@@ -13,6 +13,8 @@ import (
 func (s *Service) registerPrints() {
 	s.d.Printing.Register(printing.Template{Code: contractType, DocType: contractType, Product: "hrm",
 		Data: s.contractPrint, Layouts: []printing.Layout{contractLayout1}})
+	s.d.Printing.Register(printing.Template{Code: "hrm.payslip", DocType: payrollType, Product: "hrm",
+		Data: s.payslips, Layouts: []printing.Layout{payslipLayout1}})
 }
 
 // legalEntityPrint is the employer as a print shows it.
@@ -120,6 +122,125 @@ func contractLayout1(p *printing.Page, raw json.RawMessage) error {
 	}
 	rows = append(rows, []string{t("total"), "", p.Money(total)})
 	p.Table(cols, rows, true)
+	p.Text(t("currency"))
+	return nil
+}
+
+// payslipPrint is what one employee's payslip shows; frozen as is once the payroll is posted.
+type payslipPrint struct {
+	Number        string                   `json:"number"`
+	PeriodStart   string                   `json:"period_start"`
+	Employer      legalEntityPrint         `json:"employer"`
+	EmployeeCode  string                   `json:"employee_code"`
+	EmployeeName  string                   `json:"employee_name"`
+	OrgUnit       string                   `json:"org_unit"`
+	StandardDays  int                      `json:"standard_days"`
+	PaidDays      string                   `json:"paid_days"`
+	OvertimeHours string                   `json:"overtime_hours"`
+	Amounts       PayrollAmounts           `json:"amounts"`
+	Adjustments   []PayrollAdjustmentInput `json:"adjustments"`
+}
+
+// payslips reads one payslip per employee of a computed payroll, by department then code:
+// printing checked the actor may see each person's pay.
+func (s *Service) payslips(ctx context.Context, id int64) ([]printing.Part, error) {
+	q := store.New(platform.DBFrom(ctx))
+	p, err := q.GetPayroll(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	if !p.ComputedAt.Valid {
+		return nil, ErrPayrollNotComputed
+	}
+	d, err := s.d.Record.Get(ctx, record.Ref{Type: payrollType, ID: id})
+	if err != nil {
+		return nil, err
+	}
+	le, err := q.PrintLegalEntity(ctx, p.LegalEntityID)
+	if err != nil {
+		return nil, err
+	}
+	lines, err := s.payrollLines(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	adjustments, err := s.adjustments(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	totals, err := payrollTotals(ctx, lines)
+	if err != nil {
+		return nil, err
+	}
+	units := map[int64]string{}
+	for _, t := range totals {
+		units[t.OrgUnitID] = t.OrgUnitName
+	}
+	employer := legalEntityPrint{Name: le.Name, TaxCode: platform.TextPtr(le.TaxCode), Address: platform.TextPtr(le.Address)}
+	parts := make([]printing.Part, 0, len(lines))
+	for _, t := range totals {
+		for _, l := range lines {
+			if l.OrgUnitID != t.OrgUnitID {
+				continue
+			}
+			slip := payslipPrint{Number: d.Number, PeriodStart: *platform.DatePtr(p.PeriodStart), Employer: employer,
+				EmployeeCode: l.EmployeeCode, EmployeeName: l.EmployeeName, OrgUnit: units[l.OrgUnitID], StandardDays: l.StandardDays,
+				PaidDays: l.PaidDays, OvertimeHours: l.OvertimeHours, Amounts: l.PayrollAmounts, Adjustments: []PayrollAdjustmentInput{}}
+			for _, a := range adjustments {
+				if a.EmployeeID == l.EmployeeID {
+					slip.Adjustments = append(slip.Adjustments, a.PayrollAdjustmentInput)
+				}
+			}
+			b, err := json.Marshal(slip)
+			if err != nil {
+				return nil, err
+			}
+			parts = append(parts, printing.Part{Key: l.EmployeeID, Data: b})
+		}
+	}
+	return parts, nil
+}
+
+// payslipLayout1 prints one employee's pay: attendance, earnings, deductions, net pay.
+func payslipLayout1(p *printing.Page, raw json.RawMessage) error {
+	var s payslipPrint
+	if err := json.Unmarshal(raw, &s); err != nil {
+		return err
+	}
+	t := func(k string) string { return p.T("hrm.print.payslip."+k, nil) }
+	a := s.Amounts
+	p.Title(t("title"))
+	p.Center(p.T("hrm.print.payslip.period", map[string]any{"month": p.Month(s.PeriodStart)}))
+	p.Center(p.T("hrm.print.payslip.payroll", map[string]any{"number": s.Number}))
+	p.Gap()
+	p.Field(t("employer"), s.Employer.Name)
+	p.Field(t("employee_name"), s.EmployeeName)
+	p.Field(t("employee_code"), s.EmployeeCode)
+	p.Field(t("org_unit"), s.OrgUnit)
+	p.Field(t("paid_days"), p.T("hrm.print.payslip.days_of", map[string]any{"paid": p.Decimal(s.PaidDays), "standard": s.StandardDays}))
+	p.Field(t("overtime_hours"), p.Decimal(s.OvertimeHours))
+	cols := []printing.Column{{Title: t("item"), Share: 0.7}, {Title: t("amount"), Share: 0.3, Right: true}}
+	row := func(k string, v int64) []string { return []string{t(k), p.Money(v)} }
+	p.Heading(t("income"))
+	p.Table(cols, [][]string{row("earned", a.Earned), row("overtime", a.Overtime), row("unused_leave", a.UnusedLeave),
+		row("adjustment", a.Adjustment), row("gross", a.Gross)}, true)
+	p.Heading(t("deductions"))
+	p.Table(cols, [][]string{row("social_insurance", a.SocialInsurance), row("health_insurance", a.HealthInsurance),
+		row("unemployment_insurance", a.UnemploymentIns), row("income_tax", a.IncomeTax),
+		row("total_deductions", a.SocialInsurance+a.HealthInsurance+a.UnemploymentIns+a.IncomeTax)}, true)
+	p.Heading(t("tax"))
+	p.Field(t("insurance_base"), p.Money(a.InsuranceBase))
+	p.Field(t("exempt"), p.Money(a.Exempt))
+	p.Field(t("personal_deduction"), p.Money(a.PersonalDeduction))
+	p.Field(t("dependent_deduction"), p.Money(a.DependentDeduction))
+	p.Field(t("taxable"), p.Money(a.Taxable))
+	if len(s.Adjustments) > 0 {
+		p.Heading(t("adjustments"))
+		for _, adj := range s.Adjustments {
+			p.Field(p.Month(adj.SourcePeriod+"-01"), p.Money(adj.Amount)+" · "+adj.Reason)
+		}
+	}
+	p.Table([]printing.Column{{Share: 0.7}, {Share: 0.3, Right: true}}, [][]string{row("net", a.Net)}, true)
 	p.Text(t("currency"))
 	return nil
 }

@@ -353,6 +353,8 @@
   "hrm.payroll.col.employer_unemployment_insurance": "DN: BHTN",
   "hrm.payroll.col.employer_union_fee": "DN: KPCĐ",
   "hrm.payroll.col.cost": "Tổng chi phí",
+  "hrm.payroll.print_payslips": "In phiếu lương",
+  "hrm.payroll.print_payslip": "In phiếu lương của nhân viên",
   "hrm.legal_param.bracket_upto": "đến {{upper}}: {{rate}}",
   "hrm.legal_param.bracket_over": "trên {{lower}}: {{rate}}",
   "hrm.org.title": "Cơ cấu tổ chức",

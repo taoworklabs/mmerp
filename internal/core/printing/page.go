@@ -173,7 +173,8 @@ type Column struct {
 	Right bool
 }
 
-// Table draws a header row then one row per item; the last row may be a total.
+// Table draws a header row, unless no column has a title, then one row per item; the last
+// row may be a total.
 func (p *Page) Table(cols []Column, rows [][]string, total bool) {
 	row := func(cells []string, style string) {
 		p.font(style, textSize)
@@ -198,7 +199,9 @@ func (p *Page) Table(cols []Column, rows [][]string, total bool) {
 	for i, c := range cols {
 		titles[i] = c.Title
 	}
-	row(titles, "bold")
+	if strings.Join(titles, "") != "" {
+		row(titles, "bold")
+	}
 	for i, r := range rows {
 		style := "regular"
 		if total && i == len(rows)-1 {
@@ -232,6 +235,26 @@ func (p *Page) Money(v int64) string {
 		return "-" + b.String()
 	}
 	return b.String()
+}
+
+// Decimal writes a decimal number ("21.5") as the locale does.
+func (p *Page) Decimal(s string) string {
+	if p.locale == "en" {
+		return s
+	}
+	return strings.ReplaceAll(s, ".", ",")
+}
+
+// Month writes the month of a business date (YYYY-MM-DD), e.g. 03/2026.
+func (p *Page) Month(s string) string {
+	d, err := time.Parse(time.DateOnly, s)
+	if err != nil {
+		return s
+	}
+	if p.locale == "en" {
+		return d.Format("January 2006")
+	}
+	return d.Format("01/2006")
 }
 
 // Date formats a business date (YYYY-MM-DD) as the locale writes it; "" stays "".

@@ -5,10 +5,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"slices"
+	"strconv"
 	"strings"
 	"testing"
 
 	pdfread "github.com/ledongthuc/pdf"
+	"github.com/xuri/excelize/v2"
 )
 
 // pdfText reads back the text of a PDF, page by page.
@@ -213,4 +215,118 @@ func TestPrintContractPostedBeforePrinting(t *testing.T) {
 	if again := f.printed(pay, "hrm.contract", params); !slices.Equal(again, first) {
 		t.Fatalf("reprint differs:\n%q\n%q", again, first)
 	}
+}
+
+// money writes an amount as a Vietnamese print does.
+func money(n int64) string {
+	s := strconv.FormatInt(n, 10)
+	var b strings.Builder
+	for i, r := range s {
+		if i > 0 && (len(s)-i)%3 == 0 {
+			b.WriteByte('.')
+		}
+		b.WriteRune(r)
+	}
+	return b.String()
+}
+
+// Payslips print a page per employee, with the amounts of the payroll and of its Excel
+// export to the đồng; only for who sees salaries, and unchanged once the payroll is posted.
+func TestPrintPayslips(t *testing.T) {
+	f := newJobsFixture(t)
+	f.work([]string{"hrm"})
+	f.wait(f.hr, f.upload(f.hr, "hrm.timesheet", f.params(), march()...))
+	f.ok(f.hr, "POST", fmt.Sprintf("/api/documents/hrm.timesheet/%d/transitions", f.timesheet), `{"to":"posted","version":2}`, 204)
+	f.approveAll(204)
+	pay := f.payrollSetup()
+	id := f.createPayroll(pay)
+	path := fmt.Sprintf("/api/hrm/payrolls/%d", id)
+	if a := allowedActions(f, pay, path); !slices.Contains(a, "print") {
+		t.Fatalf("pay's actions: %v", a)
+	}
+	var p struct {
+		Lines []struct {
+			EmployeeID   int64  `json:"employee_id"`
+			EmployeeName string `json:"employee_name"`
+			Gross, Net   int64
+			IncomeTax    int64 `json:"income_tax"`
+			Social       int64 `json:"social_insurance"`
+		}
+	}
+	_ = json.Unmarshal(f.ok(pay, "GET", path, "", 200), &p)
+	params := fmt.Sprintf(`{"id":%d}`, id)
+
+	pages := f.printed(pay, "hrm.payslip", params)
+	if len(pages) != 2 {
+		t.Fatalf("%d pages", len(pages))
+	}
+	for i, l := range p.Lines {
+		for _, want := range []string{"PHIẾU LƯƠNG", l.EmployeeName, money(l.Gross), money(l.Net), money(l.Social), "BẢN NHÁP"} {
+			if !strings.Contains(pages[i], want) {
+				t.Errorf("page %d: no %q in %q", i+1, want, pages[i])
+			}
+		}
+	}
+	// The Excel export says the same: gross and net of E1.
+	var ex struct {
+		JobID int64 `json:"job_id"`
+	}
+	_ = json.Unmarshal(f.ok(pay, "POST", "/api/exports/hrm.payroll", fmt.Sprintf(`{"params":{"payroll_id":%d}}`, id), 202), &ex)
+	x, err := excelize.OpenReader(bytes.NewReader(f.ok(pay, "GET", "/api/files/"+*f.wait(pay, ex.JobID).FileID, "", 200)))
+	if err != nil {
+		t.Fatal(err)
+	}
+	rows, _ := x.GetRows("Sheet1", excelize.Options{RawCellValue: true})
+	for _, col := range []string{"Tổng thu nhập", "Thực lĩnh"} {
+		c := slices.Index(rows[0], col)
+		v, _ := strconv.ParseInt(rows[1][c], 10, 64)
+		if c < 0 || !strings.Contains(pages[0], money(v)) {
+			t.Errorf("%s of E1 in Excel (%v) is not on the payslip", col, rows[1])
+		}
+	}
+
+	// One payslip; an employee not on the payroll is refused.
+	one := f.printed(pay, "hrm.payslip", fmt.Sprintf(`{"id":%d,"parts":[%d]}`, id, f.e2))
+	if len(one) != 1 || !strings.Contains(one[0], "Nhân viên E2") {
+		t.Fatalf("E2's payslip: %q", one)
+	}
+	if j := f.print(pay, "hrm.payslip", fmt.Sprintf(`{"id":%d,"parts":[999999]}`, id)); j.Code == nil || *j.Code != "invalid_request" {
+		t.Fatalf("unknown employee: %+v", j)
+	}
+	var parts string
+	if err := f.pool.QueryRow(t.Context(), `SELECT data->>'parts' FROM audit.log WHERE action = 'printing.printed' ORDER BY id DESC LIMIT 1`).Scan(&parts); err != nil || parts != fmt.Sprintf("[%d]", f.e2) {
+		t.Fatalf("audited parts %q %v", parts, err)
+	}
+
+	// Department totals only: no print.
+	viewer := f.id(f.admin, "/api/users", `{"login":"viewer","name":"Kế toán","password":"correct horse"}`)
+	f.id(f.admin, fmt.Sprintf("/api/users/%d/roles", viewer), `{"product":"hrm","role":"payroll_viewer","org_unit_id":null}`)
+	v := f.login("viewer")
+	if a := allowedActions(f, v, path); slices.Contains(a, "print") {
+		t.Fatalf("viewer's actions: %v", a)
+	}
+	if j := f.print(v, "hrm.payslip", params); j.Code == nil || *j.Code != "forbidden" {
+		t.Fatalf("viewer's print: %+v", j)
+	}
+
+	// Posted: one snapshot per line, and payslips reprint the same after a rename.
+	var version int32
+	if err := f.pool.QueryRow(t.Context(), `SELECT version FROM record.documents WHERE id = $1`, id).Scan(&version); err != nil {
+		t.Fatal(err)
+	}
+	f.ok(pay, "POST", fmt.Sprintf("/api/documents/hrm.payroll/%d/transitions", id), fmt.Sprintf(`{"to":"posted","version":%d}`, version), 204)
+	var snapshots int
+	if err := f.pool.QueryRow(t.Context(), `SELECT count(*) FROM printing.snapshots WHERE doc_type = 'hrm.payroll' AND doc_id = $1`, id).Scan(&snapshots); err != nil || snapshots != 2 {
+		t.Fatalf("%d snapshots %v", snapshots, err)
+	}
+	posted := f.printed(pay, "hrm.payslip", params)
+	f.rename("E1", "Tên mới")
+	if again := f.printed(pay, "hrm.payslip", params); !slices.Equal(again, posted) || strings.Contains(posted[0], "BẢN NHÁP") {
+		t.Fatalf("reprint differs:\n%q\n%q", again, posted)
+	}
+
+	// Without salary rights the file printed before is gone.
+	j := f.print(pay, "hrm.payslip", params)
+	f.ok(f.admin, "DELETE", fmt.Sprintf("/api/users/%d/roles/%d", f.payID, f.payGrant), "", 204)
+	f.ok(pay, "GET", "/api/files/"+*j.FileID, "", 404)
 }

@@ -1,8 +1,10 @@
-import { Text } from '@mantine/core'
+import { Menu, Text } from '@mantine/core'
+import { IconPrinter } from '@tabler/icons-react'
 import { useTranslation } from 'react-i18next'
 import type { Payroll, PayrollLine, PayrollTotal } from '@/shared/api/hrm'
 import { formatDecimal, formatNumber } from '@/shared/i18n'
 import { DataTable, type Column } from '@/shared/ui/DataTable'
+import { icon } from '@/shared/ui/theme'
 
 type Amounts = Omit<PayrollTotal, 'org_unit_id' | 'org_unit_name' | 'employees'>
 type Key = keyof Amounts
@@ -59,8 +61,9 @@ function moneyColumns<T extends Amounts>(t: (k: string) => string, keys: Key[]):
 }
 
 // PayrollTable shows each employee's pay grouped by department, with each department's total
-// and the grand total; without the amounts of persons, only the department totals.
-export function PayrollTable({ payroll }: { payroll: Payroll }) {
+// and the grand total; without the amounts of persons, only the department totals. With
+// onPrint, each employee's row offers to print their payslip.
+export function PayrollTable({ payroll, onPrint }: { payroll: Payroll; onPrint?: (line: PayrollLine) => void }) {
   const { t } = useTranslation()
   const names = new Map(payroll.totals.map((x) => [x.org_unit_id, x.org_unit_name]))
   const grand = sum(payroll.totals)
@@ -132,6 +135,15 @@ export function PayrollTable({ payroll }: { payroll: Payroll }) {
       columns={columns}
       rows={lines}
       rowKey={(l) => l.employee_id}
+      menu={
+        onPrint &&
+        ((l) =>
+          l.employee_id ? (
+            <Menu.Item leftSection={<IconPrinter {...icon.button} />} onClick={() => onPrint(l)}>
+              {t('hrm.payroll.print_payslip')}
+            </Menu.Item>
+          ) : null)
+      }
       group={{ of: (l) => names.get(l.org_unit_id) ?? '', total: (rows) => total(t('hrm.payroll.group_total'), rows) }}
       footer={total(t('hrm.payroll.grand_total'), lines)}
       maxHeight="70dvh"

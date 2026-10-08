@@ -76,6 +76,12 @@ func (s *Service) canPayroll(ctx context.Context, id int64, action record.Action
 		return s.allowed(ctx, PermPayrollView, p.LegalEntityID)
 	case record.Edit, record.Post, record.Cancel:
 		return s.allowed(ctx, PermPayrollEdit, p.LegalEntityID)
+	case record.Print:
+		// Payslips show each person's pay.
+		if ok, err := s.allowed(ctx, PermSalaryView, p.LegalEntityID); err != nil || !ok {
+			return false, err
+		}
+		return s.allowed(ctx, PermPayrollView, p.LegalEntityID)
 	}
 	return false, nil
 }
@@ -533,6 +539,11 @@ func (s *Service) Payroll(ctx context.Context, id int64) (Payroll, error) {
 			return err
 		} else if ok && salary && p.ComputedAt.Valid {
 			actions = append(actions, "export")
+		}
+		if ok, err := s.d.Record.Can(ctx, payrollType, id, record.Print); err != nil {
+			return err
+		} else if ok && p.ComputedAt.Valid {
+			actions = append(actions, "print")
 		}
 		out = Payroll{ID: id, Number: d.Number, Status: string(d.Status), Version: d.Version, LegalEntityID: p.LegalEntityID,
 			LegalEntityName: p.LegalEntityName, PeriodStart: *platform.DatePtr(p.PeriodStart), PeriodEnd: *platform.DatePtr(p.PeriodEnd),
