@@ -1,10 +1,12 @@
 import { Group } from '@mantine/core'
+import { IconPrinter } from '@tabler/icons-react'
 import { useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate, useParams } from 'react-router'
 import { api, unwrap } from '@/shared/api/hrm'
 import { ApprovalPanel, DocumentActions, DocumentHistory, DocumentStatus, useAttachmentSection, useDiscussionSection } from '@/shared/document'
+import { ExportButton } from '@/shared/jobs'
 import { DocumentPage } from '@/shared/ui/page'
 import { ContractForm } from '../components/ContractForm'
 import { loaded } from '../components/loaded'
@@ -43,19 +45,24 @@ export function ContractPage() {
       error={error}
       actions={
         c.allowed_actions.length > 0 && (
-          <DocumentActions
-            docType={contractDocType}
-            id={c.id}
-            version={c.version}
-            number={c.number}
-            actions={c.allowed_actions}
-            onError={setError}
-            onDelete={async (version) => {
-              await unwrap(api.DELETE('/hrm/contracts/{id}', { params: { path: { id: c.id }, query: { version } } }))
-              await qc.invalidateQueries({ queryKey: hrmKeys.contracts.employee(c.employee_id) })
-              navigate(`${employeePath}?tab=contracts`, { replace: true })
-            }}
-          />
+          <Group gap="xs">
+            {c.allowed_actions.includes('print') && (
+              <ExportButton kind={`printing.${contractDocType}`} params={{ id: c.id }} label={t('hrm.contract.print')} icon={IconPrinter} />
+            )}
+            <DocumentActions
+              docType={contractDocType}
+              id={c.id}
+              version={c.version}
+              number={c.number}
+              actions={c.allowed_actions}
+              onError={setError}
+              onDelete={async (version) => {
+                await unwrap(api.DELETE('/hrm/contracts/{id}', { params: { path: { id: c.id }, query: { version } } }))
+                await qc.invalidateQueries({ queryKey: hrmKeys.contracts.employee(c.employee_id) })
+                navigate(`${employeePath}?tab=contracts`, { replace: true })
+              }}
+            />
+          </Group>
         )
       }
       approval={<ApprovalPanel docType={contractDocType} id={c.id} />}

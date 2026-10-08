@@ -186,6 +186,7 @@
   "hrm.contract_type.no_term": "No end date",
   "hrm.contract_type.fixed_term_hint": "Contracts of this kind need an end date. Clear it for open-ended kinds.",
   "hrm.contract.end_date_required_hint": "This kind of contract has a fixed term.",
+  "hrm.contract.print": "Print contract",
   "hrm.timesheets.title": "Timesheets",
   "hrm.timesheets.description": "Days actually worked, by org unit and payroll period.",
   "hrm.timesheets.create": "Create timesheet",

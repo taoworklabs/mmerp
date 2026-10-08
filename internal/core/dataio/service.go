@@ -51,6 +51,9 @@ func (s *Service) RegisterExport(e Export) {
 	if e.Check == nil {
 		panic("dataio: export " + e.Kind + " has no Check")
 	}
+	if (e.Run == nil) == (e.Render == nil) {
+		panic("dataio: export " + e.Kind + " needs exactly one of Run and Render")
+	}
 	s.exports[e.Kind] = e
 }
 

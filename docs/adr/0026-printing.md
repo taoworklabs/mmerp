@@ -56,10 +56,10 @@ Templates only display data: layouts are Go code shipped with the release, and t
 
 ### Printing is a `dataio` export
 
-- `dataio.Export` gains `Render(ctx, params) (File, error)`, the alternative to `Run` for a file that is not a sheet: `File{Name, ContentType, Body}`. Exactly one of the two is set.
-- `printing` registers one export per template, with kind `printing.<template code>`, the template's product, and params `{"id": …, "parts": […]}` (no parts: all of them). Its `Check` re-checks `print` on the record and that every part exists; it runs when the job runs and on every download, as for every export.
+- `dataio.Export` gains `Render(ctx, params) (File, error)`, the alternative to `Run` for a file that is not a sheet: `File{Name, Body}`, its type given by the name's extension. Exactly one of the two is set.
+- `printing` registers one export per template, with kind `printing.<template code>`, the template's product, and params `{"id": …, "parts": […]}` (no parts: all of them). Its `Check` re-checks `print` on the record (a record the actor cannot view does not exist); it runs when the job runs and on every download, as for every export. `Render` refuses parts the record does not have.
 - Starting, following and downloading a print use the existing routes (`POST /exports/{kind}`, `GET /jobs/{id}`, `GET /files/{id}`), the jobs screen and the frontend's `ExportButton`. Expiry and cleanup are `dataio`'s. `printing` has no job, file directory or download route of its own.
-- `Render` writes the pin (if any) and the audit entry in one transaction, then draws the PDF. One PDF per job; with several parts, one per page, in the order of `Data`.
+- `Render` draws the PDF, then writes the pin (if new) and the audit entry in one transaction, so a failed attempt leaves neither. One PDF per job; with several parts, each starts a page, in the order of `Data`.
 
 ### PDF engine
 
@@ -70,7 +70,7 @@ Templates only display data: layouts are Go code shipped with the release, and t
 
 ### Audit
 
-- `printing.printed` on the record, in `Render`'s transaction: template, layout version, part count, and for payslips the employee ids. Never amounts or text.
+- `printing.printed` on the record, in `Render`'s transaction: template, layout version, and for payslips the employee ids. Never amounts or text.
 - `record.History` shows it only to actors with `print` (`record.RestrictHistory`).
 - Downloads are not audited separately, like every other export file: only the requester can download, and the print is already audited.
 - Saving text blocks writes `printing.blocks_saved` (template, version).

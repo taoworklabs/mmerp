@@ -83,8 +83,11 @@ func (s *Service) canContract(ctx context.Context, id int64, action record.Actio
 	if err != nil {
 		return false, err
 	}
-	// The signed scan shows the salary. Attaching also once posted: contracts are often
-	// signed after they are entered.
+	// The signed scan shows the salary, and so does the print. Attaching also once posted:
+	// contracts are often signed after they are entered.
+	if action == record.Print {
+		action = record.ViewFiles
+	}
 	action, files := filesAction(action)
 	if files {
 		if ok, err := s.allowed(ctx, PermSalaryView, r.OrgUnitID); err != nil || !ok {
@@ -283,6 +286,12 @@ func (s *Service) Contract(ctx context.Context, id int64) (Contract, error) {
 		if err != nil {
 			return err
 		}
+		// Printing changes nothing, so a locked period does not hold it back.
+		print, err := s.d.Record.AllowedActions(ctx, contractType, id, record.Print)
+		if err != nil {
+			return err
+		}
+		actions = append(actions, print...)
 		out = Contract{
 			ID: id, Number: d.Number, Status: string(d.Status), Version: d.Version, EmployeeID: r.EmployeeID,
 			EmployeeCode: r.EmployeeCode, EmployeeName: r.EmployeeName, ParentID: platform.Int8Ptr(r.ParentID),

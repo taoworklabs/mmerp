@@ -111,6 +111,6 @@ test('HR imports the March timesheet from Excel, fixes a bad file, follows the j
   // The posted timesheet still exports, in the import's layout.
   await hr.getByRole('button', { name: 'Xuất Excel' }).click()
   const download = hr.waitForEvent('download')
-  await hr.getByRole('link', { name: 'Tải file Excel' }).click()
+  await hr.getByRole('link', { name: 'Tải file' }).click()
   expect((await download).suggestedFilename()).toBe(`${number}.xlsx`)
 })

@@ -30,6 +30,7 @@ import (
 	"github.com/taoworklabs/mmerp/internal/core/iam"
 	"github.com/taoworklabs/mmerp/internal/core/notification"
 	"github.com/taoworklabs/mmerp/internal/core/numbering"
+	"github.com/taoworklabs/mmerp/internal/core/printing"
 	"github.com/taoworklabs/mmerp/internal/core/record"
 	"github.com/taoworklabs/mmerp/internal/core/setting"
 	"github.com/taoworklabs/mmerp/internal/modules/hrm"
@@ -78,9 +79,10 @@ func Modules() []platform.Module {
 	appr := approval.NewService(approval.Deps{IAM: ids, Record: rec, Audit: audit.NewService(), Notification: ntf})
 	rec.SetApprovalGate(appr)
 	dio := dataio.NewService(dataio.Deps{IAM: ids, Audit: audit.NewService()})
+	prn := printing.NewService(printing.Deps{Record: rec, Audit: audit.NewService(), DataIO: dio, IAM: ids})
 	att := attachment.NewService(attachment.Deps{Record: rec, Audit: audit.NewService()})
 	dis := discussion.NewService(discussion.Deps{Record: rec, Audit: audit.NewService(), IAM: ids, Notification: ntf})
-	h := hrm.NewService(hrm.Deps{IAM: ids, Record: rec, Audit: audit.NewService(), Setting: set, DataIO: dio,
+	h := hrm.NewService(hrm.Deps{IAM: ids, Record: rec, Audit: audit.NewService(), Setting: set, DataIO: dio, Printing: prn,
 		// No accounting yet: nothing reacts to posting lines.
 		Posting: posting.NewService(posting.Hooks{})})
 	return []platform.Module{iam.Module(ids), setting.Module(set), record.Module(rec), approval.Module(appr), dataio.Module(dio), attachment.Module(att), discussion.Module(dis), notification.Module(ntf), hrm.Module(h)}

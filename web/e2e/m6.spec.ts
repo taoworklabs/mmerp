@@ -91,6 +91,6 @@ test('payroll: computed by a job, refused while sources changed, computed again,
 
   await pay.getByRole('button', { name: 'Xuất Excel' }).click()
   const download = pay.waitForEvent('download')
-  await pay.getByRole('link', { name: 'Tải file Excel' }).click()
+  await pay.getByRole('link', { name: 'Tải file' }).click()
   expect((await download).suggestedFilename()).toBe(`${number}.xlsx`)
 })

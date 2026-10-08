@@ -195,9 +195,9 @@ func TestContractPermissions(t *testing.T) {
 	if _, err := f.hrm.Contract(f.m, id); errCode(err) != "not_found" {
 		t.Fatalf("manager: %v", err)
 	}
-	// With payroll every read of the terms is audited.
+	// With payroll every read of the terms is audited, and the contract may be printed.
 	before := f.auditCount("hrm.contract_terms_viewed")
-	if c := f.contract(id); c.Terms == nil || c.Terms.Salary != 10_000_000 || !equal(c.AllowedActions, "edit", "delete", "submit") {
+	if c := f.contract(id); c.Terms == nil || c.Terms.Salary != 10_000_000 || !equal(c.AllowedActions, "edit", "delete", "submit", "print") {
 		t.Fatalf("payroll: %+v", c)
 	}
 	f.contract(id)

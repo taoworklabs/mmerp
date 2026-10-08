@@ -90,6 +90,7 @@ func NewService(d Deps) *Service {
 		Can: s.canPayroll, OnTransition: s.payrollTransition, BeforeSubmit: s.payrollBeforeSubmit,
 	})
 	s.registerDataIO()
+	s.registerPrints()
 	return s
 }
 

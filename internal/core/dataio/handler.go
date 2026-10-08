@@ -6,6 +6,7 @@ import (
 	"io"
 	"mime"
 	"net/http"
+	"path"
 
 	"github.com/danielgtaylor/huma/v2"
 
@@ -77,9 +78,16 @@ func jobID(id int64, err error) (*jobIDOutput, error) {
 	return out, nil
 }
 
+// contentTypes are the types of files other than Excel, by name extension.
+var contentTypes = map[string]string{".pdf": "application/pdf"}
+
 func attachment(name string, b []byte) *fileOutput {
+	t, ok := contentTypes[path.Ext(name)]
+	if !ok {
+		t = xlsx
+	}
 	return &fileOutput{
-		ContentType:        xlsx,
+		ContentType:        t,
 		ContentDisposition: mime.FormatMediaType("attachment", map[string]string{"filename": name}),
 		CacheControl:       "no-store",
 		Body:               b,

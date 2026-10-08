@@ -41,7 +41,7 @@ func (a Action) class() platform.Class {
 	switch a {
 	case View, ViewFiles:
 		return platform.ClassRead
-	case Export:
+	case Export, Print:
 		return platform.ClassExport
 	}
 	return platform.ClassWrite

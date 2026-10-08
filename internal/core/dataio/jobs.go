@@ -213,28 +213,24 @@ func (s *Service) rowsInvalid(ctx context.Context, product string, rowErrs []Row
 		Params: map[string]any{"rows": out, "count": len(rowErrs)}}
 }
 
-// runExport writes the module's sheet to a file only the requester may download, for a day.
+// runExport writes the module's export to a file only the requester may download, for a day.
 func (s *Service) runExport(ctx context.Context, j *river.Job[exportArgs]) error {
 	a := j.Args
 	exp, ok := s.exports[a.Target]
 	if !ok {
 		return platform.ErrNotFound
 	}
-	sheet, err := exp.Run(ctx, a.Params)
+	file, err := export(ctx, exp, a.Params)
 	if err != nil {
 		return err
 	}
-	b, err := writeSheet(sheet)
-	if err != nil {
-		return err
-	}
-	id, err := files(ctx).Save(b)
+	id, err := files(ctx).Save(bytes.NewReader(file.Body))
 	if err != nil {
 		return err
 	}
 	return platform.InTx(ctx, func(ctx context.Context) error {
 		export := store.CreateFileParams{ExportKind: pgtype.Text{String: a.Target, Valid: true}, ExportParams: a.Params}
-		if err := s.keep(ctx, id, sheet.Name+".xlsx", export); err != nil {
+		if err := s.keep(ctx, id, file.Name, export); err != nil {
 			return err
 		}
 		if err := s.d.Audit.Record(ctx, "dataio.exported", map[string]any{"kind": a.Target, "params": a.Params, "file_id": id}); err != nil {
@@ -242,6 +238,22 @@ func (s *Service) runExport(ctx context.Context, j *river.Job[exportArgs]) error
 		}
 		return platform.CompleteJob(ctx, j, jobOutput{FileID: &id})
 	})
+}
+
+// export runs a module's export into a file.
+func export(ctx context.Context, exp Export, params json.RawMessage) (File, error) {
+	if exp.Render != nil {
+		return exp.Render(ctx, params)
+	}
+	sheet, err := exp.Run(ctx, params)
+	if err != nil {
+		return File{}, err
+	}
+	b, err := writeSheet(sheet)
+	if err != nil {
+		return File{}, err
+	}
+	return File{Name: sheet.Name + ".xlsx", Body: b.Bytes()}, nil
 }
 
 // writeSheet writes the header in bold, frozen, and the rows below it.

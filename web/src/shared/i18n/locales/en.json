@@ -219,7 +219,7 @@
   "shared.jobs.running": "Running…",
   "shared.jobs.imported": "{{rows}} rows imported.",
   "shared.jobs.exported": "The Excel file is ready; it can be downloaded for 24 hours.",
-  "shared.jobs.download": "Download the Excel file",
+  "shared.jobs.download": "Download the file",
   "shared.jobs.row_errors": "Rows with errors",
   "shared.jobs.row": "Row",
   "shared.jobs.reason": "Reason",
