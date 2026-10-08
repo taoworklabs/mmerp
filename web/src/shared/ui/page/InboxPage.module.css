@@ -1,0 +1,18 @@
+/* The list column is set off from the detail by a single rule, not a box. */
+.list {
+  flex: 0 0 360px;
+  min-width: 0;
+  padding-right: var(--mantine-spacing-md);
+  border-right: 1px solid var(--mantine-color-default-border);
+}
+
+.items {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+/* An unread row stands out by weight alone, so the tint stays for the selected one. */
+.unread {
+  font-weight: 600;
+}

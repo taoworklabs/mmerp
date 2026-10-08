@@ -1,0 +1,13 @@
+{
+  "notification.email.test.subject": "Test message from mmerp",
+  "notification.email.test.body": "The company's mail server sent this message. mmerp now emails notifications to users who have an email address.",
+  "notification.email.footer": "Open mmerp: {url}",
+  "notification.email.approval_requested.subject": "A document is waiting for your approval",
+  "notification.email.approval_requested.body": "A document in mmerp is waiting for your approval.",
+  "notification.email.approval_approved.subject": "Your document was approved",
+  "notification.email.approval_approved.body": "A document you sent in mmerp was approved.",
+  "notification.email.approval_rejected.subject": "Your document was rejected",
+  "notification.email.approval_rejected.body": "A document you sent in mmerp was rejected. Open mmerp to read why.",
+  "notification.email.mentioned.subject": "You were mentioned in mmerp",
+  "notification.email.mentioned.body": "Someone mentioned you in a discussion in mmerp."
+}

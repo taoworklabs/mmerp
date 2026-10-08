@@ -1,0 +1,124 @@
+.row {
+  cursor: pointer;
+}
+
+/* The identifier column stays in view when a wide table scrolls sideways, on one line. */
+.sticky {
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  white-space: nowrap;
+  background: var(--mmerp-color-surface);
+  box-shadow: inset -1px 0 0 var(--mantine-color-default-border);
+}
+
+/* A band of related columns opens with a rule. */
+.bandStart {
+  border-left: 1px solid var(--mantine-color-default-border);
+}
+
+.strong {
+  font-weight: 600;
+}
+
+.numeric {
+  font-variant-numeric: tabular-nums;
+}
+
+/* The whole card is the link's hit area. */
+.cardLink::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+}
+
+.cardLink {
+  color: inherit;
+  text-decoration: none;
+}
+
+.card {
+  position: relative;
+}
+
+/* Above the card link's hit area. */
+.cardAction {
+  position: relative;
+  z-index: 1;
+}
+
+/* Rows are 40px whatever the cell holds; the row menu button is 34px. */
+.compact td {
+  height: 40px;
+}
+
+/* Column titles are quiet: small, secondary colour, on the subtle tone. */
+.compact th {
+  height: 36px;
+  background: var(--mmerp-color-subtle);
+  color: var(--mantine-color-dimmed);
+  font-size: var(--mantine-font-size-xs);
+  font-weight: 500;
+}
+
+.compact th.sticky {
+  z-index: 2;
+  background: var(--mmerp-color-subtle);
+}
+
+/* In a frame of capped height the grand total stays at its bottom. */
+.compact tfoot td {
+  position: sticky;
+  bottom: 0;
+  z-index: 1;
+  background: var(--mmerp-color-surface);
+  box-shadow: inset 0 1px 0 var(--mantine-color-default-border);
+}
+
+.compact tfoot td.sticky {
+  z-index: 2;
+  box-shadow:
+    inset -1px 0 0 var(--mantine-color-default-border),
+    inset 0 1px 0 var(--mantine-color-default-border);
+}
+
+/* The identifier reads as the row's name; it underlines on hover like any link. */
+.idLink {
+  color: var(--mantine-color-text);
+  font-weight: 500;
+  text-decoration: none;
+}
+
+.idLink:hover {
+  text-decoration: underline;
+}
+
+/* Clips the header's tinted cells to the frame's rounded corners. */
+.frame {
+  overflow: hidden;
+}
+
+/* A group's name row and the total rows read as headings of the figures around them. */
+.groupRow td {
+  background: var(--mmerp-color-subtle);
+  font-weight: 600;
+}
+
+/* The name stays in view when the row scrolls sideways. */
+.groupName {
+  position: sticky;
+  left: var(--mantine-spacing-sm);
+}
+
+.totalRow td {
+  font-weight: 600;
+}
+
+.totalRow td.sticky {
+  background: var(--mmerp-color-surface);
+}
+
+/* A total card stands apart from the rows it sums. */
+.totalCard {
+  background: var(--mmerp-color-subtle);
+}

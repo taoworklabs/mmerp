@@ -1,0 +1,41 @@
+# Obsolete drafts kept only locally
+.backup/
+
+# Go build and test output
+/bin/
+/dist/
+*.test
+*.out
+coverage.*
+
+# Frontend: dependencies and build output (embedded into the binary at build time)
+node_modules/
+web/dist/
+*.tsbuildinfo
+.vite/
+playwright-report/
+test-results/
+
+# Files written by a local server (FILES_DIR)
+/data/
+
+# Local configuration and secrets
+.env
+.env.*
+!.env.example
+/local.mk
+/secrets/
+
+# Claude Code: personal settings stay local; shared .claude/settings.json is committed
+.claude/settings.local.json
+.claude/scheduled_tasks.lock
+
+# Editors and OS
+.idea/
+.vscode/
+*.swp
+.DS_Store
+
+# Generated code from `make gen` is committed on purpose: CI fails if it differs.
+web/test-results/
+web/playwright-report/

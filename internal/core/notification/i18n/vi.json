@@ -1,0 +1,13 @@
+{
+  "notification.email.test.subject": "Thư thử từ mmerp",
+  "notification.email.test.body": "Máy chủ mail của công ty đã gửi được thư. Từ nay mmerp gửi thông báo qua email tới người dùng có địa chỉ email.",
+  "notification.email.footer": "Mở mmerp: {url}",
+  "notification.email.approval_requested.subject": "Có chứng từ chờ bạn duyệt",
+  "notification.email.approval_requested.body": "Một chứng từ trên mmerp đang chờ bạn duyệt.",
+  "notification.email.approval_approved.subject": "Chứng từ của bạn đã được duyệt",
+  "notification.email.approval_approved.body": "Một chứng từ bạn gửi trên mmerp đã được duyệt.",
+  "notification.email.approval_rejected.subject": "Chứng từ của bạn bị từ chối",
+  "notification.email.approval_rejected.body": "Một chứng từ bạn gửi trên mmerp bị từ chối. Mở mmerp để xem lý do.",
+  "notification.email.mentioned.subject": "Bạn được nhắc tên trên mmerp",
+  "notification.email.mentioned.body": "Có người nhắc tên bạn trong một trao đổi trên mmerp."
+}

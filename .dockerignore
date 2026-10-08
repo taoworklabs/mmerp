@@ -1,0 +1,9 @@
+.git
+.backup
+.claude
+**/node_modules
+web/dist
+.env
+.env.*
+secrets
+data

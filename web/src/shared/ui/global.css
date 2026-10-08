@@ -1,0 +1,22 @@
+/* Below 1024px only self-service screens are supported: every control gets a 44px touch target. */
+@media (max-width: 63.99em) {
+  .mantine-Input-input,
+  .mantine-Button-root,
+  .mantine-ActionIcon-root,
+  .mantine-Burger-root {
+    min-height: 44px;
+    min-width: 44px;
+  }
+  /* Make room for the 44px toggle inside the password field. */
+  .mantine-PasswordInput-section {
+    width: 44px;
+  }
+  .mantine-PasswordInput-innerInput {
+    padding-right: 44px;
+  }
+}
+
+/* The chosen option of a dropdown is tinted, like any selected item. */
+[data-combobox-option][data-checked] {
+  background: var(--mantine-primary-color-light);
+}

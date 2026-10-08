@@ -1,0 +1,38 @@
+services:
+  app:
+    image: ${APP_IMAGE:-mmerp:dev}
+    build: .
+    environment:
+      DATABASE_URL: postgres://mmerp:${POSTGRES_PASSWORD:-mmerp}@postgres:5432/mmerp?sslmode=disable
+      PRODUCTS: ${PRODUCTS-hrm}
+      # Never defaulted: a missing key must stop the install, not encrypt with a public one. make sets a dev key.
+      ENCRYPTION_KEYS: ${ENCRYPTION_KEYS:?ENCRYPTION_KEYS must be set}
+      FILES_DIR: /data/files
+    volumes:
+      # Back it up with the database.
+      - files:/data/files
+    ports:
+      - "127.0.0.1:${APP_PORT:-8080}:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+
+  postgres:
+    image: postgres:18
+    environment:
+      POSTGRES_USER: mmerp
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-mmerp} # dev default only
+      POSTGRES_DB: mmerp
+    ports:
+      - "127.0.0.1:${POSTGRES_PORT:-5433}:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "mmerp"]
+      interval: 2s
+      retries: 30
+
+volumes:
+  pgdata:
+  files:

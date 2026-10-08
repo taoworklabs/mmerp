@@ -1,0 +1,18 @@
+[
+  ["area-to-other-area", "sales/relative.ts"],
+  ["area-only-through-index", "sales/relative.ts"],
+  ["area-to-other-area", "sales/alias.ts"],
+  ["area-only-through-index", "sales/alias.ts"],
+  ["area-to-other-area", "sales/dynamic.ts"],
+  ["area-only-through-index", "sales/dynamic.ts"],
+  ["area-to-other-area", "sales/via-index.ts"],
+  ["area-to-other-area", "sales/to-app.ts"],
+  ["area-api-only-core-and-own", "sales/other-api.ts"],
+  ["no-css-in-areas", "sales/style.ts"],
+  ["shared-not-to-areas", "shared/reexport.ts"],
+  ["area-only-through-index", "shared/reexport.ts"],
+  ["shared-not-to-areas", "shared/to-core.ts"],
+  ["area-only-through-index", "app/deep.ts"],
+  ["entry-only-to-app", "main.ts"],
+  ["entry-only-to-app", "main-alias.ts"]
+]

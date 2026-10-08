@@ -1,0 +1,46 @@
+/* Sections are separated by a rule, not boxed. */
+.section {
+  border: 0;
+  margin: 0;
+  padding: 0 0 var(--mantine-spacing-lg);
+  min-width: 0;
+}
+
+.section + .section {
+  border-top: 1px solid var(--mantine-color-default-border);
+  padding-top: var(--mantine-spacing-lg);
+}
+
+/* Amounts line their digits up. */
+.money {
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+/* The height of an sm input, at the bottom of its grid cell. */
+.inputRow {
+  align-self: end;
+  height: calc(2.25rem * var(--mantine-scale));
+}
+
+/* A page form's footer stays on screen however long the form; the rule turns primary once
+   something is edited. */
+.bar {
+  position: sticky;
+  bottom: 0;
+  z-index: 1;
+  padding: var(--mantine-spacing-sm) 0;
+  background: var(--mantine-color-body);
+  border-top: 1px solid var(--mantine-color-default-border);
+}
+
+.bar[data-dirty] {
+  border-top-color: var(--mantine-color-primary-filled);
+}
+
+.dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--mantine-color-primary-filled);
+}

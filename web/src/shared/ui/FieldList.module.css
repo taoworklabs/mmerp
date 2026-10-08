@@ -1,0 +1,15 @@
+.fields {
+  display: grid;
+  grid-template-columns: minmax(8rem, max-content) 1fr;
+  gap: var(--mantine-spacing-xs) var(--mantine-spacing-lg);
+  margin: 0;
+}
+
+/* Each row hands its label and value to the grid's two columns. */
+.row {
+  display: contents;
+}
+
+.row dd {
+  margin: 0;
+}

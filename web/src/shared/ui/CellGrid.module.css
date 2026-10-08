@@ -1,0 +1,80 @@
+/* A dense grid of small number cells. It fills its frame, the day columns sharing the room;
+   below 40px a column they scroll sideways inside the frame instead. */
+.grid {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: var(--mantine-font-size-sm);
+  font-variant-numeric: tabular-nums;
+}
+
+.grid th,
+.grid td {
+  border-bottom: 1px solid var(--mantine-color-default-border);
+  border-right: 1px solid var(--mantine-color-default-border);
+  padding: 0;
+  height: 32px;
+  text-align: center;
+}
+
+.grid thead th {
+  background: var(--mmerp-color-subtle);
+  color: var(--mantine-color-dimmed);
+  font-size: var(--mantine-font-size-xs);
+  font-weight: 500;
+  min-width: 40px;
+  padding: var(--mantine-spacing-xxs);
+  line-height: 1.2;
+}
+
+/* The row titles stay in view when the grid scrolls sideways. */
+.grid .sticky {
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  background: var(--mmerp-color-surface);
+  text-align: left;
+  padding: 0 var(--mantine-spacing-sm);
+  white-space: nowrap;
+  /* As narrow as its content, so the spare width goes to the day columns. */
+  width: 1%;
+}
+
+.grid thead .sticky {
+  background: var(--mmerp-color-subtle);
+}
+
+.grid .total {
+  font-weight: 500;
+  padding: 0 var(--mantine-spacing-xs);
+  text-align: right;
+  width: 1%;
+}
+
+.cell {
+  width: 100%;
+  min-width: 40px;
+  height: 31px;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: var(--mantine-color-text);
+  font: inherit;
+  text-align: center;
+}
+
+.cell:focus {
+  outline: 2px solid var(--mantine-primary-color-filled);
+  outline-offset: -2px;
+}
+
+.cell[aria-invalid='true'] {
+  background: var(--mantine-color-danger-0);
+  outline: 1px solid var(--mantine-color-error);
+  outline-offset: -1px;
+}
+
+/* A cell that takes no value, e.g. before an employee joined. */
+.off {
+  background: var(--mmerp-color-subtle);
+}

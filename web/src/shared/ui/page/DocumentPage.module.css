@@ -1,0 +1,30 @@
+.side {
+  flex: 0 0 360px;
+  min-width: 0;
+}
+
+/* Below 1024px the document's actions stay reachable at the bottom of the screen. */
+.bar {
+  position: fixed;
+  inset: auto 0 0 0;
+  z-index: 100;
+  padding: var(--mantine-spacing-sm) var(--mantine-spacing-md);
+  background: var(--mantine-color-body);
+  border-top: 1px solid var(--mantine-color-default-border);
+}
+
+.barSpace {
+  height: 64px;
+}
+
+/* More tabs than fit a phone: one row that scrolls sideways rather than wrapping.
+   Doubled to outrank Mantine's own list rule whatever order the CSS loads in. */
+.tabs.tabs {
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.tabs.tabs > * {
+  flex-shrink: 0;
+}

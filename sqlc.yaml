@@ -1,0 +1,46 @@
+# One entry per module; each module's generated store stays inside the module.
+version: "2"
+sql:
+  - &module
+    engine: postgresql
+    schema: migrations
+    queries: internal/core/iam/queries.sql
+    gen:
+      go: &go
+        package: store
+        out: internal/core/iam/internal/store
+        sql_package: pgx/v5
+        omit_unused_structs: true
+  - <<: *module
+    queries: internal/core/setting/queries.sql
+    gen: { go: { <<: *go, out: internal/core/setting/internal/store } }
+  - <<: *module
+    queries: internal/core/audit/queries.sql
+    gen: { go: { <<: *go, out: internal/core/audit/internal/store } }
+  - <<: *module
+    queries: internal/modules/hrm/queries.sql
+    gen: { go: { <<: *go, out: internal/modules/hrm/internal/store } }
+  - <<: *module
+    queries: internal/core/numbering/queries.sql
+    gen: { go: { <<: *go, out: internal/core/numbering/internal/store } }
+  - <<: *module
+    queries: internal/core/record/queries.sql
+    gen: { go: { <<: *go, out: internal/core/record/internal/store } }
+  - <<: *module
+    queries: internal/core/approval/queries.sql
+    gen: { go: { <<: *go, out: internal/core/approval/internal/store } }
+  - <<: *module
+    queries: internal/core/dataio/queries.sql
+    gen: { go: { <<: *go, out: internal/core/dataio/internal/store } }
+  - <<: *module
+    queries: internal/core/attachment/queries.sql
+    gen: { go: { <<: *go, out: internal/core/attachment/internal/store } }
+  - <<: *module
+    queries: internal/core/discussion/queries.sql
+    gen: { go: { <<: *go, out: internal/core/discussion/internal/store } }
+  - <<: *module
+    queries: internal/core/notification/queries.sql
+    gen: { go: { <<: *go, out: internal/core/notification/internal/store } }
+  - <<: *module
+    queries: internal/shared/posting/queries.sql
+    gen: { go: { <<: *go, out: internal/shared/posting/internal/store } }

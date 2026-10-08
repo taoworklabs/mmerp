@@ -1,0 +1,4 @@
+/* Empty regions are dashed, so they read as space waiting for content. */
+.empty {
+  border-style: dashed;
+}

@@ -1,0 +1,80 @@
+version: "2"
+
+linters:
+  enable:
+    - depguard
+    - forbidigo
+  settings:
+    depguard:
+      # Layers: modules → shared → core → platform. internal/app wires everything.
+      # From the second product on, each product module gets a rule denying the other modules.
+      rules:
+        platform:
+          files: ["**/internal/platform/**"]
+          deny:
+            - pkg: github.com/taoworklabs/mmerp/internal/core
+              desc: platform sits below core
+            - pkg: github.com/taoworklabs/mmerp/internal/shared
+              desc: platform sits below shared
+            - pkg: github.com/taoworklabs/mmerp/internal/modules
+              desc: platform sits below modules
+            - pkg: github.com/taoworklabs/mmerp/internal/app
+              desc: only cmd imports app
+        core:
+          files: ["**/internal/core/**"]
+          deny:
+            - pkg: github.com/taoworklabs/mmerp/internal/shared
+              desc: core sits below shared; call up through hooks.go
+            - pkg: github.com/taoworklabs/mmerp/internal/modules
+              desc: core sits below modules; call up through hooks.go
+            - pkg: github.com/taoworklabs/mmerp/internal/app
+              desc: only cmd imports app
+        shared:
+          files: ["**/internal/shared/**"]
+          deny:
+            - pkg: github.com/taoworklabs/mmerp/internal/modules
+              desc: shared sits below modules; call up through hooks.go
+            - pkg: github.com/taoworklabs/mmerp/internal/app
+              desc: only cmd imports app
+        modules:
+          files: ["**/internal/modules/**"]
+          deny:
+            - pkg: github.com/taoworklabs/mmerp/internal/app
+              desc: only cmd imports app
+        excelize:
+          files: ["**/internal/**", "!**/internal/core/dataio/**", "!$test"]
+          deny:
+            - pkg: github.com/xuri/excelize
+              desc: Excel is read and written only in dataio; register an import or export with it
+        no-pool:
+          files: ["**/internal/core/**", "**/internal/shared/**", "**/internal/modules/**"]
+          deny:
+            - pkg: github.com/jackc/pgx/v5/pgxpool
+              desc: get the connection from platform.DBFrom(ctx)
+    forbidigo:
+      analyze-types: true
+      forbid:
+        - pattern: ^fmt\.Print
+          msg: log with platform.LogFrom(ctx)
+        - pattern: ^os\.(Getenv|LookupEnv)$
+          msg: configuration is read once in platform.LoadConfig
+        - pattern: ^pgx\.Connect
+          msg: get the connection from platform.DBFrom(ctx)
+        - pattern: ^float(32|64)$
+          msg: money is int64 in minor units; rates use shopspring/decimal
+  exclusions:
+    rules:
+      - path: internal/platform/(config|pgtest/pgtest)\.go
+        linters: [forbidigo]
+        text: os\.(Getenv|LookupEnv)
+      - path: internal/platform/pgtest/
+        linters: [forbidigo]
+        text: pgx\.Connect
+      - path-except: ^internal/
+        linters: [forbidigo]
+        text: float
+
+formatters:
+  enable:
+    - gofmt
+    - goimports
