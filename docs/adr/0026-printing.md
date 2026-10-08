@@ -19,7 +19,7 @@ Constraints: one Go binary plus Postgres (no Chromium, no sidecar); Vietnamese d
   - `printing.pins (doc_type, doc_id, layout, locale, blocks, pinned_at)`, primary key `(doc_type, doc_id)`. What a posted document's first print fixed: the layout version, the locale (`CHECK` in `vi`, `en`) and the resolved text of every text block.
   - `printing.blocks (template, version, texts, saved_by, saved_at)`, primary key `(template, version)`. Each save of a template's text blocks by a tenant administrator; `texts` holds every block in `vi` and `en`.
 - No foreign key to business tables; attaches by `(doc_type, doc_id)`, like `attachment`.
-- `deps.go`: `record`, `audit`, `dataio`, `iam` (for `core.admin` on text blocks). No hooks of its own. No record types, no business lines.
+- `deps.go`: `record`, `audit`, `dataio`, `iam` (the requester's locale; `core.print_template.manage` on text blocks). No hooks of its own. No record types, no business lines.
 - A **part** is one printable unit of a record: `0` for a record printed whole (a contract), the employee id for one payslip of a payroll.
 
 ### Templates are registered in code
@@ -77,7 +77,7 @@ Templates only display data: layouts are Go code shipped with the release, and t
 
 ### Text blocks are edited by tenant administrators
 
-- Routes `GET /print-templates`, `GET /print-templates/{code}`, `PUT /print-templates/{code}/blocks`, for `core.admin`. Saving is a write of the template's product and goes through the product gate.
+- Routes `GET /print-templates`, `GET /print-templates/{code}`, `PUT /print-templates/{code}/blocks`, needing the permission `core.print_template.manage` of the `core.admin` role. Saving is a write of the template's product and goes through the product gate. Each block's text is at most 4,000 characters per language.
 - Each save adds a version; the screen shows the current version and when it was saved. A template with no saved version uses its default texts.
 
 ## Rejected alternatives

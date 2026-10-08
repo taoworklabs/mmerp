@@ -22,6 +22,7 @@ type Service struct {
 	d Deps
 	// templates by document type: one each.
 	templates map[string]Template
+	byCode    map[string]Template
 }
 
 // snapshotAAD binds the encrypted print data to its column.
@@ -44,7 +45,7 @@ func NewService(d Deps) *Service {
 		// The files are embedded: failing here is a build defect.
 		panic(err)
 	}
-	s := &Service{d: d, templates: map[string]Template{}}
+	s := &Service{d: d, templates: map[string]Template{}, byCode: map[string]Template{}}
 	d.Record.OnPosted(s)
 	// Who printed what tells nothing to someone who could not print it.
 	d.Record.RestrictHistory("printing.printed", record.Print)
@@ -59,7 +60,7 @@ func (s *Service) Register(t Template) {
 	if _, dup := s.templates[t.DocType]; dup {
 		panic("printing: " + t.DocType + " has two templates")
 	}
-	s.templates[t.DocType] = t
+	s.templates[t.DocType], s.byCode[t.Code] = t, t
 	s.d.DataIO.RegisterExport(dataio.Export{
 		Kind: "printing." + t.Code, Product: t.Product,
 		Render: func(ctx context.Context, raw json.RawMessage) (dataio.File, error) { return s.render(ctx, t, raw) },
@@ -109,8 +110,12 @@ func (s *Service) render(ctx context.Context, t Template, raw json.RawMessage) (
 		return dataio.File{}, err
 	}
 	layout, locale := len(t.Layouts), me.Locale
+	blocks, err := s.current(ctx, t, locale)
+	if err != nil {
+		return dataio.File{}, err
+	}
 	if parts != nil {
-		if layout, locale, err = s.pin(ctx, ref, layout, locale); err != nil {
+		if layout, locale, blocks, err = s.pin(ctx, ref, layout, locale, blocks); err != nil {
 			return dataio.File{}, err
 		}
 		if layout > len(t.Layouts) {
@@ -122,7 +127,7 @@ func (s *Service) render(ctx context.Context, t Template, raw json.RawMessage) (
 	if parts, err = pick(parts, in.Parts); err != nil {
 		return dataio.File{}, err
 	}
-	p, err := newPage(locale, watermark(locale, d.Status))
+	p, err := newPage(locale, watermark(locale, d.Status), blocks)
 	if err != nil {
 		return dataio.File{}, err
 	}
@@ -208,20 +213,28 @@ func (s *Service) snapshots(ctx context.Context, ref record.Ref) ([]Part, error)
 	return parts, nil
 }
 
-// pin returns the layout and locale a posted document's first print fixed, fixing them to
-// these at the first print.
-func (s *Service) pin(ctx context.Context, ref record.Ref, layout int, locale string) (int, string, error) {
+// pin returns the layout, locale and text blocks a posted document's first print fixed,
+// fixing them to these at the first print.
+func (s *Service) pin(ctx context.Context, ref record.Ref, layout int, locale string, blocks map[string]string) (int, string, map[string]string, error) {
+	raw, err := json.Marshal(blocks)
+	if err != nil {
+		return 0, "", nil, err
+	}
 	var pin store.GetPinRow
-	err := platform.InTx(ctx, func(ctx context.Context) error {
+	err = platform.InTx(ctx, func(ctx context.Context) error {
 		q := store.New(platform.DBFrom(ctx))
-		err := q.CreatePin(ctx, store.CreatePinParams{DocType: ref.Type, DocID: ref.ID, Layout: int32(layout), Locale: locale})
+		err := q.CreatePin(ctx, store.CreatePinParams{DocType: ref.Type, DocID: ref.ID, Layout: int32(layout), Locale: locale, Blocks: raw})
 		if err != nil {
 			return err
 		}
 		pin, err = q.GetPin(ctx, store.GetPinParams{DocType: ref.Type, DocID: ref.ID})
 		return err
 	})
-	return int(pin.Layout), pin.Locale, err
+	if err != nil {
+		return 0, "", nil, err
+	}
+	blocks = map[string]string{}
+	return int(pin.Layout), pin.Locale, blocks, json.Unmarshal(pin.Blocks, &blocks)
 }
 
 // pick keeps the asked parts, in print order; none asked means all.

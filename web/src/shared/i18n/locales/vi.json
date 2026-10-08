@@ -316,6 +316,7 @@
   "shared.error.mail_unreachable": "Không kết nối được máy chủ mail; mmerp sẽ tự thử lại.",
   "shared.error.mail_auth_failed": "Máy chủ mail từ chối tài khoản hoặc mật khẩu.",
   "shared.error.mail_rejected": "Máy chủ mail từ chối gửi thư tới địa chỉ này.",
+  "shared.error.print_placeholder_unknown": "Lời văn dùng chỗ điền không có trong mẫu: {{name}}.",
   "shared.devui.list": "Danh sách mẫu",
   "shared.inbox.unread": "Chưa đọc",
   "shared.devui.ago": "5 phút trước"

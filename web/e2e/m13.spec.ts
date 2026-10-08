@@ -1,5 +1,6 @@
 import { expect, test, type APIRequestContext } from '@playwright/test'
 import { created, createUser, employee, password, signedInApi } from './api'
+import { signedIn } from './helpers'
 
 // One run: department Q, where pay (HR with the payroll role) prints a draft contract.
 const run = Date.now().toString(36)
@@ -42,4 +43,22 @@ test('a contract prints to a PDF the requester downloads', async ({ browser }) =
   const again = await page.request.get(href)
   expect(again.headers()['content-type']).toBe('application/pdf')
   expect((await again.text()).startsWith('%PDF-')).toBe(true)
+})
+
+test('an administrator rewords a contract clause, saved as a new version', async ({ page }) => {
+  await signedIn(page, '/admin/print-templates')
+  const row = page.getByRole('row', { name: /Hợp đồng lao động/ })
+  await row.getByRole('button', { name: 'Thao tác khác' }).click()
+  await page.getByRole('menuitem', { name: 'Sửa lời văn' }).click()
+  const clause = page.getByRole('textbox', { name: 'Điều khoản hợp đồng (tiếng Việt)' })
+  await clause.fill('Người lao động {employee_name} tuân thủ nội quy của {employer_name}. Lần chạy ' + run)
+  await page.getByRole('button', { name: 'Lưu phiên bản mới' }).click()
+  await expect(page.getByText('Đã lưu phiên bản mới của mẫu in.')).toBeVisible()
+  await expect(row.getByText(/Phiên bản \d+/)).toBeVisible()
+
+  await row.getByRole('button', { name: 'Thao tác khác' }).click()
+  await page.getByRole('menuitem', { name: 'Sửa lời văn' }).click()
+  await clause.fill('Lương {salary}')
+  await page.getByRole('button', { name: 'Lưu phiên bản mới' }).click()
+  await expect(page.getByText('Lời văn dùng chỗ điền không có trong mẫu: salary.')).toBeVisible()
 })

@@ -77,5 +77,6 @@
   "core.jobs.kind.attachment.cleanup": "Attachment cleanup",
   "core.jobs.kind.dataio.cleanup": "Import and export cleanup",
   "core.jobs.kind.hrm.payroll_compute": "Payroll computation",
-  "core.nav.mail_server": "Mail server"
+  "core.nav.mail_server": "Mail server",
+  "core.nav.print_templates": "Print templates"
 }
