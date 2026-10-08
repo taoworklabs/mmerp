@@ -28,7 +28,8 @@ Every choice below must satisfy these three constraints:
 | File storage | Local disk | The `platform.Files` type (one directory, `FILES_DIR`), no interface. Add an S3-compatible adapter when cloud needs it |
 | Configuration | Environment variables, read with the standard library | Read and validated in full at startup; on error, stop and report the variable name |
 | Logging | `log/slog`, JSON to stdout | Every request log line carries the request id; never log personal data |
-| Print templates / PDF | Not chosen yet | Chosen when building `printing`. Headless Chrome needs a third container, violating the constraints above |
+| PDF | [gopdf](https://github.com/signintech/gopdf) | Only used in `printing` ([ADR-0026](./docs/adr/0026-printing.md)): pure Go, embeds and subsets TrueType fonts. Headless Chrome would need a third container, violating the constraints above. Tests read PDF text with [ledongthuc/pdf](https://github.com/ledongthuc/pdf), imported only by tests |
+| Print font | Noto Sans regular and bold (SIL Open Font License), embedded in the binary | Full Vietnamese coverage, no download at run time |
 
 ## Frontend
 
