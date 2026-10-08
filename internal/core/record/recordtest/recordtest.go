@@ -58,6 +58,25 @@ func Run(t *testing.T, setup func(t *testing.T) Harness) {
 		wantCode(t, h.Edit(h.Actor, ref, d.Version, "2026-03-11"), "document_not_editable")
 	})
 
+	t.Run("whoever may print a document may view it", func(t *testing.T) {
+		h := setup(t)
+		ref := create(t, h, "2026-03-10")
+		for _, step := range []func(){func() {}, func() { send(t, h, ref) }} {
+			step()
+			print, err := h.Record.Can(h.Actor, ref.Type, ref.ID, record.Print)
+			if err != nil {
+				t.Fatal(err)
+			}
+			view, err := h.Record.Can(h.Actor, ref.Type, ref.ID, record.View)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if print && !view {
+				t.Fatalf("%s: print without view", get(t, h, ref).Status)
+			}
+		}
+	})
+
 	t.Run("documents in a locked period are frozen", func(t *testing.T) {
 		h := setup(t)
 		march := create(t, h, "2026-03-10")

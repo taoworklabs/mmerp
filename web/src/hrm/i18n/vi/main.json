@@ -186,6 +186,7 @@
   "hrm.contract_type.no_term": "Không thời hạn",
   "hrm.contract_type.fixed_term_hint": "Hợp đồng loại này bắt buộc có ngày hết hạn. Bỏ chọn cho loại không xác định thời hạn.",
   "hrm.contract.end_date_required_hint": "Loại hợp đồng này có thời hạn.",
+  "hrm.contract.print": "In hợp đồng",
   "hrm.timesheets.title": "Bảng công",
   "hrm.timesheets.description": "Ngày công thực làm theo đơn vị và kỳ lương.",
   "hrm.timesheets.create": "Tạo bảng công",

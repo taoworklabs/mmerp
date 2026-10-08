@@ -1,0 +1,125 @@
+package hrm
+
+import (
+	"context"
+	"encoding/json"
+
+	"github.com/taoworklabs/mmerp/internal/core/printing"
+	"github.com/taoworklabs/mmerp/internal/core/record"
+	"github.com/taoworklabs/mmerp/internal/modules/hrm/internal/store"
+	"github.com/taoworklabs/mmerp/internal/platform"
+)
+
+func (s *Service) registerPrints() {
+	s.d.Printing.Register(printing.Template{Code: contractType, DocType: contractType, Product: "hrm",
+		Data: s.contractPrint, Layouts: []printing.Layout{contractLayout1}})
+}
+
+// legalEntityPrint is the employer as a print shows it.
+type legalEntityPrint struct {
+	Name    string  `json:"name"`
+	TaxCode *string `json:"tax_code"`
+	Address *string `json:"address"`
+}
+
+// contractPrint is what a contract's print shows; frozen as is once the contract is posted.
+type contractPrint struct {
+	Number       string           `json:"number"`
+	ParentNumber *string          `json:"parent_number"`
+	Employer     legalEntityPrint `json:"employer"`
+	EmployeeCode string           `json:"employee_code"`
+	EmployeeName string           `json:"employee_name"`
+	DateOfBirth  *string          `json:"date_of_birth"`
+	Address      *string          `json:"address"`
+	Kind         string           `json:"kind"`
+	StartDate    string           `json:"start_date"`
+	EndDate      *string          `json:"end_date"`
+	Terms        ContractTerms    `json:"terms"`
+}
+
+// contractPrint reads a contract as printed, salary included: printing checked the
+// actor may see it.
+func (s *Service) contractPrint(ctx context.Context, id int64) ([]printing.Part, error) {
+	q := store.New(platform.DBFrom(ctx))
+	r, err := q.GetContract(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	d, err := s.d.Record.Get(ctx, record.Ref{Type: contractType, ID: id})
+	if err != nil {
+		return nil, err
+	}
+	e, err := q.GetEmployee(ctx, r.EmployeeID)
+	if err != nil {
+		return nil, err
+	}
+	le, err := q.PrintLegalEntity(ctx, d.LegalEntityID)
+	if err != nil {
+		return nil, err
+	}
+	terms, err := openTerms(ctx, r.Terms)
+	if err != nil {
+		return nil, err
+	}
+	b, err := json.Marshal(contractPrint{
+		Number: d.Number, ParentNumber: platform.TextPtr(r.ParentNumber),
+		Employer:     legalEntityPrint{Name: le.Name, TaxCode: platform.TextPtr(le.TaxCode), Address: platform.TextPtr(le.Address)},
+		EmployeeCode: e.Code, EmployeeName: e.FullName, DateOfBirth: platform.DatePtr(e.DateOfBirth), Address: platform.TextPtr(e.Address),
+		Kind: r.ContractTypeName, StartDate: *platform.DatePtr(r.StartDate), EndDate: platform.DatePtr(r.EndDate), Terms: terms,
+	})
+	return []printing.Part{{Data: b}}, err
+}
+
+// contractLayout1 prints a contract or appendix: employer, employee, term and pay.
+func contractLayout1(p *printing.Page, raw json.RawMessage) error {
+	var c contractPrint
+	if err := json.Unmarshal(raw, &c); err != nil {
+		return err
+	}
+	t := func(k string) string { return p.T("hrm.print.contract."+k, nil) }
+	or := func(s *string, f func(string) string) string {
+		if s == nil {
+			return ""
+		}
+		return f(*s)
+	}
+	same := func(s string) string { return s }
+	if c.ParentNumber == nil {
+		p.Title(t("title"))
+	} else {
+		p.Title(t("appendix_title"))
+	}
+	p.Center(p.T("hrm.print.contract.number", map[string]any{"number": c.Number}))
+	if c.ParentNumber != nil {
+		p.Center(p.T("hrm.print.contract.parent", map[string]any{"number": *c.ParentNumber}))
+	}
+	p.Heading(t("employer"))
+	p.Field(t("employer_name"), c.Employer.Name)
+	p.Field(t("tax_code"), or(c.Employer.TaxCode, same))
+	p.Field(t("address"), or(c.Employer.Address, same))
+	p.Heading(t("employee"))
+	p.Field(t("employee_name"), c.EmployeeName)
+	p.Field(t("employee_code"), c.EmployeeCode)
+	p.Field(t("date_of_birth"), or(c.DateOfBirth, p.Date))
+	p.Field(t("address"), or(c.Address, same))
+	p.Heading(t("term"))
+	p.Field(t("kind"), c.Kind)
+	p.Field(t("start_date"), p.Date(c.StartDate))
+	end := t("no_end_date")
+	if c.EndDate != nil {
+		end = p.Date(*c.EndDate)
+	}
+	p.Field(t("end_date"), end)
+	p.Heading(t("pay"))
+	cols := []printing.Column{{Title: t("item"), Share: 0.5}, {Title: t("line_kind"), Share: 0.25}, {Title: t("amount"), Share: 0.25, Right: true}}
+	rows := [][]string{{t("salary"), "", p.Money(c.Terms.Salary)}}
+	total := c.Terms.Salary
+	for _, l := range c.Terms.Lines {
+		rows = append(rows, []string{l.Name, t("line_kind." + l.Kind), p.Money(l.Amount)})
+		total += l.Amount
+	}
+	rows = append(rows, []string{t("total"), "", p.Money(total)})
+	p.Table(cols, rows, true)
+	p.Text(t("currency"))
+	return nil
+}

@@ -73,6 +73,10 @@ linters:
       - path-except: ^internal/
         linters: [forbidigo]
         text: float
+      # Positions on a printed page are points, never money.
+      - path: internal/core/printing/page\.go
+        linters: [forbidigo]
+        text: float
 
 formatters:
   enable:

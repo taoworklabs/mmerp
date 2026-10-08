@@ -22,11 +22,13 @@ type Import struct {
 	Run func(ctx context.Context, params json.RawMessage, rows [][]string) ([]RowError, error)
 }
 
-// Export is what a module registers to write its data to Excel.
+// Export is what a module registers to write its data to a file: Excel through Run, or
+// any other file through Render. Exactly one of the two is set.
 type Export struct {
 	Kind    string
 	Product string
 	Run     func(ctx context.Context, params json.RawMessage) (Sheet, error)
+	Render  func(ctx context.Context, params json.RawMessage) (File, error)
 	// Check says whether the actor may read the export now; every download of its file
 	// asks again, so a right revoked since the export also closes the file.
 	Check func(ctx context.Context, params json.RawMessage) error
@@ -38,6 +40,12 @@ type Sheet struct {
 	Name   string // file name without extension
 	Header []string
 	Rows   [][]any
+}
+
+// File is an exported file other than a sheet; its name's extension gives its type.
+type File struct {
+	Name string // e.g. HD-2026-00001.pdf
+	Body []byte
 }
 
 // RowError says what is wrong with a row: Row indexes the rows given to Run, and Code

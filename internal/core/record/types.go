@@ -28,6 +28,8 @@ const (
 	ViewFiles Action = "view_files"
 	// Attach adds attachments and removes those of others.
 	Attach Action = "attach"
+	// Print makes a PDF of the record; only types with a print template answer it.
+	Print Action = "print"
 )
 
 type Status string

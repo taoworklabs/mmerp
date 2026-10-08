@@ -571,3 +571,6 @@ SELECT employee_id, data FROM hrm.dependents WHERE employee_id = ANY(@ids::bigin
 
 -- name: PayrollLeaveBalances :many
 SELECT employee_id, days::text AS days FROM hrm.leave_balances WHERE employee_id = ANY(@ids::bigint[]) AND year = @year;
+
+-- name: PrintLegalEntity :one
+SELECT coalesce(legal_name, name)::text AS name, tax_code, address FROM iam.org_units WHERE id = $1;

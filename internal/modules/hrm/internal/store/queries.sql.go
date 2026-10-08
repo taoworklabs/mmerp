@@ -2506,6 +2506,23 @@ func (q *Queries) PostedTimesheetUnits(ctx context.Context, periodStart pgtype.D
 	return items, nil
 }
 
+const printLegalEntity = `-- name: PrintLegalEntity :one
+SELECT coalesce(legal_name, name)::text AS name, tax_code, address FROM iam.org_units WHERE id = $1
+`
+
+type PrintLegalEntityRow struct {
+	Name    string
+	TaxCode pgtype.Text
+	Address pgtype.Text
+}
+
+func (q *Queries) PrintLegalEntity(ctx context.Context, id int64) (PrintLegalEntityRow, error) {
+	row := q.db.QueryRow(ctx, printLegalEntity, id)
+	var i PrintLegalEntityRow
+	err := row.Scan(&i.Name, &i.TaxCode, &i.Address)
+	return i, err
+}
+
 const reports = `-- name: Reports :many
 WITH RECURSIVE down AS (
     SELECT e.id FROM hrm.employees e JOIN hrm.employees me ON e.manager_id = me.id WHERE me.user_id = $1::bigint

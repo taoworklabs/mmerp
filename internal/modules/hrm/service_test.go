@@ -21,6 +21,7 @@ import (
 	"github.com/taoworklabs/mmerp/internal/core/iam"
 	"github.com/taoworklabs/mmerp/internal/core/notification"
 	"github.com/taoworklabs/mmerp/internal/core/numbering"
+	"github.com/taoworklabs/mmerp/internal/core/printing"
 	"github.com/taoworklabs/mmerp/internal/core/record"
 	"github.com/taoworklabs/mmerp/internal/core/setting"
 	"github.com/taoworklabs/mmerp/internal/modules/hrm"
@@ -55,8 +56,9 @@ func newFixture(t *testing.T) *fixture {
 	rec := record.NewService(record.Deps{IAM: ids, Numbering: numbering.NewService(), Audit: audit.NewService()})
 	appr := approval.NewService(approval.Deps{IAM: ids, Record: rec, Audit: audit.NewService(), Notification: notification.NewService(notification.Deps{Record: rec, IAM: ids, Audit: audit.NewService(), Setting: setting.NewService()})})
 	rec.SetApprovalGate(appr)
-	h := hrm.NewService(hrm.Deps{IAM: ids, Record: rec, Audit: audit.NewService(), Setting: setting.NewService(),
-		DataIO: dataio.NewService(dataio.Deps{IAM: ids, Audit: audit.NewService()}), Posting: posting.NewService(posting.Hooks{})})
+	dio := dataio.NewService(dataio.Deps{IAM: ids, Audit: audit.NewService()})
+	h := hrm.NewService(hrm.Deps{IAM: ids, Record: rec, Audit: audit.NewService(), Setting: setting.NewService(), DataIO: dio,
+		Printing: printing.NewService(printing.Deps{Record: rec, Audit: audit.NewService(), DataIO: dio, IAM: ids}), Posting: posting.NewService(posting.Hooks{})})
 	// Jobs are queued in ctx's transaction and worked only once work is called.
 	workers := river.NewWorkers()
 	hrm.Module(h).Workers(workers)

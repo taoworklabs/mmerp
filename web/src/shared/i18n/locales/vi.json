@@ -219,7 +219,7 @@
   "shared.jobs.running": "Đang chạy…",
   "shared.jobs.imported": "Đã nhập {{rows}} dòng.",
   "shared.jobs.exported": "File Excel đã sẵn sàng; tải được trong 24 giờ.",
-  "shared.jobs.download": "Tải file Excel",
+  "shared.jobs.download": "Tải file",
   "shared.jobs.row_errors": "Các dòng lỗi",
   "shared.jobs.row": "Dòng",
   "shared.jobs.reason": "Lý do",
