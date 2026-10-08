@@ -13,4 +13,8 @@ export const coreKeys = {
   periodLocks: () => ['core', 'period-locks'] as const,
   settings: (legalEntity: number) => ['core', 'settings', legalEntity] as const,
   mailServer: () => ['core', 'mail-server'] as const,
+  printTemplates: {
+    all: () => ['core', 'print-templates'] as const,
+    detail: (code: string) => ['core', 'print-templates', code] as const,
+  },
 }

@@ -236,6 +236,53 @@
         ],
         "type": "object"
       },
+      "BlockText": {
+        "additionalProperties": false,
+        "properties": {
+          "en": {
+            "maxLength": 4000,
+            "type": "string"
+          },
+          "key": {
+            "type": "string"
+          },
+          "vi": {
+            "maxLength": 4000,
+            "type": "string"
+          }
+        },
+        "required": [
+          "key",
+          "vi",
+          "en"
+        ],
+        "type": "object"
+      },
+      "BlocksInputBody": {
+        "additionalProperties": false,
+        "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "/api/schemas/BlocksInputBody.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
+          "blocks": {
+            "description": "Every block of the template",
+            "items": {
+              "$ref": "#/components/schemas/BlockText"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "blocks"
+        ],
+        "type": "object"
+      },
       "Comment": {
         "additionalProperties": false,
         "properties": {
@@ -3759,6 +3806,138 @@
           "legal_entity_id",
           "legal_entity_name",
           "locked_until"
+        ],
+        "type": "object"
+      },
+      "PrintBlock": {
+        "additionalProperties": false,
+        "properties": {
+          "en": {
+            "type": "string"
+          },
+          "key": {
+            "type": "string"
+          },
+          "label": {
+            "description": "In the caller's language",
+            "type": "string"
+          },
+          "placeholders": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "vi": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "key",
+          "label",
+          "placeholders",
+          "vi",
+          "en"
+        ],
+        "type": "object"
+      },
+      "PrintTemplate": {
+        "additionalProperties": false,
+        "properties": {
+          "code": {
+            "description": "e.g. hrm.contract",
+            "type": "string"
+          },
+          "name": {
+            "description": "In the caller's language",
+            "type": "string"
+          },
+          "product": {
+            "type": "string"
+          },
+          "saved_at": {
+            "format": "date-time",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "saved_by_name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "version": {
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "code",
+          "name",
+          "product",
+          "version",
+          "saved_at",
+          "saved_by_name"
+        ],
+        "type": "object"
+      },
+      "PrintTemplateBlocks": {
+        "additionalProperties": false,
+        "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "/api/schemas/PrintTemplateBlocks.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
+          "blocks": {
+            "items": {
+              "$ref": "#/components/schemas/PrintBlock"
+            },
+            "type": "array"
+          },
+          "code": {
+            "description": "e.g. hrm.contract",
+            "type": "string"
+          },
+          "name": {
+            "description": "In the caller's language",
+            "type": "string"
+          },
+          "product": {
+            "type": "string"
+          },
+          "saved_at": {
+            "format": "date-time",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "saved_by_name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "version": {
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "blocks",
+          "code",
+          "name",
+          "product",
+          "version",
+          "saved_at",
+          "saved_by_name"
         ],
         "type": "object"
       },
@@ -9145,6 +9324,128 @@
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/SetPeriodLockInputBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "tags": [
+          "core",
+          "core"
+        ]
+      }
+    },
+    "/print-templates": {
+      "get": {
+        "operationId": "list-print-templates",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/PrintTemplate"
+                  },
+                  "type": "array"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "tags": [
+          "core",
+          "core"
+        ]
+      }
+    },
+    "/print-templates/{code}": {
+      "get": {
+        "operationId": "get-print-template",
+        "parameters": [
+          {
+            "description": "e.g. hrm.contract",
+            "in": "path",
+            "name": "code",
+            "required": true,
+            "schema": {
+              "description": "e.g. hrm.contract",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PrintTemplateBlocks"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "tags": [
+          "core",
+          "core"
+        ]
+      }
+    },
+    "/print-templates/{code}/blocks": {
+      "put": {
+        "description": "Saves every block as the template's next version; documents already printed keep their texts.",
+        "operationId": "save-print-template-blocks",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "code",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BlocksInputBody"
               }
             }
           },

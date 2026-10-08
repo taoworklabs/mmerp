@@ -11,6 +11,8 @@ import (
 
 	pdfread "github.com/ledongthuc/pdf"
 	"github.com/xuri/excelize/v2"
+
+	"github.com/taoworklabs/mmerp/internal/app"
 )
 
 // pdfText reads back the text of a PDF, page by page.
@@ -329,4 +331,90 @@ func TestPrintPayslips(t *testing.T) {
 	j := f.print(pay, "hrm.payslip", params)
 	f.ok(f.admin, "DELETE", fmt.Sprintf("/api/users/%d/roles/%d", f.payID, f.payGrant), "", 204)
 	f.ok(pay, "GET", "/api/files/"+*j.FileID, "", 404)
+}
+
+type printTemplate struct {
+	Code, Name, Product string
+	Version             int
+	Blocks              []struct {
+		Key, Label   string
+		Placeholders []string
+		Vi, En       string
+	}
+}
+
+// Administrators edit a template's text blocks: each save is a version; a posted document
+// keeps the text of its first print, one printed first afterwards takes the new text.
+func TestPrintTextBlocks(t *testing.T) {
+	f := newJobsFixture(t)
+	pay := f.payrollSetup()
+	f.work([]string{"hrm"})
+	var list []printTemplate
+	_ = json.Unmarshal(f.ok(f.admin, "GET", "/api/print-templates", "", 200), &list)
+	if i := slices.IndexFunc(list, func(p printTemplate) bool { return p.Code == "hrm.contract" }); i < 0 || list[i].Version != 0 || list[i].Name != "Hợp đồng lao động" {
+		t.Fatalf("templates: %+v", list)
+	}
+	var tpl printTemplate
+	_ = json.Unmarshal(f.ok(f.admin, "GET", "/api/print-templates/hrm.contract", "", 200), &tpl)
+	clauses := slices.IndexFunc(tpl.Blocks, func(b struct {
+		Key, Label   string
+		Placeholders []string
+		Vi, En       string
+	}) bool {
+		return b.Key == "clauses"
+	})
+	if clauses < 0 || tpl.Blocks[clauses].Vi == "" || !slices.Contains(tpl.Blocks[clauses].Placeholders, "employer_name") {
+		t.Fatalf("template: %+v", tpl)
+	}
+	oldClause := strings.SplitN(tpl.Blocks[clauses].Vi, "{", 2)[0]
+	wantCode(t, pay.do("GET", "/api/print-templates", ""), 403, "forbidden")
+
+	id, _ := f.draftContract(pay)
+	f.moveContract(pay, id, "posted")
+	params := fmt.Sprintf(`{"id":%d}`, id)
+	first := f.printed(pay, "hrm.contract", params)
+	if !strings.Contains(first[0], oldClause) {
+		t.Fatalf("no default clause %q in %q", oldClause, first[0])
+	}
+
+	blocks := func(clause string) string {
+		var bs []string
+		for _, b := range tpl.Blocks {
+			vi := b.Vi
+			if b.Key == "clauses" {
+				vi = clause
+			}
+			v, _ := json.Marshal(map[string]string{"key": b.Key, "vi": vi, "en": b.En})
+			bs = append(bs, string(v))
+		}
+		return `{"blocks":[` + strings.Join(bs, ",") + `]}`
+	}
+	wantCode(t, f.admin.do("PUT", "/api/print-templates/hrm.contract/blocks", blocks("Lương {salary}")), 422, "print_placeholder_unknown")
+	f.ok(f.admin, "PUT", "/api/print-templates/hrm.contract/blocks", blocks("Điều khoản mới của {employer_name}."), 204)
+	_ = json.Unmarshal(f.ok(f.admin, "GET", "/api/print-templates/hrm.contract", "", 200), &tpl)
+	if tpl.Version != 1 {
+		t.Fatalf("version %d", tpl.Version)
+	}
+
+	if again := f.printed(pay, "hrm.contract", params); !slices.Equal(again, first) {
+		t.Fatalf("reprint differs:\n%q\n%q", again, first)
+	}
+	// E1's contract, posted before the change but never printed, takes the new text.
+	var e1 int64
+	if err := f.pool.QueryRow(t.Context(), `SELECT c.id FROM hrm.contracts c JOIN hrm.employees e ON e.id = c.employee_id WHERE e.code = 'E1'`).Scan(&e1); err != nil {
+		t.Fatal(err)
+	}
+	if p := f.printed(pay, "hrm.contract", fmt.Sprintf(`{"id":%d}`, e1)); !strings.Contains(p[0], "Điều khoản mới của C.") {
+		t.Fatalf("E1's contract: %q", p[0])
+	}
+	var saved int
+	if err := f.pool.QueryRow(t.Context(), `SELECT count(*) FROM audit.log WHERE action = 'printing.blocks_saved'`).Scan(&saved); err != nil || saved != 1 {
+		t.Fatalf("%d saves audited %v", saved, err)
+	}
+
+	// With HRM off, its templates read but take no change.
+	off := &client{t: t, h: app.New(env(t, f.pool, nil), app.Modules(), nil)}
+	off.cookie = off.do("POST", "/api/auth/login", `{"login":"admin","password":"correct horse"}`).Result().Cookies()[0]
+	f.ok(off, "GET", "/api/print-templates/hrm.contract", "", 200)
+	wantCode(t, off.do("PUT", "/api/print-templates/hrm.contract/blocks", blocks("x")), 403, "product_not_enabled")
 }

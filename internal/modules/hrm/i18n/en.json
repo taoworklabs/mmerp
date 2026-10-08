@@ -103,5 +103,12 @@
   "hrm.print.payslip.taxable": "Taxable income",
   "hrm.print.payslip.adjustments": "Back pay and clawback by period",
   "hrm.print.payslip.net": "Net pay",
-  "hrm.print.payslip.currency": "Amounts in Vietnamese đồng."
+  "hrm.print.payslip.currency": "Amounts in Vietnamese đồng.",
+  "hrm.print.contract.name": "Employment contract",
+  "hrm.print.payslip.name": "Payslip",
+  "hrm.print.contract.clauses": "Terms",
+  "hrm.print.contract.block.clauses": "Contract terms",
+  "hrm.print.contract.block.clauses.default": "The employee {employee_name} works for {employer_name} under its labour regulations and collective labour agreement.\nBoth parties undertake to comply with the terms agreed in this contract and with labour law.",
+  "hrm.print.contract.block.footer": "Footer",
+  "hrm.print.contract.block.footer.default": "This contract is made in two copies of equal value, one for each party."
 }

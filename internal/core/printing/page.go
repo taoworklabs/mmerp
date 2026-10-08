@@ -35,12 +35,14 @@ type Page struct {
 	pdf       *gopdf.GoPdf
 	locale    string
 	watermark string
-	y         float64
-	err       error
+	// blocks holds each text block in the print's locale.
+	blocks map[string]string
+	y      float64
+	err    error
 }
 
-func newPage(locale, watermark string) (*Page, error) {
-	p := &Page{pdf: &gopdf.GoPdf{}, locale: locale, watermark: watermark}
+func newPage(locale, watermark string, blocks map[string]string) (*Page, error) {
+	p := &Page{pdf: &gopdf.GoPdf{}, locale: locale, watermark: watermark, blocks: blocks}
 	p.pdf.Start(gopdf.Config{PageSize: *gopdf.PageSizeA4})
 	if err := p.pdf.AddTTFFontData("regular", regular); err != nil {
 		return nil, err
@@ -210,6 +212,17 @@ func (p *Page) Table(cols []Column, rows [][]string, total bool) {
 		row(r, style)
 	}
 	p.y += 6
+}
+
+// Block is a paragraph of the template's text block key, its placeholders filled from values.
+func (p *Page) Block(key string, values map[string]string) {
+	text := p.blocks[key]
+	for k, v := range values {
+		text = strings.ReplaceAll(text, "{"+k+"}", v)
+	}
+	if text != "" {
+		p.Text(text)
+	}
 }
 
 // Gap leaves a blank line.

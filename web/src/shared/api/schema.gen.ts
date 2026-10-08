@@ -1087,6 +1087,55 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/print-templates": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["list-print-templates"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/print-templates/{code}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["get-print-template"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/print-templates/{code}/blocks": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** @description Saves every block as the template's next version; documents already printed keep their texts. */
+        put: operations["save-print-template-blocks"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/records/{type}/{id}/attachments": {
         parameters: {
             query?: never;
@@ -1321,6 +1370,21 @@ export interface components {
             /** @description Days to add; negative to take away */
             delta: string;
             reason: string;
+        };
+        BlockText: {
+            en: string;
+            key: string;
+            vi: string;
+        };
+        BlocksInputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example /api/schemas/BlocksInputBody.json
+             */
+            readonly $schema?: string;
+            /** @description Every block of the template */
+            blocks: components["schemas"]["BlockText"][];
         };
         Comment: {
             author_name: string;
@@ -2498,6 +2562,45 @@ export interface components {
             legal_entity_name: string;
             /** Format: date */
             locked_until: string | null;
+        };
+        PrintBlock: {
+            en: string;
+            key: string;
+            /** @description In the caller's language */
+            label: string;
+            placeholders: string[];
+            vi: string;
+        };
+        PrintTemplate: {
+            /** @description e.g. hrm.contract */
+            code: string;
+            /** @description In the caller's language */
+            name: string;
+            product: string;
+            /** Format: date-time */
+            saved_at: string | null;
+            saved_by_name: string | null;
+            /** Format: int64 */
+            version: number;
+        };
+        PrintTemplateBlocks: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example /api/schemas/PrintTemplateBlocks.json
+             */
+            readonly $schema?: string;
+            blocks: components["schemas"]["PrintBlock"][];
+            /** @description e.g. hrm.contract */
+            code: string;
+            /** @description In the caller's language */
+            name: string;
+            product: string;
+            /** Format: date-time */
+            saved_at: string | null;
+            saved_by_name: string | null;
+            /** Format: int64 */
+            version: number;
         };
         ReassignInputBody: {
             /**
@@ -5807,6 +5910,100 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["SetPeriodLockInputBody"];
+            };
+        };
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "list-print-templates": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PrintTemplate"][];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "get-print-template": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description e.g. hrm.contract */
+                code: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PrintTemplateBlocks"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "save-print-template-blocks": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                code: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BlocksInputBody"];
             };
         };
         responses: {

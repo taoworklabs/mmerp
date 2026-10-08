@@ -7,10 +7,12 @@ package store
 
 import (
 	"context"
+
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 const createPin = `-- name: CreatePin :exec
-INSERT INTO printing.pins (doc_type, doc_id, layout, locale) VALUES ($1, $2, $3, $4)
+INSERT INTO printing.pins (doc_type, doc_id, layout, locale, blocks) VALUES ($1, $2, $3, $4, $5)
 ON CONFLICT DO NOTHING
 `
 
@@ -19,6 +21,7 @@ type CreatePinParams struct {
 	DocID   int64
 	Layout  int32
 	Locale  string
+	Blocks  []byte
 }
 
 func (q *Queries) CreatePin(ctx context.Context, arg CreatePinParams) error {
@@ -27,6 +30,7 @@ func (q *Queries) CreatePin(ctx context.Context, arg CreatePinParams) error {
 		arg.DocID,
 		arg.Layout,
 		arg.Locale,
+		arg.Blocks,
 	)
 	return err
 }
@@ -56,7 +60,7 @@ func (q *Queries) CreateSnapshots(ctx context.Context, arg CreateSnapshotsParams
 }
 
 const getPin = `-- name: GetPin :one
-SELECT layout, locale FROM printing.pins WHERE doc_type = $1 AND doc_id = $2
+SELECT layout, locale, blocks FROM printing.pins WHERE doc_type = $1 AND doc_id = $2
 `
 
 type GetPinParams struct {
@@ -67,13 +71,74 @@ type GetPinParams struct {
 type GetPinRow struct {
 	Layout int32
 	Locale string
+	Blocks []byte
 }
 
 func (q *Queries) GetPin(ctx context.Context, arg GetPinParams) (GetPinRow, error) {
 	row := q.db.QueryRow(ctx, getPin, arg.DocType, arg.DocID)
 	var i GetPinRow
-	err := row.Scan(&i.Layout, &i.Locale)
+	err := row.Scan(&i.Layout, &i.Locale, &i.Blocks)
 	return i, err
+}
+
+const latestBlocks = `-- name: LatestBlocks :many
+SELECT DISTINCT ON (b.template) b.template, b.version, b.texts, b.saved_at, u.name AS saved_by_name
+FROM printing.blocks b JOIN iam.users u ON u.id = b.saved_by
+ORDER BY b.template, b.version DESC
+`
+
+type LatestBlocksRow struct {
+	Template    string
+	Version     int32
+	Texts       []byte
+	SavedAt     pgtype.Timestamptz
+	SavedByName string
+}
+
+func (q *Queries) LatestBlocks(ctx context.Context) ([]LatestBlocksRow, error) {
+	rows, err := q.db.Query(ctx, latestBlocks)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []LatestBlocksRow
+	for rows.Next() {
+		var i LatestBlocksRow
+		if err := rows.Scan(
+			&i.Template,
+			&i.Version,
+			&i.Texts,
+			&i.SavedAt,
+			&i.SavedByName,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const saveBlocks = `-- name: SaveBlocks :one
+INSERT INTO printing.blocks (template, version, texts, saved_by)
+SELECT $1::text, coalesce(max(version), 0) + 1, $2::jsonb, $3::bigint
+FROM printing.blocks WHERE template = $1::text
+RETURNING version
+`
+
+type SaveBlocksParams struct {
+	Template string
+	Texts    []byte
+	SavedBy  int64
+}
+
+func (q *Queries) SaveBlocks(ctx context.Context, arg SaveBlocksParams) (int32, error) {
+	row := q.db.QueryRow(ctx, saveBlocks, arg.Template, arg.Texts, arg.SavedBy)
+	var version int32
+	err := row.Scan(&version)
+	return version, err
 }
 
 const snapshots = `-- name: Snapshots :many

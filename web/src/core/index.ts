@@ -1,4 +1,4 @@
-import { IconSettings, IconAdjustments, IconLock, IconMail, IconSitemap, IconUserShield } from '@tabler/icons-react'
+import { IconSettings, IconAdjustments, IconLock, IconMail, IconPrinter, IconSitemap, IconUserShield } from '@tabler/icons-react'
 import { lazy } from 'react'
 import type { AreaManifest } from '@/shared/area'
 
@@ -14,6 +14,7 @@ export const core: AreaManifest = {
     { label: 'core.nav.period_locks', path: 'period-locks', icon: IconLock, permission: 'core.period.manage' },
     { label: 'core.nav.settings', path: 'settings', icon: IconAdjustments, permission: 'core.setting.manage' },
     { label: 'core.nav.mail_server', path: 'mail-server', icon: IconMail, permission: 'core.mail.manage' },
+    { label: 'core.nav.print_templates', path: 'print-templates', icon: IconPrinter, permission: 'core.print_template.manage' },
   ],
   homeIcon: IconSettings,
   i18n: {

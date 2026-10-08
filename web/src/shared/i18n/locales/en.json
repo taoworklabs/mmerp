@@ -316,6 +316,7 @@
   "shared.error.mail_unreachable": "The mail server cannot be reached; mmerp will retry.",
   "shared.error.mail_auth_failed": "The mail server refused the account or password.",
   "shared.error.mail_rejected": "The mail server refused to deliver to this address.",
+  "shared.error.print_placeholder_unknown": "The wording uses a placeholder the template does not offer: {{name}}.",
   "shared.devui.list": "Sample list",
   "shared.inbox.unread": "Unread",
   "shared.devui.ago": "5 minutes ago"

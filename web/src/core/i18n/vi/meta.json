@@ -77,5 +77,6 @@
   "core.jobs.kind.attachment.cleanup": "Dọn file đính kèm",
   "core.jobs.kind.dataio.cleanup": "Dọn file nhập, xuất",
   "core.jobs.kind.hrm.payroll_compute": "Tính lương",
-  "core.nav.mail_server": "Máy chủ mail"
+  "core.nav.mail_server": "Máy chủ mail",
+  "core.nav.print_templates": "Mẫu in"
 }

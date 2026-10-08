@@ -11,9 +11,14 @@ import (
 )
 
 func (s *Service) registerPrints() {
-	s.d.Printing.Register(printing.Template{Code: contractType, DocType: contractType, Product: "hrm",
+	s.d.Printing.Register(printing.Template{Code: contractType, Name: "hrm.print.contract.name", DocType: contractType, Product: "hrm",
+		Blocks: []printing.Block{
+			{Key: "clauses", Label: "hrm.print.contract.block.clauses", Default: "hrm.print.contract.block.clauses.default",
+				Placeholders: []string{"employee_name", "employer_name"}},
+			{Key: "footer", Label: "hrm.print.contract.block.footer", Default: "hrm.print.contract.block.footer.default"},
+		},
 		Data: s.contractPrint, Layouts: []printing.Layout{contractLayout1}})
-	s.d.Printing.Register(printing.Template{Code: "hrm.payslip", DocType: payrollType, Product: "hrm",
+	s.d.Printing.Register(printing.Template{Code: "hrm.payslip", Name: "hrm.print.payslip.name", DocType: payrollType, Product: "hrm",
 		Data: s.payslips, Layouts: []printing.Layout{payslipLayout1}})
 }
 
@@ -123,6 +128,10 @@ func contractLayout1(p *printing.Page, raw json.RawMessage) error {
 	rows = append(rows, []string{t("total"), "", p.Money(total)})
 	p.Table(cols, rows, true)
 	p.Text(t("currency"))
+	p.Heading(t("clauses"))
+	p.Block("clauses", map[string]string{"employee_name": c.EmployeeName, "employer_name": c.Employer.Name})
+	p.Gap()
+	p.Block("footer", nil)
 	return nil
 }
 

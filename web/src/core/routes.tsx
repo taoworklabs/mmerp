@@ -4,6 +4,7 @@ import { ForbiddenPage, NotFoundPage } from '@/shared/ui/states'
 import { MailServerPage } from './pages/MailServerPage'
 import { OrgUnitsPage } from './pages/OrgUnitsPage'
 import { PeriodLocksPage } from './pages/PeriodLocksPage'
+import { PrintTemplatesPage } from './pages/PrintTemplatesPage'
 import { SettingsPage } from './pages/SettingsPage'
 import { UserPage } from './pages/UserPage'
 import { UsersPage } from './pages/UsersPage'
@@ -14,6 +15,7 @@ export default function CoreRoutes() {
   const canPeriods = useCan('core.period.manage')
   const canSettings = useCan('core.setting.manage')
   const canMail = useCan('core.mail.manage')
+  const canPrint = useCan('core.print_template.manage')
   return (
     <Routes>
       <Route path="org-units" element={canOrg ? <OrgUnitsPage /> : <ForbiddenPage />} />
@@ -22,6 +24,7 @@ export default function CoreRoutes() {
       <Route path="period-locks" element={canPeriods ? <PeriodLocksPage /> : <ForbiddenPage />} />
       <Route path="settings" element={canSettings ? <SettingsPage /> : <ForbiddenPage />} />
       <Route path="mail-server" element={canMail ? <MailServerPage /> : <ForbiddenPage />} />
+      <Route path="print-templates" element={canPrint ? <PrintTemplatesPage /> : <ForbiddenPage />} />
       <Route path="*" element={<NotFoundPage />} />
     </Routes>
   )

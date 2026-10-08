@@ -103,5 +103,12 @@
   "hrm.print.payslip.taxable": "Thu nhập tính thuế",
   "hrm.print.payslip.adjustments": "Truy lĩnh / truy thu theo kỳ",
   "hrm.print.payslip.net": "Thực lĩnh",
-  "hrm.print.payslip.currency": "Đơn vị tiền: đồng Việt Nam."
+  "hrm.print.payslip.currency": "Đơn vị tiền: đồng Việt Nam.",
+  "hrm.print.contract.name": "Hợp đồng lao động",
+  "hrm.print.payslip.name": "Phiếu lương",
+  "hrm.print.contract.clauses": "Điều khoản",
+  "hrm.print.contract.block.clauses": "Điều khoản hợp đồng",
+  "hrm.print.contract.block.clauses.default": "Người lao động {employee_name} làm việc cho {employer_name} theo nội quy lao động và thỏa ước lao động tập thể của đơn vị.\nHai bên cam kết thực hiện đúng các điều khoản đã thỏa thuận trong hợp đồng này và quy định của pháp luật lao động.",
+  "hrm.print.contract.block.footer": "Chân trang",
+  "hrm.print.contract.block.footer.default": "Hợp đồng được lập thành hai bản có giá trị như nhau, mỗi bên giữ một bản."
 }

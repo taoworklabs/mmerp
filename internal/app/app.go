@@ -85,7 +85,7 @@ func Modules() []platform.Module {
 	h := hrm.NewService(hrm.Deps{IAM: ids, Record: rec, Audit: audit.NewService(), Setting: set, DataIO: dio, Printing: prn,
 		// No accounting yet: nothing reacts to posting lines.
 		Posting: posting.NewService(posting.Hooks{})})
-	return []platform.Module{iam.Module(ids), setting.Module(set), record.Module(rec), approval.Module(appr), dataio.Module(dio), attachment.Module(att), discussion.Module(dis), notification.Module(ntf), hrm.Module(h)}
+	return []platform.Module{iam.Module(ids), setting.Module(set), record.Module(rec), approval.Module(appr), dataio.Module(dio), attachment.Module(att), printing.Module(prn), discussion.Module(dis), notification.Module(ntf), hrm.Module(h)}
 }
 
 // CreateAdmin adds the first administrator at install time.
