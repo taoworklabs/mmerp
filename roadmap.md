@@ -31,7 +31,7 @@ M11 Attachments and discussion ─► M12 Notifications ─► M13 PDF printing
 
 ## M11. Attachments and discussion
 
-**Done** (2026-10-07): [ADR-0024](./docs/adr/0024-attachments-and-discussion.md), issue #28.
+**Done** (2026-10-07): [ADR-0024](./docs/adr/0024-attachments-and-discussion.md).
 
 **Goal:** users attach files and discuss directly on documents and profiles, instead of email and shared folders.
 
@@ -55,7 +55,7 @@ M11 Attachments and discussion ─► M12 Notifications ─► M13 PDF printing
 
 ## M12. Notifications
 
-**Done** (2026-10-07): [ADR-0025](./docs/adr/0025-notifications.md), issue #38.
+**Done** (2026-10-07): [ADR-0025](./docs/adr/0025-notifications.md).
 
 **Goal:** users learn about their work straight away without opening every list.
 
@@ -146,7 +146,7 @@ Not numbered; the checks before real data goes in. Real data enters the system o
 | --- | --- |
 | Custom fields | When a tenant needs something specific |
 | Pay periods other than the calendar month, time clocks, salary payment through banks, electronic social insurance (BHXH điện tử) | Per [products/hrm.md](./products/hrm.md#scope) |
-| Probe product (one document type, not released) to find HRM-specific assumptions still in the core | When M13 is done; the points found so far are in issues #13 to #27 |
+| Probe product (one document type, not released) to find HRM-specific assumptions still in the core | When M13 is done; the points found so far are in issues #1 to #15 |
 | Accounting, a second product | When there is a real need for it ([README.md](./README.md#principles)) |
 | Cloud model B | When operating cloud model A becomes overloaded ([tenancy.md](./tenancy.md#cloud-path-from-a-to-b)) |
 | Product switcher | When there is a second product |
