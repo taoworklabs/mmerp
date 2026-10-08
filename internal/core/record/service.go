@@ -48,10 +48,11 @@ func (a Action) class() platform.Class {
 }
 
 type Service struct {
-	d       Deps
-	types   map[string]Type
-	gate    ApprovalGate
-	keepers []Keeper
+	d        Deps
+	types    map[string]Type
+	gate     ApprovalGate
+	keepers  []Keeper
+	freezers []Freezer
 	// history says what another module's audit action needs to show on a timeline.
 	history map[string]Action
 }
@@ -65,6 +66,9 @@ func (s *Service) SetApprovalGate(g ApprovalGate) { s.gate = g }
 
 // OnDeleted registers a module that keeps data about records, while wiring modules.
 func (s *Service) OnDeleted(k Keeper) { s.keepers = append(s.keepers, k) }
+
+// OnPosted registers a core module told of every document posted, while wiring modules.
+func (s *Service) OnPosted(f Freezer) { s.freezers = append(s.freezers, f) }
 
 // RestrictHistory shows audit action on a record's timeline only to whom may perform
 // needs on the record; with needs empty it never shows there, only in the audit log.
@@ -422,7 +426,17 @@ func (s *Service) apply(ctx context.Context, d Doc, to Status) error {
 	from := d.Status
 	d.Status, d.Version, d.ApprovalTicket, d.SubmittedBy = to, d.Version+1, nil, nil
 	if t := s.types[d.Type]; t.OnTransition != nil {
-		return t.OnTransition(ctx, d, from)
+		if err := t.OnTransition(ctx, d, from); err != nil {
+			return err
+		}
+	}
+	if to != Posted {
+		return nil
+	}
+	for _, f := range s.freezers {
+		if err := f.Posted(ctx, d); err != nil {
+			return err
+		}
 	}
 	return nil
 }

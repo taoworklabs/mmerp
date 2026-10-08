@@ -59,7 +59,7 @@ Templates only display data: layouts are Go code shipped with the release, and t
 - `dataio.Export` gains `Render(ctx, params) (File, error)`, the alternative to `Run` for a file that is not a sheet: `File{Name, Body}`, its type given by the name's extension. Exactly one of the two is set.
 - `printing` registers one export per template, with kind `printing.<template code>`, the template's product, and params `{"id": …, "parts": […]}` (no parts: all of them). Its `Check` re-checks `print` on the record (a record the actor cannot view does not exist); it runs when the job runs and on every download, as for every export. `Render` refuses parts the record does not have.
 - Starting, following and downloading a print use the existing routes (`POST /exports/{kind}`, `GET /jobs/{id}`, `GET /files/{id}`), the jobs screen and the frontend's `ExportButton`. Expiry and cleanup are `dataio`'s. `printing` has no job, file directory or download route of its own.
-- `Render` draws the PDF, then writes the pin (if new) and the audit entry in one transaction, so a failed attempt leaves neither. One PDF per job; with several parts, each starts a page, in the order of `Data`.
+- `Render` of a posted document first reads its pin, writing it if this is the first print (a concurrent first print keeps the pin written first). It then draws the PDF and writes the audit entry, so a failed attempt is not audited. One PDF per job; with several parts, each starts a page, in the order of `Data`.
 
 ### PDF engine
 
