@@ -146,3 +146,71 @@ func TestPrintWithProductOff(t *testing.T) {
 		t.Fatalf("page: %q", pages[0])
 	}
 }
+
+// moveContract moves a contract as c, at the version it has now.
+func (f *jobsFixture) moveContract(c *client, id int64, to string) {
+	f.t.Helper()
+	var d struct{ Version int32 }
+	_ = json.Unmarshal(f.ok(c, "GET", fmt.Sprintf("/api/hrm/contracts/%d", id), "", 200), &d)
+	f.ok(c, "POST", fmt.Sprintf("/api/documents/hrm.contract/%d/transitions", id), fmt.Sprintf(`{"to":%q,"version":%d}`, to, d.Version), 204)
+}
+
+// rename changes the full name of the employee coded code.
+func (f *jobsFixture) rename(code, name string) {
+	f.t.Helper()
+	if _, err := f.pool.Exec(f.t.Context(), `UPDATE hrm.employees SET full_name = $2 WHERE code = $1`, code, name); err != nil {
+		f.t.Fatal(err)
+	}
+}
+
+// A posted contract prints the same whatever changes after: the employee's name, the
+// employer's details, the language of whoever prints it. Cancelled, it is marked so.
+func TestPrintPostedContract(t *testing.T) {
+	f := newJobsFixture(t)
+	pay := f.payrollSetup()
+	f.work([]string{"hrm"})
+	id, _ := f.draftContract(pay)
+	f.moveContract(pay, id, "posted")
+	params := fmt.Sprintf(`{"id":%d}`, id)
+	first := f.printed(pay, "hrm.contract", params)
+	if strings.Contains(first[0], "BẢN NHÁP") || !strings.Contains(first[0], "Nguyễn Thị Ánh Tuyết") || !strings.Contains(first[0], "HỢP ĐỒNG LAO ĐỘNG") {
+		t.Fatalf("posted print: %q", first[0])
+	}
+
+	f.rename("E9", "Trần Thị Ánh Tuyết")
+	f.ok(f.admin, "PUT", fmt.Sprintf("/api/org-units/%d", f.legalEntity()),
+		`{"parent_id":null,"kind":"company","name":"C","tax_code":"0101234567","legal_name":"Công ty TNHH C","address":"1 Tràng Tiền, Hà Nội"}`, 204)
+	f.ok(pay, "PATCH", "/api/me", `{"locale":"en"}`, 204)
+	if again := f.printed(pay, "hrm.contract", params); !slices.Equal(again, first) {
+		t.Fatalf("reprint differs:\n%q\n%q", again, first)
+	}
+
+	f.moveContract(pay, id, "cancelled")
+	cancelled := f.printed(pay, "hrm.contract", params)
+	if !strings.Contains(cancelled[0], "ĐÃ HỦY") || !strings.Contains(cancelled[0], "Nguyễn Thị Ánh Tuyết") {
+		t.Fatalf("cancelled print: %q", cancelled[0])
+	}
+}
+
+// A contract posted before printing existed is frozen at its first print.
+func TestPrintContractPostedBeforePrinting(t *testing.T) {
+	f := newJobsFixture(t)
+	pay := f.payrollSetup()
+	f.work([]string{"hrm"})
+	var id int64
+	if err := f.pool.QueryRow(t.Context(), `SELECT c.id FROM hrm.contracts c JOIN hrm.employees e ON e.id = c.employee_id WHERE e.code = 'E1'`).Scan(&id); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.pool.Exec(t.Context(), `DELETE FROM printing.snapshots WHERE doc_id = $1`, id); err != nil {
+		t.Fatal(err)
+	}
+	params := fmt.Sprintf(`{"id":%d}`, id)
+	first := f.printed(pay, "hrm.contract", params)
+	if !strings.Contains(first[0], "Nhân viên E1") || strings.Contains(first[0], "BẢN NHÁP") {
+		t.Fatalf("first print: %q", first[0])
+	}
+	f.rename("E1", "Tên mới")
+	if again := f.printed(pay, "hrm.contract", params); !slices.Equal(again, first) {
+		t.Fatalf("reprint differs:\n%q\n%q", again, first)
+	}
+}
