@@ -1,21 +1,24 @@
 import { Alert, Button, Group, Loader, Stack, Text } from '@mantine/core'
-import { IconAlertTriangle, IconCalculator, IconReceipt2 } from '@tabler/icons-react'
+import { IconAlertTriangle, IconCalculator, IconPrinter, IconReceipt2 } from '@tabler/icons-react'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate, useParams, useSearchParams } from 'react-router'
-import { api, unwrap, type Payroll } from '@/shared/api/hrm'
+import { api, unwrap, type Payroll, type PayrollLine } from '@/shared/api/hrm'
 import { ApprovalPanel, DocumentActions, DocumentHistory, DocumentStatus, documentKeys, useDocumentMutation, useDiscussionSection } from '@/shared/document'
 import { errorText, formatDateTime, formatMonth, formatNumber } from '@/shared/i18n'
 import { ExportButton, finished, jobError, useJobStatus } from '@/shared/jobs'
 import { useMe } from '@/shared/auth/me'
 import { DataTable } from '@/shared/ui/DataTable'
-import { DocumentPage } from '@/shared/ui/page'
+import { DocumentPage, FormModal } from '@/shared/ui/page'
 import { icon } from '@/shared/ui/theme'
 import { AdjustmentsModal } from '../components/AdjustmentsModal'
 import { loaded } from '../components/loaded'
 import { PayrollTable } from '../components/PayrollTable'
 import { usePayroll } from '../hooks/usePayroll'
 import { hrmKeys, payrollDocType } from '../keys'
+
+// Payslips print through the export of their template.
+const payslipTemplate = 'printing.hrm.payslip'
 
 export function PayrollPage() {
   const { t } = useTranslation()
@@ -28,6 +31,7 @@ export function PayrollPage() {
   const status = useJobStatus(job, [hrmKeys.payrolls.detail(id), hrmKeys.payrolls.lists(), documentKeys.history(payrollDocType, id)])
   const [error, setError] = useState<string | null>(null)
   const [adjusting, setAdjusting] = useState(false)
+  const [payslipOf, setPayslipOf] = useState<PayrollLine | null>(null)
   // The computing job is on the URL, so a reload keeps following it.
   const follow = (jobId: number) => setSearch({ job: String(jobId) }, { replace: true })
 
@@ -59,6 +63,7 @@ export function PayrollPage() {
               </Button>
             )}
             {can('export') && <ExportButton kind={payrollDocType} params={{ payroll_id: p.id }} label={t('hrm.payroll.export')} />}
+            {can('print') && <ExportButton kind={payslipTemplate} params={{ id: p.id }} label={t('hrm.payroll.print_payslips')} icon={IconPrinter} />}
             <DocumentActions
               docType={payrollDocType}
               id={p.id}
@@ -81,7 +86,7 @@ export function PayrollPage() {
     >
       <Stack gap="md">
         <PayrollState payroll={p} computing={computing} failed={status.data?.state === 'failed' ? jobError(t, status.data) : status.isError ? errorText(t, status.error) : null} />
-        {p.computed_at && <PayrollTable payroll={p} />}
+        {p.computed_at && <PayrollTable payroll={p} onPrint={can('print') ? setPayslipOf : undefined} />}
         {p.adjustments && p.adjustments.length > 0 && (
           <Stack gap="xs">
             <Text fw={600}>{t('hrm.payroll.adjustments')}</Text>
@@ -100,6 +105,16 @@ export function PayrollPage() {
         )}
       </Stack>
       {adjusting && <AdjustmentsModal payroll={p} onQueued={follow} onClose={() => setAdjusting(false)} />}
+      {payslipOf && (
+        <FormModal opened title={t('hrm.payroll.print_payslip')} onClose={() => setPayslipOf(null)}>
+          <Stack gap="md">
+            <Text>{`${payslipOf.employee_code} · ${payslipOf.employee_name}`}</Text>
+            <Group justify="flex-end">
+              <ExportButton kind={payslipTemplate} params={{ id: p.id, parts: [payslipOf.employee_id] }} label={t('hrm.payroll.print_payslip')} icon={IconPrinter} />
+            </Group>
+          </Stack>
+        </FormModal>
+      )}
     </DocumentPage>
   )
 }

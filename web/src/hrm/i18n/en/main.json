@@ -353,6 +353,8 @@
   "hrm.payroll.col.employer_unemployment_insurance": "Employer: unemployment",
   "hrm.payroll.col.employer_union_fee": "Employer: union fee",
   "hrm.payroll.col.cost": "Total cost",
+  "hrm.payroll.print_payslips": "Print payslips",
+  "hrm.payroll.print_payslip": "Print this employee's payslip",
   "hrm.legal_param.bracket_upto": "up to {{upper}}: {{rate}}",
   "hrm.legal_param.bracket_over": "over {{lower}}: {{rate}}",
   "hrm.org.title": "Organisation",

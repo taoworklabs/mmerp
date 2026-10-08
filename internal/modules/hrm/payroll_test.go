@@ -113,7 +113,7 @@ func TestPayrollLifecycle(t *testing.T) {
 	first, second := f.payroll("2026-04"), f.payroll("2026-04")
 	p := f.payrollDoc(first)
 	if p.Number != "BL-2026-00001" || p.ComputedAt == nil || p.SourcesChanged || len(p.Lines) != 1 || p.Lines[0].Earned != 22_000_000 ||
-		!slices.Equal(p.AllowedActions, []string{"edit", "delete", "submit", "compute", "adjust", "export"}) {
+		!slices.Equal(p.AllowedActions, []string{"edit", "delete", "submit", "compute", "adjust", "export", "print"}) {
 		t.Fatalf("payroll %+v", p)
 	}
 	if d, err := f.rec.Get(f.admin, payrollRef(first)); err != nil || d.Amount == nil || *d.Amount != p.Totals[0].Cost {
