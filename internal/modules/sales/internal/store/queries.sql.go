@@ -526,17 +526,15 @@ func (q *Queries) ListCustomers(ctx context.Context, arg ListCustomersParams) ([
 
 const listHeaders = `-- name: ListHeaders :many
 SELECT h.id, d.number, d.status, d.date, h.customer_id, h.customer_code, h.customer_name, h.valid_until, h.total,
-       u.name AS org_unit_name, q.number AS quote_number, coalesce(o.number, '')::text AS order_number, count(*) OVER () AS total_rows
+       u.name AS org_unit_name, (h.quote_id IS NOT NULL)::bool AS from_quote,
+       EXISTS (
+           SELECT 1 FROM sales.headers oh JOIN record.documents od ON od.id = oh.id
+           WHERE oh.quote_id = h.id AND od.status <> 'cancelled'
+       ) AS ordered,
+       count(*) OVER () AS total_rows
 FROM sales.headers h
 JOIN record.documents d ON d.id = h.id
 JOIN iam.org_units u ON u.id = d.org_unit_id
-LEFT JOIN record.documents q ON q.id = h.quote_id
-LEFT JOIN LATERAL (
-    SELECT od.number
-    FROM sales.headers oh JOIN record.documents od ON od.id = oh.id
-    WHERE oh.quote_id = h.id AND od.status <> 'cancelled'
-    ORDER BY od.id DESC LIMIT 1
-) o ON true
 WHERE h.kind = $1::text
   AND ($2::bool OR d.org_unit_id = ANY($3::bigint[]))
   AND ($4::text = '' OR d.status = $4)
@@ -576,8 +574,8 @@ type ListHeadersRow struct {
 	ValidUntil   pgtype.Date
 	Total        int64
 	OrgUnitName  string
-	QuoteNumber  pgtype.Text
-	OrderNumber  string
+	FromQuote    bool
+	Ordered      bool
 	TotalRows    int64
 }
 
@@ -612,8 +610,8 @@ func (q *Queries) ListHeaders(ctx context.Context, arg ListHeadersParams) ([]Lis
 			&i.ValidUntil,
 			&i.Total,
 			&i.OrgUnitName,
-			&i.QuoteNumber,
-			&i.OrderNumber,
+			&i.FromQuote,
+			&i.Ordered,
 			&i.TotalRows,
 		); err != nil {
 			return nil, err

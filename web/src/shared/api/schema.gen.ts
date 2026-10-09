@@ -1909,6 +1909,7 @@ export interface components {
             note: string | null;
             number: string;
             order: components["schemas"]["DocRef"];
+            ordered: boolean;
             /** Format: int64 */
             org_unit_id: number;
             org_unit_name: string;
@@ -1946,12 +1947,12 @@ export interface components {
             /** Format: date */
             date: string;
             expired: boolean;
+            from_quote: boolean;
             /** Format: int64 */
             id: number;
             number: string;
-            order_number: string | null;
+            ordered: boolean;
             org_unit_name: string;
-            quote_number: string | null;
             /** @enum {string} */
             status: "draft" | "pending_approval" | "posted" | "cancelled";
             /** Format: int64 */

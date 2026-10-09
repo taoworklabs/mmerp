@@ -76,15 +76,11 @@ func (s *Service) docs(ctx context.Context, k kind, f DocFilter) (DocList, error
 	})
 	for _, r := range rows {
 		out.Total = r.TotalRows
-		var order *string
-		if r.OrderNumber != "" {
-			order = &r.OrderNumber
-		}
 		out.Items = append(out.Items, DocListItem{
 			ID: r.ID, Number: r.Number, Status: r.Status, Date: *platform.DatePtr(r.Date), CustomerID: r.CustomerID,
 			CustomerCode: r.CustomerCode, CustomerName: r.CustomerName, OrgUnitName: r.OrgUnitName, Total: r.Total,
 			ValidUntil: platform.DatePtr(r.ValidUntil), Expired: expired(r.ValidUntil, today),
-			OrderNumber: order, QuoteNumber: platform.TextPtr(r.QuoteNumber),
+			Ordered: r.Ordered, FromQuote: r.FromQuote,
 		})
 	}
 	return out, err
@@ -134,12 +130,17 @@ func (s *Service) doc(ctx context.Context, k kind, id int64) (Doc, error) {
 			ItemCode: l.ItemCode, Unit: l.Unit, Amount: l.Amount, Discount: l.Discount, Vat: l.Vat,
 		}
 	}
+	// The other document shows only to who may view it.
 	if h.QuoteID.Valid {
-		qd, err := s.d.Record.Get(ctx, record.Ref{Type: quoteType, ID: h.QuoteID.Int64})
-		if err != nil {
+		if ok, err := s.d.Record.Can(ctx, quoteType, h.QuoteID.Int64, record.View); err != nil {
 			return Doc{}, err
+		} else if ok {
+			qd, err := s.d.Record.Get(ctx, record.Ref{Type: quoteType, ID: h.QuoteID.Int64})
+			if err != nil {
+				return Doc{}, err
+			}
+			out.Quote = &DocRef{ID: qd.ID, Number: qd.Number, Status: string(qd.Status)}
 		}
-		out.Quote = &DocRef{ID: qd.ID, Number: qd.Number, Status: string(qd.Status)}
 	}
 	if k == quoteKind {
 		today, err := s.today(ctx)
@@ -150,11 +151,16 @@ func (s *Service) doc(ctx context.Context, k kind, id int64) (Doc, error) {
 		o, err := q.LiveOrder(ctx, pgtype.Int8{Int64: id, Valid: true})
 		switch {
 		case err == nil:
-			out.Order = &DocRef{ID: o.ID, Number: o.Number, Status: o.Status}
+			out.Ordered = true
+			if ok, err := s.d.Record.Can(ctx, orderType, o.ID, record.View); err != nil {
+				return Doc{}, err
+			} else if ok {
+				out.Order = &DocRef{ID: o.ID, Number: o.Number, Status: o.Status}
+			}
 		case !errors.Is(err, pgx.ErrNoRows):
 			return Doc{}, err
 		}
-		if d.Status == record.Posted && !out.Expired && out.Order == nil {
+		if d.Status == record.Posted && !out.Expired && !out.Ordered {
 			if ok, err := s.canMakeOrder(ctx, h.OrgUnitID); err != nil {
 				return Doc{}, err
 			} else if ok {
@@ -377,7 +383,15 @@ func (s *Service) writeLines(ctx context.Context, k kind, id int64, p prepared) 
 func (s *Service) CreateOrderFromQuote(ctx context.Context, quoteID int64) (int64, error) {
 	var id int64
 	err := platform.InTx(ctx, func(ctx context.Context) error {
-		if _, err := s.visible(ctx, quoteKind, quoteID); err != nil {
+		qh, err := s.visible(ctx, quoteKind, quoteID)
+		if err != nil {
+			return err
+		}
+		// Checked before an existing order is returned, so only who may make one learns of it.
+		if err := s.d.Record.WriteGate(ctx, record.Ref{Type: quoteType, ID: quoteID}); err != nil {
+			return err
+		}
+		if err := s.require(ctx, PermOrderEdit, qh.OrgUnitID); err != nil {
 			return err
 		}
 		d, err := s.d.Record.Lock(ctx, record.Ref{Type: quoteType, ID: quoteID})

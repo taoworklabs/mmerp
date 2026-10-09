@@ -1380,6 +1380,9 @@
           "order": {
             "$ref": "#/components/schemas/DocRef"
           },
+          "ordered": {
+            "type": "boolean"
+          },
           "org_unit_id": {
             "format": "int64",
             "type": "integer"
@@ -1446,6 +1449,7 @@
           "note",
           "lines",
           "expired",
+          "ordered",
           "order",
           "quote",
           "allowed_actions",
@@ -1505,6 +1509,9 @@
           "expired": {
             "type": "boolean"
           },
+          "from_quote": {
+            "type": "boolean"
+          },
           "id": {
             "format": "int64",
             "type": "integer"
@@ -1512,20 +1519,11 @@
           "number": {
             "type": "string"
           },
-          "order_number": {
-            "type": [
-              "string",
-              "null"
-            ]
+          "ordered": {
+            "type": "boolean"
           },
           "org_unit_name": {
             "type": "string"
-          },
-          "quote_number": {
-            "type": [
-              "string",
-              "null"
-            ]
           },
           "status": {
             "enum": [
@@ -1560,8 +1558,8 @@
           "total",
           "valid_until",
           "expired",
-          "order_number",
-          "quote_number"
+          "ordered",
+          "from_quote"
         ],
         "type": "object"
       },
