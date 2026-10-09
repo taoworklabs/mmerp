@@ -51,10 +51,21 @@ export async function addTranslations(locale: Locale, bundles: Array<() => Promi
   }
 }
 
+// Prefixes that own error messages besides shared: an area's own, so a product's wording
+// lives with the product. Error codes are unique across modules, so the order is irrelevant.
+let errorPrefixes: string[] = []
+
+// setErrorPrefixes is called once at startup with the areas in play. shared learns no
+// product name of its own: it is given the list by whoever owns the areas.
+export function setErrorPrefixes(prefixes: string[]) {
+  errorPrefixes = prefixes
+}
+
 // errorText translates an API error code; unknown codes fall back to a generic message.
 export function errorText(t: TFunction, err: unknown): string {
   const code = err instanceof ApiError ? err.code : 'network_error'
-  return t(`shared.error.${code}`, { ...(err instanceof ApiError ? err.params : {}), defaultValue: t('shared.error.unexpected_error') })
+  const keys = [...errorPrefixes.map((p) => `${p}.error.${code}`), `shared.error.${code}`]
+  return t(keys, { ...(err instanceof ApiError ? err.params : {}), defaultValue: t('shared.error.unexpected_error') })
 }
 
 const intlLocale = (locale: string) => (locale === 'en' ? 'en-GB' : 'vi-VN')

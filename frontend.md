@@ -119,7 +119,7 @@ export const areas = [hrm, core]
 | `routes` | The area's route tree, lazy-loaded | `Routes` |
 | `nav` | Menu items: label, path, icon, permission required to show it (one, or one of several), and group | — |
 | `collapsibleGroups` | Menu groups the user can collapse | — |
-| `i18n.meta` | Every string needed before the area's screens load: menu labels, role names (`<product>.role.<role>`, needed by `core`'s user screen), record type names; for `core` also the sign-in screen and the app shell. Loaded at once for every visible area | — |
+| `i18n.meta` | Every string needed before the area's screens load: menu labels, role names (`<product>.role.<role>`, needed by `core`'s user screen), record type names, the wording of the error codes only this product raises (`<product>.error.<code>`); for `core` also the sign-in screen and the app shell. Loaded at once for every visible area | — |
 | `i18n.main` | All other strings of the area; loaded with the screen code | The module's translation files |
 | `recordTypes[…].path` | Path to a record's detail page | Registering the record type with `record` |
 | `recordTypes[…].preview` | Read-only quick-view component, lazy-loaded; used in the approval inbox and `core` panels | — |
@@ -156,7 +156,7 @@ shared/api/
 └── hrm.ts        # hrm client (/hrm/…)
 ```
 
-Language does not travel with the request: the server reads the user's language from their profile. The text for every API error code lives in `shared/i18n/locales` (`shared.error.<code>`), because error codes are part of the API interface and do not belong to any one area.
+Language does not travel with the request: the server reads the user's language from their profile. An API error code is worded by whoever raises it: a code a `core` or `shared` module raises lives in `shared/i18n/locales` (`shared.error.<code>`), and a code only one product raises lives in that area's `i18n/*/meta.json` (`<product>.error.<code>`). `errorText` tries each area's prefix before `shared`'s, so a product's error reads correctly even on a `core` screen such as the approval inbox or the jobs screen; `app` gives `shared` the list of prefixes, so `shared` still knows no product name. Error wording goes in `meta`, never `main`, because an error can surface before the area's screens load.
 
 - An area that needs another product's data gets it through the backend (deps), not by calling the other product's API directly.
 - API errors are error codes with parameters ([techstack.md](./techstack.md#i18n)). `client.ts` turns them into typed errors; components never parse error bodies themselves.

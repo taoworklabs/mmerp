@@ -18,7 +18,7 @@ import { api, type Me } from '@/shared/api/core'
 import { RecordTypesProvider } from '@/shared/area'
 import { MeProvider } from '@/shared/auth/me'
 import { queryClient, startSession } from '@/shared/auth/session'
-import { addTranslations, initI18n, rememberLocale, switchLocale, type Locale } from '@/shared/i18n'
+import { addTranslations, initI18n, rememberLocale, setErrorPrefixes, switchLocale, type Locale } from '@/shared/i18n'
 import { cssVariablesResolver, theme } from '@/shared/ui/theme'
 import { Toasts } from '@/shared/ui/Toasts'
 import { BootError } from './BootError'
@@ -35,6 +35,8 @@ async function fetchMe(): Promise<Me | null> {
 
 export async function bootstrap(root: HTMLElement) {
   const provisional = await initI18n()
+  // Every area may own error wording; its meta bundle is loaded before anything can fail.
+  setErrorPrefixes(areas.map((a) => a.product))
   await addTranslations(provisional, [core.i18n.meta[provisional]])
 
   let page: ReactNode
