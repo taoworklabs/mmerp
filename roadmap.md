@@ -75,6 +75,8 @@ M11 Attachments and discussion ─► M12 Notifications ─► M13 PDF printing
 
 ## M13. PDF printing
 
+**Done** (2026-10-08): [ADR-0026](./docs/adr/0026-printing.md). The two measurements the ADR defers — rendering a 3,000-employee payroll's payslips, and how much longer the payroll lock is held while snapshots are written — belong to the production-readiness gate.
+
 **Goal:** payslips and contracts can be printed from the system.
 
 - ADR before writing code: `printing` module in `core`; the PDF engine lives in the Go binary (no Chromium, no sidecar container); Vietnamese support and self-embedded fonts; print templates per record type, and how far tenants can edit them.
@@ -132,7 +134,8 @@ Not numbered; the checks before real data goes in. Real data enters the system o
 | Open a list (filtered, paginated) | p95 under 500ms at the API |
 | Open a document | p95 under 300ms at the API |
 | Compute or recompute a 3,000-employee payroll | Under 2 minutes (background job) |
-| Close a 3,000-employee payroll | Under 10 seconds (time during which source changes for the legal entity are blocked) |
+| Close a 3,000-employee payroll | Under 10 seconds (time during which source changes for the legal entity are blocked), including writing one print snapshot per line |
+| Print a 3,000-employee payroll's payslips | Under 30 seconds (background job); peak memory under 512 MB |
 
 **Passed when:**
 
