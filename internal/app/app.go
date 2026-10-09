@@ -34,6 +34,7 @@ import (
 	"github.com/taoworklabs/mmerp/internal/core/record"
 	"github.com/taoworklabs/mmerp/internal/core/setting"
 	"github.com/taoworklabs/mmerp/internal/modules/hrm"
+	"github.com/taoworklabs/mmerp/internal/modules/sales"
 	"github.com/taoworklabs/mmerp/internal/platform"
 	"github.com/taoworklabs/mmerp/internal/shared/posting"
 )
@@ -43,7 +44,8 @@ var Version = "dev"
 
 // products maps every product to the products it depends on.
 var products = map[string][]string{
-	"hrm": nil,
+	"hrm":   nil,
+	"sales": nil,
 }
 
 // CheckProducts refuses unknown products and enabled products missing a dependency.
@@ -85,7 +87,8 @@ func Modules() []platform.Module {
 	h := hrm.NewService(hrm.Deps{IAM: ids, Record: rec, Audit: audit.NewService(), Setting: set, DataIO: dio, Printing: prn,
 		// No accounting yet: nothing reacts to posting lines.
 		Posting: posting.NewService(posting.Hooks{})})
-	return []platform.Module{iam.Module(ids), setting.Module(set), record.Module(rec), approval.Module(appr), dataio.Module(dio), attachment.Module(att), printing.Module(prn), discussion.Module(dis), notification.Module(ntf), hrm.Module(h)}
+	sal := sales.NewService(sales.Deps{IAM: ids, Record: rec, Audit: audit.NewService(), Setting: set, Printing: prn})
+	return []platform.Module{iam.Module(ids), setting.Module(set), record.Module(rec), approval.Module(appr), dataio.Module(dio), attachment.Module(att), printing.Module(prn), discussion.Module(dis), notification.Module(ntf), hrm.Module(h), sales.Module(sal)}
 }
 
 // CreateAdmin adds the first administrator at install time.

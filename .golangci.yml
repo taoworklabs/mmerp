@@ -7,7 +7,7 @@ linters:
   settings:
     depguard:
       # Layers: modules → shared → core → platform. internal/app wires everything.
-      # From the second product on, each product module gets a rule denying the other modules.
+      # Each product module gets a rule denying the other product modules.
       rules:
         platform:
           files: ["**/internal/platform/**"]
@@ -41,6 +41,16 @@ linters:
           deny:
             - pkg: github.com/taoworklabs/mmerp/internal/app
               desc: only cmd imports app
+        hrm:
+          files: ["**/internal/modules/hrm/**"]
+          deny:
+            - pkg: github.com/taoworklabs/mmerp/internal/modules/sales
+              desc: products never import each other; go through deps.go or hooks.go
+        sales:
+          files: ["**/internal/modules/sales/**"]
+          deny:
+            - pkg: github.com/taoworklabs/mmerp/internal/modules/hrm
+              desc: products never import each other; go through deps.go or hooks.go
         excelize:
           files: ["**/internal/**", "!**/internal/core/dataio/**", "!$test"]
           deny:

@@ -51,7 +51,7 @@ seed: web/node_modules
 	E2E_EXTERNAL=1 E2E_SEED=1 E2E_BASE_URL=$${E2E_BASE_URL:-http://localhost:8080} pnpm -C web exec playwright test --project seed
 
 dev: db web/node_modules
-	trap 'kill 0' EXIT; DATABASE_URL='$(DATABASE_URL)' PRODUCTS=hrm go run ./cmd/server & pnpm -C web dev
+	trap 'kill 0' EXIT; DATABASE_URL='$(DATABASE_URL)' PRODUCTS=hrm,sales go run ./cmd/server & pnpm -C web dev
 
 image:
 	docker build --build-arg VERSION=$(VERSION) -t $(IMAGE) .

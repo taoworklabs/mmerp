@@ -1,6 +1,30 @@
 {
   "components": {
     "schemas": {
+      "Actions": {
+        "additionalProperties": false,
+        "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "/api/schemas/Actions.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
+          "allowed_actions": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "allowed_actions"
+        ],
+        "type": "object"
+      },
       "ActionsOutputBody": {
         "additionalProperties": false,
         "properties": {
@@ -788,6 +812,333 @@
         ],
         "type": "object"
       },
+      "Customer": {
+        "additionalProperties": false,
+        "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "/api/schemas/Customer.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
+          "active": {
+            "type": "boolean"
+          },
+          "address": {
+            "maxLength": 500,
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "allowed_actions": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "code": {
+            "maxLength": 50,
+            "minLength": 1,
+            "type": "string"
+          },
+          "contact_name": {
+            "maxLength": 200,
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "email": {
+            "maxLength": 200,
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "id": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "name": {
+            "maxLength": 300,
+            "minLength": 1,
+            "type": "string"
+          },
+          "org_unit_id": {
+            "description": "Owning org unit: who may see the customer",
+            "format": "int64",
+            "type": "integer"
+          },
+          "org_unit_name": {
+            "type": "string"
+          },
+          "payment_terms": {
+            "description": "Prefilled on new quotations and orders",
+            "maxLength": 1000,
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "phone": {
+            "maxLength": 50,
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "tax_code": {
+            "maxLength": 20,
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "org_unit_name",
+          "allowed_actions",
+          "code",
+          "name",
+          "tax_code",
+          "address",
+          "phone",
+          "email",
+          "contact_name",
+          "payment_terms",
+          "org_unit_id",
+          "active"
+        ],
+        "type": "object"
+      },
+      "CustomerCopy": {
+        "additionalProperties": false,
+        "properties": {
+          "address": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "code": {
+            "type": "string"
+          },
+          "contact_name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "email": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "id": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "name": {
+            "type": "string"
+          },
+          "phone": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "tax_code": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "code",
+          "name",
+          "tax_code",
+          "address",
+          "phone",
+          "email",
+          "contact_name"
+        ],
+        "type": "object"
+      },
+      "CustomerFields": {
+        "additionalProperties": false,
+        "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "/api/schemas/CustomerFields.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
+          "active": {
+            "type": "boolean"
+          },
+          "address": {
+            "maxLength": 500,
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "code": {
+            "maxLength": 50,
+            "minLength": 1,
+            "type": "string"
+          },
+          "contact_name": {
+            "maxLength": 200,
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "email": {
+            "maxLength": 200,
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "name": {
+            "maxLength": 300,
+            "minLength": 1,
+            "type": "string"
+          },
+          "org_unit_id": {
+            "description": "Owning org unit: who may see the customer",
+            "format": "int64",
+            "type": "integer"
+          },
+          "payment_terms": {
+            "description": "Prefilled on new quotations and orders",
+            "maxLength": 1000,
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "phone": {
+            "maxLength": 50,
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "tax_code": {
+            "maxLength": 20,
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "code",
+          "name",
+          "tax_code",
+          "address",
+          "phone",
+          "email",
+          "contact_name",
+          "payment_terms",
+          "org_unit_id",
+          "active"
+        ],
+        "type": "object"
+      },
+      "CustomerList": {
+        "additionalProperties": false,
+        "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "/api/schemas/CustomerList.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/CustomerListItem"
+            },
+            "type": "array"
+          },
+          "total": {
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "items",
+          "total"
+        ],
+        "type": "object"
+      },
+      "CustomerListItem": {
+        "additionalProperties": false,
+        "properties": {
+          "active": {
+            "type": "boolean"
+          },
+          "code": {
+            "type": "string"
+          },
+          "id": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "name": {
+            "type": "string"
+          },
+          "org_unit_name": {
+            "type": "string"
+          },
+          "payment_terms": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "phone": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "tax_code": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "code",
+          "name",
+          "tax_code",
+          "phone",
+          "org_unit_name",
+          "active",
+          "payment_terms"
+        ],
+        "type": "object"
+      },
       "Dependent": {
         "additionalProperties": false,
         "properties": {
@@ -952,6 +1303,378 @@
           "allowed_actions",
           "items",
           "max_length"
+        ],
+        "type": "object"
+      },
+      "Doc": {
+        "additionalProperties": false,
+        "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "/api/schemas/Doc.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
+          "allowed_actions": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "customer": {
+            "$ref": "#/components/schemas/CustomerCopy"
+          },
+          "date": {
+            "format": "date",
+            "type": "string"
+          },
+          "delivery_date": {
+            "format": "date",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "delivery_terms": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "discount_total": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "expired": {
+            "type": "boolean"
+          },
+          "id": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "kind": {
+            "enum": [
+              "quote",
+              "order"
+            ],
+            "type": "string"
+          },
+          "lines": {
+            "items": {
+              "$ref": "#/components/schemas/Line"
+            },
+            "type": "array"
+          },
+          "note": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "number": {
+            "type": "string"
+          },
+          "order": {
+            "$ref": "#/components/schemas/DocRef"
+          },
+          "org_unit_id": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "org_unit_name": {
+            "type": "string"
+          },
+          "payment_terms": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "quote": {
+            "$ref": "#/components/schemas/DocRef"
+          },
+          "status": {
+            "enum": [
+              "draft",
+              "pending_approval",
+              "posted",
+              "cancelled"
+            ],
+            "type": "string"
+          },
+          "subtotal": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "total": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "valid_until": {
+            "format": "date",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "vat_total": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "version": {
+            "format": "int32",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "kind",
+          "number",
+          "status",
+          "version",
+          "date",
+          "org_unit_id",
+          "org_unit_name",
+          "customer",
+          "valid_until",
+          "delivery_date",
+          "payment_terms",
+          "delivery_terms",
+          "note",
+          "lines",
+          "expired",
+          "order",
+          "quote",
+          "allowed_actions",
+          "subtotal",
+          "discount_total",
+          "vat_total",
+          "total"
+        ],
+        "type": "object"
+      },
+      "DocList": {
+        "additionalProperties": false,
+        "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "/api/schemas/DocList.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/DocListItem"
+            },
+            "type": "array"
+          },
+          "total": {
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "items",
+          "total"
+        ],
+        "type": "object"
+      },
+      "DocListItem": {
+        "additionalProperties": false,
+        "properties": {
+          "customer_code": {
+            "type": "string"
+          },
+          "customer_id": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "customer_name": {
+            "type": "string"
+          },
+          "date": {
+            "format": "date",
+            "type": "string"
+          },
+          "expired": {
+            "type": "boolean"
+          },
+          "id": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "number": {
+            "type": "string"
+          },
+          "order_number": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "org_unit_name": {
+            "type": "string"
+          },
+          "quote_number": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "status": {
+            "enum": [
+              "draft",
+              "pending_approval",
+              "posted",
+              "cancelled"
+            ],
+            "type": "string"
+          },
+          "total": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "valid_until": {
+            "format": "date",
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "number",
+          "status",
+          "date",
+          "customer_id",
+          "customer_code",
+          "customer_name",
+          "org_unit_name",
+          "total",
+          "valid_until",
+          "expired",
+          "order_number",
+          "quote_number"
+        ],
+        "type": "object"
+      },
+      "DocRef": {
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "number": {
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "draft",
+              "pending_approval",
+              "posted",
+              "cancelled"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "number",
+          "status"
+        ],
+        "type": "object"
+      },
+      "DocUpdate": {
+        "additionalProperties": false,
+        "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "/api/schemas/DocUpdate.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
+          "customer_id": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "date": {
+            "format": "date",
+            "type": "string"
+          },
+          "delivery_date": {
+            "format": "date",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "delivery_terms": {
+            "maxLength": 1000,
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "lines": {
+            "items": {
+              "$ref": "#/components/schemas/LineInput"
+            },
+            "maxItems": 200,
+            "minItems": 1,
+            "type": "array"
+          },
+          "note": {
+            "maxLength": 2000,
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "org_unit_id": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "payment_terms": {
+            "maxLength": 1000,
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "valid_until": {
+            "format": "date",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "version": {
+            "format": "int32",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "version",
+          "date",
+          "org_unit_id",
+          "customer_id",
+          "valid_until",
+          "delivery_date",
+          "payment_terms",
+          "delivery_terms",
+          "note",
+          "lines"
         ],
         "type": "object"
       },
@@ -1710,6 +2433,145 @@
         },
         "type": "object"
       },
+      "Item": {
+        "additionalProperties": false,
+        "properties": {
+          "active": {
+            "type": "boolean"
+          },
+          "code": {
+            "maxLength": 50,
+            "minLength": 1,
+            "type": "string"
+          },
+          "id": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "name": {
+            "maxLength": 300,
+            "minLength": 1,
+            "type": "string"
+          },
+          "price": {
+            "description": "Default unit price in đồng",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "unit": {
+            "maxLength": 30,
+            "minLength": 1,
+            "type": "string"
+          },
+          "vat_rate": {
+            "enum": [
+              "none",
+              "0",
+              "5",
+              "8",
+              "10"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "code",
+          "name",
+          "unit",
+          "price",
+          "vat_rate",
+          "active"
+        ],
+        "type": "object"
+      },
+      "ItemFields": {
+        "additionalProperties": false,
+        "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "/api/schemas/ItemFields.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
+          "active": {
+            "type": "boolean"
+          },
+          "code": {
+            "maxLength": 50,
+            "minLength": 1,
+            "type": "string"
+          },
+          "name": {
+            "maxLength": 300,
+            "minLength": 1,
+            "type": "string"
+          },
+          "price": {
+            "description": "Default unit price in đồng",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "unit": {
+            "maxLength": 30,
+            "minLength": 1,
+            "type": "string"
+          },
+          "vat_rate": {
+            "enum": [
+              "none",
+              "0",
+              "5",
+              "8",
+              "10"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "code",
+          "name",
+          "unit",
+          "price",
+          "vat_rate",
+          "active"
+        ],
+        "type": "object"
+      },
+      "ItemList": {
+        "additionalProperties": false,
+        "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "/api/schemas/ItemList.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/Item"
+            },
+            "type": "array"
+          },
+          "total": {
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "items",
+          "total"
+        ],
+        "type": "object"
+      },
       "Job": {
         "additionalProperties": false,
         "properties": {
@@ -2276,6 +3138,126 @@
         ],
         "type": "object"
       },
+      "Line": {
+        "additionalProperties": false,
+        "properties": {
+          "amount": {
+            "description": "Quantity × unit price",
+            "format": "int64",
+            "type": "integer"
+          },
+          "description": {
+            "maxLength": 500,
+            "minLength": 1,
+            "type": "string"
+          },
+          "discount": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "discount_percent": {
+            "description": "0 to 100, up to 2 decimals",
+            "pattern": "^[0-9]{1,3}(\\.[0-9]{1,2})?$",
+            "type": "string"
+          },
+          "item_code": {
+            "type": "string"
+          },
+          "item_id": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "quantity": {
+            "description": "More than 0, up to 3 decimals",
+            "pattern": "^[0-9]{1,12}(\\.[0-9]{1,3})?$",
+            "type": "string"
+          },
+          "unit": {
+            "type": "string"
+          },
+          "unit_price": {
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "vat": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "vat_rate": {
+            "enum": [
+              "none",
+              "0",
+              "5",
+              "8",
+              "10"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "item_code",
+          "unit",
+          "amount",
+          "discount",
+          "vat",
+          "item_id",
+          "description",
+          "quantity",
+          "unit_price",
+          "discount_percent",
+          "vat_rate"
+        ],
+        "type": "object"
+      },
+      "LineInput": {
+        "additionalProperties": false,
+        "properties": {
+          "description": {
+            "maxLength": 500,
+            "minLength": 1,
+            "type": "string"
+          },
+          "discount_percent": {
+            "description": "0 to 100, up to 2 decimals",
+            "pattern": "^[0-9]{1,3}(\\.[0-9]{1,2})?$",
+            "type": "string"
+          },
+          "item_id": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "quantity": {
+            "description": "More than 0, up to 3 decimals",
+            "pattern": "^[0-9]{1,12}(\\.[0-9]{1,3})?$",
+            "type": "string"
+          },
+          "unit_price": {
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "vat_rate": {
+            "enum": [
+              "none",
+              "0",
+              "5",
+              "8",
+              "10"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "item_id",
+          "description",
+          "quantity",
+          "unit_price",
+          "discount_percent",
+          "vat_rate"
+        ],
+        "type": "object"
+      },
       "LoginInputBody": {
         "additionalProperties": false,
         "properties": {
@@ -2556,6 +3538,93 @@
           "start_date",
           "end_date",
           "terms"
+        ],
+        "type": "object"
+      },
+      "NewDoc": {
+        "additionalProperties": false,
+        "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "/api/schemas/NewDoc.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
+          "customer_id": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "date": {
+            "format": "date",
+            "type": "string"
+          },
+          "delivery_date": {
+            "format": "date",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "delivery_terms": {
+            "maxLength": 1000,
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "lines": {
+            "items": {
+              "$ref": "#/components/schemas/LineInput"
+            },
+            "maxItems": 200,
+            "minItems": 1,
+            "type": "array"
+          },
+          "note": {
+            "maxLength": 2000,
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "org_unit_id": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "payment_terms": {
+            "maxLength": 1000,
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "request_id": {
+            "description": "Generated once per form: sending it again returns the first document",
+            "format": "uuid",
+            "type": "string"
+          },
+          "valid_until": {
+            "format": "date",
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "request_id",
+          "date",
+          "org_unit_id",
+          "customer_id",
+          "valid_until",
+          "delivery_date",
+          "payment_terms",
+          "delivery_terms",
+          "note",
+          "lines"
         ],
         "type": "object"
       },
@@ -9786,6 +10855,1081 @@
         "tags": [
           "core",
           "core"
+        ]
+      }
+    },
+    "/sales/customers": {
+      "get": {
+        "operationId": "list-customers",
+        "parameters": [
+          {
+            "explode": false,
+            "in": "query",
+            "name": "q",
+            "schema": {
+              "maxLength": 100,
+              "type": "string"
+            }
+          },
+          {
+            "explode": false,
+            "in": "query",
+            "name": "active",
+            "schema": {
+              "enum": [
+                "true",
+                "false"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "explode": false,
+            "in": "query",
+            "name": "sort",
+            "schema": {
+              "default": "code",
+              "enum": [
+                "code",
+                "-code",
+                "name",
+                "-name"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "explode": false,
+            "in": "query",
+            "name": "page",
+            "schema": {
+              "default": 1,
+              "format": "int64",
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "explode": false,
+            "in": "query",
+            "name": "page_size",
+            "schema": {
+              "default": 50,
+              "enum": [
+                20,
+                50,
+                100
+              ],
+              "format": "int64",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomerList"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "tags": [
+          "sales",
+          "sales"
+        ]
+      },
+      "post": {
+        "operationId": "create-customer",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CustomerFields"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreatedOutputBody"
+                }
+              }
+            },
+            "description": "Created"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "tags": [
+          "sales",
+          "sales"
+        ]
+      }
+    },
+    "/sales/customers/actions": {
+      "get": {
+        "operationId": "get-customer-actions",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Actions"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "tags": [
+          "sales",
+          "sales"
+        ]
+      }
+    },
+    "/sales/customers/{id}": {
+      "get": {
+        "operationId": "get-customer",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Customer"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "tags": [
+          "sales",
+          "sales"
+        ]
+      },
+      "put": {
+        "operationId": "update-customer",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CustomerFields"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "tags": [
+          "sales",
+          "sales"
+        ]
+      }
+    },
+    "/sales/items": {
+      "get": {
+        "operationId": "list-items",
+        "parameters": [
+          {
+            "explode": false,
+            "in": "query",
+            "name": "q",
+            "schema": {
+              "maxLength": 100,
+              "type": "string"
+            }
+          },
+          {
+            "explode": false,
+            "in": "query",
+            "name": "active",
+            "schema": {
+              "enum": [
+                "true",
+                "false"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "explode": false,
+            "in": "query",
+            "name": "page",
+            "schema": {
+              "default": 1,
+              "format": "int64",
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "explode": false,
+            "in": "query",
+            "name": "page_size",
+            "schema": {
+              "default": 50,
+              "enum": [
+                20,
+                50,
+                100
+              ],
+              "format": "int64",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ItemList"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "tags": [
+          "sales",
+          "sales"
+        ]
+      },
+      "post": {
+        "operationId": "create-item",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ItemFields"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreatedOutputBody"
+                }
+              }
+            },
+            "description": "Created"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "tags": [
+          "sales",
+          "sales"
+        ]
+      }
+    },
+    "/sales/items/{id}": {
+      "put": {
+        "operationId": "update-item",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ItemFields"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "tags": [
+          "sales",
+          "sales"
+        ]
+      }
+    },
+    "/sales/orders": {
+      "get": {
+        "operationId": "list-orders",
+        "parameters": [
+          {
+            "description": "Number, customer code or name",
+            "explode": false,
+            "in": "query",
+            "name": "q",
+            "schema": {
+              "description": "Number, customer code or name",
+              "maxLength": 100,
+              "type": "string"
+            }
+          },
+          {
+            "explode": false,
+            "in": "query",
+            "name": "status",
+            "schema": {
+              "enum": [
+                "draft",
+                "pending_approval",
+                "posted",
+                "cancelled"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "explode": false,
+            "in": "query",
+            "name": "customer_id",
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          },
+          {
+            "explode": false,
+            "in": "query",
+            "name": "sort",
+            "schema": {
+              "default": "-date",
+              "enum": [
+                "date",
+                "-date",
+                "number",
+                "-number",
+                "total",
+                "-total"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "explode": false,
+            "in": "query",
+            "name": "page",
+            "schema": {
+              "default": 1,
+              "format": "int64",
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "explode": false,
+            "in": "query",
+            "name": "page_size",
+            "schema": {
+              "default": 50,
+              "enum": [
+                20,
+                50,
+                100
+              ],
+              "format": "int64",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DocList"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "tags": [
+          "sales",
+          "sales"
+        ]
+      },
+      "post": {
+        "description": "Sending the same request_id again returns the document created the first time.",
+        "operationId": "create-order",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NewDoc"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreatedOutputBody"
+                }
+              }
+            },
+            "description": "Created"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "tags": [
+          "sales",
+          "sales"
+        ]
+      }
+    },
+    "/sales/orders/actions": {
+      "get": {
+        "operationId": "get-order-actions",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Actions"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "tags": [
+          "sales",
+          "sales"
+        ]
+      }
+    },
+    "/sales/orders/{id}": {
+      "delete": {
+        "operationId": "delete-order",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          },
+          {
+            "explode": false,
+            "in": "query",
+            "name": "version",
+            "required": true,
+            "schema": {
+              "format": "int32",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "tags": [
+          "sales",
+          "sales"
+        ]
+      },
+      "get": {
+        "operationId": "get-order",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Doc"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "tags": [
+          "sales",
+          "sales"
+        ]
+      },
+      "put": {
+        "operationId": "update-order",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DocUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "tags": [
+          "sales",
+          "sales"
+        ]
+      }
+    },
+    "/sales/quotes": {
+      "get": {
+        "operationId": "list-quotes",
+        "parameters": [
+          {
+            "description": "Number, customer code or name",
+            "explode": false,
+            "in": "query",
+            "name": "q",
+            "schema": {
+              "description": "Number, customer code or name",
+              "maxLength": 100,
+              "type": "string"
+            }
+          },
+          {
+            "explode": false,
+            "in": "query",
+            "name": "status",
+            "schema": {
+              "enum": [
+                "draft",
+                "pending_approval",
+                "posted",
+                "cancelled"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "explode": false,
+            "in": "query",
+            "name": "customer_id",
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          },
+          {
+            "explode": false,
+            "in": "query",
+            "name": "sort",
+            "schema": {
+              "default": "-date",
+              "enum": [
+                "date",
+                "-date",
+                "number",
+                "-number",
+                "total",
+                "-total"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "explode": false,
+            "in": "query",
+            "name": "page",
+            "schema": {
+              "default": 1,
+              "format": "int64",
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "explode": false,
+            "in": "query",
+            "name": "page_size",
+            "schema": {
+              "default": 50,
+              "enum": [
+                20,
+                50,
+                100
+              ],
+              "format": "int64",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DocList"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "tags": [
+          "sales",
+          "sales"
+        ]
+      },
+      "post": {
+        "description": "Sending the same request_id again returns the document created the first time.",
+        "operationId": "create-quote",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NewDoc"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreatedOutputBody"
+                }
+              }
+            },
+            "description": "Created"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "tags": [
+          "sales",
+          "sales"
+        ]
+      }
+    },
+    "/sales/quotes/actions": {
+      "get": {
+        "operationId": "get-quote-actions",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Actions"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "tags": [
+          "sales",
+          "sales"
+        ]
+      }
+    },
+    "/sales/quotes/{id}": {
+      "delete": {
+        "operationId": "delete-quote",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          },
+          {
+            "explode": false,
+            "in": "query",
+            "name": "version",
+            "required": true,
+            "schema": {
+              "format": "int32",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "tags": [
+          "sales",
+          "sales"
+        ]
+      },
+      "get": {
+        "operationId": "get-quote",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Doc"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "tags": [
+          "sales",
+          "sales"
+        ]
+      },
+      "put": {
+        "operationId": "update-quote",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DocUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "tags": [
+          "sales",
+          "sales"
+        ]
+      }
+    },
+    "/sales/quotes/{id}/order": {
+      "post": {
+        "description": "While an order from the quotation is not cancelled, returns that order instead of making another.",
+        "operationId": "create-order-from-quote",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreatedOutputBody"
+                }
+              }
+            },
+            "description": "Created"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "tags": [
+          "sales",
+          "sales"
         ]
       }
     },

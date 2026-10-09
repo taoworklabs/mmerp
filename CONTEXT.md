@@ -117,6 +117,6 @@ Product description: [products/sales.md](./products/sales.md).
 - **Subtotal, discount total, VAT total, total** (vi: "Cộng tiền hàng, Tổng chiết khấu, Tiền thuế GTGT, Tổng thanh toán"): sums of a document's lines; total is subtotal less discount total plus VAT total.
 - **Ordered** (vi: "Đã lên đơn"): a quotation that a non-cancelled sales order comes from. Derived, not stored.
 - **Expired** (vi: "Hết hiệu lực"): a quotation whose validity date is before today in the tenant time zone. Derived, not stored. An expired quotation cannot become an order.
-- **Create sales order** (vi: "Tạo đơn bán hàng"): turning a posted, unexpired quotation into a draft order with the same customer details, terms and lines. Repeating it returns the same order while that order is not cancelled.
+- **Create sales order** (vi: "Tạo đơn bán hàng"): turning a posted, unexpired quotation into a draft order with the same customer, terms and lines. Repeating it returns the same order while that order is not cancelled.
 - **Request id** (`request_id`, vi: "Mã yêu cầu"): a UUID a create form generates once; sending the same create twice returns the first document.
 - **Sales roles** (vi: "Vai trò bán hàng"): `staff` and `manager` (customers, quotations and orders, view and edit; same permissions, two names for approval routing), `viewer` (view), `catalog_admin` (items; tenant-wide only), `approval_admin` (`sales.approval.manage`; tenant-wide only). See [ADR-0027](./docs/adr/0027-sales-product.md).

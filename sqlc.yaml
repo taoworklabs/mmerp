@@ -47,3 +47,6 @@ sql:
   - <<: *module
     queries: internal/core/printing/queries.sql
     gen: { go: { <<: *go, out: internal/core/printing/internal/store } }
+  - <<: *module
+    queries: internal/modules/sales/queries.sql
+    gen: { go: { <<: *go, out: internal/modules/sales/internal/store } }

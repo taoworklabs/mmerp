@@ -85,7 +85,7 @@ An inactive customer or item cannot be put on a draft (`customer_inactive`, `ite
 
 ## From quotation to order
 
-"Tạo đơn bán hàng" (Create sales order) on a posted, unexpired quotation creates a draft order with the quotation's org unit, customer details, terms and lines exactly as quoted, and today's date. The order shows its quotation; the quotation shows its order.
+"Tạo đơn bán hàng" (Create sales order) on a posted, unexpired quotation creates a draft order with the quotation's org unit, customer, terms and lines (prices, discounts and VAT rates as quoted), dated today. Like every draft save it copies the customer's current details, and it refuses a customer or item deactivated since. The order shows its quotation; the quotation shows its order.
 
 - Clicking twice, or retrying after a lost response, returns the same order: under the quotation's row lock, an existing non-cancelled order is returned instead of creating another.
 - The draft order may then be edited like any order, sent, approved and printed.

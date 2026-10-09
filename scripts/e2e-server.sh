@@ -1,5 +1,5 @@
 #!/bin/sh
-# Serves the built app for Playwright on a fresh database: :8090 with PRODUCTS=hrm,
+# Serves the built app for Playwright on a fresh database: :8090 with PRODUCTS=hrm,sales,
 # :8091 with no product enabled. Creates the e2e admin. Runs until killed.
 set -eu
 cd "$(dirname "$0")/.."
@@ -23,4 +23,4 @@ trap 'kill 0' EXIT INT TERM
 # Only the :8090 server works jobs, so they run with its products.
 DATABASE_URL=$db_url HTTP_ADDR=:8091 PRODUCTS= RUN_JOBS=false LOG_LEVEL=warn "$bin" &
 until curl -fsS http://localhost:8091/healthz >/dev/null 2>&1; do sleep 0.2; done
-DATABASE_URL=$db_url HTTP_ADDR=:8090 PRODUCTS=hrm LOG_LEVEL=warn "$bin"
+DATABASE_URL=$db_url HTTP_ADDR=:8090 PRODUCTS=hrm,sales LOG_LEVEL=warn "$bin"
