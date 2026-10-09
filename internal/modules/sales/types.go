@@ -189,10 +189,12 @@ type Doc struct {
 	Note          *string      `json:"note"`
 	Lines         []Line       `json:"lines" nullable:"false"`
 	Totals
-	// Quotations: past their validity date, and the order made from them.
+	// Quotations: past their validity date; an order not cancelled comes from it, and that
+	// order when the actor may view it.
 	Expired bool    `json:"expired"`
+	Ordered bool    `json:"ordered"`
 	Order   *DocRef `json:"order"`
-	// Orders: the quotation they came from.
+	// Orders: the quotation they came from, when the actor may view it.
 	Quote *DocRef `json:"quote"`
 	// edit, delete, submit, withdraw, cancel, print; quotations also create_order.
 	AllowedActions []string `json:"allowed_actions" nullable:"false"`
@@ -219,9 +221,9 @@ type DocListItem struct {
 	Total        int64   `json:"total"`
 	ValidUntil   *string `json:"valid_until" format:"date"`
 	Expired      bool    `json:"expired"`
-	// The live order of a quotation, the quotation of an order.
-	OrderNumber *string `json:"order_number"`
-	QuoteNumber *string `json:"quote_number"`
+	// Quotations: an order not cancelled comes from it. Orders: made from a quotation.
+	Ordered   bool `json:"ordered"`
+	FromQuote bool `json:"from_quote"`
 }
 
 type DocList struct {
