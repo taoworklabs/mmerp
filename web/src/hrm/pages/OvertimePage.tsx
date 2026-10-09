@@ -7,7 +7,7 @@ import { ApprovalPanel, DocumentActions, DocumentHistory, DocumentStatus, useDis
 import { formatDate } from '@/shared/i18n'
 import { DocumentPage } from '@/shared/ui/page'
 import { OvertimeForm } from '../components/OvertimeForm'
-import { loaded } from '../components/loaded'
+import { loaded } from '@/shared/ui/loaded'
 import { useOvertime } from '../hooks/useOvertime'
 import { overtimeDocType } from '../keys'
 

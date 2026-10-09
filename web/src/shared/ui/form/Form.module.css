@@ -18,6 +18,10 @@
 }
 
 /* The height of an sm input, at the bottom of its grid cell. */
+.fullRow {
+  grid-column: 1 / -1;
+}
+
 .inputRow {
   align-self: end;
   height: calc(2.25rem * var(--mantine-scale));

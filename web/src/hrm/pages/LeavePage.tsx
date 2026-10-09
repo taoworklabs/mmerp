@@ -7,7 +7,7 @@ import { ApprovalPanel, DocumentActions, DocumentHistory, DocumentStatus, useAtt
 import { formatDecimal } from '@/shared/i18n'
 import { DocumentPage } from '@/shared/ui/page'
 import { LeaveForm } from '../components/LeaveForm'
-import { loaded } from '../components/loaded'
+import { loaded } from '@/shared/ui/loaded'
 import { useLeave } from '../hooks/useLeave'
 import { leaveDocType } from '../keys'
 

@@ -12,7 +12,7 @@ import { ContractsTab } from '../components/ContractsTab'
 import { DependentsTab } from '../components/DependentsTab'
 import { EmployeeForm } from '../components/EmployeeForm'
 import { EmployeeStatus } from '../components/EmployeeStatus'
-import { loaded } from '../components/loaded'
+import { loaded } from '@/shared/ui/loaded'
 import { employeeDocType, hrmKeys } from '../keys'
 
 export function EmployeePage() {

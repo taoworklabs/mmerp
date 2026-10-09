@@ -1,4 +1,4 @@
-export { Form, FormActions, FormSection, InputRow, fieldId } from './Form'
+export { Form, FormActions, FormRow, FormSection, InputRow, fieldId } from './Form'
 export { CheckboxField, DateField, DecimalField, FileField, MoneyField, MonthField, PasswordField, SelectField, TextField, type Option } from './fields'
 export { MonthFilter } from './MonthFilter'
 export { OrgUnitField, OrgUnitSelect, orgUnitKeys, orgUnitOptions, useOrgUnits } from './OrgUnitField'

@@ -12,7 +12,7 @@ import { OrgUnitName } from './OrgUnitName'
 import { StatusBadge } from './StatusBadge'
 import { LinkTile, StatTile, TileGrid } from './Tile'
 import { CellGrid } from './CellGrid'
-import { CheckboxField, DateField, DecimalField, FileField, Form, MoneyField, MonthField, MonthFilter, FormActions, FormSection, InputRow, OrgUnitField, OrgUnitSelect, PasswordField, SearchInput, SelectField, SensitiveField, TextField } from './form'
+import { CheckboxField, DateField, DecimalField, FileField, Form, MoneyField, MonthField, MonthFilter, FormActions, FormRow, FormSection, InputRow, OrgUnitField, OrgUnitSelect, PasswordField, SearchInput, SelectField, SensitiveField, TextField } from './form'
 import { useConfirm } from './confirm'
 import { DocumentPage, type DocumentSection, FormModal, InboxList, InboxPage, InboxRow, ListPage, Page, RecordPage, TabActions } from './page'
 import { ContentSkeleton, EmptyState, ErrorState, NotFoundPage, ReadOnlyBanner } from './states'
@@ -181,6 +181,11 @@ export default function DevUiPage({ withSections: WithSections }: Props) {
               <CheckboxField name="beside" label={t('shared.devui.checkbox')} />
             </InputRow>
             <CheckboxField name="flag" label={t('shared.devui.checkbox')} description={t('shared.devui.hint')} />
+            <FormRow>
+              <Text size="sm" c="dimmed">
+                {t('shared.devui.hint')}
+              </Text>
+            </FormRow>
             <SensitiveField name="masked" label={t('shared.devui.sensitive')} present canView canEdit reveal={async () => '079123456789'} />
             <SensitiveField name="open" label={t('shared.devui.sensitive')} present={false} canView canEdit reveal={async () => null} />
             <SensitiveField name="denied" label={t('shared.devui.sensitive')} present canView={false} canEdit={false} reveal={async () => null} />

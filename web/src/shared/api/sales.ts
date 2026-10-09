@@ -14,7 +14,8 @@ export type CustomerSort = NonNullable<NonNullable<operations['list-customers'][
 export type Item = components['schemas']['Item']
 export type ItemFields = components['schemas']['ItemFields']
 export type Doc = components['schemas']['Doc']
-export type DocFields = components['schemas']['DocFields']
+// The editable fields of a quotation or order, as both create and update send them.
+export type DocFields = Omit<components['schemas']['NewDoc'], '$schema' | 'request_id'>
 export type DocListItem = components['schemas']['DocListItem']
 export type LineInput = components['schemas']['LineInput']
 export type DocSort = NonNullable<NonNullable<operations['list-quotes']['parameters']['query']>['sort']>

@@ -30,14 +30,15 @@ web/src/
 │   └── i18n/           # i18next, formatting functions (date, month, number), text for API error codes
 ├── core/               # sign-in, users and roles, org tree, settings, approval inbox, period lock
 │                       # always present; structured like an area
-└── hrm/                # area of the HRM product
-    ├── index.ts        # manifest — the only thing imported from outside (core also exports HomePage, InboxPage, JobsPage, LoginPage, nextFromLocation)
-    ├── keys.ts         # the area's query key factory
-    ├── routes.tsx
-    ├── pages/  components/  hooks/
-    └── i18n/
-        ├── vi/meta.json  vi/main.json
-        └── en/meta.json  en/main.json
+├── hrm/                # area of the HRM product
+│   ├── index.ts        # manifest — the only thing imported from outside (core also exports HomePage, InboxPage, JobsPage, LoginPage, nextFromLocation)
+│   ├── keys.ts         # the area's query key factory
+│   ├── routes.tsx
+│   ├── pages/  components/  hooks/
+│   └── i18n/
+│       ├── vi/meta.json  vi/main.json
+│       └── en/meta.json  en/main.json
+└── sales/              # area of the Sales product, same shape
 web/lint-fixtures/      # files that deliberately break the isolation rules, used to verify the configuration (see below)
 ```
 
@@ -153,7 +154,8 @@ shared/api/
 ├── client.ts     # shared openapi-fetch: cookie, session signal, reads X-Authz-Version, handles 401; typed per product
 ├── error.ts      # ApiError: error code with parameters
 ├── core.ts       # core client (/me, /users, /org-units, …)
-└── hrm.ts        # hrm client (/hrm/…)
+├── hrm.ts        # hrm client (/hrm/…)
+└── sales.ts      # sales client (/sales/…)
 ```
 
 Language does not travel with the request: the server reads the user's language from their profile. An API error code is worded by whoever raises it: a code a `core` or `shared` module raises lives in `shared/i18n/locales` (`shared.error.<code>`), and a code only one product raises lives in that area's `i18n/*/meta.json` (`<product>.error.<code>`). `errorText` tries each area's prefix before `shared`'s, so a product's error reads correctly even on a `core` screen such as the approval inbox or the jobs screen; `app` gives `shared` the list of prefixes, so `shared` still knows no product name. Error wording goes in `meta`, never `main`, because an error can surface before the area's screens load.
@@ -225,7 +227,7 @@ The backend is the only place that decides permissions. The frontend only reads 
 - **Menu and page level:** `/me` returns the enabled products, the areas that already have data, the user's permissions per product, and the language. `useCan('hrm.payroll.view')` is used only to hide or show menus and pages.
 - **Record level:** every API that returns a document includes `allowed_actions` ([documents.md](./documents.md#permissions)). The frontend renders buttons from this list and **never derives them from status or role**.
 - **Collection level:** actions not tied to a record yet (create, import, export) come from `GET /<product>/<x>/actions`, query key `hrmKeys.<x>.actions()` (for example `useEmployeeActions`). The "Create" button shows only when `create` is present; a create page without that action shows `<ForbiddenPage>`.
-- **Route guards:** an area's `routes.tsx` wraps routes that need a permission with `useCan(…) ? <Page /> : <ForbiddenPage />`, matching the menu item's `permission`. Detail pages use `loaded()` (`hrm/components/loaded.tsx`): a skeleton while loading, a 404 (including a record outside the scope) becomes a `NotFoundPage` linking back to the list, other errors become `ErrorState`.
+- **Route guards:** an area's `routes.tsx` wraps routes that need a permission with `useCan(…) ? <Page /> : <ForbiddenPage />`, matching the menu item's `permission`. Detail pages use `loaded()` (`shared/ui/loaded.tsx`): a skeleton while loading, a 404 (including a record outside the scope) becomes a `NotFoundPage` linking back to the list, other errors become `ErrorState`.
 - A disabled product needs no special logic in the frontend. The backend removes every write action from `allowed_actions` and keeps the export action ([platform.md](./platform.md#enabled-products)), so write buttons disappear on their own while the export button stays. The only exception is catalogue screens without `allowed_actions` (leave types, contract types): write buttons are hidden based on the enabled products in `/me`, through `useProductOn`.
 - Hiding in the frontend is not security. Every request is still checked by the backend.
 
