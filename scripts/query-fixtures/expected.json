@@ -1,0 +1,9 @@
+[
+  "core/record/queries.sql: reads schema sales",
+  "shared/posting/queries.sql: reads schema inventory",
+  "modules/sales/queries.sql: reads schema hrm",
+  "modules/sales/queries.sql: writes schema inventory",
+  "modules/salesreport/queries.sql: reads schema hrm",
+  "modules/inventory/queries.sql: reads schema sales",
+  "modules/orphan/queries.sql: product orphan is not in the dependency map of the composition root"
+]
