@@ -9,7 +9,7 @@ import { ApprovalPanel, DocumentActions, DocumentHistory, DocumentStatus, useAtt
 import { ExportButton } from '@/shared/jobs'
 import { DocumentPage } from '@/shared/ui/page'
 import { ContractForm } from '../components/ContractForm'
-import { loaded } from '../components/loaded'
+import { loaded } from '@/shared/ui/loaded'
 import { useContract } from '../hooks/useContract'
 import { contractDocType, hrmKeys } from '../keys'
 

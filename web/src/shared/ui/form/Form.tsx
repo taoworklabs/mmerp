@@ -162,6 +162,11 @@ export function FormSection({ title, description, icon: Icon, children }: { titl
 
 // InputRow puts controls (a checkbox, a remove button) on one line level with the inputs beside
 // it in a FormSection, rather than with their labels.
+// FormRow spans the whole row of a FormSection, for what is not one field (a table, totals).
+export function FormRow({ children }: { children: ReactNode }) {
+  return <div className={classes.fullRow}>{children}</div>
+}
+
 export function InputRow({ children }: { children: ReactNode }) {
   return (
     <Group justify="space-between" wrap="nowrap" className={classes.inputRow}>

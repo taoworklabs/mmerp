@@ -137,7 +137,8 @@ export type Option = { value: string; label: string }
 // ponytail: sized for a one-line message (8px gap + ~20px line); measure it if messages wrap.
 export const belowError = (error?: string) => ({ offset: error ? 28 : 8 })
 
-export function SelectField(props: Base & { data: Option[]; clearable?: boolean; onSearch?: (q: string) => void }) {
+// onChange runs after the user picks, e.g. to fill other fields from the choice.
+export function SelectField(props: Base & { data: Option[]; clearable?: boolean; onSearch?: (q: string) => void; onChange?: (v: string | null) => void }) {
   const { field, common } = useField(props)
   return (
     <Select
@@ -146,7 +147,10 @@ export function SelectField(props: Base & { data: Option[]; clearable?: boolean;
       readOnly={props.readOnly}
       data={props.data}
       value={field.value ?? null}
-      onChange={(v) => field.onChange(v)}
+      onChange={(v) => {
+        field.onChange(v)
+        props.onChange?.(v)
+      }}
       searchable={props.data.length > 7 || !!props.onSearch}
       onSearchChange={props.onSearch}
       clearable={props.clearable}

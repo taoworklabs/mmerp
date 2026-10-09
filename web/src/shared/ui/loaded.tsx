@@ -1,9 +1,9 @@
 import type { UseQueryResult } from '@tanstack/react-query'
 import type { TFunction } from 'i18next'
 import type { ReactNode } from 'react'
-import { ApiError } from '@/shared/api/hrm'
+import { ApiError } from '@/shared/api/error'
 import { errorText } from '@/shared/i18n'
-import { ErrorState, NotFoundPage, PageSkeleton } from '@/shared/ui/states'
+import { ErrorState, NotFoundPage, PageSkeleton } from './states'
 
 type Loaded<T> = { ok: true; data: T } | { ok: false; fallback: ReactNode }
 
