@@ -1204,6 +1204,201 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/sales/customers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["list-customers"];
+        put?: never;
+        post: operations["create-customer"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/sales/customers/actions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["get-customer-actions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/sales/customers/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["get-customer"];
+        put: operations["update-customer"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/sales/items": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["list-items"];
+        put?: never;
+        post: operations["create-item"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/sales/items/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put: operations["update-item"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/sales/orders": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["list-orders"];
+        put?: never;
+        /** @description Sending the same request_id again returns the document created the first time. */
+        post: operations["create-order"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/sales/orders/actions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["get-order-actions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/sales/orders/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["get-order"];
+        put: operations["update-order"];
+        post?: never;
+        delete: operations["delete-order"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/sales/quotes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["list-quotes"];
+        put?: never;
+        /** @description Sending the same request_id again returns the document created the first time. */
+        post: operations["create-quote"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/sales/quotes/actions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["get-quote-actions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/sales/quotes/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["get-quote"];
+        put: operations["update-quote"];
+        post?: never;
+        delete: operations["delete-quote"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/sales/quotes/{id}/order": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description While an order from the quotation is not cancelled, returns that order instead of making another. */
+        post: operations["create-order-from-quote"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/users": {
         parameters: {
             query?: never;
@@ -1288,6 +1483,15 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        Actions: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example /api/schemas/Actions.json
+             */
+            readonly $schema?: string;
+            allowed_actions: string[];
+        };
         ActionsOutputBody: {
             /**
              * Format: uri
@@ -1550,6 +1754,89 @@ export interface components {
             /** Format: int64 */
             id: number;
         };
+        Customer: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example /api/schemas/Customer.json
+             */
+            readonly $schema?: string;
+            active: boolean;
+            address: string | null;
+            allowed_actions: string[];
+            code: string;
+            contact_name: string | null;
+            email: string | null;
+            /** Format: int64 */
+            id: number;
+            name: string;
+            /**
+             * Format: int64
+             * @description Owning org unit: who may see the customer
+             */
+            org_unit_id: number;
+            org_unit_name: string;
+            /** @description Prefilled on new quotations and orders */
+            payment_terms: string | null;
+            phone: string | null;
+            tax_code: string | null;
+        };
+        CustomerCopy: {
+            address: string | null;
+            code: string;
+            contact_name: string | null;
+            email: string | null;
+            /** Format: int64 */
+            id: number;
+            name: string;
+            phone: string | null;
+            tax_code: string | null;
+        };
+        CustomerFields: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example /api/schemas/CustomerFields.json
+             */
+            readonly $schema?: string;
+            active: boolean;
+            address: string | null;
+            code: string;
+            contact_name: string | null;
+            email: string | null;
+            name: string;
+            /**
+             * Format: int64
+             * @description Owning org unit: who may see the customer
+             */
+            org_unit_id: number;
+            /** @description Prefilled on new quotations and orders */
+            payment_terms: string | null;
+            phone: string | null;
+            tax_code: string | null;
+        };
+        CustomerList: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example /api/schemas/CustomerList.json
+             */
+            readonly $schema?: string;
+            items: components["schemas"]["CustomerListItem"][];
+            /** Format: int64 */
+            total: number;
+        };
+        CustomerListItem: {
+            active: boolean;
+            code: string;
+            /** Format: int64 */
+            id: number;
+            name: string;
+            org_unit_name: string;
+            payment_terms: string | null;
+            phone: string | null;
+            tax_code: string | null;
+        };
         Dependent: {
             /** Format: date */
             date_of_birth: string | null;
@@ -1596,6 +1883,112 @@ export interface components {
              * @description Characters one comment may hold
              */
             max_length: number;
+        };
+        Doc: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example /api/schemas/Doc.json
+             */
+            readonly $schema?: string;
+            allowed_actions: string[];
+            customer: components["schemas"]["CustomerCopy"];
+            /** Format: date */
+            date: string;
+            /** Format: date */
+            delivery_date: string | null;
+            delivery_terms: string | null;
+            /** Format: int64 */
+            discount_total: number;
+            expired: boolean;
+            /** Format: int64 */
+            id: number;
+            /** @enum {string} */
+            kind: "quote" | "order";
+            lines: components["schemas"]["Line"][];
+            note: string | null;
+            number: string;
+            order: components["schemas"]["DocRef"];
+            /** Format: int64 */
+            org_unit_id: number;
+            org_unit_name: string;
+            payment_terms: string | null;
+            quote: components["schemas"]["DocRef"];
+            /** @enum {string} */
+            status: "draft" | "pending_approval" | "posted" | "cancelled";
+            /** Format: int64 */
+            subtotal: number;
+            /** Format: int64 */
+            total: number;
+            /** Format: date */
+            valid_until: string | null;
+            /** Format: int64 */
+            vat_total: number;
+            /** Format: int32 */
+            version: number;
+        };
+        DocList: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example /api/schemas/DocList.json
+             */
+            readonly $schema?: string;
+            items: components["schemas"]["DocListItem"][];
+            /** Format: int64 */
+            total: number;
+        };
+        DocListItem: {
+            customer_code: string;
+            /** Format: int64 */
+            customer_id: number;
+            customer_name: string;
+            /** Format: date */
+            date: string;
+            expired: boolean;
+            /** Format: int64 */
+            id: number;
+            number: string;
+            order_number: string | null;
+            org_unit_name: string;
+            quote_number: string | null;
+            /** @enum {string} */
+            status: "draft" | "pending_approval" | "posted" | "cancelled";
+            /** Format: int64 */
+            total: number;
+            /** Format: date */
+            valid_until: string | null;
+        };
+        DocRef: {
+            /** Format: int64 */
+            id: number;
+            number: string;
+            /** @enum {string} */
+            status: "draft" | "pending_approval" | "posted" | "cancelled";
+        };
+        DocUpdate: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example /api/schemas/DocUpdate.json
+             */
+            readonly $schema?: string;
+            /** Format: int64 */
+            customer_id: number;
+            /** Format: date */
+            date: string;
+            /** Format: date */
+            delivery_date: string | null;
+            delivery_terms: string | null;
+            lines: components["schemas"]["LineInput"][];
+            note: string | null;
+            /** Format: int64 */
+            org_unit_id: number;
+            payment_terms: string | null;
+            /** Format: date */
+            valid_until: string | null;
+            /** Format: int32 */
+            version: number;
         };
         EmailInputBody: {
             /**
@@ -1824,6 +2217,51 @@ export interface components {
             /** @description The latest submission; absent when never sent for approval */
             instance?: components["schemas"]["Instance"];
         };
+        Item: {
+            active: boolean;
+            code: string;
+            /** Format: int64 */
+            id: number;
+            name: string;
+            /**
+             * Format: int64
+             * @description Default unit price in đồng
+             */
+            price: number;
+            unit: string;
+            /** @enum {string} */
+            vat_rate: "none" | "0" | "5" | "8" | "10";
+        };
+        ItemFields: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example /api/schemas/ItemFields.json
+             */
+            readonly $schema?: string;
+            active: boolean;
+            code: string;
+            name: string;
+            /**
+             * Format: int64
+             * @description Default unit price in đồng
+             */
+            price: number;
+            unit: string;
+            /** @enum {string} */
+            vat_rate: "none" | "0" | "5" | "8" | "10";
+        };
+        ItemList: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example /api/schemas/ItemList.json
+             */
+            readonly $schema?: string;
+            items: components["schemas"]["Item"][];
+            /** Format: int64 */
+            total: number;
+        };
         Job: {
             /**
              * Format: uri
@@ -2011,6 +2449,43 @@ export interface components {
             allowed_actions: string[];
             items: components["schemas"]["LegalParam"][];
         };
+        Line: {
+            /**
+             * Format: int64
+             * @description Quantity × unit price
+             */
+            amount: number;
+            description: string;
+            /** Format: int64 */
+            discount: number;
+            /** @description 0 to 100, up to 2 decimals */
+            discount_percent: string;
+            item_code: string;
+            /** Format: int64 */
+            item_id: number;
+            /** @description More than 0, up to 3 decimals */
+            quantity: string;
+            unit: string;
+            /** Format: int64 */
+            unit_price: number;
+            /** Format: int64 */
+            vat: number;
+            /** @enum {string} */
+            vat_rate: "none" | "0" | "5" | "8" | "10";
+        };
+        LineInput: {
+            description: string;
+            /** @description 0 to 100, up to 2 decimals */
+            discount_percent: string;
+            /** Format: int64 */
+            item_id: number;
+            /** @description More than 0, up to 3 decimals */
+            quantity: string;
+            /** Format: int64 */
+            unit_price: number;
+            /** @enum {string} */
+            vat_rate: "none" | "0" | "5" | "8" | "10";
+        };
         LoginInputBody: {
             /**
              * Format: uri
@@ -2106,6 +2581,33 @@ export interface components {
              */
             start_date: string;
             terms: components["schemas"]["ContractTerms"];
+        };
+        NewDoc: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example /api/schemas/NewDoc.json
+             */
+            readonly $schema?: string;
+            /** Format: int64 */
+            customer_id: number;
+            /** Format: date */
+            date: string;
+            /** Format: date */
+            delivery_date: string | null;
+            delivery_terms: string | null;
+            lines: components["schemas"]["LineInput"][];
+            note: string | null;
+            /** Format: int64 */
+            org_unit_id: number;
+            payment_terms: string | null;
+            /**
+             * Format: uuid
+             * @description Generated once per form: sending it again returns the first document
+             */
+            request_id: string;
+            /** Format: date */
+            valid_until: string | null;
         };
         NewLeave: {
             /**
@@ -6211,6 +6713,686 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Role"][] | null;
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "list-customers": {
+        parameters: {
+            query?: {
+                q?: string;
+                active?: "true" | "false";
+                sort?: "code" | "-code" | "name" | "-name";
+                page?: number;
+                page_size?: 20 | 50 | 100;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CustomerList"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "create-customer": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CustomerFields"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CreatedOutputBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "get-customer-actions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Actions"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "get-customer": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Customer"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "update-customer": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CustomerFields"];
+            };
+        };
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "list-items": {
+        parameters: {
+            query?: {
+                q?: string;
+                active?: "true" | "false";
+                page?: number;
+                page_size?: 20 | 50 | 100;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ItemList"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "create-item": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ItemFields"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CreatedOutputBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "update-item": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ItemFields"];
+            };
+        };
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "list-orders": {
+        parameters: {
+            query?: {
+                /** @description Number, customer code or name */
+                q?: string;
+                status?: "draft" | "pending_approval" | "posted" | "cancelled";
+                customer_id?: number;
+                sort?: "date" | "-date" | "number" | "-number" | "total" | "-total";
+                page?: number;
+                page_size?: 20 | 50 | 100;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DocList"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "create-order": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NewDoc"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CreatedOutputBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "get-order-actions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Actions"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "get-order": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Doc"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "update-order": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DocUpdate"];
+            };
+        };
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "delete-order": {
+        parameters: {
+            query: {
+                version: number;
+            };
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "list-quotes": {
+        parameters: {
+            query?: {
+                /** @description Number, customer code or name */
+                q?: string;
+                status?: "draft" | "pending_approval" | "posted" | "cancelled";
+                customer_id?: number;
+                sort?: "date" | "-date" | "number" | "-number" | "total" | "-total";
+                page?: number;
+                page_size?: 20 | 50 | 100;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DocList"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "create-quote": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NewDoc"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CreatedOutputBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "get-quote-actions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Actions"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "get-quote": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Doc"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "update-quote": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DocUpdate"];
+            };
+        };
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "delete-quote": {
+        parameters: {
+            query: {
+                version: number;
+            };
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "create-order-from-quote": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CreatedOutputBody"];
                 };
             };
             /** @description Error */

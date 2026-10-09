@@ -51,7 +51,7 @@ So there is no module status column to keep in step and no transition function t
 
 1. `record.Lock` on the quotation (period lock `FOR SHARE`, then the quotation row `FOR UPDATE`). Every conversion of one quotation, and its cancellation, therefore run one at a time.
 2. If a non-cancelled order already points to the quotation, return that order's id: a retried or doubled click gets the same order.
-3. Otherwise check the quotation is `posted` and not expired, and that the actor may create orders at its org unit, then create a draft order with the same org unit, today's date, and the quotation's customer details, terms and lines exactly as quoted.
+3. Otherwise check the quotation is `posted` and not expired, then create a draft order through the ordinary create path, so with the same checks (the actor may create orders at the org unit and view the customer; customer and items still active): the quotation's org unit, customer, terms and lines with their prices, discounts and VAT rates as quoted, dated today. Like every draft save, the order copies the customer's details as they are now.
 
 Only the order is written; the quotation is only locked, so "one transaction writes one document" holds. Deleting the draft order, or cancelling the order, frees the quotation for a new conversion. Cancelling the quotation is refused while an order from it is not cancelled.
 
