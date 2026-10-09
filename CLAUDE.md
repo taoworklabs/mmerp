@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project status
 
-mmerp is a modular business-management suite for Vietnamese SMBs. Implementation follows `roadmap.md` (Phase 1). Since 2026-10-07 the core is built out first (M11 attachments and discussion, done; M12 notifications, done; M13 PDF printing, next), each capability proven by an HRM screen; M10 (on-premise operations) and the production-readiness gate are on hold (ADR-0023). Phase 0 ended at M9 (home page of product tiles, a header title per area, grouped HRM menu, HRM overview counts; a disabled product with data stays readable), after M8 (every signed-in user reads the org tree; tenant-wide-only roles; approval rules configured per product, inside each product's area) and M6 (payroll computed by a job from captured inputs, checked against the 28 payroll samples; work calendar, legal parameters, legal-entity settings, money rounding, `shared/posting`). M7 is obsolete. HRM is the first product; accounting, custom fields and cloud model B are out of scope until the roadmap says otherwise.
+mmerp is a modular business-management suite for Vietnamese SMBs. Implementation follows `roadmap.md` (Phase 1). Since 2026-10-07 the core is built out first (M11 attachments and discussion, M12 notifications, M13 PDF printing, all done), each capability proven by an HRM screen; since 2026-10-09 Sales is the second product (M14: customers, items, quotations, sales orders; ADR-0027); M10 (on-premise operations) and the production-readiness gate are on hold (ADR-0023). Phase 0 ended at M9 (home page of product tiles, a header title per area, grouped HRM menu, HRM overview counts; a disabled product with data stays readable), after M8 (every signed-in user reads the org tree; tenant-wide-only roles; approval rules configured per product, inside each product's area) and M6 (payroll computed by a job from captured inputs, checked against the 28 payroll samples; work calendar, legal parameters, legal-entity settings, money rounding, `shared/posting`). M7 is obsolete. HRM is the first product and Sales the second; accounting, custom fields and cloud model B are out of scope until the roadmap says otherwise.
 
 The design docs are written in English; keep them in English when you edit them. `docs/archive/` holds documents of finished phases (the Phase 0 roadmap, decided proposals): do not read them unless the user asks; current docs and ADRs already carry everything still in force.
 
@@ -17,6 +17,7 @@ The design docs are written in English; keep them in English when you edit them.
 | Build or change any screen | `ui.md` (finish with its checklist), `frontend.md` |
 | Add a library or tool | `techstack.md` ("Adding a new library" section) |
 | Work on HRM | `products/hrm.md` |
+| Work on Sales | `products/sales.md` |
 | Name anything | `CONTEXT.md` (domain glossary; use its terms exactly) |
 | Make a hard-to-reverse decision | Existing ADRs in `docs/adr/` — do not re-litigate them |
 

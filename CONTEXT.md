@@ -101,3 +101,22 @@ Product description: [products/hrm.md](./products/hrm.md).
 - **Inputs hash** (`inputs_hash`, vi: "Mã băm đầu vào"): a hash of the set of source documents with their versions, legal parameters, work calendar, settings and employee data the payroll used. **Sources changed** (vi: "Nguồn đã đổi") when the recomputed hash differs from the stored one; the payroll then cannot be submitted for approval or finalized.
 - **Payroll samples** (vi: "Bộ mẫu lương"): sample payroll cases with the expected value of every item, used as the payroll acceptance test ([docs/payroll-samples](./docs/payroll-samples/README.md)).
 - **Initial import** (vi: "Nhập ban đầu"): loading the organisation's existing data (employees, dependants, contracts in effect) into the system when they start using it. Contracts imported this way take effect immediately, without approval. Only possible while the legal entity has no finalized pay period. Done in M10.
+
+## Sales
+
+Product description: [products/sales.md](./products/sales.md).
+
+- **Customer** (`sales.customer`, vi: "Khách hàng"): a party the organisation sells to, a company or a person. Has an **owning org unit** that decides who sees it. Not synonymous with User.
+- **Customer code** (`code`, vi: "Mã khách hàng"): set by the user, unique within the tenant, case-insensitive.
+- **Item** (`sales.items`, vi: "Hàng hóa, dịch vụ"): one entry of the catalogue of what is sold, goods or a service alike: code, name, unit, default unit price, default VAT rate. Tenant-wide.
+- **Quotation** (`sales.quote`, vi: "Báo giá"): a document offering items to a customer at stated prices until its validity date (`valid_until`). `posted` means approved.
+- **Sales order** (`sales.order`, vi: "Đơn bán hàng"): a document recording what a customer ordered. `posted` means confirmed. Created from a quotation or directly.
+- **Line** (vi: "Dòng hàng"): one item on a quotation or order: description, quantity, unit price, discount, VAT rate, and the amounts computed from them.
+- **Discount** (vi: "Chiết khấu"): a percentage off a line's amount, 0 to 100. There is no document-level discount.
+- **VAT rate** (`vat_rate`, vi: "Thuế suất GTGT"): `none` (not subject to VAT, "không chịu thuế"), `0`, `5`, `8` or `10` %.
+- **Subtotal, discount total, VAT total, total** (vi: "Cộng tiền hàng, Tổng chiết khấu, Tiền thuế GTGT, Tổng thanh toán"): sums of a document's lines; total is subtotal less discount total plus VAT total.
+- **Ordered** (vi: "Đã lên đơn"): a quotation that a non-cancelled sales order comes from. Derived, not stored.
+- **Expired** (vi: "Hết hiệu lực"): a quotation whose validity date is before today in the tenant time zone. Derived, not stored. An expired quotation cannot become an order.
+- **Create sales order** (vi: "Tạo đơn bán hàng"): turning a posted, unexpired quotation into a draft order with the same customer details, terms and lines. Repeating it returns the same order while that order is not cancelled.
+- **Request id** (`request_id`, vi: "Mã yêu cầu"): a UUID a create form generates once; sending the same create twice returns the first document.
+- **Sales roles** (vi: "Vai trò bán hàng"): `staff` and `manager` (customers, quotations and orders, view and edit; same permissions, two names for approval routing), `viewer` (view), `catalog_admin` (items; tenant-wide only), `approval_admin` (`sales.approval.manage`; tenant-wide only). See [ADR-0027](./docs/adr/0027-sales-product.md).
