@@ -73,7 +73,7 @@ Tools: Go, Node 24+ with pnpm, Docker. The server reads `DATABASE_URL`, `PRODUCT
 | Command | Does |
 | --- | --- |
 | `make gen` | sqlc (`sqlc.yaml`, one entry per module; pinned via `go run`, needs cgo), OpenAPI spec from Huma (`api/openapi.json`), TypeScript types (`web/src/shared/api/schema.gen.ts`); the per-product clients in `shared/api/<product>.ts` are typed views of it |
-| `make lint` | golangci-lint (pinned via `go run`; depguard, forbidigo), `tsc`, ESLint, dependency-cruiser on `web/src` and `web/lint-fixtures` (must report exactly `web/lint-fixtures/expected.json`), colour-literal scan, i18n key check, `queries.sql` schema scan (`scripts/check-queries.mjs`) |
+| `make lint` | golangci-lint (pinned via `go run`; depguard, forbidigo), `tsc`, ESLint, dependency-cruiser on `web/src` and `web/lint-fixtures` (must report exactly `web/lint-fixtures/expected.json`), colour-literal scan, i18n key check, `queries.sql` schema scan (`scripts/check-queries.mjs`, which must also report exactly `scripts/query-fixtures/expected.json`) |
 | `make test` | `go test ./...` and Vitest; starts Postgres via compose unless `TEST_DATABASE_URL` is set |
 | `make e2e` | Playwright (`web/e2e`): builds the app, recreates the `mmerp_e2e` database (psql through the `postgres:18` image), creates the admin, serves `:8090` with `PRODUCTS=hrm` and `:8091` with none (`scripts/e2e-server.sh`) |
 | `make db` | Postgres via compose unless `TEST_DATABASE_URL` is set; `make` exports a dev `ENCRYPTION_KEYS` |

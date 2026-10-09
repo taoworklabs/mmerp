@@ -1,0 +1,11 @@
+// Fixture composition root for check-queries.mjs: sales declares inventory as a
+// dependency, so the check must let sales read inventory and must still refuse the
+// other way round. The .fixture suffix keeps Go from compiling products that do not exist.
+package app
+
+// products maps every product to the products it depends on.
+var products = map[string][]string{
+	"hrm":       nil,
+	"inventory": nil,
+	"sales":     {"inventory"},
+}
