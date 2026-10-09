@@ -17,11 +17,12 @@ This directory describes the shared core of a modular business-management suite:
 
 | Plan | Document |
 | --- | --- |
-| From core to the first HRM release | [roadmap.md](./roadmap.md) |
+| From core to the first HRM release, then Sales | [roadmap.md](./roadmap.md) |
 
 | Product | Document |
 | --- | --- |
 | HRM | [products/hrm.md](./products/hrm.md) |
+| Sales | [products/sales.md](./products/sales.md) |
 
 ## Principles
 
@@ -33,7 +34,7 @@ This directory describes the shared core of a modular business-management suite:
 - **One shape, isolated by tools.** Every module follows `handler → service → store`, has its own Postgres schema and keeps business logic in the service. Isolation rules that a compiler, linter or CI can check are checked by tools; the rest have contract tests or are stated explicitly as conventions (see [backend.md](./backend.md#isolation)).
 - **Money is `bigint` in the currency's minor unit** (for VND, the đồng). Every rounding goes through a single function in `platform`. The rounding rules are in [ADR-0006](./docs/adr/0006-money-rounding.md).
 - **Decisions are recorded as ADRs.** Anything hard to reverse (tenancy, module boundaries, shared entities, core changes) needs an ADR in `docs/adr/` before code is written.
-- **One product at a time, core first, proven by HRM.** The first product is HRM ([products/hrm.md](./products/hrm.md)). The core is built out fully first, but each core capability is only done when a real HRM flow uses it ([ADR-0023](./docs/adr/0023-build-core-first.md)). The next product starts only when the roadmap says so.
+- **One product at a time, core first, proven by HRM.** The first product is HRM ([products/hrm.md](./products/hrm.md)). The core is built out fully first, but each core capability is only done when a real HRM flow uses it ([ADR-0023](./docs/adr/0023-build-core-first.md)). The next product starts only when the roadmap says so; Sales is the second ([ADR-0027](./docs/adr/0027-sales-product.md)).
 
 ## Not doing
 

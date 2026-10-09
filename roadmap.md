@@ -1,6 +1,6 @@
 # Roadmap Phase 1: a complete core
 
-Scope: build the core capabilities still missing before production use, each proven by HRM ([ADR-0023](./docs/adr/0023-build-core-first.md)). M10 and the production-readiness gate are on hold. Excludes accounting, custom fields, cloud model B, and other products.
+Scope: build the core capabilities still missing before production use, each proven by HRM ([ADR-0023](./docs/adr/0023-build-core-first.md)), then open Sales as the second product ([ADR-0027](./docs/adr/0027-sales-product.md)). M10 and the production-readiness gate are on hold. Excludes accounting, custom fields, cloud model B, and products other than HRM and Sales.
 
 Phase 0 (M0 to M9: foundation, sign-in, organisation and permissions, document lifecycle, contracts, overtime, timekeeping, payroll calculation, administrative permissions, navigation shell) is finished and archived in [docs/archive/roadmap-phase-0.md](./docs/archive/roadmap-phase-0.md). You do not need to read that file when working on Phase 1.
 
@@ -25,7 +25,7 @@ A milestone only passes when what it adds keeps the contract intact from table t
 - **Module-specific status:** each status column has a single transition function, with tests for forbidden transitions.
 
 ```
-M11 Attachments and discussion ─► M12 Notifications ─► M13 PDF printing
+M11 Attachments and discussion ─► M12 Notifications ─► M13 PDF printing ─► M14 Sales
    ┄► M10 On-premise operations ┄► [Gate: production readiness]   (on hold)
 ```
 
@@ -94,6 +94,25 @@ M11 Attachments and discussion ─► M12 Notifications ─► M13 PDF printing
 - Vietnamese diacritics display correctly in the PDF on a machine without Internet.
 - Bulk printing the payslips of a 3,000-employee payroll runs as a job and does not block the request.
 
+## M14. Sales
+
+**Goal:** a business of any trade keeps its customers and item catalogue, and issues quotations and sales orders through the same lifecycle, approval, printing, attachments and notifications as HRM ([ADR-0027](./docs/adr/0027-sales-product.md), [products/sales.md](./products/sales.md)).
+
+Vertical slices, each from migration to screen:
+
+1. **Sales area and customers.** Product `sales` (startup check, `depguard`, query scan), roles, the `sales` area with its API client (issue #14), customers: list with search, create, edit, deactivate, scoped by owning org unit; attachments and discussion on a customer.
+   Done when: a `staff` user of team A creates a customer and sees it; a `staff` user of team B gets not found on it, even by id; with Sales disabled the customer reads but every write is refused.
+2. **Item catalogue.** Items list and modal editor for `catalog_admin`; read-only for others.
+   Done when: a duplicate code is refused with `item_code_taken`; a user without `sales.item.manage` cannot create one through the API.
+3. **Quotations.** Draft with lines, amounts computed by the server in both rounding modes, customer and item details copied, approval with `amount` and `max_discount`, approval rules page, inbox preview, attachments and discussion; duplicate creates return the first document.
+   Done when: `recordtest` passes for `sales.quote`; totals match [products/sales.md](./products/sales.md#amounts) for `line` and `total`; editing the customer after posting leaves the quotation unchanged; a quotation with a 15 % discount waits for the manager under a "discount above 10 %" rule.
+4. **Printing quotations and orders.** Templates `sales.quote` and `sales.order` with editable text blocks.
+   Done when: a posted quotation reprints identically after its customer and the legal entity are edited; a user who cannot view it cannot print it.
+5. **Sales orders.** Direct entry and creation from a posted quotation, idempotent; cancelling a quotation with a live order refused; derived "ordered" and "expired" shown on quotations.
+   Done when: `recordtest` passes for `sales.order`; creating the order twice gives one order; an expired quotation cannot become an order; cancelling the order lets the quotation become an order again.
+6. **End to end.** Playwright for the main flow and the team boundary; HRM suites unchanged and green.
+   Done when: Playwright drives customer → item → quotation → manager approval from the inbox → PDF → order → confirmed order, and team B's user sees none of it.
+
 ## M10. On-premise operations
 
 **On hold** (2026-10-07); nothing is pulled forward ([ADR-0023](./docs/adr/0023-build-core-first.md)).
@@ -149,10 +168,10 @@ Not numbered; the checks before real data goes in. Real data enters the system o
 | --- | --- |
 | Custom fields | When a tenant needs something specific |
 | Pay periods other than the calendar month, time clocks, salary payment through banks, electronic social insurance (BHXH điện tử) | Per [products/hrm.md](./products/hrm.md#scope) |
-| Probe product (one document type, not released) to find HRM-specific assumptions still in the core | When M13 is done; the points found so far are in issues #1 to #15 |
-| Accounting, a second product | When there is a real need for it ([README.md](./README.md#principles)) |
+| Accounting, a third product | When there is a real need for it ([README.md](./README.md#principles)) |
+| Sales: CRM pipeline, stock, delivery, payment, invoices and e-invoices, foreign currencies, price lists | Per [products/sales.md](./products/sales.md#scope) |
 | Cloud model B | When operating cloud model A becomes overloaded ([tenancy.md](./tenancy.md#cloud-path-from-a-to-b)) |
-| Product switcher | When there is a second product |
+| Product switcher in the header | When moving between HRM and Sales through the home page proves slow |
 | Shared work page | When users need one place to gather work beyond the approval inbox |
 | Timekeeping and payroll status on the HRM overview | When users ask for it; needs splitting by salary view permission |
 | Org structure with effective dates and history (moving units by date, keeping old context) | When a tenant needs restructuring; needs its own ADR. Blocking documents from changing legal entity when a node moves already exists |
