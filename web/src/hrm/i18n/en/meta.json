@@ -117,5 +117,6 @@
   "hrm.error.payroll_sources_changed": "The source data changed since the computation. Compute again, then send.",
   "hrm.error.payroll_already_posted": "Another payroll of this period is posted. Cancel it first.",
   "hrm.error.payroll_not_holding_period": "This payroll does not hold its period, so it cannot be cancelled.",
-  "hrm.error.invalid_payroll_adjustment": "Invalid adjustment: a non-zero amount, an original period before the payroll's, an employee of the payroll's legal entity."
+  "hrm.error.invalid_payroll_adjustment": "Invalid adjustment: a non-zero amount, an original period before the payroll's, an employee of the payroll's legal entity.",
+  "hrm.payslip.name": "Payslip"
 }

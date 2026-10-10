@@ -25,7 +25,7 @@
   "core.inbox.empty_description": "Documents to approve show up here.",
   "core.nav.jobs": "Background jobs",
   "core.jobs.title": "My background jobs",
-  "core.jobs.description": "This account's own Excel imports and exports, kept for 7 days.",
+  "core.jobs.description": "This account's own Excel imports and exports and PDF prints, kept for 7 days.",
   "core.jobs.refresh": "Refresh",
   "core.jobs.kind": "Job",
   "core.jobs.kind.dataio.import": "Excel import",
@@ -42,7 +42,7 @@
   "core.jobs.imported": "{{rows}} rows imported",
   "core.jobs.row_errors": "See {{count}} rows with errors",
   "core.jobs.empty": "No background jobs yet.",
-  "core.jobs.empty_description": "Import or export Excel on a business screen, then follow it here.",
+  "core.jobs.empty_description": "Import, export Excel or print on a business screen, then follow it here.",
   "core.jobs.reason": "See why",
   "core.jobs.failed_title": "Background job failed",
   "core.nav.settings": "Legal entity settings",
@@ -78,5 +78,6 @@
   "core.jobs.kind.dataio.cleanup": "Import and export cleanup",
   "core.jobs.kind.hrm.payroll_compute": "Payroll computation",
   "core.nav.mail_server": "Mail server",
-  "core.nav.print_templates": "Print templates"
+  "core.nav.print_templates": "Print templates",
+  "core.jobs.kind.print": "Print to PDF"
 }
