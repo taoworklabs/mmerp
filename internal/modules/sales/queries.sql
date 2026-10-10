@@ -15,7 +15,8 @@ FROM sales.customers c JOIN iam.org_units u ON u.id = c.org_unit_id
 WHERE c.id = $1;
 
 -- name: LockCustomer :exec
-SELECT 1 FROM sales.customers WHERE id = $1 FOR UPDATE;
+-- NO KEY: documents referencing the customer stay creatable meanwhile.
+SELECT 1 FROM sales.customers WHERE id = $1 FOR NO KEY UPDATE;
 
 -- name: CustomerActive :one
 -- Read under a share lock, so the customer cannot be deactivated while a document posts.
