@@ -23,12 +23,18 @@ function areaRoute(area: AreaManifest): RouteObject | null {
 
 const DevUi = lazy(() => import('./DevUi'))
 
+// Every user's own pages: at the root from home, and inside each area so its menu stays.
+const own: RouteObject[] = [
+  { path: 'inbox', Component: InboxPage },
+  { path: 'jobs', Component: JobsPage },
+  { path: 'notifications', Component: NotificationsPage },
+]
+
 export function createAppRouter(areas: AreaManifest[]) {
   const children: RouteObject[] = [
     { index: true, element: <HomePage areas={areas} /> },
-    { path: 'inbox', Component: InboxPage },
-    { path: 'jobs', Component: JobsPage },
-    { path: 'notifications', Component: NotificationsPage },
+    ...own,
+    ...areas.flatMap((a) => own.map((r) => ({ ...r, path: `${a.basePath.slice(1)}/${r.path}` }))),
     // Signed in already: continue where the login would have gone.
     { path: 'login', element: <Navigate to={nextFromLocation() ?? '/'} replace /> },
     ...areas.map(areaRoute).filter((r) => r !== null),
