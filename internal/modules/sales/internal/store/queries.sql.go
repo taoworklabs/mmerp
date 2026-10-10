@@ -737,9 +737,10 @@ func (q *Queries) LiveOrder(ctx context.Context, quoteID pgtype.Int8) (LiveOrder
 }
 
 const lockCustomer = `-- name: LockCustomer :exec
-SELECT 1 FROM sales.customers WHERE id = $1 FOR UPDATE
+SELECT 1 FROM sales.customers WHERE id = $1 FOR NO KEY UPDATE
 `
 
+// NO KEY: documents referencing the customer stay creatable meanwhile.
 func (q *Queries) LockCustomer(ctx context.Context, id int64) error {
 	_, err := q.db.Exec(ctx, lockCustomer, id)
 	return err
