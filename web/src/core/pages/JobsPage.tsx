@@ -15,6 +15,10 @@ import { ContentSkeleton, EmptyState, ErrorState } from '@/shared/ui/states'
 import { StatusBadge, type StatusTone } from '@/shared/ui/StatusBadge'
 import { icon } from '@/shared/ui/theme'
 
+// A print runs as an export whose target is printing.<template>; the template is named
+// after its record type (or its own name, like hrm.payslip).
+const printed = (j: Job) => (j.target?.startsWith('printing.') ? j.target.slice('printing.'.length) : null)
+
 const tone: Record<Job['state'], StatusTone> = { queued: 'neutral', running: 'info', retrying: 'warning', completed: 'positive', failed: 'negative' }
 
 // The user's own background jobs (imports, exports) of the last 7 days, newest first; an
@@ -65,9 +69,14 @@ export default function JobsPage() {
     )
   }
 
+  const targetName = (j: Job) => {
+    const target = printed(j) ?? j.target
+    return target ? t(`${target}.name`, { defaultValue: target }) : ''
+  }
+
   const columns: Column<Job>[] = [
-    { key: 'kind', header: t('core.jobs.kind'), role: 'title', render: (j) => t(`core.jobs.kind.${j.kind}`, { defaultValue: j.kind }) },
-    { key: 'target', header: t('core.jobs.target'), role: 'meta', render: (j) => (j.target ? t(`${j.target}.name`, { defaultValue: j.target }) : '') },
+    { key: 'kind', header: t('core.jobs.kind'), role: 'title', render: (j) => (printed(j) ? t('core.jobs.kind.print') : t(`core.jobs.kind.${j.kind}`, { defaultValue: j.kind })) },
+    { key: 'target', header: t('core.jobs.target'), role: 'meta', render: targetName },
     { key: 'created_at', header: t('core.jobs.created_at'), role: 'meta', render: (j) => formatDateTime(j.created_at, me.timezone) },
     { key: 'state', header: t('core.jobs.state'), role: 'status', render: (j) => <StatusBadge tone={tone[j.state]}>{t(`core.jobs.state.${j.state}`)}</StatusBadge> },
     ...(system ? [{ key: 'attempts', header: t('core.jobs.attempts'), role: 'meta' as const, numeric: true, render: (j: Job) => formatNumber(j.attempts) }] : []),

@@ -117,5 +117,6 @@
   "hrm.error.payroll_sources_changed": "Dữ liệu nguồn đã thay đổi kể từ lần tính. Bấm Tính lại rồi gửi lại.",
   "hrm.error.payroll_already_posted": "Kỳ lương này đã có một bảng lương được chốt. Hủy bảng lương đó trước.",
   "hrm.error.payroll_not_holding_period": "Bảng lương này không phải bảng lương đang giữ kỳ, nên không hủy được.",
-  "hrm.error.invalid_payroll_adjustment": "Khoản điều chỉnh không hợp lệ: số tiền khác 0, kỳ gốc trước kỳ lương, nhân viên thuộc pháp nhân của bảng lương."
+  "hrm.error.invalid_payroll_adjustment": "Khoản điều chỉnh không hợp lệ: số tiền khác 0, kỳ gốc trước kỳ lương, nhân viên thuộc pháp nhân của bảng lương.",
+  "hrm.payslip.name": "Phiếu lương"
 }

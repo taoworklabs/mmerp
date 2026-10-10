@@ -25,7 +25,7 @@
   "core.inbox.empty_description": "Chứng từ cần duyệt sẽ hiện ở đây.",
   "core.nav.jobs": "Việc chạy nền",
   "core.jobs.title": "Việc chạy nền của tôi",
-  "core.jobs.description": "Các lần nhập và xuất Excel của chính tài khoản này, giữ trong 7 ngày.",
+  "core.jobs.description": "Các lần nhập, xuất Excel và in PDF của chính tài khoản này, giữ trong 7 ngày.",
   "core.jobs.refresh": "Làm mới",
   "core.jobs.kind": "Việc",
   "core.jobs.kind.dataio.import": "Nhập Excel",
@@ -42,7 +42,7 @@
   "core.jobs.imported": "Đã nhập {{rows}} dòng",
   "core.jobs.row_errors": "Xem {{count}} dòng lỗi",
   "core.jobs.empty": "Chưa có việc chạy nền nào.",
-  "core.jobs.empty_description": "Nhập hoặc xuất Excel ở một màn hình nghiệp vụ, rồi theo dõi tại đây.",
+  "core.jobs.empty_description": "Nhập, xuất Excel hoặc in ở một màn hình nghiệp vụ, rồi theo dõi tại đây.",
   "core.jobs.reason": "Xem lý do",
   "core.jobs.failed_title": "Việc chạy nền thất bại",
   "core.nav.settings": "Thiết lập pháp nhân",
@@ -78,5 +78,6 @@
   "core.jobs.kind.dataio.cleanup": "Dọn file nhập, xuất",
   "core.jobs.kind.hrm.payroll_compute": "Tính lương",
   "core.nav.mail_server": "Máy chủ mail",
-  "core.nav.print_templates": "Mẫu in"
+  "core.nav.print_templates": "Mẫu in",
+  "core.jobs.kind.print": "In PDF"
 }
