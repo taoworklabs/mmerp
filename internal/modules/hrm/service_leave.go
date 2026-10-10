@@ -322,7 +322,7 @@ func leaveChanges(old LeaveFields, oldType string, n LeaveFields, newType string
 		{Field: "leave_type", Old: oldType, New: newType},
 		{Field: "start_date", Old: old.StartDate, New: n.StartDate},
 		{Field: "end_date", Old: old.EndDate, New: n.EndDate},
-		{Field: "days", Old: old.Days, New: n.Days},
+		{Field: "days", Old: old.Days, New: plain(n.Days)},
 		{Field: "reason", Old: old.Reason, New: n.Reason},
 	}
 }
