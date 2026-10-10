@@ -171,6 +171,27 @@ A single rule:
 - **A hook failure does not break the main operation, unless explicitly chosen.** By default, a hook only puts a River job on the queue with `platform.Enqueue` in the same transaction: the job is guaranteed to be written if the main operation succeeds, and a failure while processing the job is retried without rolling back the main operation. Synchronous hooks (whose failure rolls back the whole operation) are used only for invariants that must be strictly consistent, and the reason must be recorded in an ADR.
 - **No events.** A hook is a direct call to a known interface, not an event bus.
 
+## Calling the core
+
+A product module reaches the core only through these entry points. A need none of them covers goes into the core first, proven by the product that needs it, rather than into a helper the next product would copy.
+
+| Need | Entry point |
+| --- | --- |
+| Permission at org units | `iam.Allowed` / `iam.Require(ctx, product, perm, unit, more...)` (every unit must be in scope); lists filter with `iam.Scope`; tenant-wide catalogues use `iam.RequireTenantWide` |
+| Who may do what with a record | The record type's `Can`; other modules ask `record.Can`, or `record.Visible` to answer not found |
+| Document lifecycle | `record.Create` / `Edit` / `Delete` before the module's own rows, in the same transaction; status changes through `record`'s routes, reacting in `OnTransition` and `BeforeSubmit`; `record.Lock` before writing rows that depend on a document without changing it |
+| `allowed_actions` | `record.DocumentActions` for lifecycle actions, `record.AllowedActions` for the rest |
+| Writes while a product is disabled | `platform.ProductGate`; `record`, the route middleware, settings, jobs, prints, imports and exports apply it by the registered product |
+| Audit | `audit.Record` / `RecordFor` / `RecordChanges` in the change's transaction; `record.RestrictHistory` keeps an entry off a record's timeline for who may not see it |
+| Today and settings | `setting.Today`; `setting.GetFor`; a product's legal-entity settings registered with `RegisterLegalEntityKey(product, …)` |
+| Errors | `*platform.Error` sentinels with stable codes; `platform.Violates(err, constraint)` maps a constraint to one; any other error answers `internal_error` and is logged |
+| Lists | Filters embed `platform.Paging` |
+| Jobs, prints, imports, exports | `platform.Enqueue`; `printing.Register`; `dataio.RegisterImport` / `RegisterExport` |
+| Attachments, discussion, notifications | Come with the record type; `notification.Send` for a module's own events |
+| A disabled product stays shown | Documents count by themselves; a catalog type answers `HasData` |
+
+Registration is checked when the app is composed: a record type is named `<product>.<type>`, a print template takes its product from its record type, an import or export names its product, a product's routes sit under `/<product>/`, and its manifest names a product of the `products` map. Each mistake would otherwise skip the product gate or the frontend's per-product client without a sound.
+
 ## Extension and customisation
 
 In order of preference, stop at the first approach that solves the problem:
