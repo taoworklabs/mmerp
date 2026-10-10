@@ -15,7 +15,7 @@ const dirsOf = (root, tier) =>
 // check and the running app can never disagree about who may read whom.
 function productDeps(appFile) {
   const src = readFileSync(appFile, 'utf8')
-  const start = src.indexOf('map[string][]string{')
+  const start = src.indexOf('var products = map[string][]string{')
   if (start < 0) throw new Error(`check-queries: no product dependency map in ${appFile}`)
   const open = src.indexOf('{', start)
   let end = src.length

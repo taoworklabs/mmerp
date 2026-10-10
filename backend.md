@@ -204,6 +204,6 @@ Terms live in [CONTEXT.md](./CONTEXT.md): one section for the core and one per p
    - the business lines used for posting.
 2. Add terminology entries to `CONTEXT.md`.
 3. Migration creating the schema and tables, `queries.sql`, the sqlc entry in `sqlc.yaml`.
-4. Write the service, handler and `module.go`. Wire it in `internal/app`, including deps and hooks (a hook no module implements gets a no-op). From the second product on, add a `depguard` rule for each product module forbidding imports of other products' modules. If the module has document types, run the `recordtest` suite for each.
+4. Write the service, handler and `module.go`. Wire it in `internal/app`, including deps and hooks (a hook no module implements gets a no-op). Add the product's `depguard` rule, the same shape as the others (lax mode: allow the product's own package, deny `internal/modules`), so no existing rule changes. If the module has document types, run the `recordtest` suite for each.
 5. Run `make gen`, then build the frontend area (see [frontend.md](./frontend.md#adding-an-area)).
 6. Attach the module to a product, and declare which products that product depends on (see [platform.md](./platform.md#enabled-products)).
