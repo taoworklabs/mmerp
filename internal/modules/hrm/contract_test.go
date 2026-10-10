@@ -195,6 +195,17 @@ func TestContractPermissions(t *testing.T) {
 	if _, err := f.hrm.Contract(f.m, id); errCode(err) != "not_found" {
 		t.Fatalf("manager: %v", err)
 	}
+	// HR sends a contract without seeing its terms, and takes it back the same way.
+	f.check(f.appr.SaveRule(f.admin, "hrm.contract", approval.RuleInput{
+		Steps: []approval.Step{{Approver: approval.Approver{Kind: "role", Product: "hrm", Role: "hr"}}}, MaxLevels: 1, FallbackProduct: "hrm", FallbackRole: "hr",
+	}))
+	ref := record.Ref{Type: "hrm.contract", ID: id}
+	f.check(f.rec.Transition(f.hr, ref, 1, record.Posted))
+	sent, err := f.hrm.Contract(f.hr, id)
+	if err != nil || !equal(sent.AllowedActions, "withdraw") {
+		t.Fatalf("hr after sending: %+v %v", sent.AllowedActions, err)
+	}
+	f.check(f.rec.Transition(f.hr, ref, sent.Version, record.Draft))
 	// With payroll every read of the terms is audited, and the contract may be printed.
 	before := f.auditCount("hrm.contract_terms_viewed")
 	if c := f.contract(id); c.Terms == nil || c.Terms.Salary != 10_000_000 || !equal(c.AllowedActions, "edit", "delete", "submit", "print") {

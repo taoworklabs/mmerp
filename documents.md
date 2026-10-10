@@ -123,7 +123,7 @@ Because of the row lock and the `version` check, if two requests post the same d
 Each submission is a separate **approval instance**, with an id:
 
 - When the gate answers "approval needed", `approval` creates an approval instance (`approval.instances`), records the submitted `version`, and returns the id. `record` stores this id in `record.documents.approval_ticket`.
-- **Withdrawn** (by the submitter, needs `Can(edit)`) or **rejected**: the document returns to `draft`, `approval_ticket` is cleared, `version` increases, and that approval instance is closed. On rejection, `approval` calls `record.Reject(ctx, ref, ticket, version)`, with the same checks as `CompleteApproval` below.
+- **Withdrawn** (by the submitter, needs `Can(post)`, the right that sent it) or **rejected**: the document returns to `draft`, `approval_ticket` is cleared, `version` increases, and that approval instance is closed. On rejection, `approval` calls `record.Reject(ctx, ref, ticket, version)`, with the same checks as `CompleteApproval` below.
 - **Completed**: when the last approval step is approved, `approval` calls `record.CompleteApproval(ctx, ref, ticket, version)` (`version` is the version at submission), in the same transaction that writes the approval decision. `record` locks in the order above and checks, then runs steps 3 and 4 of `Transition`. This step does not call `Can(post)`, because approval permission is decided by `approval`'s rules. On failure, handling depends on the kind of error:
 
   | Kind of error | Example | Handling |
