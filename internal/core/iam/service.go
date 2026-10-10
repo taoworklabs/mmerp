@@ -27,12 +27,13 @@ type Service struct {
 	d          Deps
 	roles      map[string]map[string][]string // product → role → permissions
 	tenantWide map[[2]string]bool             // product, role
+	sensitive  map[string]bool                // permissions core.admin does not imply
 	tree       TreeHook
 	data       DataProducts
 }
 
 func NewService(d Deps) *Service {
-	s := &Service{d: d, roles: map[string]map[string][]string{}, tenantWide: map[[2]string]bool{}}
+	s := &Service{d: d, roles: map[string]map[string][]string{}, tenantWide: map[[2]string]bool{}, sensitive: map[string]bool{}}
 	s.RegisterRoles("core", map[string][]string{"admin": {PermManageOrg, PermManageUsers, PermManagePeriods, PermManageApproval, PermMonitorJobs, PermManageMail, PermManagePrint, setting.PermManage}}, "admin")
 	return s
 }
@@ -287,6 +288,25 @@ func (s *Service) RegisterRoles(product string, roles map[string][]string, tenan
 	}
 }
 
+// RegisterSensitive marks permissions of a product that guard sensitive data: unlike its
+// other permissions, a tenant administrator holds them only through a role granted to them.
+// Call it while wiring modules, before serving.
+func (s *Service) RegisterSensitive(product string, permissions ...string) {
+	for _, p := range permissions {
+		s.sensitive[p] = true
+	}
+}
+
+// adminImplies reports whether a tenant-wide core.admin holds perm of product without a role.
+func (s *Service) adminImplies(product, perm string) bool {
+	return product != "core" && !s.sensitive[perm]
+}
+
+// isAdmin: core.admin granted tenant-wide (it can be granted no other way).
+func isAdmin(grants []store.UserRolesRow) bool {
+	return slices.ContainsFunc(grants, func(g store.UserRolesRow) bool { return g.Product == "core" && g.Role == "admin" && !g.OrgUnitID.Valid })
+}
+
 // Roles lists every registered role.
 func (s *Service) Roles() []Role {
 	var out []Role
@@ -342,6 +362,9 @@ func (s *Service) scope(ctx context.Context, product, permission string) (Scope,
 	if err != nil {
 		return Scope{}, err
 	}
+	if isAdmin(grants) && s.adminImplies(product, permission) && s.registered(product, permission) {
+		return Scope{All: true}, nil
+	}
 	var roots []int64
 	for _, g := range grants {
 		if g.Product != product || !slices.Contains(s.roles[product][g.Role], permission) {
@@ -357,6 +380,16 @@ func (s *Service) scope(ctx context.Context, product, permission string) (Scope,
 	}
 	units, err := store.New(platform.DBFrom(ctx)).Subtrees(ctx, roots)
 	return Scope{Units: units}, err
+}
+
+// registered: some role of product grants permission, so a mistyped name never opens.
+func (s *Service) registered(product, permission string) bool {
+	for _, perms := range s.roles[product] {
+		if slices.Contains(perms, permission) {
+			return true
+		}
+	}
+	return false
 }
 
 // RequireCore fails with forbidden unless the actor has a tenant-wide core permission.
@@ -382,6 +415,17 @@ func (s *Service) permissions(ctx context.Context, userID int64) (map[string][]s
 		return nil, err
 	}
 	out := map[string][]string{}
+	if isAdmin(grants) {
+		for product, roles := range s.roles {
+			for _, perms := range roles {
+				for _, p := range perms {
+					if s.adminImplies(product, p) && !slices.Contains(out[product], p) {
+						out[product] = append(out[product], p)
+					}
+				}
+			}
+		}
+	}
 	for _, g := range grants {
 		for _, p := range s.roles[g.Product][g.Role] {
 			if !slices.Contains(out[g.Product], p) {

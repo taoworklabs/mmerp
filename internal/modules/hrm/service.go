@@ -57,6 +57,8 @@ func NewService(d Deps) *Service {
 		// Approval rules apply tenant-wide, so the role is granted only tenant-wide.
 		"approval_admin": {PermApprovalManage},
 	}, "approval_admin")
+	// Sensitive fields and every person's pay need a role of their own, even for administrators.
+	d.IAM.RegisterSensitive("hrm", PermSensitive, PermSalaryView)
 	d.Record.Register(record.Type{Code: employeeType, Product: "hrm", Kind: record.Catalog, Can: s.can})
 	d.Record.Register(record.Type{
 		Code: leaveType, Product: "hrm", Kind: record.Document, NumberPrefix: "NP",

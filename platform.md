@@ -8,6 +8,7 @@ Concerns shared by every product. Deployment is mainly on-premise on the organis
 - Roles are assigned per product and per org unit scope: `iam.user_roles (id, user_id, product, role, org_unit_id)`.
   - `product = 'core'` is for core roles (tenant administration, user management).
   - Any product can declare roles that are only assigned tenant-wide (e.g. `core.admin`, `hrm.approval_admin`); assigning them at an org unit gives the error `role_tenant_wide`.
+  - `core.admin` also holds, tenant-wide, every permission of every product except those the product declares sensitive (`iam.RegisterSensitive`, e.g. `hrm.salary.view`); those still need a role ([ADR-0028](./docs/adr/0028-tenant-admin-holds-business-permissions.md)). Role-based approvers still come from role grants only.
   - An empty `org_unit_id` means tenant-wide. A permission assigned at an org unit applies to that unit's whole subtree.
   - The unique constraint uses `NULLS NOT DISTINCT` (Postgres 15+) so there are no two identical rows when `org_unit_id` is empty.
   - Role names and each role's permissions are declared in code by the product module (the `iam` service's `RegisterRoles(product, roles, tenantWide...)` method); `iam` stores role grants and answers the question "at which org units does the user have permission Q of product P" (`Scope`) ([ADR-0010](./docs/adr/0010-org-tree-and-roles.md)).

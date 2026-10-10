@@ -13,6 +13,7 @@ A term used by two products must have the same meaning, or the two must use diff
 - **Legal entity** (vi: "Pháp nhân"): an org unit with `kind = company`, carrying a tax code.
 - **Org unit kind** (`kind`, vi: "Loại đơn vị tổ chức"): `group` (group, the root of a corporate group, above the legal entities), `company` (legal entity), `branch` (branch), `department` (department). Branches and departments always sit under exactly one legal entity.
 - **Role** (vi: "Vai trò"): a set of permissions declared in code by a product (`hrm.hr`), granted to a user at an org unit or tenant-wide. A grant at a unit applies to its whole subtree. Some roles can only be granted tenant-wide (e.g. `hrm.approval_admin`).
+- **Tenant administrator** (`core.admin`, vi: "Quản trị viên"): the role that administers the tenant and holds every product permission except the sensitive ones, which still need a role ([ADR-0028](./docs/adr/0028-tenant-admin-holds-business-permissions.md)).
 - **Permission** (vi: "Quyền"): `<product>.<object>.<action>`, e.g. `hrm.employee.view`. Users get permissions through roles; individual permissions are never granted.
 - **Scope** (`Scope`, vi: "Phạm vi"): the org units where a user has a permission, expanded to their subtrees, or the tenant-wide flag.
 - **Sensitive field** (vi: "Trường nhạy cảm"): a field encrypted in the database; viewing it needs a dedicated permission and every view is audited.
