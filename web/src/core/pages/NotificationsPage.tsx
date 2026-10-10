@@ -34,7 +34,6 @@ export default function NotificationsPage() {
     onError: (err) => notifyError(errorText(t, err)),
   })
 
-  const target = (n: Notification) => (n.job_id ? '/jobs' : n.record_type && n.record_id ? linkOf(n.record_type, n.record_id) : null)
   const open = async (n: Notification) => {
     if (!n.read) {
       try {
@@ -45,8 +44,12 @@ export default function NotificationsPage() {
       }
       void refresh()
     }
-    const to = target(n)
-    if (to) void navigate(to)
+    // Jobs stay in the current area, like this page.
+    if (n.job_id) void navigate('../jobs', { relative: 'path' })
+    else if (n.record_type && n.record_id) {
+      const to = linkOf(n.record_type, n.record_id)
+      if (to) void navigate(to)
+    }
   }
   const describe = (n: Notification) => {
     if (n.job_id) return t('core.notifications.job')

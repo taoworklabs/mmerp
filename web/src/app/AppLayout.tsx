@@ -25,7 +25,10 @@ export function AppLayout({ areas }: { areas: AreaManifest[] }) {
   const me = useMe()
   const { pathname } = useLocation()
   const area = areas.find((a) => inArea(a, pathname))
-  // Home and the shared pages (notifications, inbox, jobs) have no sidebar.
+  // Notifications, inbox and jobs open inside the current area; from home, at the root.
+  const own = (page: string) => (area ? join(area.basePath, page) : `/${page}`)
+  const onOwn = ['notifications', 'inbox', 'jobs'].some((page) => pathname === own(page))
+  // Home has no sidebar.
   const nav = area ? area.nav.filter((item) => can(me, item.permission)) : []
   const [drawer, { toggle: toggleDrawer, close: closeDrawer }] = useDisclosure()
   // Capture phase: the burger's tooltip consumes Escape before it bubbles.
@@ -105,9 +108,9 @@ export function AppLayout({ areas }: { areas: AreaManifest[] }) {
               <Indicator label={unread} size={16} disabled={unread === 0} offset={4}>
                 <ActionIcon
                   component={Link}
-                  to="/notifications"
-                  variant={pathname === '/notifications' ? 'light' : 'subtle'}
-                  color={pathname === '/notifications' ? undefined : 'gray'}
+                  to={own('notifications')}
+                  variant={pathname === own('notifications') ? 'light' : 'subtle'}
+                  color={pathname === own('notifications') ? undefined : 'gray'}
                   size="lg"
                   aria-label={unread > 0 ? t('core.nav.notifications_count', { count: unread }) : t('core.nav.notifications')}
                 >
@@ -119,9 +122,9 @@ export function AppLayout({ areas }: { areas: AreaManifest[] }) {
               <Indicator label={waiting} size={16} disabled={waiting === 0} offset={4}>
                 <ActionIcon
                   component={Link}
-                  to="/inbox"
-                  variant={pathname === '/inbox' ? 'light' : 'subtle'}
-                  color={pathname === '/inbox' ? undefined : 'gray'}
+                  to={own('inbox')}
+                  variant={pathname === own('inbox') ? 'light' : 'subtle'}
+                  color={pathname === own('inbox') ? undefined : 'gray'}
                   size="lg"
                   aria-label={waiting > 0 ? t('core.nav.inbox_count', { count: waiting }) : t('core.nav.inbox')}
                 >
@@ -132,9 +135,9 @@ export function AppLayout({ areas }: { areas: AreaManifest[] }) {
             <Tooltip label={t('core.nav.jobs')}>
               <ActionIcon
                 component={Link}
-                to="/jobs"
-                variant={pathname === '/jobs' ? 'light' : 'subtle'}
-                color={pathname === '/jobs' ? undefined : 'gray'}
+                to={own('jobs')}
+                variant={pathname === own('jobs') ? 'light' : 'subtle'}
+                color={pathname === own('jobs') ? undefined : 'gray'}
                 size="lg"
                 aria-label={t('core.nav.jobs')}
               >
@@ -216,7 +219,7 @@ export function AppLayout({ areas }: { areas: AreaManifest[] }) {
             <ErrorState message={error} />
           </Box>
         )}
-        {area && area.product !== 'core' && !me.products.includes(area.product) && (
+        {area && !onOwn && area.product !== 'core' && !me.products.includes(area.product) && (
           <Box px={pageFrame.px} pt="lg">
             <ReadOnlyBanner />
           </Box>

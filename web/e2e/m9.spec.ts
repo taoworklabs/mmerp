@@ -100,17 +100,20 @@ test('home has no sidebar; each area shows only its own menu; the header names t
   await page.getByRole('main').getByRole('link', { name: 'Quản lý nhân sự' }).click()
   await expect(nav.getByRole('link', { name: 'Cây tổ chức' })).toHaveCount(0)
 
-  // The inbox is in the header on every page, without a sidebar.
+  // The inbox is in the header on every page and opens inside the current area.
   await header.getByRole('link', { name: /^Hộp duyệt/ }).click()
-  await expect(page).toHaveURL(/\/inbox$/)
-  await expect(nav).toHaveCount(0)
+  await expect(page).toHaveURL(/\/hrm\/inbox$/)
+  await expect(header.getByText('Quản lý nhân sự')).toBeVisible()
+  await expect(nav).toHaveCount(1)
 
   await page.goto('/hrm/overview')
   await expect(header.getByText('Quản lý nhân sự')).toBeVisible()
   await page.goto('/admin/users')
   await expect(header.getByText('Quản trị', { exact: true })).toBeVisible()
+  // From home it has no area.
   await page.goto('/inbox')
   await expect(header.getByText('Hệ thống quản trị doanh nghiệp')).toBeVisible()
+  await expect(nav).toHaveCount(0)
 })
 
 test('the HRM menu is grouped and empty groups are hidden', async ({ page }) => {

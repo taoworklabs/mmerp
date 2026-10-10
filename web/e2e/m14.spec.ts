@@ -105,8 +105,11 @@ test('customer and item, a quotation approved by the manager, printed, then orde
   await other.goto(customerUrl)
   await expect(other.getByRole('link', { name: 'Về danh sách khách hàng' })).toBeVisible()
 
-  // The manager approves it from the inbox.
-  const manager = await as(browser, login.manager, '/inbox')
+  // The manager approves it from the inbox, opened without leaving Sales.
+  const manager = await as(browser, login.manager, '/sales/quotes')
+  await manager.getByRole('link', { name: /^Hộp duyệt/ }).click()
+  await expect(manager).toHaveURL(/\/sales\/inbox$/)
+  await expect(manager.getByRole('navigation').getByRole('link', { name: 'Báo giá' })).toBeVisible()
   await manager
     .getByRole('button', { name: /BG-\d{4}-/ })
     .first()
