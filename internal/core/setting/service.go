@@ -31,10 +31,11 @@ var defaults = map[string]string{
 	Timezone: "Asia/Ho_Chi_Minh",
 }
 
-// key is a legal-entity setting: its default and the values it may take.
+// key is a legal-entity setting: its product (empty for core), default and the values it may take.
 type key struct {
-	def    string
-	values []string
+	product string
+	def     string
+	values  []string
 }
 
 type Service struct {
@@ -45,7 +46,7 @@ type Service struct {
 
 func NewService() *Service {
 	s := &Service{keys: map[string]key{}, audit: audit.NewService()}
-	s.RegisterLegalEntityKey(Rounding, string(platform.RoundLine), []string{string(platform.RoundLine), string(platform.RoundTotal)})
+	s.RegisterLegalEntityKey("", Rounding, string(platform.RoundLine), []string{string(platform.RoundLine), string(platform.RoundTotal)})
 	return s
 }
 
@@ -66,12 +67,13 @@ func (s *Service) Get(ctx context.Context, key string) (string, error) {
 	return v, err
 }
 
-// RegisterLegalEntityKey adds a legal-entity setting while wiring modules, before serving.
-func (s *Service) RegisterLegalEntityKey(name, def string, values []string) {
+// RegisterLegalEntityKey adds a legal-entity setting of product (empty for core) while
+// wiring modules, before serving; it is written only while its product is enabled.
+func (s *Service) RegisterLegalEntityKey(product, name, def string, values []string) {
 	if _, dup := s.keys[name]; dup {
 		panic("setting: key " + name + " registered twice")
 	}
-	s.keys[name] = key{def: def, values: values}
+	s.keys[name] = key{product: product, def: def, values: values}
 }
 
 // GetFor returns a legal entity's value of key, or its default.
@@ -120,6 +122,9 @@ func (s *Service) SetFor(ctx context.Context, legalEntity int64, name, value str
 	}
 	if !slices.Contains(k.values, value) {
 		return &platform.Error{Status: http.StatusUnprocessableEntity, Code: "invalid_setting_value", Params: map[string]any{"key": name}}
+	}
+	if err := platform.ProductGate(ctx, k.product, platform.ClassWrite); err != nil {
+		return err
 	}
 	return platform.InTx(ctx, func(ctx context.Context) error {
 		if err := s.checkEntity(ctx, legalEntity); err != nil {

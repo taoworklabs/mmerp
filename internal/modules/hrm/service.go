@@ -41,7 +41,7 @@ func NewService(d Deps) *Service {
 		panic(err) // embedded files: broken only by a bad build
 	}
 	s := &Service{d: d}
-	d.Setting.RegisterLegalEntityKey(SettingWageRegion, "1", []string{"1", "2", "3", "4"})
+	d.Setting.RegisterLegalEntityKey("hrm", SettingWageRegion, "1", []string{"1", "2", "3", "4"})
 	d.IAM.RegisterRoles("hrm", map[string][]string{
 		"hr": {PermView, PermEdit, PermLeaveView, PermLeaveEdit, PermOvertimeView, PermOvertimeEdit,
 			PermContractView, PermContractEdit, PermContractTypeManage, PermTimesheetView, PermTimesheetEdit},
