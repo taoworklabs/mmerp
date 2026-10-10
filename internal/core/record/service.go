@@ -226,6 +226,10 @@ func (s *Service) Create(ctx context.Context, code string, h Header) (Doc, error
 	}
 	var out Doc
 	err = platform.InTx(ctx, func(ctx context.Context) error {
+		// Before the legal entity is read, so a tree move cannot place the document wrongly.
+		if err := s.d.IAM.ShareTree(ctx); err != nil {
+			return err
+		}
 		le, err := s.d.IAM.LegalEntityOf(ctx, h.OrgUnitID)
 		if err != nil {
 			return err
@@ -270,6 +274,9 @@ func (s *Service) Edit(ctx context.Context, ref Ref, version int32, h Header) (D
 			return err
 		}
 		if err := checkPeriod(h.Date, locked); err != nil {
+			return err
+		}
+		if err := s.d.IAM.ShareTree(ctx); err != nil {
 			return err
 		}
 		if le, err := s.d.IAM.LegalEntityOf(ctx, h.OrgUnitID); err != nil {

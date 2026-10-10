@@ -92,6 +92,8 @@ Modules call the following functions **inside the service's transaction, before 
 
 The lock date is always read from the row just locked in step 1, never earlier. Document writes for the same legal entity do not block each other (both are `FOR SHARE`). Thanks to the lock in step 2, operations on the same document run one after another.
 
+`Create` and `Edit` read the legal entity of the org unit only after `iam.ShareTree` (a `SHARE` lock on `iam.org_units`, which tree writes conflict with), so a concurrent move of the unit to another legal entity either finishes first or waits. Tree writes take no document or period lock, so this lock adds no cycle to the order above.
+
 A document's legal entity cannot change after `Create`, so each operation locks exactly one row in step 1.
 
 A core module that needs to lock its own rows after a document calls `record.Lock(ctx, ref)`: this function takes the step 1 and step 2 locks and returns the document, with no further checks. For example, `approval` calls it before locking its row in `approval.instances`.

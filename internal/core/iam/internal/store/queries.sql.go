@@ -390,6 +390,16 @@ func (q *Queries) SetUserEmail(ctx context.Context, arg SetUserEmailParams) (int
 	return result.RowsAffected(), nil
 }
 
+const shareOrgUnits = `-- name: ShareOrgUnits :exec
+LOCK TABLE iam.org_units IN SHARE MODE
+`
+
+// Holds tree writes off, not other readers of the tree.
+func (q *Queries) ShareOrgUnits(ctx context.Context) error {
+	_, err := q.db.Exec(ctx, shareOrgUnits)
+	return err
+}
+
 const subtrees = `-- name: Subtrees :many
 WITH RECURSIVE t AS (
     SELECT id FROM iam.org_units WHERE id = ANY($1::bigint[])

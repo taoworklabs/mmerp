@@ -5,6 +5,7 @@ import (
 	"errors"
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/taoworklabs/mmerp/internal/core/approval"
 	"github.com/taoworklabs/mmerp/internal/core/audit"
@@ -123,6 +124,39 @@ func TestUnitWithDocumentsCannotChangeLegalEntity(t *testing.T) {
 	}
 	if err := ids.UpdateOrgUnit(admin, a, iam.OrgUnitInput{ParentID: &c1, Kind: "department", Name: "A2"}); err != nil {
 		t.Fatal(err)
+	}
+}
+
+// A document created while its unit moves to another legal entity waits for the move,
+// then belongs to the legal entity the unit is under.
+func TestCreateWaitsForATreeMove(t *testing.T) {
+	pool := pgtest.New(t)
+	ctx := platform.WithKeyring(platform.WithProducts(platform.WithDB(t.Context(), pool), []string{"test"}), pgtest.Keyring())
+	ids := iam.NewService(iam.Deps{Setting: setting.NewService(), Audit: audit.NewService()})
+	rec := record.NewService(record.Deps{IAM: ids, Numbering: numbering.NewService(), Audit: audit.NewService()})
+	ids.SetTreeHook(rec)
+	rec.Register(record.Type{Code: "test.doc", Product: "test", Kind: record.Document, NumberPrefix: "T",
+		Can: func(context.Context, int64, record.Action) (bool, error) { return true, nil }})
+	admin := platform.WithActor(ctx, must(t)(ids.CreateAdmin(ctx, "admin", "Admin", "long enough")))
+	c1 := must(t)(ids.CreateOrgUnit(admin, iam.OrgUnitInput{Kind: "company", Name: "C1"}))
+	c2 := must(t)(ids.CreateOrgUnit(admin, iam.OrgUnitInput{Kind: "company", Name: "C2"}))
+	a := must(t)(ids.CreateOrgUnit(admin, iam.OrgUnitInput{ParentID: &c1, Kind: "department", Name: "A"}))
+	var wg sync.WaitGroup
+	var d record.Doc
+	var created error
+	if err := platform.InTx(admin, func(ctx context.Context) error {
+		if err := ids.UpdateOrgUnit(ctx, a, iam.OrgUnitInput{ParentID: &c2, Kind: "department", Name: "A"}); err != nil {
+			return err
+		}
+		wg.Go(func() { d, created = rec.Create(admin, "test.doc", record.Header{Date: "2026-03-10", OrgUnitID: a}) })
+		time.Sleep(100 * time.Millisecond)
+		return nil
+	}); err != nil {
+		t.Fatal(err)
+	}
+	wg.Wait()
+	if created != nil || d.LegalEntityID != c2 {
+		t.Fatalf("created %+v %v, want legal entity %d", d, created, c2)
 	}
 }
 

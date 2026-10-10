@@ -615,6 +615,12 @@ func (s *Service) writeTree(ctx context.Context, fn func(ctx context.Context) er
 	})
 }
 
+// ShareTree holds tree writes off until ctx's transaction ends, so a legal entity read
+// after it stays the one a unit belongs to (a document never changes legal entity).
+func (s *Service) ShareTree(ctx context.Context) error {
+	return store.New(platform.DBFrom(ctx)).ShareOrgUnits(ctx)
+}
+
 // LegalEntityOf returns the legal entity a unit belongs to: the nearest company at or above it.
 func (s *Service) LegalEntityOf(ctx context.Context, unit int64) (int64, error) {
 	id, err := store.New(platform.DBFrom(ctx)).LegalEntityOf(ctx, unit)
