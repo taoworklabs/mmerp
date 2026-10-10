@@ -34,7 +34,7 @@ func TestCompute(t *testing.T) {
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
-			a, tot, _, err := compute(c.lines, c.mode)
+			a, tot, _, err := compute(c.lines, make([]int64, len(c.lines)), c.mode)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -48,9 +48,22 @@ func TestCompute(t *testing.T) {
 			}
 		})
 	}
-	_, _, maxDiscount, _ := compute([]LineInput{line("1", 10, "5", "0"), line("1", 10, "15.5", "0")}, platform.RoundLine)
+	_, _, maxDiscount, _ := compute([]LineInput{line("1", 10, "5", "0"), line("1", 10, "15.5", "0")}, []int64{0, 0}, platform.RoundLine)
 	if maxDiscount.String() != "15.5" {
 		t.Fatalf("max discount %s", maxDiscount)
+	}
+	// A unit price cut below the catalogue price counts as discount: 85 of 100 is 15 %, and
+	// 85 less 10 % is 76.5 of 100, 23.5 %; a price above the list counts only its discount; a one-đồng
+	// cut of 100,000 rounds up to 0.01 %, so it is never lost.
+	for _, c := range []struct {
+		price     int64
+		pct, want string
+		list      int64
+	}{{85, "0", "15", 100}, {85, "10", "23.5", 100}, {120, "5", "5", 100}, {99_999, "0", "0.01", 100_000}} {
+		_, _, got, _ := compute([]LineInput{line("1", c.price, c.pct, "0")}, []int64{c.list}, platform.RoundLine)
+		if got.String() != c.want {
+			t.Errorf("price %d less %s%% of %d: max discount %s, want %s", c.price, c.pct, c.list, got, c.want)
+		}
 	}
 	for _, bad := range []struct {
 		l    LineInput
@@ -61,7 +74,7 @@ func TestCompute(t *testing.T) {
 		{line("1", 1, "0", "7"), "invalid_vat_rate"},
 		{line("999999999999", 999_999_999, "0", "8"), "line_amount_too_large"},
 	} {
-		_, _, _, err := compute([]LineInput{line("1", 1, "0", "0"), bad.l}, platform.RoundLine)
+		_, _, _, err := compute([]LineInput{line("1", 1, "0", "0"), bad.l}, []int64{0, 0}, platform.RoundLine)
 		if e, ok := err.(*platform.Error); !ok || e.Code != bad.code || e.Params["line"] != 2 {
 			t.Errorf("%+v: %v, want %s on line 2", bad.l, err, bad.code)
 		}

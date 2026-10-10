@@ -35,7 +35,7 @@ A single module `internal/modules/sales`, schema `sales`, product `sales`. Depen
 | `sales.quote` | document `BG` | Approved: may be sent and turned into an order | Quotation date | Into `posted`: customer still active. Into `cancelled`: no non-cancelled order from it | `max_discount` |
 | `sales.order` | document `DH` | Confirmed | Order date | Into `posted`: customer still active | `max_discount` |
 
-Approval fields: `amount` (the header, the total including VAT) and `max_discount` (the largest line discount, in percent). With no approval rule, sending posts at once. Sales approval rules are configured inside the Sales area (`/sales/approval-rules`), needing `sales.approval.manage` or `core.approval.manage`.
+Approval fields: `amount` (the header, the total including VAT) and `max_discount` (the largest line discount, in percent, measured against the item's catalogue price: a unit price cut below it counts as discount, so lowering the price never slips past a discount rule). With no approval rule, sending posts at once. Sales approval rules are configured inside the Sales area (`/sales/approval-rules`), needing `sales.approval.manage` or `core.approval.manage`.
 
 Attachments and discussion are on customers, quotations and orders. Printing is on quotations and orders.
 

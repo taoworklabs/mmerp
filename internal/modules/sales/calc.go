@@ -20,8 +20,10 @@ type amounts struct{ amount, discount, vat int64 }
 
 // compute works out every line's amounts and the document totals. VAT rounds per line, or
 // with RoundTotal once per rate over the document, allocated back to that rate's lines.
-// It also returns the largest discount, the max_discount approval field.
-func compute(lines []LineInput, mode platform.Rounding) ([]amounts, Totals, decimal.Decimal, error) {
+// It also returns the largest discount, the max_discount approval field: a line priced below
+// its catalogue price (list, 0 for none) counts that cut as discount, so lowering the unit
+// price never slips past a discount rule.
+func compute(lines []LineInput, list []int64, mode platform.Rounding) ([]amounts, Totals, decimal.Decimal, error) {
 	out := make([]amounts, len(lines))
 	vats := make([]decimal.Decimal, len(lines)) // unrounded
 	maxDiscount := decimal.Zero
@@ -38,6 +40,11 @@ func compute(lines []LineInput, mode platform.Rounding) ([]amounts, Totals, deci
 			return nil, Totals{}, maxDiscount, errLine("invalid_vat_rate", i+1)
 		}
 		maxDiscount = decimal.Max(maxDiscount, pct)
+		if list[i] > 0 {
+			// 100 − price × (100 − pct) / list, rounded up so 10.001 % is above 10 %.
+			cut := hundred.Sub(decimal.NewFromInt(l.UnitPrice).Mul(hundred.Sub(pct)).Div(decimal.NewFromInt(list[i]))).RoundCeil(2)
+			maxDiscount = decimal.Max(maxDiscount, cut)
+		}
 		gross := qty.Mul(decimal.NewFromInt(l.UnitPrice))
 		if gross.GreaterThan(maxLine) {
 			return nil, Totals{}, maxDiscount, errLine("line_amount_too_large", i+1)
