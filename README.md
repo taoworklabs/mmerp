@@ -18,6 +18,7 @@ This directory describes the shared core of a modular business-management suite:
 | Plan | Document |
 | --- | --- |
 | From core to the first HRM release, then Sales | [roadmap.md](./roadmap.md) |
+| Reviewing the HRM business flows and verifying the core against them | [docs/hrm-review-plan.md](./docs/hrm-review-plan.md) |
 
 | Product | Document |
 | --- | --- |
