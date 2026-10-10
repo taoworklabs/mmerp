@@ -62,7 +62,7 @@ func (s *Service) current(ctx context.Context, t Template, locale string) (map[s
 }
 
 func listed(t Template, saved store.LatestBlocksRow, locale string) PrintTemplate {
-	out := PrintTemplate{Code: t.Code, Name: platform.Translate(locale, t.Name, nil), Product: t.Product, Version: int(saved.Version)}
+	out := PrintTemplate{Code: t.Code, Name: platform.Translate(locale, t.Name, nil), Product: t.product, Version: int(saved.Version)}
 	if saved.Version > 0 {
 		at := saved.SavedAt.Time.UTC().Format(time.RFC3339)
 		out.SavedAt, out.SavedByName = &at, &saved.SavedByName
@@ -130,7 +130,7 @@ func (s *Service) SaveBlocks(ctx context.Context, code string, in []BlockText) e
 	if !ok {
 		return platform.ErrNotFound
 	}
-	if err := platform.ProductGate(ctx, t.Product, platform.ClassWrite); err != nil {
+	if err := platform.ProductGate(ctx, t.product, platform.ClassWrite); err != nil {
 		return err
 	}
 	if len(in) != len(t.Blocks) {

@@ -51,7 +51,7 @@ func setup(t *testing.T, data func(context.Context, int64) ([]Part, error), layo
 		Can: func(context.Context, int64, record.Action) (bool, error) { return true, nil }})
 	prn := NewService(Deps{Record: rec, Audit: audit.NewService(), IAM: ids,
 		DataIO: dataio.NewService(dataio.Deps{IAM: ids, Audit: audit.NewService()})})
-	prn.Register(Template{Code: "test.doc", DocType: "test.doc", Product: "test", Data: data, Layouts: []Layout{layout}})
+	prn.Register(Template{Code: "test.doc", DocType: "test.doc", Data: data, Layouts: []Layout{layout}})
 	admin := platform.WithActor(ctx, must[int64](t)(ids.CreateAdmin(ctx, "admin", "Admin", "long enough")))
 	c := must[int64](t)(ids.CreateOrgUnit(admin, iam.OrgUnitInput{Kind: "company", Name: "C"}))
 	d := must[record.Doc](t)(rec.Create(admin, "test.doc", record.Header{Date: "2026-03-10", OrgUnitID: c}))

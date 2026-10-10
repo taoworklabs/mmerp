@@ -12,6 +12,7 @@ import (
 	"regexp"
 	"slices"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/jackc/pgx/v5"
@@ -77,6 +78,10 @@ func (s *Service) RestrictHistory(action string, needs Action) { s.history[actio
 
 // Register adds a record type while wiring modules, before serving.
 func (s *Service) Register(t Type) {
+	// The product gate goes by Product, so a type without one would never be gated.
+	if t.Product == "" || !strings.HasPrefix(t.Code, t.Product+".") {
+		panic("record: type " + t.Code + " is not named <product>.<type> after its product " + t.Product)
+	}
 	if _, dup := s.types[t.Code]; dup {
 		panic("record: type " + t.Code + " registered twice")
 	}

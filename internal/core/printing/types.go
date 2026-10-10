@@ -14,7 +14,8 @@ type Template struct {
 	Code    string // <module>.<name>, e.g. hrm.contract
 	Name    string // i18n key
 	DocType string
-	Product string
+	// product is the record type's, set by Register.
+	product string
 	// Blocks are the texts tenant administrators may edit; layouts draw them by key.
 	Blocks []Block
 	// Data reads the current print data of a record, one part per printable unit, in

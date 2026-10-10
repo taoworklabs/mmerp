@@ -37,6 +37,9 @@ func NewService(d Deps) *Service {
 
 // RegisterImport adds an import while wiring modules, before serving.
 func (s *Service) RegisterImport(i Import) {
+	if i.Product == "" {
+		panic("dataio: import " + i.Kind + " has no product to gate it")
+	}
 	if _, dup := s.imports[i.Kind]; dup {
 		panic("dataio: import " + i.Kind + " registered twice")
 	}
@@ -45,6 +48,9 @@ func (s *Service) RegisterImport(i Import) {
 
 // RegisterExport adds an export while wiring modules, before serving.
 func (s *Service) RegisterExport(e Export) {
+	if e.Product == "" {
+		panic("dataio: export " + e.Kind + " has no product to gate it")
+	}
 	if _, dup := s.exports[e.Kind]; dup {
 		panic("dataio: export " + e.Kind + " registered twice")
 	}
