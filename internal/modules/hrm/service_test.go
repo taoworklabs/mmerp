@@ -132,17 +132,17 @@ func TestScopeLimitsEmployees(t *testing.T) {
 		t.Fatalf("duplicate code: %v", err)
 	}
 
-	list, err := f.hrm.Employees(hrA, hrm.EmployeeFilter{Sort: "code", Page: 1, PageSize: 50})
+	list, err := f.hrm.Employees(hrA, hrm.EmployeeFilter{Sort: "code", Paging: platform.Paging{Page: 1, PageSize: 50}})
 	if err != nil || list.Total != 1 || list.Items[0].ID != ea {
 		t.Fatalf("hr_a list = %+v %v", list, err)
 	}
 	if _, err := f.hrm.Employee(hrA, eb); !errors.Is(err, platform.ErrNotFound) {
 		t.Fatalf("hr_a reads B: %v", err)
 	}
-	if list, _ := f.hrm.Employees(viewer, hrm.EmployeeFilter{Sort: "-code", Page: 1, PageSize: 50}); list.Total != 2 || list.Items[0].Code != "B1" {
+	if list, _ := f.hrm.Employees(viewer, hrm.EmployeeFilter{Sort: "-code", Paging: platform.Paging{Page: 1, PageSize: 50}}); list.Total != 2 || list.Items[0].Code != "B1" {
 		t.Fatalf("viewer list = %+v", list)
 	}
-	if list, _ := f.hrm.Employees(nobody, hrm.EmployeeFilter{Sort: "code", Page: 1, PageSize: 50}); list.Total != 0 {
+	if list, _ := f.hrm.Employees(nobody, hrm.EmployeeFilter{Sort: "code", Paging: platform.Paging{Page: 1, PageSize: 50}}); list.Total != 0 {
 		t.Fatalf("nobody list = %+v", list)
 	}
 
@@ -211,7 +211,7 @@ func TestListFiltersSortAndPages(t *testing.T) {
 		{hrm.EmployeeFilter{Status: "terminated"}, "E1/1"},
 		{hrm.EmployeeFilter{OrgUnitID: f.b}, "E2/1"},
 		{hrm.EmployeeFilter{Q: "bìn"}, "E2/1"},
-		{hrm.EmployeeFilter{PageSize: 20, Page: 2}, "/0"},
+		{hrm.EmployeeFilter{Paging: platform.Paging{PageSize: 20, Page: 2}}, "/0"},
 	} {
 		if got := codes(c.f); got != c.want {
 			t.Errorf("%+v: got %s, want %s", c.f, got, c.want)
@@ -342,7 +342,7 @@ func TestManagerAndAccountLinks(t *testing.T) {
 		t.Fatalf("own manager: %v", err)
 	}
 	// The manager picker for the boss offers neither the boss nor anyone under them.
-	list, err := f.hrm.Employees(hr, hrm.EmployeeFilter{ManagerOf: boss, Sort: "code", Page: 1, PageSize: 50})
+	list, err := f.hrm.Employees(hr, hrm.EmployeeFilter{ManagerOf: boss, Sort: "code", Paging: platform.Paging{Page: 1, PageSize: 50}})
 	if err != nil {
 		t.Fatal(err)
 	}

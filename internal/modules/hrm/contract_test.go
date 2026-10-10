@@ -10,6 +10,7 @@ import (
 	"github.com/taoworklabs/mmerp/internal/core/record"
 	"github.com/taoworklabs/mmerp/internal/core/record/recordtest"
 	"github.com/taoworklabs/mmerp/internal/modules/hrm"
+	"github.com/taoworklabs/mmerp/internal/platform"
 )
 
 // contractFixture adds to the leave fixture HR with the payroll role, a second approver,
@@ -334,7 +335,7 @@ func TestContractList(t *testing.T) {
 	if got := list(f.m, hrm.ContractFilter{}); !equalIDs(got) {
 		t.Fatalf("manager: %v", got)
 	}
-	l, err := f.hrm.Contracts(f.pay, hrm.ContractFilter{EmployeeID: f.emp, Sort: "start_date", Page: 1, PageSize: 50})
+	l, err := f.hrm.Contracts(f.pay, hrm.ContractFilter{EmployeeID: f.emp, Sort: "start_date", Paging: platform.Paging{Page: 1, PageSize: 50}})
 	f.check(err)
 	if c := l.Items[0]; c.ID != draft || c.EmployeeName != "Nhân viên E" || c.ParentNumber != nil {
 		t.Fatalf("row %+v", c)

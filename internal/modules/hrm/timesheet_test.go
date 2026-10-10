@@ -9,6 +9,7 @@ import (
 	"github.com/taoworklabs/mmerp/internal/core/record"
 	"github.com/taoworklabs/mmerp/internal/core/record/recordtest"
 	"github.com/taoworklabs/mmerp/internal/modules/hrm"
+	"github.com/taoworklabs/mmerp/internal/platform"
 )
 
 func (f *leaveFixture) timesheet(id int64) hrm.Timesheet {
@@ -20,7 +21,7 @@ func (f *leaveFixture) timesheet(id int64) hrm.Timesheet {
 
 func (f *leaveFixture) postedTimesheets() int {
 	f.t.Helper()
-	l, err := f.hrm.Timesheets(f.hr, hrm.TimesheetFilter{Status: "posted", Page: 1, PageSize: 20})
+	l, err := f.hrm.Timesheets(f.hr, hrm.TimesheetFilter{Status: "posted", Paging: platform.Paging{Page: 1, PageSize: 20}})
 	f.check(err)
 	return int(l.Total)
 }

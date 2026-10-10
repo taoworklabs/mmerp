@@ -83,7 +83,7 @@ func (s *Service) Timesheets(ctx context.Context, f TimesheetFilter) (TimesheetL
 	}
 	rows, err := store.New(platform.DBFrom(ctx)).ListTimesheets(ctx, store.ListTimesheetsParams{
 		AllUnits: sc.All, Units: sc.Units, Status: f.Status, OrgUnitID: pgtype.Int8{Int64: f.OrgUnitID, Valid: f.OrgUnitID != 0},
-		PeriodStart: start, Lim: int32(f.PageSize), Off: int32((f.Page - 1) * f.PageSize),
+		PeriodStart: start, Lim: f.Limit(), Off: f.Offset(),
 	})
 	for _, r := range rows {
 		out.Total = r.Total

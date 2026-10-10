@@ -13,6 +13,7 @@ import (
 	"github.com/taoworklabs/mmerp/internal/core/record"
 	"github.com/taoworklabs/mmerp/internal/core/record/recordtest"
 	"github.com/taoworklabs/mmerp/internal/modules/hrm"
+	"github.com/taoworklabs/mmerp/internal/platform"
 )
 
 func payrollRef(id int64) record.Ref { return record.Ref{Type: "hrm.payroll", ID: id} }
@@ -184,7 +185,7 @@ func TestPayrollLifecycle(t *testing.T) {
 	ot2 := f.overtime("2026-04-07")
 	wantErr(t, f.rec.Transition(f.pay, record.Ref{Type: "hrm.overtime_request", ID: ot2}, 1, record.Posted), "payroll_period_closed")
 	// 13: nor can the timesheet be cancelled.
-	ts, err := f.hrm.Timesheets(f.hr, hrm.TimesheetFilter{Month: "2026-04", Page: 1, PageSize: 20})
+	ts, err := f.hrm.Timesheets(f.hr, hrm.TimesheetFilter{Month: "2026-04", Paging: platform.Paging{Page: 1, PageSize: 20}})
 	f.check(err)
 	wantErr(t, f.rec.Transition(f.hr, record.Ref{Type: "hrm.timesheet", ID: ts.Items[0].ID}, 3, record.Cancelled), "payroll_period_closed")
 

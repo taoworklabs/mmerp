@@ -10,6 +10,7 @@ import (
 	"github.com/taoworklabs/mmerp/internal/core/record"
 	"github.com/taoworklabs/mmerp/internal/core/record/recordtest"
 	"github.com/taoworklabs/mmerp/internal/modules/hrm"
+	"github.com/taoworklabs/mmerp/internal/platform"
 )
 
 func overtime(date, day, night string) hrm.OvertimeFields {
@@ -18,7 +19,7 @@ func overtime(date, day, night string) hrm.OvertimeFields {
 
 func (f *leaveFixture) postedOvertimes() int {
 	f.t.Helper()
-	l, err := f.hrm.Overtimes(f.hr, hrm.OvertimeFilter{Status: "posted", Sort: "-date", Page: 1, PageSize: 20})
+	l, err := f.hrm.Overtimes(f.hr, hrm.OvertimeFilter{Status: "posted", Sort: "-date", Paging: platform.Paging{Page: 1, PageSize: 20}})
 	f.check(err)
 	return int(l.Total)
 }

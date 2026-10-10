@@ -47,11 +47,10 @@ type Customer struct {
 }
 
 type CustomerFilter struct {
-	Q        string `query:"q" maxLength:"100"`
-	Active   string `query:"active" enum:"true,false"`
-	Sort     string `query:"sort" enum:"code,-code,name,-name" default:"code"`
-	Page     int    `query:"page" minimum:"1" default:"1"`
-	PageSize int    `query:"page_size" enum:"20,50,100" default:"50"`
+	Q      string `query:"q" maxLength:"100"`
+	Active string `query:"active" enum:"true,false"`
+	Sort   string `query:"sort" enum:"code,-code,name,-name" default:"code"`
+	platform.Paging
 }
 
 type CustomerListItem struct {
@@ -91,10 +90,9 @@ type Item struct {
 }
 
 type ItemFilter struct {
-	Q        string `query:"q" maxLength:"100"`
-	Active   string `query:"active" enum:"true,false"`
-	Page     int    `query:"page" minimum:"1" default:"1"`
-	PageSize int    `query:"page_size" enum:"20,50,100" default:"50"`
+	Q      string `query:"q" maxLength:"100"`
+	Active string `query:"active" enum:"true,false"`
+	platform.Paging
 }
 
 type ItemList struct {
@@ -207,8 +205,7 @@ type DocFilter struct {
 	Status     string `query:"status" enum:"draft,pending_approval,posted,cancelled"`
 	CustomerID int64  `query:"customer_id"`
 	Sort       string `query:"sort" enum:"date,-date,number,-number,total,-total" default:"-date"`
-	Page       int    `query:"page" minimum:"1" default:"1"`
-	PageSize   int    `query:"page_size" enum:"20,50,100" default:"50"`
+	platform.Paging
 }
 
 type DocListItem struct {
