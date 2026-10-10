@@ -280,6 +280,10 @@ func TestPayrollSamples(t *testing.T) {
 	job, err := f.hrm.SavePayrollAdjustments(f.pay, id, hrm.PayrollAdjustments{Version: f.payrollDoc(id).Version, Items: adjustments})
 	f.check(err)
 	f.wantJob(job, "completed")
+	// Computing opened the dependents, a read of sensitive data audited like any other.
+	if f.auditCount("hrm.dependents_viewed") == 0 {
+		t.Fatal("computing read the dependents unaudited")
+	}
 	lines := map[int64]hrm.PayrollLine{}
 	for _, l := range f.payrollDoc(id).Lines {
 		lines[l.EmployeeID] = l
