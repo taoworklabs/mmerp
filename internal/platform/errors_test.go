@@ -1,8 +1,11 @@
 package platform_test
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
+	"log/slog"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -54,6 +57,22 @@ func TestErrorsUseCodeAndParams(t *testing.T) {
 }
 
 func mustJSON(v any) string { b, _ := json.Marshal(v); return string(b) }
+
+// The client gets only internal_error; the cause goes to the request's log.
+func TestUnexpectedErrorIsLogged(t *testing.T) {
+	_, api := humatest.New(t)
+	huma.Get(api, "/boom", func(ctx context.Context, _ *struct{}) (*struct{}, error) {
+		return nil, errors.New("decrypt: no key 7")
+	})
+	var log bytes.Buffer
+	req := httptest.NewRequest("GET", "/boom", nil)
+	req = req.WithContext(platform.WithLogger(req.Context(), slog.New(slog.NewTextHandler(&log, nil))))
+	rec := httptest.NewRecorder()
+	api.Adapter().ServeHTTP(rec, req)
+	if rec.Code != 500 || strings.Contains(rec.Body.String(), "decrypt") || !strings.Contains(log.String(), "decrypt: no key 7") {
+		t.Fatalf("status %d, body %s, log %q", rec.Code, rec.Body, log.String())
+	}
+}
 
 // Codes are API contract: pinned explicitly, never derived from Go's status text.
 func TestNewHumaErrorCodes(t *testing.T) {
