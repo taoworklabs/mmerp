@@ -32,7 +32,7 @@ The product owner decided to open Sales as the second product, generic across tr
 | `sales.order` | `DH` | Order confirmed | Order date | Into `posted`: the customer is still active | `max_discount` |
 
 - Both types share one header table `sales.headers` (`kind` with a `CHECK` on `quote`, `order`) and one line table `sales.lines`, keyed by the document id; the columns that only one kind uses (`valid_until`, `delivery_date`, `quote_id`) have `CHECK`s tying them to the kind. One code path computes, saves and prints both.
-- `record.documents.amount` is the document total including VAT; `max_discount` is the largest line discount percentage. Approval rules can therefore say "orders over 500 million" or "any discount above 10 %".
+- `record.documents.amount` is the document total including VAT; `max_discount` is the largest line discount percentage measured against the item's catalogue price, so a unit price lowered instead of discounted still counts. Approval rules can therefore say "orders over 500 million" or "any discount above 10 %".
 - Numbering, gaps on deleted drafts, and the period lock are the core's, unchanged: quotations and orders need no gap-free numbers (invoices will).
 - **No business lines.** Revenue arises on invoicing or delivery, not on an order; `posting` is not called.
 

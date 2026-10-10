@@ -345,16 +345,21 @@ func (s *Service) prepare(ctx context.Context, k kind, f DocFields) (prepared, e
 	if err != nil {
 		return p, err
 	}
-	amts, totals, maxDiscount, err := compute(f.Lines, platform.Rounding(mode))
-	if err != nil {
-		return p, err
-	}
-	p.lines = make([]Line, len(f.Lines))
+	list := make([]int64, len(f.Lines))
 	for i, l := range f.Lines {
 		it, ok := items[l.ItemID]
 		if !ok || !it.Active {
 			return p, errLine("item_inactive", i+1)
 		}
+		list[i] = it.Price
+	}
+	amts, totals, maxDiscount, err := compute(f.Lines, list, platform.Rounding(mode))
+	if err != nil {
+		return p, err
+	}
+	p.lines = make([]Line, len(f.Lines))
+	for i, l := range f.Lines {
+		it := items[l.ItemID]
 		p.lines[i] = Line{LineInput: l, ItemCode: it.Code, Unit: it.Unit, Amount: amts[i].amount, Discount: amts[i].discount, Vat: amts[i].vat}
 	}
 	p.totals = totals
