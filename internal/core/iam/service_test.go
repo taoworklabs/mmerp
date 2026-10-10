@@ -159,6 +159,16 @@ func TestScopeAndGrants(t *testing.T) {
 	if sc := must[iam.Scope](t)(s.Scope(asAn, "hrm", "hrm.employee.edit")); sc.Has(a) {
 		t.Fatalf("viewer can edit: %+v", sc)
 	}
+	// Allowed needs every unit; tenant-wide needs a grant above every unit.
+	if ok, err := s.Allowed(asAn, "hrm", "hrm.employee.view", a, a1); err != nil || !ok {
+		t.Fatalf("allowed at a and a1: %v %v", ok, err)
+	}
+	if err := s.Require(asAn, "hrm", "hrm.employee.view", a, b); !errors.Is(err, platform.ErrForbidden) {
+		t.Fatalf("required at a and b: %v", err)
+	}
+	if err := s.RequireTenantWide(asAn, "hrm", "hrm.employee.view"); !errors.Is(err, platform.ErrForbidden) {
+		t.Fatalf("tenant-wide from a grant at a: %v", err)
+	}
 	if units := must[[]iam.OrgUnit](t)(s.OrgUnits(asAn, "", "")); len(units) != 4 {
 		t.Fatalf("whole tree for a signed-in user = %+v", units)
 	}

@@ -392,20 +392,40 @@ func (s *Service) registered(product, permission string) bool {
 	return false
 }
 
+// Allowed reports whether the actor holds product's permission at unit and at each of more.
+func (s *Service) Allowed(ctx context.Context, product, permission string, unit int64, more ...int64) (bool, error) {
+	sc, err := s.Scope(ctx, product, permission)
+	if err != nil {
+		return false, err
+	}
+	return sc.Has(unit) && !slices.ContainsFunc(more, func(u int64) bool { return !sc.Has(u) }), nil
+}
+
+// Require fails with forbidden unless Allowed.
+func (s *Service) Require(ctx context.Context, product, permission string, unit int64, more ...int64) error {
+	ok, err := s.Allowed(ctx, product, permission, unit, more...)
+	if err == nil && !ok {
+		return platform.ErrForbidden
+	}
+	return err
+}
+
+// RequireTenantWide fails with forbidden unless the actor holds product's permission tenant-wide.
+func (s *Service) RequireTenantWide(ctx context.Context, product, permission string) error {
+	sc, err := s.Scope(ctx, product, permission)
+	if err == nil && !sc.All {
+		return platform.ErrForbidden
+	}
+	return err
+}
+
 // RequireCore fails with forbidden unless the actor has a tenant-wide core permission.
 func (s *Service) RequireCore(ctx context.Context, permission string) error {
 	return s.require(ctx, permission)
 }
 
 func (s *Service) require(ctx context.Context, permission string) error {
-	sc, err := s.Scope(ctx, "core", permission)
-	if err != nil {
-		return err
-	}
-	if !sc.All {
-		return platform.ErrForbidden
-	}
-	return nil
+	return s.RequireTenantWide(ctx, "core", permission)
 }
 
 // permissions lists every permission the user has anywhere, by product.

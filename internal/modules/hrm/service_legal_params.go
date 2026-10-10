@@ -107,8 +107,8 @@ func (s *Service) SaveLegalParam(ctx context.Context, p LegalParam) error {
 	if !from.Valid {
 		return ErrLegalParam
 	}
-	if sc, err := s.d.IAM.Scope(ctx, "hrm", PermLegalParamManage); err != nil || !sc.All {
-		return platform.OrErr(err, platform.ErrForbidden)
+	if err := s.d.IAM.RequireTenantWide(ctx, "hrm", PermLegalParamManage); err != nil {
+		return err
 	}
 	return platform.InTx(ctx, func(ctx context.Context) error {
 		q := store.New(platform.DBFrom(ctx))

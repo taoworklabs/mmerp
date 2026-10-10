@@ -78,25 +78,12 @@ func NewService(d Deps) *Service {
 	return s
 }
 
-func (s *Service) allowed(ctx context.Context, perm string, units ...int64) (bool, error) {
-	sc, err := s.d.IAM.Scope(ctx, "sales", perm)
-	if err != nil {
-		return false, err
-	}
-	for _, u := range units {
-		if !sc.Has(u) {
-			return false, nil
-		}
-	}
-	return true, nil
+func (s *Service) allowed(ctx context.Context, perm string, unit int64, more ...int64) (bool, error) {
+	return s.d.IAM.Allowed(ctx, "sales", perm, unit, more...)
 }
 
-func (s *Service) require(ctx context.Context, perm string, units ...int64) error {
-	ok, err := s.allowed(ctx, perm, units...)
-	if err == nil && !ok {
-		return platform.ErrForbidden
-	}
-	return err
+func (s *Service) require(ctx context.Context, perm string, unit int64, more ...int64) error {
+	return s.d.IAM.Require(ctx, "sales", perm, unit, more...)
 }
 
 // canDoc answers for quotations or orders by the document's org unit: reading, printing

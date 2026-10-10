@@ -33,8 +33,8 @@ func (s *Service) SaveItem(ctx context.Context, id int64, in ItemFields) (int64,
 	if err := platform.ProductGate(ctx, "sales", platform.ClassWrite); err != nil {
 		return 0, err
 	}
-	if sc, err := s.d.IAM.Scope(ctx, "sales", PermItemManage); err != nil || !sc.All {
-		return 0, platform.OrErr(err, platform.ErrForbidden)
+	if err := s.d.IAM.RequireTenantWide(ctx, "sales", PermItemManage); err != nil {
+		return 0, err
 	}
 	err := platform.InTx(ctx, func(ctx context.Context) error {
 		q := store.New(platform.DBFrom(ctx))
