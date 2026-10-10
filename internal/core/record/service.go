@@ -169,7 +169,7 @@ var documentActions = map[Status][]struct {
 	action Action
 }{
 	Draft:           {{"edit", Edit}, {"delete", Edit}, {"submit", Post}},
-	PendingApproval: {{"withdraw", Edit}},
+	PendingApproval: {{"withdraw", Post}},
 	Posted:          {{"cancel", Cancel}},
 }
 
@@ -338,7 +338,8 @@ func (s *Service) Transition(ctx context.Context, ref Ref, version int32, to Sta
 		case d.Status == Draft && to == Posted:
 			action = Post
 		case d.Status == PendingApproval && to == Draft:
-			action = Edit
+			// Taking back a submission needs the right that sent it, not the right to edit.
+			action = Post
 		case d.Status == Posted && to == Cancelled:
 			action = Cancel
 		default:
