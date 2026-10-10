@@ -1,6 +1,6 @@
 # 0014. Documents table, document numbers and period lock
 
-Status: accepted · 2026-10-05
+Status: accepted · 2026-10-05 · the withdraw permission is amended by [ADR-0029](./0029-withdraw-right-and-tree-lock.md): withdraw needs `Can(post)`
 
 ## Context
 
