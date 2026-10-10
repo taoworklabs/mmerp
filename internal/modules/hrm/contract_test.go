@@ -196,6 +196,8 @@ func TestContractPermissions(t *testing.T) {
 	if _, err := f.hrm.Contract(f.m, id); errCode(err) != "not_found" {
 		t.Fatalf("manager: %v", err)
 	}
+	_, err = f.hrm.CreateContract(f.m, hrm.NewContract{EmployeeID: f.emp, ContractFields: hrm.ContractFields{ContractTypeID: f.kind, StartDate: "2027-01-01", Terms: terms(1)}})
+	wantErr(t, err, "not_found")
 	// HR sends a contract without seeing its terms, and takes it back the same way.
 	f.check(f.appr.SaveRule(f.admin, "hrm.contract", approval.RuleInput{
 		Steps: []approval.Step{{Approver: approval.Approver{Kind: "role", Product: "hrm", Role: "hr"}}}, MaxLevels: 1, FallbackProduct: "hrm", FallbackRole: "hr",
