@@ -9,7 +9,6 @@ import (
 	"sync"
 
 	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgtype"
 
 	"github.com/taoworklabs/mmerp/internal/core/record"
@@ -171,9 +170,4 @@ func (s *Service) today(ctx context.Context) (pgtype.Date, error) {
 		return pgtype.Date{}, err
 	}
 	return store.New(platform.DBFrom(ctx)).Today(ctx, tz)
-}
-
-func isUnique(err error, constraint string) bool {
-	pgErr, ok := errors.AsType[*pgconn.PgError](err)
-	return ok && pgErr.Code == "23505" && pgErr.ConstraintName == constraint
 }

@@ -57,3 +57,9 @@ func mustPool(ctx context.Context) *pgxpool.Pool {
 	}
 	return pool
 }
+
+// Violates reports whether err breaks the named constraint (unique, check or foreign key).
+func Violates(err error, constraint string) bool {
+	pgErr, ok := errors.AsType[*pgconn.PgError](err)
+	return ok && pgErr.ConstraintName == constraint
+}

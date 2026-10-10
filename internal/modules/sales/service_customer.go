@@ -94,7 +94,7 @@ func (s *Service) CreateCustomer(ctx context.Context, in CustomerFields) (int64,
 			Address: platform.NullText(in.Address), Phone: platform.NullText(in.Phone), Email: platform.NullText(in.Email),
 			ContactName: platform.NullText(in.ContactName), PaymentTerms: platform.NullText(in.PaymentTerms), OrgUnitID: in.OrgUnitID, Active: in.Active,
 		})
-		if isUnique(err, "customers_code_key") {
+		if platform.Violates(err, "customers_code_key") {
 			return ErrCustomerCodeTaken
 		}
 		if err != nil {
@@ -123,7 +123,7 @@ func (s *Service) UpdateCustomer(ctx context.Context, id int64, in CustomerField
 			Address: platform.NullText(in.Address), Phone: platform.NullText(in.Phone), Email: platform.NullText(in.Email),
 			ContactName: platform.NullText(in.ContactName), PaymentTerms: platform.NullText(in.PaymentTerms), OrgUnitID: in.OrgUnitID, Active: in.Active,
 		})
-		if isUnique(err, "customers_code_key") {
+		if platform.Violates(err, "customers_code_key") {
 			return ErrCustomerCodeTaken
 		}
 		if err != nil {
