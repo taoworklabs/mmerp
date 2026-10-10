@@ -3,6 +3,7 @@ package hrm_test
 import (
 	"context"
 	"errors"
+	"slices"
 	"sync"
 	"testing"
 	"time"
@@ -452,6 +453,33 @@ func TestCancelRefundsWhatWasDeducted(t *testing.T) {
 	f.check(f.rec.Transition(f.hr, record.Ref{Type: "hrm.leave_request", ID: id}, f.leave(id).Version, record.Cancelled))
 	if f.balance() != "12" {
 		t.Fatalf("after cancel %s", f.balance())
+	}
+}
+
+// The employee's timeline shows a viewer neither balance adjustments nor reads of sensitive data;
+// whoever sees sensitive data sees those reads.
+func TestEmployeeHistoryHidesBalancesAndSensitiveReads(t *testing.T) {
+	f := newLeaveFixture(t)
+	f.grant("12")
+	sens := f.ctxFor("sens", "viewer@*", "sensitive_viewer@*")
+	if _, err := f.hrm.Dependents(sens, f.emp); err != nil {
+		t.Fatal(err)
+	}
+	actions := func(ctx context.Context) []string {
+		t.Helper()
+		h, err := f.rec.History(ctx, record.Ref{Type: "hrm.employee", ID: f.emp})
+		f.check(err)
+		var out []string
+		for _, e := range h {
+			out = append(out, e.Action)
+		}
+		return out
+	}
+	if a := actions(f.ctxFor("viewer", "viewer@*")); slices.Contains(a, "hrm.leave_balance_adjusted") || slices.Contains(a, "hrm.dependents_viewed") {
+		t.Fatalf("viewer sees %v", a)
+	}
+	if a := actions(sens); !slices.Contains(a, "hrm.dependents_viewed") || slices.Contains(a, "hrm.leave_balance_adjusted") {
+		t.Fatalf("sensitive viewer sees %v", a)
 	}
 }
 

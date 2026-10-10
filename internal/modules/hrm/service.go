@@ -60,6 +60,12 @@ func NewService(d Deps) *Service {
 	// Sensitive fields and every person's pay need a role of their own, even for administrators.
 	d.IAM.RegisterSensitive("hrm", PermSensitive, PermSalaryView)
 	d.Record.Register(record.Type{Code: employeeType, Product: "hrm", Kind: record.Catalog, Can: s.can})
+	// A profile's viewer sees neither leave balances nor what sensitive data was read or changed;
+	// on an employee, ViewFiles is view plus the sensitive permission.
+	d.Record.RestrictHistory("hrm.leave_balance_adjusted", "")
+	for _, a := range []string{"hrm.employee_sensitive_viewed", "hrm.dependents_viewed", "hrm.dependent_saved", "hrm.dependent_deleted"} {
+		d.Record.RestrictHistory(a, record.ViewFiles)
+	}
 	d.Record.Register(record.Type{
 		Code: leaveType, Product: "hrm", Kind: record.Document, NumberPrefix: "NP",
 		Fields: []record.Field{
