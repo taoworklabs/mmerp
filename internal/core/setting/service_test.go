@@ -34,7 +34,7 @@ func TestLegalEntitySettings(t *testing.T) {
 	set := setting.NewService()
 	ids := iam.NewService(iam.Deps{Setting: set, Audit: audit.NewService()})
 	set.SetAuthz(ids)
-	set.RegisterLegalEntityKey("hrm.wage_region", "1", []string{"1", "2", "3", "4"})
+	set.RegisterLegalEntityKey("hrm", "hrm.wage_region", "1", []string{"1", "2", "3", "4"})
 	admin := platform.WithActor(ctx, must(ids.CreateAdmin(ctx, "admin", "Admin", "long enough")))
 	c := must(ids.CreateOrgUnit(admin, iam.OrgUnitInput{Kind: "company", Name: "C"}))
 	dept := must(ids.CreateOrgUnit(admin, iam.OrgUnitInput{ParentID: &c, Kind: "department", Name: "A"}))
@@ -54,6 +54,10 @@ func TestLegalEntitySettings(t *testing.T) {
 	}
 	if err := set.SetFor(admin, c, setting.Rounding, "total"); err != nil {
 		t.Fatal(err)
+	}
+	// A product's setting is written only while the product is enabled.
+	if err := set.SetFor(admin, c, "hrm.wage_region", "2"); errCode(err) != "product_not_enabled" {
+		t.Fatalf("hrm off: %v", err)
 	}
 	l, err := set.LegalEntitySettings(admin, c)
 	if err != nil || len(l) != 2 || l[0].Key != "hrm.wage_region" || l[0].Value != "1" || l[1].Value != "total" {
