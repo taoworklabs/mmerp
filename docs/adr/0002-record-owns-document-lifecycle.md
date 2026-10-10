@@ -1,6 +1,6 @@
 # 0002. `record` owns the validity and editability of documents
 
-Status: accepted · 2026-10-05
+Status: accepted · 2026-10-05 · the lock order is extended by [ADR-0029](./0029-withdraw-right-and-tree-lock.md): `Create` and `Edit` share-lock the org tree before reading the legal entity
 
 ## Context
 
