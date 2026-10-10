@@ -20,7 +20,8 @@ const session: Middleware = {
 export const client = createClient<paths>({ baseUrl: '/api' })
 client.use(session)
 
-// Every product's routes live under /<product>/; core routes are the rest.
+// Every product's routes live under /<product>/; core routes are the rest. A Go test in
+// internal/app checks every product is listed.
 type ProductPrefix = '/hrm/' | '/sales/'
 
 // productClient is the shared client typed to one product's routes, so an area cannot call another's.
