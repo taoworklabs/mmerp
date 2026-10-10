@@ -1,4 +1,4 @@
-import { ActionIcon, Button, Group, Stack, Text, Tooltip } from '@mantine/core'
+import { ActionIcon, Box, Button, Group, Stack, Text, Tooltip } from '@mantine/core'
 import { IconFileDollar, IconListDetails, IconNotes, IconPlus, IconTrash } from '@tabler/icons-react'
 import { useState } from 'react'
 import { useFieldArray, useForm, type Path } from 'react-hook-form'
@@ -8,7 +8,7 @@ import { useDocumentMutation } from '@/shared/document'
 import { formatDecimal, formatNumber } from '@/shared/i18n'
 import { DataTable, type Column } from '@/shared/ui/DataTable'
 import { FieldList } from '@/shared/ui/FieldList'
-import { DateField, DecimalField, Form, FormActions, FormRow, FormSection, InputRow, MoneyField, OrgUnitField, SelectField, TextField } from '@/shared/ui/form'
+import { DateField, DecimalField, Form, FormActions, FormRow, FormSection, MoneyField, OrgUnitField, SelectField, TextField } from '@/shared/ui/form'
 import { icon } from '@/shared/ui/theme'
 import { docTypeOf, type Kind } from '../keys'
 import { CustomerField, ItemField } from './pickers'
@@ -241,8 +241,11 @@ function LineFields({
       <DecimalField name={`lines.${index}.quantity`} label={t('sales.line.quantity', { n })} required scale={3} min={0} />
       <MoneyField name={`lines.${index}.unit_price`} label={t('sales.line.unit_price', { n })} required />
       <DecimalField name={`lines.${index}.discount_percent`} label={t('sales.line.discount', { n })} scale={2} min={0} />
-      <InputRow>
-        <SelectField name={`lines.${index}.vat_rate`} label={t('sales.line.vat_rate', { n })} required data={vatOptions} />
+      {/* Not an InputRow: the rate has a label, which the row's fixed height would cut. */}
+      <Group gap="xs" align="flex-end" wrap="nowrap">
+        <Box flex={1} miw={0}>
+          <SelectField name={`lines.${index}.vat_rate`} label={t('sales.line.vat_rate', { n })} required data={vatOptions} />
+        </Box>
         {removable && (
           <Tooltip label={t('sales.line.remove', { n })}>
             <ActionIcon variant="subtle" color="danger" size="lg" aria-label={t('sales.line.remove', { n })} onClick={onRemove}>
@@ -250,7 +253,7 @@ function LineFields({
             </ActionIcon>
           </Tooltip>
         )}
-      </InputRow>
+      </Group>
     </>
   )
 }

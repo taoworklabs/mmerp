@@ -21,9 +21,10 @@
   grid-column: 1 / -1;
 }
 
-/* The height of an sm input, at the bottom of its grid cell. */
+/* The height of an sm input, at the bottom of its grid cell or row; an auto margin, not
+   align-self, so in a column (the filter drawer) it stays at the start. */
 .inputRow {
-  align-self: end;
+  margin-top: auto;
   height: calc(2.25rem * var(--mantine-scale));
 }
 

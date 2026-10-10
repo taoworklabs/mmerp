@@ -9,6 +9,7 @@ import { can, useMe } from '@/shared/auth/me'
 import { finished, jobError, jobKeys, JobOutcome, type Job } from '@/shared/jobs'
 import { errorText, formatDateTime, formatNumber } from '@/shared/i18n'
 import { DataTable, type Column } from '@/shared/ui/DataTable'
+import { InputRow } from '@/shared/ui/form'
 import { FormModal, ListPage } from '@/shared/ui/page'
 import { ContentSkeleton, EmptyState, ErrorState } from '@/shared/ui/states'
 import { StatusBadge, type StatusTone } from '@/shared/ui/StatusBadge'
@@ -96,7 +97,9 @@ export default function JobsPage() {
               onChange={(v) => filter('scope', v === 'system' ? 'system' : null)}
               allowDeselect={false}
             />
-            <Checkbox label={t('core.jobs.only_failed')} checked={onlyFailed} onChange={(e) => filter('failed', e.currentTarget.checked ? '1' : null)} />
+            <InputRow>
+              <Checkbox label={t('core.jobs.only_failed')} checked={onlyFailed} onChange={(e) => filter('failed', e.currentTarget.checked ? '1' : null)} />
+            </InputRow>
           </>
         )
       }
