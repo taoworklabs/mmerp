@@ -183,6 +183,7 @@
   "shared.error.approval_closed": "Bước duyệt này đã được xử lý hoặc lần duyệt đã đóng. Tải lại để xem tình trạng mới.",
   "shared.error.no_approver": "Không tìm được người duyệt cho chứng từ này. Liên hệ quản trị để cấu hình quy tắc duyệt hoặc vai trò dự phòng.",
   "shared.error.self_approval": "Không ai được duyệt chứng từ của chính mình.",
+  "shared.error.approver_cannot_view": "Người này không xem được chứng từ nên không thể duyệt.",
   "shared.error.invalid_rule": "Quy tắc duyệt không hợp lệ ở bước {{step}}.",
   "shared.devui.decimal": "Số có phần lẻ",
   "shared.devui.checkbox": "Ô chọn",

@@ -227,6 +227,10 @@ func TestReassignByTheFallbackRole(t *testing.T) {
 	if code(f.appr.Reassign(f.as("hr"), *d.ApprovalTicket, 1, "submitter")) != "self_approval" {
 		t.Fatal("reassigned to the submitter")
 	}
+	// One who cannot view the document could never act on the step.
+	if code(f.appr.Reassign(f.as("hr"), *d.ApprovalTicket, 1, "outsider")) != "approver_cannot_view" {
+		t.Fatal("reassigned to someone who cannot view it")
+	}
 	f.check(f.appr.Reassign(f.as("hr"), *d.ApprovalTicket, 1, "big_boss"))
 	if code(f.appr.Approve(f.as("boss"), *d.ApprovalTicket, 1)) != "forbidden" {
 		t.Fatal("old approver still approves")

@@ -183,6 +183,7 @@
   "shared.error.approval_closed": "This step was already decided or the submission is closed. Reload to see its state.",
   "shared.error.no_approver": "No approver could be found for this document. Ask an administrator to set up the approval rule or its fallback role.",
   "shared.error.self_approval": "Nobody approves their own document.",
+  "shared.error.approver_cannot_view": "This person cannot view the document, so they could never approve it.",
   "shared.error.invalid_rule": "The approval rule is not valid at step {{step}}.",
   "shared.devui.decimal": "Decimal number",
   "shared.devui.checkbox": "Checkbox",
