@@ -70,6 +70,10 @@ type Type struct {
 	// Subjects returns the users a document is about (e.g. the employee on leave);
 	// like its submitter, they never approve it.
 	Subjects func(ctx context.Context, id int64) ([]int64, error)
+
+	// Catalog types only. HasData reports whether the product holds any such record, so a
+	// disabled product with master data but no document stays readable.
+	HasData func(ctx context.Context) (bool, error)
 }
 
 type FieldKind string

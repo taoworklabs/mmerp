@@ -209,4 +209,11 @@ func TestMeListsProductsWithData(t *testing.T) {
 	if me := must[iam.Me](t)(s.Me(off)); !slices.Equal(me.ProductsWithData, []string{"test"}) || len(me.Products) != 0 {
 		t.Fatalf("after a record: %+v", me)
 	}
+	// Master data counts too, without any document.
+	rec.Register(record.Type{Code: "cat.customer", Product: "cat", Kind: record.Catalog,
+		Can:     func(context.Context, int64, record.Action) (bool, error) { return true, nil },
+		HasData: func(context.Context) (bool, error) { return true, nil }})
+	if me := must[iam.Me](t)(s.Me(off)); !slices.Equal(me.ProductsWithData, []string{"cat", "test"}) {
+		t.Fatalf("with master data: %+v", me.ProductsWithData)
+	}
 }

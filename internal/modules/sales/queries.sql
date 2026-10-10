@@ -151,3 +151,7 @@ SET customer_code = c.code, customer_name = c.name, customer_tax_code = c.tax_co
 FROM sales.customers c
 WHERE h.id = $1 AND c.id = h.customer_id
 RETURNING c.active;
+
+-- name: AnyCatalog :one
+-- Items count as Sales data too, though they are no record type.
+SELECT (EXISTS (SELECT 1 FROM sales.customers) OR EXISTS (SELECT 1 FROM sales.items))::bool AS any;

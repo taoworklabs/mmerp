@@ -103,7 +103,7 @@ func (s *Service) DocumentTypes() []Type {
 	return out
 }
 
-// ProductsWithData lists, sorted, the products that have at least one document.
+// ProductsWithData lists, sorted, the products that have a document or master data.
 func (s *Service) ProductsWithData(ctx context.Context) ([]string, error) {
 	var codes []string
 	for _, t := range s.DocumentTypes() {
@@ -117,6 +117,16 @@ func (s *Service) ProductsWithData(ctx context.Context) ([]string, error) {
 	for _, c := range used {
 		if p := s.types[c].Product; !slices.Contains(out, p) {
 			out = append(out, p)
+		}
+	}
+	for _, t := range s.types {
+		if t.HasData == nil || slices.Contains(out, t.Product) {
+			continue
+		}
+		if ok, err := t.HasData(ctx); err != nil {
+			return nil, err
+		} else if ok {
+			out = append(out, t.Product)
 		}
 	}
 	slices.Sort(out)

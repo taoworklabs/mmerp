@@ -11,6 +11,18 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const anyCatalog = `-- name: AnyCatalog :one
+SELECT (EXISTS (SELECT 1 FROM sales.customers) OR EXISTS (SELECT 1 FROM sales.items))::bool AS any
+`
+
+// Items count as Sales data too, though they are no record type.
+func (q *Queries) AnyCatalog(ctx context.Context) (bool, error) {
+	row := q.db.QueryRow(ctx, anyCatalog)
+	var any bool
+	err := row.Scan(&any)
+	return any, err
+}
+
 const copyCustomer = `-- name: CopyCustomer :one
 UPDATE sales.headers h
 SET customer_code = c.code, customer_name = c.name, customer_tax_code = c.tax_code, customer_address = c.address,

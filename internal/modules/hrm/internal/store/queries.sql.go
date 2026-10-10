@@ -31,6 +31,17 @@ func (q *Queries) AddLeaveBalance(ctx context.Context, arg AddLeaveBalanceParams
 	return days, err
 }
 
+const anyEmployee = `-- name: AnyEmployee :one
+SELECT EXISTS (SELECT 1 FROM hrm.employees)
+`
+
+func (q *Queries) AnyEmployee(ctx context.Context) (bool, error) {
+	row := q.db.QueryRow(ctx, anyEmployee)
+	var exists bool
+	err := row.Scan(&exists)
+	return exists, err
+}
+
 const clearPayrollComputed = `-- name: ClearPayrollComputed :exec
 UPDATE hrm.payrolls SET computed_at = NULL WHERE id = $1
 `
