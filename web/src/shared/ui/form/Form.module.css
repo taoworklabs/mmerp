@@ -17,11 +17,11 @@
   text-align: right;
 }
 
-/* The height of an sm input, at the bottom of its grid cell. */
 .fullRow {
   grid-column: 1 / -1;
 }
 
+/* The height of an sm input, at the bottom of its grid cell. */
 .inputRow {
   align-self: end;
   height: calc(2.25rem * var(--mantine-scale));

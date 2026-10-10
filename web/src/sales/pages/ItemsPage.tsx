@@ -25,7 +25,9 @@ export function ItemsPage() {
   const { t } = useTranslation()
   const vat = useVatOptions()
   // Catalogue writes have no allowed_actions; a disabled product is read-only.
-  const writable = useCan('sales.item.manage') && useProductOn('sales')
+  const canManage = useCan('sales.item.manage')
+  const on = useProductOn('sales')
+  const writable = canManage && on
   const [editing, setEditing] = useState<Item | 'new' | null>(null)
   const [params, set] = useListParams(defaults)
   const { q } = params.filters as typeof defaults.filters
