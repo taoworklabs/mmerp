@@ -38,8 +38,8 @@ func (s *Service) LeaveTypes(ctx context.Context) ([]LeaveType, error) {
 
 // SaveLeaveType creates a kind of leave (id 0) or replaces one. Kinds are tenant-wide.
 func (s *Service) SaveLeaveType(ctx context.Context, id int64, in LeaveTypeInput) (int64, error) {
-	if sc, err := s.d.IAM.Scope(ctx, "hrm", PermLeaveTypeManage); err != nil || !sc.All {
-		return 0, platform.OrErr(err, platform.ErrForbidden)
+	if err := s.d.IAM.RequireTenantWide(ctx, "hrm", PermLeaveTypeManage); err != nil {
+		return 0, err
 	}
 	err := platform.InTx(ctx, func(ctx context.Context) error {
 		q := store.New(platform.DBFrom(ctx))

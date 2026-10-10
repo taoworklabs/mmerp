@@ -39,8 +39,8 @@ func (s *Service) ContractTypes(ctx context.Context) ([]ContractType, error) {
 
 // SaveContractType creates a kind of contract (id 0) or replaces one. Kinds are tenant-wide.
 func (s *Service) SaveContractType(ctx context.Context, id int64, in ContractTypeInput) (int64, error) {
-	if sc, err := s.d.IAM.Scope(ctx, "hrm", PermContractTypeManage); err != nil || !sc.All {
-		return 0, platform.OrErr(err, platform.ErrForbidden)
+	if err := s.d.IAM.RequireTenantWide(ctx, "hrm", PermContractTypeManage); err != nil {
+		return 0, err
 	}
 	err := platform.InTx(ctx, func(ctx context.Context) error {
 		q := store.New(platform.DBFrom(ctx))

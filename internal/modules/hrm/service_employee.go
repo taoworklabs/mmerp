@@ -304,11 +304,11 @@ func (s *Service) prepare(ctx context.Context, old store.HrmEmployee, in Employe
 	}
 	if v := in.Sensitive; v != nil {
 		// Both the old and the new unit must allow it, so a move cannot launder access.
-		units := []int64{in.OrgUnitID}
+		var was []int64
 		if old.ID != 0 {
-			units = append(units, old.OrgUnitID)
+			was = append(was, old.OrgUnitID)
 		}
-		if err := s.require(ctx, PermSensitive, units...); err != nil {
+		if err := s.require(ctx, PermSensitive, in.OrgUnitID, was...); err != nil {
 			return old, err
 		}
 		for field, val := range map[string]*string{"national_id": v.NationalID, "social_insurance_no": v.SocialInsuranceNo, "tax_code": v.TaxCode, "bank_account": v.BankAccount} {
