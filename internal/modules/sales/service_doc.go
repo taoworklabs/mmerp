@@ -120,8 +120,9 @@ func (s *Service) doc(ctx context.Context, k kind, id int64) (Doc, error) {
 		OrgUnitID: h.OrgUnitID, OrgUnitName: h.OrgUnitName, Customer: customerCopy(h),
 		ValidUntil: platform.DatePtr(h.ValidUntil), DeliveryDate: platform.DatePtr(h.DeliveryDate),
 		PaymentTerms: platform.TextPtr(h.PaymentTerms), DeliveryTerms: platform.TextPtr(h.DeliveryTerms), Note: platform.TextPtr(h.Note),
-		Lines:  make([]Line, len(lines)),
-		Totals: Totals{Subtotal: h.Subtotal, DiscountTotal: h.DiscountTotal, VatTotal: h.VatTotal, Total: h.Total},
+		Lines:       make([]Line, len(lines)),
+		Totals:      Totals{Subtotal: h.Subtotal, DiscountTotal: h.DiscountTotal, VatTotal: h.VatTotal, Total: h.Total},
+		MaxDiscount: d.Fields["max_discount"],
 	}
 	for i, l := range lines {
 		out.Lines[i] = Line{
@@ -406,6 +407,9 @@ func (s *Service) CreateOrderFromQuote(ctx context.Context, quoteID int64) (int6
 		q := store.New(platform.DBFrom(ctx))
 		live, err := q.LiveOrder(ctx, pgtype.Int8{Int64: quoteID, Valid: true})
 		if err == nil {
+			if ok, err := s.d.Record.Can(ctx, orderType, live.ID, record.View); err != nil || !ok {
+				return platform.OrErr(err, ErrQuoteHasOrder)
+			}
 			id = live.ID
 			return nil
 		}

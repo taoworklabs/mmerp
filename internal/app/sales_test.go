@@ -99,6 +99,10 @@ func TestSalesProductOff(t *testing.T) {
 		t.Fatalf("actions with Sales off: %v", q.AllowedActions)
 	}
 	f.ok(off, "GET", fmt.Sprintf("/api/sales/customers/%d", f.customer), "", 200)
+	customer := fmt.Sprintf(`{"code":"KH9","name":"Khách 9","tax_code":null,"address":null,"phone":null,"email":null,
+		"contact_name":null,"payment_terms":null,"org_unit_id":%d,"active":true}`, f.a)
+	wantCode(t, off.do("POST", "/api/sales/customers", customer), 403, "product_not_enabled")
+	wantCode(t, off.do("PUT", fmt.Sprintf("/api/sales/customers/%d", f.customer), customer), 403, "product_not_enabled")
 	wantCode(t, off.do("POST", fmt.Sprintf("/api/sales/quotes/%d/order", f.quote), ""), 403, "product_not_enabled")
 	wantCode(t, off.do("POST", fmt.Sprintf("/api/documents/sales.quote/%d/transitions", f.quote), `{"to":"posted","version":1}`), 403, "product_not_enabled")
 	if pages := f.printed(off, "sales.quote", fmt.Sprintf(`{"id":%d}`, f.quote)); !strings.Contains(pages[0], "Công ty Ánh Dương") {

@@ -40,16 +40,86 @@ const items: [string, string, string, number, string, boolean][] = [
 type Team = 'hn' | 'hcm'
 // [code, name, team, tax code, address, phone, contact, payment terms, active]
 const customers: [string, string, Team, string | null, string, string, string | null, string, boolean][] = [
-  ['KH001', 'Công ty TNHH Thương mại Hoàng Long', 'hn', '0101111111', '12 Láng Hạ, Đống Đa, Hà Nội', '024 3771 1111', 'Anh Hoàng Văn Long', 'Thanh toán trong 30 ngày', true],
-  ['KH002', 'Trường THCS Nguyễn Du', 'hn', '0102222222', '45 Nguyễn Du, Hai Bà Trưng, Hà Nội', '024 3822 2222', 'Cô Phạm Thị Hạnh', 'Chuyển khoản sau nghiệm thu', true],
-  ['KH003', 'Công ty CP Xây dựng An Phát', 'hn', '0103333333', '8 Phạm Hùng, Cầu Giấy, Hà Nội', '024 3793 3333', 'Chị Nguyễn Thu Hằng', 'Tạm ứng 30%, còn lại trong 15 ngày', true],
-  ['KH004', 'Phòng khám Đa khoa Hà Đông', 'hn', '0104444444', '102 Quang Trung, Hà Đông, Hà Nội', '024 3355 4444', 'Bác sĩ Trần Minh', 'Thanh toán khi nhận hàng', true],
+  [
+    'KH001',
+    'Công ty TNHH Thương mại Hoàng Long',
+    'hn',
+    '0101111111',
+    '12 Láng Hạ, Đống Đa, Hà Nội',
+    '024 3771 1111',
+    'Anh Hoàng Văn Long',
+    'Thanh toán trong 30 ngày',
+    true,
+  ],
+  [
+    'KH002',
+    'Trường THCS Nguyễn Du',
+    'hn',
+    '0102222222',
+    '45 Nguyễn Du, Hai Bà Trưng, Hà Nội',
+    '024 3822 2222',
+    'Cô Phạm Thị Hạnh',
+    'Chuyển khoản sau nghiệm thu',
+    true,
+  ],
+  [
+    'KH003',
+    'Công ty CP Xây dựng An Phát',
+    'hn',
+    '0103333333',
+    '8 Phạm Hùng, Cầu Giấy, Hà Nội',
+    '024 3793 3333',
+    'Chị Nguyễn Thu Hằng',
+    'Tạm ứng 30%, còn lại trong 15 ngày',
+    true,
+  ],
+  [
+    'KH004',
+    'Phòng khám Đa khoa Hà Đông',
+    'hn',
+    '0104444444',
+    '102 Quang Trung, Hà Đông, Hà Nội',
+    '024 3355 4444',
+    'Bác sĩ Trần Minh',
+    'Thanh toán khi nhận hàng',
+    true,
+  ],
   ['KH005', 'Anh Nguyễn Văn Bình', 'hn', null, '27 Ngõ Huế, Hai Bà Trưng, Hà Nội', '0912 555 555', null, 'Thanh toán khi nhận hàng', true],
-  ['KH006', 'Công ty TNHH Nhà hàng Sài Gòn Xanh', 'hcm', '0306666666', '88 Lê Thánh Tôn, Quận 1, TP.HCM', '028 3822 6666', 'Anh Lê Quốc Huy', 'Thanh toán trong 15 ngày', true],
-  ['KH007', 'Công ty CP Dược phẩm Phương Nam', 'hcm', '0307777777', '210 Cộng Hòa, Tân Bình, TP.HCM', '028 3811 7777', 'Chị Võ Ngọc Trâm', 'Thanh toán trong 45 ngày', true],
+  [
+    'KH006',
+    'Công ty TNHH Nhà hàng Sài Gòn Xanh',
+    'hcm',
+    '0306666666',
+    '88 Lê Thánh Tôn, Quận 1, TP.HCM',
+    '028 3822 6666',
+    'Anh Lê Quốc Huy',
+    'Thanh toán trong 15 ngày',
+    true,
+  ],
+  [
+    'KH007',
+    'Công ty CP Dược phẩm Phương Nam',
+    'hcm',
+    '0307777777',
+    '210 Cộng Hòa, Tân Bình, TP.HCM',
+    '028 3811 7777',
+    'Chị Võ Ngọc Trâm',
+    'Thanh toán trong 45 ngày',
+    true,
+  ],
   ['KH008', 'Khách sạn Bến Thành', 'hcm', '0308888888', '5 Phạm Ngũ Lão, Quận 1, TP.HCM', '028 3836 8888', 'Anh Đặng Minh Khôi', 'Tạm ứng 50%', true],
   ['KH009', 'Chị Trần Thị Lan', 'hcm', null, '14 Nguyễn Trãi, Quận 5, TP.HCM', '0903 999 999', null, 'Thanh toán khi nhận hàng', true],
-  ['KH010', 'Công ty TNHH Logistics Đông Á', 'hcm', '0310101010', '3 Nguyễn Tất Thành, Quận 4, TP.HCM', '028 3940 1010', 'Anh Phan Đông', 'Thanh toán trong 30 ngày', false],
+  [
+    'KH010',
+    'Công ty TNHH Logistics Đông Á',
+    'hcm',
+    '0310101010',
+    '3 Nguyễn Tất Thành, Quận 4, TP.HCM',
+    '028 3940 1010',
+    'Anh Phan Đông',
+    'Thanh toán trong 30 ngày',
+    false,
+  ],
 ]
 
 // A line: item code, quantity, discount %, and a unit price when it differs from the catalogue.
@@ -57,22 +127,129 @@ type Line = [string, string, string, number?]
 type Quote = { by: string; customer: string; date: string; until: string; lines: Line[]; outcome: Outcome; order?: Outcome; why?: string }
 
 const quotes: Quote[] = [
-  { by: 'kd.hn', customer: 'KH001', date: '2026-09-03', until: '2026-10-31', lines: [['LAP-14', '5', '0'], ['MH-27', '5', '5'], ['DV-LD', '5', '0']], outcome: 'approved', order: 'approved' },
-  { by: 'kd.hn', customer: 'KH002', date: '2026-09-10', until: '2026-10-31', lines: [['GHE-VP', '40', '12'], ['BAN-LV', '20', '12'], ['DV-VC', '3', '0']], outcome: 'approved', order: 'draft' },
-  { by: 'kd.hn2', customer: 'KH003', date: '2026-09-18', until: '2026-11-15', lines: [['VPP-A4', '200', '0'], ['BUT-TL', '30', '0'], ['MUC-LZ', '10', '5']], outcome: 'approved' },
+  {
+    by: 'kd.hn',
+    customer: 'KH001',
+    date: '2026-09-03',
+    until: '2026-10-31',
+    lines: [
+      ['LAP-14', '5', '0'],
+      ['MH-27', '5', '5'],
+      ['DV-LD', '5', '0'],
+    ],
+    outcome: 'approved',
+    order: 'approved',
+  },
+  {
+    by: 'kd.hn',
+    customer: 'KH002',
+    date: '2026-09-10',
+    until: '2026-10-31',
+    lines: [
+      ['GHE-VP', '40', '12'],
+      ['BAN-LV', '20', '12'],
+      ['DV-VC', '3', '0'],
+    ],
+    outcome: 'approved',
+    order: 'draft',
+  },
+  {
+    by: 'kd.hn2',
+    customer: 'KH003',
+    date: '2026-09-18',
+    until: '2026-11-15',
+    lines: [
+      ['VPP-A4', '200', '0'],
+      ['BUT-TL', '30', '0'],
+      ['MUC-LZ', '10', '5'],
+    ],
+    outcome: 'approved',
+  },
   { by: 'kd.hn2', customer: 'KH005', date: '2026-10-02', until: '2026-10-31', lines: [['LAP-14', '1', '15']], outcome: 'pending' },
-  { by: 'kd.hn', customer: 'KH001', date: '2026-10-08', until: '2026-11-30', lines: [['MIN-LZ', '3', '0'], ['MUC-LZ', '6', '0']], outcome: 'draft' },
+  {
+    by: 'kd.hn',
+    customer: 'KH001',
+    date: '2026-10-08',
+    until: '2026-11-30',
+    lines: [
+      ['MIN-LZ', '3', '0'],
+      ['MUC-LZ', '6', '0'],
+    ],
+    outcome: 'draft',
+  },
   { by: 'kd.hn', customer: 'KH003', date: '2026-08-20', until: '2026-09-15', lines: [['DV-BT', '12', '5']], outcome: 'approved' },
-  { by: 'kd.hn2', customer: 'KH004', date: '2026-09-25', until: '2026-10-25', lines: [['MH-27', '10', '20']], outcome: 'rejected', why: 'Chiết khấu 20% vượt mức cho phép, đề xuất tối đa 10%' },
-  { by: 'kd.hcm', customer: 'KH006', date: '2026-09-05', until: '2026-10-20', lines: [['NUOC-20L', '100', '0'], ['GAO-5KG', '50', '3'], ['DV-VC', '4', '0']], outcome: 'approved', order: 'approved' },
-  { by: 'kd.hcm', customer: 'KH007', date: '2026-09-15', until: '2026-12-31', lines: [['PM-KT', '10', '10'], ['DV-DT', '4', '0']], outcome: 'cancelled' },
-  { by: 'kd.hcm', customer: 'KH008', date: '2026-09-28', until: '2026-11-30', lines: [['LAP-14', '20', '8'], ['MH-27', '20', '8'], ['DV-LD', '20', '0']], outcome: 'approved', order: 'pending' },
-  { by: 'kd.hcm', customer: 'KH009', date: '2026-10-06', until: '2026-10-31', lines: [['GHE-VP', '2', '0'], ['BAN-LV', '1', '0', 2_100_000]], outcome: 'draft' },
+  {
+    by: 'kd.hn2',
+    customer: 'KH004',
+    date: '2026-09-25',
+    until: '2026-10-25',
+    lines: [['MH-27', '10', '20']],
+    outcome: 'rejected',
+    why: 'Chiết khấu 20% vượt mức cho phép, đề xuất tối đa 10%',
+  },
+  {
+    by: 'kd.hcm',
+    customer: 'KH006',
+    date: '2026-09-05',
+    until: '2026-10-20',
+    lines: [
+      ['NUOC-20L', '100', '0'],
+      ['GAO-5KG', '50', '3'],
+      ['DV-VC', '4', '0'],
+    ],
+    outcome: 'approved',
+    order: 'approved',
+  },
+  {
+    by: 'kd.hcm',
+    customer: 'KH007',
+    date: '2026-09-15',
+    until: '2026-12-31',
+    lines: [
+      ['PM-KT', '10', '10'],
+      ['DV-DT', '4', '0'],
+    ],
+    outcome: 'cancelled',
+  },
+  {
+    by: 'kd.hcm',
+    customer: 'KH008',
+    date: '2026-09-28',
+    until: '2026-11-30',
+    lines: [
+      ['LAP-14', '20', '8'],
+      ['MH-27', '20', '8'],
+      ['DV-LD', '20', '0'],
+    ],
+    outcome: 'approved',
+    order: 'pending',
+  },
+  {
+    by: 'kd.hcm',
+    customer: 'KH009',
+    date: '2026-10-06',
+    until: '2026-10-31',
+    lines: [
+      ['GHE-VP', '2', '0'],
+      ['BAN-LV', '1', '0', 2_100_000],
+    ],
+    outcome: 'draft',
+  },
 ]
 
 type Order = { by: string; customer: string; date: string; delivery?: string; lines: Line[]; outcome: Outcome }
 const orders: Order[] = [
-  { by: 'kd.hn', customer: 'KH002', date: '2026-09-29', delivery: '2026-10-05', lines: [['VPP-A4', '50', '0'], ['BUT-TL', '10', '0']], outcome: 'approved' },
+  {
+    by: 'kd.hn',
+    customer: 'KH002',
+    date: '2026-09-29',
+    delivery: '2026-10-05',
+    lines: [
+      ['VPP-A4', '50', '0'],
+      ['BUT-TL', '10', '0'],
+    ],
+    outcome: 'approved',
+  },
   { by: 'kd.hcm', customer: 'KH006', date: '2026-10-01', delivery: '2026-10-03', lines: [['NUOC-20L', '60', '0']], outcome: 'approved' },
   { by: 'kd.hcm', customer: 'KH008', date: '2026-10-05', lines: [['DV-BT', '6', '0']], outcome: 'cancelled' },
   { by: 'kd.hn2', customer: 'KH005', date: '2026-10-09', delivery: '2026-10-15', lines: [['MUC-LZ', '2', '0']], outcome: 'draft' },
@@ -182,7 +359,12 @@ test('seed Sales on the Demo demo company', async ({ baseURL }) => {
         }
       }
       if (!item) return
-      await ok(by!.post(`/api/approvals/${item.instance_id}/${reject ? 'reject' : 'approve'}`, { data: reject ? { step: item.step, reason: reject } : { step: item.step } }), `decide ${id}`)
+      await ok(
+        by!.post(`/api/approvals/${item.instance_id}/${reject ? 'reject' : 'approve'}`, {
+          data: reject ? { step: item.step, reason: reject } : { step: item.step },
+        }),
+        `decide ${id}`,
+      )
       if (reject) return
     }
   }

@@ -189,6 +189,8 @@ type Doc struct {
 	Note          *string      `json:"note"`
 	Lines         []Line       `json:"lines" nullable:"false"`
 	Totals
+	// The approval field: the largest line discount against the catalogue price, in percent.
+	MaxDiscount string `json:"max_discount"`
 	// Quotations: past their validity date; an order not cancelled comes from it, and that
 	// order when the actor may view it.
 	Expired bool    `json:"expired"`

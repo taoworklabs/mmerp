@@ -1,10 +1,12 @@
+import type { Doc } from '@/shared/api/sales'
+
 // The record types of the sales area, as registered by the backend.
 export const quoteDocType = 'sales.quote'
 export const orderDocType = 'sales.order'
 export const customerDocType = 'sales.customer'
 
 // A quotation or a sales order: the two share every screen.
-export type Kind = 'quote' | 'order'
+export type Kind = Doc['kind']
 export const docTypeOf = (k: Kind) => (k === 'quote' ? quoteDocType : orderDocType)
 export const pathOf = (k: Kind) => (k === 'quote' ? 'quotes' : 'orders')
 

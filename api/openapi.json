@@ -1368,6 +1368,9 @@
             },
             "type": "array"
           },
+          "max_discount": {
+            "type": "string"
+          },
           "note": {
             "type": [
               "string",
@@ -1448,6 +1451,7 @@
           "delivery_terms",
           "note",
           "lines",
+          "max_discount",
           "expired",
           "ordered",
           "order",

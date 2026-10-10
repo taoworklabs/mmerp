@@ -27,13 +27,13 @@ type Service struct {
 	d          Deps
 	roles      map[string]map[string][]string // product → role → permissions
 	tenantWide map[[2]string]bool             // product, role
-	sensitive  map[string]bool                // permissions core.admin does not imply
+	sensitive  map[[2]string]bool             // product, permission core.admin does not imply
 	tree       TreeHook
 	data       DataProducts
 }
 
 func NewService(d Deps) *Service {
-	s := &Service{d: d, roles: map[string]map[string][]string{}, tenantWide: map[[2]string]bool{}, sensitive: map[string]bool{}}
+	s := &Service{d: d, roles: map[string]map[string][]string{}, tenantWide: map[[2]string]bool{}, sensitive: map[[2]string]bool{}}
 	s.RegisterRoles("core", map[string][]string{"admin": {PermManageOrg, PermManageUsers, PermManagePeriods, PermManageApproval, PermMonitorJobs, PermManageMail, PermManagePrint, setting.PermManage}}, "admin")
 	return s
 }
@@ -293,13 +293,13 @@ func (s *Service) RegisterRoles(product string, roles map[string][]string, tenan
 // Call it while wiring modules, before serving.
 func (s *Service) RegisterSensitive(product string, permissions ...string) {
 	for _, p := range permissions {
-		s.sensitive[p] = true
+		s.sensitive[[2]string{product, p}] = true
 	}
 }
 
 // adminImplies reports whether a tenant-wide core.admin holds perm of product without a role.
 func (s *Service) adminImplies(product, perm string) bool {
-	return product != "core" && !s.sensitive[perm]
+	return product != "core" && !s.sensitive[[2]string{product, perm}]
 }
 
 // isAdmin: core.admin granted tenant-wide (it can be granted no other way).

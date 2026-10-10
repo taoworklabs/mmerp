@@ -26,12 +26,12 @@ const (
 
 // kind is what differs between quotations and orders; everything else is shared.
 type kind struct {
-	name, docType, view, edit string
+	name, docType, prefix, view, edit string
 }
 
 var (
-	quoteKind = kind{"quote", quoteType, PermQuoteView, PermQuoteEdit}
-	orderKind = kind{"order", orderType, PermOrderView, PermOrderEdit}
+	quoteKind = kind{"quote", quoteType, "BG", PermQuoteView, PermQuoteEdit}
+	orderKind = kind{"order", orderType, "DH", PermOrderView, PermOrderEdit}
 )
 
 type Service struct{ d Deps }
@@ -66,9 +66,8 @@ func NewService(d Deps) *Service {
 	}, "catalog_admin", "approval_admin")
 	d.Record.Register(record.Type{Code: customerType, Product: "sales", Kind: record.Catalog, Can: s.canCustomer})
 	for _, k := range []kind{quoteKind, orderKind} {
-		prefix := map[string]string{"quote": "BG", "order": "DH"}[k.name]
 		d.Record.Register(record.Type{
-			Code: k.docType, Product: "sales", Kind: record.Document, NumberPrefix: prefix,
+			Code: k.docType, Product: "sales", Kind: record.Document, NumberPrefix: k.prefix,
 			Fields:       []record.Field{{Key: "max_discount", Kind: record.Number, Label: "sales.doc.max_discount"}},
 			Can:          s.canDoc(k),
 			OnTransition: s.transition,

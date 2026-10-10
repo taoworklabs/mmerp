@@ -1906,6 +1906,7 @@ export interface components {
             /** @enum {string} */
             kind: "quote" | "order";
             lines: components["schemas"]["Line"][];
+            max_discount: string;
             note: string | null;
             number: string;
             order: components["schemas"]["DocRef"];

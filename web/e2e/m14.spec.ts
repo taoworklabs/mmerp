@@ -9,7 +9,9 @@ const team = `Kinh doanh A ${run}`
 
 test.beforeAll(async ({ baseURL }) => {
   const api = await signedInApi(baseURL!)
-  const company = await created(api.post('/api/org-units', { data: { parent_id: null, kind: 'company', name: `Công ty M14 ${run}`, legal_name: `Công ty TNHH M14 ${run}` } }))
+  const company = await created(
+    api.post('/api/org-units', { data: { parent_id: null, kind: 'company', name: `Công ty M14 ${run}`, legal_name: `Công ty TNHH M14 ${run}` } }),
+  )
   const a = await created(api.post('/api/org-units', { data: { parent_id: company, kind: 'department', name: team } }))
   const b = await created(api.post('/api/org-units', { data: { parent_id: company, kind: 'department', name: `Kinh doanh B ${run}` } }))
   await createUser(api, login.staff, [{ role: 'sales.staff', unit: a }])
@@ -67,6 +69,7 @@ test('customer and item, a quotation approved by the manager, printed, then orde
   await staff.getByRole('textbox', { name: 'Điều kiện thanh toán' }).fill('Thanh toán trong 30 ngày')
   await staff.getByRole('button', { name: 'Thêm khách hàng' }).click()
   await expect(staff.getByRole('heading', { name: `Công ty Ánh Dương ${run}` })).toBeVisible()
+  const customerUrl = staff.url()
 
   // A quotation with a 15 % discount: twelve boxes at 10,005.
   await staff.goto('/sales/quotes')
@@ -97,10 +100,17 @@ test('customer and item, a quotation approved by the manager, printed, then orde
   await expect(other.getByText('Chưa có báo giá')).toBeVisible()
   await other.goto(quoteUrl)
   await expect(other.getByRole('link', { name: 'Về danh sách báo giá' })).toBeVisible()
+  await other.goto('/sales/customers')
+  await expect(other.getByText('Chưa có khách hàng')).toBeVisible()
+  await other.goto(customerUrl)
+  await expect(other.getByRole('link', { name: 'Về danh sách khách hàng' })).toBeVisible()
 
   // The manager approves it from the inbox.
   const manager = await as(browser, login.manager, '/inbox')
-  await manager.getByRole('button', { name: /BG-\d{4}-/ }).first().click()
+  await manager
+    .getByRole('button', { name: /BG-\d{4}-/ })
+    .first()
+    .click()
   await expect(manager.getByText(`KH${run} · Công ty Ánh Dương ${run}`)).toBeVisible()
   await manager.getByRole('button', { name: 'Duyệt', exact: true }).click()
 
@@ -128,6 +138,10 @@ test('customer and item, a quotation approved by the manager, printed, then orde
   // No discount above 10 % on orders' rule: sending confirms it at once.
   await staff.getByRole('button', { name: 'Gửi duyệt' }).click()
   await expect(staff.getByText('Đã xác nhận').first()).toBeVisible()
+  await other.goto(orderUrl)
+  await expect(other.getByRole('link', { name: 'Về danh sách đơn bán hàng' })).toBeVisible()
+  await other.goto('/sales/orders')
+  await expect(other.getByText('Chưa có đơn bán hàng')).toBeVisible()
   await staff.goto(quoteUrl)
   await expect(staff.getByText('Đã lên đơn')).toBeVisible()
   await expect(staff.getByRole('button', { name: 'Tạo đơn bán hàng' })).toHaveCount(0)
