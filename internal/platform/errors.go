@@ -12,7 +12,16 @@ import (
 
 // Every importer of platform gets coded errors from the framework too, so no
 // handler can leak Huma's default body with internal messages.
-func init() { huma.NewError = NewHumaError }
+func init() {
+	huma.NewError = NewHumaError
+	// The client only gets internal_error, so the cause is logged or lost.
+	huma.NewErrorWithContext = func(ctx huma.Context, status int, msg string, errs ...error) huma.StatusError {
+		if status >= http.StatusInternalServerError {
+			LogFrom(ctx.Context()).Error("request failed", "status", status, "err", errors.Join(errs...))
+		}
+		return NewHumaError(status, msg, errs...)
+	}
+}
 
 // Error is what the API returns: a stable code with parameters, never a sentence.
 // The frontend translates the code.
