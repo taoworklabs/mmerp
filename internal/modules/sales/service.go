@@ -63,7 +63,8 @@ func NewService(d Deps) *Service {
 		"catalog_admin":  {PermItemView, PermItemManage},
 		"approval_admin": {PermApprovalManage},
 	}, "catalog_admin", "approval_admin")
-	d.Record.Register(record.Type{Code: customerType, Product: "sales", Kind: record.Catalog, Can: s.canCustomer})
+	d.Record.Register(record.Type{Code: customerType, Product: "sales", Kind: record.Catalog, Can: s.canCustomer,
+		HasData: func(ctx context.Context) (bool, error) { return store.New(platform.DBFrom(ctx)).AnyCatalog(ctx) }})
 	for _, k := range []kind{quoteKind, orderKind} {
 		d.Record.Register(record.Type{
 			Code: k.docType, Product: "sales", Kind: record.Document, NumberPrefix: k.prefix,

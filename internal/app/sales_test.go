@@ -110,6 +110,24 @@ func TestSalesProductOff(t *testing.T) {
 	}
 }
 
+// A catalogue alone is Sales data: with Sales off, its area still shows.
+func TestSalesCatalogueIsData(t *testing.T) {
+	pool := pgtest.New(t)
+	if err := app.CreateAdmin(t.Context(), pool, "admin", "Admin", "correct horse"); err != nil {
+		t.Fatal(err)
+	}
+	f := &jobsFixture{t: t, pool: pool, env: env(t, pool, []string{"sales"})}
+	f.id(f.login("admin"), "/api/sales/items", `{"code":"BUT","name":"Bút bi","unit":"hộp","price":10005,"vat_rate":"8","active":true}`)
+	f.env = env(t, pool, nil)
+	var me struct {
+		ProductsWithData []string `json:"products_with_data"`
+	}
+	_ = json.Unmarshal(f.ok(f.login("admin"), "GET", "/api/me", "", 200), &me)
+	if !slices.Equal(me.ProductsWithData, []string{"sales"}) {
+		t.Fatalf("products with data: %v", me.ProductsWithData)
+	}
+}
+
 // newSalesFixtureOn signs staff of A in again on a server running with products.
 func newSalesFixtureOn(f *salesFixture, products []string) *client {
 	f.env = env(f.t, f.pool, products)

@@ -574,3 +574,6 @@ SELECT employee_id, days::text AS days FROM hrm.leave_balances WHERE employee_id
 
 -- name: PrintLegalEntity :one
 SELECT coalesce(legal_name, name)::text AS name, tax_code, address FROM iam.org_units WHERE id = $1;
+
+-- name: AnyEmployee :one
+SELECT EXISTS (SELECT 1 FROM hrm.employees);
