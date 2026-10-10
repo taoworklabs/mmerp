@@ -79,9 +79,9 @@ The server computes and stores every amount on each draft save; screens and prin
 
 ## What a document keeps
 
-On each draft save a document copies the customer's code, name, tax code, address, phone, email and contact person, and for each line the item's code and unit. The line description, unit price and VAT rate start from the item and may be changed on the line; payment terms start from the customer's. After the draft stage these copies are final: editing the customer or the item later never changes a quotation or order. The print of a posted document is also frozen ([ADR-0026](../docs/adr/0026-printing.md)).
+On each draft save a document copies the customer's code, name, tax code, address, phone, email and contact person, and for each line the item's code and unit. The line description, unit price and VAT rate start from the item and may be changed on the line; payment terms start from the customer's. Sending the draft for approval copies the customer's details once more, so the approver sees, and the document posts with, the customer as it is at sending. After that these copies are final: editing the customer or the item later, even while the document waits for approval, never changes a quotation or order. The print of a posted document is also frozen ([ADR-0026](../docs/adr/0026-printing.md)).
 
-An inactive customer or item cannot be put on a draft (`customer_inactive`, `item_inactive`); a document whose customer was deactivated after saving cannot be posted.
+An inactive customer or item cannot be put on a draft (`customer_inactive`, `item_inactive`); a document whose customer was deactivated after saving cannot be sent or posted.
 
 ## From quotation to order
 

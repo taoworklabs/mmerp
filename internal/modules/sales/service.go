@@ -71,6 +71,7 @@ func NewService(d Deps) *Service {
 			Fields:       []record.Field{{Key: "max_discount", Kind: record.Number, Label: "sales.doc.max_discount"}},
 			Can:          s.canDoc(k),
 			OnTransition: s.transition,
+			BeforeSubmit: s.beforeSubmit,
 		})
 	}
 	s.registerPrints()
@@ -147,6 +148,19 @@ func (s *Service) transition(ctx context.Context, d record.Doc, _ record.Status)
 		if !errors.Is(err, pgx.ErrNoRows) {
 			return err
 		}
+	}
+	return nil
+}
+
+// beforeSubmit copies the customer's current details onto a draft being sent, so what goes to
+// approval, and what posts, is the customer as it is at sending; an inactive one keeps it a draft.
+func (s *Service) beforeSubmit(ctx context.Context, d record.Doc) error {
+	active, err := store.New(platform.DBFrom(ctx)).CopyCustomer(ctx, d.ID)
+	if err != nil {
+		return err
+	}
+	if !active {
+		return ErrCustomerInactive
 	}
 	return nil
 }

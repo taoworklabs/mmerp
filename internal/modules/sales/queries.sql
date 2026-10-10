@@ -138,3 +138,13 @@ LIMIT @lim OFFSET @off;
 
 -- name: PrintLegalEntity :one
 SELECT coalesce(legal_name, name)::text AS name, tax_code, address FROM iam.org_units WHERE id = $1;
+
+-- name: CopyCustomer :one
+-- Takes the customer's details as they are now onto a document being sent; returns whether
+-- the customer is active.
+UPDATE sales.headers h
+SET customer_code = c.code, customer_name = c.name, customer_tax_code = c.tax_code, customer_address = c.address,
+    customer_phone = c.phone, customer_email = c.email, contact_name = c.contact_name
+FROM sales.customers c
+WHERE h.id = $1 AND c.id = h.customer_id
+RETURNING c.active;

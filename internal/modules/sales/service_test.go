@@ -462,3 +462,37 @@ func todayOf(t *testing.T, f *fixture) string {
 	}
 	return d
 }
+
+// Sending a draft takes the customer as it is then; edits while it waits for approval, or
+// once posted, never reach it. An inactive customer keeps it a draft.
+func TestCustomerCopiedAtSending(t *testing.T) {
+	f := newFixture(t)
+	f.managerApproves("sales.quote")
+	rename := func(name string, active bool) {
+		c := customer("KH1", f.a)
+		c.Name, c.Active = name, active
+		f.check(f.sales.UpdateCustomer(f.staff, f.customer, c))
+	}
+	fl := f.fields("2026-03-10")
+	fl.Lines[2].DiscountPercent = "15"
+	id := must(t)(f.sales.CreateQuote(f.staff, sales.NewDoc{RequestID: newRequest(), DocFields: fl}))
+
+	rename("Công ty lúc gửi", false)
+	wantCode(t, f.move(f.staff, "sales.quote", id, record.Posted), "customer_inactive")
+	if q, _ := f.sales.Quote(f.staff, id); q.Status != "draft" || q.Customer.Name != "Công ty KH1" {
+		t.Fatalf("refused send: %+v", q)
+	}
+	rename("Công ty lúc gửi", true)
+	f.check(f.move(f.staff, "sales.quote", id, record.Posted))
+	rename("Công ty lúc chờ duyệt", true)
+	q, _ := f.sales.Quote(f.staff, id)
+	if q.Status != "pending_approval" || q.Customer.Name != "Công ty lúc gửi" {
+		t.Fatalf("pending: %+v", q)
+	}
+	inbox, err := f.appr.Inbox(f.manager)
+	f.check(err)
+	f.check(f.appr.Approve(f.manager, inbox[0].InstanceID, 1))
+	if q, _ := f.sales.Quote(f.staff, id); q.Status != "posted" || q.Customer.Name != "Công ty lúc gửi" {
+		t.Fatalf("posted: %+v", q)
+	}
+}
