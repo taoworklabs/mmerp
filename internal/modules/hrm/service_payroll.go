@@ -499,7 +499,7 @@ func (s *Service) Payrolls(ctx context.Context, f PayrollFilter) (PayrollList, e
 	}
 	rows, err := store.New(platform.DBFrom(ctx)).ListPayrolls(ctx, store.ListPayrollsParams{
 		AllUnits: sc.All, Units: sc.Units, Status: f.Status, LegalEntityID: pgtype.Int8{Int64: f.LegalEntityID, Valid: f.LegalEntityID != 0},
-		PeriodStart: start, Lim: int32(f.PageSize), Off: int32((f.Page - 1) * f.PageSize),
+		PeriodStart: start, Lim: f.Limit(), Off: f.Offset(),
 	})
 	for _, r := range rows {
 		out.Total = r.Total

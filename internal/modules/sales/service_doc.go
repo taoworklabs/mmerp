@@ -72,7 +72,7 @@ func (s *Service) docs(ctx context.Context, k kind, f DocFilter) (DocList, error
 	rows, err := store.New(platform.DBFrom(ctx)).ListHeaders(ctx, store.ListHeadersParams{
 		Kind: k.name, AllUnits: sc.All, Units: sc.Units, Status: f.Status, Q: f.Q,
 		CustomerID: pgtype.Int8{Int64: f.CustomerID, Valid: f.CustomerID != 0},
-		Sort:       f.Sort, Lim: int32(f.PageSize), Off: int32((f.Page - 1) * f.PageSize),
+		Sort:       f.Sort, Lim: f.Limit(), Off: f.Offset(),
 	})
 	for _, r := range rows {
 		out.Total = r.TotalRows

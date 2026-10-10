@@ -58,7 +58,7 @@ func (s *Service) Customers(ctx context.Context, f CustomerFilter) (CustomerList
 	}
 	rows, err := store.New(platform.DBFrom(ctx)).ListCustomers(ctx, store.ListCustomersParams{
 		AllUnits: sc.All, Units: sc.Units, Q: strings.TrimSpace(f.Q), Active: boolFilter(f.Active),
-		Sort: f.Sort, Lim: int32(f.PageSize), Off: int32((f.Page - 1) * f.PageSize),
+		Sort: f.Sort, Lim: f.Limit(), Off: f.Offset(),
 	})
 	for _, r := range rows {
 		out.Total = r.Total

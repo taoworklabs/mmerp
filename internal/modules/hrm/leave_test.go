@@ -277,7 +277,7 @@ func TestLeavePermissions(t *testing.T) {
 		t.Fatalf("manager creates for E: %v", err)
 	}
 	for login, want := range map[string]int{"e": 1, "m": 1, "hr": 1, "other": 0} {
-		l, err := f.hrm.Leaves(f.loginCtx(login), hrm.LeaveFilter{Sort: "-start_date", Page: 1, PageSize: 20})
+		l, err := f.hrm.Leaves(f.loginCtx(login), hrm.LeaveFilter{Sort: "-start_date", Paging: platform.Paging{Page: 1, PageSize: 20}})
 		if err != nil || l.Total != int64(want) {
 			t.Fatalf("%s lists %d: %v", login, l.Total, err)
 		}

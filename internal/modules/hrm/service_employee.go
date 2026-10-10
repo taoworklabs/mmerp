@@ -55,7 +55,7 @@ func (s *Service) Employees(ctx context.Context, f EmployeeFilter) (EmployeeList
 	}
 	rows, err := store.New(platform.DBFrom(ctx)).ListEmployees(ctx, store.ListEmployeesParams{
 		AllUnits: sc.All, Units: sc.Units, Q: f.Q, OrgUnitID: pgtype.Int8{Int64: f.OrgUnitID, Valid: f.OrgUnitID != 0},
-		Status: f.Status, ManagerOf: pgtype.Int8{Int64: f.ManagerOf, Valid: f.ManagerOf != 0}, Today: today, Sort: f.Sort, Lim: int32(f.PageSize), Off: int32((f.Page - 1) * f.PageSize),
+		Status: f.Status, ManagerOf: pgtype.Int8{Int64: f.ManagerOf, Valid: f.ManagerOf != 0}, Today: today, Sort: f.Sort, Lim: f.Limit(), Off: f.Offset(),
 	})
 	for _, r := range rows {
 		out.Total = r.Total

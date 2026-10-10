@@ -152,7 +152,7 @@ func (f *fixture) posted(docType string) int {
 	if docType == "sales.order" {
 		list = f.sales.Orders
 	}
-	l, err := list(f.staff, sales.DocFilter{Status: "posted", Sort: "-date", Page: 1, PageSize: 100})
+	l, err := list(f.staff, sales.DocFilter{Status: "posted", Sort: "-date", Paging: platform.Paging{Page: 1, PageSize: 100}})
 	f.check(err)
 	return int(l.Total)
 }
@@ -208,7 +208,7 @@ func TestCustomerScope(t *testing.T) {
 		t.Fatalf("create in B as staff of A: %v", err)
 	}
 	wantCode(t, must2(f.sales.CreateCustomer(staffB, customer("kh1", f.b))), "customer_code_taken")
-	if l, err := f.sales.Customers(staffB, sales.CustomerFilter{Sort: "code", Page: 1, PageSize: 50}); err != nil || l.Total != 0 {
+	if l, err := f.sales.Customers(staffB, sales.CustomerFilter{Sort: "code", Paging: platform.Paging{Page: 1, PageSize: 50}}); err != nil || l.Total != 0 {
 		t.Fatalf("B lists %+v %v", l, err)
 	}
 	if _, err := f.sales.Customer(staffB, f.customer); !errors.Is(err, platform.ErrNotFound) {
@@ -217,7 +217,7 @@ func TestCustomerScope(t *testing.T) {
 	if err := f.sales.UpdateCustomer(staffB, f.customer, customer("KH1", f.b)); !errors.Is(err, platform.ErrNotFound) {
 		t.Fatalf("B edits A's customer: %v", err)
 	}
-	if l, _ := f.sales.Customers(nobody, sales.CustomerFilter{Sort: "code", Page: 1, PageSize: 50}); l.Total != 0 {
+	if l, _ := f.sales.Customers(nobody, sales.CustomerFilter{Sort: "code", Paging: platform.Paging{Page: 1, PageSize: 50}}); l.Total != 0 {
 		t.Fatalf("nobody lists %+v", l)
 	}
 	c, err := f.sales.Customer(viewer, f.customer)
@@ -260,10 +260,10 @@ func must2(_ int64, err error) error { return err }
 // The catalogue is tenant-wide: read by any sales user, written only by catalogue admins.
 func TestItems(t *testing.T) {
 	f := newFixture(t)
-	if l, err := f.sales.Items(f.ctxFor("viewer_b", "viewer@B"), sales.ItemFilter{Q: "bút", Page: 1, PageSize: 50}); err != nil || l.Total != 1 {
+	if l, err := f.sales.Items(f.ctxFor("viewer_b", "viewer@B"), sales.ItemFilter{Q: "bút", Paging: platform.Paging{Page: 1, PageSize: 50}}); err != nil || l.Total != 1 {
 		t.Fatalf("viewer of B: %+v %v", l, err)
 	}
-	if _, err := f.sales.Items(f.ctxFor("nobody"), sales.ItemFilter{Page: 1, PageSize: 50}); !errors.Is(err, platform.ErrForbidden) {
+	if _, err := f.sales.Items(f.ctxFor("nobody"), sales.ItemFilter{Paging: platform.Paging{Page: 1, PageSize: 50}}); !errors.Is(err, platform.ErrForbidden) {
 		t.Fatalf("nobody: %v", err)
 	}
 	if _, err := f.sales.SaveItem(f.manager, 0, sales.ItemFields{Code: "X", Name: "X", Unit: "cái", VatRate: "0", Active: true}); !errors.Is(err, platform.ErrForbidden) {
@@ -347,7 +347,7 @@ func TestQuote(t *testing.T) {
 	if _, err := f.sales.CreateOrderFromQuote(staffB, id); !errors.Is(err, platform.ErrNotFound) {
 		t.Fatalf("B orders: %v", err)
 	}
-	if l, _ := f.sales.Quotes(staffB, sales.DocFilter{Sort: "-date", Page: 1, PageSize: 50}); l.Total != 0 {
+	if l, _ := f.sales.Quotes(staffB, sales.DocFilter{Sort: "-date", Paging: platform.Paging{Page: 1, PageSize: 50}}); l.Total != 0 {
 		t.Fatalf("B lists %+v", l)
 	}
 	// B cannot quote A's customer, even in B.
@@ -377,7 +377,7 @@ func TestQuoteCreateRace(t *testing.T) {
 	if ids[0] == 0 || slices.ContainsFunc(ids, func(v int64) bool { return v != ids[0] }) {
 		t.Fatalf("ids %v", ids)
 	}
-	if l, _ := f.sales.Quotes(f.staff, sales.DocFilter{Sort: "-date", Page: 1, PageSize: 50}); l.Total != 1 {
+	if l, _ := f.sales.Quotes(f.staff, sales.DocFilter{Sort: "-date", Paging: platform.Paging{Page: 1, PageSize: 50}}); l.Total != 1 {
 		t.Fatalf("%d quotations", l.Total)
 	}
 }

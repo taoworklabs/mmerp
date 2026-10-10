@@ -84,7 +84,7 @@ func (s *Service) Overtimes(ctx context.Context, f OvertimeFilter) (OvertimeList
 		AllUnits: sc.All, Units: sc.Units, Actor: actor, Reports: reports, Status: f.Status,
 		EmployeeID: pgtype.Int8{Int64: f.EmployeeID, Valid: f.EmployeeID != 0},
 		FromDate:   platform.NullDate(optional(f.From)), ToDate: platform.NullDate(optional(f.To)),
-		Sort: f.Sort, Lim: int32(f.PageSize), Off: int32((f.Page - 1) * f.PageSize),
+		Sort: f.Sort, Lim: f.Limit(), Off: f.Offset(),
 	})
 	for _, r := range rows {
 		out.Total = r.Total

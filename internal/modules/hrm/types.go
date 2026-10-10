@@ -116,8 +116,7 @@ type EmployeeFilter struct {
 	Status    string `query:"status" enum:"active,terminated"`
 	ManagerOf int64  `query:"manager_of" doc:"Only who may become this employee's direct manager: neither the employee nor anyone under them"`
 	Sort      string `query:"sort" enum:"code,-code,full_name,-full_name,hire_date,-hire_date" default:"code"`
-	Page      int    `query:"page" minimum:"1" default:"1"`
-	PageSize  int    `query:"page_size" enum:"20,50,100" default:"50"`
+	platform.Paging
 }
 
 type DependentInput struct {
@@ -206,8 +205,7 @@ type LeaveFilter struct {
 	From       string `query:"from" format:"date" doc:"Requests ending on or after"`
 	To         string `query:"to" format:"date" doc:"Requests starting on or before"`
 	Sort       string `query:"sort" enum:"start_date,-start_date,number,-number" default:"-start_date"`
-	Page       int    `query:"page" minimum:"1" default:"1"`
-	PageSize   int    `query:"page_size" enum:"20,50,100" default:"50"`
+	platform.Paging
 }
 
 // SelfServiceActions is what the actor may do before picking a leave or overtime request.
@@ -330,8 +328,7 @@ type ContractFilter struct {
 	EmployeeID     int64  `query:"employee_id"`
 	Expiring       bool   `query:"expiring" doc:"Posted originals ending within 30 days from today"`
 	Sort           string `query:"sort" enum:"start_date,-start_date,end_date,-end_date,number,-number" default:"-start_date"`
-	Page           int    `query:"page" minimum:"1" default:"1"`
-	PageSize       int    `query:"page_size" enum:"20,50,100" default:"50"`
+	platform.Paging
 }
 
 // OvertimeFields are the editable fields of an overtime request: the hours of one day.
@@ -391,8 +388,7 @@ type OvertimeFilter struct {
 	From       string `query:"from" format:"date"`
 	To         string `query:"to" format:"date"`
 	Sort       string `query:"sort" enum:"date,-date,number,-number" default:"-date"`
-	Page       int    `query:"page" minimum:"1" default:"1"`
-	PageSize   int    `query:"page_size" enum:"20,50,100" default:"50"`
+	platform.Paging
 }
 
 type NewTimesheet struct {
@@ -460,8 +456,7 @@ type TimesheetFilter struct {
 	Month     string `query:"month" pattern:"^[0-9]{4}-(0[1-9]|1[0-2])$"`
 	OrgUnitID int64  `query:"org_unit_id"`
 	Status    string `query:"status" enum:"draft,pending_approval,posted,cancelled"`
-	Page      int    `query:"page" minimum:"1" default:"1"`
-	PageSize  int    `query:"page_size" enum:"20,50,100" default:"50"`
+	platform.Paging
 }
 
 // WorkWeek is a version of a legal entity's weekly days off, 0 (Sunday) to 6 (Saturday).
@@ -617,8 +612,7 @@ type PayrollFilter struct {
 	LegalEntityID int64  `query:"legal_entity_id"`
 	Month         string `query:"month" pattern:"^[0-9]{4}-(0[1-9]|1[0-2])$"`
 	Status        string `query:"status" enum:"draft,pending_approval,posted,cancelled"`
-	Page          int    `query:"page" minimum:"1" default:"1"`
-	PageSize      int    `query:"page_size" enum:"20,50,100" default:"50"`
+	platform.Paging
 }
 
 // PayrollParams names the payroll of a payroll export.

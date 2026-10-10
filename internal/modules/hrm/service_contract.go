@@ -254,7 +254,7 @@ func (s *Service) Contracts(ctx context.Context, f ContractFilter) (ContractList
 		OrgUnitID:      pgtype.Int8{Int64: f.OrgUnitID, Valid: f.OrgUnitID != 0},
 		EmployeeID:     pgtype.Int8{Int64: f.EmployeeID, Valid: f.EmployeeID != 0},
 		Expiring:       f.Expiring, Today: today,
-		Sort: f.Sort, Lim: int32(f.PageSize), Off: int32((f.Page - 1) * f.PageSize),
+		Sort: f.Sort, Lim: f.Limit(), Off: f.Offset(),
 	})
 	for _, r := range rows {
 		out.Total = r.Total
