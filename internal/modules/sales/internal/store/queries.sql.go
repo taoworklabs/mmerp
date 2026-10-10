@@ -11,6 +11,24 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const copyCustomer = `-- name: CopyCustomer :one
+UPDATE sales.headers h
+SET customer_code = c.code, customer_name = c.name, customer_tax_code = c.tax_code, customer_address = c.address,
+    customer_phone = c.phone, customer_email = c.email, contact_name = c.contact_name
+FROM sales.customers c
+WHERE h.id = $1 AND c.id = h.customer_id
+RETURNING c.active
+`
+
+// Takes the customer's details as they are now onto a document being sent; returns whether
+// the customer is active.
+func (q *Queries) CopyCustomer(ctx context.Context, id int64) (bool, error) {
+	row := q.db.QueryRow(ctx, copyCustomer, id)
+	var active bool
+	err := row.Scan(&active)
+	return active, err
+}
+
 const createCustomer = `-- name: CreateCustomer :one
 INSERT INTO sales.customers (code, name, tax_code, address, phone, email, contact_name, payment_terms, org_unit_id, active)
 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)

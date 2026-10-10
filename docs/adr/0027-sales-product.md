@@ -70,9 +70,9 @@ Every create body (customer excepted, whose unique code already guards it) carri
 
 ### What a document keeps
 
-On each save of a draft, the document copies from the catalogues what it shows: the customer's code, name, tax code, address, phone, email and contact person; for each line the item's code and unit, plus the line description (prefilled from the item name, editable), the unit price and the VAT rate (prefilled from the item, editable). Payment terms (prefilled from the customer), delivery terms, validity date and note are the document's own fields. Once a document leaves `draft` it cannot be edited, so these copies are what the quotation or order said; later edits of the customer or item never reach it. The print of a posted document is additionally frozen by `printing` when it posts.
+On each save of a draft, the document copies from the catalogues what it shows: the customer's code, name, tax code, address, phone, email and contact person; for each line the item's code and unit, plus the line description (prefilled from the item name, editable), the unit price and the VAT rate (prefilled from the item, editable). Payment terms (prefilled from the customer), delivery terms, validity date and note are the document's own fields. Sending a draft (submit, before approval is asked) copies the customer's details once more, so what goes to approval and what posts is the customer as it is at sending. Once a document leaves `draft` it cannot be edited, so these copies are what the quotation or order said; later edits of the customer or item never reach it. The print of a posted document is additionally frozen by `printing` when it posts.
 
-Saving refuses an inactive customer (`customer_inactive`) or item (`item_inactive`); posting refuses a customer deactivated since.
+Saving refuses an inactive customer (`customer_inactive`) or item (`item_inactive`); sending and posting refuse a customer deactivated since.
 
 ### Permissions and data scope
 
