@@ -346,6 +346,9 @@ func (s *Service) Reassign(ctx context.Context, id int64, step int32, login stri
 		} else if slices.Contains(excluded, user) {
 			return ErrSelfApproval
 		}
+		if ok, err := s.d.Record.Can(s.d.IAM.AsUser(ctx, user), d.Type, d.ID, record.View); err != nil || !ok {
+			return platform.OrErr(err, ErrApproverCannotView)
+		}
 		q := store.New(platform.DBFrom(ctx))
 		old, err := q.GetStep(ctx, store.GetStepParams{InstanceID: id, Position: step})
 		if err != nil {

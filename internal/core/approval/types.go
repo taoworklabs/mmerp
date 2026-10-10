@@ -139,6 +139,8 @@ var (
 	ErrNoApprover = &platform.Error{Status: http.StatusUnprocessableEntity, Code: "no_approver"}
 	// Nobody approves their own submission, not even through reassignment.
 	ErrSelfApproval = &platform.Error{Status: http.StatusUnprocessableEntity, Code: "self_approval"}
+	// A reassigned approver must be able to view the document, or the step could never move.
+	ErrApproverCannotView = &platform.Error{Status: http.StatusUnprocessableEntity, Code: "approver_cannot_view"}
 )
 
 func errInvalidRule(step int, reason string) error {
