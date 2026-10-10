@@ -3,6 +3,7 @@ package app_test
 import (
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"strings"
 	"testing"
 	"testing/fstest"
@@ -49,6 +50,19 @@ func TestServesFrontend(t *testing.T) {
 		h.ServeHTTP(rec, httptest.NewRequest("GET", c.path, nil))
 		if rec.Code != c.status || (c.body != "" && rec.Body.String() != c.body) {
 			t.Errorf("GET %s = %d %q, want %d %q", c.path, rec.Code, rec.Body, c.status, c.body)
+		}
+	}
+}
+
+// The frontend types each product's client by its route prefix, so it must list every product.
+func TestFrontendKnowsEveryProduct(t *testing.T) {
+	src, err := os.ReadFile("../../web/src/shared/api/client.ts")
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, m := range app.Modules() {
+		if m.Product != "" && !strings.Contains(string(src), "'/"+m.Product+"/'") {
+			t.Errorf("ProductPrefix in client.ts lacks '/%s/'", m.Product)
 		}
 	}
 }
