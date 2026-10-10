@@ -234,6 +234,14 @@ func TestCustomerScope(t *testing.T) {
 	if c, _ := f.sales.Customer(f.staff, f.customer); !slices.Equal(c.AllowedActions, []string{"edit", "attach"}) {
 		t.Fatalf("staff actions %v", c.AllowedActions)
 	}
+	// An org unit that does not exist is not found, for a tenant-wide editor too.
+	everywhere := f.ctxFor("staff_all", "staff@*")
+	if _, err := f.sales.CreateCustomer(everywhere, customer("KH9", 999999)); !errors.Is(err, platform.ErrNotFound) {
+		t.Fatalf("create at a missing unit: %v", err)
+	}
+	if err := f.sales.UpdateCustomer(everywhere, f.customer, customer("KH1", 999999)); !errors.Is(err, platform.ErrNotFound) {
+		t.Fatalf("move to a missing unit: %v", err)
+	}
 
 	// With Sales off the customer reads, and nothing writes.
 	off := platform.WithProducts(f.staff, nil)
