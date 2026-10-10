@@ -1,7 +1,8 @@
 import { test as setup } from '@playwright/test'
 import { signedInApi } from './api'
 
-// The install-time admin only administers; give it HRM roles to set up test data and see the HRM menu.
+// The install-time admin holds every business permission but no sensitive one; give it the
+// HRM roles that see salaries and identity numbers, to set up test data.
 setup('admin can use HRM', async ({ baseURL }) => {
   const api = await signedInApi(baseURL!)
   const { id } = (await (await api.get('/api/me')).json()) as { id: number }

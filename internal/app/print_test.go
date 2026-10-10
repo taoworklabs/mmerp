@@ -114,8 +114,8 @@ func TestPrintDraftContract(t *testing.T) {
 			t.Fatalf("print without salary: %+v", j)
 		}
 	}
-	// Nobody may probe a contract they cannot see.
-	if j := f.print(f.admin, "hrm.contract", params); j.Code == nil || *j.Code != "not_found" {
+	// The administrator sees every contract but holds no salary permission without a role.
+	if j := f.print(f.admin, "hrm.contract", params); j.Code == nil || *j.Code != "forbidden" {
 		t.Fatalf("admin's print: %+v", j)
 	}
 	if j := f.print(pay, "hrm.contract", `{"id":999999}`); j.Code == nil || *j.Code != "not_found" {

@@ -111,3 +111,18 @@ func newSalesFixtureOn(f *salesFixture, products []string) *client {
 	f.env = env(f.t, f.pool, products)
 	return f.login("staff_a")
 }
+
+// The tenant administrator works in every product with no role of its own, but sees no
+// salary without one.
+func TestAdminHoldsBusinessPermissions(t *testing.T) {
+	f := newSalesFixture(t, []string{"hrm", "sales"})
+	var me struct{ Permissions map[string][]string }
+	_ = json.Unmarshal(f.ok(f.admin, "GET", "/api/me", "", 200), &me)
+	if !slices.Contains(me.Permissions["sales"], "sales.quote.edit") || !slices.Contains(me.Permissions["hrm"], "hrm.employee.edit") ||
+		slices.Contains(me.Permissions["hrm"], "hrm.salary.view") || slices.Contains(me.Permissions["hrm"], "hrm.employee.sensitive") {
+		t.Fatalf("admin permissions: %v", me.Permissions)
+	}
+	f.ok(f.admin, "GET", fmt.Sprintf("/api/sales/quotes/%d", f.quote), "", 200)
+	f.id(f.admin, "/api/sales/customers", fmt.Sprintf(`{"code":"KH2","name":"Khách 2","tax_code":null,"address":null,"phone":null,"email":null,
+		"contact_name":null,"payment_terms":null,"org_unit_id":%d,"active":true}`, f.a))
+}
