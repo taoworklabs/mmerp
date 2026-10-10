@@ -5,11 +5,8 @@ package hrm
 import (
 	"context"
 	"embed"
-	"errors"
 	"io/fs"
 	"sync"
-
-	"github.com/jackc/pgx/v5/pgconn"
 
 	"github.com/taoworklabs/mmerp/internal/core/record"
 	"github.com/taoworklabs/mmerp/internal/platform"
@@ -146,11 +143,6 @@ func payrollEffect(d record.Doc, from record.Status) (posted, ok bool) {
 		return false, true
 	}
 	return false, false
-}
-
-func isCheck(err error, constraint string) bool {
-	pgErr, ok := errors.AsType[*pgconn.PgError](err)
-	return ok && pgErr.ConstraintName == constraint
 }
 
 func optional(s string) *string {

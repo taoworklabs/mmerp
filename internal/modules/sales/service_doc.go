@@ -201,7 +201,7 @@ func (s *Service) createOnce(ctx context.Context, k kind, in NewDoc) (int64, err
 		id, err = s.create(ctx, k, in.RequestID, in.DocFields, nil)
 		return err
 	})
-	if isUnique(err, "headers_request_id_key") {
+	if platform.Violates(err, "headers_request_id_key") {
 		id, _, err = s.byRequest(ctx, k, in.RequestID)
 	}
 	return id, err

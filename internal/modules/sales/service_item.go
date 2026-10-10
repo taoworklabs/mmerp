@@ -49,7 +49,7 @@ func (s *Service) SaveItem(ctx context.Context, id int64, in ItemFields) (int64,
 				return platform.ErrNotFound
 			}
 		}
-		if isUnique(err, "items_code_key") {
+		if platform.Violates(err, "items_code_key") {
 			return ErrItemCodeTaken
 		}
 		if err != nil {

@@ -54,7 +54,7 @@ func (s *Service) SaveContractType(ctx context.Context, id int64, in ContractTyp
 				return platform.ErrNotFound
 			}
 		}
-		if isCheck(err, "contract_types_name_key") {
+		if platform.Violates(err, "contract_types_name_key") {
 			return ErrContractTypeTaken
 		}
 		if err != nil {
@@ -403,7 +403,7 @@ func (s *Service) DeleteContract(ctx context.Context, id int64, version int32) e
 			return err
 		}
 		err := store.New(platform.DBFrom(ctx)).DeleteContract(ctx, id)
-		if isCheck(err, "contracts_parent_id_fkey") {
+		if platform.Violates(err, "contracts_parent_id_fkey") {
 			return ErrContractHasAppendices
 		}
 		return err

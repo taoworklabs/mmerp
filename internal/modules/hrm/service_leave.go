@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/shopspring/decimal"
 
@@ -54,7 +53,7 @@ func (s *Service) SaveLeaveType(ctx context.Context, id int64, in LeaveTypeInput
 				return platform.ErrNotFound
 			}
 		}
-		if pgErr, ok := errors.AsType[*pgconn.PgError](err); ok && pgErr.ConstraintName == "leave_types_name_key" {
+		if platform.Violates(err, "leave_types_name_key") {
 			return ErrLeaveTypeTaken
 		}
 		if err != nil {
@@ -123,7 +122,7 @@ func (s *Service) leaveTransition(ctx context.Context, d record.Doc, from record
 		return nil
 	}
 	_, err = q.AddLeaveBalance(ctx, store.AddLeaveBalanceParams{EmployeeID: r.EmployeeID, Year: int32(r.StartDate.Time.Year()), Delta: delta.String()})
-	if errors.Is(err, pgx.ErrNoRows) || isCheck(err, "leave_balances_days_check") {
+	if errors.Is(err, pgx.ErrNoRows) || platform.Violates(err, "leave_balances_days_check") {
 		return ErrInsufficientBalance
 	}
 	if err != nil {
@@ -388,7 +387,7 @@ func (s *Service) AdjustLeaveBalance(ctx context.Context, employeeID int64, year
 			return err
 		}
 		after, err := q.AddLeaveBalance(ctx, store.AddLeaveBalanceParams{EmployeeID: employeeID, Year: year, Delta: in.Delta})
-		if isCheck(err, "leave_balances_days_check") {
+		if platform.Violates(err, "leave_balances_days_check") {
 			return ErrNegativeBalance
 		}
 		if err != nil {

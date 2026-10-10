@@ -153,7 +153,7 @@ func (s *Service) CreateTimesheet(ctx context.Context, in NewTimesheet) (int64, 
 		}
 		id = d.ID
 		err = store.New(platform.DBFrom(ctx)).CreateTimesheet(ctx, store.CreateTimesheetParams{ID: id, OrgUnitID: in.OrgUnitID, PeriodStart: start, PeriodEnd: end})
-		if isCheck(err, "timesheets_org_unit_period_key") {
+		if platform.Violates(err, "timesheets_org_unit_period_key") {
 			return ErrTimesheetExists
 		}
 		return err
@@ -187,7 +187,7 @@ func (s *Service) SaveTimesheet(ctx context.Context, id int64, in TimesheetUpdat
 		}
 		q := store.New(platform.DBFrom(ctx))
 		err = q.UpdateTimesheetPeriod(ctx, store.UpdateTimesheetPeriodParams{ID: id, PeriodStart: start, PeriodEnd: end})
-		if isCheck(err, "timesheets_org_unit_period_key") {
+		if platform.Violates(err, "timesheets_org_unit_period_key") {
 			return ErrTimesheetExists
 		}
 		if err != nil {
