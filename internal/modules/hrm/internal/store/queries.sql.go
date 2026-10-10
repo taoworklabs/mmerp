@@ -1424,8 +1424,8 @@ WHERE ($1::bool OR e.org_unit_id = ANY($2::bigint[]))
   AND ($3::text = '' OR e.code ILIKE '%' || $3 || '%' OR e.full_name ILIKE '%' || $3 || '%')
   AND ($4::bigint IS NULL OR e.org_unit_id = $4)
   AND ($5::text = ''
-       OR ($5 = 'active' AND (e.termination_date IS NULL OR e.termination_date >= (now() AT TIME ZONE $6::text)::date))
-       OR ($5 = 'terminated' AND e.termination_date < (now() AT TIME ZONE $6)::date))
+       OR ($5 = 'active' AND (e.termination_date IS NULL OR e.termination_date >= $6::date))
+       OR ($5 = 'terminated' AND e.termination_date < $6::date))
   AND e.id NOT IN (SELECT id FROM under)
 ORDER BY
     CASE WHEN $7::text = 'code' THEN lower(e.code) END,
@@ -1444,7 +1444,7 @@ type ListEmployeesParams struct {
 	Q         string
 	OrgUnitID pgtype.Int8
 	Status    string
-	Tz        string
+	Today     pgtype.Date
 	Sort      string
 	Off       int32
 	Lim       int32
@@ -1464,7 +1464,7 @@ type ListEmployeesRow struct {
 	Total           int64
 }
 
-// Scope filter: @all_units or org_unit_id in @units. Status uses today in the tenant time zone @tz.
+// Scope filter: @all_units or org_unit_id in @units. Status uses @today, in the tenant time zone.
 // manager_of drops that employee and everyone under them, who cannot become their manager.
 func (q *Queries) ListEmployees(ctx context.Context, arg ListEmployeesParams) ([]ListEmployeesRow, error) {
 	rows, err := q.db.Query(ctx, listEmployees,
@@ -1473,7 +1473,7 @@ func (q *Queries) ListEmployees(ctx context.Context, arg ListEmployeesParams) ([
 		arg.Q,
 		arg.OrgUnitID,
 		arg.Status,
-		arg.Tz,
+		arg.Today,
 		arg.Sort,
 		arg.Off,
 		arg.Lim,
@@ -2748,18 +2748,6 @@ func (q *Queries) TimesheetLines(ctx context.Context, timesheetID int64) ([]Time
 		return nil, err
 	}
 	return items, nil
-}
-
-const today = `-- name: Today :one
-SELECT (now() AT TIME ZONE $1::text)::date
-`
-
-// Today in the tenant time zone.
-func (q *Queries) Today(ctx context.Context, tz string) (pgtype.Date, error) {
-	row := q.db.QueryRow(ctx, today, tz)
-	var column_1 pgtype.Date
-	err := row.Scan(&column_1)
-	return column_1, err
 }
 
 const updateContract = `-- name: UpdateContract :exec

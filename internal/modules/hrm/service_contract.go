@@ -244,7 +244,7 @@ func (s *Service) Contracts(ctx context.Context, f ContractFilter) (ContractList
 	if err != nil || !sc.Any() {
 		return out, err
 	}
-	today, err := s.today(ctx)
+	today, err := s.d.Setting.Today(ctx)
 	if err != nil {
 		return out, err
 	}

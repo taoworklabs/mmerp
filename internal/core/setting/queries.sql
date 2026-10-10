@@ -13,3 +13,6 @@ SELECT value FROM setting.legal_entity_values WHERE legal_entity_id = $1 AND key
 -- name: SetLegalEntityValue :exec
 INSERT INTO setting.legal_entity_values (legal_entity_id, key, value) VALUES ($1, $2, $3)
 ON CONFLICT (legal_entity_id, key) DO UPDATE SET value = excluded.value;
+
+-- name: Today :one
+SELECT (now() AT TIME ZONE @tz::text)::date;

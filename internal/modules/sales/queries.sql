@@ -1,7 +1,3 @@
--- name: Today :one
--- Today in the tenant time zone.
-SELECT (now() AT TIME ZONE @tz::text)::date;
-
 -- name: CreateCustomer :one
 INSERT INTO sales.customers (code, name, tax_code, address, phone, email, contact_name, payment_terms, org_unit_id, active)
 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)

@@ -11,6 +11,7 @@ import (
 	"slices"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgtype"
 
 	"github.com/taoworklabs/mmerp/internal/core/audit"
 	"github.com/taoworklabs/mmerp/internal/core/setting/internal/store"
@@ -65,6 +66,15 @@ func (s *Service) Get(ctx context.Context, key string) (string, error) {
 		return def, nil
 	}
 	return v, err
+}
+
+// Today is the date in the tenant time zone.
+func (s *Service) Today(ctx context.Context) (pgtype.Date, error) {
+	tz, err := s.Get(ctx, Timezone)
+	if err != nil {
+		return pgtype.Date{}, err
+	}
+	return store.New(platform.DBFrom(ctx)).Today(ctx, tz)
 }
 
 // RegisterLegalEntityKey adds a legal-entity setting of product (empty for core) while
