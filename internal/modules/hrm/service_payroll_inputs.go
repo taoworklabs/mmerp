@@ -241,6 +241,13 @@ func (s *Service) payInputs(ctx context.Context, b payrollBasis, payrollID int64
 	month := b.Start[:7]
 	dependents := map[int64]int{}
 	for _, d := range deps {
+		// Opening them is a read of sensitive data like any other, audited once per employee.
+		if _, seen := dependents[d.EmployeeID]; !seen {
+			dependents[d.EmployeeID] = 0
+			if err := s.d.Audit.RecordFor(ctx, "hrm.dependents_viewed", audit.Ref{Type: employeeType, ID: d.EmployeeID}, nil); err != nil {
+				return nil, err
+			}
+		}
 		dep, err := openDependent(ctx, d.Data)
 		if err != nil {
 			return nil, err
