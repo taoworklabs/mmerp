@@ -315,6 +315,10 @@ func (s *Service) Contract(ctx context.Context, id int64) (Contract, error) {
 func (s *Service) CreateContract(ctx context.Context, in NewContract) (int64, error) {
 	var id int64
 	err := platform.InTx(ctx, func(ctx context.Context) error {
+		// An employee the actor cannot see does not exist, so ids cannot be probed.
+		if err := s.d.Record.Visible(ctx, record.Ref{Type: employeeType, ID: in.EmployeeID}, record.View); err != nil {
+			return err
+		}
 		q := store.New(platform.DBFrom(ctx))
 		e, err := q.GetEmployee(ctx, in.EmployeeID)
 		if errors.Is(err, pgx.ErrNoRows) {
