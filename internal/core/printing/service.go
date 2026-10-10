@@ -57,12 +57,17 @@ func (s *Service) Register(t Template) {
 	if len(t.Layouts) == 0 || t.Data == nil {
 		panic("printing: template " + t.Code + " needs Data and a layout")
 	}
+	rt, ok := s.d.Record.TypeOf(t.DocType)
+	if !ok {
+		panic("printing: " + t.DocType + " is not a registered record type")
+	}
+	t.product = rt.Product
 	if _, dup := s.templates[t.DocType]; dup {
 		panic("printing: " + t.DocType + " has two templates")
 	}
 	s.templates[t.DocType], s.byCode[t.Code] = t, t
 	s.d.DataIO.RegisterExport(dataio.Export{
-		Kind: "printing." + t.Code, Product: t.Product,
+		Kind: "printing." + t.Code, Product: t.product,
 		Render: func(ctx context.Context, raw json.RawMessage) (dataio.File, error) { return s.render(ctx, t, raw) },
 		Check: func(ctx context.Context, raw json.RawMessage) error {
 			_, err := s.check(ctx, t, raw)

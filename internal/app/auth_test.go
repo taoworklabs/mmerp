@@ -125,9 +125,9 @@ func TestSessionLifecycle(t *testing.T) {
 func TestProductGateOnRoutes(t *testing.T) {
 	sales := platform.Module{Name: "sales", Product: "sales", Routes: func(api huma.API) {
 		public := map[string]any{platform.MetaPublic: true}
-		huma.Register(api, huma.Operation{OperationID: "list", Method: "GET", Path: "/sales", Metadata: public},
+		huma.Register(api, huma.Operation{OperationID: "list", Method: "GET", Path: "/sales/quotes", Metadata: public},
 			func(context.Context, *struct{}) (*struct{}, error) { return nil, nil })
-		huma.Register(api, huma.Operation{OperationID: "create", Method: "POST", Path: "/sales", Metadata: public},
+		huma.Register(api, huma.Operation{OperationID: "create", Method: "POST", Path: "/sales/quotes", Metadata: public},
 			func(context.Context, *struct{}) (*struct{}, error) { return nil, nil })
 		huma.Register(api, huma.Operation{OperationID: "export", Method: "POST", Path: "/sales/export",
 			Metadata: map[string]any{platform.MetaPublic: true, platform.MetaClass: platform.ClassExport}},
@@ -135,12 +135,12 @@ func TestProductGateOnRoutes(t *testing.T) {
 	}}
 	c := &client{t: t, h: app.New(env(t, pgtest.New(t), []string{"hrm"}), []platform.Module{sales}, nil)}
 
-	for path, method := range map[string]string{"/api/sales": "GET", "/api/sales/export": "POST"} {
+	for path, method := range map[string]string{"/api/sales/quotes": "GET", "/api/sales/export": "POST"} {
 		if rec := c.do(method, path, ""); rec.Code != 204 {
 			t.Errorf("%s %s = %d %s", method, path, rec.Code, rec.Body)
 		}
 	}
-	rec := c.do("POST", "/api/sales", "")
+	rec := c.do("POST", "/api/sales/quotes", "")
 	wantCode(t, rec, 403, "product_not_enabled")
 	if !strings.Contains(rec.Body.String(), `"product":"sales"`) {
 		t.Fatalf("body = %s", rec.Body)

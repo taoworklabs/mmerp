@@ -10,6 +10,7 @@ import (
 	"log/slog"
 	"net/http"
 	"slices"
+	"strings"
 	"time"
 
 	"github.com/danielgtaylor/huma/v2"
@@ -84,9 +85,9 @@ func Modules() []platform.Module {
 	prn := printing.NewService(printing.Deps{Record: rec, Audit: audit.NewService(), DataIO: dio, IAM: ids})
 	att := attachment.NewService(attachment.Deps{Record: rec, Audit: audit.NewService()})
 	dis := discussion.NewService(discussion.Deps{Record: rec, Audit: audit.NewService(), IAM: ids, Notification: ntf})
-	h := hrm.NewService(hrm.Deps{IAM: ids, Record: rec, Audit: audit.NewService(), Setting: set, DataIO: dio, Printing: prn,
-		// No accounting yet: nothing reacts to posting lines.
-		Posting: posting.NewService(posting.Hooks{})})
+	// No accounting yet: nothing reacts to posting lines.
+	pst := posting.NewService(posting.Hooks{})
+	h := hrm.NewService(hrm.Deps{IAM: ids, Record: rec, Audit: audit.NewService(), Setting: set, DataIO: dio, Printing: prn, Posting: pst})
 	sal := sales.NewService(sales.Deps{IAM: ids, Record: rec, Audit: audit.NewService(), Setting: set, Printing: prn})
 	return []platform.Module{iam.Module(ids), setting.Module(set), record.Module(rec), approval.Module(appr), dataio.Module(dio), attachment.Module(att), printing.Module(prn), discussion.Module(dis), notification.Module(ntf), hrm.Module(h), sales.Module(sal)}
 }
@@ -205,7 +206,16 @@ func newAPI(r chi.Router, modules []platform.Module) huma.API {
 		g := huma.NewGroup(api)
 		// The tag splits the spec into one frontend client per product.
 		tag := cmp.Or(m.Product, "core")
-		g.UseSimpleModifier(func(op *huma.Operation) { op.Tags = append(op.Tags, tag) })
+		g.UseSimpleModifier(func(op *huma.Operation) {
+			// The frontend types each product's client by this prefix.
+			if m.Product != "" && !strings.HasPrefix(op.Path, "/"+m.Product+"/") {
+				panic("app: route " + op.Path + " of " + m.Product + " is outside /" + m.Product + "/")
+			}
+			op.Tags = append(op.Tags, tag)
+		})
+		if _, ok := products[m.Product]; m.Product != "" && !ok {
+			panic("app: module " + m.Name + " belongs to unknown product " + m.Product)
+		}
 		if m.Product != "" {
 			g.UseMiddleware(productGate(api, m.Product))
 		}

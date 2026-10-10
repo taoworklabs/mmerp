@@ -11,14 +11,14 @@ import (
 )
 
 func (s *Service) registerPrints() {
-	s.d.Printing.Register(printing.Template{Code: contractType, Name: "hrm.print.contract.name", DocType: contractType, Product: "hrm",
+	s.d.Printing.Register(printing.Template{Code: contractType, Name: "hrm.print.contract.name", DocType: contractType,
 		Blocks: []printing.Block{
 			{Key: "clauses", Label: "hrm.print.contract.block.clauses", Default: "hrm.print.contract.block.clauses.default",
 				Placeholders: []string{"employee_name", "employer_name"}},
 			{Key: "footer", Label: "hrm.print.contract.block.footer", Default: "hrm.print.contract.block.footer.default"},
 		},
 		Data: s.contractPrint, Layouts: []printing.Layout{contractLayout1}})
-	s.d.Printing.Register(printing.Template{Code: "hrm.payslip", Name: "hrm.print.payslip.name", DocType: payrollType, Product: "hrm",
+	s.d.Printing.Register(printing.Template{Code: "hrm.payslip", Name: "hrm.print.payslip.name", DocType: payrollType,
 		Data: s.payslips, Layouts: []printing.Layout{payslipLayout1}})
 }
 

@@ -11,7 +11,7 @@ import (
 
 func (s *Service) registerPrints() {
 	for _, k := range []kind{quoteKind, orderKind} {
-		s.d.Printing.Register(printing.Template{Code: k.docType, Name: "sales.print." + k.name + ".name", DocType: k.docType, Product: "sales",
+		s.d.Printing.Register(printing.Template{Code: k.docType, Name: "sales.print." + k.name + ".name", DocType: k.docType,
 			Blocks: []printing.Block{
 				{Key: "terms", Label: "sales.print.block.terms", Default: "sales.print." + k.name + ".block.terms.default",
 					Placeholders: []string{"customer_name", "seller_name"}},
