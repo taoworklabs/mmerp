@@ -127,15 +127,15 @@ func (s *Service) SaveWorkWeek(ctx context.Context, legalEntity int64, w WorkWee
 		days = append(days, int16(d))
 	}
 	slices.Sort(days)
-	return s.writeWorkWeek(ctx, legalEntity, w.EffectiveFrom, func(q *store.Queries, from pgtype.Date) error {
-		return q.SaveWorkWeek(ctx, store.SaveWorkWeekParams{LegalEntityID: legalEntity, EffectiveFrom: from, OffDays: days})
+	return s.writeWorkWeek(ctx, legalEntity, w.EffectiveFrom, func(ctx context.Context, from pgtype.Date) error {
+		return store.New(platform.DBFrom(ctx)).SaveWorkWeek(ctx, store.SaveWorkWeekParams{LegalEntityID: legalEntity, EffectiveFrom: from, OffDays: days})
 	}, map[string]any{"off_days": days})
 }
 
 // DeleteWorkWeek removes a version; the one before it applies again.
 func (s *Service) DeleteWorkWeek(ctx context.Context, legalEntity int64, effectiveFrom string) error {
-	return s.writeWorkWeek(ctx, legalEntity, effectiveFrom, func(q *store.Queries, from pgtype.Date) error {
-		n, err := q.DeleteWorkWeek(ctx, store.DeleteWorkWeekParams{LegalEntityID: legalEntity, EffectiveFrom: from})
+	return s.writeWorkWeek(ctx, legalEntity, effectiveFrom, func(ctx context.Context, from pgtype.Date) error {
+		n, err := store.New(platform.DBFrom(ctx)).DeleteWorkWeek(ctx, store.DeleteWorkWeekParams{LegalEntityID: legalEntity, EffectiveFrom: from})
 		if err == nil && n == 0 {
 			return platform.ErrNotFound
 		}
@@ -143,7 +143,7 @@ func (s *Service) DeleteWorkWeek(ctx context.Context, legalEntity int64, effecti
 	}, map[string]any{"deleted": true})
 }
 
-func (s *Service) writeWorkWeek(ctx context.Context, legalEntity int64, effectiveFrom string, write func(*store.Queries, pgtype.Date) error, data map[string]any) error {
+func (s *Service) writeWorkWeek(ctx context.Context, legalEntity int64, effectiveFrom string, write func(context.Context, pgtype.Date) error, data map[string]any) error {
 	from := platform.NullDate(&effectiveFrom)
 	if !from.Valid {
 		return &platform.Error{Status: http.StatusUnprocessableEntity, Code: "invalid_request", Params: map[string]any{"fields": []string{"effective_from"}}}
@@ -167,7 +167,7 @@ func (s *Service) writeWorkWeek(ctx context.Context, legalEntity int64, effectiv
 		if err := checkPayrollPeriods(ctx, legalEntity, effectiveFrom, to); err != nil {
 			return err
 		}
-		if err := write(q, from); err != nil {
+		if err := write(ctx, from); err != nil {
 			return err
 		}
 		data["legal_entity_id"], data["effective_from"] = legalEntity, effectiveFrom
@@ -177,14 +177,14 @@ func (s *Service) writeWorkWeek(ctx context.Context, legalEntity int64, effectiv
 
 // SaveHoliday adds or renames a holiday; refused in a closed payroll period.
 func (s *Service) SaveHoliday(ctx context.Context, legalEntity int64, h Holiday) error {
-	return s.writeHoliday(ctx, legalEntity, h.Date, func(q *store.Queries, date pgtype.Date) error {
-		return q.SaveHoliday(ctx, store.SaveHolidayParams{LegalEntityID: legalEntity, Date: date, Name: h.Name})
+	return s.writeHoliday(ctx, legalEntity, h.Date, func(ctx context.Context, date pgtype.Date) error {
+		return store.New(platform.DBFrom(ctx)).SaveHoliday(ctx, store.SaveHolidayParams{LegalEntityID: legalEntity, Date: date, Name: h.Name})
 	}, map[string]any{"name": h.Name})
 }
 
 func (s *Service) DeleteHoliday(ctx context.Context, legalEntity int64, date string) error {
-	return s.writeHoliday(ctx, legalEntity, date, func(q *store.Queries, d pgtype.Date) error {
-		n, err := q.DeleteHoliday(ctx, store.DeleteHolidayParams{LegalEntityID: legalEntity, Date: d})
+	return s.writeHoliday(ctx, legalEntity, date, func(ctx context.Context, d pgtype.Date) error {
+		n, err := store.New(platform.DBFrom(ctx)).DeleteHoliday(ctx, store.DeleteHolidayParams{LegalEntityID: legalEntity, Date: d})
 		if err == nil && n == 0 {
 			return platform.ErrNotFound
 		}
@@ -192,7 +192,7 @@ func (s *Service) DeleteHoliday(ctx context.Context, legalEntity int64, date str
 	}, map[string]any{"deleted": true})
 }
 
-func (s *Service) writeHoliday(ctx context.Context, legalEntity int64, date string, write func(*store.Queries, pgtype.Date) error, data map[string]any) error {
+func (s *Service) writeHoliday(ctx context.Context, legalEntity int64, date string, write func(context.Context, pgtype.Date) error, data map[string]any) error {
 	d := platform.NullDate(&date)
 	if !d.Valid {
 		return &platform.Error{Status: http.StatusUnprocessableEntity, Code: "invalid_request", Params: map[string]any{"fields": []string{"date"}}}
@@ -204,7 +204,7 @@ func (s *Service) writeHoliday(ctx context.Context, legalEntity int64, date stri
 		if err := checkPayrollPeriods(ctx, legalEntity, date, &date); err != nil {
 			return err
 		}
-		if err := write(store.New(platform.DBFrom(ctx)), d); err != nil {
+		if err := write(ctx, d); err != nil {
 			return err
 		}
 		data["legal_entity_id"], data["date"] = legalEntity, date
