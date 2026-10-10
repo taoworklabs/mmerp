@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"slices"
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -487,4 +488,18 @@ func TestEmployeeHistoryHidesBalancesAndSensitiveReads(t *testing.T) {
 func TestAdjustBalanceNeedsReason(t *testing.T) {
 	f := newLeaveFixture(t)
 	wantErr(t, f.hrm.AdjustLeaveBalance(f.hr, f.emp, 2026, hrm.BalanceAdjustment{Delta: "1", Reason: "  "}), "reason_required")
+}
+
+// "2.0" over a stored 2 is no change in the audit diff.
+func TestLeaveAuditIgnoresNumberSpelling(t *testing.T) {
+	f := newLeaveFixture(t)
+	id := must(t)(f.hrm.CreateLeave(f.e, hrm.NewLeave{LeaveFields: f.fields("2026-03-10", "2026-03-11", "2")}))
+	in := f.fields("2026-03-10", "2026-03-11", "2.0")
+	in.Reason = str("ốm")
+	f.check(f.hrm.UpdateLeave(f.e, id, hrm.LeaveUpdate{Version: 1, LeaveFields: in}))
+	var data string
+	f.check(f.pool.QueryRow(f.admin, `SELECT data::text FROM audit.log WHERE action = 'hrm.leave_request_updated' AND doc_id = $1`, id).Scan(&data))
+	if strings.Contains(data, `"days"`) || !strings.Contains(data, `"reason"`) {
+		t.Fatalf("diff %s", data)
+	}
 }

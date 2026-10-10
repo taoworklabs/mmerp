@@ -211,8 +211,8 @@ func overtimeChanges(old, n OvertimeFields) []audit.Change {
 	return []audit.Change{
 		{Field: "date", Old: old.Date, New: n.Date},
 		{Field: "day_kind", Old: old.DayKind, New: n.DayKind},
-		{Field: "day_hours", Old: old.DayHours, New: n.DayHours},
-		{Field: "night_hours", Old: old.NightHours, New: n.NightHours},
+		{Field: "day_hours", Old: old.DayHours, New: plain(n.DayHours)},
+		{Field: "night_hours", Old: old.NightHours, New: plain(n.NightHours)},
 		{Field: "reason", Old: old.Reason, New: n.Reason},
 	}
 }
