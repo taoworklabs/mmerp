@@ -24,6 +24,10 @@ UPDATE iam.authz SET version = version + 1;
 -- Serialises tree writes so concurrent moves cannot build a cycle.
 LOCK TABLE iam.org_units IN SHARE ROW EXCLUSIVE MODE;
 
+-- name: ShareOrgUnits :exec
+-- Holds tree writes off, not other readers of the tree.
+LOCK TABLE iam.org_units IN SHARE MODE;
+
 -- name: ListOrgUnits :many
 SELECT id, parent_id, kind, name, tax_code, legal_name, address FROM iam.org_units ORDER BY name, id;
 
