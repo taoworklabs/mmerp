@@ -762,18 +762,6 @@ func (q *Queries) PrintLegalEntity(ctx context.Context, id int64) (PrintLegalEnt
 	return i, err
 }
 
-const today = `-- name: Today :one
-SELECT (now() AT TIME ZONE $1::text)::date
-`
-
-// Today in the tenant time zone.
-func (q *Queries) Today(ctx context.Context, tz string) (pgtype.Date, error) {
-	row := q.db.QueryRow(ctx, today, tz)
-	var column_1 pgtype.Date
-	err := row.Scan(&column_1)
-	return column_1, err
-}
-
 const updateCustomer = `-- name: UpdateCustomer :exec
 UPDATE sales.customers
 SET code = $2, name = $3, tax_code = $4, address = $5, phone = $6, email = $7, contact_name = $8,

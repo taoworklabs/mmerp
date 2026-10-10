@@ -11,7 +11,6 @@ import (
 
 	"github.com/taoworklabs/mmerp/internal/core/audit"
 	"github.com/taoworklabs/mmerp/internal/core/record"
-	"github.com/taoworklabs/mmerp/internal/core/setting"
 	"github.com/taoworklabs/mmerp/internal/modules/hrm/internal/store"
 	"github.com/taoworklabs/mmerp/internal/platform"
 )
@@ -50,17 +49,13 @@ func (s *Service) Employees(ctx context.Context, f EmployeeFilter) (EmployeeList
 	if err != nil || !sc.Any() {
 		return out, err
 	}
-	tz, err := s.d.Setting.Get(ctx, setting.Timezone)
-	if err != nil {
-		return out, err
-	}
-	today, err := store.New(platform.DBFrom(ctx)).Today(ctx, tz)
+	today, err := s.d.Setting.Today(ctx)
 	if err != nil {
 		return out, err
 	}
 	rows, err := store.New(platform.DBFrom(ctx)).ListEmployees(ctx, store.ListEmployeesParams{
 		AllUnits: sc.All, Units: sc.Units, Q: f.Q, OrgUnitID: pgtype.Int8{Int64: f.OrgUnitID, Valid: f.OrgUnitID != 0},
-		Status: f.Status, ManagerOf: pgtype.Int8{Int64: f.ManagerOf, Valid: f.ManagerOf != 0}, Tz: tz, Sort: f.Sort, Lim: int32(f.PageSize), Off: int32((f.Page - 1) * f.PageSize),
+		Status: f.Status, ManagerOf: pgtype.Int8{Int64: f.ManagerOf, Valid: f.ManagerOf != 0}, Today: today, Sort: f.Sort, Lim: int32(f.PageSize), Off: int32((f.Page - 1) * f.PageSize),
 	})
 	for _, r := range rows {
 		out.Total = r.Total
@@ -133,7 +128,7 @@ func (s *Service) Employee(ctx context.Context, id int64) (Employee, error) {
 	} else if ok && platform.ProductGate(ctx, "hrm", platform.ClassWrite) == nil {
 		actions = append(actions, "create_contract")
 	}
-	today, err := s.today(ctx)
+	today, err := s.d.Setting.Today(ctx)
 	if err != nil {
 		return Employee{}, err
 	}
@@ -380,14 +375,6 @@ func open(ctx context.Context, field string, sealed []byte) (*string, error) {
 	pt, err := platform.Decrypt(ctx, "hrm.employees."+field, sealed)
 	v := string(pt)
 	return &v, err
-}
-
-func (s *Service) today(ctx context.Context) (pgtype.Date, error) {
-	tz, err := s.d.Setting.Get(ctx, setting.Timezone)
-	if err != nil {
-		return pgtype.Date{}, err
-	}
-	return store.New(platform.DBFrom(ctx)).Today(ctx, tz)
 }
 
 // status: terminated once the termination date has passed in the tenant's time zone.

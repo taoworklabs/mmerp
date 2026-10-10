@@ -12,7 +12,6 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 
 	"github.com/taoworklabs/mmerp/internal/core/record"
-	"github.com/taoworklabs/mmerp/internal/core/setting"
 	"github.com/taoworklabs/mmerp/internal/modules/sales/internal/store"
 	"github.com/taoworklabs/mmerp/internal/platform"
 )
@@ -150,12 +149,4 @@ func (s *Service) beforeSubmit(ctx context.Context, d record.Doc) error {
 		return ErrCustomerInactive
 	}
 	return nil
-}
-
-func (s *Service) today(ctx context.Context) (pgtype.Date, error) {
-	tz, err := s.d.Setting.Get(ctx, setting.Timezone)
-	if err != nil {
-		return pgtype.Date{}, err
-	}
-	return store.New(platform.DBFrom(ctx)).Today(ctx, tz)
 }

@@ -65,7 +65,7 @@ func (s *Service) docs(ctx context.Context, k kind, f DocFilter) (DocList, error
 	if err != nil || !sc.Any() {
 		return out, err
 	}
-	today, err := s.today(ctx)
+	today, err := s.d.Setting.Today(ctx)
 	if err != nil {
 		return out, err
 	}
@@ -144,7 +144,7 @@ func (s *Service) doc(ctx context.Context, k kind, id int64) (Doc, error) {
 		}
 	}
 	if k == quoteKind {
-		today, err := s.today(ctx)
+		today, err := s.d.Setting.Today(ctx)
 		if err != nil {
 			return Doc{}, err
 		}
@@ -423,7 +423,7 @@ func (s *Service) CreateOrderFromQuote(ctx context.Context, quoteID int64) (int6
 		if err != nil {
 			return err
 		}
-		today, err := s.today(ctx)
+		today, err := s.d.Setting.Today(ctx)
 		if err != nil {
 			return err
 		}

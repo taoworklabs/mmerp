@@ -7,6 +7,8 @@ package store
 
 import (
 	"context"
+
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 const getLegalEntityValue = `-- name: GetLegalEntityValue :one
@@ -90,4 +92,15 @@ type SetLegalEntityValueParams struct {
 func (q *Queries) SetLegalEntityValue(ctx context.Context, arg SetLegalEntityValueParams) error {
 	_, err := q.db.Exec(ctx, setLegalEntityValue, arg.LegalEntityID, arg.Key, arg.Value)
 	return err
+}
+
+const today = `-- name: Today :one
+SELECT (now() AT TIME ZONE $1::text)::date
+`
+
+func (q *Queries) Today(ctx context.Context, tz string) (pgtype.Date, error) {
+	row := q.db.QueryRow(ctx, today, tz)
+	var column_1 pgtype.Date
+	err := row.Scan(&column_1)
+	return column_1, err
 }

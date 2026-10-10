@@ -1,5 +1,5 @@
 -- name: ListEmployees :many
--- Scope filter: @all_units or org_unit_id in @units. Status uses today in the tenant time zone @tz.
+-- Scope filter: @all_units or org_unit_id in @units. Status uses @today, in the tenant time zone.
 -- manager_of drops that employee and everyone under them, who cannot become their manager.
 WITH RECURSIVE under (id) AS (
     SELECT sqlc.narg(manager_of)::bigint WHERE sqlc.narg(manager_of)::bigint IS NOT NULL
@@ -13,8 +13,8 @@ WHERE (@all_units::bool OR e.org_unit_id = ANY(@units::bigint[]))
   AND (@q::text = '' OR e.code ILIKE '%' || @q || '%' OR e.full_name ILIKE '%' || @q || '%')
   AND (sqlc.narg(org_unit_id)::bigint IS NULL OR e.org_unit_id = sqlc.narg(org_unit_id))
   AND (@status::text = ''
-       OR (@status = 'active' AND (e.termination_date IS NULL OR e.termination_date >= (now() AT TIME ZONE @tz::text)::date))
-       OR (@status = 'terminated' AND e.termination_date < (now() AT TIME ZONE @tz)::date))
+       OR (@status = 'active' AND (e.termination_date IS NULL OR e.termination_date >= @today::date))
+       OR (@status = 'terminated' AND e.termination_date < @today::date))
   AND e.id NOT IN (SELECT id FROM under)
 ORDER BY
     CASE WHEN @sort::text = 'code' THEN lower(e.code) END,
@@ -77,10 +77,6 @@ SELECT employee_id FROM chain;
 -- name: LockManagerTree :exec
 -- Serialises manager changes so two concurrent edits cannot close a cycle.
 SELECT pg_advisory_xact_lock(hashtext('hrm.manager_tree'));
-
--- name: Today :one
--- Today in the tenant time zone.
-SELECT (now() AT TIME ZONE @tz::text)::date;
 
 -- name: ListLeaveTypes :many
 SELECT * FROM hrm.leave_types ORDER BY lower(name);
