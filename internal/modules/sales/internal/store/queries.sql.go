@@ -724,6 +724,15 @@ func (q *Queries) LiveOrder(ctx context.Context, quoteID pgtype.Int8) (LiveOrder
 	return i, err
 }
 
+const lockCustomer = `-- name: LockCustomer :exec
+SELECT 1 FROM sales.customers WHERE id = $1 FOR UPDATE
+`
+
+func (q *Queries) LockCustomer(ctx context.Context, id int64) error {
+	_, err := q.db.Exec(ctx, lockCustomer, id)
+	return err
+}
+
 const printLegalEntity = `-- name: PrintLegalEntity :one
 SELECT coalesce(legal_name, name)::text AS name, tax_code, address FROM iam.org_units WHERE id = $1
 `

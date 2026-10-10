@@ -97,6 +97,9 @@ func (s *Service) CreateCustomer(ctx context.Context, in CustomerFields) (int64,
 		if platform.Violates(err, "customers_code_key") {
 			return ErrCustomerCodeTaken
 		}
+		if platform.Violates(err, "customers_org_unit_id_fkey") {
+			return platform.ErrNotFound
+		}
 		if err != nil {
 			return err
 		}
@@ -108,6 +111,10 @@ func (s *Service) CreateCustomer(ctx context.Context, in CustomerFields) (int64,
 // UpdateCustomer replaces a customer's fields; moving it needs edit at both org units.
 func (s *Service) UpdateCustomer(ctx context.Context, id int64, in CustomerFields) error {
 	return platform.InTx(ctx, func(ctx context.Context) error {
+		// Locked first, so the checks and the audit diff see what a concurrent edit left.
+		if err := store.New(platform.DBFrom(ctx)).LockCustomer(ctx, id); err != nil {
+			return err
+		}
 		old, err := s.visibleCustomer(ctx, id)
 		if err != nil {
 			return err
@@ -125,6 +132,9 @@ func (s *Service) UpdateCustomer(ctx context.Context, id int64, in CustomerField
 		})
 		if platform.Violates(err, "customers_code_key") {
 			return ErrCustomerCodeTaken
+		}
+		if platform.Violates(err, "customers_org_unit_id_fkey") {
+			return platform.ErrNotFound
 		}
 		if err != nil {
 			return err

@@ -18,6 +18,9 @@ SELECT c.*, u.name AS org_unit_name
 FROM sales.customers c JOIN iam.org_units u ON u.id = c.org_unit_id
 WHERE c.id = $1;
 
+-- name: LockCustomer :exec
+SELECT 1 FROM sales.customers WHERE id = $1 FOR UPDATE;
+
 -- name: CustomerActive :one
 -- Read under a share lock, so the customer cannot be deactivated while a document posts.
 SELECT active FROM sales.customers WHERE id = $1 FOR SHARE;
