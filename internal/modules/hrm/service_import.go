@@ -296,6 +296,9 @@ func (s *Service) importLeaveBalances(ctx context.Context, _ json.RawMessage, ro
 func (s *Service) knownCodes(ctx context.Context, rows [][]string) (map[string]store.EmployeesByCodesRow, error) {
 	codes := make([]string, 0, len(rows))
 	for _, r := range rows {
+		if r == nil {
+			continue
+		}
 		codes = append(codes, strings.ToLower(strings.TrimSpace(r[0])))
 	}
 	found, err := store.New(platform.DBFrom(ctx)).EmployeesByCodes(ctx, codes)

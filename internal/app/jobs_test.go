@@ -404,7 +404,8 @@ func TestLeaveBalanceImport(t *testing.T) {
 	}
 	j = f.wait(f.admin, f.upload(f.admin, "hrm.leave_balance", "", head,
 		// A deduction before the grant it relies on still applies: the file's end result counts.
-		[]any{"E1", 2026, -2, "Trừ"}, []any{"e2", 2026, "1,5", "Đầu năm"}, []any{"E1", 2026, 12, "Đầu năm"}))
+		// A blank row in between is skipped.
+		[]any{"E1", 2026, -2, "Trừ"}, []any{"e2", 2026, "1,5", "Đầu năm"}, []any{"", "", "", ""}, []any{"E1", 2026, 12, "Đầu năm"}))
 	if j.State != "completed" || balance(f.e1) != "10" || balance(f.e2) != "1.5" {
 		t.Fatalf("%+v %s %s", j, balance(f.e1), balance(f.e2))
 	}
