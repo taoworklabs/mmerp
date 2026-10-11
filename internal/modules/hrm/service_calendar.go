@@ -64,6 +64,18 @@ func (c calendar) holiday(d time.Time) bool {
 	return ok
 }
 
+// workingDays counts the days of [start, end] a leave request can be placed on: the ones
+// that are neither a weekly day off nor a holiday.
+func (c calendar) workingDays(start, end time.Time) int {
+	n := 0
+	for d := start; !d.After(end); d = d.AddDate(0, 0, 1) {
+		if !c.weeklyOff(d) && !c.holiday(d) {
+			n++
+		}
+	}
+	return n
+}
+
 // standardDays is the month's normal working days, holidays on working days included, at most 26.
 func (c calendar) standardDays(start, end time.Time) int {
 	n := 0

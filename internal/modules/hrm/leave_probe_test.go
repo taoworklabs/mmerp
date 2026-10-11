@@ -8,10 +8,11 @@ import (
 	"github.com/taoworklabs/mmerp/internal/modules/hrm"
 )
 
-// Probes for leave situations no rule settles yet: leave on non-working days, two requests
-// over the same days, a type that neither deducts nor pays, a missing approver, and HR
-// filing for someone without an account. They only observe and log; they assert nothing,
-// because the expected result is still being agreed. The NP codes label the observations.
+// Probes for leave situations no rule settles yet: a type that neither deducts nor pays, a
+// missing approver, and HR filing for someone without an account. They only observe and log;
+// they assert nothing, because the expected result is still being agreed. The NP codes label
+// the observations. Leave on non-working days and two requests over the same days were probed
+// here too until a rule settled them; leave_overlap_test.go now asserts both.
 
 func (f *leaveFixture) balanceOf(emp int64) string {
 	f.t.Helper()
@@ -37,54 +38,6 @@ func (f *leaveFixture) steps(id int64) string {
 		out += fmt.Sprintf("[step %d approvers=%v fallback=%v]", s.Position, s.ApproverNames, s.Fallback)
 	}
 	return fmt.Sprintf("%s %s", inst.Status, out)
-}
-
-// NP-06: two requests covering the same days. Nothing in the code or the documents
-// checks for overlap, so this records what actually happens.
-func TestProbeNP06Overlap(t *testing.T) {
-	f := newLeaveFixture(t)
-	f.ruleManager()
-	f.grant("12")
-
-	same1 := must(t)(f.hrm.CreateLeave(f.e, hrm.NewLeave{LeaveFields: f.fields("2026-03-10", "2026-03-11", "2")}))
-	same2 := must(t)(f.hrm.CreateLeave(f.e, hrm.NewLeave{LeaveFields: f.fields("2026-03-10", "2026-03-11", "2")}))
-	f.check(f.send(f.e, same1))
-	f.check(f.send(f.e, same2))
-	t.Logf("NP-06 two identical requests created and submitted: %s / %s", f.leave(same1).Number, f.leave(same2).Number)
-	e1 := f.appr.Approve(f.m, f.ticket(same1), 1)
-	e2 := f.appr.Approve(f.m, f.ticket(same2), 1)
-	t.Logf("NP-06 approving both: %v / %v → statuses %s / %s, balance %s (12 granted)",
-		e1, e2, f.leave(same1).Status, f.leave(same2).Status, f.balance())
-
-	part1 := must(t)(f.hrm.CreateLeave(f.e, hrm.NewLeave{LeaveFields: f.fields("2026-05-04", "2026-05-06", "3")}))
-	part2 := must(t)(f.hrm.CreateLeave(f.e, hrm.NewLeave{LeaveFields: f.fields("2026-05-06", "2026-05-08", "3")}))
-	f.check(f.send(f.e, part1))
-	f.check(f.send(f.e, part2))
-	e3 := f.appr.Approve(f.m, f.ticket(part1), 1)
-	e4 := f.appr.Approve(f.m, f.ticket(part2), 1)
-	t.Logf("NP-06 partly overlapping (06/05 in both): %v / %v → statuses %s / %s, balance %s",
-		e3, e4, f.leave(part1).Status, f.leave(part2).Status, f.balance())
-}
-
-// NP-04, balance side: a request whose days all fall on weekly rest days still
-// deducts the balance, while the paid days it produces are zero (see TestProbeNP04).
-func TestProbeNP04Balance(t *testing.T) {
-	f := newLeaveFixture(t)
-	f.ruleManager()
-	f.grant("12")
-
-	// 14 and 15/03/2026 are Saturday and Sunday.
-	weekend := must(t)(f.hrm.CreateLeave(f.e, hrm.NewLeave{LeaveFields: f.fields("2026-03-14", "2026-03-15", "2")}))
-	f.check(f.send(f.e, weekend))
-	f.check(f.appr.Approve(f.m, f.ticket(weekend), 1))
-	t.Logf("NP-04 two days entered on Sat+Sun: status %s, balance %s (12 granted)",
-		f.leave(weekend).Status, f.balance())
-
-	// Friday to Monday entered as 4 days: the calendar only has two working days in it.
-	span := must(t)(f.hrm.CreateLeave(f.e, hrm.NewLeave{LeaveFields: f.fields("2026-03-13", "2026-03-16", "4")}))
-	f.check(f.send(f.e, span))
-	f.check(f.appr.Approve(f.m, f.ticket(span), 1))
-	t.Logf("NP-04 four days entered over Fri→Mon: balance %s", f.balance())
 }
 
 // NP-10: a type that neither deducts the balance nor is company-paid.

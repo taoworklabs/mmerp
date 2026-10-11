@@ -29,6 +29,7 @@ export const hrmKeys = {
     lists: () => ['hrm', 'leaves', 'list'] as const,
     list: (q: LeaveQuery) => ['hrm', 'leaves', 'list', q] as const,
     detail: (id: number) => ['hrm', 'leaves', 'detail', id] as const,
+    workingDays: (start: string | null, end: string | null, employee?: number) => ['hrm', 'leaves', 'working-days', start, end, employee ?? null] as const,
   },
   balances: {
     all: () => ['hrm', 'balances'] as const,

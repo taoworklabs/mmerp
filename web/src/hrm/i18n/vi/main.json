@@ -79,6 +79,7 @@
   "hrm.leave.start_date": "Từ ngày",
   "hrm.leave.end_date": "Đến ngày",
   "hrm.leave.days_hint": "Theo nửa ngày, ví dụ 2,5.",
+  "hrm.leave.working_days": "Khoảng ngày đã chọn có {{days}} ngày làm việc.",
   "hrm.leave.reason_hint": "Không ghi chẩn đoán hay thông tin sức khỏe.",
   "hrm.leave.section": "Thông tin nghỉ",
   "hrm.leave.section_hint": "Đơn chỉ có hiệu lực sau khi được duyệt.",

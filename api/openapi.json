@@ -2740,7 +2740,7 @@
             ]
           },
           "days": {
-            "description": "Half-day steps, e.g. 2.5; at most the calendar days of the range",
+            "description": "Half-day steps, e.g. 2.5; at most the working days of the range",
             "pattern": "^[0-9]{1,3}(\\.[05])?$",
             "type": "string"
           },
@@ -3003,7 +3003,7 @@
             "type": "string"
           },
           "days": {
-            "description": "Half-day steps, e.g. 2.5; at most the calendar days of the range",
+            "description": "Half-day steps, e.g. 2.5; at most the working days of the range",
             "pattern": "^[0-9]{1,3}(\\.[05])?$",
             "type": "string"
           },
@@ -3038,6 +3038,28 @@
           "end_date",
           "days",
           "reason"
+        ],
+        "type": "object"
+      },
+      "LeaveWorkingDaysOutputBody": {
+        "additionalProperties": false,
+        "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "/api/schemas/LeaveWorkingDaysOutputBody.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
+          "working_days": {
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "working_days"
         ],
         "type": "object"
       },
@@ -3643,7 +3665,7 @@
             "type": "string"
           },
           "days": {
-            "description": "Half-day steps, e.g. 2.5; at most the calendar days of the range",
+            "description": "Half-day steps, e.g. 2.5; at most the working days of the range",
             "pattern": "^[0-9]{1,3}(\\.[05])?$",
             "type": "string"
           },
@@ -8341,6 +8363,71 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/SelfServiceActions"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "tags": [
+          "hrm",
+          "hrm"
+        ]
+      }
+    },
+    "/hrm/leaves/working-days": {
+      "get": {
+        "description": "How many days a request over this range may claim: the days that are neither a weekly rest day nor a public holiday.",
+        "operationId": "get-leave-working-days",
+        "parameters": [
+          {
+            "explode": false,
+            "in": "query",
+            "name": "start",
+            "required": true,
+            "schema": {
+              "format": "date",
+              "type": "string"
+            }
+          },
+          {
+            "explode": false,
+            "in": "query",
+            "name": "end",
+            "required": true,
+            "schema": {
+              "format": "date",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Whose calendar; omit for the actor's own record",
+            "explode": false,
+            "in": "query",
+            "name": "employee_id",
+            "schema": {
+              "description": "Whose calendar; omit for the actor's own record",
+              "format": "int64",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LeaveWorkingDaysOutputBody"
                 }
               }
             },

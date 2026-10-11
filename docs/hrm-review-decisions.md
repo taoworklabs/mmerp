@@ -1,6 +1,8 @@
 # HRM review: the decisions NP-04 and NP-06 need
 
-Created: 2026-10-11. Status: proposal awaiting the business owner; nothing here is implemented.
+Created: 2026-10-11. Status: settled on 2026-10-11 — the business owner took the recommended
+option in each row. The rules are recorded in [ADR-0030](adr/0030-leave-day-allocation.md) and built;
+this document is kept for the reasoning and the worked examples behind the choice.
 
 Fills the decision table of the [review plan](hrm-review-plan.md) section 10.2 for the two rows that
 round one found to have no rule. The evidence is in the [round-one observations](hrm-review-round1.md).
@@ -106,8 +108,10 @@ Nothing covers this: not ADR-0016, not `products/hrm.md`, not the code. Contract
 ### Option 1 — refuse when a date would exceed one day of absence (recommended)
 
 At the transition to `posted`, with the employee row locked, refuse if any date in the request would
-hold more than 1 day of absence once every non-cancelled leave of that employee is counted. Error
-code `leave_overlaps`, naming the date and the other document.
+hold more than 1 day of absence once every **approved** leave of that employee is counted. Error code
+`leave_overlaps`, naming the date and the other document. Counting approved leave only, rather than
+anything not yet cancelled, is what the last row of the table below describes and what the contract
+check already does; drafts and requests still waiting for a decision block nothing.
 
 | Case | Date in question holds | Proposed outcome |
 | --- | --- | --- |
@@ -145,7 +149,7 @@ up to a full day per overlapping date.
 
 ## 5. The decision table, filled
 
-| Question | Existing rule | Evidence | Proposed decision | Confirmed by | Acceptance criterion |
+| Question | Existing rule | Evidence | Decision taken | Confirmed by | Acceptance criterion |
 | --- | --- | --- | --- | --- | --- |
 | What the entered day count means against the calendar (NP-04) | Direction settled in ADR-0016, computation deferred; today's check is against calendar days | Measured: up to 3 days of balance taken and not paid, section 2 | Fix within the current scope: option B, entered days must not exceed the working days of the range | HR owner | The six rows of the option B table hold, and no case remains where the balance figure differs from the allocated figure |
 | Leave that falls entirely on rest days (NP-04, sub-question) | None | Measured: balance −2, paid 0 | Refuse it | HR owner | A request whose range contains no working day is refused with a named error |
@@ -155,15 +159,23 @@ up to a full day per overlapping date.
 Decision values available, per the plan: keep as is, fix within the current scope, widen the scope
 later, or needs more confirmation.
 
-## 6. If this is approved, what follows
+## 6. What followed
 
-1. An ADR amending ADR-0016 with the per-date allocation, the tightened validation and the overlap
-   rule — the plan requires the ADR before the code, and ADR-0016 is the decision being changed.
-2. `CONTEXT.md` gains the per-date allocation as a term, and its work-calendar and leave-type entries
-   are corrected where they describe the old check.
-3. `products/hrm.md` gains the two rules in its leave section.
-4. Implementation, test-first, with the tables in sections 3 and 4 as the test cases, plus a
-   concurrency test for two simultaneous approvals of overlapping requests, following the existing
-   `TestTwoRequestsApprovedAtOnce`.
-5. The probes keep their place: once a rule exists, the probes for NP-04 and NP-06 stop being
-   observations and become assertions.
+All five steps are done, in this order:
+
+1. [ADR-0030](adr/0030-leave-day-allocation.md) records the per-date allocation, the tightened
+   validation and the overlap rule, and amends ADR-0016, whose `days` cap it changes.
+2. `CONTEXT.md` gained **leave day allocation** as a term; its work-calendar entry no longer
+   describes the old calendar-days check.
+3. `products/hrm.md` carries both rules in its leave section, and HRM's own lock order now names the
+   employee row between the payroll lock and the leave balances.
+4. The tables in sections 3 and 4 became the test cases, in `leave_overlap_test.go` and
+   `leave_allocation_test.go`, together with `TestOverlappingRequestsApprovedAtOnce` for two
+   simultaneous approvals, following the existing `TestTwoRequestsApprovedAtOnce`.
+5. The NP-04 and NP-06 probes are gone: the rules they were observing are now asserted. The probes
+   for NP-10, NP-12 and NP-15 stay, since those rows are still observations.
+
+Two things the decision pulled in that section 5 did not list. The checks run both on entry and on
+approval, because a holiday added after a draft is saved would otherwise let a stale day count
+through; and the leave form now shows the working days of the chosen range, through a small read
+endpoint, since the ADR makes that ceiling the thing the employee has to know before typing.

@@ -309,7 +309,8 @@ func TestLeaveDaysAndDates(t *testing.T) {
 	for _, c := range []struct{ start, end, days, code string }{
 		{"2026-03-10", "2026-03-09", "1", "leave_end_before_start"},
 		{"2026-12-31", "2027-01-01", "2", "leave_spans_years"},
-		{"2026-03-10", "2026-03-11", "2.5", "invalid_leave_days"},
+		{"2026-03-10", "2026-03-11", "2.5", "leave_days_exceed_working_days"},
+		{"2026-03-10", "2026-03-11", "1.3", "invalid_leave_days"},
 		{"2026-03-10", "2026-03-11", "0", "invalid_leave_days"},
 	} {
 		_, err := f.hrm.CreateLeave(f.e, hrm.NewLeave{LeaveFields: f.fields(c.start, c.end, c.days)})
@@ -321,6 +322,9 @@ func TestLeaveDaysAndDates(t *testing.T) {
 func TestLeaveRecordContract(t *testing.T) {
 	recordtest.Run(t, func(t *testing.T) recordtest.Harness {
 		f := newLeaveFixture(t)
+		// The contract suite picks its own dates and is about the lifecycle, not the
+		// calendar, so no day of the week is off here and every date can hold leave.
+		f.check(f.hrm.SaveWorkWeek(f.ctxFor("cal", "payroll@*"), f.c, hrm.WorkWeek{EffectiveFrom: "2020-01-01", OffDays: []int{}}))
 		f.grant("10")
 		granted := int64(10) // posting a 1-day request takes one day from here
 		ref := func(id int64, err error) (record.Ref, error) {

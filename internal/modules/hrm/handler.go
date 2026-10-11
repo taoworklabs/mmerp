@@ -93,6 +93,18 @@ type leaveOutput struct{ Body Leave }
 
 type newLeaveInput struct{ Body NewLeave }
 
+type leaveWorkingDaysInput struct {
+	Start      string `query:"start" format:"date" required:"true"`
+	End        string `query:"end" format:"date" required:"true"`
+	EmployeeID int64  `query:"employee_id" doc:"Whose calendar; omit for the actor's own record"`
+}
+
+type leaveWorkingDaysOutput struct {
+	Body struct {
+		WorkingDays int `json:"working_days"`
+	}
+}
+
 type updateLeaveInput struct {
 	ID   int64 `path:"id"`
 	Body LeaveUpdate
@@ -323,6 +335,18 @@ func registerLeaveHandlers(api huma.API, s *Service) {
 		func(ctx context.Context, _ *struct{}) (*selfServiceActionsOutput, error) {
 			a, err := s.LeaveActions(ctx)
 			return &selfServiceActionsOutput{Body: a}, err
+		})
+	huma.Register(api, huma.Operation{OperationID: "get-leave-working-days", Method: http.MethodGet, Path: "/hrm/leaves/working-days",
+		Description: "How many days a request over this range may claim: the days that are neither a weekly rest day nor a public holiday."},
+		func(ctx context.Context, in *leaveWorkingDaysInput) (*leaveWorkingDaysOutput, error) {
+			var employee *int64
+			if in.EmployeeID != 0 {
+				employee = &in.EmployeeID
+			}
+			n, err := s.LeaveWorkingDays(ctx, employee, in.Start, in.End)
+			out := &leaveWorkingDaysOutput{}
+			out.Body.WorkingDays = n
+			return out, err
 		})
 	huma.Register(api, huma.Operation{OperationID: "create-leave", Method: http.MethodPost, Path: "/hrm/leaves", DefaultStatus: http.StatusCreated},
 		func(ctx context.Context, in *newLeaveInput) (*createdOutput, error) {

@@ -110,6 +110,16 @@ UPDATE hrm.leave_requests SET leave_type_id = @leave_type_id, start_date = @star
     days = CAST(@days::text AS numeric), reason = @reason
 WHERE id = @id;
 
+-- name: ApprovedLeaveOverlapping :many
+-- The employee's other approved leave touching [@start_date, @end_date], whatever its type:
+-- overlap is about absence, so a type that neither deducts nor is paid still occupies dates.
+SELECT r.id, d.number, r.start_date, r.end_date, r.days::text AS days
+FROM hrm.leave_requests r
+JOIN record.documents d ON d.id = r.id
+WHERE r.employee_id = @employee_id AND r.id <> @id AND d.status = 'posted'
+  AND daterange(r.start_date, r.end_date, '[]') && daterange(@start_date::date, @end_date::date, '[]')
+ORDER BY r.start_date;
+
 -- name: SetLeaveDeducted :exec
 UPDATE hrm.leave_requests SET deducted = CAST(@deducted::text AS numeric) WHERE id = @id;
 
