@@ -33,7 +33,7 @@ version the project ships against**.
 | Code | Observation | Matches an existing rule? |
 | --- | --- | --- |
 | NP-04 | The balance is cut by the days entered; payroll pays only the working days inside the range, and silently drops the rest | No rule covers the gap between the two |
-| NP-06 | Two requests covering the same days are both approved and both deducted | Confirmed: no rule exists |
+| NP-06 | Two requests covering the same days are both approved and both deducted, while payroll caps the pay at one day per date | No rule exists, and the balance and the payroll contradict each other |
 | NP-10 | A type that neither deducts nor is paid leaves the balance alone, and cancelling refunds nothing | Yes, as the plan expects |
 | NP-12 | No manager, and a manager without an account, both fall back to the `hrm.hr` role | Yes, as the plan expects |
 | NP-15 | HR filing for an employee without an account keeps the two people apart and routes to the employee's manager | Yes, as the plan expects |
@@ -68,8 +68,16 @@ Data before/after:
   balance 12 → 8 after step 1 (2 + 2 deducted)
   balance 8 → 2 after step 2 (3 + 3 deducted)
   10 days deducted in total, for 7 distinct calendar days of absence
-Evidence: TestProbeNP06Overlap, leave_probe_test.go:52-65
-Conclusion: pass, in the sense that it behaves as the code is written; there is no rule to fail against
+What the payroll then does with the same pairs, measured separately at unit level: the per-date
+  allocations add up across requests, and `service_payroll_inputs.go:297` caps worked plus leave at
+  one day per date. So the identical pair allocates 4 and is paid 2, and the partly overlapping pair
+  allocates 6 and is paid 5. The balance lost 4 and 6 respectively.
+Evidence: TestProbeNP06Overlap, leave_probe_test.go:52-65; TestProbeNP06PaidDays for the paid side
+Conclusion: fail, and on firmer ground than "no rule exists". The two halves of the system disagree
+  with each other: the balance charges per request, the payroll pays per date with a cap. Overlapping
+  requests therefore take 2 days of balance for the identical pair, and 1 for the partly overlapping
+  pair, that nobody is ever paid for. A missing rule would leave the behaviour undefined; this
+  behaviour is defined and self-contradictory.
 Points to confirm, and who owns them: HR owner, per the plan's decision table. Whether an overlap is
   refused, warned about, or allowed; and if a half day needs morning/afternoon to detect an overlap
   at all, since the overlap would otherwise be undetectable for half-day requests
@@ -283,9 +291,11 @@ message the approver can be said to have been given, so the row is recorded as a
 
 ## Suggested next steps
 
-1. Put NP-04 and NP-06 in front of the HR owner as the plan's decision table entries. They are the
-   two places where the system currently has no rule, and NP-04 costs an employee balance they are
-   not paid for, so it is the more urgent of the two.
+1. Put NP-04 and NP-06 in front of the HR owner as the plan's decision table entries. Both cost an
+   employee balance they are not paid for, and they turn out to be one question rather than two:
+   nothing defines how many days of absence a request places on each date. The options, the worked
+   examples each outcome needs and a recommendation are in [the decision
+   proposal](hrm-review-decisions.md).
 2. Fix TB-04's missing explanation in the inbox. It needs no business decision and no new wording —
    the text already exists and already reads correctly on the document page — only a place to put it
    that survives the item leaving the inbox.
