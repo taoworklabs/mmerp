@@ -56,6 +56,48 @@ func TestProbeNP04(t *testing.T) {
 	}
 }
 
+// Two approved requests over the same days: what the payroll makes of the pair, against the
+// two deductions the balance already took for them.
+func TestProbeNP06PaidDays(t *testing.T) {
+	// 2026-04-06 to 08 is Monday to Wednesday; both requests contain 04-07.
+	b := payrollBasis{Calendar: probeCalendar(), Leaves: []basisLeave{
+		{EmployeeID: 1, Start: "2026-04-06", End: "2026-04-07", Days: dec("2"), Paid: true},
+		{EmployeeID: 1, Start: "2026-04-07", End: "2026-04-08", Days: dec("2"), Paid: true},
+	}}
+	paidAfterCap := func(b payrollBasis) decimal.Decimal {
+		capped := decimal.Zero
+		for _, v := range leaveByDay(b, 1) {
+			capped = capped.Add(decimal.Min(one, v))
+		}
+		return capped
+	}
+	got := leaveByDay(b, 1)
+	t.Logf("NP-06 two requests of 2 days sharing 04-07 → allocated %s on %s", total(got), days(got))
+	t.Logf("NP-06 after the one-day-per-date cap the payroll applies → paid %s, while the balance lost 4", paidAfterCap(b))
+
+	// Two identical requests on two working days, the pair the database probe approved.
+	same := payrollBasis{Calendar: probeCalendar(), Leaves: []basisLeave{
+		{EmployeeID: 1, Start: "2026-04-06", End: "2026-04-07", Days: dec("2"), Paid: true},
+		{EmployeeID: 1, Start: "2026-04-06", End: "2026-04-07", Days: dec("2"), Paid: true},
+	}}
+	t.Logf("NP-06 two identical 2-day requests → allocated %s, paid after the cap %s, while the balance lost 4",
+		total(leaveByDay(same, 1)), paidAfterCap(same))
+
+	// The partly overlapping pair the database probe approved: 3 days each, sharing 05-06.
+	partly := payrollBasis{Calendar: probeCalendar(), Leaves: []basisLeave{
+		{EmployeeID: 1, Start: "2026-05-04", End: "2026-05-06", Days: dec("3"), Paid: true},
+		{EmployeeID: 1, Start: "2026-05-06", End: "2026-05-08", Days: dec("3"), Paid: true},
+	}}
+	t.Logf("NP-06 two 3-day requests sharing 05-06 → allocated %s, paid after the cap %s, while the balance lost 6",
+		total(leaveByDay(partly, 1)), paidAfterCap(partly))
+
+	// A single request on the holiday only, for the balance-versus-pay row.
+	holiday := payrollBasis{Calendar: probeCalendar(), Leaves: []basisLeave{
+		{EmployeeID: 1, Start: "2026-04-30", End: "2026-04-30", Days: dec("1"), Paid: true},
+	}}
+	t.Logf("NP-06 one day on the holiday 04-30 → paid after the cap %s", paidAfterCap(holiday))
+}
+
 func TestProbeNP10UnpaidType(t *testing.T) {
 	b := payrollBasis{Calendar: probeCalendar(), Leaves: []basisLeave{
 		{EmployeeID: 1, Start: "2026-04-06", End: "2026-04-07", Days: dec("2"), Paid: false},
