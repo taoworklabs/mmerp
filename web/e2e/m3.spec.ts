@@ -174,3 +174,29 @@ test('at 375px an employee sends a request and the manager approves it', async (
   await e.reload()
   await status(e, 'Đã duyệt')
 })
+
+// The form names the ceiling before the user is refused, and the refusal lands on the day
+// count. 2026-08-10 to 14 is a whole working week; 2026-08-08 to 09 is a weekend.
+test('the form shows the working days of the range and refuses more than them', async ({ page }) => {
+  await signInAs(page, login.e3, '/hrm/leaves/new')
+  await page.getByRole('combobox', { name: 'Loại nghỉ' }).click()
+  await page.getByRole('option', { name: `Phép năm ${run}` }).click()
+  await page.getByRole('textbox', { name: /^Từ ngày/ }).fill('10/08/2026')
+  await page.getByRole('textbox', { name: /^Đến ngày/ }).fill('14/08/2026')
+  // A date field hands its value to the form on blur, so move off it before reading the hint.
+  await page.getByRole('textbox', { name: /^Lý do/ }).click()
+  await expect(page.getByText('Khoảng ngày đã chọn có 5 ngày làm việc.')).toBeVisible()
+
+  await page.getByRole('textbox', { name: /^Số ngày/ }).fill('6')
+  await page.getByRole('button', { name: 'Tạo bản nháp' }).click()
+  await expect(page.getByText(/chỉ có 5 ngày làm việc/)).toBeVisible()
+
+  // A range of nothing but rest days has no leave to take.
+  await page.getByRole('textbox', { name: /^Từ ngày/ }).fill('08/08/2026')
+  await page.getByRole('textbox', { name: /^Đến ngày/ }).fill('09/08/2026')
+  await page.getByRole('textbox', { name: /^Lý do/ }).click()
+  await expect(page.getByText('Khoảng ngày đã chọn có 0 ngày làm việc.')).toBeVisible()
+  await page.getByRole('textbox', { name: /^Số ngày/ }).fill('1')
+  await page.getByRole('button', { name: 'Tạo bản nháp' }).click()
+  await expect(page.getByText(/đều là ngày nghỉ hoặc ngày lễ/)).toBeVisible()
+})

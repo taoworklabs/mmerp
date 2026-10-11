@@ -42,6 +42,63 @@ func (q *Queries) AnyEmployee(ctx context.Context) (bool, error) {
 	return exists, err
 }
 
+const approvedLeaveOverlapping = `-- name: ApprovedLeaveOverlapping :many
+SELECT r.id, d.number, r.start_date, r.end_date, r.days::text AS days
+FROM hrm.leave_requests r
+JOIN record.documents d ON d.id = r.id
+WHERE r.employee_id = $1 AND r.id <> $2 AND d.status = 'posted'
+  AND daterange(r.start_date, r.end_date, '[]') && daterange($3::date, $4::date, '[]')
+ORDER BY r.start_date
+`
+
+type ApprovedLeaveOverlappingParams struct {
+	EmployeeID int64
+	ID         int64
+	StartDate  pgtype.Date
+	EndDate    pgtype.Date
+}
+
+type ApprovedLeaveOverlappingRow struct {
+	ID        int64
+	Number    string
+	StartDate pgtype.Date
+	EndDate   pgtype.Date
+	Days      string
+}
+
+// The employee's other approved leave touching [@start_date, @end_date], whatever its type:
+// overlap is about absence, so a type that neither deducts nor is paid still occupies dates.
+func (q *Queries) ApprovedLeaveOverlapping(ctx context.Context, arg ApprovedLeaveOverlappingParams) ([]ApprovedLeaveOverlappingRow, error) {
+	rows, err := q.db.Query(ctx, approvedLeaveOverlapping,
+		arg.EmployeeID,
+		arg.ID,
+		arg.StartDate,
+		arg.EndDate,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ApprovedLeaveOverlappingRow
+	for rows.Next() {
+		var i ApprovedLeaveOverlappingRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Number,
+			&i.StartDate,
+			&i.EndDate,
+			&i.Days,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const clearPayrollComputed = `-- name: ClearPayrollComputed :exec
 UPDATE hrm.payrolls SET computed_at = NULL WHERE id = $1
 `

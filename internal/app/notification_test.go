@@ -106,6 +106,9 @@ func newLeaveFixture(t *testing.T, rule string) *leaveFixture {
 	f.bossEm = employee("E1", "boss", "null")
 	f.staffEmp = employee("E2", "staff", fmt.Sprint(f.bossEm))
 	f.annual = f.id(f.admin, "/api/hrm/leave-types", `{"name":"Phép năm","deducts_balance":true,"paid":true,"active":true}`)
+	// These tests are about notifications, so every date can hold leave: no day of the
+	// week is off, and the day count of a request is never capped by a rest day.
+	f.ok(f.admin, "PUT", fmt.Sprintf("/api/hrm/calendars/%d/weeks/2020-01-01", company), `{"off_days":[]}`, 204)
 	f.ok(f.admin, "POST", fmt.Sprintf("/api/hrm/employees/%d/leave-balances/2026/adjustments", f.staffEmp), `{"delta":"12","reason":"đầu năm"}`, 204)
 	f.ok(f.admin, "PUT", "/api/approval-rules/hrm.leave_request", rule, 204)
 	f.boss, f.staff, f.hr2 = f.login("boss"), f.login("staff"), f.login("hr2")

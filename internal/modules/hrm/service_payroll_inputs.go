@@ -374,22 +374,33 @@ func termsAt(cs []payContract, day string) *payContract {
 	return out
 }
 
-// leaveByDay spreads each paid leave of an employee over its working days in date order,
-// a day at most per day, and returns the paid leave days of each date.
+// leaveAllocation places days on the working days of [start, end] in date order, a day at
+// most per day: how much absence a leave request puts on each date. The entry cap keeps the
+// day count within the working days available, so nothing is left over.
+func leaveAllocation(c calendar, start, end string, days decimal.Decimal) map[string]decimal.Decimal {
+	out := map[string]decimal.Decimal{}
+	left := days
+	for d := dayOf(start); !d.After(dayOf(end)) && left.IsPositive(); d = d.AddDate(0, 0, 1) {
+		if c.weeklyOff(d) || c.holiday(d) {
+			continue
+		}
+		take := decimal.Min(one, left)
+		out[d.Format(time.DateOnly)] = take
+		left = left.Sub(take)
+	}
+	return out
+}
+
+// leaveByDay adds up the allocations of an employee's paid leave and returns the paid leave
+// days of each date. Unpaid types are left out: the payroll has no use for them.
 func leaveByDay(b payrollBasis, employee int64) map[string]decimal.Decimal {
 	out := map[string]decimal.Decimal{}
 	for _, l := range b.Leaves {
 		if l.EmployeeID != employee || !l.Paid {
 			continue
 		}
-		left := l.Days
-		for d := dayOf(l.Start); !d.After(dayOf(l.End)) && left.IsPositive(); d = d.AddDate(0, 0, 1) {
-			if b.Calendar.weeklyOff(d) || b.Calendar.holiday(d) {
-				continue
-			}
-			take := decimal.Min(one, left)
-			out[d.Format(time.DateOnly)] = out[d.Format(time.DateOnly)].Add(take)
-			left = left.Sub(take)
+		for d, v := range leaveAllocation(b.Calendar, l.Start, l.End, l.Days) {
+			out[d] = out[d].Add(v)
 		}
 	}
 	return out

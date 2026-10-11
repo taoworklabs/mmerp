@@ -79,6 +79,7 @@
   "hrm.leave.start_date": "From",
   "hrm.leave.end_date": "To",
   "hrm.leave.days_hint": "In half days, e.g. 2.5.",
+  "hrm.leave.working_days": "The chosen range holds {{days}} working day(s).",
   "hrm.leave.reason_hint": "Do not enter diagnoses or other health information.",
   "hrm.leave.section": "Leave details",
   "hrm.leave.section_hint": "A request takes effect only once approved.",

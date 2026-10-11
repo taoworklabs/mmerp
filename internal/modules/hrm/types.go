@@ -150,7 +150,7 @@ type LeaveFields struct {
 	LeaveTypeID int64   `json:"leave_type_id"`
 	StartDate   string  `json:"start_date" format:"date"`
 	EndDate     string  `json:"end_date" format:"date"`
-	Days        string  `json:"days" pattern:"^[0-9]{1,3}(\\.[05])?$" doc:"Half-day steps, e.g. 2.5; at most the calendar days of the range"`
+	Days        string  `json:"days" pattern:"^[0-9]{1,3}(\\.[05])?$" doc:"Half-day steps, e.g. 2.5; at most the working days of the range"`
 	Reason      *string `json:"reason" maxLength:"1000"`
 }
 
@@ -638,8 +638,10 @@ var (
 	ErrNotAnEmployee         = &platform.Error{Status: http.StatusUnprocessableEntity, Code: "not_an_employee"}
 	ErrLeaveDates            = &platform.Error{Status: http.StatusUnprocessableEntity, Code: "leave_end_before_start"}
 	ErrLeaveSpansYears       = &platform.Error{Status: http.StatusUnprocessableEntity, Code: "leave_spans_years"}
-	// Days must be positive half-day steps no larger than the calendar days of the range.
-	ErrLeaveDays            = &platform.Error{Status: http.StatusUnprocessableEntity, Code: "invalid_leave_days"}
+	// Days must be positive half-day steps.
+	ErrLeaveDays = &platform.Error{Status: http.StatusUnprocessableEntity, Code: "invalid_leave_days"}
+	// No day of the range is a working day, so the request would take and pay nothing.
+	ErrLeaveNoWorkingDays   = &platform.Error{Status: http.StatusUnprocessableEntity, Code: "leave_no_working_days"}
 	ErrInsufficientBalance  = &platform.Error{Status: http.StatusConflict, Code: "insufficient_leave_balance"}
 	ErrNegativeBalance      = &platform.Error{Status: http.StatusConflict, Code: "leave_balance_negative"}
 	ErrContractTypeTaken    = &platform.Error{Status: http.StatusConflict, Code: "contract_type_taken"}

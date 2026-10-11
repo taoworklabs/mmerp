@@ -576,6 +576,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/hrm/leaves/working-days": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description How many days a request over this range may claim: the days that are neither a weekly rest day nor a public holiday. */
+        get: operations["get-leave-working-days"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/hrm/leaves/{id}": {
         parameters: {
             query?: never;
@@ -2322,7 +2339,7 @@ export interface components {
             readonly $schema?: string;
             allowed_actions: string[];
             balance: string | null;
-            /** @description Half-day steps, e.g. 2.5; at most the calendar days of the range */
+            /** @description Half-day steps, e.g. 2.5; at most the working days of the range */
             days: string;
             employee_code: string;
             /** Format: int64 */
@@ -2408,7 +2425,7 @@ export interface components {
              * @example /api/schemas/LeaveUpdate.json
              */
             readonly $schema?: string;
-            /** @description Half-day steps, e.g. 2.5; at most the calendar days of the range */
+            /** @description Half-day steps, e.g. 2.5; at most the working days of the range */
             days: string;
             /** Format: date */
             end_date: string;
@@ -2419,6 +2436,16 @@ export interface components {
             start_date: string;
             /** Format: int32 */
             version: number;
+        };
+        LeaveWorkingDaysOutputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example /api/schemas/LeaveWorkingDaysOutputBody.json
+             */
+            readonly $schema?: string;
+            /** Format: int64 */
+            working_days: number;
         };
         LegalEntitySetting: {
             /** @description Translated as <key> and <key>.<value> */
@@ -2618,7 +2645,7 @@ export interface components {
              * @example /api/schemas/NewLeave.json
              */
             readonly $schema?: string;
-            /** @description Half-day steps, e.g. 2.5; at most the calendar days of the range */
+            /** @description Half-day steps, e.g. 2.5; at most the working days of the range */
             days: string;
             /** Format: int64 */
             employee_id?: number;
@@ -4988,6 +5015,40 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SelfServiceActions"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "get-leave-working-days": {
+        parameters: {
+            query: {
+                start: string;
+                end: string;
+                /** @description Whose calendar; omit for the actor's own record */
+                employee_id?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LeaveWorkingDaysOutputBody"];
                 };
             };
             /** @description Error */

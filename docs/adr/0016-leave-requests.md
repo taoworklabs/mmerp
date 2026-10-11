@@ -1,6 +1,6 @@
 # 0016. Leave requests, leave types and leave balances
 
-Status: accepted · 2026-10-05
+Status: accepted · 2026-10-05 · the `days` cap is amended by [ADR-0030](./0030-leave-day-allocation.md): `days` is capped by the working days of the range, not its calendar days, is allocated per date, and a date holds at most one day of approved absence
 
 ## Context
 

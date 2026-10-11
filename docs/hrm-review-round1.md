@@ -13,20 +13,29 @@ not called a defect here unless the plan or the product documents already state 
 | Application version | `25f1098` (branch `docs/hrm-review-plan`) |
 | Run date | 2026-10-11 |
 | Postgres | 17.11 on `localhost:5433`, via `TEST_DATABASE_URL` in a gitignored `local.mk` |
-| Backend probes | `internal/modules/hrm/leave_probe_test.go`, `payroll_inputs_probe_test.go` |
-| Frontend probes | `web/e2e/review-probe.spec.ts`, Playwright on the built app (`:8090`, `PRODUCTS=hrm,sales`) |
+| Backend probes | `internal/modules/hrm/leave_probe_test.go`, and the allocation probes since folded into `leave_allocation_test.go` |
+| Frontend probes | `web/e2e/review-probe.spec.ts`, Playwright on a build of this branch (`:8090`, `PRODUCTS=hrm,sales`) |
 | Business date in the data | 2026; leave balances granted for year 2026 |
 
 The probes observe and log; they assert almost nothing, because what they measure is exactly what the
 review has to settle. They carry `probe` in their name so they stay recognisable as observations
 rather than as expectations the suite enforces.
 
-Two deviations from the documented commands, both forced by the sandbox and neither affecting what was
-measured: Docker cannot run here (the daemon cannot create its bridge network), so `make db` and
-`make e2e` were replaced by the already-running Postgres 17 and by the steps of `scripts/e2e-server.sh`
-run by hand with the local `psql` instead of the `postgres:18` image. The repo targets Postgres 18;
-every migration and probe applied cleanly on 17, but **the figures below were not produced on the
-version the project ships against**.
+Two deviations from the documented commands, both forced by the sandbox: Docker cannot run here (the
+daemon cannot create its bridge network), so `make db` and `make e2e` were replaced by the
+already-running Postgres 17 and by the steps of `scripts/e2e-server.sh` run by hand with the local
+`psql` instead of the `postgres:18` image. The repo targets Postgres 18; every migration and probe
+applied cleanly on 17, but **the figures below were not produced on the version the project ships
+against**.
+
+One trap is worth recording, because it invalidated a first set of frontend figures. Two servers left
+over from an earlier session still held `:8090` and `:8091`, so the freshly built binary exited with
+`bind: address already in use` while the `/healthz` check still answered `ok` — from the stale server.
+Every frontend figure in that first pass therefore came from a binary nobody meant to test. It was
+caught only because a newly added endpoint was missing from the spec the server was serving. The
+section 8 and TB-04 figures below were re-measured after stopping those processes, against a build of
+this branch; they came out the same, but the first set was discarded rather than trusted. **When
+running this by hand, check what is listening before trusting `/healthz`.**
 
 ## Summary
 
@@ -240,16 +249,16 @@ Expected result and its basis: plan section 8, TB-04 — "Approving again is ref
 Actual result, server side (deterministic, through the API): POST /api/approvals/{id}/approve
   returns 409 with code `approval_closed`. The inbox no longer lists the request and the document
   stays draft. The refusal itself is correct.
-Actual result, user side in the inbox (9 runs): the click always reaches the server and always gets
-  the 409 — captured from the browser as "POST /api/approvals/13/approve → 409" and the same in
-  every other run. What the approver sees is a race. In 6 of 9 runs no message appeared at all: the
-  detail pane simply emptied and the page read "Không có việc nào đang chờ duyệt". In 3 of 9 a
-  message was briefly visible, and in each of those it had already disappeared before its text could
-  be read — one run logged "(gone before it could be read: locator.innerText: Timeout 2000ms
-  exceeded)" and "still visible a second later: false", and an earlier run of the whole file failed
-  outright on the same read. So the approver is either told nothing, or told something they cannot
-  finish reading.
-Actual result, user side on the document page (2 runs, consistent): the same withdrawal, the same
+Actual result, user side in the inbox (9 runs on this build): the click always reaches the server
+  and always gets the 409 — captured from the browser as "POST /api/approvals/37/approve → 409" and
+  the same in every other run. What the approver sees is a race. In 8 of 9 runs no message appeared
+  at all: the detail pane simply emptied and the page read "Không có việc nào đang chờ duyệt". In 1
+  of 9 a message was briefly visible and had already disappeared before its text could be read, the
+  run logging "(gone before it could be read: locator.innerText: Timeout 2000ms exceeded)" and
+  "still visible a second later: false". So the approver is either told nothing, or told something
+  they cannot finish reading. The same pattern appeared on the stale binary of the discarded first
+  pass, at 3 flashes in 9, which is the kind of spread a repaint race gives.
+Actual result, user side on the document page (3 runs, consistent): the same withdrawal, the same
   409, but the approver is told plainly. The panel shows "Người gửi đã rút lại lần duyệt này." and
   "Bước duyệt này đã được xử lý hoặc lần duyệt đã đóng", and the document reads Nháp. So the
   message exists and is correctly worded; only the inbox fails to show it.
@@ -272,11 +281,11 @@ Points to confirm, and who owns them: none for whether this is wrong — the pla
   outside the unmounting subtree, or keeping the item on screen in a closed state. Product owner.
 ```
 
-The 3-in-9 runs where something flashed up are not evidence against the finding; they are the
-clearest evidence for it. The message is set before the refetch unmounts the panel, so it can paint
-for a frame and then go. The probe caught this directly: it saw the element, then timed out trying to
-read it, then found it gone. A message whose delivery depends on winning a repaint race is not a
-message the approver can be said to have been given, so the row is recorded as a fail.
+The runs where something flashed up are not evidence against the finding; they are the clearest
+evidence for it. The message is set before the refetch unmounts the panel, so it can paint for a
+frame and then go. The probe caught this directly: it saw the element, then timed out trying to read
+it, then found it gone. A message whose delivery depends on winning a repaint race is not a message
+the approver can be said to have been given, so the row is recorded as a fail.
 
 ## What this round did not cover
 

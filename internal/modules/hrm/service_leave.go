@@ -3,9 +3,9 @@ package hrm
 import (
 	"context"
 	"errors"
+	"net/http"
 	"strconv"
 	"strings"
-	"time"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
@@ -105,6 +105,16 @@ func (s *Service) leaveTransition(ctx context.Context, d record.Doc, from record
 	}
 	if err := checkPayrollPeriods(ctx, d.LegalEntityID, *platform.DatePtr(r.StartDate), platform.DatePtr(r.EndDate)); err != nil {
 		return err
+	}
+	if approved {
+		// Locking the employee serializes one person's approvals, so two requests cannot
+		// both find the dates free. Contracts take the same lock at the same point.
+		if _, err := q.LockEmployee(ctx, r.EmployeeID); err != nil {
+			return err
+		}
+		if err := s.checkLeaveDates(ctx, d, r); err != nil {
+			return err
+		}
 	}
 	var delta decimal.Decimal
 	switch {
@@ -286,6 +296,102 @@ func (s *Service) visibleLeave(ctx context.Context, id int64) (store.GetLeaveReq
 	return store.New(platform.DBFrom(ctx)).GetLeaveRequest(ctx, id)
 }
 
+// checkLeaveDates re-checks on approval what the entry already checked, and refuses dates
+// that would hold more than a day of absence. The entry check can be stale: a holiday added
+// to the range after the draft was saved leaves fewer working days than the count assumes.
+func (s *Service) checkLeaveDates(ctx context.Context, d record.Doc, r store.GetLeaveRequestRow) error {
+	start, end := *platform.DatePtr(r.StartDate), *platform.DatePtr(r.EndDate)
+	days, err := decimal.NewFromString(r.Days)
+	if err != nil {
+		return err
+	}
+	others, err := store.New(platform.DBFrom(ctx)).ApprovedLeaveOverlapping(ctx, store.ApprovedLeaveOverlappingParams{
+		EmployeeID: r.EmployeeID, ID: d.ID, StartDate: r.StartDate, EndDate: r.EndDate,
+	})
+	if err != nil {
+		return err
+	}
+	// One calendar over every range involved: an overlapping request may reach outside this one.
+	from, to := start, end
+	for _, o := range others {
+		from = min(from, *platform.DatePtr(o.StartDate))
+		to = max(to, *platform.DatePtr(o.EndDate))
+	}
+	cal, err := workCalendar(ctx, d.LegalEntityID, from, to)
+	if err != nil {
+		return err
+	}
+	if err := checkLeaveDaysOn(cal, start, end, days); err != nil {
+		return err
+	}
+	// Add every other request up per date first: three half days on one date must fail
+	// even though no single pair of them exceeds a day.
+	taken := map[string]decimal.Decimal{}
+	culprit := map[string]string{}
+	for _, o := range others {
+		oDays, err := decimal.NewFromString(o.Days)
+		if err != nil {
+			return err
+		}
+		for date, v := range leaveAllocation(cal, *platform.DatePtr(o.StartDate), *platform.DatePtr(o.EndDate), oDays) {
+			taken[date] = taken[date].Add(v)
+			culprit[date] = o.Number
+		}
+	}
+	for date, v := range leaveAllocation(cal, start, end, days) {
+		if v.Add(taken[date]).GreaterThan(one) {
+			return &platform.Error{Status: http.StatusConflict, Code: "leave_overlaps",
+				Params: map[string]any{"date": date, "number": culprit[date]}}
+		}
+	}
+	return nil
+}
+
+// LeaveWorkingDays is how many days a leave request over [start, end] may claim: the
+// ceiling the form shows before the employee enters a number. employee is whose calendar
+// it is; nil means the actor's own record.
+func (s *Service) LeaveWorkingDays(ctx context.Context, employee *int64, start, end string) (int, error) {
+	if dayOf(end).Before(dayOf(start)) {
+		return 0, ErrLeaveDates
+	}
+	_, unit, err := s.filer(ctx, employee, PermLeaveEdit)
+	if err != nil {
+		return 0, err
+	}
+	legalEntity, err := s.d.IAM.LegalEntityOf(ctx, unit)
+	if err != nil {
+		return 0, err
+	}
+	cal, err := workCalendar(ctx, legalEntity, start, end)
+	if err != nil {
+		return 0, err
+	}
+	return cal.workingDays(dayOf(start), dayOf(end)), nil
+}
+
+// checkLeaveDays holds the day count to the working days of [start, end]: the days the
+// allocation can place it on. Without the cap the remainder is dropped from the paid days
+// while the balance still loses it.
+func checkLeaveDays(ctx context.Context, legalEntity int64, start, end string, days decimal.Decimal) error {
+	cal, err := workCalendar(ctx, legalEntity, start, end)
+	if err != nil {
+		return err
+	}
+	return checkLeaveDaysOn(cal, start, end, days)
+}
+
+func checkLeaveDaysOn(cal calendar, start, end string, days decimal.Decimal) error {
+	available := cal.workingDays(dayOf(start), dayOf(end))
+	switch {
+	case available == 0:
+		return ErrLeaveNoWorkingDays
+	case days.GreaterThan(decimal.NewFromInt(int64(available))):
+		return &platform.Error{Status: http.StatusUnprocessableEntity, Code: "leave_days_exceed_working_days",
+			Params: map[string]any{"working_days": available}}
+	}
+	return nil
+}
+
 // leaveHeader checks the fields and builds the record header and the row; the row's
 // leave type name comes back in typeName for the audit entry.
 func (s *Service) leaveHeader(ctx context.Context, unit int64, in LeaveFields) (h record.Header, row store.CreateLeaveRequestParams, typeName string, err error) {
@@ -297,9 +403,19 @@ func (s *Service) leaveHeader(ctx context.Context, unit int64, in LeaveFields) (
 		return h, row, "", ErrLeaveSpansYears
 	}
 	days, ok := record.ParseNumber(in.Days)
-	calendar := decimal.NewFromInt(int64(end.Time.Sub(start.Time)/(24*time.Hour)) + 1)
-	if !ok || !days.IsPositive() || days.GreaterThan(calendar) || !days.Mul(decimal.NewFromInt(2)).IsInteger() {
+	if !ok || !days.IsPositive() || !days.Mul(decimal.NewFromInt(2)).IsInteger() {
 		return h, row, "", ErrLeaveDays
+	}
+	// The legal entity is read under the tree lock, so the calendar cannot move under us.
+	if err := s.d.IAM.ShareTree(ctx); err != nil {
+		return h, row, "", err
+	}
+	legalEntity, err := s.d.IAM.LegalEntityOf(ctx, unit)
+	if err != nil {
+		return h, row, "", err
+	}
+	if err := checkLeaveDays(ctx, legalEntity, in.StartDate, in.EndDate, days); err != nil {
+		return h, row, "", err
 	}
 	t, err := store.New(platform.DBFrom(ctx)).GetLeaveType(ctx, in.LeaveTypeID)
 	if errors.Is(err, pgx.ErrNoRows) {
