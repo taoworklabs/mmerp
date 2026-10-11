@@ -60,6 +60,28 @@ func TestLeaveDaysErrorNamesTheWorkingDays(t *testing.T) {
 	}
 }
 
+// The ceiling the form reads is bounded the way the entry is: a range of centuries would
+// otherwise walk every day of it, which is work anyone signed in could ask for repeatedly.
+func TestLeaveWorkingDaysRejectsUnboundedRanges(t *testing.T) {
+	f := newLeaveFixture(t)
+	for _, c := range []struct{ start, end, want string }{
+		{"0001-01-01", "9999-12-31", "leave_spans_years"},
+		{"2026-01-01", "2027-01-01", "leave_spans_years"},
+		{"2026-04-07", "2026-04-06", "leave_end_before_start"},
+	} {
+		_, err := f.hrm.LeaveWorkingDays(f.e, nil, c.start, c.end)
+		if got := errCode(err); got != c.want {
+			t.Errorf("%s → %s: error %q, want %q", c.start, c.end, got, c.want)
+		}
+	}
+	// A whole year is the widest range a request can have, and it still answers.
+	n, err := f.hrm.LeaveWorkingDays(f.e, nil, "2026-01-01", "2026-12-31")
+	f.check(err)
+	if n != 261 {
+		t.Errorf("working days of 2026 = %d, want 261", n)
+	}
+}
+
 // Editing a draft is held to the same cap as creating one.
 func TestLeaveDaysCapAppliesToEdits(t *testing.T) {
 	f := newLeaveFixture(t)

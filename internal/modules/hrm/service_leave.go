@@ -351,8 +351,14 @@ func (s *Service) checkLeaveDates(ctx context.Context, d record.Doc, r store.Get
 // ceiling the form shows before the employee enters a number. employee is whose calendar
 // it is; nil means the actor's own record.
 func (s *Service) LeaveWorkingDays(ctx context.Context, employee *int64, start, end string) (int, error) {
-	if dayOf(end).Before(dayOf(start)) {
+	// The same bounds the entry has, and for the same reason a request may not span two
+	// years: without them a range of centuries would walk day by day through all of it.
+	from, to := dayOf(start), dayOf(end)
+	switch {
+	case to.Before(from):
 		return 0, ErrLeaveDates
+	case from.Year() != to.Year():
+		return 0, ErrLeaveSpansYears
 	}
 	_, unit, err := s.filer(ctx, employee, PermLeaveEdit)
 	if err != nil {
@@ -366,7 +372,7 @@ func (s *Service) LeaveWorkingDays(ctx context.Context, employee *int64, start, 
 	if err != nil {
 		return 0, err
 	}
-	return cal.workingDays(dayOf(start), dayOf(end)), nil
+	return cal.workingDays(from, to), nil
 }
 
 // checkLeaveDays holds the day count to the working days of [start, end]: the days the
