@@ -1,3 +1,21 @@
+/* Controls are 32px at page level (size sm) and 24px in sections (size xs), so a button
+   beside an input is exactly as tall as the input. */
+.mantine-Button-root {
+  --button-height-sm: var(--mmerp-control-height);
+  --button-height-xs: var(--mmerp-control-height-compact);
+}
+.mantine-Input-wrapper {
+  --input-height-sm: var(--mmerp-control-height);
+  --input-height-xs: var(--mmerp-control-height-compact);
+}
+.mantine-ActionIcon-root {
+  --ai-size-input-sm: var(--mmerp-control-height);
+  --ai-size-input-xs: var(--mmerp-control-height-compact);
+}
+.mantine-Pagination-root {
+  --pagination-control-size-input-sm: var(--mmerp-control-height);
+}
+
 /* Below 1024px only self-service screens are supported: every control gets a 44px touch target. */
 @media (max-width: 63.99em) {
   .mantine-Input-input,
@@ -16,7 +34,9 @@
   }
 }
 
-/* The chosen option of a dropdown is tinted, like any selected item. */
+/* The chosen option of a dropdown or menu is tinted, like any selected item. */
+.mantine-Menu-item[data-active],
 [data-combobox-option][data-checked] {
   background: var(--mantine-primary-color-light);
+  color: var(--mantine-primary-color-light-color);
 }

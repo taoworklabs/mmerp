@@ -18,7 +18,7 @@
 }
 
 .grid thead th {
-  background: var(--mmerp-color-subtle);
+  background: var(--mmerp-elevation-surface-sunken);
   color: var(--mantine-color-dimmed);
   font-size: var(--mantine-font-size-xs);
   font-weight: 500;
@@ -32,7 +32,7 @@
   position: sticky;
   left: 0;
   z-index: 1;
-  background: var(--mmerp-color-surface);
+  background: var(--mmerp-elevation-surface);
   text-align: left;
   padding: 0 var(--mantine-spacing-sm);
   white-space: nowrap;
@@ -41,7 +41,7 @@
 }
 
 .grid thead .sticky {
-  background: var(--mmerp-color-subtle);
+  background: var(--mmerp-elevation-surface-sunken);
 }
 
 .grid .total {
@@ -76,7 +76,7 @@
 
 /* A cell that takes no value, e.g. before an employee joined. */
 .off {
-  background: var(--mmerp-color-subtle);
+  background: var(--mmerp-elevation-surface-sunken);
 }
 
 /* A cell to look at again; the reason is in its tooltip and read out with it. Listed after

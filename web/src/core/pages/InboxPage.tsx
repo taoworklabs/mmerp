@@ -90,7 +90,7 @@ function Detail({ item, onDone }: { item: InboxItem; onDone: () => void }) {
         </Text>
         {link && (
           <Anchor component={Link} to={link} size="sm">
-            <Group gap={4} component="span">
+            <Group gap="xxs" component="span">
               {t('shared.document.open')}
               <IconExternalLink {...icon.text} aria-hidden />
             </Group>

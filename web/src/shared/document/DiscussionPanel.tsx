@@ -66,7 +66,7 @@ function DiscussionPanel({ docType, id }: { docType: string; id: number }) {
       ) : (
         <Stack gap="sm">
           {q.data.items.map((c) => (
-            <Stack key={c.id} gap={2}>
+            <Stack key={c.id} gap="xxxs">
               <Text size="xs" c="dimmed">
                 {c.author_name} · {formatDateTime(c.created_at, me.timezone)}
               </Text>

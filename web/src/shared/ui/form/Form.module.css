@@ -1,5 +1,7 @@
-/* Sections are separated by a rule, not boxed. */
+/* Sections are separated by a rule, not boxed, and stop at the content width so fields stay
+   near their labels on wide screens. */
 .section {
+  max-width: var(--mmerp-content-width);
   border: 0;
   margin: 0;
   padding: 0 0 var(--mantine-spacing-lg);
@@ -25,7 +27,7 @@
    align-self, so in a column (the filter drawer) it stays at the start. */
 .inputRow {
   margin-top: auto;
-  height: calc(2.25rem * var(--mantine-scale));
+  height: var(--mmerp-control-height);
 }
 
 /* A page form's footer stays on screen however long the form; the rule turns primary once

@@ -1,71 +1,122 @@
-import { Badge, Button, createTheme, InputWrapper, Modal, NavLink, Paper, rem, Select, Tabs, type CSSVariablesResolver, type MantineColorsTuple } from '@mantine/core'
+import { Badge, Button, Combobox, createTheme, Drawer, InputWrapper, Menu, Modal, NavLink, Paper, Popover, rem, Select, Tabs, Tooltip, type CSSVariablesResolver, type MantineColorsTuple } from '@mantine/core'
 
-// Index 6 is the shade Mantine uses for filled components.
-const primary: MantineColorsTuple = ['#EFF6FF', '#DBEAFE', '#BFDBFE', '#93C5FD', '#60A5FA', '#2563EB', '#1E40AF', '#1E3A8A', '#172554', '#0F1B3D']
-const success: MantineColorsTuple = ['#F0FDF4', '#DCFCE7', '#BBF7D0', '#86EFAC', '#4ADE80', '#22C55E', '#16A34A', '#15803D', '#166534', '#14532D']
-const warning: MantineColorsTuple = ['#FFFBEB', '#FEF3C7', '#FDE68A', '#FCD34D', '#FBBF24', '#F59E0B', '#D97706', '#B45309', '#92400E', '#78350F']
-const danger: MantineColorsTuple = ['#FEF2F2', '#FEE2E2', '#FECACA', '#FCA5A5', '#F87171', '#EF4444', '#DC2626', '#B91C1C', '#991B1B', '#7F1D1D']
-const info: MantineColorsTuple = ['#F0F9FF', '#E0F2FE', '#BAE6FD', '#7DD3FC', '#38BDF8', '#0EA5E9', '#0284C7', '#0369A1', '#075985', '#0C4A6E']
-
-const radius = rem(6)
+// Ramps run from palest (0) to darkest (9). Index 6 is the shade filled components use,
+// 7 the text on a tinted background, 0 the tint itself.
+const primary: MantineColorsTuple = ['#E9F2FE', '#CFE1FD', '#8FB8F6', '#669DF1', '#4688EC', '#357DE8', '#1868DB', '#1558BC', '#123263', '#1C2B42']
+const success: MantineColorsTuple = ['#EFFFD6', '#D3F1A7', '#B3DF72', '#94C748', '#82B536', '#6A9A23', '#5B7F24', '#4C6B1F', '#37471F', '#28311B']
+const warning: MantineColorsTuple = ['#FFF5DB', '#FCE4A6', '#FBC828', '#FCA700', '#F68909', '#E06C00', '#BD5B00', '#9E4C00', '#693200', '#3A2C1F']
+const danger: MantineColorsTuple = ['#FFECEB', '#FFD5D2', '#FD9891', '#F87168', '#F15B50', '#E2483D', '#C9372C', '#AE2E24', '#5D1F1A', '#42221F']
+const info = primary
+// Discovery marks what is new or in beta, nothing else.
+const discovery: MantineColorsTuple = ['#F8EEFE', '#EED7FC', '#D8A0F7', '#C97CF4', '#BF63F3', '#AF59E1', '#964AC0', '#803FA5', '#48245D', '#35243F']
+// The one neutral ramp; it replaces Mantine's gray, whose steps Mantine reads by position:
+// 3 frames and table rules, 4 input borders, so 2 and 3 share the light border tone.
+const gray: MantineColorsTuple = ['#F8F8F8', '#F0F1F2', '#DDDEE1', '#DDDEE1', '#8C8F97', '#7D818A', '#6B6E76', '#505258', '#3B3D42', '#292A2E']
 
 export const theme = createTheme({
   primaryColor: 'primary',
   primaryShade: 6,
   autoContrast: true,
   respectReducedMotion: true,
-  colors: { primary, success, warning, danger, info },
+  colors: { primary, success, warning, danger, info, discovery, gray },
   fontFamily: "'Inter Variable', system-ui, sans-serif",
+  // Lines sit on a 4px grid: 12/16, 14/20, 16/24, 20/24.
   fontSizes: { xs: rem(12), sm: rem(14), md: rem(14), lg: rem(16), xl: rem(20) },
-  lineHeights: { xs: '1.5', sm: '1.5', md: '1.5', lg: '1.5', xl: '1.5' },
-  spacing: { xxs: rem(4), xs: rem(8), sm: rem(12), md: rem(16), lg: rem(24), xl: rem(32) },
-  radius: { xs: radius, sm: radius, md: radius, lg: radius, xl: radius },
-  defaultRadius: 'sm',
+  lineHeights: { xs: '1.34', sm: '1.43', md: '1.43', lg: '1.5', xl: '1.2' },
+  spacing: { xxxs: rem(2), xxs: rem(4), xs: rem(8), sm: rem(12), md: rem(16), lg: rem(24), xl: rem(32) },
+  // Radius grows with the size of what it rounds: tags 4, controls 6, menus and frames 8, modals 12.
+  radius: { xs: rem(2), sm: rem(4), md: rem(6), lg: rem(8), xl: rem(12) },
+  defaultRadius: 'md',
+  // Only overlays (menus, popovers, modals, toasts) cast a shadow; xs/sm are for a card lifted off the page.
+  shadows: {
+    xs: '0 1px 1px #1E1F2140, 0 0 1px #1E1F214F',
+    sm: '0 1px 1px #1E1F2140, 0 0 1px #1E1F214F',
+    md: '0 8px 12px #1E1F2126, 0 0 1px #1E1F214F',
+    lg: '0 8px 12px #1E1F2126, 0 0 1px #1E1F214F',
+    xl: '0 8px 12px #1E1F2126, 0 0 1px #1E1F214F',
+  },
   // md is where the navigation becomes a drawer (1024px), lg where it stops auto-collapsing (1280px).
   // Content regions sit on the surface colour, not the app background.
   components: {
-    Paper: Paper.extend({ defaultProps: { bg: 'var(--mmerp-color-surface)' } }),
+    Paper: Paper.extend({ defaultProps: { bg: 'var(--mmerp-elevation-surface)', radius: 'lg' } }),
     // Labels are quieter than the values they name.
-    InputWrapper: InputWrapper.extend({ defaultProps: { inputWrapperOrder: ['label', 'input', 'description', 'error'] }, styles: { label: { fontSize: rem(13), fontWeight: 500, color: 'var(--mantine-color-dimmed)', marginBottom: rem(4) } } }),
+    InputWrapper: InputWrapper.extend({
+      defaultProps: { inputWrapperOrder: ['label', 'input', 'description', 'error'] },
+      styles: { label: { fontSize: 'var(--mantine-font-size-xs)', fontWeight: 600, lineHeight: 'var(--mantine-line-height-xs)', color: 'var(--mantine-color-dimmed)', marginBottom: 'var(--mantine-spacing-xxs)' } },
+    }),
     Button: Button.extend({ styles: { root: { fontWeight: 500 } } }),
     // The chosen option is tinted, without a check mark that pushes every label sideways.
     Select: Select.extend({ defaultProps: { withCheckIcon: false } }),
-    Badge: Badge.extend({ defaultProps: { variant: 'light', radius: 'sm' }, styles: { root: { textTransform: 'none', fontWeight: 500 } } }),
-    Modal: Modal.extend({ styles: { title: { fontWeight: 600, fontSize: rem(16) } } }),
+    Badge: Badge.extend({ defaultProps: { variant: 'light', radius: 'sm' }, styles: { root: { textTransform: 'none', fontWeight: 500, fontSize: 'var(--mantine-font-size-xs)' } } }),
+    Modal: Modal.extend({ defaultProps: { radius: 'xl' }, styles: { title: { fontWeight: 650, fontSize: 'var(--mantine-font-size-lg)' } } }),
+    Drawer: Drawer.extend({ styles: { title: { fontWeight: 650, fontSize: 'var(--mantine-font-size-lg)' } } }),
+    Popover: Popover.extend({ defaultProps: { radius: 'lg' } }),
+    Combobox: Combobox.extend({ defaultProps: { radius: 'lg' } }),
+    Menu: Menu.extend({ defaultProps: { radius: 'lg' } }),
+    Tooltip: Tooltip.extend({ defaultProps: { radius: 'sm' } }),
     Tabs: Tabs.extend({ styles: { tab: { fontWeight: 500 } } }),
-    NavLink: NavLink.extend({ styles: { root: { borderRadius: 'var(--mantine-radius-sm)', minHeight: rem(32) }, label: { fontWeight: 500 } } }),
+    NavLink: NavLink.extend({ styles: { root: { borderRadius: 'var(--mantine-radius-md)', minHeight: 'var(--mmerp-control-height)' }, label: { fontWeight: 500 } } }),
   },
   breakpoints: { xs: '36em', sm: '48em', md: '64em', lg: '80em', xl: '96em' },
   headings: {
-    fontWeight: '600',
+    fontWeight: '650',
     sizes: {
-      h1: { fontSize: rem(22), lineHeight: '1.4' },
-      h2: { fontSize: rem(16), lineHeight: '1.5' },
-      h3: { fontSize: rem(14), lineHeight: '1.5' },
+      h1: { fontSize: rem(24), lineHeight: '1.17' },
+      h2: { fontSize: rem(16), lineHeight: '1.25' },
+      h3: { fontSize: rem(14), lineHeight: '1.43' },
     },
   },
 })
 
-// Icon sizes: 16px in text, tables and xs buttons, 18px in sm buttons.
+// Icon sizes: 16px in text, tables and xs buttons, 18px in sm buttons, 24px in empty states.
 export const icon = {
-  text: { size: 16, stroke: 1.75 },
-  button: { size: 18, stroke: 1.75 },
+  text: { size: 16, stroke: 1.5 },
+  button: { size: 18, stroke: 1.5 },
+  empty: { size: 24, stroke: 1.5 },
 } as const
 
-// Semantic tokens on top of Mantine's own variables. No dark mode yet.
+// Filter inputs take one width per kind, so filter bars line up from list to list.
+export const filterWidth = { search: 280, select: 200, unit: 240, month: 160, year: 120 } as const
+
+// A tinted ("light") variant: the palest step behind, a dark step for text, so it reads at 4.5:1.
+function tint(name: string, ramp: MantineColorsTuple, bg = 0) {
+  return {
+    [`--mantine-color-${name}-light`]: ramp[bg],
+    [`--mantine-color-${name}-light-hover`]: ramp[bg + 1],
+    [`--mantine-color-${name}-light-color`]: ramp[7],
+  }
+}
+
+// Semantic tokens on top of Mantine's own variables. No dark mode yet: names are by role,
+// so a dark set only fills the dark block.
 export const cssVariablesResolver: CSSVariablesResolver = () => ({
-  variables: {},
+  variables: {
+    // Page-level controls (sm) and section-level ones (xs); global.css applies them.
+    '--mmerp-control-height': rem(32),
+    '--mmerp-control-height-compact': rem(24),
+    // Forms and a document's main column stop here, so fields stay near their labels on wide screens.
+    '--mmerp-content-width': rem(1200),
+  },
   light: {
-    '--mantine-color-text': '#0F172A',
-    '--mantine-color-dimmed': '#475569',
-    '--mantine-color-placeholder': '#94A3B8',
-    '--mantine-color-default-border': '#E2E8F0',
-    // Content and navigation sit on white; table headers use the subtle tone.
+    '--mantine-color-text': gray[9],
+    '--mantine-color-dimmed': gray[7],
+    '--mantine-color-placeholder': gray[6],
+    '--mantine-color-disabled': gray[1],
+    // Dividers, table and frame borders: translucent, so they sit on any surface.
+    '--mantine-color-default-border': '#0B120E24',
     '--mantine-color-body': '#FFFFFF',
-    '--mmerp-color-subtle': '#F8FAFC',
-    '--mmerp-color-surface': '#FFFFFF',
-    // Required marks and field errors use the danger token, not Mantine's lighter red.
-    '--mantine-color-error': '#DC2626',
+    '--mmerp-elevation-surface': '#FFFFFF',
+    '--mmerp-elevation-surface-sunken': gray[0],
+    // Required marks and field errors use the danger text shade.
+    '--mantine-color-error': danger[7],
+    ...tint('primary', primary),
+    ...tint('success', success),
+    ...tint('warning', warning),
+    ...tint('danger', danger),
+    ...tint('info', info),
+    ...tint('discovery', discovery),
+    // The palest neutral vanishes on white; neutral tints start one step darker.
+    ...tint('gray', gray, 1),
   },
   dark: {},
 })

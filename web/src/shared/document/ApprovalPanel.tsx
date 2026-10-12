@@ -150,7 +150,7 @@ function StepBody({ step, current, onReassign, busy }: { step: ApprovalStep; cur
   const { t } = useTranslation()
   const me = useMe()
   return (
-    <Stack gap={2}>
+    <Stack gap="xxxs">
       <Group gap="xs" wrap="nowrap">
         <Text size="sm" fw={600}>
           {t('shared.approval.step', { n: step.position })}
