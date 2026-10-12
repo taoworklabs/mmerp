@@ -188,7 +188,7 @@ So a contract that was used to compute pay for a closed period cannot be cancell
 
 A `posted` payroll is immutable, and a closed pay period blocks every source change. To fix a source, cancel the payroll first.
 
-Errors found after the period is closed do not cancel that period's payroll; they are adjusted in the open period (see [Back pay and clawback](#back-pay-and-clawback)).
+Errors found after the period is closed do not cancel that period's payroll; they are adjusted in the open period (see [Back pay and clawback](#back-pay-and-clawback)). The one exception is an operating rule, not enforced by the system, which does not know when pay is paid out or filed: a closed payroll may be cancelled to reopen its period only while that period's pay has not been paid out and its insurance and tax have not been filed.
 
 ## Payroll calculation
 

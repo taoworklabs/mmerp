@@ -310,6 +310,11 @@ func TestPrintPayslips(t *testing.T) {
 	if j := f.print(v, "hrm.payslip", params); j.Code == nil || *j.Code != "forbidden" {
 		t.Fatalf("viewer's print: %+v", j)
 	}
+	// Nor an export asked for directly: it would hold everyone's amounts.
+	_ = json.Unmarshal(f.ok(v, "POST", "/api/exports/hrm.payroll", fmt.Sprintf(`{"params":{"payroll_id":%d}}`, id), 202), &ex)
+	if j := f.wait(v, ex.JobID); j.Code == nil || *j.Code != "forbidden" || j.FileID != nil {
+		t.Fatalf("viewer's export: %+v", j)
+	}
 
 	// Posted: one snapshot per line, and payslips reprint the same after a rename.
 	var version int32
