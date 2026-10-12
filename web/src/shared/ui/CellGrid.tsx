@@ -13,6 +13,10 @@ type Props = {
   // Without onChange the grid is read-only.
   onChange?: (row: string, column: string, value: string) => void
   invalid?: (value: string) => boolean
+  // Given to the first invalid cell, so a form can focus it (fieldId of the grid's field).
+  invalidId?: string
+  // The id of the message explaining what is invalid, for the cells' aria-describedby.
+  errorId?: string
   // A cell that takes no value is greyed and read-only; a value it holds anyway still shows.
   off?: (row: string, column: string) => boolean
   // A cell to look at again, with the reason: tinted, with the reason as its tooltip and read
@@ -25,7 +29,8 @@ const moves: Record<string, [number, number]> = { ArrowUp: [-1, 0], ArrowDown: [
 
 // CellGrid is a rows × columns grid of small cells, e.g. days worked per employee and day:
 // the row titles stay in view when it scrolls sideways, and arrow keys move between cells.
-export function CellGrid({ label, corner, rows, columns, value, onChange, invalid, off, warning, total }: Props) {
+export function CellGrid({ label, corner, rows, columns, value, onChange, invalid, invalidId, errorId, off, warning, total }: Props) {
+  const first = invalidId && invalid ? firstInvalid(rows, columns, value, invalid, off) : null
   function move(e: KeyboardEvent<HTMLInputElement>, r: number, c: number) {
     const step = moves[e.key]
     if (!step) return
@@ -83,7 +88,9 @@ export function CellGrid({ label, corner, rows, columns, value, onChange, invali
                           className={classes.cell}
                           data-cell={`${ri}:${ci}`}
                           aria-label={`${r.label}, ${c.label}`}
+                          id={first === `${r.key}:${c.key}` ? invalidId : undefined}
                           aria-invalid={invalid?.(v) || undefined}
+                          aria-describedby={invalid?.(v) ? errorId : undefined}
                           inputMode="decimal"
                           maxLength={4}
                           value={v}
@@ -108,4 +115,10 @@ export function CellGrid({ label, corner, rows, columns, value, onChange, invali
       </ScrollArea>
     </Paper>
   )
+}
+
+// firstInvalid is the key ("row:column") of the first invalid editable cell in reading order.
+function firstInvalid(rows: GridAxis[], columns: GridAxis[], value: (r: string, c: string) => string, invalid: (v: string) => boolean, off?: (r: string, c: string) => boolean) {
+  for (const r of rows) for (const c of columns) if (!off?.(r.key, c.key) && invalid(value(r.key, c.key))) return `${r.key}:${c.key}`
+  return null
 }
