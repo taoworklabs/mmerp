@@ -1,5 +1,5 @@
-import { Button, Group, Stack } from '@mantine/core'
-import { IconMailForward, IconPencil, IconTrash } from '@tabler/icons-react'
+import { Alert, Button, Group } from '@mantine/core'
+import { IconAlertCircle, IconLogin, IconMailForward, IconSend, IconServer, IconTrash } from '@tabler/icons-react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
@@ -7,20 +7,20 @@ import { useTranslation } from 'react-i18next'
 import { api, ApiError, unwrap, type MailServer } from '@/shared/api/core'
 import { errorText } from '@/shared/i18n'
 import { useConfirm } from '@/shared/ui/confirm'
-import { FieldList } from '@/shared/ui/FieldList'
-import { Form, FormActions, PasswordField, SelectField, TextField } from '@/shared/ui/form'
+import { Form, FormActions, FormSection, IntegerField, PasswordField, SelectField, TextField } from '@/shared/ui/form'
 import { notifySuccess } from '@/shared/ui/notify'
-import { FormModal, ListPage } from '@/shared/ui/page'
+import { Page } from '@/shared/ui/page'
 import { ContentSkeleton, EmptyState, ErrorState } from '@/shared/ui/states'
 import { icon } from '@/shared/ui/theme'
 import { coreKeys } from '../keys'
 
-// MailServerPage: the company's SMTP server. Without one, notifications stay in the app.
-// The password is never read back; a test message to oneself checks the settings.
+// MailServerPage: the company's SMTP server, viewed and edited on the page. Without one,
+// notifications stay in the app. The password is never read back; a test message to oneself
+// checks the settings.
 export function MailServerPage() {
   const { t } = useTranslation()
   const qc = useQueryClient()
-  const [editing, setEditing] = useState(false)
+  const [configuring, setConfiguring] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [ask, dialog] = useConfirm()
   const server = useQuery({
@@ -50,40 +50,27 @@ export function MailServerPage() {
   async function remove() {
     if (!(await ask({ title: t('core.mail.delete_title'), message: t('core.mail.delete_confirm'), confirmLabel: t('core.mail.delete'), danger: true }))) return
     await run(() => unwrap(api.DELETE('/mail-server')), t('core.mail.deleted'))
+    setConfiguring(false)
   }
 
   let body
   if (server.isPending) body = <ContentSkeleton />
   else if (server.isError) body = <ErrorState message={errorText(t, server.error)} onRetry={() => void server.refetch()} />
-  else if (!server.data)
+  else if (!server.data && !configuring)
     body = (
       <EmptyState
         title={t('core.mail.empty')}
         description={t('core.mail.empty_description')}
-        action={<Button onClick={() => setEditing(true)}>{t('core.mail.configure')}</Button>}
+        action={<Button onClick={() => setConfiguring(true)}>{t('core.mail.configure')}</Button>}
       />
     )
-  else
-    body = (
-      <Stack gap="md">
-        <FieldList
-          rows={[
-            [t('core.mail.host'), `${server.data.host}:${server.data.port}`],
-            [t('core.mail.security'), t(`core.mail.security.${server.data.security}`)],
-            [t('core.mail.username'), server.data.username || '—'],
-            [t('core.mail.password'), server.data.password_set ? t('core.mail.password_set') : '—'],
-            [t('core.mail.from_address'), server.data.from_address],
-            [t('core.mail.base_url'), server.data.base_url],
-          ]}
-        />
-      </Stack>
-    )
+  else body = <MailServerForm key={JSON.stringify(server.data)} current={server.data ?? null} />
 
   return (
-    <ListPage
+    <Page
       title={t('core.mail.title')}
       description={t('core.mail.description')}
-      action={
+      actions={
         server.data && (
           <Group gap="xs">
             <Button variant="subtle" color="danger" leftSection={<IconTrash {...icon.button} />} onClick={() => void remove()}>
@@ -92,31 +79,32 @@ export function MailServerPage() {
             <Button variant="default" leftSection={<IconMailForward {...icon.button} />} onClick={() => void test()}>
               {t('core.mail.test')}
             </Button>
-            <Button leftSection={<IconPencil {...icon.button} />} onClick={() => setEditing(true)}>
-              {t('core.mail.edit')}
-            </Button>
           </Group>
         )
       }
     >
-      {error && <ErrorState message={error} />}
+      {error && (
+        <Alert color="danger" icon={<IconAlertCircle {...icon.button} />} role="alert">
+          {error}
+        </Alert>
+      )}
       {body}
-      {editing && <MailServerModal current={server.data ?? null} onClose={() => setEditing(false)} />}
       {dialog}
-    </ListPage>
+    </Page>
   )
 }
 
-type Values = { host: string; port: string; security: string; username: string; password: string; from_address: string; base_url: string }
+type Values = { host: string; port: number | null; security: string; username: string; password: string; from_address: string; base_url: string }
 
-function MailServerModal({ current, onClose }: { current: MailServer | null; onClose: () => void }) {
+// MailServerForm is the server's settings in three groups: where, who logs in, what mail says.
+function MailServerForm({ current }: { current: MailServer | null }) {
   const { t } = useTranslation()
   const qc = useQueryClient()
   const form = useForm<Values>({
     mode: 'onBlur',
     defaultValues: {
       host: current?.host ?? '',
-      port: String(current?.port ?? 587),
+      port: current?.port ?? 587,
       security: current?.security ?? 'starttls',
       username: current?.username ?? '',
       password: '',
@@ -130,7 +118,7 @@ function MailServerModal({ current, onClose }: { current: MailServer | null; onC
       api.PUT('/mail-server', {
         body: {
           host: v.host.trim(),
-          port: Number(v.port),
+          port: v.port ?? 0,
           security: v.security as MailServer['security'],
           username: v.username.trim(),
           // Blank keeps the stored password.
@@ -142,26 +130,29 @@ function MailServerModal({ current, onClose }: { current: MailServer | null; onC
     )
     await qc.invalidateQueries({ queryKey: coreKeys.mailServer() })
     notifySuccess(t('core.mail.saved'))
-    onClose()
   }
 
   return (
-    <FormModal opened title={t('core.mail.title')} onClose={onClose}>
-      <Form form={form} onSubmit={save}>
+    <Form form={form} onSubmit={save}>
+      <FormSection title={t('core.mail.section.server')} description={t('core.mail.section.server_hint')} icon={IconServer}>
         <TextField name="host" label={t('core.mail.host')} required maxLength={255} />
-        <TextField name="port" label={t('core.mail.port')} required rules={{ pattern: { value: /^\d{1,5}$/, message: t('core.mail.port_invalid') } }} />
+        <IntegerField name="port" label={t('core.mail.port')} required min={1} max={65535} />
         <SelectField
           name="security"
           label={t('core.mail.security')}
           required
           data={['starttls', 'tls', 'none'].map((v) => ({ value: v, label: t(`core.mail.security.${v}`) }))}
         />
+      </FormSection>
+      <FormSection title={t('core.mail.section.login')} description={t('core.mail.section.login_hint')} icon={IconLogin}>
         <TextField name="username" label={t('core.mail.username')} maxLength={255} autoComplete="off" />
         <PasswordField name="password" label={t('core.mail.password')} description={current?.password_set ? t('core.mail.password_keep') : undefined} />
+      </FormSection>
+      <FormSection title={t('core.mail.section.sender')} description={t('core.mail.section.sender_hint')} icon={IconSend}>
         <TextField name="from_address" label={t('core.mail.from_address')} type="email" required maxLength={254} />
         <TextField name="base_url" label={t('core.mail.base_url')} description={t('core.mail.base_url_hint')} required maxLength={255} />
-        <FormActions submitLabel={t('core.common.save')} onCancel={onClose} cancelLabel={t('core.common.cancel')} />
-      </Form>
-    </FormModal>
+      </FormSection>
+      <FormActions submitLabel={t('core.common.save')} />
+    </Form>
   )
 }
