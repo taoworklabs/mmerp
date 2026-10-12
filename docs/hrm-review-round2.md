@@ -1,8 +1,8 @@
 # HRM review, round two: observations
 
 Created: 2026-10-12. Covers what round one left: its two unguarded rows (NP-01, NP-07), TB-02, and
-section 5 of [the plan](hrm-review-plan.md) (profiles, contracts, addenda). Sections 6 and 7 are not
-started yet.
+sections 5 and 6 of [the plan](hrm-review-plan.md) (profiles, contracts, addenda; timesheets, work
+calendar, overtime). Section 7 is not started yet.
 
 ## Run environment
 
@@ -66,7 +66,61 @@ intended lock removed. The older race tests (`TestTwoRequestsApprovedAtOnce`,
 `TestNegativeAdjustmentRacesApproval`, `TestBalanceAdjustmentsRaceApproval`) have not been checked
 this way.
 
+## Section 6: timesheet, work calendar, overtime
+
+April 2026 with the payroll fixture: 22 working days, of which 27/04 and 30/04 are public holidays;
+a salary of 22,000,000, so one hour of overtime is 125,000 before the multiplier. Probes are in
+`timesheet_probe_test.go`.
+
+| Code | Result | Evidence |
+| --- | --- | --- |
+| CC-01 | Covered. A second timesheet for the same unit and period is refused; a partial unique index holds it under concurrency too | `TestTimesheet`, `timesheets_org_unit_period_key` |
+| CC-02 | Covered. 0.5 and 1 stored and read back; other values refused | `TestTimesheet` |
+| CC-03 | **Open question, see below** | `TestProbeCC03WorkAndPaidLeaveSameDay` |
+| CC-04 | **Open question, see below** | `TestProbeCC04WorkOnDaysOff` |
+| CC-05 | Covered. Bad rows are named with their Excel row number and reason, and nothing is written | `TestImportRowErrors` |
+| CC-06 | Covered. A save or import replaces every line of the draft (**new** test with a shorter set of lines); the import dialog says so ("File thay toàn bộ ngày công của bảng công nháp này") | `TestTimesheetSaveReplacesEveryLine`, `hrm.timesheet.import_hint` |
+| CC-07 | Covered. The grid and the working days use the week version in force on each date | `TestWorkCalendar`, `TestWorkingDaysUsesTheWeekVersionInForce` |
+| CC-08 | Covered. Holidays, work-week versions, legal parameters and timesheets touching a closed period are refused | `TestWorkCalendar`, `TestLegalParams`, `TestTimesheet` |
+| TC-01 | **Open question, see below** | `TestProbeTC01DayKindAgainstCalendar` |
+| TC-02 | Covered. Day and night hours are stored apart and priced apart | `TestOvertime`, payroll samples C11 and C17 |
+| TC-03 | Covered (**new** test). A cancelled overtime request drops out of the next computation; the test fails when cancelled requests are let into the source query | `TestCancelledOvertimeLeavesThePayroll` |
+
+### Three questions for the HR owner
+
+All three are entries the system accepts and then quietly treats differently from what the person
+entering them probably meant. None breaks a written rule; each lacks one.
+
+**CC-04, work entered on a day off.** E's timesheet has 19 weekdays, plus a line on Sunday 05/04 and
+one on the 30/04 holiday. The timesheet saves without a word. Paid days come out at 21 of 22: the
+19 weekdays plus the two holidays, which are paid whether worked or not. The Sunday line counts for
+nothing. Work on a day off is paid only through an overtime request, and nothing tells the person
+filling in the timesheet that.
+Options: (a) keep accepting it and warn on the grid that such lines are not paid and need an
+overtime request; (b) refuse lines on days off; (c) keep as is. Recommended: (a). Imported files
+often carry a whole calendar, so refusing would fail imports for harmless cells.
+
+**CC-03, work and paid leave on the same day.** E worked every working day of April and also has a
+1-day paid annual leave on 06/04, posted. The leave took a day off the balance (12 → 11), but the
+day is capped at 1, so paid days stay 22 of 22. The employee loses a leave day and gains nothing,
+and nothing warns about the clash. This is the same kind of conflict ADR-0030 settled between two
+leave requests, but between a leave request and the timesheet.
+Options: (a) warn on the timesheet grid and on the payroll line when a day has both work and
+approved leave; (b) refuse the timesheet line, or the leave, when they clash; (c) keep as is.
+Recommended: (a) for now. The timesheet and the leave come from different people at different
+times, so refusing either one blocks someone who cannot fix the other.
+
+**TC-01, an overtime day kind that disagrees with the calendar.** Two hours on the 30/04 holiday
+are accepted both as `weekday` (paid 375,000 at 150%) and as `holiday` (paid 750,000 at 300%). One
+wrong pick halves the pay. Today the documents say the kind is entered by hand and deriving it from
+the calendar comes later. But the calendar already knows the answer for every date: weekly days off
+by version, and the holidays.
+Options: (a) refuse a kind that disagrees with the calendar, naming the right one; (b) derive the
+kind and drop the field from entry; (c) keep as is. Recommended: (a). It is one check where the
+request is saved, it keeps the field the approval rules filter on, and it is the first step toward
+(b).
+
 ## Next
 
-Section 6 (timesheet, work calendar, overtime), then section 7 (payroll and period closing), using
-the timeline above.
+Answers to the three questions above, then section 7 (payroll and period closing), using the
+contract timeline above.
