@@ -54,14 +54,14 @@ export function DocumentPage({ actions, error, approval, history, sections = [],
       <Page {...header} actions={actions}>
         {banner}
         <Flex gap="xl" align="flex-start">
-          <Box flex={1} miw={0}>
+          <Box flex={1} miw={0} maw="var(--mmerp-content-width)">
             {children}
           </Box>
           <Stack className={classes.side} gap="md">
             {side.map((p) => (
-              <Section key={p.key} title={p.title}>
+              <Panel key={p.key} title={p.title}>
                 {p.content}
-              </Section>
+              </Panel>
             ))}
           </Stack>
         </Flex>
@@ -110,7 +110,8 @@ export function DocumentPage({ actions, error, approval, history, sections = [],
   )
 }
 
-function Section({ title, children }: { title: string; children: ReactNode }) {
+// Panel frames one part of the side column (approval, attachments, history).
+function Panel({ title, children }: { title: string; children: ReactNode }) {
   return (
     <Paper withBorder p="md">
       <Stack gap="sm">

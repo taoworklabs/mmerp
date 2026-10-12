@@ -1,0 +1,21 @@
+/* The read view takes the input's exact box, so switching to edit moves nothing. */
+.view {
+  display: flex;
+  align-items: center;
+  min-height: var(--mmerp-control-height);
+  padding-inline: calc(var(--mmerp-control-height) / 3);
+  border: 1px solid transparent;
+  border-radius: var(--mantine-radius-md);
+  min-width: 0;
+}
+
+/* An editable value shows it can be clicked: a tint and the input's border on hover and focus. */
+.editable {
+  width: 100%;
+}
+
+.editable:hover,
+.editable:focus-visible {
+  background: var(--mantine-color-gray-light);
+  border-color: var(--mantine-color-gray-4);
+}

@@ -1,10 +1,11 @@
-import { ActionIcon, Group, Menu, Paper, ScrollArea, Stack, Table, Text, Tooltip, UnstyledButton } from '@mantine/core'
+import { Checkbox, Group, Paper, ScrollArea, Stack, Table, Text, UnstyledButton } from '@mantine/core'
 import { useMediaQuery } from '@mantine/hooks'
-import { IconArrowDown, IconArrowUp, IconArrowsSort, IconDots } from '@tabler/icons-react'
-import { Fragment, type ReactNode } from 'react'
+import { IconArrowDown, IconArrowUp, IconArrowsSort } from '@tabler/icons-react'
+import { Fragment, useRef, type KeyboardEvent, type PointerEvent, type ReactNode, type RefObject } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link, useNavigate } from 'react-router'
 import classes from './DataTable.module.css'
+import { MoreActions } from './MoreActions'
 import { icon } from './theme'
 
 // Role decides where a column goes on the card list below 1024px.
@@ -21,7 +22,12 @@ export type Column<T> = {
   band?: string
   // A result column (net pay, cost): bold.
   strong?: boolean
+  // Width in pixels, from the user's list settings; the table sizes the column otherwise.
+  width?: number
 }
+
+// Selection of rows for a bulk action: the keys of the selected rows on this page.
+export type Selection = { selected: ReadonlySet<string | number>; onChange: (next: Set<string | number>) => void }
 
 type Props<T> = {
   columns: Column<T>[]
@@ -29,6 +35,13 @@ type Props<T> = {
   rowKey: (row: T) => string | number
   // The first column links here and the whole row is clickable; without it rows are plain.
   href?: (row: T) => string
+  // Clicking a row outside its link runs this instead of following href: a list's side panel, or
+  // the edit modal of a settings row that has no page (its first cell becomes the keyboard's button).
+  onRowClick?: (row: T) => void
+  // A checkbox column for bulk actions; wide screens only.
+  selection?: Selection
+  // Lets the user drag a column's right edge (or use arrow keys on it) to set its width.
+  onResize?: (key: string, width: number) => void
   // Secondary actions of a row, as menu items of the "…" menu at its end; null for none.
   menu?: (row: T) => ReactNode
   // "key" ascending, "-key" descending.
@@ -56,22 +69,27 @@ function grouped<T>(rows: T[], of?: (row: T) => string): { name: string; rows: T
 }
 
 // DataTable is the only table areas use: compact, sortable on the server, a card list below 1024px.
-export function DataTable<T>({ columns, rows, rowKey, href, menu, sort, onSort, label, group, footer, maxHeight }: Props<T>) {
+export function DataTable<T>({ columns, rows, rowKey, href, onRowClick, selection, onResize, menu, sort, onSort, label, group, footer, maxHeight }: Props<T>) {
   const { t } = useTranslation()
   const wide = useMediaQuery('(min-width: 64em)', true)
   const navigate = useNavigate()
   const banded = columns.some((c) => c.band)
+  const keys = rows.map(rowKey)
+  const all = selection && keys.length > 0 && keys.every((k) => selection.selected.has(k))
+  const some = selection && keys.some((k) => selection.selected.has(k))
+  const head = (n: number) => ({ columns, sort, onSort, onResize, rowSpan: n })
   if (!wide) return <Cards columns={columns} rows={rows} rowKey={rowKey} href={href} menu={menu} label={label} group={group} footer={footer} />
   return (
-    <Paper withBorder className={classes.frame}>
+    <Paper withBorder className={`${classes.frame} ${selection ? classes.selectable : ''}`}>
       <ScrollArea.Autosize type="auto" mah={maxHeight}>
         <Table highlightOnHover stickyHeader verticalSpacing={0} className={classes.compact} aria-label={label}>
           <Table.Thead>
             {banded && (
               <Table.Tr>
+                {selection && <SelectAll rowSpan={2} all={!!all} some={!!some} onToggle={() => toggleAll(selection, keys, !!all)} />}
                 {columns.map((c, i) =>
                   !c.band ? (
-                    <Header key={c.key} column={c} index={i} columns={columns} sort={sort} onSort={onSort} rowSpan={2} />
+                    <Header key={c.key} column={c} index={i} {...head(2)} />
                   ) : bandStart(columns, i) ? (
                     <Table.Th key={`band:${c.key}`} colSpan={bandWidth(columns, i)} ta="center" className={classes.bandStart}>
                       {c.band}
@@ -82,7 +100,8 @@ export function DataTable<T>({ columns, rows, rowKey, href, menu, sort, onSort, 
               </Table.Tr>
             )}
             <Table.Tr>
-              {columns.map((c, i) => (!banded || c.band) && <Header key={c.key} column={c} index={i} columns={columns} sort={sort} onSort={onSort} />)}
+              {selection && !banded && <SelectAll all={!!all} some={!!some} onToggle={() => toggleAll(selection, keys, !!all)} />}
+              {columns.map((c, i) => (!banded || c.band) && <Header key={c.key} column={c} index={i} {...head(1)} />)}
               {menu && !banded && <Table.Th w={48} aria-label={t('shared.table.actions')} />}
             </Table.Tr>
           </Table.Thead>
@@ -91,7 +110,7 @@ export function DataTable<T>({ columns, rows, rowKey, href, menu, sort, onSort, 
               <Fragment key={`group:${g.name}`}>
                 {group && (
                   <Table.Tr className={classes.groupRow}>
-                    <Table.Td colSpan={columns.length + (menu ? 1 : 0)}>
+                    <Table.Td colSpan={columns.length + (menu ? 1 : 0) + (selection ? 1 : 0)}>
                       <span className={classes.groupName}>{g.name}</span>
                     </Table.Td>
                   </Table.Tr>
@@ -99,11 +118,25 @@ export function DataTable<T>({ columns, rows, rowKey, href, menu, sort, onSort, 
                 {g.rows.map((row) => (
                   <Table.Tr
                     key={rowKey(row)}
-                    className={href ? classes.row : undefined}
-                    // The link in the first cell handles keyboard, middle click and Ctrl+click itself.
-                    onClick={(e) => href && !(e.target as HTMLElement).closest('a,button,[role=menu]') && navigate(href(row))}
+                    className={href || onRowClick ? classes.row : undefined}
+                    aria-selected={selection ? selection.selected.has(rowKey(row)) : undefined}
+                    // The link (or button) in the first cell handles keyboard, middle click and Ctrl+click itself.
+                    onClick={(e) => {
+                      if ((e.target as HTMLElement).closest('a,button,input,[role=menu]')) return
+                      if (onRowClick) onRowClick(row)
+                      else if (href) navigate(href(row))
+                    }}
                   >
-                    <Cells columns={columns} row={row} href={href} />
+                    {selection && (
+                      <Table.Td className={classes.select}>
+                        <Checkbox
+                          aria-label={t('shared.table.select_row')}
+                          checked={selection.selected.has(rowKey(row))}
+                          onChange={() => toggle(selection, rowKey(row))}
+                        />
+                      </Table.Td>
+                    )}
+                    <Cells columns={columns} row={row} href={href} onOpen={onRowClick && !href ? () => onRowClick(row) : undefined} />
                     {menu && (
                       <Table.Td>
                         <RowMenu>{menu(row)}</RowMenu>
@@ -113,6 +146,7 @@ export function DataTable<T>({ columns, rows, rowKey, href, menu, sort, onSort, 
                 ))}
                 {group?.total && (
                   <Table.Tr className={classes.totalRow}>
+                    {selection && <Table.Td />}
                     <Cells columns={columns} row={group.total(g.rows, g.name)} />
                     {menu && <Table.Td />}
                   </Table.Tr>
@@ -123,6 +157,7 @@ export function DataTable<T>({ columns, rows, rowKey, href, menu, sort, onSort, 
           {footer !== undefined && (
             <Table.Tfoot>
               <Table.Tr className={classes.totalRow}>
+                {selection && <Table.Td />}
                 <Cells columns={columns} row={footer} />
                 {menu && <Table.Td />}
               </Table.Tr>
@@ -150,21 +185,103 @@ function cellClass<T>(columns: Column<T>[], i: number) {
   return [i === 0 && classes.sticky, c?.numeric && classes.numeric, c?.strong && classes.strong, bandStart(columns, i) && classes.bandStart].filter(Boolean).join(' ') || undefined
 }
 
-function Header<T>({ column: c, index, columns, sort, onSort, rowSpan }: { column: Column<T>; index: number; columns: Column<T>[]; sort?: string; onSort?: (s: string) => void; rowSpan?: number }) {
+type HeaderProps<T> = { column: Column<T>; index: number; columns: Column<T>[]; sort?: string; onSort?: (s: string) => void; onResize?: (key: string, width: number) => void; rowSpan?: number }
+
+function Header<T>({ column: c, index, columns, sort, onSort, onResize, rowSpan }: HeaderProps<T>) {
+  const ref = useRef<HTMLTableCellElement>(null)
   return (
-    <Table.Th ta={c.numeric ? 'right' : undefined} rowSpan={rowSpan} className={cellClass(columns, index)} aria-sort={sortState(sort, c.key)}>
+    <Table.Th ref={ref} w={c.width} ta={c.numeric ? 'right' : undefined} rowSpan={rowSpan} className={cellClass(columns, index)} aria-sort={sortState(sort, c.key)}>
       {c.sortable && onSort ? <SortButton column={c} sort={sort} onSort={onSort} /> : c.header}
+      {onResize && <ResizeHandle column={c} cell={ref} onResize={onResize} />}
     </Table.Th>
   )
 }
 
-function Cells<T>({ columns, row, href }: { columns: Column<T>[]; row: T; href?: (row: T) => string }) {
+const minWidth = 48
+const maxWidth = 800
+const clampWidth = (w: number) => Math.round(Math.min(maxWidth, Math.max(minWidth, w)))
+
+// ResizeHandle is a column's right edge: drag it, or focus it and use the arrow keys (16px a step).
+// The width follows the pointer live and is saved once, when the drag ends.
+function ResizeHandle<T>({ column, cell, onResize }: { column: Column<T>; cell: RefObject<HTMLTableCellElement | null>; onResize: (key: string, width: number) => void }) {
+  const { t } = useTranslation()
+  const current = () => cell.current?.getBoundingClientRect().width ?? column.width ?? 120
+  function onPointerDown(e: PointerEvent<HTMLSpanElement>) {
+    e.preventDefault()
+    e.stopPropagation()
+    const th = cell.current
+    if (!th) return
+    const startX = e.clientX
+    const start = current()
+    const move = (ev: globalThis.PointerEvent) => (th.style.width = `${clampWidth(start + ev.clientX - startX)}px`)
+    const up = (ev: globalThis.PointerEvent) => {
+      window.removeEventListener('pointermove', move)
+      window.removeEventListener('pointerup', up)
+      onResize(column.key, clampWidth(start + ev.clientX - startX))
+    }
+    window.addEventListener('pointermove', move)
+    window.addEventListener('pointerup', up)
+  }
+  function onKeyDown(e: KeyboardEvent<HTMLSpanElement>) {
+    const step = e.key === 'ArrowRight' ? 16 : e.key === 'ArrowLeft' ? -16 : 0
+    if (!step) return
+    e.preventDefault()
+    onResize(column.key, clampWidth(current() + step))
+  }
+  return (
+    <span
+      className={classes.resize}
+      role="separator"
+      aria-orientation="vertical"
+      aria-label={t('shared.table.resize', { column: column.header })}
+      aria-valuenow={Math.round(current())}
+      aria-valuemin={minWidth}
+      aria-valuemax={maxWidth}
+      tabIndex={0}
+      onPointerDown={onPointerDown}
+      onKeyDown={onKeyDown}
+      onClick={(e) => e.stopPropagation()}
+    />
+  )
+}
+
+function SelectAll({ all, some, onToggle, rowSpan }: { all: boolean; some: boolean; onToggle: () => void; rowSpan?: number }) {
+  const { t } = useTranslation()
+  return (
+    <Table.Th rowSpan={rowSpan} className={classes.select}>
+      <Checkbox aria-label={t('shared.table.select_all')} checked={all} indeterminate={some && !all} onChange={onToggle} />
+    </Table.Th>
+  )
+}
+
+function toggle(selection: Selection, key: string | number) {
+  const next = new Set(selection.selected)
+  if (next.has(key)) next.delete(key)
+  else next.add(key)
+  selection.onChange(next)
+}
+
+// toggleAll selects every row of the page, or clears them when all already are.
+function toggleAll(selection: Selection, keys: (string | number)[], all: boolean) {
+  const next = new Set(selection.selected)
+  for (const k of keys) {
+    if (all) next.delete(k)
+    else next.add(k)
+  }
+  selection.onChange(next)
+}
+
+function Cells<T>({ columns, row, href, onOpen }: { columns: Column<T>[]; row: T; href?: (row: T) => string; onOpen?: () => void }) {
   return columns.map((c, i) => (
     <Table.Td key={c.key} ta={c.numeric ? 'right' : undefined} className={cellClass(columns, i)}>
       {i === 0 && href ? (
         <Link to={href(row)} className={classes.idLink}>
           {c.render(row)}
         </Link>
+      ) : i === 0 && onOpen ? (
+        <UnstyledButton onClick={onOpen} className={classes.idLink}>
+          {c.render(row)}
+        </UnstyledButton>
       ) : (
         c.render(row)
       )}
@@ -193,20 +310,7 @@ function SortButton<T>({ column, sort, onSort }: { column: Column<T>; sort?: str
 
 // RowMenu shows nothing for a row without secondary actions.
 function RowMenu({ children }: { children: ReactNode }) {
-  const { t } = useTranslation()
-  if (!children) return null
-  return (
-    <Menu position="bottom-end">
-      <Menu.Target>
-        <Tooltip label={t('shared.table.actions')}>
-          <ActionIcon variant="subtle" color="gray" size="lg" aria-label={t('shared.table.actions')}>
-            <IconDots {...icon.button} />
-          </ActionIcon>
-        </Tooltip>
-      </Menu.Target>
-      <Menu.Dropdown>{children}</Menu.Dropdown>
-    </Menu>
-  )
+  return <MoreActions>{children}</MoreActions>
 }
 
 function Cards<T>({ columns, rows, rowKey, href, menu, label, group, footer }: Omit<Props<T>, 'sort' | 'onSort'>) {

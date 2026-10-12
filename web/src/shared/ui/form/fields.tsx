@@ -12,13 +12,15 @@ function separators(language: string) {
   return language === 'en' ? { decimalSeparator: '.', thousandSeparator: ',' } : { decimalSeparator: ',', thousandSeparator: '.' }
 }
 
-type Base = { name: string; label: string; required?: boolean; description?: string; readOnly?: boolean }
+// bare drops the visible label (kept as aria-label) and the description, for a field in a table
+// cell under a column header that already names it.
+type Base = { name: string; label: string; required?: boolean; description?: string; readOnly?: boolean; bare?: boolean }
 
 // Long text spans the whole row of a FormSection grid.
 const wideStyle = { gridColumn: '1 / -1' }
 
 // Every field: label above, * when required, error under the input, checked on blur and submit.
-function useField({ name, label, required }: Base, rules: RegisterOptions = {}) {
+function useField({ name, label, required, bare }: Base, rules: RegisterOptions = {}) {
   const { t } = useTranslation()
   const { control } = useFormContext()
   const { field, fieldState } = useController({
@@ -30,7 +32,8 @@ function useField({ name, label, required }: Base, rules: RegisterOptions = {}) 
     field,
     common: {
       id: fieldId(name),
-      label,
+      label: bare ? undefined : label,
+      'aria-label': bare ? label : undefined,
       withAsterisk: required,
       error: fieldState.error?.message,
       onBlur: field.onBlur,
@@ -62,7 +65,7 @@ export function PasswordField(props: Base & { autoComplete?: string }) {
   return (
     <PasswordInput
       {...common}
-      description={props.description}
+      description={props.bare ? undefined : props.description}
       autoComplete={props.autoComplete ?? 'new-password'}
       value={field.value ?? ''}
       onChange={(e) => field.onChange(e.currentTarget.value)}
@@ -87,7 +90,7 @@ export function DateField(props: Base & { clearable?: boolean }) {
   return (
     <DateInput
       {...common}
-      description={props.description}
+      description={props.bare ? undefined : props.description}
       readOnly={props.readOnly}
       value={field.value ?? null}
       onChange={(v) => field.onChange(v ?? null)}
@@ -104,7 +107,7 @@ export function MonthField(props: Base & { clearable?: boolean }) {
   return (
     <MonthPickerInput
       {...common}
-      description={props.description}
+      description={props.bare ? undefined : props.description}
       readOnly={props.readOnly}
       value={field.value ? `${field.value}-01` : null}
       onChange={(v) => field.onChange(v ? v.slice(0, 7) : null)}
@@ -120,7 +123,7 @@ export function FileField(props: Base & { accept?: string }) {
   return (
     <FileInput
       {...common}
-      description={props.description}
+      description={props.bare ? undefined : props.description}
       accept={props.accept}
       leftSection={<IconFileSpreadsheet {...icon.text} />}
       value={field.value ?? null}
@@ -143,7 +146,7 @@ export function SelectField(props: Base & { data: Option[]; clearable?: boolean;
   return (
     <Select
       {...common}
-      description={props.description}
+      description={props.bare ? undefined : props.description}
       readOnly={props.readOnly}
       data={props.data}
       value={field.value ?? null}
@@ -168,11 +171,14 @@ export function DecimalField(props: Base & { scale: number; step?: number; min?:
   return (
     <NumberInput
       {...common}
-      description={props.description}
+      description={props.bare ? undefined : props.description}
       readOnly={props.readOnly}
       value={field.value ?? ''}
       onChange={(v) => field.onChange(v === '' ? '' : String(v))}
       decimalScale={props.scale}
+      // In a table column of figures the digits line up on the right.
+      hideControls={props.bare}
+      classNames={props.bare ? { input: classes.money } : undefined}
       step={props.step}
       min={props.min}
       allowNegative={props.allowNegative ?? false}
@@ -188,7 +194,7 @@ export function CheckboxField(props: Omit<Base, 'required'>) {
       id={common.id}
       ref={common.ref}
       label={props.label}
-      description={props.description}
+      description={props.bare ? undefined : props.description}
       error={common.error}
       checked={!!field.value}
       disabled={props.readOnly}
@@ -205,7 +211,7 @@ export function MoneyField(props: Base & { min?: number }) {
   return (
     <NumberInput
       {...common}
-      description={props.description}
+      description={props.bare ? undefined : props.description}
       readOnly={props.readOnly}
       value={field.value ?? ''}
       onChange={(v) => field.onChange(v === '' ? null : Number(v))}
@@ -216,6 +222,25 @@ export function MoneyField(props: Base & { min?: number }) {
       {...separators(i18n.language)}
       hideControls
       classNames={{ input: classes.money }}
+    />
+  )
+}
+
+// IntegerField holds a whole number (a port, a year, a count of levels) without digit grouping,
+// so 8080 and 2026 read as typed.
+export function IntegerField(props: Base & { min?: number; max?: number }) {
+  const { field, common } = useField(props)
+  return (
+    <NumberInput
+      {...common}
+      description={props.bare ? undefined : props.description}
+      readOnly={props.readOnly}
+      value={field.value ?? ''}
+      onChange={(v) => field.onChange(v === '' ? null : Number(v))}
+      min={props.min}
+      max={props.max}
+      allowDecimal={false}
+      allowNegative={(props.min ?? 0) < 0}
     />
   )
 }
