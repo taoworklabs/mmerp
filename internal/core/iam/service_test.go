@@ -227,3 +227,40 @@ func TestMeListsProductsWithData(t *testing.T) {
 		t.Fatalf("with master data: %+v", me.ProductsWithData)
 	}
 }
+
+func TestListSettingsArePersonal(t *testing.T) {
+	s, ctx := setup(t)
+	if got := must[iam.ListSettings](t)(s.ListSettings(ctx, "sales.customers")); len(got.Views) != 0 || len(got.Columns) != 0 {
+		t.Fatalf("nothing saved should read empty, got %+v", got)
+	}
+
+	width := 240
+	in := iam.ListSettings{
+		Views:   []iam.ListView{{Name: " Mine ", Query: "q=an&sort=-code"}},
+		Columns: []iam.ListColumn{{Key: "phone", Hidden: true}, {Key: "name", Width: &width}},
+	}
+	if err := s.SetListSettings(ctx, "sales.customers", in); err != nil {
+		t.Fatal(err)
+	}
+	got := must[iam.ListSettings](t)(s.ListSettings(ctx, "sales.customers"))
+	if len(got.Views) != 1 || got.Views[0].Name != "Mine" || got.Views[0].Query != "q=an&sort=-code" {
+		t.Fatalf("views: %+v", got.Views)
+	}
+	if len(got.Columns) != 2 || !got.Columns[0].Hidden || got.Columns[1].Width == nil || *got.Columns[1].Width != 240 {
+		t.Fatalf("columns: %+v", got.Columns)
+	}
+
+	// Another list of the same user and the same list of another user stay apart.
+	if got := must[iam.ListSettings](t)(s.ListSettings(ctx, "sales.items")); len(got.Views) != 0 {
+		t.Fatalf("other list leaked: %+v", got)
+	}
+	other := must[int64](t)(s.CreateUser(ctx, "binh", "Bình", "long enough"))
+	if got := must[iam.ListSettings](t)(s.ListSettings(platform.WithActor(ctx, other), "sales.customers")); len(got.Views) != 0 {
+		t.Fatalf("other user sees my views: %+v", got)
+	}
+
+	dup := iam.ListSettings{Views: []iam.ListView{{Name: "Mine", Query: "a=1"}, {Name: "mine ", Query: "a=2"}}}
+	if err := s.SetListSettings(ctx, "sales.customers", dup); !errors.Is(err, iam.ErrListViewNameTaken) {
+		t.Fatalf("duplicate names: %v", err)
+	}
+}

@@ -5,6 +5,7 @@ export { coreClient as api, unwrap } from './client'
 export { ApiError } from './error'
 
 export type Me = components['schemas']['Me']
+export type ListSettings = components['schemas']['ListSettings']
 export type OrgUnit = components['schemas']['OrgUnit']
 export type OrgUnitInput = components['schemas']['OrgUnitInput']
 export type User = components['schemas']['User']

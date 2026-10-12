@@ -112,3 +112,10 @@ WITH RECURSIVE up AS (
 SELECT DISTINCT r.user_id FROM iam.user_roles r
 WHERE r.product = @product AND r.role = @role AND (r.org_unit_id IS NULL OR r.org_unit_id IN (SELECT up.id FROM up))
 ORDER BY r.user_id;
+
+-- name: ListSettings :one
+SELECT settings FROM iam.list_settings WHERE user_id = $1 AND list_key = $2;
+
+-- name: SetListSettings :exec
+INSERT INTO iam.list_settings (user_id, list_key, settings) VALUES ($1, $2, $3)
+ON CONFLICT (user_id, list_key) DO UPDATE SET settings = EXCLUDED.settings;

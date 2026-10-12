@@ -93,6 +93,28 @@ var (
 	// A company or group under a company, or another kind outside every company.
 	ErrOrgUnitMisplaced       = &platform.Error{Status: http.StatusUnprocessableEntity, Code: "org_unit_misplaced"}
 	ErrLegalFieldsCompanyOnly = &platform.Error{Status: http.StatusUnprocessableEntity, Code: "legal_fields_company_only"}
+	// Two views of one list share a name.
+	ErrListViewNameTaken = &platform.Error{Status: http.StatusUnprocessableEntity, Code: "list_view_name_taken"}
 )
+
+// ListSettings is what one user keeps for one list: named views and column choices.
+// The screen interprets both; the server only stores them.
+type ListSettings struct {
+	Views   []ListView   `json:"views" maxItems:"50" nullable:"false"`
+	Columns []ListColumn `json:"columns" maxItems:"100" nullable:"false"`
+}
+
+// ListView is a named filter: the list's own URL query string, without the leading "?".
+type ListView struct {
+	Name  string `json:"name" minLength:"1" maxLength:"100"`
+	Query string `json:"query" maxLength:"2000"`
+}
+
+// ListColumn is a column's display choice; Width is in pixels, null for the designed width.
+type ListColumn struct {
+	Key    string `json:"key" minLength:"1" maxLength:"100"`
+	Hidden bool   `json:"hidden"`
+	Width  *int   `json:"width" minimum:"48" maximum:"800"`
+}
 
 const MinPasswordLength = 8

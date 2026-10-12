@@ -3282,6 +3282,86 @@
         ],
         "type": "object"
       },
+      "ListColumn": {
+        "additionalProperties": false,
+        "properties": {
+          "hidden": {
+            "type": "boolean"
+          },
+          "key": {
+            "maxLength": 100,
+            "minLength": 1,
+            "type": "string"
+          },
+          "width": {
+            "format": "int64",
+            "maximum": 800,
+            "minimum": 48,
+            "type": [
+              "integer",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "key",
+          "hidden",
+          "width"
+        ],
+        "type": "object"
+      },
+      "ListSettings": {
+        "additionalProperties": false,
+        "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "/api/schemas/ListSettings.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
+          "columns": {
+            "items": {
+              "$ref": "#/components/schemas/ListColumn"
+            },
+            "maxItems": 100,
+            "type": "array"
+          },
+          "views": {
+            "items": {
+              "$ref": "#/components/schemas/ListView"
+            },
+            "maxItems": 50,
+            "type": "array"
+          }
+        },
+        "required": [
+          "views",
+          "columns"
+        ],
+        "type": "object"
+      },
+      "ListView": {
+        "additionalProperties": false,
+        "properties": {
+          "name": {
+            "maxLength": 100,
+            "minLength": 1,
+            "type": "string"
+          },
+          "query": {
+            "maxLength": 2000,
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "query"
+        ],
+        "type": "object"
+      },
       "LoginInputBody": {
         "additionalProperties": false,
         "properties": {
@@ -10157,6 +10237,91 @@
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/UpdateMeInputBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "tags": [
+          "core",
+          "core"
+        ]
+      }
+    },
+    "/me/lists/{key}": {
+      "get": {
+        "operationId": "get-my-list-settings",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "key",
+            "required": true,
+            "schema": {
+              "pattern": "^[a-z][a-z0-9_.-]{0,99}$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ListSettings"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "tags": [
+          "core",
+          "core"
+        ]
+      },
+      "put": {
+        "operationId": "set-my-list-settings",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "key",
+            "required": true,
+            "schema": {
+              "pattern": "^[a-z][a-z0-9_.-]{0,99}$",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ListSettings"
               }
             }
           },
