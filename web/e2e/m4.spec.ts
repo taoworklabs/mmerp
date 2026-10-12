@@ -108,8 +108,8 @@ test.describe('contract kinds', () => {
     await expect(table.getByRole('row', { name: new RegExp(`Thử việc ${run}.*Có thời hạn.*Đang dùng`) })).toBeVisible()
     await expect(table.getByRole('row', { name: new RegExp(`Mùa vụ ${run}.*Không thời hạn`) })).toBeVisible()
 
-    await table.getByRole('row', { name: new RegExp(`Mùa vụ ${run}`) }).getByRole('button', { name: 'Thao tác khác' }).click()
-    await page.getByRole('menuitem', { name: 'Sửa loại hợp đồng' }).click()
+    // A settings row opens its edit from the row itself.
+    await table.getByRole('button', { name: `Mùa vụ ${run}` }).click()
     await page.getByRole('dialog').getByRole('checkbox', { name: 'Đang dùng' }).uncheck()
     await page.getByRole('dialog').getByRole('button', { name: 'Lưu' }).click()
     await expect(table.getByRole('row', { name: new RegExp(`Mùa vụ ${run}.*Ngừng dùng`) })).toBeVisible()

@@ -7,7 +7,7 @@ import { useTranslation } from 'react-i18next'
 import { api, unwrap, type Dependent, type DependentInput, type Employee } from '@/shared/api/hrm'
 import { errorText, formatDate, formatMonth } from '@/shared/i18n'
 import { DataTable, type Column } from '@/shared/ui/DataTable'
-import { DateField, Form, FormActions, SelectField, TextField } from '@/shared/ui/form'
+import { DateField, Form, FormActions, MonthField, SelectField, TextField } from '@/shared/ui/form'
 import { useConfirm } from '@/shared/ui/confirm'
 import { notifySuccess } from '@/shared/ui/notify'
 import { FormModal, TabActions } from '@/shared/ui/page'
@@ -113,8 +113,8 @@ type Values = {
   relationship: string | null
   date_of_birth: string | null
   id_number: string
-  deduction_from: string
-  deduction_to: string
+  deduction_from: string | null
+  deduction_to: string | null
 }
 
 function DependentModal({ employeeId, dependent, onClose }: { employeeId: number; dependent: Dependent | null; onClose: () => void }) {
@@ -127,8 +127,8 @@ function DependentModal({ employeeId, dependent, onClose }: { employeeId: number
       relationship: dependent?.relationship ?? null,
       date_of_birth: dependent?.date_of_birth ?? null,
       id_number: dependent?.id_number ?? '',
-      deduction_from: dependent?.deduction_from ?? '',
-      deduction_to: dependent?.deduction_to ?? '',
+      deduction_from: dependent?.deduction_from ?? null,
+      deduction_to: dependent?.deduction_to ?? null,
     },
   })
 
@@ -139,8 +139,8 @@ function DependentModal({ employeeId, dependent, onClose }: { employeeId: number
       relationship: v.relationship as DependentInput['relationship'],
       date_of_birth: v.date_of_birth,
       id_number: orNull(v.id_number),
-      deduction_from: orNull(v.deduction_from),
-      deduction_to: orNull(v.deduction_to),
+      deduction_from: v.deduction_from,
+      deduction_to: v.deduction_to,
     }
     const path = { id: employeeId }
     if (dependent) await unwrap(api.PUT('/hrm/employees/{id}/dependents/{dependent}', { params: { path: { ...path, dependent: dependent.id } }, body }))
@@ -150,7 +150,6 @@ function DependentModal({ employeeId, dependent, onClose }: { employeeId: number
     onClose()
   }
 
-  const month = { pattern: { value: /^\d{4}-\d{2}$/, message: t('hrm.dependent.month_format') } }
   return (
     <FormModal opened title={t(dependent ? 'hrm.dependent.edit' : 'hrm.dependent.create')} onClose={onClose}>
       <Form form={form} onSubmit={save}>
@@ -163,8 +162,8 @@ function DependentModal({ employeeId, dependent, onClose }: { employeeId: number
         />
         <DateField name="date_of_birth" label={t('hrm.dependent.date_of_birth')} clearable />
         <TextField name="id_number" label={t('hrm.dependent.id_number')} maxLength={50} />
-        <TextField name="deduction_from" label={t('hrm.dependent.deduction_from')} description={t('hrm.dependent.month_format')} rules={month} />
-        <TextField name="deduction_to" label={t('hrm.dependent.deduction_to')} description={t('hrm.dependent.month_format')} rules={month} />
+        <MonthField name="deduction_from" label={t('hrm.dependent.deduction_from')} clearable />
+        <MonthField name="deduction_to" label={t('hrm.dependent.deduction_to')} clearable />
         <FormActions submitLabel={t('hrm.common.save')} onCancel={onClose} cancelLabel={t('hrm.common.cancel')} />
       </Form>
     </FormModal>

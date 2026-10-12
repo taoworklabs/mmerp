@@ -3,6 +3,7 @@ import { useForm } from 'react-hook-form'
 import { useTranslation } from 'react-i18next'
 import { api, unwrap, type Leave } from '@/shared/api/hrm'
 import { useDocumentMutation } from '@/shared/document'
+import { notifySuccess } from '@/shared/ui/notify'
 import { DateField, DecimalField, Form, FormActions, FormSection, SelectField, TextField } from '@/shared/ui/form'
 import { useLeaveTypes, useLeaveWorkingDays } from '../hooks/useLeave'
 import { EmployeeField } from './EmployeeField'
@@ -76,6 +77,7 @@ export function LeaveForm({ leave, self, chooseEmployee, onCreated }: Props) {
     }
     if (leave) {
       await mutation.run((version) => unwrap(api.PUT('/hrm/leaves/{id}', { params: { path: { id: leave.id } }, body: { version, ...fields } })))
+      notifySuccess(t('hrm.leave.saved'))
       return
     }
     const employee = chooseEmployee && v.employee_id && Number(v.employee_id) !== self?.id ? Number(v.employee_id) : undefined

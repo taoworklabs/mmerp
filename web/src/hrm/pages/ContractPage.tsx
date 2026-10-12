@@ -1,9 +1,9 @@
-import { Group } from '@mantine/core'
+import { Anchor, Group } from '@mantine/core'
 import { IconPrinter } from '@tabler/icons-react'
 import { useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { useNavigate, useParams } from 'react-router'
+import { Link, useNavigate, useParams } from 'react-router'
 import { api, unwrap } from '@/shared/api/hrm'
 import { ApprovalPanel, DocumentActions, DocumentHistory, DocumentStatus, useAttachmentSection, useDiscussionSection } from '@/shared/document'
 import { ExportButton } from '@/shared/jobs'
@@ -23,20 +23,19 @@ export function ContractPage() {
   const discussion = useDiscussionSection(contractDocType, id)
   const [error, setError] = useState<string | null>(null)
 
-  const state = loaded(contract, t, { to: '/hrm/employees', label: t('hrm.employees.back') })
+  const state = loaded(contract, t, { to: '/hrm/contracts', label: t('hrm.contracts.back') })
   if (!state.ok) return state.fallback
   const c = state.data
   const employeePath = `/hrm/employees/${c.employee_id}`
   return (
     <DocumentPage
       title={c.number}
-      breadcrumbs={[
-        { label: t('hrm.employees.title'), to: '/hrm/employees' },
-        { label: c.employee_name, to: employeePath },
-      ]}
+      breadcrumbs={[{ label: t('hrm.contracts.title'), to: '/hrm/contracts' }]}
       description={
         <Group gap="xs" component="span">
-          <span>{c.employee_name}</span>
+          <Anchor component={Link} to={employeePath} size="sm">
+            {c.employee_name}
+          </Anchor>
           <span aria-hidden>·</span>
           <span>{c.parent_number ? t('hrm.contract.appendix_of', { number: c.parent_number }) : c.contract_type_name}</span>
           <DocumentStatus docType={contractDocType} status={c.status} />
@@ -58,8 +57,8 @@ export function ContractPage() {
               onError={setError}
               onDelete={async (version) => {
                 await unwrap(api.DELETE('/hrm/contracts/{id}', { params: { path: { id: c.id }, query: { version } } }))
-                await qc.invalidateQueries({ queryKey: hrmKeys.contracts.employee(c.employee_id) })
-                navigate(`${employeePath}?tab=contracts`, { replace: true })
+                await qc.invalidateQueries({ queryKey: hrmKeys.contracts.all() })
+                navigate('/hrm/contracts', { replace: true })
               }}
             />
           </Group>

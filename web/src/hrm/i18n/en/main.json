@@ -59,7 +59,6 @@
   "hrm.dependent.deduction": "Deduction",
   "hrm.dependent.deduction_from": "Deduction from month",
   "hrm.dependent.deduction_to": "Deduction to month",
-  "hrm.dependent.month_format": "Year-month, e.g. 2026-01.",
   "hrm.dependent.delete_title": "Delete dependent?",
   "hrm.employees.back": "Back to employees",
   "hrm.employees.description": "Employee records in the org units you have access to.",
@@ -392,5 +391,10 @@
   "hrm.payroll.adjustment_title": "Adjustment {{n}}",
   "hrm.common.yes": "Yes",
   "hrm.common.no": "No",
-  "hrm.contract.no_lines": "No allowances or supports."
+  "hrm.contract.no_lines": "No allowances or supports.",
+  "hrm.leave.saved": "Leave request saved.",
+  "hrm.overtime.saved": "Overtime request saved.",
+  "hrm.contract.saved": "Contract saved.",
+  "hrm.timesheet.saved": "Timesheet saved.",
+  "hrm.contracts.back": "Back to contracts"
 }

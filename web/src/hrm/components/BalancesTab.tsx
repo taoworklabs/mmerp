@@ -8,7 +8,7 @@ import { api, ApiError, unwrap, type Employee, type LeaveBalance } from '@/share
 import { useMe } from '@/shared/auth/me'
 import { currentYear, errorText, formatDecimal } from '@/shared/i18n'
 import { DataTable, type Column } from '@/shared/ui/DataTable'
-import { DecimalField, Form, FormActions, TextField } from '@/shared/ui/form'
+import { DecimalField, Form, FormActions, IntegerField, TextField } from '@/shared/ui/form'
 import { notifySuccess } from '@/shared/ui/notify'
 import { FormModal, TabActions } from '@/shared/ui/page'
 import { ContentSkeleton, EmptyState, ErrorState } from '@/shared/ui/states'
@@ -50,13 +50,13 @@ export function BalancesTab({ employee }: { employee: Employee }) {
   )
 }
 
-type Values = { year: string; delta: string; reason: string }
+type Values = { year: number | null; delta: string; reason: string }
 
 function AdjustModal({ employeeId, onClose }: { employeeId: number; onClose: () => void }) {
   const { t } = useTranslation()
   const qc = useQueryClient()
   const me = useMe()
-  const form = useForm<Values>({ mode: 'onBlur', defaultValues: { year: String(currentYear(me.timezone)), delta: '', reason: '' } })
+  const form = useForm<Values>({ mode: 'onBlur', defaultValues: { year: currentYear(me.timezone), delta: '', reason: '' } })
   async function save(v: Values) {
     await unwrap(
       api.POST('/hrm/employees/{id}/leave-balances/{year}/adjustments', {
@@ -71,7 +71,7 @@ function AdjustModal({ employeeId, onClose }: { employeeId: number; onClose: () 
   return (
     <FormModal opened title={t('hrm.balance.adjust')} onClose={onClose}>
       <Form form={form} onSubmit={save} fieldOf={(err) => (err.code === 'leave_balance_negative' ? 'delta' : undefined)}>
-        <DecimalField name="year" label={t('hrm.balance.year')} required scale={0} min={2000} />
+        <IntegerField name="year" label={t('hrm.balance.year')} required min={2000} max={2100} />
         <DecimalField name="delta" label={t('hrm.balance.delta')} description={t('hrm.balance.delta_hint')} required scale={1} step={0.5} allowNegative />
         <TextField name="reason" label={t('hrm.balance.reason')} required multiline maxLength={1000} />
         <FormActions submitLabel={t('hrm.balance.adjust_submit')} onCancel={onClose} cancelLabel={t('hrm.common.cancel')} />

@@ -7,6 +7,7 @@ import { useDocumentMutation } from '@/shared/document'
 import { formatDate, formatDecimal, formatWeekday } from '@/shared/i18n'
 import { CellGrid } from '@/shared/ui/CellGrid'
 import { fieldId, Form, FormActions } from '@/shared/ui/form'
+import { notifySuccess } from '@/shared/ui/notify'
 import { icon } from '@/shared/ui/theme'
 import { timesheetDocType } from '../keys'
 
@@ -46,6 +47,7 @@ export function TimesheetGrid({ timesheet: ts }: { timesheet: Timesheet }) {
     await mutation.run((version) =>
       unwrap(api.PUT('/hrm/timesheets/{id}', { params: { path: { id: ts.id } }, body: { version, month: ts.period_start.slice(0, 7), lines } })),
     )
+    notifySuccess(t('hrm.timesheet.saved'))
   }
 
   if (ts.employees.length === 0) return <Text c="dimmed">{t('hrm.timesheet.no_employees')}</Text>

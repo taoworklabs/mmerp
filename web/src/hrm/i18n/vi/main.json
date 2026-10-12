@@ -59,7 +59,6 @@
   "hrm.dependent.deduction": "Giảm trừ",
   "hrm.dependent.deduction_from": "Giảm trừ từ tháng",
   "hrm.dependent.deduction_to": "Giảm trừ tới tháng",
-  "hrm.dependent.month_format": "Dạng năm-tháng, ví dụ 2026-01.",
   "hrm.dependent.delete_title": "Xóa người phụ thuộc?",
   "hrm.employees.back": "Về danh sách nhân viên",
   "hrm.employees.description": "Hồ sơ nhân viên trong các đơn vị được phân quyền.",
@@ -392,5 +391,10 @@
   "hrm.payroll.adjustment_title": "Điều chỉnh {{n}}",
   "hrm.common.yes": "Có",
   "hrm.common.no": "Không",
-  "hrm.contract.no_lines": "Không có phụ cấp, hỗ trợ."
+  "hrm.contract.no_lines": "Không có phụ cấp, hỗ trợ.",
+  "hrm.leave.saved": "Đã lưu đơn nghỉ.",
+  "hrm.overtime.saved": "Đã lưu đơn tăng ca.",
+  "hrm.contract.saved": "Đã lưu hợp đồng.",
+  "hrm.timesheet.saved": "Đã lưu bảng công.",
+  "hrm.contracts.back": "Về danh sách hợp đồng"
 }
