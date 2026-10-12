@@ -44,9 +44,10 @@ export function AppLayout({ areas }: { areas: AreaManifest[] }) {
   const collapsed = pref ?? !wide
 
   const [error, setError] = useState<string | null>(null)
-  const inbox = useQuery({ queryKey: documentKeys.inbox(), queryFn: () => unwrap(api.GET('/approvals/inbox')) })
+  // Both counts are polled: they change through other users' actions, with nothing on this page
+  // to refresh them.
+  const inbox = useQuery({ queryKey: documentKeys.inbox(), queryFn: () => unwrap(api.GET('/approvals/inbox')), refetchInterval: 60_000 })
   const waiting = inbox.data?.items.length ?? 0
-  // Polled: notifications arrive from other users' actions, with nothing on this page to refresh them.
   const unread = useQuery({
     queryKey: notificationKeys.unread(),
     queryFn: () => unwrap(api.GET('/notifications/unread-count')),
