@@ -38,6 +38,11 @@ func newLeaveFixture(t *testing.T) *leaveFixture {
 	e.UserLogin, e.ManagerID = str("e"), &mgrID
 	f.emp = must(t)(f.hrm.CreateEmployee(f.hr, e))
 	f.annual = must(t)(f.hrm.SaveLeaveType(f.hr, 0, hrm.LeaveTypeInput{Name: "Phép năm", DeductsBalance: true, Active: true}))
+	// The payroll lock row exists in any running company. Created on first use instead, its
+	// insert would serialize the first two transactions of every concurrency test by itself.
+	if _, err := f.pool.Exec(f.admin, `INSERT INTO hrm.payroll_locks (legal_entity_id) VALUES ($1)`, f.c); err != nil {
+		t.Fatal(err)
+	}
 	return f
 }
 

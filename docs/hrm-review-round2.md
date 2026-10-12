@@ -60,11 +60,20 @@ transactions instead:
   stops a two-person cycle (X under Y while Y under X), but not a longer one where the two edits touch
   four different rows.
 
-So a concurrency test has to post something beforehand to create the payroll lock row, and has to
+So a concurrency test has to hold the first transaction open while the second starts, and has to
 build a case that no incidental lock covers. Then it is worth checking that the test fails with the
-intended lock removed. The older race tests (`TestTwoRequestsApprovedAtOnce`,
-`TestNegativeAdjustmentRacesApproval`, `TestBalanceAdjustmentsRaceApproval`) have not been checked
-this way.
+intended lock removed. The leave fixture now creates the payroll lock row up front, as any running
+company has it, so the first problem cannot hide a race in any test built on it.
+
+Checking the older race tests this way found one that proved nothing. `TestOverlappingRequestsApprovedAtOnce`
+started its two approvals without holding either open, and it passed with the employee lock removed.
+Holding the first approval open without that lock, both overlapping requests were approved and the
+balance lost four days. The lock itself works; nothing guarded it. The test now holds the first
+approval open, and it fails when the lock is removed. The three balance race tests
+(`TestTwoRequestsApprovedAtOnce`, `TestNegativeAdjustmentRacesApproval`,
+`TestBalanceAdjustmentsRaceApproval`) rest on no lock to remove: a balance changes in one `UPDATE …
+SET days = days + delta` under a `CHECK` that it stays at or above zero, which holds whatever the
+timing.
 
 ## Section 6: timesheet, work calendar, overtime
 
@@ -169,5 +178,5 @@ filed.
 
 ## Next
 
-The older race tests named above, checked by breaking their locks. Round two then has nothing left
-from the plan's sections 4 to 8.
+Nothing left from the plan's sections 4 to 8. What remains open is outside it: an accountant's review
+of the payroll samples, and the open points `products/hrm.md` lists under "Still open".

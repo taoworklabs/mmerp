@@ -361,9 +361,6 @@ func equalIDs(got []int64, want ...int64) bool {
 // wait for the first to commit, then refuse.
 func TestOverlappingContractsPostedAtOnce(t *testing.T) {
 	f := newContractFixture(t)
-	// An earlier contract in force, so the legal entity's payroll lock row already exists:
-	// creating it on first use would serialize the two by itself.
-	f.check(f.post(must(t)(f.original("2025-01-01", "2025-12-31", 9_000_000))))
 	a := must(t)(f.original("2026-01-01", "2026-12-31", 10_000_000))
 	b := must(t)(f.original("2026-06-01", "", 12_000_000))
 	var second error
