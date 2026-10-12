@@ -164,7 +164,8 @@ func (s *Service) Leaves(ctx context.Context, f LeaveFilter) (LeaveList, error) 
 		return out, err
 	}
 	rows, err := q.ListLeaveRequests(ctx, store.ListLeaveRequestsParams{
-		AllUnits: sc.All, Units: sc.Units, Actor: actor, Reports: reports, Status: f.Status,
+		AllUnits: sc.All, Units: sc.Units, Actor: actor, Reports: reports, Status: f.Status, Q: strings.TrimSpace(f.Q),
+		OrgUnitID:  pgtype.Int8{Int64: f.OrgUnitID, Valid: f.OrgUnitID != 0},
 		EmployeeID: pgtype.Int8{Int64: f.EmployeeID, Valid: f.EmployeeID != 0},
 		FromDate:   platform.NullDate(optional(f.From)), ToDate: platform.NullDate(optional(f.To)),
 		Sort: f.Sort, Lim: f.Limit(), Off: f.Offset(),

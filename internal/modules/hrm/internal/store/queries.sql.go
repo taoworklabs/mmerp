@@ -1295,18 +1295,19 @@ WHERE ($1::bool OR d.org_unit_id = ANY($2::bigint[]))
   AND ($3::text = '' OR d.status = $3)
   AND ($4::bigint IS NULL OR c.contract_type_id = $4)
   AND ($5::bigint IS NULL OR d.org_unit_id = $5)
-  AND ($6::bigint IS NULL OR c.employee_id = $6)
-  AND (NOT $7::bool OR (c.parent_id IS NULL AND d.status = 'posted'
-       AND c.end_date BETWEEN $8::date AND $8::date + 30))
+  AND ($6::text = '' OR d.number ILIKE '%' || $6 || '%' OR e.code ILIKE '%' || $6 || '%' OR e.full_name ILIKE '%' || $6 || '%')
+  AND ($7::bigint IS NULL OR c.employee_id = $7)
+  AND (NOT $8::bool OR (c.parent_id IS NULL AND d.status = 'posted'
+       AND c.end_date BETWEEN $9::date AND $9::date + 30))
 ORDER BY
-    CASE WHEN $9::text = 'start_date' THEN c.start_date END,
-    CASE WHEN $9 = '-start_date' THEN c.start_date END DESC,
-    CASE WHEN $9 = 'end_date' THEN c.end_date END,
-    CASE WHEN $9 = '-end_date' THEN c.end_date END DESC NULLS LAST,
-    CASE WHEN $9 = 'number' THEN d.number END,
-    CASE WHEN $9 = '-number' THEN d.number END DESC,
+    CASE WHEN $10::text = 'start_date' THEN c.start_date END,
+    CASE WHEN $10 = '-start_date' THEN c.start_date END DESC,
+    CASE WHEN $10 = 'end_date' THEN c.end_date END,
+    CASE WHEN $10 = '-end_date' THEN c.end_date END DESC NULLS LAST,
+    CASE WHEN $10 = 'number' THEN d.number END,
+    CASE WHEN $10 = '-number' THEN d.number END DESC,
     c.id DESC
-LIMIT $11 OFFSET $10
+LIMIT $12 OFFSET $11
 `
 
 type ListContractsParams struct {
@@ -1315,6 +1316,7 @@ type ListContractsParams struct {
 	Status         string
 	ContractTypeID pgtype.Int8
 	OrgUnitID      pgtype.Int8
+	Q              string
 	EmployeeID     pgtype.Int8
 	Expiring       bool
 	Today          pgtype.Date
@@ -1346,6 +1348,7 @@ func (q *Queries) ListContracts(ctx context.Context, arg ListContractsParams) ([
 		arg.Status,
 		arg.ContractTypeID,
 		arg.OrgUnitID,
+		arg.Q,
 		arg.EmployeeID,
 		arg.Expiring,
 		arg.Today,
@@ -1574,16 +1577,18 @@ JOIN hrm.employees e ON e.id = r.employee_id
 JOIN hrm.leave_types t ON t.id = r.leave_type_id
 WHERE ($1::bool OR d.org_unit_id = ANY($2::bigint[]) OR e.user_id = $3::bigint OR r.employee_id = ANY($4::bigint[]))
   AND ($5::text = '' OR d.status = $5)
-  AND ($6::bigint IS NULL OR r.employee_id = $6)
-  AND ($7::date IS NULL OR r.end_date >= $7)
-  AND ($8::date IS NULL OR r.start_date <= $8)
+  AND ($6::text = '' OR d.number ILIKE '%' || $6 || '%' OR e.code ILIKE '%' || $6 || '%' OR e.full_name ILIKE '%' || $6 || '%')
+  AND ($7::bigint IS NULL OR d.org_unit_id = $7)
+  AND ($8::bigint IS NULL OR r.employee_id = $8)
+  AND ($9::date IS NULL OR r.end_date >= $9)
+  AND ($10::date IS NULL OR r.start_date <= $10)
 ORDER BY
-    CASE WHEN $9::text = 'start_date' THEN r.start_date END,
-    CASE WHEN $9 = '-start_date' THEN r.start_date END DESC,
-    CASE WHEN $9 = 'number' THEN d.number END,
-    CASE WHEN $9 = '-number' THEN d.number END DESC,
+    CASE WHEN $11::text = 'start_date' THEN r.start_date END,
+    CASE WHEN $11 = '-start_date' THEN r.start_date END DESC,
+    CASE WHEN $11 = 'number' THEN d.number END,
+    CASE WHEN $11 = '-number' THEN d.number END DESC,
     r.id DESC
-LIMIT $11 OFFSET $10
+LIMIT $13 OFFSET $12
 `
 
 type ListLeaveRequestsParams struct {
@@ -1592,6 +1597,8 @@ type ListLeaveRequestsParams struct {
 	Actor      int64
 	Reports    []int64
 	Status     string
+	Q          string
+	OrgUnitID  pgtype.Int8
 	EmployeeID pgtype.Int8
 	FromDate   pgtype.Date
 	ToDate     pgtype.Date
@@ -1622,6 +1629,8 @@ func (q *Queries) ListLeaveRequests(ctx context.Context, arg ListLeaveRequestsPa
 		arg.Actor,
 		arg.Reports,
 		arg.Status,
+		arg.Q,
+		arg.OrgUnitID,
 		arg.EmployeeID,
 		arg.FromDate,
 		arg.ToDate,
@@ -1721,16 +1730,18 @@ JOIN record.documents d ON d.id = r.id
 JOIN hrm.employees e ON e.id = r.employee_id
 WHERE ($1::bool OR d.org_unit_id = ANY($2::bigint[]) OR e.user_id = $3::bigint OR r.employee_id = ANY($4::bigint[]))
   AND ($5::text = '' OR d.status = $5)
-  AND ($6::bigint IS NULL OR r.employee_id = $6)
-  AND ($7::date IS NULL OR r.date >= $7)
-  AND ($8::date IS NULL OR r.date <= $8)
+  AND ($6::text = '' OR d.number ILIKE '%' || $6 || '%' OR e.code ILIKE '%' || $6 || '%' OR e.full_name ILIKE '%' || $6 || '%')
+  AND ($7::bigint IS NULL OR d.org_unit_id = $7)
+  AND ($8::bigint IS NULL OR r.employee_id = $8)
+  AND ($9::date IS NULL OR r.date >= $9)
+  AND ($10::date IS NULL OR r.date <= $10)
 ORDER BY
-    CASE WHEN $9::text = 'date' THEN r.date END,
-    CASE WHEN $9 = '-date' THEN r.date END DESC,
-    CASE WHEN $9 = 'number' THEN d.number END,
-    CASE WHEN $9 = '-number' THEN d.number END DESC,
+    CASE WHEN $11::text = 'date' THEN r.date END,
+    CASE WHEN $11 = '-date' THEN r.date END DESC,
+    CASE WHEN $11 = 'number' THEN d.number END,
+    CASE WHEN $11 = '-number' THEN d.number END DESC,
     r.id DESC
-LIMIT $11 OFFSET $10
+LIMIT $13 OFFSET $12
 `
 
 type ListOvertimeRequestsParams struct {
@@ -1739,6 +1750,8 @@ type ListOvertimeRequestsParams struct {
 	Actor      int64
 	Reports    []int64
 	Status     string
+	Q          string
+	OrgUnitID  pgtype.Int8
 	EmployeeID pgtype.Int8
 	FromDate   pgtype.Date
 	ToDate     pgtype.Date
@@ -1769,6 +1782,8 @@ func (q *Queries) ListOvertimeRequests(ctx context.Context, arg ListOvertimeRequ
 		arg.Actor,
 		arg.Reports,
 		arg.Status,
+		arg.Q,
+		arg.OrgUnitID,
 		arg.EmployeeID,
 		arg.FromDate,
 		arg.ToDate,
@@ -1889,8 +1904,13 @@ WHERE ($1::bool OR t.org_unit_id = ANY($2::bigint[]))
   AND ($3::text = '' OR d.status = $3)
   AND ($4::bigint IS NULL OR t.org_unit_id = $4)
   AND ($5::date IS NULL OR t.period_start = $5)
-ORDER BY t.period_start DESC, u.name, t.id DESC
-LIMIT $7 OFFSET $6
+ORDER BY
+    CASE WHEN $6::text = 'period' THEN t.period_start END,
+    CASE WHEN $6 IN ('', '-period') THEN t.period_start END DESC,
+    CASE WHEN $6 = 'number' THEN d.number END,
+    CASE WHEN $6 = '-number' THEN d.number END DESC,
+    u.name, t.id DESC
+LIMIT $8 OFFSET $7
 `
 
 type ListTimesheetsParams struct {
@@ -1899,6 +1919,7 @@ type ListTimesheetsParams struct {
 	Status      string
 	OrgUnitID   pgtype.Int8
 	PeriodStart pgtype.Date
+	Sort        string
 	Off         int32
 	Lim         int32
 }
@@ -1921,6 +1942,7 @@ func (q *Queries) ListTimesheets(ctx context.Context, arg ListTimesheetsParams) 
 		arg.Status,
 		arg.OrgUnitID,
 		arg.PeriodStart,
+		arg.Sort,
 		arg.Off,
 		arg.Lim,
 	)
