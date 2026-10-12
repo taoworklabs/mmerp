@@ -126,5 +126,8 @@
   "sales.line.unit_price_col": "Đơn giá (đ)",
   "sales.line.discount_col": "Chiết khấu (đ)",
   "sales.line.vat_rate_col": "Thuế suất",
-  "sales.line.net_col": "Thành tiền (đ)"
+  "sales.line.net_col": "Thành tiền (đ)",
+  "sales.line.item_col": "Mặt hàng",
+  "sales.line.discount_percent_col": "Chiết khấu %",
+  "sales.line.title": "Dòng {{n}}"
 }

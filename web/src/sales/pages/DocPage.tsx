@@ -104,6 +104,8 @@ export function DocPage({ kind }: { kind: Kind }) {
       }
       approval={<ApprovalPanel docType={docType} id={d.id} />}
       sections={[attachments, discussion]}
+      // The editable lines table needs the whole width; approval and history become tabs.
+      fullWidth
       history={<DocumentHistory docType={docType} id={d.id} />}
     >
       {/* Keyed by version: a reload after a conflict starts from the saved data. */}
