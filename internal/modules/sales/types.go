@@ -92,6 +92,7 @@ type Item struct {
 type ItemFilter struct {
 	Q      string `query:"q" maxLength:"100"`
 	Active string `query:"active" enum:"true,false"`
+	Sort   string `query:"sort" enum:"code,-code,name,-name" default:"code"`
 	platform.Paging
 }
 

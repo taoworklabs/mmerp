@@ -19,7 +19,7 @@ func (s *Service) Items(ctx context.Context, f ItemFilter) (ItemList, error) {
 		return out, platform.ErrForbidden
 	}
 	rows, err := store.New(platform.DBFrom(ctx)).ListItems(ctx, store.ListItemsParams{
-		Q: strings.TrimSpace(f.Q), Active: boolFilter(f.Active), Lim: f.Limit(), Off: f.Offset(),
+		Q: strings.TrimSpace(f.Q), Active: boolFilter(f.Active), Sort: f.Sort, Lim: f.Limit(), Off: f.Offset(),
 	})
 	for _, r := range rows {
 		out.Total = r.Total
