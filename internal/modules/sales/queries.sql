@@ -54,7 +54,12 @@ SELECT *, count(*) OVER () AS total
 FROM sales.items
 WHERE (@q::text = '' OR code ILIKE '%' || @q || '%' OR name ILIKE '%' || @q || '%')
   AND (sqlc.narg(active)::bool IS NULL OR active = sqlc.narg(active))
-ORDER BY lower(code), id
+ORDER BY
+    CASE WHEN @sort::text IN ('', 'code') THEN lower(code) END,
+    CASE WHEN @sort = '-code' THEN lower(code) END DESC,
+    CASE WHEN @sort = 'name' THEN name END,
+    CASE WHEN @sort = '-name' THEN name END DESC,
+    id
 LIMIT @lim OFFSET @off;
 
 -- name: InsertHeader :exec

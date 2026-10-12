@@ -271,6 +271,26 @@ func TestItems(t *testing.T) {
 	}
 	catalog := f.ctxFor("catalog2", "catalog_admin@*")
 	wantCode(t, must2(f.sales.SaveItem(catalog, 0, sales.ItemFields{Code: "but", Name: "Bút", Unit: "cái", VatRate: "8", Active: true})), "item_code_taken")
+
+	// The catalogue sorts by code or name, either way; code is the default.
+	must(t)(f.sales.SaveItem(catalog, 0, sales.ItemFields{Code: "A1", Name: "Zeta", Unit: "cái", VatRate: "8", Active: true}))
+	must(t)(f.sales.SaveItem(catalog, 0, sales.ItemFields{Code: "Z9", Name: "Alpha", Unit: "cái", VatRate: "8", Active: true}))
+	codes := func(sort string) []string {
+		l, err := f.sales.Items(catalog, sales.ItemFilter{Sort: sort, Paging: platform.Paging{Page: 1, PageSize: 50}})
+		f.check(err)
+		out := []string{}
+		for _, it := range l.Items {
+			if it.Code == "A1" || it.Code == "Z9" {
+				out = append(out, it.Code)
+			}
+		}
+		return out
+	}
+	for sort, want := range map[string][]string{"": {"A1", "Z9"}, "-code": {"Z9", "A1"}, "name": {"Z9", "A1"}, "-name": {"A1", "Z9"}} {
+		if got := codes(sort); !slices.Equal(got, want) {
+			t.Fatalf("sort %q: %v", sort, got)
+		}
+	}
 }
 
 // A quotation computes on the server, keeps what it said once posted, and creating it twice

@@ -7064,6 +7064,7 @@ export interface operations {
             query?: {
                 q?: string;
                 active?: "true" | "false";
+                sort?: "code" | "-code" | "name" | "-name";
                 page?: number;
                 page_size?: 20 | 50 | 100;
             };

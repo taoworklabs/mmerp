@@ -659,13 +659,19 @@ SELECT id, code, name, unit, price, vat_rate, active, count(*) OVER () AS total
 FROM sales.items
 WHERE ($1::text = '' OR code ILIKE '%' || $1 || '%' OR name ILIKE '%' || $1 || '%')
   AND ($2::bool IS NULL OR active = $2)
-ORDER BY lower(code), id
-LIMIT $4 OFFSET $3
+ORDER BY
+    CASE WHEN $3::text IN ('', 'code') THEN lower(code) END,
+    CASE WHEN $3 = '-code' THEN lower(code) END DESC,
+    CASE WHEN $3 = 'name' THEN name END,
+    CASE WHEN $3 = '-name' THEN name END DESC,
+    id
+LIMIT $5 OFFSET $4
 `
 
 type ListItemsParams struct {
 	Q      string
 	Active pgtype.Bool
+	Sort   string
 	Off    int32
 	Lim    int32
 }
@@ -685,6 +691,7 @@ func (q *Queries) ListItems(ctx context.Context, arg ListItemsParams) ([]ListIte
 	rows, err := q.db.Query(ctx, listItems,
 		arg.Q,
 		arg.Active,
+		arg.Sort,
 		arg.Off,
 		arg.Lim,
 	)
