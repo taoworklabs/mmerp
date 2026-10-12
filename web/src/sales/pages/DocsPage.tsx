@@ -10,7 +10,8 @@ import { DataTable, type Column } from '@/shared/ui/DataTable'
 import { SearchInput } from '@/shared/ui/form'
 import { ListPage } from '@/shared/ui/page'
 import { ContentSkeleton, EmptyState, ErrorState } from '@/shared/ui/states'
-import { icon } from '@/shared/ui/theme'
+import { useListView } from '@/shared/ui/ListView'
+import { filterWidth, icon } from '@/shared/ui/theme'
 import { useListParams } from '@/shared/url/listParams'
 import { DocProgress } from '../components/DocProgress'
 import { useDocActions } from '../hooks/useSales'
@@ -70,6 +71,7 @@ export function DocsPage({ kind }: { kind: Kind }) {
       ),
     },
   ]
+  const view = useListView(`sales.${pathOf(kind)}`, columns)
 
   let body
   if (list.isPending) body = <ContentSkeleton />
@@ -86,13 +88,14 @@ export function DocsPage({ kind }: { kind: Kind }) {
           }
         />
       ) : (
-        <EmptyState title={t(`sales.${pathOf(kind)}.empty`)} description={canCreate ? t(`sales.${pathOf(kind)}.empty_description`) : undefined} />
+        <EmptyState title={t(`sales.${pathOf(kind)}.empty`)} description={t(`sales.${pathOf(kind)}.empty_description`)} />
       )
   else
     body = (
       <DataTable
         label={t(`sales.${pathOf(kind)}.title`)}
-        columns={columns}
+        columns={view.columns}
+        onResize={view.onResize}
         rows={list.data.items}
         rowKey={(d) => d.id}
         href={(d) => `${base}/${d.id}`}
@@ -118,7 +121,7 @@ export function DocsPage({ kind }: { kind: Kind }) {
           <Select
             aria-label={t('sales.doc.status')}
             leftSection={<IconCircleDot {...icon.text} />}
-            w={{ base: '100%', md: 200 }}
+            w={{ base: '100%', md: filterWidth.select }}
             data={statuses.map((s) => ({ value: s, label: statusLabel(docType, s) }))}
             value={status || null}
             onChange={(v) => set({ filters: { status: v ?? '' } })}
@@ -127,6 +130,7 @@ export function DocsPage({ kind }: { kind: Kind }) {
           />
         </>
       }
+      tools={view.tools}
       paging={
         list.data && {
           page: params.page,

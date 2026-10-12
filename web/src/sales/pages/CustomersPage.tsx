@@ -9,7 +9,8 @@ import { DataTable, type Column } from '@/shared/ui/DataTable'
 import { SearchInput } from '@/shared/ui/form'
 import { ListPage } from '@/shared/ui/page'
 import { ContentSkeleton, EmptyState, ErrorState } from '@/shared/ui/states'
-import { icon } from '@/shared/ui/theme'
+import { useListView } from '@/shared/ui/ListView'
+import { filterWidth, icon } from '@/shared/ui/theme'
 import { useListParams } from '@/shared/url/listParams'
 import { CustomerStatus } from '../components/CustomerStatus'
 import { useCustomerActions } from '../hooks/useSales'
@@ -52,6 +53,7 @@ export function CustomersPage() {
     { key: 'org_unit', header: t('sales.customer.org_unit'), role: 'meta', render: (c) => c.org_unit_name },
     { key: 'active', header: t('sales.customer.status'), role: 'status', render: (c) => <CustomerStatus active={c.active} /> },
   ]
+  const view = useListView('sales.customers', columns)
 
   let body
   if (list.isPending) body = <ContentSkeleton />
@@ -68,13 +70,14 @@ export function CustomersPage() {
           }
         />
       ) : (
-        <EmptyState title={t('sales.customers.empty')} description={canCreate ? t('sales.customers.empty_description') : undefined} />
+        <EmptyState title={t('sales.customers.empty')} description={t('sales.customers.empty_description')} />
       )
   else
     body = (
       <DataTable
         label={t('sales.customers.title')}
-        columns={columns}
+        columns={view.columns}
+        onResize={view.onResize}
         rows={list.data.items}
         rowKey={(c) => c.id}
         href={(c) => `/sales/customers/${c.id}`}
@@ -105,7 +108,7 @@ export function CustomersPage() {
           <Select
             aria-label={t('sales.customer.status')}
             leftSection={<IconCircleDot {...icon.text} />}
-            w={{ base: '100%', md: 180 }}
+            w={{ base: '100%', md: filterWidth.select }}
             data={[
               { value: 'true', label: t('sales.customer.status.active') },
               { value: 'false', label: t('sales.customer.status.inactive') },
@@ -117,6 +120,7 @@ export function CustomersPage() {
           />
         </>
       }
+      tools={view.tools}
       paging={
         list.data && {
           page: params.page,
