@@ -8,11 +8,11 @@ export const employeeDocType = 'hrm.employee'
 
 // Query keys of the hrm area; every parameter that changes a result is part of its key.
 export type EmployeeQuery = { q: string; status: string; org_unit_id: string; sort: string; page: number; pageSize: number }
-export type LeaveQuery = { status: string; sort: string; page: number; pageSize: number }
+export type LeaveQuery = { q: string; status: string; orgUnit: string; month: string; sort: string; page: number; pageSize: number }
 export type OvertimeQuery = LeaveQuery
-export type TimesheetQuery = { month: string; org_unit_id: string; status: string; page: number; pageSize: number }
+export type TimesheetQuery = { month: string; org_unit_id: string; status: string; sort: string; page: number; pageSize: number }
 export type PayrollQuery = { month: string; legal_entity_id: string; status: string; page: number; pageSize: number }
-export type ContractQuery = { status: string; contract_type_id: string; org_unit_id: string; expiring: string; sort: string; page: number; pageSize: number }
+export type ContractQuery = { q: string; status: string; contract_type_id: string; org_unit_id: string; expiring: string; sort: string; page: number; pageSize: number }
 
 export const hrmKeys = {
   employees: {

@@ -20,6 +20,7 @@ export type LeaveType = components['schemas']['LeaveType']
 export type LeaveTypeInput = components['schemas']['LeaveTypeInput']
 export type LeaveBalance = components['schemas']['LeaveBalance']
 export type LeaveSort = NonNullable<NonNullable<operations['list-leaves']['parameters']['query']>['sort']>
+export type TimesheetSort = NonNullable<NonNullable<operations['list-timesheets']['parameters']['query']>['sort']>
 export type Overtime = components['schemas']['Overtime']
 export type OvertimeListItem = components['schemas']['OvertimeListItem']
 export type OvertimeSort = NonNullable<NonNullable<operations['list-overtimes']['parameters']['query']>['sort']>

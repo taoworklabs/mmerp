@@ -10,9 +10,10 @@ import { DocumentStatus, useStatusLabel } from '@/shared/document'
 import { errorText, formatMonth } from '@/shared/i18n'
 import { DataTable, type Column } from '@/shared/ui/DataTable'
 import { Form, FormActions, MonthField, MonthFilter, SelectField, useOrgUnits } from '@/shared/ui/form'
+import { notifySuccess } from '@/shared/ui/notify'
 import { FormModal, ListPage } from '@/shared/ui/page'
 import { ContentSkeleton, EmptyState, ErrorState } from '@/shared/ui/states'
-import { icon } from '@/shared/ui/theme'
+import { filterWidth, icon } from '@/shared/ui/theme'
 import { useListParams } from '@/shared/url/listParams'
 import { usePayrollActions } from '../hooks/usePayroll'
 import { hrmKeys, payrollDocType } from '../keys'
@@ -76,7 +77,7 @@ export function PayrollsPage() {
         }
       />
     ) : (
-      <EmptyState title={t('hrm.payrolls.empty')} description={canCreate ? t('hrm.payrolls.empty_description') : undefined} />
+      <EmptyState title={t('hrm.payrolls.empty')} description={t('hrm.payrolls.empty_description')} />
     )
   else body = <DataTable label={t('hrm.payrolls.title')} columns={columns} rows={list.data.items} rowKey={(p) => p.id} href={(p) => `/hrm/payrolls/${p.id}`} />
 
@@ -93,12 +94,11 @@ export function PayrollsPage() {
       }
       filters={
         <>
-          <MonthFilter label={t('hrm.payroll.month')} value={month || null} onChange={(v) => set({ filters: { month: v ?? '' } })} />
           <Select
             aria-label={t('hrm.payroll.legal_entity')}
             placeholder={t('hrm.payroll.legal_entity')}
             leftSection={<IconBuildingSkyscraper {...icon.text} />}
-            w={{ base: '100%', md: 240 }}
+            w={{ base: '100%', md: filterWidth.unit }}
             data={entities}
             value={legal_entity_id || null}
             onChange={(v) => set({ filters: { legal_entity_id: v ?? '' } })}
@@ -107,13 +107,14 @@ export function PayrollsPage() {
           <Select
             aria-label={t('hrm.payroll.status')}
             leftSection={<IconCircleDot {...icon.text} />}
-            w={{ base: '100%', md: 200 }}
+            w={{ base: '100%', md: filterWidth.select }}
             data={statuses.map((s) => ({ value: s, label: statusLabel(payrollDocType, s) }))}
             value={status || null}
             onChange={(v) => set({ filters: { status: v ?? '' } })}
             placeholder={t('hrm.payroll.status')}
             clearable
           />
+          <MonthFilter label={t('hrm.payroll.month')} value={month || null} onChange={(v) => set({ filters: { month: v ?? '' } })} />
         </>
       }
       paging={
@@ -146,6 +147,7 @@ function NewPayroll({ onClose }: { onClose: () => void }) {
   async function create(v: { legal_entity_id: string | null; month: string | null }) {
     const { id, job_id } = await unwrap(api.POST('/hrm/payrolls', { body: { legal_entity_id: Number(v.legal_entity_id), month: v.month ?? '' } }))
     await qc.invalidateQueries({ queryKey: hrmKeys.payrolls.lists() })
+    notifySuccess(t('hrm.payrolls.created'))
     navigate(`/hrm/payrolls/${id}?job=${job_id}`)
   }
 

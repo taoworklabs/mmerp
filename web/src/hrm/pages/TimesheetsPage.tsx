@@ -5,20 +5,23 @@ import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router'
-import { api, unwrap, type TimesheetListItem } from '@/shared/api/hrm'
+import { api, unwrap, type TimesheetListItem, type TimesheetSort } from '@/shared/api/hrm'
 import { DocumentStatus, useStatusLabel } from '@/shared/document'
 import { errorText, formatMonth } from '@/shared/i18n'
 import { DataTable, type Column } from '@/shared/ui/DataTable'
 import { Form, FormActions, MonthField, MonthFilter, OrgUnitField, OrgUnitSelect } from '@/shared/ui/form'
+import { useListView } from '@/shared/ui/ListView'
+import { notifySuccess } from '@/shared/ui/notify'
 import { FormModal, ListPage } from '@/shared/ui/page'
 import { ContentSkeleton, EmptyState, ErrorState } from '@/shared/ui/states'
-import { icon } from '@/shared/ui/theme'
+import { filterWidth, icon } from '@/shared/ui/theme'
 import { useListParams } from '@/shared/url/listParams'
 import { useTimesheetActions } from '../hooks/useTimesheet'
 import { hrmKeys, timesheetDocType } from '../keys'
 
 const statuses = ['draft', 'pending_approval', 'posted', 'cancelled'] as const
-const defaults = { filters: { month: '', org_unit_id: '', status: '' }, sort: '', sorts: [], pageSize: 50 }
+const sorts = ['-period', 'period', '-number', 'number'] as const satisfies readonly TimesheetSort[]
+const defaults = { filters: { month: '', org_unit_id: '', status: '' }, sort: '-period', sorts: [...sorts], pageSize: 50 }
 
 export function TimesheetsPage() {
   const { t } = useTranslation()
@@ -27,7 +30,7 @@ export function TimesheetsPage() {
   const [creating, setCreating] = useState(false)
   const [params, set] = useListParams(defaults)
   const { month, org_unit_id, status } = params.filters as typeof defaults.filters
-  const query = { month, org_unit_id, status, page: params.page, pageSize: params.pageSize }
+  const query = { month, org_unit_id, status, sort: params.sort, page: params.page, pageSize: params.pageSize }
   const list = useQuery({
     queryKey: hrmKeys.timesheets.list(query),
     queryFn: () =>
@@ -38,6 +41,7 @@ export function TimesheetsPage() {
               month: month || undefined,
               org_unit_id: org_unit_id ? Number(org_unit_id) : undefined,
               status: (status || undefined) as (typeof statuses)[number] | undefined,
+              sort: params.sort as TimesheetSort,
               page: params.page,
               page_size: params.pageSize as 50,
             },
@@ -48,11 +52,12 @@ export function TimesheetsPage() {
   })
 
   const columns: Column<TimesheetListItem>[] = [
-    { key: 'number', header: t('hrm.timesheet.number'), role: 'title', render: (s) => s.number },
+    { key: 'number', header: t('hrm.timesheet.number'), role: 'title', sortable: true, render: (s) => s.number },
     { key: 'org_unit', header: t('hrm.timesheet.org_unit'), role: 'meta', render: (s) => s.org_unit_name },
-    { key: 'month', header: t('hrm.timesheet.month'), role: 'meta', render: (s) => formatMonth(s.period_start.slice(0, 7)) },
+    { key: 'period', header: t('hrm.timesheet.month'), role: 'meta', sortable: true, render: (s) => formatMonth(s.period_start.slice(0, 7)) },
     { key: 'status', header: t('hrm.timesheet.status'), role: 'status', render: (s) => <DocumentStatus docType={timesheetDocType} status={s.status} /> },
   ]
+  const view = useListView('hrm.timesheets', columns)
 
   const filtered = month !== '' || org_unit_id !== '' || status !== ''
   let body
@@ -69,11 +74,20 @@ export function TimesheetsPage() {
         }
       />
     ) : (
-      <EmptyState title={t('hrm.timesheets.empty')} description={canCreate ? t('hrm.timesheets.empty_description') : undefined} />
+      <EmptyState title={t('hrm.timesheets.empty')} description={t('hrm.timesheets.empty_description')} />
     )
   else
     body = (
-      <DataTable label={t('hrm.timesheets.title')} columns={columns} rows={list.data.items} rowKey={(s) => s.id} href={(s) => `/hrm/timesheets/${s.id}`} />
+      <DataTable
+        label={t('hrm.timesheets.title')}
+        columns={view.columns}
+        onResize={view.onResize}
+        rows={list.data.items}
+        rowKey={(s) => s.id}
+        href={(s) => `/hrm/timesheets/${s.id}`}
+        sort={params.sort}
+        onSort={(sort) => set({ sort })}
+      />
     )
 
   return (
@@ -89,7 +103,6 @@ export function TimesheetsPage() {
       }
       filters={
         <>
-          <MonthFilter label={t('hrm.timesheet.month')} value={month || null} onChange={(v) => set({ filters: { month: v ?? '' } })} />
           <OrgUnitSelect
             label={t('hrm.timesheet.org_unit')}
             product="hrm"
@@ -101,15 +114,17 @@ export function TimesheetsPage() {
           <Select
             aria-label={t('hrm.timesheet.status')}
             leftSection={<IconCircleDot {...icon.text} />}
-            w={{ base: '100%', md: 200 }}
+            w={{ base: '100%', md: filterWidth.select }}
             data={statuses.map((s) => ({ value: s, label: statusLabel(timesheetDocType, s) }))}
             value={status || null}
             onChange={(v) => set({ filters: { status: v ?? '' } })}
             placeholder={t('hrm.timesheet.status')}
             clearable
           />
+          <MonthFilter label={t('hrm.timesheet.month')} value={month || null} onChange={(v) => set({ filters: { month: v ?? '' } })} />
         </>
       }
+      tools={view.tools}
       paging={
         list.data && {
           page: params.page,
@@ -136,6 +151,7 @@ function NewTimesheet({ onClose }: { onClose: () => void }) {
   async function create(v: { org_unit_id: string | null; month: string | null }) {
     const { id } = await unwrap(api.POST('/hrm/timesheets', { body: { org_unit_id: Number(v.org_unit_id), month: v.month ?? '' } }))
     await qc.invalidateQueries({ queryKey: hrmKeys.timesheets.lists() })
+    notifySuccess(t('hrm.timesheets.created'))
     navigate(`/hrm/timesheets/${id}`)
   }
 

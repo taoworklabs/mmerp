@@ -6,18 +6,21 @@ import { api, unwrap, type ContractListItem, type ContractSort } from '@/shared/
 import { DocumentStatus, useStatusLabel } from '@/shared/document'
 import { errorText, formatDate } from '@/shared/i18n'
 import { DataTable, type Column } from '@/shared/ui/DataTable'
-import { OrgUnitSelect } from '@/shared/ui/form'
+import { OrgUnitSelect, SearchInput } from '@/shared/ui/form'
+import { useListView } from '@/shared/ui/ListView'
 import { ListPage } from '@/shared/ui/page'
+import { SidePanel, usePeek } from '@/shared/ui/SidePanel'
 import { ContentSkeleton, EmptyState, ErrorState } from '@/shared/ui/states'
-import { icon } from '@/shared/ui/theme'
+import { filterWidth, icon } from '@/shared/ui/theme'
 import { useListParams } from '@/shared/url/listParams'
+import ContractPreview from '../components/ContractPreview'
 import { useContractTypes } from '../hooks/useContract'
 import { contractDocType, hrmKeys } from '../keys'
 
 // Every sort the API offers; `satisfies` fails tsc if the API drops one.
 const sorts = ['-start_date', 'start_date', 'end_date', '-end_date', '-number', 'number'] as const satisfies readonly ContractSort[]
 const statuses = ['draft', 'pending_approval', 'posted', 'cancelled'] as const
-const defaults = { filters: { status: '', contract_type_id: '', org_unit_id: '', expiring: '' }, sort: '-start_date', sorts: [...sorts], pageSize: 50 }
+const defaults = { filters: { q: '', status: '', contract_type_id: '', org_unit_id: '', expiring: '' }, sort: '-start_date', sorts: [...sorts], pageSize: 50 }
 
 // ContractsPage: every contract in the user's scope, without amounts. New contracts start from the employee.
 export function ContractsPage() {
@@ -25,8 +28,9 @@ export function ContractsPage() {
   const statusLabel = useStatusLabel()
   const types = useContractTypes()
   const [params, set] = useListParams(defaults)
+  const peek = usePeek()
   const filters = params.filters as typeof defaults.filters
-  const { status, contract_type_id, org_unit_id, expiring } = filters
+  const { q, status, contract_type_id, org_unit_id, expiring } = filters
   const query = { ...filters, sort: params.sort, page: params.page, pageSize: params.pageSize }
   const list = useQuery({
     queryKey: hrmKeys.contracts.list(query),
@@ -35,6 +39,7 @@ export function ContractsPage() {
         api.GET('/hrm/contracts', {
           params: {
             query: {
+              q: q || undefined,
               status: (status || undefined) as (typeof statuses)[number] | undefined,
               contract_type_id: contract_type_id ? Number(contract_type_id) : undefined,
               org_unit_id: org_unit_id ? Number(org_unit_id) : undefined,
@@ -68,6 +73,8 @@ export function ContractsPage() {
     },
     { key: 'status', header: t('hrm.contract.status'), role: 'status', render: (c) => <DocumentStatus docType={contractDocType} status={c.status} /> },
   ]
+  const view = useListView('hrm.contracts', columns)
+  const open = list.data?.items.find((c) => String(c.id) === peek.id)
 
   const filtered = Object.values(filters).some((v) => v !== '')
   let body
@@ -90,10 +97,12 @@ export function ContractsPage() {
     body = (
       <DataTable
         label={t('hrm.contracts.title')}
-        columns={columns}
+        columns={view.columns}
+        onResize={view.onResize}
         rows={list.data.items}
         rowKey={(c) => c.id}
         href={(c) => `/hrm/contracts/${c.id}`}
+        onRowClick={(c) => peek.open(c.id)}
         sort={params.sort}
         onSort={(sort) => set({ sort })}
       />
@@ -105,18 +114,11 @@ export function ContractsPage() {
       description={t('hrm.contracts.description')}
       filters={
         <>
-          <Button
-            variant={expiring ? 'light' : 'default'}
-            aria-pressed={expiring === '1'}
-            leftSection={<IconCalendarDue {...icon.button} />}
-            onClick={() => set({ filters: { expiring: expiring ? '' : '1' } })}
-          >
-            {t('hrm.contracts.expiring')}
-          </Button>
+          <SearchInput label={t('hrm.contracts.search')} placeholder={t('hrm.common.search_request_hint')} value={q} onSearch={(v) => set({ filters: { q: v } })} />
           <Select
             aria-label={t('hrm.contract.status')}
             leftSection={<IconCircleDot {...icon.text} />}
-            w={{ base: '100%', md: 180 }}
+            w={{ base: '100%', md: filterWidth.select }}
             data={statuses.map((s) => ({ value: s, label: statusLabel(contractDocType, s) }))}
             value={status || null}
             onChange={(v) => set({ filters: { status: v ?? '' } })}
@@ -126,7 +128,7 @@ export function ContractsPage() {
           <Select
             aria-label={t('hrm.contract.kind')}
             leftSection={<IconFileCertificate {...icon.text} />}
-            w={{ base: '100%', md: 200 }}
+            w={{ base: '100%', md: filterWidth.select }}
             data={(types.data ?? []).map((x) => ({ value: String(x.id), label: x.name }))}
             value={contract_type_id || null}
             onChange={(v) => set({ filters: { contract_type_id: v ?? '' } })}
@@ -141,8 +143,17 @@ export function ContractsPage() {
             onChange={(v) => set({ filters: { org_unit_id: v ?? '' } })}
             clearable
           />
+          <Button
+            variant={expiring ? 'light' : 'default'}
+            aria-pressed={expiring === '1'}
+            leftSection={<IconCalendarDue {...icon.button} />}
+            onClick={() => set({ filters: { expiring: expiring ? '' : '1' } })}
+          >
+            {t('hrm.contracts.expiring')}
+          </Button>
         </>
       }
+      tools={view.tools}
       paging={
         list.data && {
           page: params.page,
@@ -154,6 +165,9 @@ export function ContractsPage() {
       }
     >
       {body}
+      <SidePanel title={open?.number ?? ''} href={`/hrm/contracts/${open?.id ?? ''}`} opened={!!open} onClose={peek.close}>
+        {open && <ContractPreview id={open.id} />}
+      </SidePanel>
     </ListPage>
   )
 }
