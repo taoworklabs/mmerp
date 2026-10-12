@@ -3,7 +3,8 @@ import { created, createUser, employee, password, signedInApi } from './api'
 import { signedIn } from './helpers'
 
 // Covers the parts of notifications and the approval inbox the other specs leave out: the
-// notification and job links staying in the area (TB-01), approving something the submitter
+// notification and job links staying in the area (TB-01), a notification opening its own
+// document with the permission checked as it opens (TB-02), approving something the submitter
 // withdrew (TB-04), a notification whose permission was revoked (TB-05) and going back to a
 // filtered list (TB-07). TB-05 still observes and logs, since what should happen to a
 // notification nobody may read any more is not settled; the rest assert.
@@ -150,6 +151,42 @@ test('TB-04 the same refusal seen from the document page', async ({ browser, bas
   await approve.click()
   await expect(boss.getByText('Người gửi đã rút lại lần duyệt này.')).toBeVisible()
   await expect(boss.getByRole('main').getByText('Nháp').first()).toBeVisible()
+})
+
+// TB-02: a notification opens the document it names, and whether the user may still view it
+// is decided when it opens, not when the list was loaded.
+test('TB-02 a notification opens its own document and re-checks the permission', async ({ browser, baseURL }) => {
+  const admin = await signedInApi(baseURL!)
+  const reader = `tbread_${run}`
+  const readerId = await createUser(admin, reader, [{ role: 'hrm.hr', unit: dept }])
+  const type = await created(admin.post('/api/hrm/leave-types', { data: { name: `Nghỉ TB2 ${run}`, deducts_balance: false, paid: true, active: true } }))
+  const asStaff = await signedInApi(baseURL!, login.staff, password)
+  const mentioned = async (day: string) => {
+    const id = await created(asStaff.post('/api/hrm/leaves', { data: { leave_type_id: type, start_date: day, end_date: day, days: '1', reason: null } }))
+    const said = await asStaff.post(`/api/records/hrm.leave_request/${id}/comments`, { data: { body: `Nhờ xem giúp @${reader}` } })
+    expect(said.status(), await said.text()).toBe(204)
+    return { id, number: (await (await asStaff.get(`/api/hrm/leaves/${id}`)).json()).number as string }
+  }
+  const first = await mentioned('2026-08-24')
+  const second = await mentioned('2026-08-25')
+
+  // Two notifications of the same kind: the one clicked is the one opened.
+  const page = await as(browser, reader, '/notifications')
+  const row = (number: string) => page.getByRole('button').filter({ hasText: number })
+  await row(first.number).click()
+  await expect(page).toHaveURL(new RegExp(`/hrm/leaves/${first.id}$`))
+  await expect(page.getByRole('main').getByText(first.number).first()).toBeVisible()
+
+  // Revoked while the list still shows the second one in full.
+  await page.goBack()
+  await expect(row(second.number)).toBeVisible()
+  const grants: { id: number }[] = await (await admin.get(`/api/users/${readerId}/roles`)).json()
+  for (const g of grants) expect((await admin.delete(`/api/users/${readerId}/roles/${g.id}`)).status()).toBe(204)
+  // The changed permissions reload the page on the next answer, which may land back on the list
+  // or on the document; either way the request's content is gone.
+  await row(second.number).click()
+  await expect(page.getByRole('main').getByText(/bạn không còn quyền xem|Không tìm thấy dữ liệu, hoặc không có quyền xem/).first()).toBeVisible()
+  await expect(page.getByRole('main').getByText(second.number)).toHaveCount(0)
 })
 
 // TB-05: a notification whose record the user may no longer view.
