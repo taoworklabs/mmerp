@@ -1,15 +1,13 @@
-import { ActionIcon, Box, Button, Group, Stack, Text, Tooltip } from '@mantine/core'
-import { IconFileDollar, IconListDetails, IconNotes, IconPlus, IconTrash } from '@tabler/icons-react'
+import { Stack } from '@mantine/core'
+import { IconFileDollar, IconListDetails, IconNotes } from '@tabler/icons-react'
 import { useState } from 'react'
-import { useFieldArray, useForm, type Path } from 'react-hook-form'
+import { useForm, type Path } from 'react-hook-form'
 import { useTranslation } from 'react-i18next'
 import { api, unwrap, type Doc, type DocFields, type LineInput } from '@/shared/api/sales'
 import { useDocumentMutation } from '@/shared/document'
 import { formatDecimal, formatNumber } from '@/shared/i18n'
 import { DataTable, type Column } from '@/shared/ui/DataTable'
-import { FieldList } from '@/shared/ui/FieldList'
-import { DateField, DecimalField, Form, FormActions, FormRow, FormSection, MoneyField, OrgUnitField, SelectField, TextField } from '@/shared/ui/form'
-import { icon } from '@/shared/ui/theme'
+import { DateField, DecimalField, Form, FormActions, FormRow, FormSection, LinesTable, LinesTotals, MoneyField, OrgUnitField, SelectField, TextField, type LineColumn } from '@/shared/ui/form'
 import { docTypeOf, type Kind } from '../keys'
 import { CustomerField, ItemField } from './pickers'
 import { useVatOptions } from './vat'
@@ -94,7 +92,6 @@ export function DocForm({ kind, doc, onCreated }: Props) {
   // One id per opened form: sending it twice returns the document made the first time.
   const [requestId] = useState(() => crypto.randomUUID())
   const form = useForm<Values>({ mode: 'onBlur', defaultValues: defaults(doc) })
-  const lines = useFieldArray({ control: form.control, name: 'lines' })
   const editable = doc ? doc.allowed_actions.includes('edit') : true
   const ro = !editable
   const quote = kind === 'quote'
@@ -140,6 +137,67 @@ export function DocForm({ kind, doc, onCreated }: Props) {
     return docFields[err.code]
   }
 
+  // The item cell fills description, price and VAT from the catalogue; each stays editable.
+  const lineColumns: LineColumn[] = [
+    {
+      key: 'item',
+      header: t('sales.line.item_col'),
+      required: true,
+      width: 200,
+      cell: (i, bare, line) => (
+        <ItemField
+          name={`lines.${i}.item_id`}
+          label={t('sales.line.item', { n: i + 1 })}
+          bare={bare}
+          current={
+            doc?.lines[i] && String(doc.lines[i].item_id) === line.item_id ? { id: doc.lines[i].item_id, code: doc.lines[i].item_code, name: doc.lines[i].description } : undefined
+          }
+          onPicked={(it) => {
+            form.setValue(`lines.${i}.description`, it.name, { shouldDirty: true })
+            form.setValue(`lines.${i}.unit_price`, it.price, { shouldDirty: true })
+            form.setValue(`lines.${i}.vat_rate`, it.vat_rate, { shouldDirty: true })
+          }}
+        />
+      ),
+    },
+    {
+      key: 'description',
+      header: t('sales.line.description_col'),
+      required: true,
+      cell: (i, bare) => <TextField name={`lines.${i}.description`} label={t('sales.line.description', { n: i + 1 })} bare={bare} required maxLength={500} />,
+    },
+    {
+      key: 'quantity',
+      header: t('sales.line.quantity_col'),
+      numeric: true,
+      required: true,
+      width: 96,
+      cell: (i, bare) => <DecimalField name={`lines.${i}.quantity`} label={t('sales.line.quantity', { n: i + 1 })} bare={bare} required scale={3} min={0} />,
+    },
+    {
+      key: 'unit_price',
+      header: t('sales.line.unit_price_col'),
+      numeric: true,
+      required: true,
+      width: 128,
+      cell: (i, bare) => <MoneyField name={`lines.${i}.unit_price`} label={t('sales.line.unit_price', { n: i + 1 })} bare={bare} required />,
+    },
+    {
+      key: 'discount',
+      header: t('sales.line.discount_percent_col'),
+      numeric: true,
+      width: 88,
+      cell: (i, bare) => <DecimalField name={`lines.${i}.discount_percent`} label={t('sales.line.discount', { n: i + 1 })} bare={bare} scale={2} min={0} />,
+    },
+    {
+      key: 'vat_rate',
+      header: t('sales.line.vat_rate_col'),
+      required: true,
+      width: 112,
+      cell: (i, bare) => <SelectField name={`lines.${i}.vat_rate`} label={t('sales.line.vat_rate', { n: i + 1 })} bare={bare} required data={vat.options} />,
+    },
+  ]
+
   return (
     <Form form={form} onSubmit={save} fieldOf={fieldOf}>
       <FormSection title={t(`sales.${kind}.section.general`)} description={t(`sales.${kind}.section.general_hint`)} icon={IconFileDollar}>
@@ -171,40 +229,28 @@ export function DocForm({ kind, doc, onCreated }: Props) {
         title={t('sales.doc.section.lines')}
         description={t(ro ? 'sales.doc.section.lines_hint_ro' : 'sales.doc.section.lines_hint')}
         icon={IconListDetails}
+        wide
       >
-        {ro && doc ? (
-          <FormRow>
-            <LinesTable doc={doc} />
-          </FormRow>
-        ) : (
-          <>
-            {lines.fields.map((line, i) => (
-              <LineFields
-                key={line.id}
-                index={i}
-                current={
-                  doc?.lines[i] && String(doc.lines[i].item_id) === line.item_id
-                    ? { id: doc.lines[i].item_id, code: doc.lines[i].item_code, name: doc.lines[i].description }
-                    : undefined
-                }
-                vatOptions={vat.options}
-                removable={lines.fields.length > 1}
-                onRemove={() => lines.remove(i)}
-                onPicked={(it) => {
-                  form.setValue(`lines.${i}.description`, it.name, { shouldDirty: true })
-                  form.setValue(`lines.${i}.unit_price`, it.price, { shouldDirty: true })
-                  form.setValue(`lines.${i}.vat_rate`, it.vat_rate, { shouldDirty: true })
-                }}
-              />
-            ))}
-            <Group>
-              <Button size="xs" variant="light" leftSection={<IconPlus {...icon.text} />} onClick={() => lines.append({ ...emptyLine })}>
-                {t('sales.line.add')}
-              </Button>
-            </Group>
-          </>
-        )}
-        {doc && <Totals doc={doc} saved={!ro} />}
+        <FormRow>
+          {ro && doc ? (
+            <Stack gap="sm">
+              <SavedLines doc={doc} />
+              <Totals doc={doc} saved={false} />
+            </Stack>
+          ) : (
+            <LinesTable
+              name="lines"
+              label={t('sales.doc.section.lines')}
+              columns={lineColumns}
+              newLine={() => ({ ...emptyLine })}
+              addLabel={t('sales.line.add')}
+              lineLabel={(n) => t('sales.line.title', { n })}
+              removeLabel={(n) => t('sales.line.remove', { n })}
+              minLines={1}
+              footer={doc && <Totals doc={doc} saved />}
+            />
+          )}
+        </FormRow>
       </FormSection>
       <FormSection title={t('sales.doc.section.terms')} description={t('sales.doc.section.terms_hint')} icon={IconNotes}>
         <TextField name="payment_terms" label={t('sales.doc.payment_terms')} maxLength={1000} readOnly={ro} />
@@ -217,51 +263,10 @@ export function DocForm({ kind, doc, onCreated }: Props) {
   )
 }
 
-function LineFields({
-  index,
-  current,
-  vatOptions,
-  removable,
-  onRemove,
-  onPicked,
-}: {
-  index: number
-  current?: { id: number; code: string; name: string }
-  vatOptions: { value: string; label: string }[]
-  removable: boolean
-  onRemove: () => void
-  onPicked: (it: { name: string; price: number; vat_rate: string }) => void
-}) {
-  const { t } = useTranslation()
-  const n = index + 1
-  return (
-    <>
-      <ItemField name={`lines.${index}.item_id`} label={t('sales.line.item', { n })} current={current} onPicked={onPicked} />
-      <TextField name={`lines.${index}.description`} label={t('sales.line.description', { n })} required maxLength={500} />
-      <DecimalField name={`lines.${index}.quantity`} label={t('sales.line.quantity', { n })} required scale={3} min={0} />
-      <MoneyField name={`lines.${index}.unit_price`} label={t('sales.line.unit_price', { n })} required />
-      <DecimalField name={`lines.${index}.discount_percent`} label={t('sales.line.discount', { n })} scale={2} min={0} />
-      {/* Not an InputRow: the rate has a label, which the row's fixed height would cut. */}
-      <Group gap="xs" align="flex-end" wrap="nowrap">
-        <Box flex={1} miw={0}>
-          <SelectField name={`lines.${index}.vat_rate`} label={t('sales.line.vat_rate', { n })} required data={vatOptions} />
-        </Box>
-        {removable && (
-          <Tooltip label={t('sales.line.remove', { n })}>
-            <ActionIcon variant="subtle" color="danger" size="lg" aria-label={t('sales.line.remove', { n })} onClick={onRemove}>
-              <IconTrash {...icon.button} />
-            </ActionIcon>
-          </Tooltip>
-        )}
-      </Group>
-    </>
-  )
-}
-
 type LineRow = Doc['lines'][number] & { n: number }
 
-// LinesTable shows the lines of a document that is not edited, with their amounts.
-export function LinesTable({ doc }: { doc: Doc }) {
+// SavedLines shows the lines of a document that is not edited, with their amounts.
+function SavedLines({ doc }: { doc: Doc }) {
   const { t } = useTranslation()
   const vat = useVatOptions()
   const columns: Column<LineRow>[] = [
@@ -279,22 +284,14 @@ export function LinesTable({ doc }: { doc: Doc }) {
 function Totals({ doc, saved }: { doc: Doc; saved: boolean }) {
   const { t } = useTranslation()
   return (
-    <FormRow>
-      <Stack gap="xs">
-        {saved && (
-          <Text size="sm" c="dimmed">
-            {t('sales.doc.totals_saved')}
-          </Text>
-        )}
-        <FieldList
-          rows={[
-            [t('sales.doc.subtotal'), formatNumber(doc.subtotal)],
-            [t('sales.doc.discount_total'), formatNumber(doc.discount_total)],
-            [t('sales.doc.vat_total'), formatNumber(doc.vat_total)],
-            [t('sales.doc.total'), formatNumber(doc.total)],
-          ]}
-        />
-      </Stack>
-    </FormRow>
+    <LinesTotals
+      note={saved ? t('sales.doc.totals_saved') : undefined}
+      rows={[
+        [t('sales.doc.subtotal'), formatNumber(doc.subtotal)],
+        [t('sales.doc.discount_total'), formatNumber(doc.discount_total)],
+        [t('sales.doc.vat_total'), formatNumber(doc.vat_total)],
+        [t('sales.doc.total'), formatNumber(doc.total)],
+      ]}
+    />
   )
 }

@@ -126,5 +126,8 @@
   "sales.line.unit_price_col": "Unit price (VND)",
   "sales.line.discount_col": "Discount (VND)",
   "sales.line.vat_rate_col": "VAT rate",
-  "sales.line.net_col": "Amount (VND)"
+  "sales.line.net_col": "Amount (VND)",
+  "sales.line.item_col": "Item",
+  "sales.line.discount_percent_col": "Discount %",
+  "sales.line.title": "Line {{n}}"
 }

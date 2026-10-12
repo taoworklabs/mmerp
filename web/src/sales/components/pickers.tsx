@@ -55,12 +55,14 @@ export function ItemField({
   label: text,
   current,
   readOnly,
+  bare,
   onPicked,
 }: {
   name: string
   label: string
   current?: Current
   readOnly?: boolean
+  bare?: boolean
   onPicked?: (i: Item) => void
 }) {
   const [search, setSearch] = useState('')
@@ -78,6 +80,7 @@ export function ItemField({
       current={current}
       readOnly={readOnly}
       rows={rows}
+      bare={bare}
       onSearch={setSearch}
       onPicked={(id) => {
         const i = rows.find((r) => r.id === id)
@@ -92,6 +95,7 @@ function Picker({
   label: text,
   current,
   readOnly,
+  bare,
   rows,
   onSearch,
   onPicked,
@@ -100,6 +104,7 @@ function Picker({
   label: string
   current?: Current
   readOnly?: boolean
+  bare?: boolean
   rows: { id: number; code: string; name: string }[]
   onSearch: (q: string) => void
   onPicked: (id: number) => void
@@ -114,6 +119,7 @@ function Picker({
       data={options}
       required
       readOnly={readOnly}
+      bare={bare}
       // Select puts the chosen option's label into the search box; that is not a search.
       onSearch={(q) => onSearch(options.some((o) => o.label === q) ? '' : q)}
       onChange={(v) => v && onPicked(Number(v))}
