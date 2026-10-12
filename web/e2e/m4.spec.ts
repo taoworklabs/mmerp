@@ -19,6 +19,9 @@ test.beforeAll(async ({ baseURL }) => {
   api = await signedInApi(baseURL!)
   const company = await created(api.post('/api/org-units', { data: { parent_id: null, kind: 'company', name: `Công ty M4 ${run}` } }))
   const q = await created(api.post('/api/org-units', { data: { parent_id: company, kind: 'department', name: `Phòng Q ${run}` } }))
+  // The holiday overtime below must fall on a holiday of the company's calendar.
+  const holiday = await api.put(`/api/hrm/calendars/${company}/holidays/2026-09-02`, { data: { name: 'Quốc khánh' } })
+  expect(holiday.ok(), await holiday.text()).toBe(true)
   for (const l of [login.m, login.e]) await createUser(api, l, [])
   await createUser(api, login.hr, [{ role: 'hrm.hr', unit: q }])
   await createUser(api, login.pay, [
