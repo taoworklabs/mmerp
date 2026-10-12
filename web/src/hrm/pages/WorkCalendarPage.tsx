@@ -1,5 +1,5 @@
-import { Button, Group, Menu, Select, Stack, Text } from '@mantine/core'
-import { IconBuildingSkyscraper, IconCalendar, IconPencil, IconPlus, IconTrash } from '@tabler/icons-react'
+import { Alert, Button, Group, Menu, Select, Stack, Text } from '@mantine/core'
+import { IconAlertCircle, IconBuildingSkyscraper, IconCalendar, IconPencil, IconPlus, IconTrash } from '@tabler/icons-react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
@@ -30,6 +30,8 @@ export function WorkCalendarPage() {
   const [params, set] = useListParams(defaults)
   const [editingWeek, setEditingWeek] = useState<WorkWeek | 'new' | null>(null)
   const [editingHoliday, setEditingHoliday] = useState<Holiday | 'new' | null>(null)
+  // A failed delete, shown above the tables until the next attempt.
+  const [error, setError] = useState<string | null>(null)
   const units = useOrgUnits({ product: 'hrm', permission: 'hrm.calendar.manage' })
   const entities = (units.data ?? []).filter((u) => u.kind === 'company')
   const entity = Number(params.filters.legal_entity) || entities[0]?.id
@@ -45,9 +47,14 @@ export function WorkCalendarPage() {
 
   async function remove(path: () => Promise<unknown>, message: string) {
     if (!(await confirm({ title: t('hrm.calendar.delete_title'), message, confirmLabel: t('hrm.calendar.delete'), danger: true }))) return
-    await path()
-    await qc.invalidateQueries({ queryKey: hrmKeys.calendars() })
-    notifySuccess(t('hrm.calendar.saved'))
+    setError(null)
+    try {
+      await path()
+      await qc.invalidateQueries({ queryKey: hrmKeys.calendars() })
+      notifySuccess(t('hrm.calendar.saved'))
+    } catch (err) {
+      setError(errorText(t, err))
+    }
   }
 
   const weekColumns: Column<WorkWeek>[] = [
@@ -181,6 +188,11 @@ export function WorkCalendarPage() {
         </>
       }
     >
+      {error && (
+        <Alert color="danger" icon={<IconAlertCircle {...icon.button} />} role="alert">
+          {error}
+        </Alert>
+      )}
       {body}
       {entity !== undefined && editingWeek && <WeekModal entity={entity} week={editingWeek === 'new' ? null : editingWeek} onClose={() => setEditingWeek(null)} />}
       {entity !== undefined && editingHoliday && (

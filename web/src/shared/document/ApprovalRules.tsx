@@ -1,6 +1,7 @@
-import { ActionIcon, Button, Group, Paper, Stack, Text, Tooltip } from '@mantine/core'
-import { IconPlus, IconTrash } from '@tabler/icons-react'
+import { ActionIcon, Alert, Button, Group, Paper, Stack, Text, Tooltip } from '@mantine/core'
+import { IconAlertCircle, IconPlus, IconTrash } from '@tabler/icons-react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { useState } from 'react'
 import { useFieldArray, useForm, useWatch, type Control } from 'react-hook-form'
 import { useTranslation } from 'react-i18next'
 import { Route, Routes, useNavigate, useParams } from 'react-router'
@@ -133,6 +134,8 @@ function RuleForm({ rule, basePath, roles, userOptions }: { rule: TypeRule; base
   const qc = useQueryClient()
   const navigate = useNavigate()
   const [ask, confirm] = useConfirm()
+  // A failed delete, shown at the top of the page until the next attempt.
+  const [error, setError] = useState<string | null>(null)
   const form = useForm<Values>({ mode: 'onBlur', defaultValues: toValues(rule) })
   const steps = useFieldArray({ control: form.control, name: 'steps' })
   const name = t(`${rule.doc_type}.name`, { defaultValue: rule.doc_type })
@@ -149,10 +152,15 @@ function RuleForm({ rule, basePath, roles, userOptions }: { rule: TypeRule; base
 
   async function remove() {
     if (!(await ask({ title: t('shared.rule.delete'), message: t('shared.rule.delete_confirm', { name }), confirmLabel: t('shared.rule.delete'), danger: true }))) return
-    await unwrap(api.DELETE('/approval-rules/{doc_type}', { params: { path: { doc_type: rule.doc_type } } }))
-    await qc.invalidateQueries({ queryKey: documentKeys.approvalRules() })
-    notifySuccess(t('shared.rule.deleted'))
-    navigate(basePath)
+    setError(null)
+    try {
+      await unwrap(api.DELETE('/approval-rules/{doc_type}', { params: { path: { doc_type: rule.doc_type } } }))
+      await qc.invalidateQueries({ queryKey: documentKeys.approvalRules() })
+      notifySuccess(t('shared.rule.deleted'))
+      navigate(basePath)
+    } catch (err) {
+      setError(errorText(t, err))
+    }
   }
 
   return (
@@ -163,12 +171,17 @@ function RuleForm({ rule, basePath, roles, userOptions }: { rule: TypeRule; base
       actions={
         rule.rule &&
         allowed.includes('delete') && (
-          <Button variant="outline" color="danger" leftSection={<IconTrash {...icon.button} />} onClick={() => void remove()}>
+          <Button variant="subtle" color="danger" leftSection={<IconTrash {...icon.button} />} onClick={() => void remove()}>
             {t('shared.rule.delete')}
           </Button>
         )
       }
     >
+      {error && (
+        <Alert color="danger" icon={<IconAlertCircle {...icon.button} />} role="alert">
+          {error}
+        </Alert>
+      )}
       <Form form={form} onSubmit={save}>
         <Stack gap="md">
           {steps.fields.map((s, i) => (
