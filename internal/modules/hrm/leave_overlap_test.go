@@ -1,12 +1,15 @@
 package hrm_test
 
 import (
+	"context"
 	"fmt"
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/taoworklabs/mmerp/internal/core/record"
 	"github.com/taoworklabs/mmerp/internal/modules/hrm"
+	"github.com/taoworklabs/mmerp/internal/platform"
 )
 
 // holiday adds 2026-04-30 to the company's calendar, so the leave tests below have a
@@ -237,8 +240,8 @@ func TestLeaveOverlapIsPerEmployee(t *testing.T) {
 	f.check(f.appr.Approve(f.m, f.ticket(theirs), 1))
 }
 
-// Two overlapping requests approved at the same time: the employee lock makes one of them
-// lose, so a date never ends up holding two days.
+// Two overlapping requests approved at the same time: the employee lock makes the second
+// wait for the first to commit, then find the date taken, so a date never holds two days.
 func TestOverlappingRequestsApprovedAtOnce(t *testing.T) {
 	f := newLeaveFixture(t)
 	f.ruleManager()
@@ -247,26 +250,17 @@ func TestOverlappingRequestsApprovedAtOnce(t *testing.T) {
 	b := must(t)(f.hrm.CreateLeave(f.e, hrm.NewLeave{LeaveFields: f.fields("2026-04-07", "2026-04-08", "2")}))
 	f.check(f.send(f.e, a))
 	f.check(f.send(f.e, b))
+	ta, tb := f.ticket(a), f.ticket(b)
+	var second error
 	var wg sync.WaitGroup
-	errs := make([]error, 2)
-	for i, id := range []int64{a, b} {
-		wg.Go(func() { errs[i] = f.appr.Approve(f.m, f.ticket(id), 1) })
-	}
+	f.check(platform.InTx(f.m, func(ctx context.Context) error {
+		f.check(f.appr.Approve(ctx, ta, 1))
+		wg.Go(func() { second = f.appr.Approve(f.m, tb, 1) })
+		time.Sleep(100 * time.Millisecond)
+		return nil
+	}))
 	wg.Wait()
-	posted, refused := 0, 0
-	for _, err := range errs {
-		switch {
-		case err == nil:
-			posted++
-		case errCode(err) == "leave_overlaps":
-			refused++
-		default:
-			t.Fatalf("unexpected error: %v", err)
-		}
-	}
-	if posted != 1 || refused != 1 {
-		t.Fatalf("%d posted and %d refused, want exactly one of each (%v, %v)", posted, refused, errs[0], errs[1])
-	}
+	wantErr(t, second, "leave_overlaps")
 	if f.balance() != "28" {
 		t.Fatalf("balance %s, want only one request deducted", f.balance())
 	}
