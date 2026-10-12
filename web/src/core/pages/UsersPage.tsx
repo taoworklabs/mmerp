@@ -9,17 +9,25 @@ import { api, unwrap, type User } from '@/shared/api/core'
 import { errorText } from '@/shared/i18n'
 import { PersonName } from '@/shared/ui/avatar'
 import { DataTable, type Column } from '@/shared/ui/DataTable'
-import { Form, FormActions, PasswordField, TextField } from '@/shared/ui/form'
+import { Form, FormActions, PasswordField, SearchInput, TextField } from '@/shared/ui/form'
 import { notifySuccess } from '@/shared/ui/notify'
 import { FormModal, ListPage } from '@/shared/ui/page'
 import { ContentSkeleton, EmptyState, ErrorState } from '@/shared/ui/states'
 import { icon } from '@/shared/ui/theme'
+import { useListParams } from '@/shared/url/listParams'
 import { coreKeys } from '../keys'
 
+const defaults = { filters: { q: '' }, sort: '', sorts: [''], pageSize: 50 }
+
+// UsersPage lists every account. The list is small and loads whole, so the search filters it here.
 export function UsersPage() {
   const { t } = useTranslation()
   const [creating, setCreating] = useState(false)
+  const [params, set] = useListParams(defaults)
+  const { q } = params.filters as typeof defaults.filters
   const users = useQuery({ queryKey: coreKeys.users.all(), queryFn: async () => (await unwrap(api.GET('/users'))) ?? [] })
+  const needle = q.trim().toLocaleLowerCase()
+  const shown = (users.data ?? []).filter((u) => !needle || u.name.toLocaleLowerCase().includes(needle) || u.login.toLocaleLowerCase().includes(needle))
   const columns: Column<User>[] = [
     { key: 'name', header: t('core.user.name'), role: 'title', render: (u) => <PersonName name={u.name} /> },
     { key: 'login', header: t('core.user.login'), role: 'meta', render: (u) => u.login },
@@ -29,7 +37,18 @@ export function UsersPage() {
   if (users.isPending) body = <ContentSkeleton />
   else if (users.isError) body = <ErrorState message={errorText(t, users.error)} onRetry={() => void users.refetch()} />
   else if (users.data.length === 0) body = <EmptyState title={t('core.user.empty')} />
-  else body = <DataTable label={t('core.user.title')} columns={columns} rows={users.data} rowKey={(u) => u.id} href={(u) => `/admin/users/${u.id}`} />
+  else if (shown.length === 0)
+    body = (
+      <EmptyState
+        title={t('core.common.no_results')}
+        action={
+          <Button variant="default" onClick={() => set({ filters: defaults.filters })}>
+            {t('core.common.clear_filters')}
+          </Button>
+        }
+      />
+    )
+  else body = <DataTable label={t('core.user.title')} columns={columns} rows={shown} rowKey={(u) => u.id} href={(u) => `/admin/users/${u.id}`} />
 
   return (
     <ListPage
@@ -40,6 +59,7 @@ export function UsersPage() {
           {t('core.user.create')}
         </Button>
       }
+      filters={<SearchInput label={t('core.user.search')} placeholder={t('core.user.search_hint')} value={q} onSearch={(v) => set({ filters: { q: v } })} />}
     >
       {body}
       {creating && <CreateUserModal onClose={() => setCreating(false)} />}

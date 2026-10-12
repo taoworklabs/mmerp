@@ -1,5 +1,5 @@
-import { Button, Menu, Stack } from '@mantine/core'
-import { IconPencil, IconPlus, IconTrash } from '@tabler/icons-react'
+import { Button, Menu, Stack, Text } from '@mantine/core'
+import { IconPlus, IconTrash } from '@tabler/icons-react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
@@ -10,8 +10,8 @@ import { api, ApiError, unwrap, type Grant } from '@/shared/api/core'
 import { errorText } from '@/shared/i18n'
 import { PersonAvatar } from '@/shared/ui/avatar'
 import { DataTable, type Column } from '@/shared/ui/DataTable'
-import { Form, FormActions, OrgUnitField, SelectField, TextField } from '@/shared/ui/form'
-import { FieldList } from '@/shared/ui/FieldList'
+import { Form, FormActions, OrgUnitField, SelectField } from '@/shared/ui/form'
+import { InlineEditField } from '@/shared/ui/InlineEditField'
 import { useConfirm } from '@/shared/ui/confirm'
 import { notifySuccess } from '@/shared/ui/notify'
 import { FormModal, RecordPage, TabActions } from '@/shared/ui/page'
@@ -148,39 +148,25 @@ function GrantModal({ userId, onClose }: { userId: number; onClose: () => void }
   )
 }
 
-// ContactTab: where the user's email notifications go, if anywhere.
+// ContactTab: where the user's email notifications go, if anywhere; the address is edited in place.
 function ContactTab({ userId, email }: { userId: number; email: string | null }) {
   const { t } = useTranslation()
-  const [editing, setEditing] = useState(false)
-  return (
-    <Stack gap="md">
-      <TabActions>
-        <Button size="xs" variant="default" leftSection={<IconPencil {...icon.text} />} onClick={() => setEditing(true)}>
-          {t('core.user.edit_email')}
-        </Button>
-      </TabActions>
-      <FieldList rows={[[t('core.user.email'), email ?? t('core.user.no_email')]]} />
-      {editing && <EmailModal userId={userId} email={email} onClose={() => setEditing(false)} />}
-    </Stack>
-  )
-}
-
-function EmailModal({ userId, email, onClose }: { userId: number; email: string | null; onClose: () => void }) {
-  const { t } = useTranslation()
   const qc = useQueryClient()
-  const form = useForm<{ email: string }>({ mode: 'onBlur', defaultValues: { email: email ?? '' } })
-  async function save(v: { email: string }) {
-    await unwrap(api.PUT('/users/{id}/email', { params: { path: { id: userId } }, body: { email: v.email.trim() || null } }))
-    await qc.invalidateQueries({ queryKey: coreKeys.users.detail(userId) })
-    notifySuccess(t('core.user.email_saved'))
-    onClose()
-  }
   return (
-    <FormModal opened title={t('core.user.edit_email')} onClose={onClose}>
-      <Form form={form} onSubmit={save}>
-        <TextField name="email" label={t('core.user.email')} type="email" maxLength={254} description={t('core.user.email_hint')} />
-        <FormActions submitLabel={t('core.common.save')} onCancel={onClose} cancelLabel={t('core.common.cancel')} />
-      </Form>
-    </FormModal>
+    <Stack gap="xxs" maw={480}>
+      <InlineEditField
+        label={t('core.user.email')}
+        value={email ?? ''}
+        maxLength={254}
+        validate={(v) => (v && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(v) ? t('core.user.email_invalid') : null)}
+        onSave={async (v) => {
+          await unwrap(api.PUT('/users/{id}/email', { params: { path: { id: userId } }, body: { email: v || null } }))
+          await qc.invalidateQueries({ queryKey: coreKeys.users.detail(userId) })
+        }}
+      />
+      <Text size="sm" c="dimmed">
+        {t('core.user.email_hint')}
+      </Text>
+    </Stack>
   )
 }
