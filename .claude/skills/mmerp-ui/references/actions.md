@@ -74,8 +74,8 @@ An undo needs an inverse the server already offers (reactivate is an edit with `
 Only for the reversible, side-effect-free actions above, and for personal display settings (`useListView` does it: a failed column change simply reverts, which the user sees; saving a named view reports its error in its own dialog). Documents, money and approvals always wait for the server: it computes numbers, totals and status.
 
 ```tsx
-// toFields, markInactive and reactivate are the area's own: the item's editable fields, the cached
-// lists with one item marked inactive, and the same mutation with active: true.
+// The full version is the catalogue's Retire/Put back on sale in sales/pages/ItemsPage.tsx; toFields,
+// markInactive and reactivate stand for the area's own helpers.
 const retire = useMutation({
   mutationFn: (item: Item) => unwrap(api.PUT('/sales/items/{id}', { params: { path: { id: item.id } }, body: { ...toFields(item), active: false } })),
   onMutate: async (item) => {

@@ -16,7 +16,7 @@ Code recipes, one per screen type: which template, which components, in which or
 
 ## List page
 
-Working example: `web/src/sales/pages/CustomersPage.tsx` (it predates `useListView`, `filterWidth` and the empty-state rule; the recipe below is the rule). Before writing a new list, check the area's `pages/` for one that already lists the same records (`hrm/pages/LeavesPage.tsx` lists leave requests).
+Working example: `web/src/sales/pages/CustomersPage.tsx`; with a status filter and per-row actions, `web/src/sales/pages/ItemsPage.tsx`. Before writing a new list, check the area's `pages/` for one that already lists the same records (`hrm/pages/LeavesPage.tsx` lists leave requests).
 
 ```tsx
 const sorts = ['code', '-code', 'name', '-name'] as const satisfies readonly CustomerSort[]
@@ -121,7 +121,7 @@ Working example: `web/src/sales/pages/CustomerPage.tsx`, `web/src/hrm/pages/Empl
 
 ## Settings list
 
-Closest example: `web/src/hrm/pages/LeaveTypesPage.tsx` (it still opens the edit modal from a one-item row menu; the recipe below is the rule).
+Working example: `web/src/sales/pages/ItemsPage.tsx` (row click edits; the menu holds Edit and Retire, with Undo).
 
 `ListPage` with "Create" in the header; `DataTable` with `onRowClick={(r) => setEditing(r)}` (no `href`: the first cell becomes the keyboard's button) and a `menu` only when rows have two or more actions; one `FormModal` for create and edit with `FormActions onCancel`; success toast, list invalidated. More than six fields or tables of its own: a page instead.
 

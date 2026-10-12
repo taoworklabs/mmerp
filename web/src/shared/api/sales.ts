@@ -12,6 +12,8 @@ export type CustomerFields = components['schemas']['CustomerFields']
 export type CustomerListItem = components['schemas']['CustomerListItem']
 export type CustomerSort = NonNullable<NonNullable<operations['list-customers']['parameters']['query']>['sort']>
 export type Item = components['schemas']['Item']
+export type ItemList = components['schemas']['ItemList']
+export type ItemSort = NonNullable<NonNullable<operations['list-items']['parameters']['query']>['sort']>
 export type ItemFields = components['schemas']['ItemFields']
 export type Doc = components['schemas']['Doc']
 // The editable fields of a quotation or order, as both create and update send them.

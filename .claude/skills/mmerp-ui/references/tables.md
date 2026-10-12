@@ -71,7 +71,7 @@ Every list with more than four columns or with filters people reuse gets `useLis
 | Text | Left-aligned; long text wraps |
 | Dates | Left-aligned, `formatDate` |
 | Numbers, money | `numeric: true` (right-aligned, tabular figures); money in minor units through `formatNumber`, the unit in the header ("Đơn giá (đ)") |
-| Status | Last before the menu: the document status (`DocumentStatus`), then any module progress badge; each `role: 'status'` |
+| Status | Last before the menu, `role: 'status'`: the document status (`DocumentStatus`), with any module progress badge beside it in the same cell (`<Group gap="xs" wrap="nowrap">`, see `sales/pages/DocsPage.tsx`) |
 | Results (net pay, total) | Last of the figures, `strong: true` |
 
 - Each column declares its `role` for the card layout below 1024px: `title`, `status`, `meta` (a line under the title) or `hidden`.
