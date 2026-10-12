@@ -80,7 +80,9 @@ func TestCancelledOvertimeLeavesThePayroll(t *testing.T) {
 func TestTimesheetSaveReplacesEveryLine(t *testing.T) {
 	f := newLeaveFixture(t)
 	id := must(t)(f.hrm.CreateTimesheet(f.hr, hrm.NewTimesheet{OrgUnitID: f.a, Month: "2026-03"}))
-	line := func(date string) hrm.TimesheetLine { return hrm.TimesheetLine{EmployeeID: f.emp, Date: date, Days: "1"} }
+	line := func(date string) hrm.TimesheetLine {
+		return hrm.TimesheetLine{EmployeeID: f.emp, Date: date, Days: "1"}
+	}
 	f.check(f.hrm.SaveTimesheet(f.hr, id, hrm.TimesheetUpdate{Version: 1, Month: "2026-03", Lines: []hrm.TimesheetLine{line("2026-03-02"), line("2026-03-03")}}))
 	f.check(f.hrm.SaveTimesheet(f.hr, id, hrm.TimesheetUpdate{Version: 2, Month: "2026-03", Lines: []hrm.TimesheetLine{line("2026-03-04")}}))
 	if ts := f.timesheet(id); !slices.Equal(ts.Lines, []hrm.TimesheetLine{line("2026-03-04")}) {
