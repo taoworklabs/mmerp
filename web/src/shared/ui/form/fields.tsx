@@ -193,7 +193,8 @@ export function CheckboxField(props: Omit<Base, 'required'>) {
     <Checkbox
       id={common.id}
       ref={common.ref}
-      label={props.label}
+      label={props.bare ? undefined : props.label}
+      aria-label={props.bare ? props.label : undefined}
       description={props.bare ? undefined : props.description}
       error={common.error}
       checked={!!field.value}

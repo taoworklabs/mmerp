@@ -1,17 +1,16 @@
 import { Alert, Button, Group, Loader, Stack, Text } from '@mantine/core'
-import { IconAlertTriangle, IconCalculator, IconPrinter, IconReceipt2 } from '@tabler/icons-react'
+import { IconAlertTriangle, IconCalculator, IconPrinter } from '@tabler/icons-react'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate, useParams, useSearchParams } from 'react-router'
 import { api, unwrap, type Payroll, type PayrollLine } from '@/shared/api/hrm'
 import { ApprovalPanel, DocumentActions, DocumentHistory, DocumentStatus, documentKeys, useDocumentMutation, useDiscussionSection } from '@/shared/document'
-import { errorText, formatDateTime, formatMonth, formatNumber } from '@/shared/i18n'
+import { errorText, formatDateTime, formatMonth } from '@/shared/i18n'
 import { ExportButton, finished, jobError, useJobStatus } from '@/shared/jobs'
 import { useMe } from '@/shared/auth/me'
-import { DataTable } from '@/shared/ui/DataTable'
 import { DocumentPage, FormModal } from '@/shared/ui/page'
 import { icon } from '@/shared/ui/theme'
-import { AdjustmentsModal } from '../components/AdjustmentsModal'
+import { AdjustmentsSection } from '../components/AdjustmentsSection'
 import { loaded } from '@/shared/ui/loaded'
 import { PayrollTable } from '../components/PayrollTable'
 import { usePayroll } from '../hooks/usePayroll'
@@ -30,7 +29,6 @@ export function PayrollPage() {
   const payroll = usePayroll(id)
   const status = useJobStatus(job, [hrmKeys.payrolls.detail(id), hrmKeys.payrolls.lists(), documentKeys.history(payrollDocType, id)])
   const [error, setError] = useState<string | null>(null)
-  const [adjusting, setAdjusting] = useState(false)
   const [payslipOf, setPayslipOf] = useState<PayrollLine | null>(null)
   // The computing job is on the URL, so a reload keeps following it.
   const follow = (jobId: number) => setSearch({ job: String(jobId) }, { replace: true })
@@ -57,11 +55,6 @@ export function PayrollPage() {
         p.allowed_actions.length > 0 && (
           <Group gap="xs">
             {can('compute') && <ComputeButton payroll={p} busy={computing} onQueued={follow} onError={setError} />}
-            {can('adjust') && (
-              <Button variant="default" leftSection={<IconReceipt2 {...icon.button} />} disabled={computing} onClick={() => setAdjusting(true)}>
-                {t('hrm.payroll.adjustments')}
-              </Button>
-            )}
             {can('export') && <ExportButton kind={payrollDocType} params={{ payroll_id: p.id }} label={t('hrm.payroll.export')} />}
             {can('print') && <ExportButton kind={payslipTemplate} params={{ id: p.id }} label={t('hrm.payroll.print_payslips')} icon={IconPrinter} />}
             <DocumentActions
@@ -87,24 +80,8 @@ export function PayrollPage() {
       <Stack gap="md">
         <PayrollState payroll={p} computing={computing} failed={status.data?.state === 'failed' ? jobError(t, status.data) : status.isError ? errorText(t, status.error) : null} />
         {p.computed_at && <PayrollTable payroll={p} onPrint={can('print') ? setPayslipOf : undefined} />}
-        {p.adjustments && p.adjustments.length > 0 && (
-          <Stack gap="xs">
-            <Text fw={600}>{t('hrm.payroll.adjustments')}</Text>
-            <DataTable
-              label={t('hrm.payroll.adjustments')}
-              rows={p.adjustments}
-              rowKey={(a) => `${a.employee_id}:${a.source_period}:${a.reason}:${a.amount}`}
-              columns={[
-                { key: 'employee', header: t('hrm.payroll.employee'), role: 'title', render: (a) => `${a.employee_code} · ${a.employee_name}` },
-                { key: 'period', header: t('hrm.payroll.source_period'), role: 'meta', render: (a) => formatMonth(a.source_period) },
-                { key: 'reason', header: t('hrm.payroll.reason'), role: 'meta', render: (a) => a.reason },
-                { key: 'amount', header: t('hrm.payroll.col.adjustment'), role: 'meta', numeric: true, render: (a) => formatNumber(a.amount) },
-              ]}
-            />
-          </Stack>
-        )}
+        <AdjustmentsSection payroll={p} editable={can('adjust') && !computing} onQueued={follow} />
       </Stack>
-      {adjusting && <AdjustmentsModal payroll={p} onQueued={follow} onClose={() => setAdjusting(false)} />}
       {payslipOf && (
         <FormModal opened title={t('hrm.payroll.print_payslip')} onClose={() => setPayslipOf(null)}>
           <Stack gap="md">

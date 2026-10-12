@@ -152,6 +152,7 @@ const lineColumns: LineColumn[] = [
 - **Totals are the server's.** Rounding happens only on the server, so the footer shows the stored totals with a note that they are as of the last save; a new document shows none. Never multiply, divide, apply a percentage or round money in the screen. Adding or subtracting stored amounts of one document (net = amount − discount) is exact and allowed only when the API sends no field for it.
 - Line errors from the server map with `fieldOf` to `lines.<i>.<field>` (the server's `line` parameter is 1-based).
 - Below 1024px each line is a card with labelled fields.
+- Rows saved on their own, apart from the document's form (a payroll's adjustments), sit in a `Section` holding its own `Form`, `LinesTable` and page `FormActions`; see `hrm/components/AdjustmentsSection.tsx`. A table never goes into a `FormModal`.
 - A read-only document (no `edit` in `allowed_actions`) shows its lines as a `DataTable` instead of `LinesTable`: description, quantity with unit, unit price, discount, VAT rate, net amount, all from the stored line; then `LinesTotals` without the note.
 
 ## Inline edit

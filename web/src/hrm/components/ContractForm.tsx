@@ -1,11 +1,13 @@
-import { ActionIcon, Button, Group, Text, Tooltip } from '@mantine/core'
-import { IconCash, IconFileText, IconPlus, IconTrash } from '@tabler/icons-react'
-import { useFieldArray, useForm } from 'react-hook-form'
+import { Text } from '@mantine/core'
+import { IconCash, IconFileText, IconListDetails } from '@tabler/icons-react'
+import type { TFunction } from 'i18next'
+import { useForm, useWatch } from 'react-hook-form'
 import { useTranslation } from 'react-i18next'
 import { api, unwrap, type Contract, type ContractFields } from '@/shared/api/hrm'
 import { useDocumentMutation } from '@/shared/document'
-import { CheckboxField, DateField, Form, FormActions, FormSection, InputRow, MoneyField, SelectField, TextField } from '@/shared/ui/form'
-import { icon } from '@/shared/ui/theme'
+import { formatNumber } from '@/shared/i18n'
+import { DataTable } from '@/shared/ui/DataTable'
+import { CheckboxField, DateField, Form, FormActions, FormRow, FormSection, LinesTable, MoneyField, SelectField, TextField, type LineColumn } from '@/shared/ui/form'
 import { useContractTypes } from '../hooks/useContract'
 import { contractDocType } from '../keys'
 
@@ -54,8 +56,6 @@ export function ContractForm({ contract, employeeId, parent, onCreated }: Props)
       lines: terms?.lines.map((l) => ({ ...l })) ?? [],
     },
   })
-  const lines = useFieldArray({ control: form.control, name: 'lines' })
-  const kinds = form.watch('lines')
   const editable = contract ? contract.allowed_actions.includes('edit') : true
   const ro = !editable
   // Inactive kinds stay visible on contracts that already use them.
@@ -101,57 +101,103 @@ export function ContractForm({ contract, employeeId, parent, onCreated }: Props)
             {t('hrm.contract.terms_hidden')}
           </Text>
         ) : (
-          <>
-            <MoneyField name="salary" label={t('hrm.contract.salary')} required readOnly={ro} />
-            <span />
-            {lines.fields.map((line, i) => (
-              <LineFields key={line.id} index={i} support={kinds[i]?.kind === 'support'} readOnly={ro} onRemove={() => lines.remove(i)} />
-            ))}
-            {!ro && (
-              <Group>
-                <Button size="xs" variant="light" leftSection={<IconPlus {...icon.text} />} onClick={() => lines.append({ kind: 'allowance', name: '', amount: null, taxable: true })}>
-                  {t('hrm.contract.add_line')}
-                </Button>
-              </Group>
-            )}
-          </>
+          <MoneyField name="salary" label={t('hrm.contract.salary')} required readOnly={ro} />
         )}
       </FormSection>
+      {!(terms === null && contract) && (
+        <FormSection title={t('hrm.contract.section_lines')} description={t('hrm.contract.section_lines_hint')} icon={IconListDetails} wide>
+          <FormRow>
+            {ro ? (
+              <SavedLines lines={terms?.lines ?? []} />
+            ) : (
+              <LinesTable
+                name="lines"
+                label={t('hrm.contract.section_lines')}
+                columns={lineColumns(t)}
+                newLine={() => ({ kind: 'allowance', name: '', amount: null, taxable: true })}
+                addLabel={t('hrm.contract.add_line')}
+                lineLabel={(n) => t('hrm.contract.line_title', { n })}
+                removeLabel={(n) => t('hrm.contract.remove_line', { n })}
+              />
+            )}
+          </FormRow>
+        </FormSection>
+      )}
       {editable && <FormActions submitLabel={contract ? t('hrm.common.save') : t('hrm.common.create_draft')} />}
       {mutation.dialog}
     </Form>
   )
 }
 
-// LineFields is one allowance or support of the terms; only supports may be tax-free.
-function LineFields({ index, support, readOnly, onRemove }: { index: number; support: boolean; readOnly: boolean; onRemove: () => void }) {
+// lineColumns are the allowances and supports of the terms, one row each; only a support may be tax-free.
+function lineColumns(t: TFunction): LineColumn[] {
+  return [
+    {
+      key: 'kind',
+      header: t('hrm.contract.line_kind_col'),
+      required: true,
+      width: 168,
+      cell: (i, bare) => (
+        <SelectField
+          name={`lines.${i}.kind`}
+          label={t('hrm.contract.line_kind', { n: i + 1 })}
+          bare={bare}
+          required
+         
+          data={[
+            { value: 'allowance', label: t('hrm.contract.line.allowance') },
+            { value: 'support', label: t('hrm.contract.line.support') },
+          ]}
+        />
+      ),
+    },
+    {
+      key: 'name',
+      header: t('hrm.contract.line_name_col'),
+      required: true,
+      width: 144,
+      cell: (i, bare) => <TextField name={`lines.${i}.name`} label={t('hrm.contract.line_name', { n: i + 1 })} bare={bare} required maxLength={200} />,
+    },
+    {
+      key: 'amount',
+      header: t('hrm.contract.line_amount_col'),
+      numeric: true,
+      required: true,
+      width: 128,
+      cell: (i, bare) => <MoneyField name={`lines.${i}.amount`} label={t('hrm.contract.line_amount', { n: i + 1 })} bare={bare} required />,
+    },
+    { key: 'taxable', header: t('hrm.contract.line_taxable_col'), width: 72, cell: (i, bare) => <TaxableCell index={i} bare={bare} /> },
+  ]
+}
+
+// TaxableCell asks only of a support; an allowance is always taxable.
+function TaxableCell({ index, bare }: { index: number; bare: boolean }) {
   const { t } = useTranslation()
-  const n = index + 1
+  const kind = useWatch({ name: `lines.${index}.kind` }) as Line['kind']
+  if (kind !== 'support') return null
+  return <CheckboxField name={`lines.${index}.taxable`} label={t('hrm.contract.line.taxable')} bare={bare} />
+}
+
+// SavedLines shows the allowances and supports of a contract that is not edited.
+function SavedLines({ lines }: { lines: Line[] }) {
+  const { t } = useTranslation()
+  if (lines.length === 0)
+    return (
+      <Text size="sm" c="dimmed">
+        {t('hrm.contract.no_lines')}
+      </Text>
+    )
   return (
-    <>
-      <SelectField
-        name={`lines.${index}.kind`}
-        label={t('hrm.contract.line_kind', { n })}
-        required
-        readOnly={readOnly}
-        data={[
-          { value: 'allowance', label: t('hrm.contract.line.allowance') },
-          { value: 'support', label: t('hrm.contract.line.support') },
-        ]}
-        description={t(support ? 'hrm.contract.line.support_hint' : 'hrm.contract.line.allowance_hint')}
-      />
-      <TextField name={`lines.${index}.name`} label={t('hrm.contract.line_name', { n })} required maxLength={200} readOnly={readOnly} />
-      <MoneyField name={`lines.${index}.amount`} label={t('hrm.contract.line_amount', { n })} required readOnly={readOnly} />
-      <InputRow>
-        {support ? <CheckboxField name={`lines.${index}.taxable`} label={t('hrm.contract.line.taxable')} readOnly={readOnly} /> : <span />}
-        {!readOnly && (
-          <Tooltip label={t('hrm.contract.remove_line', { n })}>
-            <ActionIcon variant="subtle" color="danger" size="lg" aria-label={t('hrm.contract.remove_line', { n })} onClick={onRemove}>
-              <IconTrash {...icon.button} />
-            </ActionIcon>
-          </Tooltip>
-        )}
-      </InputRow>
-    </>
+    <DataTable
+      label={t('hrm.contract.section_lines')}
+      rows={lines.map((l, i) => ({ ...l, n: i + 1 }))}
+      rowKey={(l) => l.n}
+      columns={[
+        { key: 'name', header: t('hrm.contract.line_name_col'), role: 'title', render: (l) => l.name },
+        { key: 'kind', header: t('hrm.contract.line_kind_col'), role: 'meta', render: (l) => t(`hrm.contract.line.${l.kind}`) },
+        { key: 'amount', header: t('hrm.contract.line_amount_col'), role: 'meta', numeric: true, render: (l) => formatNumber(l.amount ?? 0) },
+        { key: 'taxable', header: t('hrm.contract.line_taxable_col'), role: 'hidden', render: (l) => (l.kind === 'support' ? t(l.taxable ? 'hrm.common.yes' : 'hrm.common.no') : '') },
+      ]}
+    />
   )
 }
