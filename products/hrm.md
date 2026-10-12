@@ -78,7 +78,7 @@ Departments and branches are nodes in the `iam` permission-scope tree, with `kin
 | `hrm.overtime_request` | `hours` (number), `day_kind` (list: working day, rest day, public holiday) |
 | `hrm.contract` | `contract_kind` (list) |
 
-`day_kind` is still entered manually; deriving it from the work calendar comes later. Overtime requests record day-shift and night-shift hours separately; `hours` is their sum.
+`day_kind` is entered by hand but must be the kind the legal entity's work calendar gives the date (a public holiday wins over a weekly day off), checked on save and again when the request goes into force; otherwise `overtime_day_kind_mismatch` names the right kind. Deriving it from the calendar comes later. Overtime requests record day-shift and night-shift hours separately; `hours` is their sum.
 
 This lets tenants configure rules such as "leave over 3 days needs director approval" or "public-holiday overtime needs an extra approval step" ([documents.md](../documents.md#shared-features)). HRM approval rules are configured inside the HRM area and need `hrm.approval.manage` (role `approval_admin`, grantable only tenant-wide) or `core.approval.manage`, both at tenant-wide scope.
 

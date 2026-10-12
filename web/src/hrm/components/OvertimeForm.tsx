@@ -23,6 +23,7 @@ const dayKinds = Object.keys(dayKindSet) as DayKind[]
 
 const fieldOfCode: Record<string, keyof Values> = {
   invalid_overtime_hours: 'day_hours',
+  overtime_day_kind_mismatch: 'day_kind',
   not_an_employee: 'employee_id',
 }
 

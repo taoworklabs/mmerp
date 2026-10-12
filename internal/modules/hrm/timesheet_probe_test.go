@@ -8,10 +8,10 @@ import (
 	"github.com/taoworklabs/mmerp/internal/modules/hrm"
 )
 
-// Probes for timesheet and overtime situations no rule settles yet: work entered on a day off,
-// work and paid leave on the same day, and an overtime day kind that disagrees with the
-// calendar. They log what happens and assert only what the existing rules already say. The
-// CC and TC codes label the observations.
+// Probes for timesheet situations no rule settles yet: work entered on a day off, and work and
+// paid leave on the same day. They log what happens and assert only what the existing rules
+// already say. The CC and TC codes label the observations. An overtime day kind that disagreed
+// with the calendar was probed here too until a rule settled it; overtime_test.go asserts it.
 //
 // April 2026 with the payroll fixture: 22 working days, of which 27/04 and 30/04 are public
 // holidays; E's salary is 22,000,000, so one hour of overtime is 125,000 before the multiplier.
@@ -41,24 +41,6 @@ func TestProbeCC03WorkAndPaidLeaveSameDay(t *testing.T) {
 	paid, _ := f.paidDays(f.payroll("2026-04"))
 	t.Logf("CC-03 worked every working day and took 1 paid leave day on 06/04: leave %s, balance %s of 12, paid days %s of 22",
 		f.leave(id).Status, f.balance(), paid)
-}
-
-// TC-01: overtime on the 30/04 public holiday, entered once as a weekday and once as a holiday.
-func TestProbeTC01DayKindAgainstCalendar(t *testing.T) {
-	f := payrollAprilFixture(t)
-	for _, kind := range []string{"weekday", "holiday"} {
-		id, err := f.hrm.CreateOvertime(f.hr, hrm.NewOvertime{EmployeeID: &f.emp, OvertimeFields: ot("2026-04-30", kind, "2", "0")})
-		if err != nil {
-			t.Logf("TC-01 %s on 30/04 refused: %v", kind, err)
-			continue
-		}
-		f.post(record.Ref{Type: "hrm.overtime_request", ID: id}, 1)
-		p := f.payroll("2026-04")
-		_, amount := f.paidDays(p)
-		t.Logf("TC-01 2 hours on the 30/04 holiday entered as %s: accepted, overtime pay %d", kind, amount)
-		f.check(f.rec.Transition(f.pay, record.Ref{Type: "hrm.overtime_request", ID: id}, 2, record.Cancelled))
-		f.check(f.hrm.DeletePayroll(f.pay, p, f.payrollDoc(p).Version))
-	}
 }
 
 // TC-03: a cancelled overtime request is no longer a source; asserted, since only posted

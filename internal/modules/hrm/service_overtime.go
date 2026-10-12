@@ -3,6 +3,7 @@ package hrm
 import (
 	"context"
 	"errors"
+	"net/http"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
@@ -56,10 +57,46 @@ func (s *Service) overtimeSubjects(ctx context.Context, id int64) ([]int64, erro
 // overtimeTransition only keeps approved overtime out of closed payroll periods; pay
 // for it is worked out by the payroll.
 func (s *Service) overtimeTransition(ctx context.Context, d record.Doc, from record.Status) error {
-	if _, ok := payrollEffect(d, from); !ok {
+	posted, ok := payrollEffect(d, from)
+	if !ok {
 		return nil
 	}
+	if posted {
+		// The calendar may have changed since the request was saved.
+		r, err := store.New(platform.DBFrom(ctx)).GetOvertimeRequest(ctx, d.ID)
+		if err != nil {
+			return err
+		}
+		if err := dayKindOn(ctx, d.LegalEntityID, d.Date, r.DayKind); err != nil {
+			return err
+		}
+	}
 	return checkPayrollPeriods(ctx, d.LegalEntityID, d.Date, &d.Date)
+}
+
+// checkDayKind holds the day kind to the one the unit's work calendar gives the date: it
+// sets the overtime multiplier, so a wrong pick changes the pay.
+func (s *Service) checkDayKind(ctx context.Context, unit int64, date, kind string) error {
+	// The legal entity is read under the tree lock, so the calendar cannot move under us.
+	if err := s.d.IAM.ShareTree(ctx); err != nil {
+		return err
+	}
+	legalEntity, err := s.d.IAM.LegalEntityOf(ctx, unit)
+	if err != nil {
+		return err
+	}
+	return dayKindOn(ctx, legalEntity, date, kind)
+}
+
+func dayKindOn(ctx context.Context, legalEntity int64, date, kind string) error {
+	cal, err := workCalendar(ctx, legalEntity, date, date)
+	if err != nil {
+		return err
+	}
+	if want := cal.dayKind(dayOf(date)); kind != want {
+		return &platform.Error{Status: http.StatusUnprocessableEntity, Code: "overtime_day_kind_mismatch", Params: map[string]any{"day_kind": want}}
+	}
+	return nil
 }
 
 // OvertimeActions lists what the actor may do before picking an overtime request.
@@ -129,6 +166,9 @@ func (s *Service) CreateOvertime(ctx context.Context, in NewOvertime) (int64, er
 		if err != nil {
 			return err
 		}
+		if err := s.checkDayKind(ctx, unit, in.Date, in.DayKind); err != nil {
+			return err
+		}
 		d, err := s.d.Record.Create(ctx, overtimeType, h)
 		if err != nil {
 			return err
@@ -155,6 +195,9 @@ func (s *Service) UpdateOvertime(ctx context.Context, id int64, in OvertimeUpdat
 		}
 		h, err := overtimeHeader(old.OrgUnitID, in.OvertimeFields)
 		if err != nil {
+			return err
+		}
+		if err := s.checkDayKind(ctx, old.OrgUnitID, in.Date, in.DayKind); err != nil {
 			return err
 		}
 		if _, err := s.d.Record.Edit(ctx, record.Ref{Type: overtimeType, ID: id}, in.Version, h); err != nil {
