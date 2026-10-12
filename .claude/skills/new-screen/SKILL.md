@@ -7,7 +7,7 @@ description: Build or change a frontend screen in web/src. Use when adding a pag
 
 The rules live in `ui.md` and `frontend.md`; this skill is the order to apply them in. Each step ends on its completion criterion.
 
-1. **Read the rules.** Read `ui.md` end to end, then `frontend.md` → "Cache" and "Permissions: the frontend computes nothing". For a specific UX question (a form pattern, a table behaviour, an accessibility outcome), consult the `ui-ux-pro-max` skill when it is installed; `ui.md` wins where they differ.
+1. **Read the rules.** Read `ui.md` end to end and the `mmerp-ui` skill (its table says which references the screen needs), then `frontend.md` → "Cache" and "Permissions: the frontend computes nothing". For a specific UX question (a form pattern, a table behaviour, an accessibility outcome), consult the `ui-ux-pro-max` skill when it is installed; `ui.md` wins where they differ.
    Done when: you have named the page template from `ui.md` → "Page templates" that this screen uses.
 
 2. **Assemble.** Build the screen from that `shared/ui/page` template and `shared/ui` primitives. Business components live in the area; a missing generic primitive goes into `shared/ui` with an entry on `/dev/ui` (`ui.md` → "Where components live").
