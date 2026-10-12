@@ -8,7 +8,9 @@ import (
 	"log/slog"
 	"slices"
 	"strings"
+	"sync"
 	"testing"
+	"time"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/riverqueue/river"
@@ -427,5 +429,38 @@ func TestRevealFailsWhenItsAuditFails(t *testing.T) {
 	}
 	if _, err := f.hrm.Dependents(sens, id); err == nil || !strings.Contains(err.Error(), "audit down") {
 		t.Fatal("dependents listed without audit")
+	}
+}
+
+// With B under C and D under A, setting A under B while C goes under D closes A→B→C→D→A.
+// The two touch four different rows, so only the manager tree lock makes the second wait
+// for the first to commit and see the cycle.
+func TestManagerCycleFormedAtOnce(t *testing.T) {
+	f := newFixture(t)
+	hr := f.ctxFor("hr", "hr@*")
+	managed := func(code string, manager *int64) hrm.EmployeeInput {
+		in := employee(code, f.a)
+		in.ManagerID = manager
+		return in
+	}
+	c := must(t)(f.hrm.CreateEmployee(hr, managed("C", nil)))
+	b := must(t)(f.hrm.CreateEmployee(hr, managed("B", &c)))
+	a := must(t)(f.hrm.CreateEmployee(hr, managed("A", nil)))
+	d := must(t)(f.hrm.CreateEmployee(hr, managed("D", &a)))
+	var second error
+	var wg sync.WaitGroup
+	if err := platform.InTx(hr, func(ctx context.Context) error {
+		if err := f.hrm.UpdateEmployee(ctx, a, managed("A", &b)); err != nil {
+			return err
+		}
+		wg.Go(func() { second = f.hrm.UpdateEmployee(hr, c, managed("C", &d)) })
+		time.Sleep(100 * time.Millisecond)
+		return nil
+	}); err != nil {
+		t.Fatal(err)
+	}
+	wg.Wait()
+	if !errors.Is(second, hrm.ErrManagerCycle) {
+		t.Fatalf("second: %v, want manager_cycle", second)
 	}
 }
