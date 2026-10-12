@@ -5,6 +5,7 @@ import (
 	"reflect"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/taoworklabs/mmerp/internal/core/approval"
 	"github.com/taoworklabs/mmerp/internal/core/record"
@@ -13,8 +14,14 @@ import (
 	"github.com/taoworklabs/mmerp/internal/platform"
 )
 
+// overtime is a request on date with the kind the default calendar gives it: Saturday and
+// Sunday off, no holidays.
 func overtime(date, day, night string) hrm.OvertimeFields {
-	return hrm.OvertimeFields{Date: date, DayKind: "weekday", DayHours: day, NightHours: night}
+	kind := "weekday"
+	if d, _ := time.Parse(time.DateOnly, date); d.Weekday() == time.Saturday || d.Weekday() == time.Sunday {
+		kind = "weekly_off"
+	}
+	return hrm.OvertimeFields{Date: date, DayKind: kind, DayHours: day, NightHours: night}
 }
 
 func (f *leaveFixture) postedOvertimes() int {
@@ -108,4 +115,36 @@ func TestDayKindEnums(t *testing.T) {
 			t.Fatalf("%T enum %v, want %v", v, got, hrm.DayKinds)
 		}
 	}
+}
+
+// The day kind must be the one the calendar gives the date, checked on save and again when
+// the request goes into force, since the calendar may change in between. A holiday wins over
+// a weekly day off.
+func TestDayKindFollowsTheCalendar(t *testing.T) {
+	f := newLeaveFixture(t)
+	pay := f.ctxFor("pay", "payroll@*")
+	f.check(f.hrm.SaveHoliday(pay, f.c, hrm.Holiday{Date: "2026-04-30", Name: "Giải phóng miền Nam"}))
+	f.check(f.hrm.SaveHoliday(pay, f.c, hrm.Holiday{Date: "2026-05-03", Name: "Ngày lễ rơi vào Chủ nhật"}))
+	create := func(date, kind string) (int64, error) {
+		return f.hrm.CreateOvertime(f.e, hrm.NewOvertime{OvertimeFields: hrm.OvertimeFields{Date: date, DayKind: kind, DayHours: "2", NightHours: "0"}})
+	}
+	for _, c := range []struct{ date, kind, want string }{
+		{"2026-04-30", "weekday", "holiday"},
+		{"2026-04-29", "weekly_off", "weekday"},
+		{"2026-04-26", "weekday", "weekly_off"},
+		{"2026-05-03", "weekly_off", "holiday"},
+	} {
+		_, err := create(c.date, c.kind)
+		wantErr(t, err, "overtime_day_kind_mismatch")
+		if got := errParams(err)["day_kind"]; got != c.want {
+			t.Fatalf("%s as %s: names %v, want %s", c.date, c.kind, got, c.want)
+		}
+	}
+	id := must(t)(create("2026-04-30", "holiday"))
+	wantErr(t, f.hrm.UpdateOvertime(f.e, id, hrm.OvertimeUpdate{Version: 1, OvertimeFields: overtime("2026-04-30", "2", "0")}), "overtime_day_kind_mismatch")
+
+	// Right when saved, wrong by the time it is sent: 29/04 became a holiday meanwhile.
+	late := must(t)(create("2026-04-29", "weekday"))
+	f.check(f.hrm.SaveHoliday(pay, f.c, hrm.Holiday{Date: "2026-04-29", Name: "Nghỉ bù"}))
+	wantErr(t, f.rec.Transition(f.e, record.Ref{Type: "hrm.overtime_request", ID: late}, 1, record.Posted), "overtime_day_kind_mismatch")
 }

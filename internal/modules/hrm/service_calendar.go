@@ -64,6 +64,17 @@ func (c calendar) holiday(d time.Time) bool {
 	return ok
 }
 
+// dayKind is the overtime day kind the calendar gives d; a holiday wins over a weekly day off.
+func (c calendar) dayKind(d time.Time) string {
+	switch {
+	case c.holiday(d):
+		return "holiday"
+	case c.weeklyOff(d):
+		return "weekly_off"
+	}
+	return "weekday"
+}
+
 // workingDays counts the days of [start, end] a leave request can be placed on: the ones
 // that are neither a weekly day off nor a holiday.
 func (c calendar) workingDays(start, end time.Time) int {

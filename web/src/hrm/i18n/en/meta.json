@@ -103,6 +103,7 @@
   "hrm.error.contract_parent_not_posted": "The original contract is not in force yet. Get it approved first.",
   "hrm.error.contract_has_appendices": "The contract still has appendices. Cancel or delete them first.",
   "hrm.error.invalid_overtime_hours": "Hours go in half-hour steps; day and night together are more than 0 and at most 24.",
+  "hrm.error.overtime_day_kind_mismatch": "By the company work calendar this day is a “$t(hrm.overtime.day_kind.{{day_kind}})”. Pick that kind of day.",
   "hrm.error.contract_end_required": "This kind of contract has a fixed term: enter an end date.",
   "hrm.error.contract_end_not_allowed": "This kind of contract has no end date: leave it empty.",
   "hrm.error.timesheet_exists": "This org unit already has a timesheet for that month.",

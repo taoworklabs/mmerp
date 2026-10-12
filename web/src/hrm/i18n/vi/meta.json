@@ -103,6 +103,7 @@
   "hrm.error.contract_parent_not_posted": "Hợp đồng gốc chưa có hiệu lực. Duyệt hợp đồng gốc trước.",
   "hrm.error.contract_has_appendices": "Hợp đồng còn phụ lục. Hủy hoặc xóa các phụ lục trước.",
   "hrm.error.invalid_overtime_hours": "Số giờ theo nửa giờ, tổng giờ ca ngày và ca đêm lớn hơn 0 và không quá 24.",
+  "hrm.error.overtime_day_kind_mismatch": "Theo lịch làm việc của công ty, ngày này thuộc loại “$t(hrm.overtime.day_kind.{{day_kind}})”. Hãy chọn đúng loại đó.",
   "hrm.error.contract_end_required": "Loại hợp đồng này có thời hạn: cần nhập ngày hết hạn.",
   "hrm.error.contract_end_not_allowed": "Loại hợp đồng này không xác định thời hạn: bỏ trống ngày hết hạn.",
   "hrm.error.timesheet_exists": "Đơn vị này đã có bảng công của tháng đó.",

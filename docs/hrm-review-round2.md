@@ -82,11 +82,13 @@ a salary of 22,000,000, so one hour of overtime is 125,000 before the multiplier
 | CC-06 | Covered. A save or import replaces every line of the draft (**new** test with a shorter set of lines); the import dialog says so ("File thay toàn bộ ngày công của bảng công nháp này") | `TestTimesheetSaveReplacesEveryLine`, `hrm.timesheet.import_hint` |
 | CC-07 | Covered. The grid and the working days use the week version in force on each date | `TestWorkCalendar`, `TestWorkingDaysUsesTheWeekVersionInForce` |
 | CC-08 | Covered. Holidays, work-week versions, legal parameters and timesheets touching a closed period are refused | `TestWorkCalendar`, `TestLegalParams`, `TestTimesheet` |
-| TC-01 | **Open question, see below** | `TestProbeTC01DayKindAgainstCalendar` |
+| TC-01 | Settled 2026-10-12 and built: a kind the calendar disagrees with is refused on save and when it goes into force | `TestDayKindFollowsTheCalendar` |
 | TC-02 | Covered. Day and night hours are stored apart and priced apart | `TestOvertime`, payroll samples C11 and C17 |
 | TC-03 | Covered (**new** test). A cancelled overtime request drops out of the next computation; the test fails when cancelled requests are let into the source query | `TestCancelledOvertimeLeavesThePayroll` |
 
 ### Three questions for the HR owner
+
+Answered on 2026-10-12: the recommended option in each case. TC-01 is built; CC-04 and CC-03 are next.
 
 All three are entries the system accepts and then quietly treats differently from what the person
 entering them probably meant. None breaks a written rule; each lacks one.
