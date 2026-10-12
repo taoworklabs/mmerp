@@ -2,11 +2,11 @@ import { expect, test, type Browser, type Page } from '@playwright/test'
 import { created, createUser, employee, password, signedInApi } from './api'
 import { signedIn } from './helpers'
 
-// Probes for the parts of notifications and the approval inbox the other specs leave out:
-// the notification and job links staying in the area (TB-01), approving something the
-// submitter withdrew (TB-04), a notification whose permission was revoked (TB-05) and going
-// back to a filtered list (TB-07). They mostly observe and log, because some of the expected
-// results are still being agreed. The TB codes label the observations.
+// Covers the parts of notifications and the approval inbox the other specs leave out: the
+// notification and job links staying in the area (TB-01), approving something the submitter
+// withdrew (TB-04), a notification whose permission was revoked (TB-05) and going back to a
+// filtered list (TB-07). TB-05 still observes and logs, since what should happen to a
+// notification nobody may read any more is not settled; the rest assert.
 
 const run = Date.now().toString(36)
 const login = { staff: `tbstaff_${run}`, boss: `tbboss_${run}`, peer: `tbpeer_${run}` }
@@ -69,17 +69,18 @@ test('TB-01 the notification and job links open inside the current area', async 
   await expect(nav).toHaveCount(0)
 })
 
-// TB-04: the submitter withdraws while the approver still has the inbox open.
+// TB-04: the submitter withdraws while the approver still has the inbox open. The refusal has
+// to be explained where the approver is looking, and the explanation has to stay put: the
+// request leaves the inbox at that moment, and the panel explaining it must not leave with it.
 test('TB-04 approving a request the submitter already withdrew', async ({ browser }) => {
   const staff = await as(browser, login.staff, `/hrm/leaves/${leave}`)
   await staff.getByRole('button', { name: 'Gửi duyệt' }).click()
   await expect(staff.getByText('Chờ duyệt').first()).toBeVisible()
 
   const boss = await as(browser, login.boss, '/hrm/inbox')
-  // Record whether the click reaches the server at all, and with what answer.
   const calls: string[] = []
   boss.on('response', (r) => {
-    if (r.url().includes('/approve')) calls.push(`${r.request().method()} ${new URL(r.url()).pathname} → ${r.status()}`)
+    if (r.url().includes('/approve')) calls.push(String(r.status()))
   })
   await boss.getByRole('button', { name: /Chờ bạn duyệt|TB|NP-/ }).first().click()
   await expect(boss.getByRole('button', { name: 'Duyệt', exact: true })).toBeVisible()
@@ -89,22 +90,17 @@ test('TB-04 approving a request the submitter already withdrew', async ({ browse
   await expect(staff.getByText('Nháp').first()).toBeVisible()
 
   await boss.getByRole('button', { name: 'Duyệt', exact: true }).click()
-  // A toast renders outside main, so read the whole page and look for the withdrawn text.
-  const withdrawn = boss.getByText(/rút lại lần duyệt này|đã được xử lý|approval_closed/)
-  const explained = await withdrawn.first().isVisible({ timeout: 3000 }).catch(() => false)
-  console.log('TB-04 an explanation of the state is shown:', explained)
-  if (explained) {
-    // The message can vanish between being seen and being read: the panel holding it unmounts.
-    const text = await withdrawn.first().innerText({ timeout: 2000 }).catch((e) => `(gone before it could be read: ${e.message.split('\n')[0]})`)
-    console.log('TB-04 the exact wording shown:', text.replace(/\s+/g, ' '))
-    console.log('TB-04 still visible a second later:', await withdrawn.first().isVisible().catch(() => false))
-  }
-  console.log('TB-04 approve calls the click produced:', calls.length ? calls.join(', ') : '(none — the click never reached the server)')
-  console.log('TB-04 the whole page after approving:', (await boss.locator('body').innerText()).replace(/\s+/g, ' ').slice(0, 500))
+  const withdrawn = boss.getByText(/rút lại lần duyệt này|đã được xử lý/).first()
+  await expect(withdrawn).toBeVisible()
+  // Still there a moment later: a message that only survives one frame is no message.
+  await boss.waitForTimeout(1500)
+  await expect(withdrawn).toBeVisible()
+  // And the button that cannot work any more is gone.
+  await expect(boss.getByRole('button', { name: 'Duyệt', exact: true })).toHaveCount(0)
+  expect(calls, 'the click reached the server and was refused').toEqual(['409'])
 })
 
-// TB-04 through the API, because the inbox drops the item asynchronously and the UI
-// probe above is therefore timing-dependent: this pins down what the server answers.
+// TB-04 through the API as well, to pin the answer itself rather than how it is shown.
 test('TB-04 the API refusal when approving a withdrawn request', async ({ baseURL }) => {
   const admin = await signedInApi(baseURL!)
   const type = await created(admin.post('/api/hrm/leave-types', { data: { name: `Nghỉ TB4 ${run}`, deducts_balance: false, paid: true, active: true } }))
@@ -113,27 +109,28 @@ test('TB-04 the API refusal when approving a withdrawn request', async ({ baseUR
 
   const doc = await (await asStaff.get(`/api/hrm/leaves/${id}`)).json()
   const sent = await asStaff.post(`/api/documents/hrm.leave_request/${id}/transitions`, { data: { to: 'posted', version: doc.version } })
-  console.log('TB-04 submit:', sent.status(), (await sent.text()).slice(0, 200))
+  expect(sent.status(), await sent.text()).toBe(204)
 
   const asBoss = await signedInApi(baseURL!, login.boss, password)
   const inbox = await (await asBoss.get('/api/approvals/inbox')).json()
   const item = inbox.items.find((i: { doc_id: number }) => i.doc_id === id)
-  console.log('TB-04 the approver sees it in the inbox:', JSON.stringify(item))
+  expect(item, 'the approver has it waiting').toBeTruthy()
 
   const after = await (await asStaff.get(`/api/hrm/leaves/${id}`)).json()
   const pulled = await asStaff.post(`/api/documents/hrm.leave_request/${id}/transitions`, { data: { to: 'draft', version: after.version } })
-  console.log('TB-04 the submitter withdraws:', pulled.status(), (await pulled.text()).slice(0, 200))
+  expect(pulled.status(), await pulled.text()).toBe(204)
 
   // The approver acts on the instance and step they saw before the withdrawal.
   const res = await asBoss.post(`/api/approvals/${item.instance_id}/approve`, { data: { step: item.step } })
-  console.log('TB-04 approving afterwards →', res.status(), (await res.text()).slice(0, 300))
-  console.log('TB-04 the inbox afterwards holds this request:',
-    (await (await asBoss.get('/api/approvals/inbox')).json()).items.some((i: { doc_id: number }) => i.doc_id === id))
-  console.log('TB-04 the document ended up as:', (await (await asStaff.get(`/api/hrm/leaves/${id}`)).json()).status)
+  expect(res.status()).toBe(409)
+  expect((await res.json()).code).toBe('approval_closed')
+  const left = (await (await asBoss.get('/api/approvals/inbox')).json()).items
+  expect(left.some((i: { doc_id: number }) => i.doc_id === id), 'it no longer waits for anyone').toBe(false)
+  expect((await (await asStaff.get(`/api/hrm/leaves/${id}`)).json()).status, 'the withdrawal stands').toBe('draft')
 })
 
-// TB-04 from the document page rather than the inbox: the panel is not inside a subtree that
-// disappears with the item, so this isolates where the lost message comes from.
+// The same refusal from the document page, which reaches it by a different route than the
+// inbox: here nothing ever removes the panel, so it guards the wording itself.
 test('TB-04 the same refusal seen from the document page', async ({ browser, baseURL }) => {
   const admin = await signedInApi(baseURL!)
   const type = await created(admin.post('/api/hrm/leave-types', { data: { name: `Nghỉ TB4b ${run}`, deducts_balance: false, paid: true, active: true } }))
@@ -151,11 +148,8 @@ test('TB-04 the same refusal seen from the document page', async ({ browser, bas
   expect((await asStaff.post(`/api/documents/hrm.leave_request/${id}/transitions`, { data: { to: 'draft', version: now.version } })).status()).toBe(204)
 
   await approve.click()
-  const message = boss.getByText(/rút lại lần duyệt này|đã được xử lý|approval_closed|không còn/)
-  const shown = await message.first().isVisible({ timeout: 3000 }).catch(() => false)
-  console.log('TB-04 from the document page, a message is shown:', shown)
-  if (shown) console.log('TB-04 the wording on the document page:', (await message.first().innerText()).replace(/\s+/g, ' '))
-  console.log('TB-04 the document page after approving:', (await boss.getByRole('main').innerText()).replace(/\s+/g, ' ').slice(0, 400))
+  await expect(boss.getByText('Người gửi đã rút lại lần duyệt này.')).toBeVisible()
+  await expect(boss.getByRole('main').getByText('Nháp').first()).toBeVisible()
 })
 
 // TB-05: a notification whose record the user may no longer view.
@@ -169,6 +163,8 @@ test('TB-05 a notification after the permission was revoked', async ({ browser, 
   await expect(staff.getByText('Nhờ anh xem giúp')).toBeVisible()
 
   const peer = await as(browser, login.peer, '/notifications')
+  // Wait for the mention to arrive, or the before-picture is of an empty list.
+  await expect(peer.getByText(/Nhắc tên bạn/).first()).toBeVisible()
   console.log('TB-05 with permission, the notification reads:', (await peer.getByRole('main').innerText()).replace(/\s+/g, ' ').slice(0, 300))
 
   const api = await signedInApi(baseURL!)

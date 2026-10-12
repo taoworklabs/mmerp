@@ -1,6 +1,7 @@
 import { Anchor, Divider, Group, Stack, Text, Tooltip } from '@mantine/core'
 import { IconExternalLink } from '@tabler/icons-react'
 import { useQuery } from '@tanstack/react-query'
+import { useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link, useLocation, useNavigate, useSearchParams } from 'react-router'
 import { api, unwrap, type InboxItem } from '@/shared/api/core'
@@ -19,7 +20,13 @@ export default function InboxPage() {
   const [search, setSearch] = useSearchParams()
   const inbox = useQuery({ queryKey: documentKeys.inbox(), queryFn: () => unwrap(api.GET('/approvals/inbox')) })
   const selected = Number(search.get('item'))
-  const item = inbox.data?.items.find((i) => i.instance_id === selected)
+  // The chosen submission stays on screen after it leaves the list. Someone else handling it,
+  // or the submitter withdrawing it, drops it from the inbox, and the panel is where the user
+  // reads why their decision was refused; dropping the panel with it explains nothing.
+  const held = useRef<InboxItem | null>(null)
+  const found = inbox.data?.items.find((i) => i.instance_id === selected) ?? null
+  if (found) held.current = found
+  const item = found ?? (held.current?.instance_id === selected ? held.current : null)
   const navigate = useNavigate()
   const location = useLocation()
   // Picking an item pushed a history entry; going back pops it, like the browser's Back.
