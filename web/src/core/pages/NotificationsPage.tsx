@@ -1,13 +1,13 @@
-import { Button, Group, Text, Tooltip } from '@mantine/core'
-import { IconChecks } from '@tabler/icons-react'
+import { Alert, Button, Group, Text, Tooltip } from '@mantine/core'
+import { IconAlertCircle, IconChecks } from '@tabler/icons-react'
 import { useInfiniteQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router'
 import { api, unwrap, type Notification } from '@/shared/api/core'
 import { useRecordLinks } from '@/shared/area'
 import { useMe } from '@/shared/auth/me'
 import { errorText, formatAgo, formatDateTime } from '@/shared/i18n'
-import { notifyError } from '@/shared/ui/notify'
 import { InboxList, InboxRow, ListPage } from '@/shared/ui/page'
 import { ContentSkeleton, EmptyState, ErrorState } from '@/shared/ui/states'
 import { icon } from '@/shared/ui/theme'
@@ -21,6 +21,8 @@ export default function NotificationsPage() {
   const qc = useQueryClient()
   const navigate = useNavigate()
   const linkOf = useRecordLinks()
+  // A failed read, shown above the list until the next attempt.
+  const [error, setError] = useState<string | null>(null)
   const list = useInfiniteQuery({
     queryKey: notificationKeys.list(),
     queryFn: ({ pageParam }) => unwrap(api.GET('/notifications', { params: { query: pageParam ? { before: pageParam } : {} } })),
@@ -30,16 +32,18 @@ export default function NotificationsPage() {
   const refresh = () => qc.invalidateQueries({ queryKey: notificationKeys.all() })
   const readAll = useMutation({
     mutationFn: () => unwrap(api.POST('/notifications/read-all')),
+    onMutate: () => setError(null),
     onSuccess: refresh,
-    onError: (err) => notifyError(errorText(t, err)),
+    onError: (err) => setError(errorText(t, err)),
   })
 
   const open = async (n: Notification) => {
     if (!n.read) {
+      setError(null)
       try {
         await unwrap(api.POST('/notifications/{id}/read', { params: { path: { id: n.id } } }))
       } catch (err) {
-        notifyError(errorText(t, err))
+        setError(errorText(t, err))
         return
       }
       void refresh()
@@ -109,6 +113,11 @@ export default function NotificationsPage() {
         </Button>
       }
     >
+      {error && (
+        <Alert color="danger" icon={<IconAlertCircle {...icon.button} />} role="alert">
+          {error}
+        </Alert>
+      )}
       {body}
     </ListPage>
   )
