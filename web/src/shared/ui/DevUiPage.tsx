@@ -154,6 +154,7 @@ export default function DevUiPage({ withSections: WithSections }: Props) {
           onChange={(r, c, v) => setCells({ ...cells, [`${r}:${c}`]: v })}
           invalid={(v) => !['', '1', '0,5', '0.5'].includes(v)}
           off={(r, c) => r === 'NV002' && c === '1'}
+          warning={(r, c) => (r === 'NV001' && c === '3' ? t('shared.devui.hint') : undefined)}
           total={{ header: t('shared.devui.total'), value: (r) => Object.entries(cells).filter(([k]) => k.startsWith(`${r}:`)).length }}
         />
       </Stack>

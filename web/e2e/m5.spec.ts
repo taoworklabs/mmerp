@@ -1,5 +1,6 @@
 import { expect, test, type APIRequestContext, type Browser, type Page } from '@playwright/test'
 import { created, createUser, employee, password, signedInApi } from './api'
+import { signedIn } from './helpers'
 
 // One run: department P with M5E01, M5E02 and M5E03 (who joins on 16/03), the codes the
 // committed Excel files use (go run ./scripts/e2e-fixtures). hr is HR of P; dir approves timesheets.
@@ -113,4 +114,22 @@ test('HR imports the March timesheet from Excel, fixes a bad file, follows the j
   const download = hr.waitForEvent('download')
   await hr.getByRole('link', { name: 'Tải file' }).click()
   expect((await download).suggestedFilename()).toBe(`${number}.xlsx`)
+})
+
+// Work entered on a Sunday saves, but the payroll pays nothing for it: the grid shows the
+// value tinted, with the reason on the cell and once above the grid.
+test('the grid warns of work entered on a day off', async ({ page }) => {
+  const company = await created(api.post('/api/org-units', { data: { parent_id: null, kind: 'company', name: `Công ty M5W ${run}` } }))
+  const unit = await created(api.post('/api/org-units', { data: { parent_id: company, kind: 'department', name: `Phòng W ${run}` } }))
+  const emp = await created(api.post('/api/hrm/employees', { data: employee(`M5W${run}`, unit, { hire_date: '2026-01-05' }) }))
+  const ts = await created(api.post('/api/hrm/timesheets', { data: { org_unit_id: unit, month: '2026-04' } }))
+  const lines = ['2026-04-03', '2026-04-05'].map((date) => ({ employee_id: emp, date, days: '1' }))
+  const saved = await api.put(`/api/hrm/timesheets/${ts}`, { data: { version: 1, month: '2026-04', lines } })
+  expect(saved.status(), await saved.text()).toBe(204)
+
+  await signedIn(page, `/hrm/timesheets/${ts}`)
+  await expect(page.getByText('Một số ô cần xem lại')).toBeVisible()
+  const sunday = page.getByRole('cell', { name: /^1 Ngày nghỉ: công không được tính lương/ })
+  await expect(sunday).toHaveAttribute('title', 'Ngày nghỉ: công không được tính lương nếu không có đơn tăng ca')
+  await expect(page.locator('td[title]')).toHaveCount(1)
 })

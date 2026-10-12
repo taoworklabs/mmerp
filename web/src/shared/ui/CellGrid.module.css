@@ -78,3 +78,9 @@
 .off {
   background: var(--mmerp-color-subtle);
 }
+
+/* A cell to look at again; the reason is in its tooltip and read out with it. Listed after
+   .off, so a day off holding a value shows the warning. */
+.warn {
+  background: var(--mantine-color-warning-1);
+}

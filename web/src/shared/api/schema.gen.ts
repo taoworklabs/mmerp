@@ -3275,6 +3275,7 @@ export interface components {
             status: "draft" | "pending_approval" | "posted" | "cancelled";
             /** Format: int32 */
             version: number;
+            warnings: components["schemas"]["TimesheetWarning"][];
         };
         TimesheetEmployee: {
             code: string;
@@ -3330,6 +3331,14 @@ export interface components {
             month: string;
             /** Format: int32 */
             version: number;
+        };
+        TimesheetWarning: {
+            /** @enum {string} */
+            code: "work_on_day_off" | "work_on_leave_day";
+            /** Format: date */
+            date: string;
+            /** Format: int64 */
+            employee_id: number;
         };
         TransitionInputBody: {
             /**

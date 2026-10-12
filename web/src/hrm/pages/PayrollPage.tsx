@@ -179,7 +179,7 @@ function PayrollState({ payroll: p, computing, failed }: { payroll: Payroll; com
         </Alert>
       )}
       {warned.length > 0 && (
-        <Alert color="warning" icon={<IconAlertTriangle {...icon.button} />} title={t('hrm.payroll.overtime_limit')}>
+        <Alert color="warning" icon={<IconAlertTriangle {...icon.button} />} title={t('hrm.payroll.warnings')}>
           {warned.map((l) => `${l.employee_code} · ${l.employee_name}: ${l.warnings.map((w) => t(`hrm.payroll.warning.${w}`)).join(', ')}`).join('; ')}
         </Alert>
       )}

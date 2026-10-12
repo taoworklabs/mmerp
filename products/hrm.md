@@ -116,6 +116,7 @@ This lets tenants configure rules such as "leave over 3 days needs director appr
 ## Timekeeping
 
 - Timesheets are per pay period and org unit; each unit has one non-cancelled timesheet per period. A daily grid: each line is the actual days worked (0.5 or 1) by one employee on one day ([ADR-0020](../docs/adr/0020-timesheets.md)). Leave days come from leave requests, public holidays from the work calendar; the grid shades weekly rest days and public holidays.
+- The timesheet warns, per cell, of entries the payroll treats differently from what they say, and refuses neither: work on a weekly day off or a holiday (`work_on_day_off`: not paid without an overtime request) and work on a day an approved leave request covers (`work_on_leave_day`: the leave takes the balance, the work earns nothing more). The payroll line carries `work_on_leave_day` too.
 - Data sources in the first release are manual entry and Excel import through `dataio`. Excel import is a job on behalf of the user: it runs with the importing user's permissions and re-checks them when it runs. The imported file replaces all lines of the draft timesheet; Excel export has the same layout, so it doubles as the template to fill in.
 - Time clocks will be an integration in `internal/integration/`, built when there is a need for it, and will only produce data for `draft` timesheets.
 

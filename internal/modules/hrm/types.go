@@ -433,8 +433,19 @@ type Timesheet struct {
 	Lines       []TimesheetLine     `json:"lines" nullable:"false"`
 	// Weekly days off and holidays of the period, from the work calendar.
 	OffDays []string `json:"off_days" nullable:"false"`
+	// Cells the payroll treats differently from what they say.
+	Warnings []TimesheetWarning `json:"warnings" nullable:"false"`
 	// edit, delete, submit, withdraw, cancel, export, import.
 	AllowedActions []string `json:"allowed_actions" nullable:"false"`
+}
+
+// TimesheetWarning flags one cell: work_on_day_off is work on a weekly day off or a holiday,
+// which earns nothing without an overtime request; work_on_leave_day is work on a day an
+// approved leave request also covers.
+type TimesheetWarning struct {
+	EmployeeID int64  `json:"employee_id"`
+	Date       string `json:"date" format:"date"`
+	Code       string `json:"code" enum:"work_on_day_off,work_on_leave_day"`
 }
 
 type TimesheetListItem struct {
@@ -546,7 +557,7 @@ type PayrollLine struct {
 	StandardDays  int    `json:"standard_days"`
 	PaidDays      string `json:"paid_days"`
 	OvertimeHours string `json:"overtime_hours"`
-	// overtime_month_limit, overtime_year_limit.
+	// overtime_month_limit, overtime_year_limit, work_on_leave_day.
 	Warnings []string `json:"warnings" nullable:"false"`
 	PayrollAmounts
 }

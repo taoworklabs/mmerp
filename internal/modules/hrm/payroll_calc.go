@@ -54,6 +54,8 @@ type payInput struct {
 	UnusedLeave         *unusedLeave    `json:"unused_leave"`
 	Adjustment          int64           `json:"adjustment"`
 	Dependents          int             `json:"dependents"`
+	// Days with both work and approved leave: the leave takes the balance, the work earns nothing.
+	WorkOnLeaveDays int `json:"work_on_leave_days,omitempty"`
 }
 
 func (a *PayrollAmounts) add(b PayrollAmounts) {
@@ -94,7 +96,8 @@ type payResult struct {
 	PayrollAmounts
 	PaidDays      decimal.Decimal `json:"paid_days"`
 	OvertimeHours decimal.Decimal `json:"overtime_hours"`
-	// overtime_month_limit, overtime_year_limit: hours past the tax-free limits.
+	// overtime_month_limit, overtime_year_limit: hours past the tax-free limits;
+	// work_on_leave_day: a day both worked and on approved leave.
 	Warnings []string `json:"warnings"`
 }
 
@@ -176,6 +179,9 @@ func calcPayroll(p params, mode platform.Rounding, in []payInput) []payResult {
 	otPay, otExempt := make([]decimal.Decimal, n), make([]decimal.Decimal, n)
 	for i, x := range in {
 		otPay[i], otExempt[i], out[i].OvertimeHours, out[i].Warnings = overtime(p, x, std[i])
+		if x.WorkOnLeaveDays > 0 {
+			out[i].Warnings = append(out[i].Warnings, "work_on_leave_day")
+		}
 	}
 	ot := col(func(i int) decimal.Decimal { return otPay[i] })
 	exemptOT := col(func(i int) decimal.Decimal { return otExempt[i] })

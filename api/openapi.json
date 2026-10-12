@@ -5478,6 +5478,12 @@
           "version": {
             "format": "int32",
             "type": "integer"
+          },
+          "warnings": {
+            "items": {
+              "$ref": "#/components/schemas/TimesheetWarning"
+            },
+            "type": "array"
           }
         },
         "required": [
@@ -5492,6 +5498,7 @@
           "employees",
           "lines",
           "off_days",
+          "warnings",
           "allowed_actions"
         ],
         "type": "object"
@@ -5663,6 +5670,32 @@
           "version",
           "month",
           "lines"
+        ],
+        "type": "object"
+      },
+      "TimesheetWarning": {
+        "additionalProperties": false,
+        "properties": {
+          "code": {
+            "enum": [
+              "work_on_day_off",
+              "work_on_leave_day"
+            ],
+            "type": "string"
+          },
+          "date": {
+            "format": "date",
+            "type": "string"
+          },
+          "employee_id": {
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "employee_id",
+          "date",
+          "code"
         ],
         "type": "object"
       },
