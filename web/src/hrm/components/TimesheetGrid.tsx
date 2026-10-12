@@ -6,7 +6,7 @@ import { api, unwrap, type Timesheet } from '@/shared/api/hrm'
 import { useDocumentMutation } from '@/shared/document'
 import { formatDate, formatDecimal, formatWeekday } from '@/shared/i18n'
 import { CellGrid } from '@/shared/ui/CellGrid'
-import { Form, FormActions } from '@/shared/ui/form'
+import { fieldId, Form, FormActions } from '@/shared/ui/form'
 import { icon } from '@/shared/ui/theme'
 import { timesheetDocType } from '../keys'
 
@@ -82,42 +82,52 @@ function Warnings({ timesheet: ts }: { timesheet: Timesheet }) {
 
 function Grid({ timesheet: ts, editable }: { timesheet: Timesheet; editable: boolean }) {
   const { t } = useTranslation()
-  const { field } = useController<{ cells: Cells }, 'cells'>({
+  const { field, fieldState } = useController<{ cells: Cells }, 'cells'>({
     name: 'cells',
     rules: { validate: (v) => Object.values(v).every((c) => halves(c) !== null) || t('hrm.timesheet.invalid_cells') },
   })
   const value: Cells = field.value
+  const errorId = `${fieldId('cells')}-error`
   const dates = days(ts.period_start, ts.period_end)
   const employees = new Map(ts.employees.map((e) => [String(e.id), e]))
   const offDays = new Set(ts.off_days)
   const warnings = new Map(ts.warnings.map((w) => [`${w.employee_id}:${w.date}`, t(`hrm.timesheet.cell_warning.${w.code}`)]))
   return (
-    <CellGrid
-      label={t('hrm.timesheet.grid')}
-      corner={t('hrm.timesheet.employee')}
-      rows={ts.employees.map((e) => ({ key: String(e.id), header: `${e.code} · ${e.full_name}`, label: e.full_name }))}
-      columns={dates.map((d) => ({
-        key: d,
-        label: formatDate(d),
-        header: (
-          <Stack gap={0}>
-            <span>{Number(d.slice(8))}</span>
-            <span>{formatWeekday(d)}</span>
-          </Stack>
-        ),
-      }))}
-      value={(r, c) => value[`${r}:${c}`] ?? ''}
-      onChange={editable ? (r, c, v) => field.onChange({ ...value, [`${r}:${c}`]: v }) : undefined}
-      invalid={(v) => halves(v) === null}
-      warning={(r, c) => warnings.get(`${r}:${c}`)}
-      off={(r, c) => {
-        const e = employees.get(r)
-        return offDays.has(c) || (!!e && (c < e.hire_date || (e.termination_date !== null && c > e.termination_date)))
-      }}
-      total={{
-        header: t('hrm.timesheet.total'),
-        value: (r) => formatDecimal(String(dates.reduce((sum, d) => sum + (halves(value[`${r}:${d}`] ?? '') ?? 0), 0) / 2)),
-      }}
-    />
+    <Stack gap="xs">
+      <CellGrid
+        label={t('hrm.timesheet.grid')}
+        invalidId={fieldId('cells')}
+        errorId={errorId}
+        corner={t('hrm.timesheet.employee')}
+        rows={ts.employees.map((e) => ({ key: String(e.id), header: `${e.code} · ${e.full_name}`, label: e.full_name }))}
+        columns={dates.map((d) => ({
+          key: d,
+          label: formatDate(d),
+          header: (
+            <Stack gap={0}>
+              <span>{Number(d.slice(8))}</span>
+              <span>{formatWeekday(d)}</span>
+            </Stack>
+          ),
+        }))}
+        value={(r, c) => value[`${r}:${c}`] ?? ''}
+        onChange={editable ? (r, c, v) => field.onChange({ ...value, [`${r}:${c}`]: v }) : undefined}
+        invalid={(v) => halves(v) === null}
+        warning={(r, c) => warnings.get(`${r}:${c}`)}
+        off={(r, c) => {
+          const e = employees.get(r)
+          return offDays.has(c) || (!!e && (c < e.hire_date || (e.termination_date !== null && c > e.termination_date)))
+        }}
+        total={{
+          header: t('hrm.timesheet.total'),
+          value: (r) => formatDecimal(String(dates.reduce((sum, d) => sum + (halves(value[`${r}:${d}`] ?? '') ?? 0), 0) / 2)),
+        }}
+      />
+      {fieldState.error && (
+        <Text id={errorId} size="sm" c="var(--mantine-color-error)">
+          {fieldState.error.message}
+        </Text>
+      )}
+    </Stack>
   )
 }

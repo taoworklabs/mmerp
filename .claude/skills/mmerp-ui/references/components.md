@@ -118,7 +118,8 @@ Every field takes `bare` for a table cell: no visible label (kept as `aria-label
 
 | Form part | Use |
 | --- | --- |
-| `Form` | The form: validation, focus on the first error, server errors via `fieldOf`, leave guard, Ctrl/Cmd+S |
+| `Form` | The form: validation, focus on the first error, server errors via `fieldOf`, leave guard, Ctrl/Cmd+S; tells an enclosing `UnsavedProvider` whether it holds unsaved edits |
+| `UnsavedProvider`, `useUnsaved` | Whether a form of the page has unsaved edits; `DocumentPage` provides it, `DocumentActions` reads it. A page-level action that reloads the record reads `useUnsaved()` the same way |
 | `FormSection` | Titled group of fields; `wide` puts the title on top and the content full width (for a table); at most 1200px wide |
 | `FormRow`, `InputRow` | Something that spans the field grid; a control level with the inputs beside it |
 | `FormActions` | The footer: sticky with Discard on a page (no `onCancel`), Cancel + submit in a modal (`onCancel`) |
@@ -138,7 +139,7 @@ Filter inputs (`SearchInput`, `MonthFilter`, `YearSelect`, `OrgUnitSelect`, a pl
 | `BulkBar` | "N selected", the bulk actions (children), Clear selection |
 | `SidePanel` + `usePeek` | Read-only preview of a list row on the right, 480px, not modal, with "Open full page"; the open id on the URL (`?peek=`) |
 | `FieldList` | Read-only label/value pairs, label left in `dimmed` |
-| `CellGrid` | A grid of number inputs on two axes (timesheet) |
+| `CellGrid` | A grid of number inputs on two axes (timesheet). Inside a form, pass `invalidId={fieldId('<field>')}` and `errorId` and render the field's error under the grid: the first invalid cell then takes the focus from the footer's "Go to next field" |
 | `TileGrid`, `StatTile`, `LinkTile` | Home and overview pages: a count that opens its list, a destination |
 | `PersonName`, `PersonAvatar` | A person: initials on a colour derived from the name, round |
 | `OrgUnitName` | An org unit with its kind icon (square, radius 4) |

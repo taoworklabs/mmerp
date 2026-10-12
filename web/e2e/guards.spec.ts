@@ -49,3 +49,19 @@ test('submitting a quotation with unsaved edits asks to save first and keeps the
   const saved = (await (await api.get(`/api/sales/quotes/${quote}`)).json()) as { status: string }
   expect(saved.status).toBe('draft')
 })
+
+test('an invalid timesheet cell is named and the footer leads to it', async ({ page }) => {
+  const code = `G${run}E1`
+  await created(api.post('/api/hrm/employees', { data: employee(code, unit) }))
+  const sheet = await created(api.post('/api/hrm/timesheets', { data: { org_unit_id: unit, month: '2026-04' } }))
+
+  await signedIn(page, `/hrm/timesheets/${sheet}`)
+  const cell = page.getByRole('textbox', { name: `Nhân viên ${code}, 01/04/2026` })
+  await cell.fill('2')
+  await page.getByRole('button', { name: 'Lưu' }).click()
+
+  await expect(page.getByText('Có ô không hợp lệ: mỗi ô chỉ nhận 0,5 hoặc 1.')).toBeVisible()
+  await page.getByRole('button', { name: 'Lưu' }).focus()
+  await page.getByRole('button', { name: 'Đến trường tiếp theo' }).click()
+  await expect(cell).toBeFocused()
+})
