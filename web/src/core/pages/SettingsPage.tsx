@@ -1,5 +1,5 @@
-import { Menu, Select } from '@mantine/core'
-import { IconBuildingSkyscraper, IconPencil } from '@tabler/icons-react'
+import { Select } from '@mantine/core'
+import { IconBuildingSkyscraper } from '@tabler/icons-react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
@@ -45,11 +45,8 @@ export function SettingsPage() {
         columns={columns}
         rows={settings.data ?? []}
         rowKey={(s) => s.key}
-        menu={(s) => (
-          <Menu.Item leftSection={<IconPencil {...icon.text} />} onClick={() => setEditing(s)}>
-            {t('core.settings.change')}
-          </Menu.Item>
-        )}
+        // One action per row: the row itself opens it.
+        onRowClick={(s) => setEditing(s)}
       />
     )
   return (

@@ -48,16 +48,14 @@ test('a contract prints to a PDF the requester downloads', async ({ browser }) =
 test('an administrator rewords a contract clause, saved as a new version', async ({ page }) => {
   await signedIn(page, '/admin/print-templates')
   const row = page.getByRole('row', { name: /Hợp đồng lao động/ })
-  await row.getByRole('button', { name: 'Thao tác khác' }).click()
-  await page.getByRole('menuitem', { name: 'Sửa lời văn' }).click()
+  await row.getByRole('button', { name: /Hợp đồng lao động/ }).click()
   const clause = page.getByRole('textbox', { name: 'Điều khoản hợp đồng (tiếng Việt)' })
   await clause.fill('Người lao động {employee_name} tuân thủ nội quy của {employer_name}. Lần chạy ' + run)
   await page.getByRole('button', { name: 'Lưu phiên bản mới' }).click()
   await expect(page.getByText('Đã lưu phiên bản mới của mẫu in.')).toBeVisible()
   await expect(row.getByText(/Phiên bản \d+/)).toBeVisible()
 
-  await row.getByRole('button', { name: 'Thao tác khác' }).click()
-  await page.getByRole('menuitem', { name: 'Sửa lời văn' }).click()
+  await row.getByRole('button', { name: /Hợp đồng lao động/ }).click()
   await clause.fill('Lương {salary}')
   await page.getByRole('button', { name: 'Lưu phiên bản mới' }).click()
   await expect(page.getByText('Lời văn dùng chỗ điền không có trong mẫu: salary.')).toBeVisible()
