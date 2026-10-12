@@ -3,6 +3,7 @@ package hrm_test
 import (
 	"context"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -354,4 +355,25 @@ func equalIDs(got []int64, want ...int64) bool {
 		}
 	}
 	return true
+}
+
+// Two overlapping originals sent into force at once: the employee lock makes the second
+// wait for the first to commit, then refuse.
+func TestOverlappingContractsPostedAtOnce(t *testing.T) {
+	f := newContractFixture(t)
+	// An earlier contract in force, so the legal entity's payroll lock row already exists:
+	// creating it on first use would serialize the two by itself.
+	f.check(f.post(must(t)(f.original("2025-01-01", "2025-12-31", 9_000_000))))
+	a := must(t)(f.original("2026-01-01", "2026-12-31", 10_000_000))
+	b := must(t)(f.original("2026-06-01", "", 12_000_000))
+	var second error
+	var wg sync.WaitGroup
+	f.check(platform.InTx(f.pay, func(ctx context.Context) error {
+		f.check(f.rec.Transition(ctx, record.Ref{Type: "hrm.contract", ID: a}, 1, record.Posted))
+		wg.Go(func() { second = f.post(b) })
+		time.Sleep(100 * time.Millisecond)
+		return nil
+	}))
+	wg.Wait()
+	wantErr(t, second, "contract_overlaps")
 }
