@@ -18,6 +18,7 @@ export function EmployeeField({
   required,
   withTerminated,
   managerOf,
+  bare,
 }: {
   name: string
   label: string
@@ -28,6 +29,7 @@ export function EmployeeField({
   withTerminated?: boolean
   // Picking this employee's manager: leave out the employee and everyone under them.
   managerOf?: number
+  bare?: boolean
 }) {
   const [search, setSearch] = useState('')
   const [q] = useDebouncedValue(search, 300)
@@ -42,5 +44,5 @@ export function EmployeeField({
   if (current && !options.some((o) => o.value === String(current.id))) options.unshift({ value: String(current.id), label: employeeLabel(current.code, current.name) })
   // Select puts the chosen option's label into the search box; that is not a search.
   const onSearch = (q: string) => setSearch(options.some((o) => o.label === q) ? '' : q)
-  return <SelectField name={name} label={label} data={options} onSearch={onSearch} clearable={!required} required={required} readOnly={readOnly} />
+  return <SelectField name={name} label={label} data={options} onSearch={onSearch} clearable={!required} required={required} readOnly={readOnly} bare={bare} />
 }
