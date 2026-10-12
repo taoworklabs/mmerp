@@ -94,6 +94,9 @@ test('filters, sort and page live on the URL and Back restores each step', async
 
   await page.getByRole('button', { name: 'Họ tên' }).click()
   await expect(page).toHaveURL(/sort=full_name/)
+  // The URL changes before the header re-renders (router updates run in a transition);
+  // a click in between toggles from the old sort.
+  await expect(table.getByRole('columnheader', { name: 'Họ tên' })).toHaveAttribute('aria-sort', 'ascending')
   await page.getByRole('button', { name: 'Họ tên' }).click()
   await expect(page).toHaveURL(/sort=-full_name/)
   await expect(table.getByRole('row').nth(1)).toContainText(`A${run}-24`)
