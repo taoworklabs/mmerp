@@ -57,7 +57,7 @@ function Dependents({ employee }: { employee: Employee }) {
   const months = (d: Dependent) => [d.deduction_from, d.deduction_to].map((m) => formatMonth(m) || '…').join(' – ')
   const columns: Column<Dependent>[] = [
     { key: 'full_name', header: t('hrm.dependent.full_name'), role: 'title', render: (d) => d.full_name },
-    { key: 'relationship', header: t('hrm.dependent.relationship'), role: 'status', render: (d) => t(`hrm.dependent.relationship.${d.relationship}`) },
+    { key: 'relationship', header: t('hrm.dependent.relationship'), role: 'meta', render: (d) => t(`hrm.dependent.relationship.${d.relationship}`) },
     { key: 'date_of_birth', header: t('hrm.dependent.date_of_birth'), role: 'meta', render: (d) => formatDate(d.date_of_birth) },
     { key: 'id_number', header: t('hrm.dependent.id_number'), role: 'hidden', render: (d) => d.id_number ?? '' },
     { key: 'deduction', header: t('hrm.dependent.deduction'), role: 'meta', render: months },
