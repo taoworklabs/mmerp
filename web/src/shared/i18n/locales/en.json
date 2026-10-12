@@ -318,5 +318,6 @@
   "shared.devui.undo": "Retire item",
   "shared.devui.undo_done": "Item retired.",
   "shared.devui.year": "Year",
-  "shared.devui.grand_total": "Total"
+  "shared.devui.grand_total": "Total",
+  "shared.document.save_first": "Save changes before submitting or withdrawing."
 }

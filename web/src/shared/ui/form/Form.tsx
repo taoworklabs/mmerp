@@ -1,6 +1,6 @@
 import { Alert, Anchor, Badge, Box, Button, Grid, Group, SimpleGrid, Stack, Text } from '@mantine/core'
 import { IconAlertCircle, type Icon as TablerIcon } from '@tabler/icons-react'
-import { useEffect, useRef, useState, type ReactNode } from 'react'
+import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from 'react'
 import { FormProvider, useFormContext, useFormState, type FieldErrors, type FieldValues, type Path, type UseFormReturn } from 'react-hook-form'
 import { useTranslation } from 'react-i18next'
 import { useBlocker } from 'react-router'
@@ -11,6 +11,21 @@ import { icon } from '../theme'
 import classes from './Form.module.css'
 
 export const fieldId = (name: string) => `field-${name.replaceAll('.', '-')}`
+
+// Unsaved tells a page whether a form inside it holds edits not yet saved, so the page's own
+// actions (Submit for approval) can ask to save first instead of dropping them.
+type Unsaved = { dirty: boolean; set: (dirty: boolean) => void }
+const UnsavedContext = createContext<Unsaved | null>(null)
+
+export function UnsavedProvider({ children }: { children: ReactNode }) {
+  const [dirty, set] = useState(false)
+  return <UnsavedContext.Provider value={{ dirty, set }}>{children}</UnsavedContext.Provider>
+}
+
+// useUnsaved is true while a form of the page has unsaved edits; false outside a provider.
+export function useUnsaved() {
+  return useContext(UnsavedContext)?.dirty ?? false
+}
 
 // errorNames lists the dotted names of every field with an error, lines of a list included.
 function errorNames(errors: FieldErrors, prefix = ''): string[] {
@@ -87,6 +102,11 @@ export function Form<T extends FieldValues>({ form, onSubmit, fieldOf, id, child
   }, [submit])
 
   const dirty = Object.keys(dirtyFields).length > 0 && !isSubmitting
+  const report = useContext(UnsavedContext)?.set
+  useEffect(() => {
+    report?.(dirty)
+    return () => report?.(false)
+  }, [report, dirty])
   const blocker = useBlocker(({ currentLocation, nextLocation }) => dirty && currentLocation.pathname + currentLocation.search !== nextLocation.pathname + nextLocation.search)
   const [ask, dialog] = useConfirm()
   useEffect(() => {

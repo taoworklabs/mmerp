@@ -318,5 +318,6 @@
   "shared.devui.undo": "Ngừng dùng mặt hàng",
   "shared.devui.undo_done": "Đã ngừng dùng mặt hàng.",
   "shared.devui.year": "Năm",
-  "shared.devui.grand_total": "Tổng thanh toán"
+  "shared.devui.grand_total": "Tổng thanh toán",
+  "shared.document.save_first": "Lưu thay đổi trước khi gửi duyệt hoặc rút lại."
 }

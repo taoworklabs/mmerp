@@ -48,7 +48,7 @@ A document moves between `draft`, `pending_approval`, `posted`, `cancelled` only
 - Status changes are explicit verb buttons, never a status dropdown: the next step depends on approval rules and permissions the server decides.
 - When no lifecycle step is left, the area's follow-up action (Create order from a posted quotation) may be the page's primary button.
 - Every lifecycle action answers with a toast on success and a banner at the top of the page on failure (`onError`).
-- A document with unsaved edits must be saved before Submit or Withdraw: the button explains "Save changes first" and points to the save bar. (Rule; `DocumentActions` does not enforce it yet and it is in the migration list. Screens add no workaround of their own.)
+- A document with unsaved edits must be saved before Submit or Withdraw: `DocumentActions` shows "Lưu thay đổi trước khi gửi duyệt hoặc rút lại." in the page banner instead of acting, while the save bar stays on screen. It knows through `UnsavedProvider` (set up by `DocumentPage`; every `Form` inside reports to it), so screens add nothing.
 
 ## Confirm or undo
 
