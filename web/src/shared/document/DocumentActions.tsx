@@ -22,7 +22,8 @@ type Props = {
   onError: (message: string | null) => void
 }
 
-// DocumentActions draws the lifecycle buttons from allowed_actions and runs them.
+// DocumentActions draws the lifecycle buttons from allowed_actions and runs them: Submit is the
+// primary button, Delete and Cancel quiet red text that asks before acting.
 export function DocumentActions({ docType, id, version, number, actions, onDelete, onError }: Props) {
   const { t } = useTranslation()
   const { run, dialog } = useDocumentMutation(docType, id, version)
@@ -54,12 +55,12 @@ export function DocumentActions({ docType, id, version, number, actions, onDelet
   return (
     <Group gap="xs" justify="flex-end">
       {has('delete') && onDelete && (
-        <Button variant="outline" color="danger" leftSection={<IconTrash {...icon.button} />} disabled={busy} onClick={() => void destructive('delete', onDelete)}>
+        <Button variant="subtle" color="danger" leftSection={<IconTrash {...icon.button} />} disabled={busy} onClick={() => void destructive('delete', onDelete)}>
           {t('shared.document.action.delete')}
         </Button>
       )}
       {has('cancel') && (
-        <Button variant="outline" color="danger" leftSection={<IconX {...icon.button} />} disabled={busy} onClick={() => void destructive('cancel', transition('cancelled'))}>
+        <Button variant="subtle" color="danger" leftSection={<IconX {...icon.button} />} disabled={busy} onClick={() => void destructive('cancel', transition('cancelled'))}>
           {t('shared.document.action.cancel')}
         </Button>
       )}
@@ -69,7 +70,8 @@ export function DocumentActions({ docType, id, version, number, actions, onDelet
         </Button>
       )}
       {has('submit') && (
-        <Button variant="default" leftSection={<IconSend {...icon.button} />} disabled={busy} onClick={() => void act('submit', transition('posted'))}>
+        // Sending on is the next step of a draft, so it is the page's primary button.
+        <Button leftSection={<IconSend {...icon.button} />} disabled={busy} onClick={() => void act('submit', transition('posted'))}>
           {t('shared.document.action.submit')}
         </Button>
       )}

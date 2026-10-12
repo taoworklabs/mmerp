@@ -121,8 +121,9 @@ export function Form<T extends FieldValues>({ form, onSubmit, fieldOf, id, child
 
 // FormSection groups fields under a title. From 1280px the title and description sit in a
 // left column and short fields two per row on the right; below that, everything is one column.
+// wide puts the title on top and gives the content the whole width, for a table of lines.
 // After a failed submit its title carries the number of its fields still to fix.
-export function FormSection({ title, description, icon: Icon, children }: { title: string; description?: string; icon?: TablerIcon; children: ReactNode }) {
+export function FormSection({ title, description, icon: Icon, wide, children }: { title: string; description?: string; icon?: TablerIcon; wide?: boolean; children: ReactNode }) {
   const { t } = useTranslation()
   const { errors, submitCount } = useFormState()
   const ref = useRef<HTMLFieldSetElement>(null)
@@ -132,7 +133,7 @@ export function FormSection({ title, description, icon: Icon, children }: { titl
   return (
     <Box component="fieldset" className={classes.section} ref={ref}>
       <Grid gap={{ base: 'sm', lg: 'xl' }}>
-        <Grid.Col span={{ base: 12, lg: 4 }}>
+        <Grid.Col span={{ base: 12, lg: wide ? 12 : 4 }}>
           <Group gap="xs" wrap="nowrap">
             {Icon && <Icon {...icon.text} aria-hidden />}
             <Text component="legend" fw={600}>
@@ -150,8 +151,8 @@ export function FormSection({ title, description, icon: Icon, children }: { titl
             </Text>
           )}
         </Grid.Col>
-        <Grid.Col span={{ base: 12, lg: 8 }}>
-          <SimpleGrid cols={{ base: 1, lg: 2 }} spacing="md" verticalSpacing="md">
+        <Grid.Col span={{ base: 12, lg: wide ? 12 : 8 }}>
+          <SimpleGrid cols={{ base: 1, lg: wide ? 1 : 2 }} spacing="md" verticalSpacing="md">
             {children}
           </SimpleGrid>
         </Grid.Col>

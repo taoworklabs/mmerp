@@ -1,0 +1,52 @@
+/* Clips the header's tinted cells to the frame's rounded corners. */
+.frame {
+  overflow: hidden;
+}
+
+.table thead th {
+  height: 36px;
+  background: var(--mmerp-elevation-surface-sunken);
+  color: var(--mantine-color-dimmed);
+  font-size: var(--mantine-font-size-xs);
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+/* The line number and the remove button take only their own width. */
+.n {
+  width: 1%;
+  color: var(--mantine-color-dimmed);
+  font-variant-numeric: tabular-nums;
+}
+
+.remove {
+  width: 1%;
+}
+
+/* Totals line up their figures in one right-hand column, as on a printed document. */
+.totals {
+  display: grid;
+  grid-template-columns: max-content minmax(8rem, max-content);
+  gap: var(--mantine-spacing-xxs) var(--mantine-spacing-lg);
+  margin: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+.totals div {
+  display: contents;
+}
+
+.totals dt {
+  color: var(--mantine-color-dimmed);
+}
+
+.totals dd {
+  margin: 0;
+  text-align: right;
+}
+
+.grand dt,
+.grand dd {
+  color: var(--mantine-color-text);
+  font-weight: 600;
+}

@@ -5,7 +5,7 @@ import { useController, useFormContext } from 'react-hook-form'
 import { useTranslation } from 'react-i18next'
 import { api, unwrap, type OrgUnit } from '@/shared/api/core'
 import { OrgUnitName } from '../OrgUnitName'
-import { icon } from '../theme'
+import { filterWidth, icon } from '../theme'
 import { fieldId } from './Form'
 import { belowError, type Option } from './fields'
 
@@ -76,7 +76,7 @@ export function OrgUnitSelect({ product, permission, label, value, onChange, cle
       onChange={onChange}
       searchable
       clearable={clearable}
-      w={{ base: '100%', md: 240 }}
+      w={{ base: '100%', md: filterWidth.unit }}
     />
   )
 }

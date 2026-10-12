@@ -11,16 +11,21 @@ import { Page, type PageHeaderProps } from './Page'
 type Paging = { page: number; pageSize: number; total: number; onPage: (page: number) => void; onPageSize: (size: number) => void }
 
 // ListPage: title and the create button, a filter bar, the table, then paging.
-// Below 1024px the filter bar moves into a drawer behind a "Filter" button.
+// Below 1024px the filter bar moves into a drawer behind a "Filter" button. tools (saved views,
+// columns) sit at the bar's right end; bulk, while rows are selected, takes the whole bar's place.
 export function ListPage({
   action,
   filters,
+  tools,
+  bulk,
   paging,
   children,
   ...header
 }: Omit<PageHeaderProps, 'actions' | 'leading'> & {
   action?: ReactNode
   filters?: ReactNode
+  tools?: ReactNode
+  bulk?: ReactNode
   paging?: Paging
   children: ReactNode
 }) {
@@ -29,12 +34,17 @@ export function ListPage({
   const [open, { toggle, close }] = useDisclosure()
   return (
     <Page {...header} actions={action}>
-      {filters &&
-        (wide ? (
+      {wide && bulk ? (
+        bulk
+      ) : wide && (filters || tools) ? (
+        <Group gap="xs" align="flex-end" justify="space-between" wrap="nowrap">
           <Group gap="xs" align="flex-end" role="search">
             {filters}
           </Group>
-        ) : (
+          {tools}
+        </Group>
+      ) : (
+        filters && (
           <>
             <Group>
               <Button variant="default" leftSection={<IconFilter {...icon.button} />} onClick={toggle}>
@@ -48,7 +58,8 @@ export function ListPage({
               </Stack>
             </Drawer>
           </>
-        ))}
+        )
+      )}
       {children}
       {paging && paging.total > 0 && <PagingBar {...paging} />}
     </Page>

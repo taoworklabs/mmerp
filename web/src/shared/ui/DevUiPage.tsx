@@ -7,6 +7,7 @@ import { useSearchParams } from 'react-router'
 import { formatNumber } from '@/shared/i18n'
 import { PersonAvatar, PersonName } from './avatar'
 import { DataTable } from './DataTable'
+import { DevUiPatterns } from './DevUiPatterns'
 import { FieldList } from './FieldList'
 import { OrgUnitName } from './OrgUnitName'
 import { StatusBadge } from './StatusBadge'
@@ -194,6 +195,7 @@ export default function DevUiPage({ withSections: WithSections }: Props) {
           <FormActions submitLabel={t('shared.devui.primary')} />
         </Form>
       </Stack>
+      <DevUiPatterns />
       <Stack gap="xs">
         <Title order={2}>{t('shared.devui.states')}</Title>
         <ContentSkeleton />
