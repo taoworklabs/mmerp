@@ -249,7 +249,7 @@ func (s *Service) Contracts(ctx context.Context, f ContractFilter) (ContractList
 		return out, err
 	}
 	rows, err := store.New(platform.DBFrom(ctx)).ListContracts(ctx, store.ListContractsParams{
-		AllUnits: sc.All, Units: sc.Units, Status: f.Status,
+		AllUnits: sc.All, Units: sc.Units, Status: f.Status, Q: strings.TrimSpace(f.Q),
 		ContractTypeID: pgtype.Int8{Int64: f.ContractTypeID, Valid: f.ContractTypeID != 0},
 		OrgUnitID:      pgtype.Int8{Int64: f.OrgUnitID, Valid: f.OrgUnitID != 0},
 		EmployeeID:     pgtype.Int8{Int64: f.EmployeeID, Valid: f.EmployeeID != 0},

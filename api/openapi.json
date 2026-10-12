@@ -7198,6 +7198,17 @@
         "operationId": "list-contracts",
         "parameters": [
           {
+            "description": "Number, or the employee's code or name",
+            "explode": false,
+            "in": "query",
+            "name": "q",
+            "schema": {
+              "description": "Number, or the employee's code or name",
+              "maxLength": 100,
+              "type": "string"
+            }
+          },
+          {
             "explode": false,
             "in": "query",
             "name": "status",
@@ -8313,6 +8324,17 @@
         "operationId": "list-leaves",
         "parameters": [
           {
+            "description": "Number, or the employee's code or name",
+            "explode": false,
+            "in": "query",
+            "name": "q",
+            "schema": {
+              "description": "Number, or the employee's code or name",
+              "maxLength": 100,
+              "type": "string"
+            }
+          },
+          {
             "explode": false,
             "in": "query",
             "name": "status",
@@ -8324,6 +8346,15 @@
                 "cancelled"
               ],
               "type": "string"
+            }
+          },
+          {
+            "explode": false,
+            "in": "query",
+            "name": "org_unit_id",
+            "schema": {
+              "format": "int64",
+              "type": "integer"
             }
           },
           {
@@ -8781,6 +8812,17 @@
         "operationId": "list-overtimes",
         "parameters": [
           {
+            "description": "Number, or the employee's code or name",
+            "explode": false,
+            "in": "query",
+            "name": "q",
+            "schema": {
+              "description": "Number, or the employee's code or name",
+              "maxLength": 100,
+              "type": "string"
+            }
+          },
+          {
             "explode": false,
             "in": "query",
             "name": "status",
@@ -8792,6 +8834,15 @@
                 "cancelled"
               ],
               "type": "string"
+            }
+          },
+          {
+            "explode": false,
+            "in": "query",
+            "name": "org_unit_id",
+            "schema": {
+              "format": "int64",
+              "type": "integer"
             }
           },
           {
@@ -9484,6 +9535,21 @@
                 "pending_approval",
                 "posted",
                 "cancelled"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "explode": false,
+            "in": "query",
+            "name": "sort",
+            "schema": {
+              "default": "-period",
+              "enum": [
+                "period",
+                "-period",
+                "number",
+                "-number"
               ],
               "type": "string"
             }

@@ -334,6 +334,13 @@ func TestContractList(t *testing.T) {
 	if got := list(f.pay, hrm.ContractFilter{ContractTypeID: f.kind}); !equalIDs(got) {
 		t.Fatalf("kind without term: %v", got)
 	}
+	// Search: the employee's code or name, or a contract's number.
+	if got := list(f.pay, hrm.ContractFilter{Q: "nhân viên e"}); !equalIDs(got, later, app, soon, ended, draft) {
+		t.Fatalf("search by name: %v", got)
+	}
+	if got := list(f.pay, hrm.ContractFilter{Q: "zzz"}); !equalIDs(got) {
+		t.Fatalf("search without match: %v", got)
+	}
 	// Outside the contract permission there is nothing to list.
 	if got := list(f.m, hrm.ContractFilter{}); !equalIDs(got) {
 		t.Fatalf("manager: %v", got)

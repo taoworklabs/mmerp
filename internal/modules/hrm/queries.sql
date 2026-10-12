@@ -136,6 +136,8 @@ JOIN hrm.employees e ON e.id = r.employee_id
 JOIN hrm.leave_types t ON t.id = r.leave_type_id
 WHERE (@all_units::bool OR d.org_unit_id = ANY(@units::bigint[]) OR e.user_id = @actor::bigint OR r.employee_id = ANY(@reports::bigint[]))
   AND (@status::text = '' OR d.status = @status)
+  AND (@q::text = '' OR d.number ILIKE '%' || @q || '%' OR e.code ILIKE '%' || @q || '%' OR e.full_name ILIKE '%' || @q || '%')
+  AND (sqlc.narg(org_unit_id)::bigint IS NULL OR d.org_unit_id = sqlc.narg(org_unit_id))
   AND (sqlc.narg(employee_id)::bigint IS NULL OR r.employee_id = sqlc.narg(employee_id))
   AND (sqlc.narg(from_date)::date IS NULL OR r.end_date >= sqlc.narg(from_date))
   AND (sqlc.narg(to_date)::date IS NULL OR r.start_date <= sqlc.narg(to_date))
@@ -262,6 +264,7 @@ WHERE (@all_units::bool OR d.org_unit_id = ANY(@units::bigint[]))
   AND (@status::text = '' OR d.status = @status)
   AND (sqlc.narg(contract_type_id)::bigint IS NULL OR c.contract_type_id = sqlc.narg(contract_type_id))
   AND (sqlc.narg(org_unit_id)::bigint IS NULL OR d.org_unit_id = sqlc.narg(org_unit_id))
+  AND (@q::text = '' OR d.number ILIKE '%' || @q || '%' OR e.code ILIKE '%' || @q || '%' OR e.full_name ILIKE '%' || @q || '%')
   AND (sqlc.narg(employee_id)::bigint IS NULL OR c.employee_id = sqlc.narg(employee_id))
   AND (NOT sqlc.arg(expiring)::bool OR (c.parent_id IS NULL AND d.status = 'posted'
        AND c.end_date BETWEEN sqlc.arg(today)::date AND sqlc.arg(today)::date + 30))
@@ -331,6 +334,8 @@ JOIN record.documents d ON d.id = r.id
 JOIN hrm.employees e ON e.id = r.employee_id
 WHERE (@all_units::bool OR d.org_unit_id = ANY(@units::bigint[]) OR e.user_id = @actor::bigint OR r.employee_id = ANY(@reports::bigint[]))
   AND (@status::text = '' OR d.status = @status)
+  AND (@q::text = '' OR d.number ILIKE '%' || @q || '%' OR e.code ILIKE '%' || @q || '%' OR e.full_name ILIKE '%' || @q || '%')
+  AND (sqlc.narg(org_unit_id)::bigint IS NULL OR d.org_unit_id = sqlc.narg(org_unit_id))
   AND (sqlc.narg(employee_id)::bigint IS NULL OR r.employee_id = sqlc.narg(employee_id))
   AND (sqlc.narg(from_date)::date IS NULL OR r.date >= sqlc.narg(from_date))
   AND (sqlc.narg(to_date)::date IS NULL OR r.date <= sqlc.narg(to_date))
@@ -388,7 +393,12 @@ WHERE (@all_units::bool OR t.org_unit_id = ANY(@units::bigint[]))
   AND (@status::text = '' OR d.status = @status)
   AND (sqlc.narg(org_unit_id)::bigint IS NULL OR t.org_unit_id = sqlc.narg(org_unit_id))
   AND (sqlc.narg(period_start)::date IS NULL OR t.period_start = sqlc.narg(period_start))
-ORDER BY t.period_start DESC, u.name, t.id DESC
+ORDER BY
+    CASE WHEN @sort::text = 'period' THEN t.period_start END,
+    CASE WHEN @sort IN ('', '-period') THEN t.period_start END DESC,
+    CASE WHEN @sort = 'number' THEN d.number END,
+    CASE WHEN @sort = '-number' THEN d.number END DESC,
+    u.name, t.id DESC
 LIMIT @lim OFFSET @off;
 
 -- name: EmployeesByCodes :many

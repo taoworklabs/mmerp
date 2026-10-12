@@ -4288,6 +4288,8 @@ export interface operations {
     "list-contracts": {
         parameters: {
             query?: {
+                /** @description Number, or the employee's code or name */
+                q?: string;
                 status?: "draft" | "pending_approval" | "posted" | "cancelled";
                 contract_type_id?: number;
                 org_unit_id?: number;
@@ -4975,7 +4977,10 @@ export interface operations {
     "list-leaves": {
         parameters: {
             query?: {
+                /** @description Number, or the employee's code or name */
+                q?: string;
                 status?: "draft" | "pending_approval" | "posted" | "cancelled";
+                org_unit_id?: number;
                 employee_id?: number;
                 /** @description Requests ending on or after */
                 from?: string;
@@ -5268,7 +5273,10 @@ export interface operations {
     "list-overtimes": {
         parameters: {
             query?: {
+                /** @description Number, or the employee's code or name */
+                q?: string;
                 status?: "draft" | "pending_approval" | "posted" | "cancelled";
+                org_unit_id?: number;
                 employee_id?: number;
                 from?: string;
                 to?: string;
@@ -5695,6 +5703,7 @@ export interface operations {
                 month?: string;
                 org_unit_id?: number;
                 status?: "draft" | "pending_approval" | "posted" | "cancelled";
+                sort?: "period" | "-period" | "number" | "-number";
                 page?: number;
                 page_size?: 20 | 50 | 100;
             };

@@ -200,7 +200,9 @@ type LeaveList struct {
 }
 
 type LeaveFilter struct {
+	Q          string `query:"q" maxLength:"100" doc:"Number, or the employee's code or name"`
 	Status     string `query:"status" enum:"draft,pending_approval,posted,cancelled"`
+	OrgUnitID  int64  `query:"org_unit_id"`
 	EmployeeID int64  `query:"employee_id"`
 	From       string `query:"from" format:"date" doc:"Requests ending on or after"`
 	To         string `query:"to" format:"date" doc:"Requests starting on or before"`
@@ -322,6 +324,7 @@ type ContractList struct {
 }
 
 type ContractFilter struct {
+	Q              string `query:"q" maxLength:"100" doc:"Number, or the employee's code or name"`
 	Status         string `query:"status" enum:"draft,pending_approval,posted,cancelled"`
 	ContractTypeID int64  `query:"contract_type_id"`
 	OrgUnitID      int64  `query:"org_unit_id"`
@@ -383,7 +386,9 @@ type OvertimeList struct {
 }
 
 type OvertimeFilter struct {
+	Q          string `query:"q" maxLength:"100" doc:"Number, or the employee's code or name"`
 	Status     string `query:"status" enum:"draft,pending_approval,posted,cancelled"`
+	OrgUnitID  int64  `query:"org_unit_id"`
 	EmployeeID int64  `query:"employee_id"`
 	From       string `query:"from" format:"date"`
 	To         string `query:"to" format:"date"`
@@ -467,6 +472,7 @@ type TimesheetFilter struct {
 	Month     string `query:"month" pattern:"^[0-9]{4}-(0[1-9]|1[0-2])$"`
 	OrgUnitID int64  `query:"org_unit_id"`
 	Status    string `query:"status" enum:"draft,pending_approval,posted,cancelled"`
+	Sort      string `query:"sort" enum:"period,-period,number,-number" default:"-period"`
 	platform.Paging
 }
 
