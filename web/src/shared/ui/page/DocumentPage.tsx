@@ -4,6 +4,7 @@ import { IconAlertCircle } from '@tabler/icons-react'
 import type { ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useSearchParams } from 'react-router'
+import { UnsavedProvider } from '../form'
 import { icon } from '../theme'
 import classes from './DocumentPage.module.css'
 import { Page, readingWidth, type PageHeaderProps } from './Page'
@@ -34,7 +35,16 @@ type Props = Omit<PageHeaderProps, 'actions' | 'leading'> & {
 // main column; approval, the sections and history in a 360px side column. Below 1024px the
 // side column becomes tabs (details · approval · … · history, on the URL) and the actions a
 // bar at the bottom.
-export function DocumentPage({ actions, error, approval, history, sections = [], fullWidth, children, ...header }: Props) {
+// The page knows whether its form holds unsaved edits, so its actions can ask to save first.
+export function DocumentPage(props: Props) {
+  return (
+    <UnsavedProvider>
+      <DocumentLayout {...props} />
+    </UnsavedProvider>
+  )
+}
+
+function DocumentLayout({ actions, error, approval, history, sections = [], fullWidth, children, ...header }: Props) {
   const { t } = useTranslation()
   const wide = useMediaQuery('(min-width: 64em)', true)
   const [search, setSearch] = useSearchParams()

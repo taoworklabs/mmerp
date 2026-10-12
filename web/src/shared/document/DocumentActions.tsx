@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next'
 import { api, unwrap } from '@/shared/api/core'
 import { errorText } from '@/shared/i18n'
 import { useConfirm } from '@/shared/ui/confirm'
+import { useUnsaved } from '@/shared/ui/form'
 import { notifySuccess } from '@/shared/ui/notify'
 import { icon } from '@/shared/ui/theme'
 import { useDocumentMutation } from './useDocumentMutation'
@@ -29,8 +30,11 @@ export function DocumentActions({ docType, id, version, number, actions, onDelet
   const { run, dialog } = useDocumentMutation(docType, id, version)
   const [ask, confirm] = useConfirm()
   const [busy, setBusy] = useState(false)
+  const unsaved = useUnsaved()
 
   async function act(action: string, call: (version: number) => Promise<unknown>) {
+    // Moving on would reload the form at the new version and drop what is not saved yet.
+    if (unsaved && (action === 'submit' || action === 'withdraw')) return onError(t('shared.document.save_first'))
     onError(null)
     setBusy(true)
     try {
