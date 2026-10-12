@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"slices"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -284,4 +285,73 @@ func TestPayrollSixDayWeek(t *testing.T) {
 	if l.StandardDays != 26 || l.PaidDays != "26" || l.Earned != 26_000_000 || l.SocialInsurance == 0 {
 		t.Fatalf("%+v", l)
 	}
+}
+
+// closing sends a payroll inside a transaction left open for a moment, while other runs at once.
+func (f *payrollFixture) closing(id int64, other func() error) (otherErr error) {
+	f.t.Helper()
+	var wg sync.WaitGroup
+	f.check(platform.InTx(f.pay, func(ctx context.Context) error {
+		f.check(f.rec.Transition(ctx, payrollRef(id), f.payrollDoc(id).Version, record.Posted))
+		wg.Go(func() { otherErr = other() })
+		time.Sleep(100 * time.Millisecond)
+		return nil
+	}))
+	wg.Wait()
+	return otherErr
+}
+
+// Two payrolls of one period closed at once, after a cancel left the period row in place:
+// the payroll lock makes the second wait and find the period taken.
+func TestPayrollsClosedAtOnce(t *testing.T) {
+	f := payrollAprilFixture(t)
+	first, second, third := f.payroll("2026-04"), f.payroll("2026-04"), f.payroll("2026-04")
+	f.check(f.send(first))
+	f.check(f.rec.Transition(f.pay, payrollRef(first), f.payrollDoc(first).Version, record.Cancelled))
+	v := f.payrollDoc(third).Version // read first: reading a payroll takes long enough to miss the race
+	wantErr(t, f.closing(second, func() error { return f.rec.Transition(f.pay, payrollRef(third), v, record.Posted) }), "payroll_already_posted")
+	if f.heldBy(second) != 1 || f.heldBy(third) != 0 {
+		t.Fatalf("held by second %d, third %d", f.heldBy(second), f.heldBy(third))
+	}
+}
+
+// A source approved while the payroll closes: whichever commits first wins, and the other
+// sees it. The closed period refuses the overtime; an overtime in first fails the close.
+func TestSourceApprovedWhilePayrollCloses(t *testing.T) {
+	f := payrollAprilFixture(t)
+	ot := record.Ref{Type: "hrm.overtime_request", ID: f.overtime("2026-04-06")}
+	first := f.payroll("2026-04")
+	wantErr(t, f.closing(first, func() error { return f.rec.Transition(f.pay, ot, 1, record.Posted) }), "payroll_period_closed")
+	f.check(f.rec.Transition(f.pay, payrollRef(first), f.payrollDoc(first).Version, record.Cancelled))
+
+	second := f.payroll("2026-04")
+	var sent error
+	var wg sync.WaitGroup
+	f.check(platform.InTx(f.pay, func(ctx context.Context) error {
+		f.check(f.rec.Transition(ctx, ot, 1, record.Posted))
+		wg.Go(func() { sent = f.send(second) })
+		time.Sleep(100 * time.Millisecond)
+		return nil
+	}))
+	wg.Wait()
+	wantErr(t, sent, "payroll_sources_changed")
+	if f.heldBy(second) != 0 {
+		t.Fatal("closed on stale sources")
+	}
+}
+
+// Computing again is only for a draft, and each computation is audited.
+func TestRecomputeOnlyADraft(t *testing.T) {
+	f := payrollAprilFixture(t)
+	id := f.payroll("2026-04")
+	if n := f.auditCount("hrm.payroll_computed"); n != 1 {
+		t.Fatalf("audited %d computations", n)
+	}
+	f.check(f.payrollJob(id))
+	if n := f.auditCount("hrm.payroll_computed"); n != 2 {
+		t.Fatalf("audited %d computations after the second", n)
+	}
+	f.check(f.send(id))
+	_, err := f.hrm.RecomputePayroll(f.pay, id, f.payrollDoc(id).Version)
+	wantErr(t, err, "document_not_editable")
 }

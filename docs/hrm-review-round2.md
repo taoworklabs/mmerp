@@ -2,7 +2,7 @@
 
 Created: 2026-10-12. Covers what round one left: its two unguarded rows (NP-01, NP-07), TB-02, and
 sections 5 and 6 of [the plan](hrm-review-plan.md) (profiles, contracts, addenda; timesheets, work
-calendar, overtime). Section 7 is not started yet.
+calendar, overtime) and 7 (payroll and period closing).
 
 ## Run environment
 
@@ -122,7 +122,52 @@ kind and drop the field from entry; (c) keep as is. Recommended: (a). It is one 
 request is saved, it keeps the field the approval rules filter on, and it is the first step toward
 (b).
 
+## Section 7: payroll and period closing
+
+The amounts themselves are checked against the 28 payroll samples (`TestPayrollSamples`); whether an
+accountant has confirmed the samples is still open, as `products/hrm.md` records. This section reads
+the flows around them.
+
+| Code | Result | Evidence |
+| --- | --- | --- |
+| LG-01 | Covered. Refused with `payroll_timesheets_missing`, naming the units | `TestPayrollLifecycle` |
+| LG-02 | Covered. Mid-month hire and termination per person | payroll samples C01, C02 and the quit samples |
+| LG-03 | Covered. Split at the addendum's date | payroll sample C04 |
+| LG-04 | Covered. Unpaid leave, overtime and adjustments each reconcile with the samples' spreadsheet; an adjustment needs a reason and a closed earlier period | payroll samples, `TestPayrollAdjustments` |
+| LG-05 | Covered. `sources_changed` shows and sending is refused until computed again | `TestPayrollLifecycle` |
+| LG-06 | Covered. The last approval fails with `payroll_sources_changed`, the instance stays open; withdraw, compute, resend | `TestPayrollSourcesChangeWhilePending` |
+| LG-07 | Covered (**new** test). Computing again only on a draft (`document_not_editable` otherwise); each computation is audited | `TestRecomputeOnlyADraft` |
+| LG-08 | Covered, now including concurrency (**new**). Two payrolls of one period closed at once after a cancel: the second finds the period taken | `TestPayrollsClosedAtOnce` |
+| LG-09 | Covered, now including concurrency (**new**). Whichever of the close and an overtime approval commits first wins: the overtime then meets a closed period, or the close meets changed sources | `TestSourceApprovedWhilePayrollCloses` |
+| LG-10 | Settled 2026-10-12 as an operating rule, see below | `TestPayrollAdjustments`, `TestPayrollLifecycle` |
+| LG-11 | Covered. A posted payroll's payslips reprint identically after the employee is renamed; template text is frozen at the first print | `TestPrintPayslips`, `TestPrintTextBlocks` |
+| LG-12 | Covered, now including a direct export (**new**). The totals-only viewer gets no lines, no print and no export; files go when the salary right does | `TestPayrollLifecycle`, `TestPrintPayslips` |
+
+Three notes from checking the new tests by breaking what they guard:
+
+- **LG-09 is held by the payroll lock alone.** With `LockPayrollLock` removed, the overtime is
+  approved into a period that the close then marks closed.
+- **LG-08 is held twice.** The insert of the period row (`ON CONFLICT DO NOTHING`) waits for the other
+  close's update of that same row, so the period row serializes two closes even without the
+  payroll lock. The test keeps the outcome either way.
+- **The export of a payroll is held by one line.** `record` lets the totals-only viewer export; only
+  the salary-view check in `exportablePayroll` refuses. Removing it hands the viewer every
+  amount, and the new test now fails if that happens.
+
+### LG-10: cancel or adjust
+
+The plan asks whoever owns payroll to state when a closed payroll may be cancelled to reopen its
+period, and when an error must be corrected by back pay or clawback in the open period. The system
+allows both. Cancelling voids the posting lines and frees every source of that period. Adjusting
+leaves the closed period untouched. It does not recompute the old period's insurance or tax.
+
+Decided on 2026-10-12: a closed payroll may be cancelled to reopen its period only while that
+period's pay has not been paid out and its insurance and tax have not been filed. Once either has
+happened, every error is corrected in the open period. This is an operating rule written into
+`products/hrm.md`. The system does not enforce it, because it does not know when pay is paid out or
+filed.
+
 ## Next
 
-Section 7 (payroll and period closing), using the
-contract timeline above.
+The older race tests named above, checked by breaking their locks. Round two then has nothing left
+from the plan's sections 4 to 8.
