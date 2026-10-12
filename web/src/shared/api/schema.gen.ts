@@ -975,6 +975,22 @@ export interface paths {
         patch: operations["update-me"];
         trace?: never;
     };
+    "/me/lists/{key}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["get-my-list-settings"];
+        put: operations["set-my-list-settings"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/notifications": {
         parameters: {
             query?: never;
@@ -2514,6 +2530,26 @@ export interface components {
             unit_price: number;
             /** @enum {string} */
             vat_rate: "none" | "0" | "5" | "8" | "10";
+        };
+        ListColumn: {
+            hidden: boolean;
+            key: string;
+            /** Format: int64 */
+            width: number | null;
+        };
+        ListSettings: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example /api/schemas/ListSettings.json
+             */
+            readonly $schema?: string;
+            columns: components["schemas"]["ListColumn"][];
+            views: components["schemas"]["ListView"][];
+        };
+        ListView: {
+            name: string;
+            query: string;
         };
         LoginInputBody: {
             /**
@@ -6206,6 +6242,70 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["UpdateMeInputBody"];
+            };
+        };
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "get-my-list-settings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                key: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListSettings"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "set-my-list-settings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                key: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ListSettings"];
             };
         };
         responses: {

@@ -82,7 +82,32 @@ func registerHandlers(api huma.API, s *Service) {
 		return nil, s.SetLocale(ctx, in.Body.Locale)
 	})
 
+	huma.Register(api, huma.Operation{
+		OperationID: "get-my-list-settings", Method: http.MethodGet, Path: "/me/lists/{key}",
+	}, func(ctx context.Context, in *listKeyInput) (*listSettingsOutput, error) {
+		out, err := s.ListSettings(ctx, in.Key)
+		return &listSettingsOutput{Body: out}, err
+	})
+
+	huma.Register(api, huma.Operation{
+		OperationID: "set-my-list-settings", Method: http.MethodPut, Path: "/me/lists/{key}",
+		DefaultStatus: http.StatusNoContent,
+	}, func(ctx context.Context, in *setListSettingsInput) (*struct{}, error) {
+		return nil, s.SetListSettings(ctx, in.Key, in.Body)
+	})
+
 	registerAdminHandlers(api, s)
+}
+
+type listKeyInput struct {
+	Key string `path:"key" pattern:"^[a-z][a-z0-9_.-]{0,99}$"`
+}
+
+type listSettingsOutput struct{ Body ListSettings }
+
+type setListSettingsInput struct {
+	Key  string `path:"key" pattern:"^[a-z][a-z0-9_.-]{0,99}$"`
+	Body ListSettings
 }
 
 type orgUnitsInput struct {

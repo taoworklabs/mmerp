@@ -265,6 +265,22 @@ func (q *Queries) ListOrgUnits(ctx context.Context) ([]IamOrgUnit, error) {
 	return items, nil
 }
 
+const listSettings = `-- name: ListSettings :one
+SELECT settings FROM iam.list_settings WHERE user_id = $1 AND list_key = $2
+`
+
+type ListSettingsParams struct {
+	UserID  int64
+	ListKey string
+}
+
+func (q *Queries) ListSettings(ctx context.Context, arg ListSettingsParams) ([]byte, error) {
+	row := q.db.QueryRow(ctx, listSettings, arg.UserID, arg.ListKey)
+	var settings []byte
+	err := row.Scan(&settings)
+	return settings, err
+}
+
 const listUsers = `-- name: ListUsers :many
 SELECT id, login, name, email FROM iam.users ORDER BY lower(login)
 `
@@ -357,6 +373,22 @@ func (q *Queries) RevokeRole(ctx context.Context, arg RevokeRoleParams) (RevokeR
 	var i RevokeRoleRow
 	err := row.Scan(&i.Product, &i.Role, &i.OrgUnitID)
 	return i, err
+}
+
+const setListSettings = `-- name: SetListSettings :exec
+INSERT INTO iam.list_settings (user_id, list_key, settings) VALUES ($1, $2, $3)
+ON CONFLICT (user_id, list_key) DO UPDATE SET settings = EXCLUDED.settings
+`
+
+type SetListSettingsParams struct {
+	UserID   int64
+	ListKey  string
+	Settings []byte
+}
+
+func (q *Queries) SetListSettings(ctx context.Context, arg SetListSettingsParams) error {
+	_, err := q.db.Exec(ctx, setListSettings, arg.UserID, arg.ListKey, arg.Settings)
+	return err
 }
 
 const setLocale = `-- name: SetLocale :exec
