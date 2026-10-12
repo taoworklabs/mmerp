@@ -507,3 +507,60 @@ func TestLeaveAuditIgnoresNumberSpelling(t *testing.T) {
 		t.Fatalf("diff %s", data)
 	}
 }
+
+// Adjusting a balance needs leave_admin, not HR alone; a cut within what is left goes
+// through, and each adjustment writes who, how much, the result and why on the employee.
+func TestAdjustBalanceIsGuardedAndAudited(t *testing.T) {
+	f := newLeaveFixture(t)
+	hrOnly := f.ctxFor("hronly", "hr@*")
+	wantErr(t, f.hrm.AdjustLeaveBalance(hrOnly, f.emp, 2026, hrm.BalanceAdjustment{Delta: "1", Reason: "x"}), "not_found")
+	f.grant("12")
+	f.check(f.hrm.AdjustLeaveBalance(f.hr, f.emp, 2026, hrm.BalanceAdjustment{Delta: "-2.5", Reason: "trừ nhầm"}))
+	if f.balance() != "9.5" {
+		t.Fatalf("balance %s, want 12 - 2.5", f.balance())
+	}
+	hrID, err := f.iam.UserIDByLogin(f.admin, "hr")
+	f.check(err)
+	rows, err := f.pool.Query(f.admin, `SELECT actor_id, data->>'delta', data->>'days', data->>'reason' FROM audit.log
+		WHERE action = 'hrm.leave_balance_adjusted' AND doc_type = 'hrm.employee' AND doc_id = $1 ORDER BY id`, f.emp)
+	f.check(err)
+	var got []string
+	for rows.Next() {
+		var actor int64
+		var delta, days, reason string
+		f.check(rows.Scan(&actor, &delta, &days, &reason))
+		if actor != hrID {
+			t.Fatalf("actor %d, want %d", actor, hrID)
+		}
+		got = append(got, delta+"→"+days+" "+reason)
+	}
+	f.check(rows.Err())
+	if !equal(got, "12→12 đầu năm", "-2.5→9.5 trừ nhầm") {
+		t.Fatalf("audit %v", got)
+	}
+}
+
+// A rejected request goes back to draft without touching the balance, and E may edit and send it again.
+func TestRejectedLeaveReturnsToDraft(t *testing.T) {
+	f := newLeaveFixture(t)
+	f.ruleManager()
+	f.grant("12")
+	id := must(t)(f.hrm.CreateLeave(f.e, hrm.NewLeave{LeaveFields: f.fields("2026-03-10", "2026-03-11", "2")}))
+	f.check(f.send(f.e, id))
+	ticket := f.ticket(id)
+	wantErr(t, f.appr.Reject(f.e, ticket, 1, "tự từ chối"), "forbidden")
+	f.check(f.appr.Reject(f.m, ticket, 1, "trùng lịch họp"))
+	if l := f.leave(id); l.Status != "draft" || f.balance() != "12" {
+		t.Fatalf("after reject: %+v, balance %s", l, f.balance())
+	}
+	if l, _ := f.hrm.Leave(f.e, id); !equal(l.AllowedActions, "edit", "delete", "submit") {
+		t.Fatalf("E's actions after reject %v", l.AllowedActions)
+	}
+	wantErr(t, f.appr.Approve(f.m, ticket, 1), "approval_closed")
+	f.check(f.hrm.UpdateLeave(f.e, id, hrm.LeaveUpdate{Version: f.leave(id).Version, LeaveFields: f.fields("2026-03-10", "2026-03-10", "1")}))
+	f.check(f.send(f.e, id))
+	f.check(f.appr.Approve(f.m, f.ticket(id), 1))
+	if f.leave(id).Status != "posted" || f.balance() != "11" {
+		t.Fatalf("resent: %+v, balance %s", f.leave(id), f.balance())
+	}
+}
