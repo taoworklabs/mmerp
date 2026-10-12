@@ -39,6 +39,8 @@ func (s *Service) canOvertime(ctx context.Context, id int64, action record.Actio
 	if err != nil {
 		return false, err
 	}
+	// Attachments (a signed overtime sheet) go with the request, asking nothing more.
+	action, _ = filesAction(action)
 	return s.canSelfService(ctx, selfService{r.EmployeeID, r.EmployeeUserID, r.OrgUnitID}, action, PermOvertimeView, PermOvertimeEdit)
 }
 

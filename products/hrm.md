@@ -56,12 +56,12 @@ Departments and branches are nodes in the `iam` permission-scope tree, with `kin
 | `hrm.payroll` | document | Payroll closed | `period_end` | Close the pay period; `posting.Record` (cancelling runs `posting.Void` and reopens the period) | — |
 
 - Every document type uses approval and audit. Employee profiles use audit; there is no profile import/export yet. Excel import/export through `dataio` currently covers: timesheet import and export, payroll export, leave balance adjustment import.
-- Discussion is available on every record type. Attachments are only on contracts, leave requests and employee profiles ([ADR-0024](../docs/adr/0024-attachments-and-discussion.md)):
+- Discussion is available on every record type. Attachments are only on contracts, leave and overtime requests, and employee profiles ([ADR-0024](../docs/adr/0024-attachments-and-discussion.md)):
 
   | Type | View attachments | Add attachments |
   | --- | --- | --- |
   | Contract | View the contract, plus `hrm.salary.view` (scans show the salary) | Edit the contract (already includes `hrm.salary.view`), even when `posted` |
-  | Leave request | Same as viewing the request | The submitter, and HR who can edit the request |
+  | Leave request, overtime request | Same as viewing the request | The submitter, and HR who can edit the request |
   | Employee profile | View the profile, plus `hrm.employee.sensitive` (ID card scans contain sensitive fields) | Edit the profile, plus `hrm.employee.sensitive` |
 
 - Numbering scope: per legal entity and year, separate for each document type. The number is assigned when the draft is created; deleting a draft leaves a gap. This is acceptable, because HRM documents do not require gap-free numbering.

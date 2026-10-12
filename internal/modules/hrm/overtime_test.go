@@ -117,6 +117,28 @@ func TestDayKindEnums(t *testing.T) {
 	}
 }
 
+// Paperwork goes with an overtime request as with a leave request: whoever sees the request sees
+// its files, and whoever may edit it adds them.
+func TestOvertimeAttachments(t *testing.T) {
+	f := newLeaveFixture(t)
+	id := must(t)(f.hrm.CreateOvertime(f.e, hrm.NewOvertime{OvertimeFields: overtime("2026-03-11", "2", "0")}))
+	for name, c := range map[string]struct {
+		ctx    context.Context
+		action record.Action
+		want   bool
+	}{
+		"submitter views": {f.e, record.ViewFiles, true},
+		"submitter adds":  {f.e, record.Attach, true},
+		"manager views":   {f.m, record.ViewFiles, true},
+		"manager adds":    {f.m, record.Attach, false},
+		"stranger views":  {f.ctxFor("stranger"), record.ViewFiles, false},
+	} {
+		if ok, err := f.rec.Can(c.ctx, "hrm.overtime_request", id, c.action); err != nil || ok != c.want {
+			t.Fatalf("%s: %v %v", name, ok, err)
+		}
+	}
+}
+
 // The day kind must be the one the calendar gives the date, checked on save and again when
 // the request goes into force, since the calendar may change in between. A holiday wins over
 // a weekly day off.
