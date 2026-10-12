@@ -1,4 +1,4 @@
-import { Paper, ScrollArea } from '@mantine/core'
+import { Paper, ScrollArea, VisuallyHidden } from '@mantine/core'
 import type { KeyboardEvent, ReactNode } from 'react'
 import classes from './CellGrid.module.css'
 
@@ -13,8 +13,11 @@ type Props = {
   // Without onChange the grid is read-only.
   onChange?: (row: string, column: string, value: string) => void
   invalid?: (value: string) => boolean
-  // A cell that takes no value shows blank and greyed.
+  // A cell that takes no value is greyed and read-only; a value it holds anyway still shows.
   off?: (row: string, column: string) => boolean
+  // A cell to look at again, with the reason: tinted, with the reason as its tooltip and read
+  // out after the cell's value.
+  warning?: (row: string, column: string) => string | undefined
   total?: { header: string; value: (row: string) => ReactNode }
 }
 
@@ -22,7 +25,7 @@ const moves: Record<string, [number, number]> = { ArrowUp: [-1, 0], ArrowDown: [
 
 // CellGrid is a rows × columns grid of small cells, e.g. days worked per employee and day:
 // the row titles stay in view when it scrolls sideways, and arrow keys move between cells.
-export function CellGrid({ label, corner, rows, columns, value, onChange, invalid, off, total }: Props) {
+export function CellGrid({ label, corner, rows, columns, value, onChange, invalid, off, warning, total }: Props) {
   function move(e: KeyboardEvent<HTMLInputElement>, r: number, c: number) {
     const step = moves[e.key]
     if (!step) return
@@ -72,8 +75,9 @@ export function CellGrid({ label, corner, rows, columns, value, onChange, invali
                 {columns.map((c, ci) => {
                   const isOff = off?.(r.key, c.key) ?? false
                   const v = value(r.key, c.key)
+                  const warn = warning?.(r.key, c.key)
                   return (
-                    <td key={c.key} className={isOff ? classes.off : undefined}>
+                    <td key={c.key} className={[isOff && classes.off, warn && classes.warn].filter(Boolean).join(' ') || undefined} title={warn}>
                       {onChange && !isOff ? (
                         <input
                           className={classes.cell}
@@ -85,9 +89,13 @@ export function CellGrid({ label, corner, rows, columns, value, onChange, invali
                           value={v}
                           onChange={(e) => onChange(r.key, c.key, e.currentTarget.value)}
                           onKeyDown={(e) => move(e, ri, ci)}
+                          aria-description={warn}
                         />
                       ) : (
-                        !isOff && v
+                        <>
+                          {v}
+                          {warn && <VisuallyHidden>{warn}</VisuallyHidden>}
+                        </>
                       )}
                     </td>
                   )

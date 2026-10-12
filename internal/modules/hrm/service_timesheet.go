@@ -129,11 +129,54 @@ func (s *Service) Timesheet(ctx context.Context, id int64) (Timesheet, error) {
 	}
 	start, end := *platform.DatePtr(t.PeriodStart), *platform.DatePtr(t.PeriodEnd)
 	cal, err := workCalendar(ctx, d.LegalEntityID, start, end)
+	if err != nil {
+		return Timesheet{}, err
+	}
+	warnings, err := timesheetWarnings(ctx, cal, t, emps, lines)
 	return Timesheet{
 		ID: id, Number: d.Number, Status: string(d.Status), Version: d.Version, OrgUnitID: t.OrgUnitID, OrgUnitName: t.OrgUnitName,
 		PeriodStart: start, PeriodEnd: end, Employees: emps, Lines: lines,
-		OffDays: cal.offDays(t.PeriodStart.Time, t.PeriodEnd.Time), AllowedActions: actions,
+		OffDays: cal.offDays(t.PeriodStart.Time, t.PeriodEnd.Time), Warnings: warnings, AllowedActions: actions,
 	}, err
+}
+
+// timesheetWarnings flags the lines the payroll treats differently from what they say: work
+// on a day off earns nothing without an overtime request, and work on a day of approved leave
+// earns nothing on top of the leave, which has already taken the balance.
+func timesheetWarnings(ctx context.Context, cal calendar, t store.GetTimesheetRow, emps []TimesheetEmployee, lines []TimesheetLine) ([]TimesheetWarning, error) {
+	ids := make([]int64, len(emps))
+	for i, e := range emps {
+		ids[i] = e.ID
+	}
+	rows, err := store.New(platform.DBFrom(ctx)).PayrollLeaves(ctx, store.PayrollLeavesParams{Ids: ids, PeriodStart: t.PeriodStart, PeriodEnd: t.PeriodEnd})
+	if err != nil {
+		return nil, err
+	}
+	leaves := make([]basisLeave, len(rows))
+	for i, r := range rows {
+		leaves[i] = basisLeave{EmployeeID: r.EmployeeID, Start: *platform.DatePtr(r.StartDate), End: *platform.DatePtr(r.EndDate), Days: decimal.RequireFromString(r.Days)}
+	}
+	onLeave := map[int64]map[string]decimal.Decimal{}
+	out := []TimesheetWarning{}
+	for _, l := range lines {
+		day := dayOf(l.Date)
+		code := ""
+		switch {
+		case cal.weeklyOff(day) || cal.holiday(day):
+			code = "work_on_day_off"
+		default:
+			if onLeave[l.EmployeeID] == nil {
+				onLeave[l.EmployeeID] = leaveOn(cal, leaves, l.EmployeeID, false)
+			}
+			if onLeave[l.EmployeeID][l.Date].IsPositive() {
+				code = "work_on_leave_day"
+			}
+		}
+		if code != "" {
+			out = append(out, TimesheetWarning{EmployeeID: l.EmployeeID, Date: l.Date, Code: code})
+		}
+	}
+	return out, nil
 }
 
 // CreateTimesheet adds an empty draft for an org unit and month.

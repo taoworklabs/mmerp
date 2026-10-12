@@ -69,15 +69,15 @@ this way.
 ## Section 6: timesheet, work calendar, overtime
 
 April 2026 with the payroll fixture: 22 working days, of which 27/04 and 30/04 are public holidays;
-a salary of 22,000,000, so one hour of overtime is 125,000 before the multiplier. Probes are in
-`timesheet_probe_test.go`.
+a salary of 22,000,000, so one hour of overtime is 125,000 before the multiplier. The tests are in
+`timesheet_sources_test.go`.
 
 | Code | Result | Evidence |
 | --- | --- | --- |
 | CC-01 | Covered. A second timesheet for the same unit and period is refused; a partial unique index holds it under concurrency too | `TestTimesheet`, `timesheets_org_unit_period_key` |
 | CC-02 | Covered. 0.5 and 1 stored and read back; other values refused | `TestTimesheet` |
-| CC-03 | **Open question, see below** | `TestProbeCC03WorkAndPaidLeaveSameDay` |
-| CC-04 | **Open question, see below** | `TestProbeCC04WorkOnDaysOff` |
+| CC-03 | Settled 2026-10-12 and built: the timesheet cell and the payroll line warn of work on a day of approved leave | `TestWorkOnALeaveDayWarns` |
+| CC-04 | Settled 2026-10-12 and built: the grid shows work on a day off, tinted, with the reason; it was hidden before | `TestTimesheetWarnsOfWorkOnDaysOff`, `m5.spec.ts` |
 | CC-05 | Covered. Bad rows are named with their Excel row number and reason, and nothing is written | `TestImportRowErrors` |
 | CC-06 | Covered. A save or import replaces every line of the draft (**new** test with a shorter set of lines); the import dialog says so ("File thay toàn bộ ngày công của bảng công nháp này") | `TestTimesheetSaveReplacesEveryLine`, `hrm.timesheet.import_hint` |
 | CC-07 | Covered. The grid and the working days use the week version in force on each date | `TestWorkCalendar`, `TestWorkingDaysUsesTheWeekVersionInForce` |
@@ -88,7 +88,7 @@ a salary of 22,000,000, so one hour of overtime is 125,000 before the multiplier
 
 ### Three questions for the HR owner
 
-Answered on 2026-10-12: the recommended option in each case. TC-01 is built; CC-04 and CC-03 are next.
+Answered on 2026-10-12: the recommended option in each case, all three built. Building CC-04 showed one more thing: the grid did not show a value on a day off at all, so a Sunday line from an Excel import was invisible. Such a cell now shows its value, read-only and tinted. The warnings come from the API (`warnings` on the timesheet, `work_on_leave_day` on the payroll line), so the screen derives no rule.
 
 All three are entries the system accepts and then quietly treats differently from what the person
 entering them probably meant. None breaks a written rule; each lacks one.
@@ -124,5 +124,5 @@ request is saved, it keeps the field the approval rules filter on, and it is the
 
 ## Next
 
-Answers to the three questions above, then section 7 (payroll and period closing), using the
+Section 7 (payroll and period closing), using the
 contract timeline above.

@@ -273,6 +273,7 @@ func (s *Service) payInputs(ctx context.Context, b payrollBasis, payrollID int64
 		}
 		cs := contracts[e.ID]
 		leaveDays := leaveByDay(b, e.ID)
+		anyLeave := leaveOn(b.Calendar, b.Leaves, e.ID, false)
 		from, to := start, end
 		if h := dayOf(e.Hire); h.After(from) {
 			from = h
@@ -295,6 +296,9 @@ func (s *Service) payInputs(ctx context.Context, b payrollBasis, payrollID int64
 			default:
 				w, _ := record.ParseNumber(b.Worked[fmt.Sprintf("%d:%s", e.ID, day)])
 				paid = decimal.Min(one, w.Add(leaveDays[day]))
+				if w.IsPositive() && anyLeave[day].IsPositive() {
+					x.WorkOnLeaveDays++
+				}
 			}
 			if n := len(x.Segments); n > 0 && x.Segments[n-1].contract == c.ID {
 				x.Segments[n-1].To, x.Segments[n-1].PaidDays = day, x.Segments[n-1].PaidDays.Add(paid)
@@ -394,12 +398,17 @@ func leaveAllocation(c calendar, start, end string, days decimal.Decimal) map[st
 // leaveByDay adds up the allocations of an employee's paid leave and returns the paid leave
 // days of each date. Unpaid types are left out: the payroll has no use for them.
 func leaveByDay(b payrollBasis, employee int64) map[string]decimal.Decimal {
+	return leaveOn(b.Calendar, b.Leaves, employee, true)
+}
+
+// leaveOn adds up the allocations of an employee's leave, of paid types only when paidOnly.
+func leaveOn(c calendar, leaves []basisLeave, employee int64, paidOnly bool) map[string]decimal.Decimal {
 	out := map[string]decimal.Decimal{}
-	for _, l := range b.Leaves {
-		if l.EmployeeID != employee || !l.Paid {
+	for _, l := range leaves {
+		if l.EmployeeID != employee || paidOnly && !l.Paid {
 			continue
 		}
-		for d, v := range leaveAllocation(b.Calendar, l.Start, l.End, l.Days) {
+		for d, v := range leaveAllocation(c, l.Start, l.End, l.Days) {
 			out[d] = out[d].Add(v)
 		}
 	}

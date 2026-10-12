@@ -1,4 +1,5 @@
-import { Stack, Text } from '@mantine/core'
+import { Alert, List, Stack, Text } from '@mantine/core'
+import { IconAlertTriangle } from '@tabler/icons-react'
 import { useController, useForm } from 'react-hook-form'
 import { useTranslation } from 'react-i18next'
 import { api, unwrap, type Timesheet } from '@/shared/api/hrm'
@@ -6,6 +7,7 @@ import { useDocumentMutation } from '@/shared/document'
 import { formatDate, formatDecimal, formatWeekday } from '@/shared/i18n'
 import { CellGrid } from '@/shared/ui/CellGrid'
 import { Form, FormActions } from '@/shared/ui/form'
+import { icon } from '@/shared/ui/theme'
 import { timesheetDocType } from '../keys'
 
 type Cells = Record<string, string> // "<employee id>:<YYYY-MM-DD>" → the cell as typed
@@ -53,11 +55,28 @@ export function TimesheetGrid({ timesheet: ts }: { timesheet: Timesheet }) {
         <Text size="sm" c="dimmed">
           {t(editable ? 'hrm.timesheet.grid_hint' : 'hrm.timesheet.grid_hint_read')}
         </Text>
+        <Warnings timesheet={ts} />
         <Grid timesheet={ts} editable={editable} />
       </Stack>
       {editable && <FormActions submitLabel={t('hrm.common.save')} />}
       {mutation.dialog}
     </Form>
+  )
+}
+
+// Warnings explains, once above the grid, why some cells are tinted.
+function Warnings({ timesheet: ts }: { timesheet: Timesheet }) {
+  const { t } = useTranslation()
+  const codes = [...new Set(ts.warnings.map((w) => w.code))]
+  if (codes.length === 0) return null
+  return (
+    <Alert color="warning" icon={<IconAlertTriangle {...icon.button} />} title={t('hrm.timesheet.warnings')}>
+      <List size="sm">
+        {codes.map((c) => (
+          <List.Item key={c}>{t(`hrm.timesheet.warning.${c}`)}</List.Item>
+        ))}
+      </List>
+    </Alert>
   )
 }
 
@@ -71,6 +90,7 @@ function Grid({ timesheet: ts, editable }: { timesheet: Timesheet; editable: boo
   const dates = days(ts.period_start, ts.period_end)
   const employees = new Map(ts.employees.map((e) => [String(e.id), e]))
   const offDays = new Set(ts.off_days)
+  const warnings = new Map(ts.warnings.map((w) => [`${w.employee_id}:${w.date}`, t(`hrm.timesheet.cell_warning.${w.code}`)]))
   return (
     <CellGrid
       label={t('hrm.timesheet.grid')}
@@ -89,6 +109,7 @@ function Grid({ timesheet: ts, editable }: { timesheet: Timesheet; editable: boo
       value={(r, c) => value[`${r}:${c}`] ?? ''}
       onChange={editable ? (r, c, v) => field.onChange({ ...value, [`${r}:${c}`]: v }) : undefined}
       invalid={(v) => halves(v) === null}
+      warning={(r, c) => warnings.get(`${r}:${c}`)}
       off={(r, c) => {
         const e = employees.get(r)
         return offDays.has(c) || (!!e && (c < e.hire_date || (e.termination_date !== null && c > e.termination_date)))
