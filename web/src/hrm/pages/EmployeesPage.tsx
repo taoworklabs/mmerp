@@ -10,9 +10,10 @@ import { ImportDialog } from '@/shared/jobs'
 import { PersonName } from '@/shared/ui/avatar'
 import { DataTable, type Column } from '@/shared/ui/DataTable'
 import { OrgUnitSelect, SearchInput } from '@/shared/ui/form'
+import { useListView } from '@/shared/ui/ListView'
 import { ListPage } from '@/shared/ui/page'
 import { ContentSkeleton, EmptyState, ErrorState } from '@/shared/ui/states'
-import { icon } from '@/shared/ui/theme'
+import { filterWidth, icon } from '@/shared/ui/theme'
 import { useListParams } from '@/shared/url/listParams'
 import { EmployeeStatus } from '../components/EmployeeStatus'
 import { useEmployeeActions } from '../hooks/useEmployeeActions'
@@ -59,6 +60,7 @@ export function EmployeesPage() {
   ]
 
   const filtered = q !== '' || status !== '' || org_unit_id !== ''
+  const view = useListView('hrm.employees', columns)
   let body
   if (list.isPending) body = <ContentSkeleton />
   else if (list.isError) body = <ErrorState message={errorText(t, list.error)} onRetry={() => void list.refetch()} />
@@ -73,13 +75,14 @@ export function EmployeesPage() {
         }
       />
     ) : (
-      <EmptyState title={t('hrm.employees.empty')} description={canCreate ? t('hrm.employees.empty_description') : undefined} />
+      <EmptyState title={t('hrm.employees.empty')} description={t('hrm.employees.empty_description')} />
     )
   else
     body = (
       <DataTable
         label={t('hrm.employees.title')}
-        columns={columns}
+        columns={view.columns}
+        onResize={view.onResize}
         rows={list.data.items}
         rowKey={(e) => e.id}
         href={(e) => `/hrm/employees/${e.id}`}
@@ -112,7 +115,7 @@ export function EmployeesPage() {
           <Select
             aria-label={t('hrm.employee.status')}
             leftSection={<IconCircleDot {...icon.text} />}
-            w={{ base: '100%', md: 180 }}
+            w={{ base: '100%', md: filterWidth.select }}
             data={[
               { value: 'active', label: t('hrm.employee.status.active') },
               { value: 'terminated', label: t('hrm.employee.status.terminated') },
@@ -132,6 +135,7 @@ export function EmployeesPage() {
           />
         </>
       }
+      tools={view.tools}
       paging={
         list.data && {
           page: params.page,
