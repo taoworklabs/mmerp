@@ -52,7 +52,7 @@ export function DocumentHistory({ docType, id }: { docType: string; id: number }
         const changes = Object.entries((e.data?.changes ?? {}) as Record<string, Change>)
         return (
           <Timeline.Item key={e.id} title={<Text size="sm" fw={500}>{what(e)}</Text>}>
-            <Stack gap={2}>
+            <Stack gap="xxxs">
               <Text size="xs" c="dimmed">
                 {[e.actor_name, formatDateTime(e.at, me.timezone), count > 1 && t('shared.history.times', { count })].filter(Boolean).join(' · ')}
               </Text>

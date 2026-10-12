@@ -8,7 +8,7 @@
   left: 0;
   z-index: 1;
   white-space: nowrap;
-  background: var(--mmerp-color-surface);
+  background: var(--mmerp-elevation-surface);
   box-shadow: inset -1px 0 0 var(--mantine-color-default-border);
 }
 
@@ -55,7 +55,7 @@
 /* Column titles are quiet: small, secondary colour, on the subtle tone. */
 .compact th {
   height: 36px;
-  background: var(--mmerp-color-subtle);
+  background: var(--mmerp-elevation-surface-sunken);
   color: var(--mantine-color-dimmed);
   font-size: var(--mantine-font-size-xs);
   font-weight: 500;
@@ -63,7 +63,7 @@
 
 .compact th.sticky {
   z-index: 2;
-  background: var(--mmerp-color-subtle);
+  background: var(--mmerp-elevation-surface-sunken);
 }
 
 /* In a frame of capped height the grand total stays at its bottom. */
@@ -71,7 +71,7 @@
   position: sticky;
   bottom: 0;
   z-index: 1;
-  background: var(--mmerp-color-surface);
+  background: var(--mmerp-elevation-surface);
   box-shadow: inset 0 1px 0 var(--mantine-color-default-border);
 }
 
@@ -100,7 +100,7 @@
 
 /* A group's name row and the total rows read as headings of the figures around them. */
 .groupRow td {
-  background: var(--mmerp-color-subtle);
+  background: var(--mmerp-elevation-surface-sunken);
   font-weight: 600;
 }
 
@@ -115,10 +115,41 @@
 }
 
 .totalRow td.sticky {
-  background: var(--mmerp-color-surface);
+  background: var(--mmerp-elevation-surface);
 }
 
 /* A total card stands apart from the rows it sums. */
 .totalCard {
-  background: var(--mmerp-color-subtle);
+  background: var(--mmerp-elevation-surface-sunken);
+}
+
+/* The checkbox column of a selectable table; the identifier column sticks right after it. */
+.select {
+  width: 40px;
+}
+
+.selectable .sticky {
+  left: 40px;
+}
+
+/* A column's right edge, wide enough to grab, visible on hover and focus. A sticky cell already
+   positions it, so only the others need relative. */
+.compact th:not(.sticky) {
+  position: relative;
+}
+
+.resize {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 8px;
+  cursor: col-resize;
+  touch-action: none;
+}
+
+.resize:hover,
+.resize:focus-visible {
+  box-shadow: inset -2px 0 0 var(--mantine-primary-color-filled);
+  outline: none;
 }

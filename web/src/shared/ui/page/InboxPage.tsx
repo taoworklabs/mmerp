@@ -57,7 +57,7 @@ export function InboxPage({ list, detail, onBack, ...header }: Props) {
 // InboxList holds the inbox's items as flat rows, without bullets or a box.
 export function InboxList({ label, children }: { label: string; children: ReactNode }) {
   return (
-    <Stack gap={2} component="ul" className={classes.items} aria-label={label}>
+    <Stack gap="xxxs" component="ul" className={classes.items} aria-label={label}>
       {children}
     </Stack>
   )
