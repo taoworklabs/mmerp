@@ -4,7 +4,7 @@ Mandatory rules for every screen. **Agents and people must read this document be
 
 Sources of truth in code:
 
-- `web/src/shared/ui/theme.ts`: every colour, font size, spacing and radius. Sizes specific to one component (table row height, status dot, 44px touch target) live in its CSS module in `shared/ui`; areas set no other value apart from the width of a filter input.
+- `web/src/shared/ui/theme.ts`: every colour, font size, spacing and radius. Sizes specific to one component (table row height, 44px touch target) live in its CSS module in `shared/ui`; areas set no other value apart from the width of a filter input.
 - `web/src/shared/ui/`: page templates and components. New screens are **assembled from what already exists here**.
 - The `/dev/ui` page, dev build only: shows every page template and component in every state. When unsure what to use, open this page first.
 
@@ -47,18 +47,22 @@ All of them live in `theme.ts`. Area code uses only token names or Mantine props
 
 | Token | Value | Used for |
 | --- | --- | --- |
-| `primary` | Blue scale, main shade `#1E40AF` | Primary buttons, links, focus, selected navigation item |
-| `text` | `#0F172A` | Main text |
-| `text-secondary` | `#475569` | Secondary labels, captions, column headers |
-| `placeholder` | `#94A3B8` | Placeholders and disabled state only; never for text that must be read |
-| `border` | `#E2E8F0` | Table borders, input borders, dividers |
+| `primary` | Blue scale, main shade `#1868DB` | Primary buttons, links, focus, selected item (tint `#E9F2FE`, text `#1558BC`) |
+| `text` | `#292A2E` | Main text |
+| `text-secondary` (`dimmed`) | `#505258` | Secondary labels, captions, column headers |
+| `placeholder` | `#6B6E76` | Placeholders only |
+| `border` | `#0B120E24` (translucent) | Table borders, frames, dividers, outlined buttons |
+| input border | `#8C8F97` | Input borders, so a field's edge reads at 3:1 |
 | `background` | `#FFFFFF` | App background and content area |
 | `surface` | `#FFFFFF` | Background of tables, forms, cards |
-| `subtle` | `#F8FAFC` | Background of the column header row |
-| `success` | Green | Posted status, success notifications |
-| `warning` | Amber | Pending approval status, warnings |
-| `danger` | Red `#DC2626` | Errors, destructive actions, cancelled status |
-| `info` | Blue | Neutral information |
+| `surface-sunken` | `#F8F8F8` | Background of the column header row, tile hover, cells that take no value |
+| `success` | Green, `#5B7F24` | Posted status, success notifications |
+| `warning` | Orange, `#BD5B00` | Pending approval status, warnings |
+| `danger` | Red `#C9372C` (text `#AE2E24`) | Errors, destructive actions, cancelled status |
+| `info` | Blue, same as `primary` | Neutral information |
+| `discovery` | Purple `#964AC0` | Marks something new or in beta; nothing else |
+
+Each colour is a ten-step scale in `theme.ts`. Tinted badges, alerts and selected items use its palest step behind and its step 7 for text.
 
 Body text must have a contrast ratio of at least 4.5:1 against its background. Colour is never the only signal: a status always comes with text, an error always comes with text and an icon.
 
@@ -78,22 +82,22 @@ A document type may change the **label**, never the colour, through the translat
 ### Type
 
 - Font: **Inter** (variable font, with full Vietnamese diacritics), self-hosted through `@fontsource-variable/inter`. Fonts are never loaded from a CDN.
-- Base font size **14px** for tables, forms and content. Minimum 12px, reserved for captions, column headers and badges. Line height 1.5.
-- Page title 22px, weight 600. Section title 14–16px, weight 600. No more than three heading levels on a page.
-- Field label 13px, weight 500, colour `text-secondary`: a label is lighter than the value it names.
+- Base font size **14px** for tables, forms and content. Minimum 12px, reserved for captions, column headers and badges. Lines sit on a 4px grid: 12/16, 14/20, 16/24.
+- Page title 24px, weight 650. Section title 16px, sub-section 14px, weight 650. No more than three heading levels on a page.
+- Field label 12px, weight 600, colour `text-secondary`: a label is lighter than the value it names.
 - Every number and money column uses `font-variant-numeric: tabular-nums`, so digits line up.
 
 ### Spacing, radius, shadow
 
-- 4px-based spacing scale: 4, 8, 12, 16, 24, 32. No other values.
-- 6px radius for everything except avatars (round).
+- 4px-based spacing scale: 4, 8, 12, 16, 24, 32 (`xxs`…`xl`), plus 2 (`xxxs`) between a line and its caption. No other values.
+- Radius by role: 4px for badges, tooltips and small icon tiles (`sm`); 6px for buttons, inputs and navigation items (`md`, the default); 8px for cards, tiles, table frames, menus and popovers (`lg`); 12px for modals (`xl`); avatars are round.
 - **Controls in the same strip have the same height.** A strip is a row of controls placed side by side: filter bar, pagination bar, form footer, page header buttons. The `shared/ui` component that builds the strip picks the size of every control inside it; a button next to an input uses Mantine's `input-*` size so it is exactly as tall as the input (e.g. pagination at `input-sm` next to the rows-per-page select). Controls elsewhere keep the size that fits their place, as long as they meet the minimum touch target. Buttons inside an input (clear value, show password, hide sensitive field) are smaller than the input that holds them.
-- No shadows, except on modals, dropdown menus and popovers.
-- **A selected item only gets a light blue background**, everywhere (navigation, lists, menus, approval inbox): no accent bar on the left edge and no coloured border.
+- No shadows, except on modals, dropdown menus, popovers and toasts (one overlay shadow).
+- **A selected item only gets a light blue background and primary text**, everywhere (navigation, lists, menus, approval inbox): no accent bar on the left edge and no coloured border.
 
 ### Icons
 
-- The [Tabler Icons](https://tabler.io/icons) set (`@tabler/icons-react`), stroke 1.75. Size 16px in text, in tables and in `xs` buttons, 18px in `sm` buttons, 24px (stroke 1.5) in empty states.
+- The [Tabler Icons](https://tabler.io/icons) set (`@tabler/icons-react`), stroke 1.5, through the `icon` constant in `theme.ts`: `icon.text` (16px) in text, in tables and in `xs` buttons, `icon.button` (18px) in `sm` buttons, `icon.empty` (24px) in empty states.
 - No emoji as icons.
 - Decorative icons (form section titles, org unit type in the org tree, empty states) are always `aria-hidden` and always come with text.
 - People (employees, users) are shown with `PersonAvatar`: initials on an accent colour derived from the name, so a person always has the same colour.
@@ -140,21 +144,26 @@ General rules:
 
 - **Page header** (built by `Page`, shared by every template): breadcrumb to the pages above, title, a one-line description (what the list holds, or the record's key facts), action buttons on the right, then a thin divider. `RecordPage` adds an avatar or icon left of the title and uses a tab bar instead of the divider. Below 768px (breakpoint `sm`) the action buttons wrap below the title and take the full width.
 - **Viewing and editing a draft document is the same page** (`DocumentPage`); there is no separate "edit" page. Fields are editable when `allowed_actions` contains `edit`, read-only otherwise.
+- **Inline edit** (`InlineEditField`: click or Enter to edit, Enter saves, Esc cancels) is only for single values of master-data records on their page (phone, email, address); never for documents, money, rates or sensitive fields.
 - Filters, sort, page and the selected tab live in the URL. Copying the URL reopens exactly that screen; the browser's Back button behaves as expected.
-- Each page has exactly one primary button.
+- Each page has exactly one primary button. On a document it is the next lifecycle step (Submit for approval); Delete and Cancel are red text buttons. A page header holds at most three buttons; the rest go in a "…" menu (`MoreActions`).
+- Form sections and a document's main column stop at 1200px (`--mmerp-content-width`); lists and documents with a wide table (editable lines, grid, payroll, which use `fullWidth`) take the whole width.
 
 ## Data tables
 
 Use `<DataTable>` from `shared/ui`, not Mantine's `Table` directly.
 
-- Rows are 40px tall. The column header row sits on the `subtle` background, 12px text in `text-secondary`. A long table scrolls with the page and the column headers do not stick yet; when needed, give the table frame a fixed height so the headers stick inside the frame.
+- Rows are 40px tall. The column header row sits on the `surface-sunken` background, 12px text in `text-secondary`. A long table scrolls with the page and the column headers do not stick yet; when needed, give the table frame a fixed height so the headers stick inside the frame.
 - The first column is the identifier (document number, full name with avatar), weight 500 in the main text colour, underlined on hover. The whole row is clickable; the link is a real `<a>` tag, so middle-click or Ctrl+click opens a new tab.
 - Numbers and money are right-aligned and use `tabular-nums`. Text is left-aligned. Dates are left-aligned.
-- The status column uses `<DocumentStatus>` for documents and `<StatusBadge>` (badge with a coloured dot) for master data, e.g. employees who are active or have left.
+- The status column uses `<DocumentStatus>` for documents and `<StatusBadge>` (tinted badge, 4px radius, sentence case) for master data, e.g. employees who are active or have left.
 - Sorting and pagination run on the server. Default 50 rows per page, with choices of 20, 50 and 100. Exception: small admin lists (users, org tree) load in full at once, without pagination.
 - A list's search box is `SearchInput`: it applies on Enter or on leaving the box; `/` moves focus to it.
-- No action buttons on each row. A row's secondary actions go in a "…" menu at the end of the row.
-- A multi-select column exists only when the screen has bulk actions. When rows are selected, the bulk action bar replaces the filter bar.
+- No action buttons on each row. A row with a single action (a settings row's edit modal) opens it on click (`onRowClick`); two or more actions go in a "…" menu at the end of the row.
+- A list whose records are often checked without being changed may open a read-only side panel on row click (`SidePanel`, 480px, not modal, `?peek=` on the URL) with a link to the full page; the identifier link still opens the page.
+- Users keep their own saved views (a named filter and sort) and column choices (show/hide, width) per list, on the server (`useListView`, [ADR-0031](./docs/adr/0031-personal-list-views.md)); the identifier column always shows.
+- A multi-select column exists only when the screen has bulk actions. When rows are selected, the bulk action bar (`BulkBar`) replaces the filter bar; a bulk action runs as a job and is confirmed with the count.
+- Filter inputs take one width per kind (`filterWidth`: search 280, select 200, org unit or legal entity 240, month 160, year 120).
 - A wide table scrolls horizontally inside the table frame, never making the whole page scroll horizontally. The identifier column sticks to the left while scrolling horizontally and does not wrap.
 - **Reconciliation tables** (many number columns, e.g. payroll):
   - Columns are grouped by meaning (income, insurance, tax…): two-level headers, each group starting with a vertical line. Result columns (net pay, cost) go last, in bold.
@@ -174,6 +183,7 @@ Use the fields of `shared/ui/form`, already wired to React Hook Form.
 - Leaving the page with unsaved changes asks for confirmation.
 - **A form footer on a page sticks to the bottom of the screen** (`FormActions` without `onCancel`): a long form always shows the Save button. With no edits there is no footer (except right after a failed submit, to keep the error line). Once there are changes, the left of the footer shows "Có thay đổi chưa lưu" (Unsaved changes), left of the Save button there is a red text button "Bỏ thay đổi" (Discard changes) (which asks before discarding), and the top divider turns `primary`. A form footer in a modal stays as is: not sticky and no state indicator. `FormActions` tells the two places apart by `onCancel`, so a form in a modal always passes `onCancel` and a form on a page never does.
 - A control next to an input (checkbox, remove-row button) goes in an `InputRow` so it lines up with the input rather than its label.
+- **Document lines** (quotation, order) are edited in `LinesTable`: one row per line, Tab or Enter to the next cell, a grey remove button per line, totals under it as computed by the server at the last save (never recomputed in the screen). The section holding them is `FormSection wide`; the document page uses `fullWidth`.
 - Specialised fields:
 
 | Data | Component | Notes |
@@ -214,16 +224,17 @@ What `shared/ui` already has (see also `/dev/ui`), to use before building your o
 
   | Level | Place | Button size | Icon |
   | --- | --- | --- | --- |
-  | Page | The page template's `actions`, `FormActions`, modal footer, buttons in empty and error states | `sm` (36px) | 18px |
-  | Section | `TabActions`, the header of a section within a page, the `DocumentPage` side column (`ApprovalPanel`) | `xs` (30px) | 16px |
+  | Page | The page template's `actions`, `FormActions`, modal footer, buttons in empty and error states | `sm` (32px) | 18px |
+  | Section | `TabActions`, the header of a section within a page, the `DocumentPage` side column (`ApprovalPanel`) | `xs` (24px) | 16px |
   | In content | Add row in a form, buttons sitting among data; a button right after a line of text (change approver next to the approver's name) uses `compact-xs` | `xs`, `light` or `subtle` style | 16px |
 
   Page-level buttons keep the default size; section-level and in-content buttons set `size="xs"`.
 - **Button placement:** action buttons are always right-aligned: in the page header (the page template's `actions`), at the top of a `RecordPage` tab (`TabActions`) and in a form or modal footer (`FormActions`). Areas do not align buttons themselves.
 - **Button names are specific verbs:** "Lưu" (Save), "Gửi duyệt" (Submit for approval), "Rút lại" (Withdraw), "Duyệt" (Approve), "Từ chối" (Reject), "Hủy chứng từ" (Cancel document). Never "OK" or "Đồng ý" (Agree).
-- **Ask for confirmation** before deleting a draft, cancelling a posted document, and rejecting an approval. Rejecting requires a reason. The confirm button repeats the exact verb ("Hủy chứng từ"), not "Có" (Yes).
+- **Ask for confirmation** before deleting a draft, cancelling a posted document, rejecting an approval, and any step the server cannot take back (revoking a role, recomputing results). Rejecting requires a reason. The confirm button repeats the exact verb ("Hủy chứng từ"), not "Có" (Yes). Edits inside an unsaved form (removing a line) do not ask: Discard covers them.
+- **Undo instead of confirmation** for reversible actions that write no ledger, approval or notification (mark read, retire or reactivate a catalogue record): they apply at once, optimistically, and a toast offers Undo for 5 seconds (`notifyUndo`). Lifecycle actions never offer undo.
 - **In progress:** a submitting button cannot be pressed again, and shows a loading state only if the action takes longer than 300ms, to avoid flicker (`FormActions` does this). The first load uses skeletons: `PageSkeleton` replaces the whole page, with the same margins as `Page`; `ContentSkeleton` replaces a region inside a page (page body, tab, panel), with no margins of its own so it lines up with the header. Skeletons shaped like each layout are added when needed.
-- **Success:** a short notification in the bottom-right corner, closing itself after 3 seconds.
+- **Success:** a short notification in the bottom-right corner, closing itself after 3 seconds, after every save, create and lifecycle action (not after an inline edit, whose value shows the result).
 - **Errors:** place the error near what caused it (the field, or a banner at the top of the page). Corner notifications are only for job errors. A `version` conflict error always shows a "Dữ liệu đã thay đổi" (Data has changed) dialog with a "Tải lại" (Reload) button.
 - **Error messages** say what happened and what the user needs to do: "Kỳ tháng 3 đã khóa sổ. Liên hệ kế toán nếu cần sửa chứng từ này." (The March period is locked. Contact accounting if this document needs changing.) Never show technical error codes, except in a collapsed details section to send to support.
 

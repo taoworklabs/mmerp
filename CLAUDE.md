@@ -114,6 +114,7 @@ CI (GitHub Actions, `.github/workflows/ci.yml`) runs `make gen` (fails on diff),
   - `mattpocock-skills:tdd` when building a feature or fixing a bug test-first;
   - `mattpocock-skills:diagnosing-bugs` when debugging;
   - `mattpocock-skills:codebase-design` when shaping a module interface or seam;
+  - `mmerp-ui` (the project's design system: tokens, components, screen patterns, UI text, checklist) for any change to a screen, component, styling or layout;
   - `ui-ux-pro-max` when building or reviewing a screen, together with `ui.md`;
   - `mattpocock-skills:domain-modeling` when adding a term to `CONTEXT.md` or writing an ADR;
   - `code-review` or `simplify` before finishing a change, and the `pr-review-toolkit` agents when reviewing a PR.
