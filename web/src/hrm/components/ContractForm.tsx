@@ -5,6 +5,7 @@ import { useForm, useWatch } from 'react-hook-form'
 import { useTranslation } from 'react-i18next'
 import { api, unwrap, type Contract, type ContractFields } from '@/shared/api/hrm'
 import { useDocumentMutation } from '@/shared/document'
+import { notifySuccess } from '@/shared/ui/notify'
 import { formatNumber } from '@/shared/i18n'
 import { DataTable } from '@/shared/ui/DataTable'
 import { CheckboxField, DateField, Form, FormActions, FormRow, FormSection, LinesTable, MoneyField, SelectField, TextField, type LineColumn } from '@/shared/ui/form'
@@ -76,6 +77,7 @@ export function ContractForm({ contract, employeeId, parent, onCreated }: Props)
     }
     if (contract) {
       await mutation.run((version) => unwrap(api.PUT('/hrm/contracts/{id}', { params: { path: { id: contract.id } }, body: { version, ...body } })))
+      notifySuccess(t('hrm.contract.saved'))
       return
     }
     const { id } = await unwrap(api.POST('/hrm/contracts', { body: { employee_id: employeeId ?? 0, parent_id: parent?.id, ...body } }))

@@ -3,6 +3,7 @@ import { useForm } from 'react-hook-form'
 import { useTranslation } from 'react-i18next'
 import { api, unwrap, type Overtime } from '@/shared/api/hrm'
 import { useDocumentMutation } from '@/shared/document'
+import { notifySuccess } from '@/shared/ui/notify'
 import { DateField, DecimalField, Form, FormActions, FormSection, SelectField, TextField } from '@/shared/ui/form'
 import { overtimeDocType } from '../keys'
 import { EmployeeField } from './EmployeeField'
@@ -64,6 +65,7 @@ export function OvertimeForm({ overtime, self, chooseEmployee, onCreated }: Prop
     }
     if (overtime) {
       await mutation.run((version) => unwrap(api.PUT('/hrm/overtimes/{id}', { params: { path: { id: overtime.id } }, body: { version, ...fields } })))
+      notifySuccess(t('hrm.overtime.saved'))
       return
     }
     const employee = chooseEmployee && v.employee_id && Number(v.employee_id) !== self?.id ? Number(v.employee_id) : undefined
