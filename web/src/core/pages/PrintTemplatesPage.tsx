@@ -1,5 +1,4 @@
-import { Menu, Stack, Text } from '@mantine/core'
-import { IconPencil } from '@tabler/icons-react'
+import { Stack, Text } from '@mantine/core'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
@@ -12,7 +11,6 @@ import { Form, FormActions, TextField } from '@/shared/ui/form'
 import { notifySuccess } from '@/shared/ui/notify'
 import { FormModal, ListPage } from '@/shared/ui/page'
 import { ContentSkeleton, ErrorState } from '@/shared/ui/states'
-import { icon } from '@/shared/ui/theme'
 import { coreKeys } from '../keys'
 
 // PrintTemplatesPage: the templates products print with. Their layout is fixed; tenant
@@ -47,11 +45,8 @@ export function PrintTemplatesPage() {
             render: (p) => (p.saved_at ? t('core.print.saved_by', { at: formatDateTime(p.saved_at, me.timezone), name: p.saved_by_name }) : '—'),
           },
         ]}
-        menu={(p) => (
-          <Menu.Item leftSection={<IconPencil {...icon.button} />} onClick={() => setEditing(p.code)}>
-            {t('core.print.edit')}
-          </Menu.Item>
-        )}
+        // One action per row: the row itself opens it.
+        onRowClick={(p) => setEditing(p.code)}
       />
     )
 

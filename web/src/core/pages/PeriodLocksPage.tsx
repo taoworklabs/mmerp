@@ -1,5 +1,4 @@
-import { Anchor, List, Menu, Stack, Text } from '@mantine/core'
-import { IconLock } from '@tabler/icons-react'
+import { Anchor, List, Stack, Text } from '@mantine/core'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
@@ -13,7 +12,6 @@ import { DateField, Form, FormActions } from '@/shared/ui/form'
 import { notifySuccess } from '@/shared/ui/notify'
 import { FormModal, ListPage } from '@/shared/ui/page'
 import { ContentSkeleton, EmptyState, ErrorState } from '@/shared/ui/states'
-import { icon } from '@/shared/ui/theme'
 import { coreKeys } from '../keys'
 
 // PeriodLocksPage: each legal entity's lock date. Documents dated on or before it are frozen.
@@ -36,11 +34,8 @@ export function PeriodLocksPage() {
         columns={columns}
         rows={locks.data}
         rowKey={(l) => l.legal_entity_id}
-        menu={(l) => (
-          <Menu.Item leftSection={<IconLock {...icon.text} />} onClick={() => setEditing(l)}>
-            {t('core.period.change')}
-          </Menu.Item>
-        )}
+        // One action per row: the row itself opens it.
+        onRowClick={(l) => setEditing(l)}
       />
     )
   return (
