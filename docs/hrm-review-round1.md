@@ -279,6 +279,9 @@ Cause, read from the code and then confirmed by the contrast above:
 Points to confirm, and who owns them: none for whether this is wrong — the plan states the expected
   result. What needs deciding is only where the message belongs once the item is gone: a toast
   outside the unmounting subtree, or keeping the item on screen in a closed state. Product owner.
+Fixed: the second of those two, on 2026-10-11. The inbox keeps the chosen submission on screen after
+  it leaves the list, so the panel is still there to explain itself; the TB-04 rows of
+  review-probe.spec.ts now assert the message and that it is still readable a moment later.
 ```
 
 The runs where something flashed up are not evidence against the finding; they are the clearest
@@ -287,26 +290,55 @@ frame and then go. The probe caught this directly: it saw the element, then time
 it, then found it gone. A message whose delivery depends on winning a repaint race is not a message
 the approver can be said to have been given, so the row is recorded as a fail.
 
+## What reading the automated rows changed
+
+The plan warned that section 4.2's "Automated" column was written from test names alone. Reading every
+row against the test body moved four of them, and the column now records what each test asserts rather
+than what its name suggests.
+
+| Row | What the name suggested | What the body does |
+| --- | --- | --- |
+| NP-16 | `TestPendingLeaveBlocksPeriodLock` covers "cancel or approve a request affecting a closed period" | It tests the opposite direction: a pending document refusing the lock, with `period_has_pending_documents`. NP-16's own direction is covered, but by `TestLeaveSampleFlow` step 12 and two `recordtest` rows |
+| NP-01 | Covered by two tests | Reason and upward adjustment yes; **the permission and the audit entry are asserted nowhere**, and no test makes a downward adjustment succeed. The only test naming `hrm.leave_balance_adjusted` checks who may *not* see it in the history, never that it is written |
+| NP-03 | `TestLeaveDaysAndDates` covers half days | It only creates a 1.5-day request: no approval, no balance, no paid days. The real coverage came with ADR-0030's tests |
+| NP-07 | Partly covered by the contract suite | The suite covers a **withdrawal**, not a rejection. **No Go test rejects a leave request**; only `web/e2e/m3.spec.ts` does |
+| NP-08 | Partly covered | Fully covered in fact: `TestLeaveSampleFlow` steps 3–5 are exactly this scenario, and `recordtest` holds it for every document type |
+
+Two of these are gaps worth filling rather than mapping errors: **NP-01's permission and audit entry**,
+and **a rejection in Go**. Neither is a defect — the behaviour exists, as the e2e rejection and the
+`leave_admin` role show — but neither is guarded by a test, so either could regress unnoticed. They
+are the first candidates for the next round, and both are small.
+
+One row also mis-stated the rule rather than the test. NP-13 read "the submitter is also the chosen
+approver", but `Subjects` is the employee on the request, so what is excluded is the person whose leave
+it is, not whoever filed it. HR filing for someone else may approve it, which is a different question
+and still open; the scenario title has been corrected.
+
 ## What this round did not cover
 
 - Nothing in sections 5, 6 or 7 of the plan: profiles, contracts, timesheets, payroll. Round one is
   the leave flow plus section 8, per the plan's scope.
-- TB-02, TB-03, TB-06 were not re-run here; the plan records `web/e2e/m12.spec.ts` as already
-  touching TB-03 and TB-06, and that mapping is still to be checked against the test bodies.
-- The rows of plan section 4.2 marked as automated were not read line by line against the scenario
-  text yet. The plan warns the mapping was made from test names alone; that check is the next step
-  and may move rows from "covered" to "needs a scenario".
+- TB-02 was not run. TB-03 and TB-06 were not re-run, since `web/e2e/m12.spec.ts` covers them and
+  that spec passes; its mapping has not been read against the test body the way section 4.2's was.
 - Every figure here comes from Postgres 17, not the Postgres 18 the project targets.
 
-## Suggested next steps
+## What was done with these results
 
-1. Put NP-04 and NP-06 in front of the HR owner as the plan's decision table entries. Both cost an
-   employee balance they are not paid for, and they turn out to be one question rather than two:
-   nothing defines how many days of absence a request places on each date. The options, the worked
-   examples each outcome needs and a recommendation are in [the decision
-   proposal](hrm-review-decisions.md).
-2. Fix TB-04's missing explanation in the inbox. It needs no business decision and no new wording —
-   the text already exists and already reads correctly on the document page — only a place to put it
-   that survives the item leaving the inbox.
-3. Read the automated rows of section 4.2 against their test bodies, then decide the order of HRM
-   and core fixes before opening the timesheet and payroll rounds.
+The three things this round asked for are done.
+
+1. **NP-04 and NP-06 went to the business owner** as one question rather than two, with the options
+   and a worked example per outcome in [the decision proposal](hrm-review-decisions.md). The owner
+   took the recommended option in each row on 2026-10-11; [ADR-0030](adr/0030-leave-day-allocation.md)
+   records the rules and they are built and asserted.
+2. **TB-04's missing explanation is fixed.** It needed no business decision and no new wording: the
+   text already existed and already read correctly on the document page. The inbox now keeps the
+   chosen submission on screen after it leaves the list, so the panel explaining the refusal is still
+   there to be read. The TB-04 rows of `review-probe.spec.ts` assert both the message and that it
+   stays put a moment later, which is what the old behaviour could not do.
+3. **The automated rows of section 4.2 were read against their test bodies**, and the column was
+   corrected where the two disagreed. See the section above.
+
+What that leaves for the next round, in the order the findings suggest: NP-01's permission and audit
+entry and a rejection in Go, both small and both unguarded today; then TB-02; then sections 5 to 7 —
+profiles and contracts, timesheets, payroll — which are untouched. The core issues #1 to #15 stay
+with their owner; nothing in this round changed what they say.
