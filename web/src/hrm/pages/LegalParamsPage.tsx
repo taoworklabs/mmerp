@@ -1,5 +1,5 @@
-import { Button, Menu } from '@mantine/core'
-import { IconPencil, IconPlus } from '@tabler/icons-react'
+import { Button } from '@mantine/core'
+import { IconPlus } from '@tabler/icons-react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
@@ -91,15 +91,8 @@ export function LegalParamsPage() {
         columns={columns}
         rows={rows}
         rowKey={(p) => `${p.key}:${p.effective_from}`}
-        menu={
-          manage
-            ? (p) => (
-                <Menu.Item leftSection={<IconPencil {...icon.text} />} onClick={() => setEditing(p)}>
-                  {t('hrm.legal_param.edit')}
-                </Menu.Item>
-              )
-            : undefined
-        }
+        // One action per row: the row itself opens it.
+        onRowClick={manage ? (p) => setEditing(p) : undefined}
       />
     )
   return (

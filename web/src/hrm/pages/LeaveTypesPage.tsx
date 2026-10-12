@@ -1,5 +1,5 @@
-import { Button, Menu } from '@mantine/core'
-import { IconPencil, IconPlus } from '@tabler/icons-react'
+import { Button } from '@mantine/core'
+import { IconPlus } from '@tabler/icons-react'
 import { useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
@@ -46,15 +46,8 @@ export function LeaveTypesPage() {
         columns={columns}
         rows={types.data}
         rowKey={(x) => x.id}
-        menu={
-          writable
-            ? (x) => (
-                <Menu.Item leftSection={<IconPencil {...icon.text} />} onClick={() => setEditing(x)}>
-                  {t('hrm.leave_type.edit')}
-                </Menu.Item>
-              )
-            : undefined
-        }
+        // One action per row: the row itself opens it.
+        onRowClick={writable ? (x) => setEditing(x) : undefined}
       />
     )
   return (

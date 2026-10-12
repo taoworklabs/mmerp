@@ -1,5 +1,5 @@
-import { Alert, Button, Group, Menu, Select, Stack, Text } from '@mantine/core'
-import { IconAlertCircle, IconBuildingSkyscraper, IconCalendar, IconPencil, IconPlus, IconTrash } from '@tabler/icons-react'
+import { Alert, Button, Menu, Select, Stack, Text } from '@mantine/core'
+import { IconAlertCircle, IconBuildingSkyscraper, IconPencil, IconPlus, IconTrash } from '@tabler/icons-react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
@@ -9,11 +9,12 @@ import { useMe } from '@/shared/auth/me'
 import { currentYear, errorText, formatDate } from '@/shared/i18n'
 import { useConfirm } from '@/shared/ui/confirm'
 import { DataTable, type Column } from '@/shared/ui/DataTable'
-import { CheckboxField, DateField, Form, FormActions, TextField, useOrgUnits } from '@/shared/ui/form'
+import { CheckboxField, DateField, Form, FormActions, TextField, useOrgUnits, YearSelect } from '@/shared/ui/form'
 import { notifySuccess } from '@/shared/ui/notify'
 import { FormModal, ListPage } from '@/shared/ui/page'
 import { ContentSkeleton, EmptyState, ErrorState } from '@/shared/ui/states'
-import { icon } from '@/shared/ui/theme'
+import { Section } from '@/shared/ui/Section'
+import { filterWidth, icon } from '@/shared/ui/theme'
 import { useListParams } from '@/shared/url/listParams'
 import { hrmKeys } from '../keys'
 
@@ -112,31 +113,30 @@ export function WorkCalendarPage() {
   else
     body = (
       <Stack gap="lg">
-        <Stack gap="xs">
-          <Group justify="space-between">
-            <Text fw={600}>{t('hrm.calendar.weeks')}</Text>
-            {manage && (
+        <Section
+          title={t('hrm.calendar.weeks')}
+          actions={
+            manage && (
               <Button size="xs" variant="default" leftSection={<IconPlus {...icon.text} />} onClick={() => setEditingWeek('new')}>
                 {t('hrm.calendar.add_week')}
               </Button>
-            )}
-          </Group>
+            )
+          }
+        >
           {cal.data.work_weeks.length === 0 ? (
-            <Text size="sm" c="dimmed">
-              {t('hrm.calendar.default_week')}
-            </Text>
+            <EmptyState title={t('hrm.calendar.default_week')} />
           ) : (
             <DataTable
               label={t('hrm.calendar.weeks')}
               columns={weekColumns}
               rows={cal.data.work_weeks}
               rowKey={(w) => w.effective_from}
+              onRowClick={manage ? (w) => setEditingWeek(w) : undefined}
               menu={manage ? weekMenu : undefined}
             />
           )}
-        </Stack>
-        <Stack gap="xs">
-          <Text fw={600}>{t('hrm.calendar.holidays', { year })}</Text>
+        </Section>
+        <Section title={t('hrm.calendar.holidays', { year })}>
           {cal.data.holidays.length === 0 ? (
             <EmptyState title={t('hrm.calendar.no_holidays')} />
           ) : (
@@ -145,10 +145,11 @@ export function WorkCalendarPage() {
               columns={holidayColumns}
               rows={cal.data.holidays}
               rowKey={(h) => h.date}
+              onRowClick={manage ? (h) => setEditingHoliday(h) : undefined}
               menu={manage ? holidayMenu : undefined}
             />
           )}
-        </Stack>
+        </Section>
       </Stack>
     )
 
@@ -169,22 +170,13 @@ export function WorkCalendarPage() {
             aria-label={t('hrm.calendar.legal_entity')}
             placeholder={t('hrm.calendar.legal_entity')}
             leftSection={<IconBuildingSkyscraper {...icon.text} />}
-            w={{ base: '100%', md: 240 }}
+            w={{ base: '100%', md: filterWidth.unit }}
             data={entities.map((u) => ({ value: String(u.id), label: u.name }))}
             value={entity ? String(entity) : null}
             onChange={(v) => set({ filters: { legal_entity: v ?? '' } })}
             allowDeselect={false}
           />
-          <Select
-            aria-label={t('hrm.calendar.year')}
-            placeholder={t('hrm.calendar.year')}
-            leftSection={<IconCalendar {...icon.text} />}
-            w={{ base: '100%', md: 120 }}
-            data={[thisYear - 1, thisYear, thisYear + 1].map((y) => String(y))}
-            value={String(year)}
-            onChange={(v) => set({ filters: { year: v ?? '' } })}
-            allowDeselect={false}
-          />
+          <YearSelect label={t('hrm.calendar.year')} value={year} years={[thisYear - 1, thisYear, thisYear + 1]} onChange={(y) => set({ filters: { year: String(y) } })} />
         </>
       }
     >
