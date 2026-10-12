@@ -65,3 +65,18 @@ test('an invalid timesheet cell is named and the footer leads to it', async ({ p
   await page.getByRole('button', { name: 'Đến trường tiếp theo' }).click()
   await expect(cell).toBeFocused()
 })
+
+test('a holiday the server refuses to delete says so', async ({ page }) => {
+  const put = await api.put(`/api/hrm/calendars/${company}/holidays/2026-12-24`, { data: { name: `Nghỉ G ${run}` } })
+  expect(put.status(), await put.text()).toBe(204)
+  await page.route('**/api/hrm/calendars/*/holidays/*', (route) =>
+    route.request().method() === 'DELETE' ? route.fulfill({ status: 500, contentType: 'application/json', body: '{"code":"internal_error"}' }) : route.continue(),
+  )
+
+  await signedIn(page, `/hrm/work-calendar?legal_entity=${company}&year=2026`)
+  await page.getByRole('row', { name: new RegExp(`Nghỉ G ${run}`) }).getByRole('button', { name: 'Thao tác khác' }).click()
+  await page.getByRole('menuitem', { name: 'Xóa' }).click()
+  await page.getByRole('dialog').getByRole('button', { name: 'Xóa' }).click()
+
+  await expect(page.getByRole('alert').filter({ hasText: 'Máy chủ gặp lỗi.' })).toBeVisible()
+})
