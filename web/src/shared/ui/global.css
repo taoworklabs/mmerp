@@ -1,4 +1,4 @@
-/* Controls are 32px at page level (size sm) and 24px in sections (size xs), so a button
+/* Controls are 30px at page level (size sm) and 24px in sections (size xs), so a button
    beside an input is exactly as tall as the input. */
 .mantine-Button-root {
   --button-height-sm: var(--mmerp-control-height);

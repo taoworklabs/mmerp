@@ -11,7 +11,7 @@ const info = primary
 const discovery: MantineColorsTuple = ['#F8EEFE', '#EED7FC', '#D8A0F7', '#C97CF4', '#BF63F3', '#AF59E1', '#964AC0', '#803FA5', '#48245D', '#35243F']
 // The one neutral ramp; it replaces Mantine's gray, whose steps Mantine reads by position:
 // 3 frames and table rules, 4 input borders, so 2 and 3 share the light border tone.
-const gray: MantineColorsTuple = ['#F8F8F8', '#F0F1F2', '#DDDEE1', '#DDDEE1', '#8C8F97', '#7D818A', '#6B6E76', '#505258', '#3B3D42', '#292A2E']
+const gray: MantineColorsTuple = ['#F8F8F8', '#F0F1F2', '#DDDEE1', '#DDDEE1', '#B4B7BD', '#7D818A', '#6B6E76', '#505258', '#3B3D42', '#292A2E']
 
 export const theme = createTheme({
   primaryColor: 'primary',
@@ -92,7 +92,7 @@ function tint(name: string, ramp: MantineColorsTuple, bg = 0) {
 export const cssVariablesResolver: CSSVariablesResolver = () => ({
   variables: {
     // Page-level controls (sm) and section-level ones (xs); global.css applies them.
-    '--mmerp-control-height': rem(32),
+    '--mmerp-control-height': rem(30),
     '--mmerp-control-height-compact': rem(24),
     // Forms and a document's main column stop here, so fields stay near their labels on wide screens.
     '--mmerp-content-width': rem(1200),

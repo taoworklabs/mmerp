@@ -52,21 +52,24 @@
   height: 40px;
 }
 
-/* Column titles are quiet: small, secondary colour, on the subtle tone. */
+/* Column titles are quiet: small, secondary colour, over a rule. Opaque so rows scroll under a sticky header. */
 .compact th {
   height: 36px;
-  background: var(--mmerp-elevation-surface-sunken);
+  background: var(--mmerp-elevation-surface);
   color: var(--mantine-color-dimmed);
   font-size: var(--mantine-font-size-xs);
   font-weight: 500;
 }
 
+/* Mantine draws the header rule as a box-shadow; keep it next to the sticky column's edge. */
 .compact th.sticky {
   z-index: 2;
-  background: var(--mmerp-elevation-surface-sunken);
+  box-shadow:
+    inset -1px 0 0 var(--mantine-color-default-border),
+    inset 0 -1px 0 var(--mantine-color-default-border);
 }
 
-/* In a frame of capped height the grand total stays at its bottom. */
+/* In a scroll area of capped height the grand total stays at its bottom. */
 .compact tfoot td {
   position: sticky;
   bottom: 0;
@@ -91,11 +94,6 @@
 
 .idLink:hover {
   text-decoration: underline;
-}
-
-/* Clips the header's tinted cells to the frame's rounded corners. */
-.frame {
-  overflow: hidden;
 }
 
 /* A group's name row and the total rows read as headings of the figures around them. */

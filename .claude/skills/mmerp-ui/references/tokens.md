@@ -29,10 +29,10 @@ Each colour is a ten-step scale, palest (0) to darkest (9). Components read it b
 | placeholder | automatic | `#6B6E76` | Input placeholders only (5.1:1) |
 | border | `withBorder`, `var(--mantine-color-default-border)` | `#0B120E24` (translucent) | Dividers, table rules, frames, outlined buttons. Translucent so it reads on white and on the sunken tone alike |
 | frame border | automatic on `Paper withBorder` and table rules (`gray-3`) | `#DDDEE1` | Same tone as `border`, drawn solid by Mantine |
-| input border | automatic (`gray-4`) | `#8C8F97` | Input edges, 3.2:1 so a field is findable without colour vision |
+| input border | automatic (`gray-4`) | `#B4B7BD` | Edges of checkboxes, radios, inline edit and inputs outside a `Form` or filter bar. Form fields have no edge but a fill: `gray-1`, `gray-2` on hover, white with the primary edge on focus, none when read-only or disabled (`components.md`); filter bar inputs use `border` (`tables.md`) |
 | surface | `var(--mmerp-elevation-surface)`, default `Paper` background | `#FFFFFF` | Tables, forms, cards, the page |
-| surface sunken | `var(--mmerp-elevation-surface-sunken)` | `#F8F8F8` | Table header row, group and total rows, tile hover, grid cells that take no value |
-| disabled | automatic | `#F0F1F2` | Disabled input background |
+| surface sunken | `var(--mmerp-elevation-surface-sunken)` | `#F8F8F8` | Group and total rows, tile hover, grid cells that take no value |
+| disabled | automatic | `#F0F1F2` | Disabled input background outside a `Form` |
 | neutral | `color="gray"` | tint `#F0F1F2`, text `#505258` | Neutral badges, quiet icon buttons, empty-state icon |
 
 ### Primary and semantic scales
@@ -117,9 +117,9 @@ The scale is closed: if a gap seems to need 6, 10 or 20, the layout needs anothe
 | `xs` | 2 | Not assigned to any component yet |
 | `sm` | 4 | Badges, tooltips, small icon tiles (`ThemeIcon` up to 28px) |
 | `md` | 6 | Default: buttons, inputs, navigation items, alerts |
-| `lg` | 8 | `Paper` (cards, tiles, table frames), menus, popovers, dropdowns |
+| `lg` | 8 | `Paper` (cards, tiles), menus, popovers, dropdowns |
 | `xl` | 12 | Modals |
-| round | — | Avatars (people only) |
+| round | — | Avatars, page numbers in the paging bar |
 
 Components already carry their radius through theme defaults; set `radius` only on a new component, by this table.
 
@@ -127,7 +127,7 @@ Components already carry their radius through theme defaults; set `radius` only 
 
 | Level | Surface | Shadow | Use |
 | --- | --- | --- | --- |
-| Sunken | `--mmerp-elevation-surface-sunken` | none | A well inside the page: table headers, group rows, unavailable cells |
+| Sunken | `--mmerp-elevation-surface-sunken` | none | A well inside the page: group and total rows, unavailable cells |
 | Default | `--mmerp-elevation-surface` | none | The page and everything flat on it; framed with `withBorder` |
 | Raised | surface | `shadow="xs"` | Reserved for a card that can be dragged; no screen has one yet |
 | Overlay | surface | `md`, `lg`, `xl` (all `0 8px 12px #1E1F2126, 0 0 1px #1E1F214F`) | Menus, popovers, modals, toasts: Mantine applies it |
@@ -138,13 +138,13 @@ A card on the page is `Paper withBorder`, never a shadow.
 
 | What | Value | Where |
 | --- | --- | --- |
-| Page-level control (button, input, select, pagination, `ActionIcon size="input-sm"`) | 32px, `size="sm"` (default) | `--mmerp-control-height`, applied in `global.css` |
+| Page-level control (button, input, select, pagination, `ActionIcon size="input-sm"`) | 30px, `size="sm"` (default) | `--mmerp-control-height`, applied in `global.css` |
 | Section-level control | 24px, `size="xs"` | `--mmerp-control-height-compact` |
 | Touch target below 1024px | 44px | `global.css` |
 | Header | 48px | `app/AppLayout.tsx` |
 | Navigation | 240px, 56px collapsed | `app/AppLayout.tsx` |
 | Table row / header row | 40px / 36px | `DataTable.module.css` |
-| Grid cell (timesheet) | 32px | `CellGrid.module.css` |
+| Grid cell (timesheet) | 30px | `CellGrid.module.css` |
 | Document side column, inbox list | 360px | `DocumentPage`, `InboxPage` |
 | Content width (form sections, a document's main column) | 1200px | `--mmerp-content-width`, applied by `FormSection` and `DocumentPage` |
 | Side panel, side-column tab | 480px | `readingWidth` (`page/Page.tsx`) |
