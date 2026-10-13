@@ -16,10 +16,10 @@ Sources of truth in code:
 
 ## Principles
 
-1. **Dense and calm.** Users work at a desk all day: 14px text on 20px lines, 32px controls, 40px table rows. Space comes from the 4px scale, separation from thin borders, never from decoration.
+1. **Dense and calm.** Users work at a desk all day: 14px text on 20px lines, 30px controls, 40px table rows. Space comes from the 4px scale, separation from thin borders, never from decoration.
 2. **Flat until it floats.** Pages are flat white surfaces divided by borders; only overlays (menus, popovers, modals, toasts) cast a shadow.
 3. **Colour means something.** Primary blue marks action and selection; green, orange, red, blue and purple mark state. Neutral grey carries everything else. A colour always comes with text or an icon.
-4. **Radius follows role.** 4px for tags, 6px for controls, 8px for frames and menus, 12px for modals, round for people.
+4. **Radius follows role.** 4px for tags, 6px for controls, 8px for frames and menus, 12px for modals, round for people and page numbers.
 5. **One way per job.** Two screens doing the same job look the same, because both use the same `shared/ui` component.
 6. **The backend decides, the UI displays.** Buttons come from `allowed_actions`, messages from error codes.
 

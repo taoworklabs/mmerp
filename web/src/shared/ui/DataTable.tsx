@@ -52,7 +52,7 @@ type Props<T> = {
   group?: { of: (row: T) => string; total?: (rows: T[], name: string) => T }
   // A summary row after every row, e.g. the grand total.
   footer?: T
-  // Caps the frame's height (e.g. "70dvh") so the header and footer stay in view inside it.
+  // Caps the table's height (e.g. "70dvh") so the header and footer stay in view inside it.
   maxHeight?: string
 }
 
@@ -80,7 +80,7 @@ export function DataTable<T>({ columns, rows, rowKey, href, onRowClick, selectio
   const head = (n: number) => ({ columns, sort, onSort, onResize, rowSpan: n })
   if (!wide) return <Cards columns={columns} rows={rows} rowKey={rowKey} href={href} menu={menu} label={label} group={group} footer={footer} />
   return (
-    <Paper withBorder className={`${classes.frame} ${selection ? classes.selectable : ''}`}>
+    <div className={selection ? classes.selectable : undefined}>
       <ScrollArea.Autosize type="auto" mah={maxHeight}>
         <Table highlightOnHover stickyHeader verticalSpacing={0} className={classes.compact} aria-label={label}>
           <Table.Thead>
@@ -165,7 +165,7 @@ export function DataTable<T>({ columns, rows, rowKey, href, onRowClick, selectio
           )}
         </Table>
       </ScrollArea.Autosize>
-    </Paper>
+    </div>
   )
 }
 

@@ -15,7 +15,7 @@ What the user can do, where it sits, how it confirms and how it answers. Which a
 
 - **One primary per place.** A page header has at most one; a modal's footer one; a section none or one.
 - **At most three buttons** in a page header; the rest go into `MoreActions place="page"`, placed before the primary button. A table row puts every secondary action into its `menu` (`MoreActions` on the row) when it has two or more; a row with one action opens it on click.
-- **Size follows the place** (`components.md`): page level 32px, section level `xs` 24px, inline `compact-xs`.
+- **Size follows the place** (`components.md`): page level 30px, section level `xs` 24px, inline `compact-xs`.
 - Buttons are right-aligned in the page header, `TabActions`, section headers and footers.
 
 ```tsx

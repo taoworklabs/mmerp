@@ -18,7 +18,7 @@ Where things sit on a screen. Every screen is one page template from `@/shared/u
 ```
 
 - **Header** (`app/AppLayout.tsx`): the logo goes home, where areas are switched; then the open area's name; on the right notifications (unread count), approval inbox (pending count), jobs, and the account menu. The icon of the page you are on is `variant="light"`.
-- **Navigation**: only the open area's menu, from the manifest's `nav` (`label`, `path`, `icon`, `group`, `permission`). Ungrouped items first, then groups; a group emptied by permissions disappears. Items are 32px tall, radius 6, weight 500, 16px icon; the current item is tinted with primary text. Collapsed and folded states are remembered per user. A screen adds a `nav` entry; it never draws navigation.
+- **Navigation**: only the open area's menu, from the manifest's `nav` (`label`, `path`, `icon`, `group`, `permission`). Ungrouped items first, then groups; a group emptied by permissions disappears. Items are at least 30px tall (the control height), radius 6, weight 500, 16px icon; the current item is tinted with primary text. Collapsed and folded states are remembered per user. A screen adds a `nav` entry; it never draws navigation.
 - **Home** (`/`) and the queues (inbox, notifications, jobs) have no navigation.
 - Below 1024px the navigation is a drawer behind the menu button.
 
@@ -144,7 +144,7 @@ A `ListPage` whose rows open their edit `FormModal` on click (`onRowClick`); "Cr
 Report title                                              [Export]
 Description
 [Period ▾] [Legal entity ▾] [Org unit ▾]
-┌ frame ≤ 70% of screen height; header and totals stick ────────────┐
+┌ scroll area ≤ 70% of screen height; header and totals stick ──────┐
 │ Name │ Income ───────────│ Deductions ─────│ Net                    │
 │      │ Base │ Allow │ OT │ Ins. │ Tax      │                        │
 │ ▸ Group                                                             │

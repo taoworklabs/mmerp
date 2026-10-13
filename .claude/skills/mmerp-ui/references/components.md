@@ -19,7 +19,7 @@ Sizes follow where the button sits, not how important it is:
 
 | Level | Where | `size` | Height | Icon |
 | --- | --- | --- | --- | --- |
-| Page | Page header actions, `FormActions`, modal footer, empty and error states | default (`sm`) | 32px | `icon.button` |
+| Page | Page header actions, `FormActions`, modal footer, empty and error states | default (`sm`) | 30px | `icon.button` |
 | Section | `TabActions`, section headers, the `DocumentPage` side column | `xs` | 24px | `icon.text` |
 | Inline | Right after a line of text | `compact-xs` | 22px | `icon.text` |
 
@@ -47,7 +47,7 @@ Where each one goes, and how many per place: `actions.md`.
 
 ## Icon button
 
-`ActionIcon variant="subtle" color="gray" size="lg"` with the icon at `icon.button`, wrapped in a `Tooltip`, with an `aria-label` that repeats the tooltip. Beside 32px buttons or inputs use `size="input-sm"` so it is as tall as they are; a remove-row button is grey, never red.
+`ActionIcon variant="subtle" color="gray" size="lg"` with the icon at `icon.button`, wrapped in a `Tooltip`, with an `aria-label` that repeats the tooltip. Beside 30px buttons or inputs use `size="input-sm"` so it is as tall as they are; a remove-row button is grey, never red.
 
 ```tsx
 <Tooltip label={t('shared.attachments.remove')}>
@@ -59,7 +59,7 @@ Where each one goes, and how many per place: `actions.md`.
 
 ## More actions
 
-`MoreActions` (`@/shared/ui/MoreActions`) is the "…" menu: children are `Menu.Item`s. `place="row"` (default) is quiet, for a table row's `menu`; `place="page"` is outlined and 32px, for page actions beyond three. Renders nothing without children.
+`MoreActions` (`@/shared/ui/MoreActions`) is the "…" menu: children are `Menu.Item`s. `place="row"` (default) is quiet, for a table row's `menu`; `place="page"` is outlined and 30px, for page actions beyond three. Renders nothing without children.
 
 ```tsx
 <MoreActions place="page">
@@ -98,7 +98,7 @@ Mantine `Alert`, default (tinted) variant, `color` by meaning, always with an ic
 
 ## Fields (`shared/ui/form`)
 
-Every field is wired to React Hook Form and renders: label above (12px, 600, `dimmed`), `*` when required, description under the input, error under that. Inputs are 32px, radius 6, input border token (`gray-4`, see `tokens.md`), focus ring primary.
+Every field is wired to React Hook Form and renders: label above (12px, 600, `dimmed`), `*` when required, description under the input, error under that. Inputs are 30px, radius 6, a `gray-1` fill with no edge (`gray-2` on hover), white with the primary edge on focus; read-only and disabled fields have no fill, so they read as values, not fields to fill; `Form` applies it, so every field inside a `Form` looks the same.
 
 | Field | Data |
 | --- | --- |
@@ -133,7 +133,7 @@ Filter inputs (`SearchInput`, `MonthFilter`, `YearSelect`, `OrgUnitSelect`, a pl
 
 | Component | Use |
 | --- | --- |
-| `DataTable` | Every table. Columns declare `role` (`title`, `status`, `meta`, `hidden`), `numeric`, `sortable`, `band`, `strong`, `width`. Rows 40px, header 36px on the sunken tone, row hover tint, cards below 1024px. Props: `href` (first column links the row), `onRowClick` (side panel, settings modal), `menu` (row "…"), `selection` (checkbox column), `onResize` (drag or ←/→ on a column edge), `group`, `footer`, `maxHeight`. Rules in `tables.md` |
+| `DataTable` | Every table. Columns declare `role` (`title`, `status`, `meta`, `hidden`), `numeric`, `sortable`, `band`, `strong`, `width`. Unframed; rows 40px, header 36px with no fill over a rule, row hover tint, cards below 1024px. Props: `href` (first column links the row), `onRowClick` (side panel, settings modal), `menu` (row "…"), `selection` (checkbox column), `onResize` (drag or ←/→ on a column edge), `group`, `footer`, `maxHeight`. Rules in `tables.md` |
 | `ListPage` | `filters` (left), `tools` (right: `useListView().tools`), `bulk` (replaces the bar while rows are selected), `paging` |
 | `useListView(listKey, columns)` | The user's saved views and column choices for a list, stored on the server; returns `columns`, `onResize`, `tools` |
 | `BulkBar` | "N selected", the bulk actions (children), Clear selection |

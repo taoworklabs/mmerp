@@ -6,17 +6,16 @@ Every table is `DataTable` (`@/shared/ui/DataTable`); a list screen is `ListPage
 
 ```
 [🔍 Search      ] [Status ▾] [Org unit ▾] [Month ▾]          [Views ▾] [Columns]   ← filters … tools
-┌──┬──────────────┬─────────────┬──────────┬────────────┬──────────┬───┐
-│☐ │ Identifier ↕ │ Text        │ Date ↕   │   Amount ↕ │ Status   │ ⋯ │  header 36px, sunken tone
-├──┼──────────────┼─────────────┼──────────┼────────────┼──────────┼───┤
-│☐ │ DH-0001      │ Customer    │ 01/10    │     12.500 │ [Posted] │ ⋯ │  rows 40px, hover tint
-└──┴──────────────┴─────────────┴──────────┴────────────┴──────────┴───┘
-1.234 records                                     [50 / page ▾] ‹ 1 2 3 › ← paging
+  ☐   Identifier ↕   Text          Date ↕       Amount ↕   Status        header 36px, no fill, unframed
+ ─────────────────────────────────────────────────────────────────────
+  ☐   DH-0001        Customer      01/10          12.500   [Posted]   ⋯   rows 40px, hover tint
+ ─────────────────────────────────────────────────────────────────────
+1.234 records                     ‹ 1 2 3 ›                   50 / page ▾  ← paging
 ```
 
 ## Filter bar
 
-- Inputs only, `xs` (8px) apart, 32px tall, in this order: search, then selects, then period filters. Saved views and columns (`tools`) sit at the bar's right end.
+- Inputs only, `xs` (8px) apart, 30px tall, styled like the `default` tool buttons at the bar's end (light `border` edge, 500 weight, hover tint; `ListPage` applies it, the area adds nothing), in this order: search, then selects, then period filters. Saved views and columns (`tools`) sit at the bar's right end.
 - Each input: placeholder = its name, the same text as `aria-label`, a 16px leading icon, `clearable` when optional, one width per kind from `filterWidth` in `theme.ts`:
 
 | Kind | Component | Width |
@@ -130,15 +129,15 @@ const [selected, setSelected] = useState<Set<string | number>>(new Set())
 
 ## Paging
 
-- Server-side, 50 rows by default, 20/50/100 to choose; total count on the left of the paging bar.
+- Server-side, 50 rows by default, 20/50/100 to choose; one bar under the table: total count on the left, pages in the centre (ghost buttons, the current page filled primary), the page size on the right as a ghost select (no edge or fill until hovered).
 - Small admin lists (users, org units) load whole without paging.
 - Feeds (notifications) use a "Load more" button.
-- Reconciliation tables load whole inside a capped frame (`maxHeight="70dvh"`) so group and grand totals are never split across pages.
+- Reconciliation tables load whole inside a capped scroll area (`maxHeight="70dvh"`) so group and grand totals are never split across pages.
 
 ## Figures and totals
 
 - Many number columns: group with `band` (two-level header, each band opening with a rule); results last with `strong`; zero shown as "–" in `dimmed`.
-- Totals: `group={{ of, total }}` adds a row naming each group and a total row after it ("Tổng"); `footer` adds a grand total row that sticks to the bottom of a capped frame.
+- Totals: `group={{ of, total }}` adds a row naming each group and a total row after it ("Tổng"); `footer` adds a grand total row that sticks to the bottom of a capped scroll area.
 
 ## Inline editing in cells
 

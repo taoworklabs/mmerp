@@ -14,7 +14,7 @@ Run every item against the change before calling it done. An item that does not 
 
 - [ ] Built from an existing `shared/ui` template and components; anything new and generic is in `shared/ui` with a `/dev/ui` entry and a row in `components.md`.
 - [ ] One primary button per view; others `variant="default"`; `color="danger"` only for a step that loses data.
-- [ ] Buttons sized by level: default (32px) in the page header, form footer, modal footer; `size="xs"` (24px) in sections, tabs and the side column. Controls in one strip share one height.
+- [ ] Buttons sized by level: default (30px) in the page header, form footer, modal footer; `size="xs"` (24px) in sections, tabs and the side column. Controls in one strip share one height.
 - [ ] Status through `DocumentStatus` (documents) or `StatusBadge` (everything else).
 - [ ] Selection shown by the primary tint and primary text only.
 - [ ] Shadows only on overlays; cards are `Paper withBorder`.
@@ -34,7 +34,7 @@ Run every item against the change before calling it done. An item that does not 
 - [ ] Lists people reuse use `useListView` with a stable `listKey`.
 - [ ] Bulk actions only with a real bulk operation: `selection` + `BulkBar`, run as a job, confirmed with the count, selection cleared on filter/sort/page change.
 - [ ] Side panel only read-only, with its link to the page.
-- [ ] Reconciliation tables: bands, totals, capped frame, zero as "–".
+- [ ] Reconciliation tables: bands, totals, capped height, zero as "–".
 
 ## Forms (`forms.md`)
 

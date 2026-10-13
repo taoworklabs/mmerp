@@ -52,10 +52,10 @@ All of them live in `theme.ts`. Area code uses only token names or Mantine props
 | `text-secondary` (`dimmed`) | `#505258` | Secondary labels, captions, column headers |
 | `placeholder` | `#6B6E76` | Placeholders only |
 | `border` | `#0B120E24` (translucent) | Table borders, frames, dividers, outlined buttons |
-| input border | `#8C8F97` | Input borders, so a field's edge reads at 3:1 |
+| input border | `#B4B7BD` | Edges of checkboxes, radios, inline edit and inputs outside a `Form` or filter bar. Inside a `Form` a field has no edge but a `gray-1` (`#F0F1F2`) fill, `gray-2` on hover, white with the primary edge on focus, no fill when read-only or disabled, so a form of many fields stays calm; a list's filter bar uses `border` like the tool buttons beside it |
 | `background` | `#FFFFFF` | App background and content area |
 | `surface` | `#FFFFFF` | Background of tables, forms, cards |
-| `surface-sunken` | `#F8F8F8` | Background of the column header row, tile hover, cells that take no value |
+| `surface-sunken` | `#F8F8F8` | Background of group and total rows, tile hover, cells that take no value |
 | `success` | Green, `#5B7F24` | Posted status, success notifications |
 | `warning` | Orange, `#BD5B00` | Pending approval status, warnings |
 | `danger` | Red `#C9372C` (text `#AE2E24`) | Errors, destructive actions, cancelled status |
@@ -90,7 +90,7 @@ A document type may change the **label**, never the colour, through the translat
 ### Spacing, radius, shadow
 
 - 4px-based spacing scale: 4, 8, 12, 16, 24, 32 (`xxs`…`xl`), plus 2 (`xxxs`) between a line and its caption. No other values.
-- Radius by role: 4px for badges, tooltips and small icon tiles (`sm`); 6px for buttons, inputs and navigation items (`md`, the default); 8px for cards, tiles, table frames, menus and popovers (`lg`); 12px for modals (`xl`); avatars are round.
+- Radius by role: 4px for badges, tooltips and small icon tiles (`sm`); 6px for buttons, inputs and navigation items (`md`, the default); 8px for cards, tiles, menus and popovers (`lg`); 12px for modals (`xl`); avatars and page numbers are round.
 - **Controls in the same strip have the same height.** A strip is a row of controls placed side by side: filter bar, pagination bar, form footer, page header buttons. The `shared/ui` component that builds the strip picks the size of every control inside it; a button next to an input uses Mantine's `input-*` size so it is exactly as tall as the input (e.g. pagination at `input-sm` next to the rows-per-page select). Controls elsewhere keep the size that fits their place, as long as they meet the minimum touch target. Buttons inside an input (clear value, show password, hide sensitive field) are smaller than the input that holds them.
 - No shadows, except on modals, dropdown menus, popovers and toasts (one overlay shadow).
 - **A selected item only gets a light blue background and primary text**, everywhere (navigation, lists, menus, approval inbox): no accent bar on the left edge and no coloured border.
@@ -153,21 +153,21 @@ General rules:
 
 Use `<DataTable>` from `shared/ui`, not Mantine's `Table` directly.
 
-- Rows are 40px tall. The column header row sits on the `surface-sunken` background, 12px text in `text-secondary`. A long table scrolls with the page and the column headers do not stick yet; when needed, give the table frame a fixed height so the headers stick inside the frame.
+- Rows are 40px tall. Tables are unframed. The column header row has no background: 12px text in `text-secondary` over a rule. A long table scrolls with the page and the column headers do not stick yet; when needed, cap the table's height so the headers stick inside its scroll area.
 - The first column is the identifier (document number, full name with avatar), weight 500 in the main text colour, underlined on hover. The whole row is clickable; the link is a real `<a>` tag, so middle-click or Ctrl+click opens a new tab.
 - Numbers and money are right-aligned and use `tabular-nums`. Text is left-aligned. Dates are left-aligned.
 - The status column uses `<DocumentStatus>` for documents and `<StatusBadge>` (tinted badge, 4px radius, sentence case) for master data, e.g. employees who are active or have left.
-- Sorting and pagination run on the server. Default 50 rows per page, with choices of 20, 50 and 100. Exception: small admin lists (users, org tree) load in full at once, without pagination.
+- Sorting and pagination run on the server. Default 50 rows per page, with choices of 20, 50 and 100. The paging bar under the table holds the total on the left, the pages in the centre (ghost buttons, the current page filled primary) and the rows-per-page choice on the right, a ghost select (no edge or fill until hovered). Exception: small admin lists (users, org tree) load in full at once, without pagination.
 - A list's search box is `SearchInput`: it applies on Enter or on leaving the box; `/` moves focus to it.
 - No action buttons on each row. A row with a single action (a settings row's edit modal) opens it on click (`onRowClick`); two or more actions go in a "…" menu at the end of the row.
 - A list whose records are often checked without being changed may open a read-only side panel on row click (`SidePanel`, 480px, not modal, `?peek=` on the URL) with a link to the full page; the identifier link still opens the page.
 - Users keep their own saved views (a named filter and sort) and column choices (show/hide, width) per list, on the server (`useListView`, [ADR-0031](./docs/adr/0031-personal-list-views.md)); the identifier column always shows.
 - A multi-select column exists only when the screen has bulk actions. When rows are selected, the bulk action bar (`BulkBar`) replaces the filter bar; a bulk action runs as a job and is confirmed with the count.
 - Filter inputs take one width per kind (`filterWidth`: search 280, select 200, org unit or legal entity 240, month 160, year 120).
-- A wide table scrolls horizontally inside the table frame, never making the whole page scroll horizontally. The identifier column sticks to the left while scrolling horizontally and does not wrap.
+- A wide table scrolls horizontally inside its own scroll area, never making the whole page scroll horizontally. The identifier column sticks to the left while scrolling horizontally and does not wrap.
 - **Reconciliation tables** (many number columns, e.g. payroll):
   - Columns are grouped by meaning (income, insurance, tax…): two-level headers, each group starting with a vertical line. Result columns (net pay, cost) go last, in bold.
-  - The table frame is at most 70% of the screen tall, so the column headers stick to the top of the frame and the totals row sticks to the bottom.
+  - The table's scroll area is at most 70% of the screen tall, so the column headers stick to its top and the totals row sticks to the bottom.
   - Zero is shown as "–" in the secondary colour, so the eye stops on cells that hold numbers.
   - A group's total row says only "Tổng" (Total); the group's name is already on the group's first row.
 
@@ -177,7 +177,7 @@ Use the fields of `shared/ui/form`, already wired to React Hook Form.
 
 - **Labels always sit above the input** and are always visible. Placeholders never replace labels. Required fields have a `*`. Help text sits below the input.
 - Layout: split into sections (`FormSection`) with a title, a one-sentence description and an optional icon; sections are separated by thin dividers, unframed. From 1280px, the title and description sit in the left column and the fields in the right column, laid out in two columns; long text fields span the whole row.
-- **A list's filter bar** is the only exception to the label rule: its inputs line up as a compact toolbar, each input's name shown as the placeholder and attached with `aria-label`, with an icon. Every data-entry form still has visible labels above.
+- **A list's filter bar** is the only exception to the label rule: its inputs line up as a compact toolbar, each input's name shown as the placeholder and attached with `aria-label`, with an icon. They look like the `default` buttons beside them (saved views, columns): the light `border` edge, 500 weight, the same hover tint; `ListPage` applies it. Every data-entry form still has visible labels above.
 - **Validation:** validate on leaving a field and on submit. The error appears right under the field, linked to the input with `aria-describedby`, and does not repeat the field name because the label is right above ("Chưa nhập" (Not entered), not "Nhập Mã nhân viên" (Enter Employee code)). On failed submit there is no summary box at the top of the form: focus and scroll to the first invalid field; next to the submit button a `role="alert"` line "Còn N trường cần sửa · Đến trường tiếp theo" (N fields to fix · Go to next field) cycles through the invalid fields and disappears when no errors remain; the title of each `FormSection` with errors carries that section's error count. `Form`, `FormActions` and `FormSection` do this already.
 - **Server errors** that name a field are attached to that field; document-level errors (e.g. `period_locked`) show as a banner at the top of the page.
 - Leaving the page with unsaved changes asks for confirmation.
@@ -224,7 +224,7 @@ What `shared/ui` already has (see also `/dev/ui`), to use before building your o
 
   | Level | Place | Button size | Icon |
   | --- | --- | --- | --- |
-  | Page | The page template's `actions`, `FormActions`, modal footer, buttons in empty and error states | `sm` (32px) | 18px |
+  | Page | The page template's `actions`, `FormActions`, modal footer, buttons in empty and error states | `sm` (30px) | 18px |
   | Section | `TabActions`, the header of a section within a page, the `DocumentPage` side column (`ApprovalPanel`) | `xs` (24px) | 16px |
   | In content | Add row in a form, buttons sitting among data; a button right after a line of text (change approver next to the approver's name) uses `compact-xs` | `xs`, `light` or `subtle` style | 16px |
 
@@ -274,7 +274,7 @@ Dates and times are shown in the tenant's time zone, not the browser's ([techsta
 - Every action can be done with the keyboard. Keep Mantine's default focus ring, never remove it.
 - Tab order follows reading order. Opening a modal moves focus into it; closing it returns focus to where it was.
 - Shortcuts, and only these: `/` to go to a list's search box; `Ctrl+S` to save a form; `Esc` to close a modal or menu.
-- Minimum touch target 32×32px on desktop, 44×44px on self-service screens on small devices.
+- Minimum touch target 30×30px on desktop, 44×44px on self-service screens on small devices.
 - Respect `prefers-reduced-motion`.
 
 ## Motion

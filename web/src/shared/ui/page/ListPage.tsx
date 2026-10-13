@@ -6,6 +6,7 @@ import { useTranslation } from 'react-i18next'
 import { formatNumber } from '@/shared/i18n'
 import { pageSizes } from '@/shared/url/listParams'
 import { icon } from '../theme'
+import classes from './ListPage.module.css'
 import { Page, type PageHeaderProps } from './Page'
 
 type Paging = { page: number; pageSize: number; total: number; onPage: (page: number) => void; onPageSize: (size: number) => void }
@@ -38,7 +39,7 @@ export function ListPage({
         bulk
       ) : wide && (filters || tools) ? (
         <Group gap="xs" align="flex-end" justify="space-between" wrap="nowrap">
-          <Group gap="xs" align="flex-end" role="search">
+          <Group gap="xs" align="flex-end" role="search" className={classes.filters}>
             {filters}
           </Group>
           {tools}
@@ -52,7 +53,7 @@ export function ListPage({
               </Button>
             </Group>
             <Drawer opened={open} onClose={close} title={t('shared.list.filter')} position="bottom">
-              <Stack gap="sm" role="search">
+              <Stack gap="sm" role="search" className={classes.filters}>
                 {filters}
                 <Button onClick={close}>{t('shared.list.apply')}</Button>
               </Stack>
@@ -69,29 +70,29 @@ export function ListPage({
 function PagingBar({ page, pageSize, total, onPage, onPageSize }: Paging) {
   const { t } = useTranslation()
   return (
-    <Group justify="space-between" gap="sm">
+    <div className={classes.paging}>
       <Text size="sm" c="dimmed">
         {t('shared.list.total', { total: formatNumber(total) })}
       </Text>
-      <Group gap="sm">
-        <Select
-          aria-label={t('shared.list.page_size')}
-          data={pageSizes.map((n) => ({ value: String(n), label: t('shared.list.per_page', { n }) }))}
-          value={String(pageSize)}
-          onChange={(v) => v && onPageSize(Number(v))}
-          allowDeselect={false}
-          w={130}
-        />
-        {/* Same height as the page-size select beside it. */}
-        <Pagination
-          size="input-sm"
-          total={Math.ceil(total / pageSize)}
-          value={page}
-          onChange={onPage}
-          getControlProps={(control) => ({ 'aria-label': t(`shared.list.${control}`) })}
-          getItemProps={(p) => ({ 'aria-label': t('shared.list.page', { page: p }) })}
-        />
-      </Group>
-    </Group>
+      <Pagination
+        size="input-sm"
+        total={Math.ceil(total / pageSize)}
+        value={page}
+        onChange={onPage}
+        classNames={{ control: `${classes.ghost} ${classes.page}` }}
+        getControlProps={(control) => ({ 'aria-label': t(`shared.list.${control}`) })}
+        getItemProps={(p) => ({ 'aria-label': t('shared.list.page', { page: p }) })}
+      />
+      <Select
+        aria-label={t('shared.list.page_size')}
+        data={pageSizes.map((n) => ({ value: String(n), label: t('shared.list.per_page', { n }) }))}
+        value={String(pageSize)}
+        onChange={(v) => v && onPageSize(Number(v))}
+        allowDeselect={false}
+        w={130}
+        className={classes.pageSize}
+        classNames={{ input: classes.ghost }}
+      />
+    </div>
   )
 }
