@@ -1,0 +1,92 @@
+/* Sizes of one tree row; the guide lines are drawn from them, so they line up with the toggles. */
+.tree {
+  --indent: 24px;
+  --toggle: 22px;
+  --row: 36px;
+  --line: var(--mantine-color-default-border);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+/* Below 1024px every toggle is a 44px touch target. */
+@media (max-width: 63.99em) {
+  .tree {
+    --indent: 28px;
+    --toggle: 44px;
+    --row: 44px;
+  }
+}
+
+.group {
+  list-style: none;
+  margin: 0;
+  padding-left: var(--indent);
+}
+
+.node {
+  position: relative;
+}
+
+/* An elbow from the parent's toggle to this row; a leaf's runs on across its empty toggle slot. */
+.group > .node::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: calc(var(--toggle) / 2 - var(--indent));
+  width: calc(var(--indent) - var(--toggle) / 2);
+  height: calc(var(--row) / 2);
+  border-left: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+  border-bottom-left-radius: var(--mantine-radius-sm);
+}
+
+.group > .node[data-leaf]::before {
+  width: calc(var(--indent) + var(--toggle) / 2);
+}
+
+/* The parent's line runs on past every child but the last, from where the elbow ends, so the
+   translucent lines never overlap. */
+.group > .node:not(:last-child)::after {
+  content: '';
+  position: absolute;
+  top: calc(var(--row) / 2);
+  bottom: 0;
+  left: calc(var(--toggle) / 2 - var(--indent));
+  border-left: 1px solid var(--line);
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: var(--mantine-spacing-xs);
+  height: var(--row);
+  padding-right: var(--mantine-spacing-xxs);
+  border-radius: var(--mantine-radius-sm);
+}
+
+@media (hover: hover) {
+  .row:hover {
+    background: var(--mantine-color-default-hover);
+  }
+}
+
+.toggle {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--toggle);
+  height: var(--toggle);
+  border-radius: var(--mantine-radius-sm);
+  color: var(--mantine-color-dimmed);
+}
+
+.toggle:hover {
+  background: var(--mantine-color-default-hover);
+}
+
+/* The name shrinks and truncates instead of pushing the menu out of the row. */
+.label > * {
+  min-width: 0;
+}

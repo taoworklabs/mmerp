@@ -60,7 +60,7 @@ export function ContractsTab({ employee }: { employee: Employee }) {
     <Stack gap="md">
       {canCreate && (
         <TabActions>
-          <Button size="xs" component={Link} to={newPath} leftSection={<IconPlus {...icon.text} />}>
+          <Button component={Link} to={newPath} leftSection={<IconPlus {...icon.button} />}>
             {t('hrm.contract.create')}
           </Button>
         </TabActions>

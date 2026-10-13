@@ -1,5 +1,5 @@
 .side {
-  flex: 0 0 360px;
+  flex: 0 0 var(--mmerp-side-width);
   min-width: 0;
 }
 

@@ -20,6 +20,7 @@ export function NewDocPage({ kind }: { kind: Kind }) {
   if (!actions.data.includes('create')) return <ForbiddenPage />
   return (
     <Page
+      centered
       title={t(`sales.${pathOf(kind)}.create`)}
       breadcrumbs={[{ label: t(`sales.${pathOf(kind)}.title`), to: list }]}
       description={t(`sales.${pathOf(kind)}.create_description`)}

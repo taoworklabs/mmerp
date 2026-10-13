@@ -9,19 +9,14 @@ Areas never import Mantine's `Table`, `Modal`, `Badge`, `Notification`, `NumberI
 | Variant | Code | Use |
 | --- | --- | --- |
 | Primary | `<Button>` (filled, primary) | The single main action of a view: Save, Create, Approve |
-| Default | `variant="default"` (white, thin border) | Every other action: Cancel, Export, Retry, Clear filters |
+| Default | `variant="default"` (white, thin border) | Every other action: Discard changes, Export, Retry, Clear filters |
 | Danger | `color="danger"` (filled) | Only the confirm button of a destructive confirmation dialog |
-| Danger text | `variant="subtle" color="danger"` | Every destructive action that asks first: Delete draft, Cancel document, Revoke, Discard changes |
-| Subtle | `variant="subtle"` | Low-emphasis action in content: Add row, Change approver |
-| Light | `variant="light"` | Selected state of a toggle-like button (header icons on their own page) |
+| Danger text | `variant="subtle" color="danger"` | Every destructive action that asks first: Delete draft, Cancel document, Revoke |
+| Danger outline | `variant="outline" color="danger"` | Only Reject in `ApprovalPanel`, paired with Approve |
+| Subtle | `variant="subtle"` | Low-emphasis action in content: Add row, Change approver; `color="gray"` for the way out beside a primary button (Cancel, "Quay lại") |
+| Light | `variant="light"` | Adding to a form from inside it, with `IconPlus`: "Add line" under lines (`LinesTable`), "Add step" (approval rule), "Add sensitive details"; the selected state of a toggle-like button (header icons on their own page) |
 
-Sizes follow where the button sits, not how important it is:
-
-| Level | Where | `size` | Height | Icon |
-| --- | --- | --- | --- | --- |
-| Page | Page header actions, `FormActions`, modal footer, empty and error states | default (`sm`) | 30px | `icon.button` |
-| Section | `TabActions`, section headers, the `DocumentPage` side column | `xs` | 24px | `icon.text` |
-| Inline | Right after a line of text | `compact-xs` | 22px | `icon.text` |
+Every button has the one size, the default `sm` (30px), with `icon.button` (18px), wherever it sits: page header, tabs, section headers, the side column, footers, among content. Never set `size` on a button; a less important action is quieter in style, not smaller.
 
 States: hover darkens (filled) or tints (default, subtle); `loading` shows a spinner and blocks clicks (`FormActions` shows it only after 300ms); `disabled` greys out. Keep a form's submit button enabled and let validation explain what is missing.
 
@@ -31,7 +26,7 @@ Do:
 <Button leftSection={<IconPlus {...icon.button} />} component={Link} to="/sales/customers/new">
   {t('sales.customers.create')}
 </Button>
-<Button size="xs" variant="default" onClick={openUpload}>{t('shared.attachments.add')}</Button>
+<Button variant="default" onClick={openUpload}>{t('shared.attachments.add')}</Button>
 ```
 
 Don't:
@@ -69,10 +64,10 @@ Where each one goes, and how many per place: `actions.md`.
 
 ## Section
 
-`Section` (`@/shared/ui/Section`) is a titled region of a page that is not a form: a table, a group of facts. Title (`h2`, 16px), optional description, optional `actions` on the right (`xs` buttons); consecutive sections are separated by a rule. Inside a form use `FormSection`; in a document's side column the template frames its own panels.
+`Section` (`@/shared/ui/Section`) is a titled region of a page that is not a form: a table, a group of facts. Title (`h2`, 16px), optional description, optional `actions` on the right (default-size buttons); consecutive sections are separated by a rule. Inside a form use `FormSection`; in a document's side column the template frames its own panels.
 
 ```tsx
-<Section title={t('hrm.calendar.weeks')} actions={<Button size="xs" variant="default" onClick={addWeek}>{t('hrm.calendar.add_week')}</Button>}>
+<Section title={t('hrm.calendar.weeks')} actions={<Button variant="default" onClick={addWeek}>{t('hrm.calendar.add_week')}</Button>}>
   <DataTable … />
 </Section>
 ```
@@ -98,7 +93,7 @@ Mantine `Alert`, default (tinted) variant, `color` by meaning, always with an ic
 
 ## Fields (`shared/ui/form`)
 
-Every field is wired to React Hook Form and renders: label above (12px, 600, `dimmed`), `*` when required, description under the input, error under that. Inputs are 30px, radius 6, input border token (`gray-4`, see `tokens.md`), focus ring primary.
+Every field is wired to React Hook Form and renders: label above (12px, 600, `dimmed`), `*` when required, description under the input, error under that. Inputs are 30px, radius 6, input border token (`--mmerp-input-border`, see `tokens.md`), focus ring primary. Every field takes `short` (a third of a section row instead of half); `DateField` and `MonthField` show a calendar icon and their format as placeholder (not when `bare` or read-only); `TextField` takes `placeholder` for a "VD:" sample.
 
 | Field | Data |
 | --- | --- |
@@ -112,7 +107,7 @@ Every field is wired to React Hook Form and renders: label above (12px, 600, `di
 | `IntegerField` | A whole number without digit grouping (port, year, levels) |
 | `FileField` | One file |
 | `SensitiveField` | Masked value with Show/Hide; reveal is audited |
-| `OrgUnitField` | An org unit within the user's scope |
+| `OrgUnitField` | An org unit within the user's scope; the chosen unit shows its kind icon, as in the list |
 
 Every field takes `bare` for a table cell: no visible label (kept as `aria-label`), no description, numbers right-aligned without spin buttons.
 
@@ -120,9 +115,9 @@ Every field takes `bare` for a table cell: no visible label (kept as `aria-label
 | --- | --- |
 | `Form` | The form: validation, focus on the first error, server errors via `fieldOf`, leave guard, Ctrl/Cmd+S; tells an enclosing `UnsavedProvider` whether it holds unsaved edits |
 | `UnsavedProvider`, `useUnsaved` | Whether a form of the page has unsaved edits; `DocumentPage` provides it, `DocumentActions` reads it. A page-level action that reloads the record reads `useUnsaved()` the same way |
-| `FormSection` | Titled group of fields; `wide` puts the title on top and the content full width (for a table); at most 1200px wide |
+| `FormSection` | Titled group of fields: title 16/650, description 12px; fields on six columns from 1280px (half a row each, `short` a third, `wide` the whole row); `wide` on the section puts the title on top and the content full width (for a table); at most 1200px wide |
 | `FormRow`, `InputRow` | Something that spans the field grid; a control level with the inputs beside it |
-| `FormActions` | The footer: sticky with Discard on a page (no `onCancel`), Cancel + submit in a modal (`onCancel`) |
+| `FormActions` | The footer: sticky on a page (no `onCancel`), with a shadow while the form runs on under it; editing, it shows once dirty with "Unsaved changes" and Discard; creating (`cancelTo`: the list), it shows from the start with Cancel. In a modal (`onCancel`): Cancel + submit in a `ModalFooter`. Cancel is quiet grey everywhere |
 | `LinesTable` + `LineColumn` | A document's lines: one row per line, typed cells (`cell(index, bare, line)`), Enter to the next cell, add/remove (`minLines`), `footer`; cards below 1024px |
 | `LinesTotals` | Totals under the lines, right-aligned, the last row bold, with a `note` on where the figures come from |
 | `InlineEditField` | One value of a record page that turns into an input on click/Enter; Enter or ✓ saves, Esc or ✕ cancels, blur keeps it open; `readOnly` without permission |
@@ -133,8 +128,9 @@ A list's filter bar holds `SearchInput` and filter chips: `FilterChip` (options 
 
 | Component | Use |
 | --- | --- |
-| `DataTable` | Every table. Columns declare `role` (`title`, `status`, `meta`, `hidden`), `kind` (`text`, the default, `person`, `code`, `date`, `number`, `status`: look and width), `sortable`, `band`, `strong`, `width`; a zero figure or an empty cell shows "–". Unframed; rows 40px, header 36px on the sunken tone over a rule, row hover tint, cards below 1024px. Props: `href` (first column links the row), `onRowClick` (side panel, settings modal), `menu` (row "…"), `selection` (checkbox column), `onResize` (drag or ←/→ on a column edge), `group`, `footer`, `maxHeight` (without it the table takes the height its parent gives, e.g. a list page's frame). Rules in `tables.md` |
-| `ListPage` | `filters` (left), `onClearFilters` (given while a filter is set: "Clear filters" ends the chips), `tools` (right: `useListView().tools`), `bulk` (replaces the bar while rows are selected), `paging`. From 1024px it fills the window and only its content scrolls |
+| `DataTable` | Every table. Columns declare `role` (`title`, `status`, `meta`, `hidden`), `kind` (`text`, the default, `person`, `code`, `date`, `number`, `status`: look and width), `sortable`, `band`, `strong`, `width`; a zero figure or an empty cell shows "–". Framed (1px `border`, radius 8) wherever it is part of a page; as a list page's whole content it fills the page unframed (`ListPage` drops the frame); rows 40px, header 36px on the table header tone (12px, 600) over a rule, row hover tint, cards below 1024px. Props: `href` (first column links the row), `onRowClick` (side panel, settings modal), `menu` (row "…"), `selection` (checkbox column), `onResize` (drag or ←/→ on a column edge), `group`, `footer`, `maxHeight` (without it the table takes the height its parent gives, e.g. a list page's frame). Rules in `tables.md` |
+| `TreeList` | A hierarchy (the org tree): rows 36px joined to their parent by guide lines, each branch folds (all open at first; from 1024px a folded one says how many units sit directly under it). Props: `nodes` (nested), `render` (the name), `meta` (quiet facts after it), `menu` (row "…"), `toggleLabel`. Unframed; below 1024px rows and toggles are 44px and `meta` is left out |
+| `ListPage` | `tabs` (ways to view the same list, e.g. tree and table: a `Tabs` element under the header, its line replacing the header rule; the choice is on the URL), `filters` (left), `onClearFilters` (given while a filter is set: "Clear filters" ends the chips), `tools` (right: `useListView().tools`), `bulk` (replaces the bar while rows are selected), `paging`. From 1024px it fills the window and only its content scrolls |
 | `useListView(listKey, columns)` | The user's saved views and column choices for a list, stored on the server; returns `columns`, `onResize`, `tools` |
 | `BulkBar` | "N selected", the bulk actions (children), Clear selection |
 | `SidePanel` + `usePeek` | Read-only preview of a list row on the right, 480px, not modal, with "Open full page"; the open id on the URL (`?peek=`) |
@@ -142,13 +138,14 @@ A list's filter bar holds `SearchInput` and filter chips: `FilterChip` (options 
 | `CellGrid` | A grid of number inputs on two axes (timesheet). Inside a form, pass `invalidId={fieldId('<field>')}` and `errorId` and render the field's error under the grid: the first invalid cell then takes the focus from the footer's "Go to next field" |
 | `TileGrid`, `StatTile`, `LinkTile` | Home and overview pages: a count that opens its list, a destination |
 | `PersonName`, `PersonAvatar` | A person: initials on a colour derived from the name, round |
-| `OrgUnitName` | An org unit with its kind icon (square, radius 4) |
+| `OrgUnitName`, `OrgUnitIcon` | An org unit with its kind icon (square, radius 4); `OrgUnitIcon` is the kind's tinted icon alone (`size`) |
 
 ## Feedback and overlays
 
 | Component | Use |
 | --- | --- |
-| `FormModal` | A form of at most 6 fields; radius 12, fullscreen below 1024px |
+| `FormModal` | A form of at most 6 fields: 440px, one column (`wide`: 620px, for long text or a table), a header band (title 20/24 weight 650) under a rule, padding 24px at the sides and 16px above and below, radius 12, fullscreen below 1024px |
+| `ModalFooter` | A modal's buttons, right-aligned in a band across the modal under a rule; every modal's buttons sit in it: `FormActions` in a modal, `useConfirm`, and modals with their own buttons |
 | `useConfirm` | Before deleting, cancelling a posted document, rejecting; the confirm button repeats the verb; `danger: true` for destructive steps |
 | `notifySuccess` | After a save: bottom right, closes after 3 seconds |
 | `notifyUndo(message, undoLabel, onUndo)` | A reversible action that already took effect, with Undo, 5 seconds (`actions.md`) |
@@ -156,7 +153,8 @@ A list's filter bar holds `SearchInput` and filter chips: `FilterChip` (options 
 | `EmptyState`, `ErrorState`, `PageSkeleton`, `ContentSkeleton`, `ForbiddenPage`, `NotFoundPage`, `ReadOnlyBanner` | The states of a region (see `patterns.md`). `EmptyState`'s icon is a 24px glyph (`icon.empty`) in a 48px neutral circle; pass another Tabler icon with `icon` |
 | `Menu` | Secondary actions behind "…"; radius 8, overlay shadow |
 | `Tooltip` | Name of an icon-only control; radius 4 |
-| `Tabs` | Tabs of a `RecordPage` or a wide `DocumentPage`; the selected tab lives in the URL |
+| `Tabs` | Tabs of a `RecordPage` or a wide `DocumentPage`, and the view tabs of a `ListPage` (`tabs`); the selected tab lives in the URL |
+| `InboxList`, `InboxGroup`, `InboxRow` | A feed: `InboxList` (`framed`: one frame, rows ruled apart, scrolling inside itself in a list page), `InboxGroup` (a sticky group heading on the sunken tone, e.g. a day), `InboxRow` (`icon` leads, `aside` ends, an 8px dot while unread) |
 
 ## Building a new component
 

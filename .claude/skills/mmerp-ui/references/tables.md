@@ -6,7 +6,7 @@ Every table is `DataTable` (`@/shared/ui/DataTable`); a list screen is `ListPage
 
 ```
 [🔍 Search      ] [Status: Posted ✕] [Org unit ▾] [Month ▾]  Clear filters   [Views ▾] [Columns]
-  ☐   Identifier ↕   Text (takes the room left)   Date ↕    Amount ↕   Status       header 36px, sunken tone, unframed
+  ☐   Identifier ↕   Text (wraps if short of room)   Date ↕   Amount ↕   Status       header 36px, header tone, 600; framed inside a page, bare as a list page's content
  ──────────────────────────────────────────────────────────────────────────
   ☐   DH-0001        Customer                     01/10       12.500   [Posted]  ⋯   rows 40px, hover tint
  ─────────────────────────────────────────────────────────────────────
@@ -76,16 +76,18 @@ Every column has a `kind`, what it holds (`text`, the default, is left out); `Da
 
 | `kind` | Holds | Look | Width |
 | --- | --- | --- | --- |
-| `text` (default) | Names of things, types, descriptions | Main text colour | Shares the room the other columns leave |
-| `person` | `PersonName` (avatar + name) | Main text colour | Its content |
-| `code` | Document numbers, employee or customer codes, logins, tax codes, phones | `dimmed`, tabular figures | Its content |
-| `date` | Dates, periods, months (`formatDate`, `formatMonthShort`: 08/2026), date and time | `dimmed`, tabular figures | Its content |
-| `number` | Quantities, money, rates | Right-aligned, tabular figures; money in minor units through `formatNumber`, the unit in the header ("Đơn giá (đ)") | Its content |
-| `status` | `DocumentStatus`, `StatusBadge` | The badge | Its content |
+| `text` (default) | Names of things, types, descriptions | Main text colour | Wraps when the table runs short |
+| `person` | `PersonName` (avatar + name) | Main text colour | One line |
+| `code` | Document numbers, employee or customer codes, logins, tax codes, phones | `dimmed`, tabular figures | One line |
+| `date` | Dates, periods, months (`formatDate`, `formatMonthShort`: 08/2026), date and time | `dimmed`, tabular figures | One line |
+| `number` | Quantities, money, rates | Right-aligned, tabular figures; money in minor units through `formatNumber`, the unit in the header ("Đơn giá (đ)") | One line |
+| `status` | `DocumentStatus`, `StatusBadge` | The badge | One line |
+
+Spare room goes to every column in proportion to its content, so the gaps between columns stay even.
 
 | Column | Rule |
 | --- | --- |
-| Identifier | First, `role: 'title'`, sticky on horizontal scroll (its edge rule shows only then), never wraps, links the row (`href`); weight 500 in the main text colour whatever its kind (`code` for a number, `person` for a name), linked or not. It takes its content's width while a `text` column after it takes the rest; without one it takes the rest itself |
+| Identifier | First, `role: 'title'`, sticky on horizontal scroll (its edge rule shows only then), never wraps, links the row (`href`); weight 500 in the main text colour whatever its kind (`code` for a number, `person` for a name), linked or not. Spare room is shared by every column in proportion to its content, so the gaps stay even |
 | Status | Last before the menu, `role: 'status'`, `kind: 'status'`: the document status (`DocumentStatus`), with any module progress badge beside it in the same cell (`<Group gap="xs" wrap="nowrap">`, see `sales/pages/DocsPage.tsx`) |
 | Results (net pay, total) | Last of the figures, `strong: true` |
 
@@ -179,7 +181,7 @@ List tables never edit in place. Editing happens on the record's page or in its 
 
 // Don't
 <Table>…</Table>                                               // Mantine Table in an area: lint fails
-{ render: (d) => <Button size="xs">{t('…edit')}</Button> }     // a button per row: use menu
+{ render: (d) => <Button>{t('…edit')}</Button> }     // a button per row: use menu
 <Select aria-label={…} … />                                   // a Select in the filter bar: use FilterChip
 render: (d) => d.total.toLocaleString()                        // formatting outside shared/i18n
 ```

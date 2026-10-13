@@ -1,16 +1,17 @@
-/* Controls are 30px at page level (size sm) and 24px in sections (size xs), so a button
-   beside an input is exactly as tall as the input. */
+/* Every control has the one control height (size sm, the default), so a button beside an input
+   is exactly as tall as the input. */
 .mantine-Button-root {
   --button-height-sm: var(--mmerp-control-height);
-  --button-height-xs: var(--mmerp-control-height-compact);
 }
 .mantine-Input-wrapper {
   --input-height-sm: var(--mmerp-control-height);
-  --input-height-xs: var(--mmerp-control-height-compact);
 }
 .mantine-ActionIcon-root {
   --ai-size-input-sm: var(--mmerp-control-height);
-  --ai-size-input-xs: var(--mmerp-control-height-compact);
+}
+/* Fields are outlined in the quieter input tone; error and focus edges still win over it. */
+[data-mantine-color-scheme='light'] .mantine-Input-wrapper[data-variant='default'] {
+  --input-bd: var(--mmerp-input-border);
 }
 .mantine-Pagination-root {
   --pagination-control-size-input-sm: var(--mmerp-control-height);

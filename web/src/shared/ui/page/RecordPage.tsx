@@ -1,4 +1,4 @@
-import { Group, Tabs } from '@mantine/core'
+import { Box, Group, Tabs } from '@mantine/core'
 import type { ReactNode } from 'react'
 import { useSearchParams } from 'react-router'
 import { Page, readingWidth, type PageHeaderProps } from './Page'
@@ -31,8 +31,15 @@ export function RecordPage({ tabs, ...header }: PageHeaderProps & { tabs: Record
           ))}
         </Tabs.List>
         {tabs.map((t) => (
-          <Tabs.Panel key={t.value} value={t.value} pt="lg" maw={t.panel ? readingWidth : undefined}>
-            {t.content}
+          // The tab line runs the page's width; what is under it is centred, like a form page.
+          <Tabs.Panel key={t.value} value={t.value} pt="lg" maw="var(--mmerp-content-width)" mx="auto">
+            {t.panel ? (
+              <Box maw={readingWidth} mx="auto">
+                {t.content}
+              </Box>
+            ) : (
+              t.content
+            )}
           </Tabs.Panel>
         ))}
       </Tabs>

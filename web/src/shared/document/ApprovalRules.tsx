@@ -165,6 +165,7 @@ function RuleForm({ rule, basePath, roles, userOptions }: { rule: TypeRule; base
 
   return (
     <Page
+      centered
       title={name}
       breadcrumbs={[{ label: t('shared.rule.title'), to: basePath }]}
       description={t('shared.rule.form_description')}
@@ -203,7 +204,7 @@ function RuleForm({ rule, basePath, roles, userOptions }: { rule: TypeRule; base
           ))}
           {!readOnly && (
             <Group>
-              <Button size="xs" variant="light" leftSection={<IconPlus {...icon.text} />} onClick={() => steps.append(newStep(rule))}>
+              <Button variant="light" leftSection={<IconPlus {...icon.button} />} onClick={() => steps.append(newStep(rule))}>
                 {t('shared.rule.add_step')}
               </Button>
             </Group>

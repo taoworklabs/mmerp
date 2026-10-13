@@ -7,6 +7,7 @@ import { useTranslation } from 'react-i18next'
 import { coreClient, unwrap } from '@/shared/api/client'
 import { FileField, Form, FormActions } from '@/shared/ui/form'
 import { FormModal } from '@/shared/ui/page'
+import { ModalFooter } from '@/shared/ui/ModalFooter'
 import { icon } from '@/shared/ui/theme'
 import { JobOutcome } from './JobOutcome'
 import { finished, followJob, useJobStatus } from './useJobStatus'
@@ -53,7 +54,7 @@ export function ImportDialog({ kind, params = {}, title, description, invalidate
   }
 
   return (
-    <FormModal opened title={title} onClose={close}>
+    <FormModal opened wide title={title} onClose={close}>
       {job === null ? (
         <Form form={form} onSubmit={start}>
           <Stack gap="sm">
@@ -71,7 +72,7 @@ export function ImportDialog({ kind, params = {}, title, description, invalidate
       ) : (
         <Stack gap="md">
           <JobOutcome job={status.data} error={status.error} />
-          <Group justify="flex-end">
+          <ModalFooter>
             {status.data?.state === 'failed' && (
               <Button variant="default" onClick={() => setJob(null)}>
                 {t('shared.jobs.retry')}
@@ -80,7 +81,7 @@ export function ImportDialog({ kind, params = {}, title, description, invalidate
             <Button onClick={close} variant={finished(status.data) ? 'filled' : 'default'}>
               {t('shared.jobs.close')}
             </Button>
-          </Group>
+          </ModalFooter>
         </Stack>
       )}
     </FormModal>

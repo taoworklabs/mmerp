@@ -6,18 +6,18 @@ Run every item against the change before calling it done. An item that does not 
 
 - [ ] No colour code, `rgb(`, `hsl(` outside `theme.ts` (`make lint` checks).
 - [ ] No pixel or rem number for spacing, font size or radius in a component; only theme keys (`gap="xs"`, `fz="xs"`, `radius="lg"`) or `var(--mantine-…)` / `var(--mmerp-…)`. A component-specific size sits in a `shared/ui` CSS module with a comment.
-- [ ] Colours named by meaning (`color="danger"`, `c="dimmed"`), never by hue (`"red"`, `"orange"`) or step (`"gray.6"`).
+- [ ] Colours named by meaning (`color="danger"`, `c="dimmed"`), never by hue (`"red"`, `"orange"`) or step (`"gray.6"`); accent hues only name a kind (avatars, org unit kinds, file types), never a state.
 - [ ] Icons through `icon.text` / `icon.button` / `icon.empty`.
 - [ ] No `style` attribute and no CSS file in an area.
 
 ## Components
 
 - [ ] Built from an existing `shared/ui` template and components; anything new and generic is in `shared/ui` with a `/dev/ui` entry and a row in `components.md`.
-- [ ] One primary button per view; others `variant="default"`; `color="danger"` only for a step that loses data.
-- [ ] Buttons sized by level: default (30px) in the page header, form footer, modal footer; `size="xs"` (24px) in sections, tabs and the side column. Controls in one strip share one height.
+- [ ] One primary button per view; others by `components.md` (default, subtle, light); the way out beside the primary is `subtle` grey; `color="danger"` only for a step that loses data.
+- [ ] Buttons keep the default size (30px) everywhere, with `icon.button`; no `size` on a button. Controls in one strip share one height.
 - [ ] Status through `DocumentStatus` (documents) or `StatusBadge` (everything else).
 - [ ] Selection shown by the primary tint and primary text only.
-- [ ] Shadows only on overlays; cards are `Paper withBorder`.
+- [ ] Shadows only on overlays and a pinned form footer (`--mmerp-shadow-footer`); cards are `Paper withBorder`.
 
 ## Layout (`layout.md`)
 
@@ -39,7 +39,7 @@ Run every item against the change before calling it done. An item that does not 
 ## Forms (`forms.md`)
 
 - [ ] Labels above, `*` on required, `mode: 'onBlur'`, server field errors through `fieldOf`, others as the form banner.
-- [ ] `FormActions` without `onCancel` on a page, with it in a modal; submit never disabled to signal errors.
+- [ ] `FormActions` without `onCancel` on a page, with it in a modal; a create page passes `cancelTo` (its list); submit never disabled to signal errors.
 - [ ] Same data, same field (`MonthField`, `IntegerField`, `MoneyField`…).
 - [ ] Lines in `LinesTable` inside `FormSection wide`; totals only from the server, with their note.
 - [ ] `InlineEditField` only for single master-data values; never documents, money, rates, sensitive fields.

@@ -29,6 +29,12 @@
   min-height: 0;
 }
 
+/* The list's own table is the page's content: it fills the page and needs no frame of its own. */
+.content > :global([data-table]) {
+  border: 0;
+  border-radius: 0;
+}
+
 /* The content is one item of the page, its parts spaced like the page's. */
 .content {
   display: flex;

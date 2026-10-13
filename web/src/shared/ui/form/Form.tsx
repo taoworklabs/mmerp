@@ -1,12 +1,13 @@
-import { Alert, Anchor, Badge, Box, Button, Grid, Group, SimpleGrid, Stack, Text } from '@mantine/core'
+import { Alert, Anchor, Badge, Box, Button, Grid, Group, Stack, Text } from '@mantine/core'
 import { IconAlertCircle, type Icon as TablerIcon } from '@tabler/icons-react'
-import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from 'react'
+import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from 'react'
 import { FormProvider, useFormContext, useFormState, type FieldErrors, type FieldValues, type Path, type UseFormReturn } from 'react-hook-form'
 import { useTranslation } from 'react-i18next'
-import { useBlocker } from 'react-router'
+import { Link, useBlocker } from 'react-router'
 import { ApiError } from '@/shared/api/error'
 import { errorText } from '@/shared/i18n'
 import { useConfirm } from '../confirm'
+import { ModalFooter } from '../ModalFooter'
 import { icon } from '../theme'
 import classes from './Form.module.css'
 
@@ -140,7 +141,8 @@ export function Form<T extends FieldValues>({ form, onSubmit, fieldOf, id, child
 }
 
 // FormSection groups fields under a title. From 1280px the title and description sit in a
-// left column and short fields two per row on the right; below that, everything is one column.
+// left column and the fields on six columns on the right: half a row each, a third when short,
+// the whole row when wide; below that, everything is one column.
 // wide puts the title on top and gives the content the whole width, for a table of lines.
 // After a failed submit its title carries the number of its fields still to fix.
 export function FormSection({ title, description, icon: Icon, wide, children }: { title: string; description?: string; icon?: TablerIcon; wide?: boolean; children: ReactNode }) {
@@ -156,7 +158,7 @@ export function FormSection({ title, description, icon: Icon, wide, children }: 
         <Grid.Col span={{ base: 12, lg: wide ? 12 : 4 }}>
           <Group gap="xs" wrap="nowrap">
             {Icon && <Icon {...icon.text} aria-hidden />}
-            <Text component="legend" fw={600}>
+            <Text component="legend" fz="h2" lh="h2" fw="var(--mantine-h2-font-weight)">
               {title}
             </Text>
             {count > 0 && (
@@ -165,16 +167,17 @@ export function FormSection({ title, description, icon: Icon, wide, children }: 
               </Badge>
             )}
           </Group>
+          {/* Quieter than the field labels, so the fields lead. */}
           {description && (
-            <Text size="sm" c="dimmed" mt="xxs">
+            <Text size="xs" c="dimmed" mt="xxs">
               {description}
             </Text>
           )}
         </Grid.Col>
         <Grid.Col span={{ base: 12, lg: wide ? 12 : 8 }}>
-          <SimpleGrid cols={{ base: 1, lg: wide ? 1 : 2 }} spacing="md" verticalSpacing="md">
+          <div className={classes.fields} data-wide={wide || undefined}>
             {children}
-          </SimpleGrid>
+          </div>
         </Grid.Col>
       </Grid>
     </Box>
@@ -199,18 +202,28 @@ export function InputRow({ children }: { children: ReactNode }) {
 // FormActions is a form's footer: its buttons on the right. The submit button shows its busy
 // state only after 300ms, so quick saves do not flicker. After a failed submit a line beside
 // the buttons counts the fields still to fix and steps through them. On a page (no onCancel,
-// which only modals pass) the footer shows only once something is edited or a submit failed;
-// it sticks to the bottom of the screen, says so and offers to discard the changes.
-export function FormActions({ submitLabel, onCancel, cancelLabel }: { submitLabel: string; onCancel?: () => void; cancelLabel?: string }) {
+// which only modals pass) the footer sticks to the bottom of the screen, casting a shadow while
+// the form runs on under it. Editing a record, it shows only once something is edited or a
+// submit failed, says so and offers to discard the changes; creating one (cancelTo, the list to
+// go back to) it shows from the start, with Cancel.
+export function FormActions({ submitLabel, onCancel, cancelLabel, cancelTo }: { submitLabel: string; onCancel?: () => void; cancelLabel?: string; cancelTo?: string }) {
   const { t } = useTranslation()
   const { formState, reset } = useFormContext()
   const { errors, submitCount, dirtyFields } = useFormState()
   const [slow, setSlow] = useState(false)
+  const [stuck, setStuck] = useState(false)
   const last = useRef<HTMLElement | null>(null)
   const [ask, dialog] = useConfirm()
   const invalid = submitCount > 0 ? errorNames(errors).length : 0
   const page = !onCancel
-  const dirty = page && Object.keys(dirtyFields).length > 0
+  const dirty = page && !cancelTo && Object.keys(dirtyFields).length > 0
+  // The footer sits 1px past the screen's edge while pinned, so it is then never fully in view.
+  const pinned = useCallback((el: HTMLDivElement | null) => {
+    if (!el) return
+    const io = new IntersectionObserver(([e]) => setStuck((e?.intersectionRatio ?? 1) < 1), { threshold: 1 })
+    io.observe(el)
+    return () => io.disconnect()
+  }, [])
   useEffect(() => {
     if (!formState.isSubmitting) return setSlow(false)
     const timer = setTimeout(() => setSlow(true), 300)
@@ -219,27 +232,33 @@ export function FormActions({ submitLabel, onCancel, cancelLabel }: { submitLabe
   async function discard() {
     if (await ask({ title: t('shared.form.discard_title'), message: t('shared.form.discard_message'), confirmLabel: t('shared.form.discard'), danger: true })) reset()
   }
-  const buttons = (
-    <Group justify="flex-end">
-      {invalid > 0 && (
-        <Group gap="xxs" role="alert" wrap="nowrap" c="danger">
-          <IconAlertCircle {...icon.text} aria-hidden />
-          <Text size="sm">
-            {t('shared.form.invalid', { count: invalid })} ·
-          </Text>
-          <Anchor component="button" type="button" size="sm" onClick={() => (last.current = focusInvalid(errors, last.current) ?? null)}>
-            {t('shared.form.next_invalid')}
-          </Anchor>
-        </Group>
-      )}
+  // Cancel is quiet beside the primary button; the buttons keep together, the error line wraps first.
+  const alert = invalid > 0 && (
+    <Group gap="xxs" role="alert" wrap="nowrap" c="danger">
+      <IconAlertCircle {...icon.text} aria-hidden />
+      <Text size="sm">
+        {t('shared.form.invalid', { count: invalid })} ·
+      </Text>
+      <Anchor component="button" type="button" size="sm" onClick={() => (last.current = focusInvalid(errors, last.current) ?? null)}>
+        {t('shared.form.next_invalid')}
+      </Anchor>
+    </Group>
+  )
+  const actions = (
+    <Group gap="sm" wrap="nowrap">
       {dirty && (
-        <Button variant="subtle" color="danger" onClick={() => void discard()}>
+        <Button variant="default" onClick={() => void discard()}>
           {t('shared.form.discard')}
         </Button>
       )}
       {onCancel && (
-        <Button variant="default" onClick={onCancel}>
+        <Button variant="subtle" color="gray" onClick={onCancel}>
           {cancelLabel}
+        </Button>
+      )}
+      {page && cancelTo && (
+        <Button variant="subtle" color="gray" component={Link} to={cancelTo}>
+          {t('shared.form.cancel')}
         </Button>
       )}
       <Button type="submit" loading={slow} disabled={formState.isSubmitting}>
@@ -247,17 +266,28 @@ export function FormActions({ submitLabel, onCancel, cancelLabel }: { submitLabe
       </Button>
     </Group>
   )
-  if (!page) return buttons
-  if (!dirty && invalid === 0) return null
+  if (!page)
+    return (
+      <ModalFooter>
+        {alert}
+        {actions}
+      </ModalFooter>
+    )
+  const buttons = (
+    <Group justify="flex-end">
+      {alert}
+      {actions}
+    </Group>
+  )
+  if (!cancelTo && !dirty && invalid === 0) return null
+  // The state sits beside the buttons it is about; the error line, when shown, says more.
   return (
-    <Group justify="space-between" wrap="nowrap" className={classes.bar} data-dirty={dirty || undefined}>
-      {dirty ? (
+    <Group ref={pinned} justify="flex-end" gap="lg" className={classes.bar} data-stuck={stuck || undefined}>
+      {dirty && invalid === 0 && (
         <Group gap="xs" wrap="nowrap" role="status">
           <span className={classes.dot} aria-hidden />
           <Text size="sm">{t('shared.form.unsaved')}</Text>
         </Group>
-      ) : (
-        <span />
       )}
       {buttons}
       {dialog}

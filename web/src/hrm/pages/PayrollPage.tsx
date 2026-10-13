@@ -12,6 +12,7 @@ import { DocumentPage, FormModal } from '@/shared/ui/page'
 import { icon } from '@/shared/ui/theme'
 import { AdjustmentsSection } from '../components/AdjustmentsSection'
 import { loaded } from '@/shared/ui/loaded'
+import { ModalFooter } from '@/shared/ui/ModalFooter'
 import { PayrollTable } from '../components/PayrollTable'
 import { usePayroll } from '../hooks/usePayroll'
 import { hrmKeys, payrollDocType } from '../keys'
@@ -86,9 +87,9 @@ export function PayrollPage() {
         <FormModal opened title={t('hrm.payroll.print_payslip')} onClose={() => setPayslipOf(null)}>
           <Stack gap="md">
             <Text>{`${payslipOf.employee_code} · ${payslipOf.employee_name}`}</Text>
-            <Group justify="flex-end">
+            <ModalFooter>
               <ExportButton kind={payslipTemplate} params={{ id: p.id, parts: [payslipOf.employee_id] }} label={t('hrm.payroll.print_payslip')} icon={IconPrinter} />
-            </Group>
+            </ModalFooter>
           </Stack>
         </FormModal>
       )}

@@ -1,6 +1,11 @@
-/* Lets a list page's frame shrink the table to the room left, so it scrolls under its header. */
+/* Lets a list page's frame shrink the table to the room left, so it scrolls under its header.
+   A table that is part of a page (a tab, a section, a document, a modal) sits in a frame; the
+   table that is a list page's whole content drops it there (ListPage.module.css). */
 .root {
   min-height: 0;
+  border: 1px solid var(--mantine-color-default-border);
+  border-radius: var(--mantine-radius-lg);
+  overflow: hidden;
 }
 
 /* The vertical scrollbar runs between the sticky header and footer, not behind them. */
@@ -52,10 +57,10 @@
   color: var(--mantine-color-dimmed);
 }
 
-/* As narrow as its content, so the text columns get the room left; a badge or name that could
-   truncate counts at full width. */
+/* On one line, never squeezed; the room a table has to spare goes to every column in proportion
+   to its content, so the gaps between columns stay even. A badge or name that could truncate
+   counts at full width. */
 .fit {
-  width: 1%;
   white-space: nowrap;
 }
 
@@ -96,13 +101,13 @@
   height: 40px;
 }
 
-/* Column titles are quiet: small, secondary colour, on the subtle tone over a rule. */
+/* Column titles: small, secondary colour, semibold, on the header tone over a rule. */
 .compact th {
   height: 36px;
-  background: var(--mmerp-elevation-surface-sunken);
+  background: var(--mmerp-table-header);
   color: var(--mantine-color-dimmed);
   font-size: var(--mantine-font-size-xs);
-  font-weight: 500;
+  font-weight: 600;
 }
 
 .compact th.sticky {

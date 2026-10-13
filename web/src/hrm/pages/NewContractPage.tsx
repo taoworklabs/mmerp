@@ -37,6 +37,7 @@ export function NewContractPage() {
   const title = p ? t('hrm.contract.new_appendix', { number: p.number }) : t('hrm.contract.create')
   return (
     <Page
+      centered
       title={title}
       breadcrumbs={[
         { label: t('hrm.employees.title'), to: '/hrm/employees' },

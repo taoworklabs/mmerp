@@ -92,7 +92,7 @@ export function OvertimeForm({ overtime, self, chooseEmployee, onCreated }: Prop
         <DecimalField name="night_hours" label={t('hrm.overtime.night_hours')} description={t('hrm.overtime.night_hint')} required readOnly={ro} scale={1} step={0.5} min={0} />
         <TextField name="reason" label={t('hrm.overtime.reason')} multiline maxLength={1000} readOnly={ro} />
       </FormSection>
-      {editable && <FormActions submitLabel={overtime ? t('hrm.common.save') : t('hrm.common.create_draft')} />}
+      {editable && <FormActions submitLabel={overtime ? t('hrm.common.save') : t('hrm.common.create_draft')} cancelTo={overtime ? undefined : '/hrm/overtimes'} />}
       {mutation.dialog}
     </Form>
   )

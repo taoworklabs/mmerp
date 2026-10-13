@@ -27,12 +27,19 @@ export const pageFrame = { px: { base: 'md', md: 'xl' }, py: 'lg' } as const
 export const readingWidth = 480
 
 // Page is the frame every page template builds on: header (breadcrumbs, title, at most one
-// primary action), then content.
-export function Page({ children, className, ...header }: PageHeaderProps & { children: ReactNode; className?: string }) {
+// primary action), then content. A record's or a form's content is centred at the width it stops
+// at (centered: the content width, or the given one); lists and dashboards use the whole width.
+export function Page({ children, className, centered, ...header }: PageHeaderProps & { children: ReactNode; className?: string; centered?: boolean | string }) {
   return (
     <Stack gap="lg" {...pageFrame} className={className}>
       <PageHeader {...header} />
-      {children}
+      {centered ? (
+        <Stack gap="lg" w="100%" maw={centered === true ? 'var(--mmerp-content-width)' : centered} mx="auto">
+          {children}
+        </Stack>
+      ) : (
+        children
+      )}
     </Stack>
   )
 }

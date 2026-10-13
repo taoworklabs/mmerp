@@ -60,6 +60,8 @@
   "core.notifications.empty_description": "Khi có chứng từ chờ bạn duyệt hay có người nhắc tên bạn, thông báo sẽ hiện ở đây.",
   "core.notifications.read_all": "Đánh dấu tất cả đã đọc",
   "core.notifications.more": "Xem thông báo cũ hơn",
+  "core.notifications.today": "Hôm nay",
+  "core.notifications.yesterday": "Hôm qua",
   "core.notifications.hidden": "bạn không còn quyền xem",
   "core.notifications.job": "Việc chạy nền của bạn",
   "core.notifications.kind.approval_requested": "Chờ bạn duyệt",

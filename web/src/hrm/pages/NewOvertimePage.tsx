@@ -21,7 +21,7 @@ export function NewOvertimePage() {
   const forOthers = actions.data.allowed_actions.includes('create_for_others')
   const self = actions.data.self_employee_id ? { id: actions.data.self_employee_id, name: actions.data.self_employee_name ?? '' } : null
   return (
-    <Page title={t('hrm.overtimes.create')} breadcrumbs={[{ label: t('hrm.overtimes.title'), to: '/hrm/overtimes' }]} description={t('hrm.overtimes.create_description')}>
+    <Page centered title={t('hrm.overtimes.create')} breadcrumbs={[{ label: t('hrm.overtimes.title'), to: '/hrm/overtimes' }]} description={t('hrm.overtimes.create_description')}>
       <OvertimeForm
         self={self}
         chooseEmployee={forOthers}

@@ -125,7 +125,7 @@ export function ContractForm({ contract, employeeId, parent, onCreated }: Props)
           </FormRow>
         </FormSection>
       )}
-      {editable && <FormActions submitLabel={contract ? t('hrm.common.save') : t('hrm.common.create_draft')} />}
+      {editable && <FormActions submitLabel={contract ? t('hrm.common.save') : t('hrm.common.create_draft')} cancelTo={contract ? undefined : `/hrm/employees/${employeeId}?tab=contracts`} />}
       {mutation.dialog}
     </Form>
   )

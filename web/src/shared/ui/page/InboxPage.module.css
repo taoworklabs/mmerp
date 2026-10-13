@@ -16,3 +16,44 @@
 .unread {
   font-weight: 600;
 }
+
+/* A framed feed: one frame, rows ruled apart, flat rows that tint on hover. In a list page's
+   frame it takes the room left and scrolls inside itself, so its edges stay in view. */
+.framed {
+  min-height: 0;
+  border: 1px solid var(--mantine-color-default-border);
+  border-radius: var(--mantine-radius-lg);
+  overflow: auto;
+  scrollbar-width: thin;
+}
+
+.framed > li + li {
+  border-top: 1px solid var(--mantine-color-default-border);
+}
+
+.framed :global(.mantine-NavLink-root) {
+  border-radius: 0;
+  padding-block: var(--mantine-spacing-sm);
+}
+
+/* A group's heading reads like a table's group row, and stays at the top while its rows scroll. */
+.group {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  padding: var(--mantine-spacing-xxs) var(--mantine-spacing-md);
+  background: var(--mmerp-elevation-surface-sunken);
+  box-shadow: inset 0 -1px 0 var(--mantine-color-default-border);
+}
+
+/* Holds its place on every row so times line up; filled while the item is unread. */
+.dot {
+  flex: none;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.dot[data-unread] {
+  background: var(--mantine-color-primary-filled);
+}

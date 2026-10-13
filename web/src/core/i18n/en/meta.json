@@ -60,6 +60,8 @@
   "core.notifications.empty_description": "When a document waits for your approval or someone mentions you, it shows here.",
   "core.notifications.read_all": "Mark all as read",
   "core.notifications.more": "Show older notifications",
+  "core.notifications.today": "Today",
+  "core.notifications.yesterday": "Yesterday",
   "core.notifications.hidden": "you can no longer view it",
   "core.notifications.job": "Your background job",
   "core.notifications.kind.approval_requested": "Waiting for your approval",

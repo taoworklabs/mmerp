@@ -53,7 +53,7 @@ export function DevUiPatterns() {
         description={t('shared.devui.section_hint')}
         actions={
           <>
-            <Button size="xs" variant="default" leftSection={<IconPlus {...icon.text} />}>
+            <Button variant="default" leftSection={<IconPlus {...icon.button} />}>
               {t('shared.devui.add')}
             </Button>
             <MoreActions place="page">

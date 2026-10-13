@@ -1,8 +1,11 @@
-import { IconBriefcase, IconLock, IconUser } from '@tabler/icons-react'
+import { Button } from '@mantine/core'
+import { IconAddressBook, IconLock, IconPlus, IconUser } from '@tabler/icons-react'
+import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { useTranslation } from 'react-i18next'
 import { api, unwrap, type Employee, type EmployeeInput } from '@/shared/api/hrm'
-import { DateField, Form, FormActions, FormSection, OrgUnitField, SelectField, SensitiveField, TextField } from '@/shared/ui/form'
+import { DateField, Form, FormActions, FormRow, FormSection, OrgUnitField, SelectField, SensitiveField, TextField } from '@/shared/ui/form'
+import { icon } from '@/shared/ui/theme'
 import { EmployeeField } from './EmployeeField'
 
 const sensitiveFields = ['national_id', 'social_insurance_no', 'tax_code', 'bank_account'] as const
@@ -79,6 +82,8 @@ export function EmployeeForm({ employee, actions, onSaved }: { employee?: Employ
   const form = useForm<EmployeeValues>({ mode: 'onBlur', defaultValues: defaults(employee) })
   const canEdit = actions.includes(employee ? 'edit' : 'create')
   const canViewSensitive = actions.includes('view_sensitive')
+  // Creating, the sensitive details stay folded until asked for: they usually come later, with the papers.
+  const [sensitiveOpen, setSensitiveOpen] = useState(false)
 
   async function save(v: EmployeeValues) {
     const dirty = form.formState.dirtyFields
@@ -102,22 +107,10 @@ export function EmployeeForm({ employee, actions, onSaved }: { employee?: Employ
 
   return (
     <Form form={form} onSubmit={save} fieldOf={(err) => fieldOfCode[err.code]}>
-      <FormSection title={t('hrm.employee.section.general')} description={t('hrm.employee.section.general_hint')} icon={IconUser}>
+      {/* What every employee needs comes first, the four required fields together. */}
+      <FormSection title={t('hrm.employee.section.main')} description={t('hrm.employee.section.main_hint')} icon={IconUser}>
+        <TextField name="full_name" label={t('hrm.employee.full_name')} required maxLength={200} readOnly={ro} wide />
         <TextField name="code" label={t('hrm.employee.code')} required maxLength={50} readOnly={ro} />
-        <TextField name="full_name" label={t('hrm.employee.full_name')} required maxLength={200} readOnly={ro} />
-        <DateField name="date_of_birth" label={t('hrm.employee.date_of_birth')} clearable readOnly={ro} />
-        <SelectField
-          name="gender"
-          label={t('hrm.employee.gender')}
-          clearable
-          readOnly={ro}
-          data={['male', 'female', 'other'].map((g) => ({ value: g, label: t(`hrm.employee.gender.${g}`) }))}
-        />
-        <TextField name="phone" label={t('hrm.employee.phone')} type="tel" maxLength={50} readOnly={ro} />
-        <TextField name="email" label={t('hrm.employee.email')} type="email" maxLength={200} readOnly={ro} />
-        <TextField name="address" label={t('hrm.employee.address')} maxLength={500} readOnly={ro} wide />
-      </FormSection>
-      <FormSection title={t('hrm.employee.section.work')} description={t('hrm.employee.section.work_hint')} icon={IconBriefcase}>
         <OrgUnitField
           name="org_unit_id"
           label={t('hrm.employee.org_unit')}
@@ -126,6 +119,7 @@ export function EmployeeForm({ employee, actions, onSaved }: { employee?: Employ
           permission={ro ? 'hrm.employee.view' : 'hrm.employee.edit'}
           readOnly={ro}
         />
+        <DateField name="hire_date" label={t('hrm.employee.hire_date')} required readOnly={ro} />
         <EmployeeField
           name="manager_id"
           label={t('hrm.employee.manager')}
@@ -137,25 +131,56 @@ export function EmployeeForm({ employee, actions, onSaved }: { employee?: Employ
               : undefined
           }
         />
-        <DateField name="hire_date" label={t('hrm.employee.hire_date')} required readOnly={ro} />
-        <DateField name="termination_date" label={t('hrm.employee.termination_date')} clearable readOnly={ro} />
         <TextField name="user_login" label={t('hrm.employee.user_login')} description={t('hrm.employee.user_login_hint')} maxLength={200} readOnly={ro} />
+        {/* Leaving is recorded on an existing employee, never when creating one. */}
+        {employee && <DateField name="termination_date" label={t('hrm.employee.termination_date')} clearable readOnly={ro} />}
+      </FormSection>
+      <FormSection title={t('hrm.employee.section.personal')} description={t('hrm.employee.section.personal_hint')} icon={IconAddressBook}>
+        <DateField name="date_of_birth" label={t('hrm.employee.date_of_birth')} clearable readOnly={ro} short />
+        <SelectField
+          name="gender"
+          label={t('hrm.employee.gender')}
+          clearable
+          readOnly={ro}
+          short
+          data={['male', 'female', 'other'].map((g) => ({ value: g, label: t(`hrm.employee.gender.${g}`) }))}
+        />
+        <TextField name="phone" label={t('hrm.employee.phone')} type="tel" maxLength={50} readOnly={ro} short placeholder={t('hrm.employee.phone_placeholder')} />
+        <TextField name="email" label={t('hrm.employee.email')} type="email" maxLength={200} readOnly={ro} />
+        <TextField name="address" label={t('hrm.employee.address')} maxLength={500} readOnly={ro} wide />
       </FormSection>
       <FormSection title={t('hrm.employee.section.sensitive')} description={t('hrm.employee.section.sensitive_hint')} icon={IconLock}>
-        {sensitiveFields.map((f) => (
-          <SensitiveField
-            key={f}
-            name={f}
-            label={t(`hrm.employee.${f}`)}
-            present={employee?.sensitive[f] ?? false}
-            canView={canViewSensitive}
-            canEdit={canEdit}
-            reveal={reveal(f)}
-          />
-        ))}
+        {employee || sensitiveOpen ? (
+          sensitiveFields.map((f) => (
+            <SensitiveField
+              key={f}
+              name={f}
+              label={t(`hrm.employee.${f}`)}
+              present={employee?.sensitive[f] ?? false}
+              canView={canViewSensitive}
+              canEdit={canEdit}
+              reveal={reveal(f)}
+            />
+          ))
+        ) : (
+          // Where the fields will appear, so the section keeps its place in the form.
+          <FormRow>
+            <Button
+              variant="light"
+              leftSection={<IconPlus {...icon.button} />}
+              onClick={() => {
+                setSensitiveOpen(true)
+                // The button goes away; the keyboard carries on in the first field it opened.
+                requestAnimationFrame(() => form.setFocus(sensitiveFields[0]))
+              }}
+            >
+              {t('hrm.employee.add_sensitive')}
+            </Button>
+          </FormRow>
+        )}
       </FormSection>
       {canEdit && (
-        <FormActions submitLabel={t(employee ? 'hrm.employee.save' : 'hrm.employees.create')} />
+        <FormActions submitLabel={t(employee ? 'hrm.employee.save' : 'hrm.employees.create')} cancelTo={employee ? undefined : '/hrm/employees'} />
       )}
     </Form>
   )

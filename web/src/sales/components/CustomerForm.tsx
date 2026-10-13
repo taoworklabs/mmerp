@@ -90,7 +90,7 @@ export function CustomerForm({ customer, canEdit, onSaved }: { customer?: Custom
         />
         <CheckboxField name="active" label={t('sales.customer.active')} description={t('sales.customer.active_hint')} readOnly={ro} />
       </FormSection>
-      {canEdit && <FormActions submitLabel={t(customer ? 'sales.common.save' : 'sales.customers.create')} />}
+      {canEdit && <FormActions submitLabel={t(customer ? 'sales.common.save' : 'sales.customers.create')} cancelTo={customer ? undefined : '/sales/customers'} />}
     </Form>
   )
 }

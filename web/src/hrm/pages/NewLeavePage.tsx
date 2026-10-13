@@ -21,7 +21,7 @@ export function NewLeavePage() {
   const forOthers = actions.data.allowed_actions.includes('create_for_others')
   const self = actions.data.self_employee_id ? { id: actions.data.self_employee_id, name: actions.data.self_employee_name ?? '' } : null
   return (
-    <Page title={t('hrm.leaves.create')} breadcrumbs={[{ label: t('hrm.leaves.title'), to: '/hrm/leaves' }]} description={t('hrm.leaves.create_description')}>
+    <Page centered title={t('hrm.leaves.create')} breadcrumbs={[{ label: t('hrm.leaves.title'), to: '/hrm/leaves' }]} description={t('hrm.leaves.create_description')}>
       <LeaveForm
         self={self}
         chooseEmployee={forOthers}

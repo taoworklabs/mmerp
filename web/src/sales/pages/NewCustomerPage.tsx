@@ -18,7 +18,7 @@ export function NewCustomerPage() {
   if (actions.isError) return <ErrorState message={errorText(t, actions.error)} onRetry={() => void actions.refetch()} />
   if (!actions.data.includes('create')) return <ForbiddenPage />
   return (
-    <Page title={t('sales.customers.create')} breadcrumbs={[{ label: t('sales.customers.title'), to: '/sales/customers' }]}>
+    <Page centered title={t('sales.customers.create')} breadcrumbs={[{ label: t('sales.customers.title'), to: '/sales/customers' }]}>
       <CustomerForm
         canEdit
         onSaved={async (id) => {

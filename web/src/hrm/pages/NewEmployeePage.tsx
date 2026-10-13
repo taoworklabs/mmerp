@@ -18,7 +18,7 @@ export function NewEmployeePage() {
   if (actions.isError) return <ErrorState message={errorText(t, actions.error)} onRetry={() => void actions.refetch()} />
   if (!actions.data.includes('create')) return <ForbiddenPage />
   return (
-    <Page title={t('hrm.employees.create')} breadcrumbs={[{ label: t('hrm.employees.title'), to: '/hrm/employees' }]}>
+    <Page centered title={t('hrm.employees.create')} breadcrumbs={[{ label: t('hrm.employees.title'), to: '/hrm/employees' }]}>
       <EmployeeForm
         actions={actions.data}
         onSaved={async (id) => {

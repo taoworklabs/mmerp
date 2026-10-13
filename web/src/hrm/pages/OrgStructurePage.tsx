@@ -3,7 +3,7 @@ import { IconPencil } from '@tabler/icons-react'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router'
 import { useCan } from '@/shared/auth/me'
-import { OrgTree } from '@/shared/org'
+import { OrgTree, useOrgView } from '@/shared/org'
 import { ListPage } from '@/shared/ui/page'
 import { icon } from '@/shared/ui/theme'
 
@@ -11,6 +11,7 @@ import { icon } from '@/shared/ui/theme'
 export function OrgStructurePage() {
   const { t } = useTranslation()
   const canEdit = useCan('core.org.manage')
+  const { view, tabs } = useOrgView()
   return (
     <ListPage
       title={t('hrm.org.title')}
@@ -22,8 +23,9 @@ export function OrgStructurePage() {
           </Button>
         )
       }
+      tabs={tabs}
     >
-      <OrgTree label={t('hrm.org.title')} />
+      <OrgTree label={t('hrm.org.title')} view={view} />
     </ListPage>
   )
 }

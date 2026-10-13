@@ -122,7 +122,7 @@ function ColumnsMenu<T>({ columns, settings, onChange }: { columns: Column<T>[];
             <Checkbox key={c.key} label={c.header} checked={!hidden.has(c.key)} onChange={(e) => onChange(withColumn(settings, c.key, { hidden: !e.currentTarget.checked }))} />
           ))}
           <Group>
-            <Button size="xs" variant="subtle" onClick={() => onChange({ ...settings, columns: [] })}>
+            <Button variant="subtle" onClick={() => onChange({ ...settings, columns: [] })}>
               {t('shared.views.reset')}
             </Button>
           </Group>
