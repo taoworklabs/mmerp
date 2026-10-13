@@ -8,7 +8,13 @@ import { filterWidth, icon } from '../theme'
 export function SearchInput({ label, placeholder, value, onSearch }: { label: string; placeholder?: string; value: string; onSearch: (v: string) => void }) {
   const [draft, setDraft] = useState(value)
   const ref = useRef<HTMLInputElement>(null)
-  useEffect(() => setDraft(value), [value])
+  // What was last sent: the URL re-renders in a transition, so a blur right after Enter would
+  // still see the old value and push the same search twice.
+  const sent = useRef(value)
+  useEffect(() => {
+    setDraft(value)
+    sent.current = value
+  }, [value])
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       const target = e.target as HTMLElement
@@ -20,7 +26,12 @@ export function SearchInput({ label, placeholder, value, onSearch }: { label: st
     document.addEventListener('keydown', onKey)
     return () => document.removeEventListener('keydown', onKey)
   }, [])
-  const apply = () => draft.trim() !== value && onSearch(draft.trim())
+  const apply = () => {
+    const v = draft.trim()
+    if (v === sent.current) return
+    sent.current = v
+    onSearch(v)
+  }
   return (
     <TextInput
       ref={ref}
