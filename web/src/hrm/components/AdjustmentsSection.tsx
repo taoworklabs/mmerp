@@ -2,7 +2,7 @@ import { useForm } from 'react-hook-form'
 import { useTranslation } from 'react-i18next'
 import { api, unwrap, type Payroll } from '@/shared/api/hrm'
 import { useDocumentMutation } from '@/shared/document'
-import { formatMonth, formatNumber } from '@/shared/i18n'
+import { formatMonthShort, formatNumber } from '@/shared/i18n'
 import { DataTable } from '@/shared/ui/DataTable'
 import { Form, FormActions, LinesTable, MoneyField, MonthField, TextField } from '@/shared/ui/form'
 import { Section } from '@/shared/ui/Section'
@@ -26,9 +26,9 @@ export function AdjustmentsSection({ payroll, editable, onQueued }: { payroll: P
           rowKey={(a) => `${a.employee_id}:${a.source_period}:${a.reason}:${a.amount}`}
           columns={[
             { key: 'employee', header: t('hrm.payroll.employee'), role: 'title', render: (a) => `${a.employee_code} · ${a.employee_name}` },
-            { key: 'period', header: t('hrm.payroll.source_period'), role: 'meta', render: (a) => formatMonth(a.source_period) },
+            { key: 'period', header: t('hrm.payroll.source_period'), role: 'meta', kind: 'date', render: (a) => formatMonthShort(a.source_period) },
             { key: 'reason', header: t('hrm.payroll.reason'), role: 'meta', render: (a) => a.reason },
-            { key: 'amount', header: t('hrm.payroll.col.adjustment'), role: 'meta', numeric: true, render: (a) => formatNumber(a.amount) },
+            { key: 'amount', header: t('hrm.payroll.col.adjustment'), role: 'meta', kind: 'number', render: (a) => formatNumber(a.amount) },
           ]}
         />
       </Section>

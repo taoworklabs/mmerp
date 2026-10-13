@@ -13,7 +13,7 @@ import { OrgUnitName } from './OrgUnitName'
 import { StatusBadge } from './StatusBadge'
 import { LinkTile, StatTile, TileGrid } from './Tile'
 import { CellGrid } from './CellGrid'
-import { CheckboxField, DateField, DecimalField, FileField, Form, MoneyField, MonthField, MonthFilter, FormActions, FormRow, FormSection, InputRow, OrgUnitField, OrgUnitSelect, PasswordField, SearchInput, SelectField, SensitiveField, TextField } from './form'
+import { CheckboxField, DateField, DecimalField, FileField, Form, FormActions, FormRow, FormSection, InputRow, MoneyField, MonthField, MonthFilter, OrgUnitField, OrgUnitFilter, PasswordField, SearchInput, SelectField, SensitiveField, TextField } from './form'
 import { useConfirm } from './confirm'
 import { DocumentPage, type DocumentSection, FormModal, InboxList, InboxPage, InboxRow, ListPage, Page, RecordPage, TabActions } from './page'
 import { ContentSkeleton, EmptyState, ErrorState, NotFoundPage, ReadOnlyBanner } from './states'
@@ -123,9 +123,9 @@ export default function DevUiPage({ withSections: WithSections }: Props) {
           sort={sort}
           onSort={setSort}
           columns={[
-            { key: 'code', header: t('shared.devui.code'), role: 'title', sortable: true, render: (r) => r.code },
+            { key: 'code', header: t('shared.devui.code'), role: 'title', kind: 'code', sortable: true, render: (r) => r.code },
             { key: 'name', header: t('shared.devui.name'), role: 'meta', sortable: true, render: (r) => r.name },
-            { key: 'amount', header: t('shared.devui.amount'), role: 'meta', numeric: true, render: (r) => formatNumber(r.amount) },
+            { key: 'amount', header: t('shared.devui.amount'), role: 'meta', kind: 'number', render: (r) => formatNumber(r.amount) },
           ]}
         />
       </Stack>
@@ -138,9 +138,9 @@ export default function DevUiPage({ withSections: WithSections }: Props) {
           group={{ of: (r) => (r.id === 1 ? 'A' : 'B'), total: (g, name) => ({ id: 0, code: '', name: t('shared.devui.total', { name }), amount: g.reduce((s, r) => s + r.amount, 0) }) }}
           footer={{ id: 0, code: '', name: t('shared.devui.total', { name: '' }), amount: rows.reduce((s, r) => s + r.amount, 0) }}
           columns={[
-            { key: 'code', header: t('shared.devui.code'), role: 'title', render: (r) => r.code },
+            { key: 'code', header: t('shared.devui.code'), role: 'title', kind: 'code', render: (r) => r.code },
             { key: 'name', header: t('shared.devui.name'), role: 'meta', render: (r) => r.name },
-            { key: 'amount', header: t('shared.devui.amount'), role: 'meta', numeric: true, render: (r) => formatNumber(r.amount) },
+            { key: 'amount', header: t('shared.devui.amount'), role: 'meta', kind: 'number', render: (r) => formatNumber(r.amount) },
           ]}
         />
       </Stack>
@@ -215,10 +215,11 @@ export default function DevUiPage({ withSections: WithSections }: Props) {
         filters={
           <>
             <SearchInput label={t('shared.devui.name')} value="" onSearch={() => {}} />
-            <OrgUnitSelect label={t('shared.devui.org_unit')} value={null} onChange={() => {}} clearable />
-            <MonthFilter label={t('shared.devui.month')} value={null} onChange={() => {}} />
+            <OrgUnitFilter label={t('shared.devui.org_unit')} value={null} onChange={() => {}} />
+            <MonthFilter label={t('shared.devui.month')} value="2026-08" onChange={() => {}} />
           </>
         }
+        onClearFilters={() => {}}
         paging={{ page: 1, pageSize: 50, total: 120, onPage: () => {}, onPageSize: () => {} }}
       >
         {content}

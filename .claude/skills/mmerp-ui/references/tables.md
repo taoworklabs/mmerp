@@ -5,42 +5,50 @@ Every table is `DataTable` (`@/shared/ui/DataTable`); a list screen is `ListPage
 ## Anatomy
 
 ```
-[🔍 Search      ] [Status ▾] [Org unit ▾] [Month ▾]          [Views ▾] [Columns]   ← filters … tools
-  ☐   Identifier ↕   Text          Date ↕       Amount ↕   Status        header 36px, no fill, unframed
- ─────────────────────────────────────────────────────────────────────
-  ☐   DH-0001        Customer      01/10          12.500   [Posted]   ⋯   rows 40px, hover tint
+[🔍 Search      ] [Status: Posted ✕] [Org unit ▾] [Month ▾]  Clear filters   [Views ▾] [Columns]
+  ☐   Identifier ↕   Text (takes the room left)   Date ↕    Amount ↕   Status       header 36px, sunken tone, unframed
+ ──────────────────────────────────────────────────────────────────────────
+  ☐   DH-0001        Customer                     01/10       12.500   [Posted]  ⋯   rows 40px, hover tint
  ─────────────────────────────────────────────────────────────────────
 1.234 records                     ‹ 1 2 3 ›                   50 / page ▾  ← paging
 ```
 
 ## Filter bar
 
-- Inputs only, `xs` (8px) apart, 30px tall, styled like the `default` tool buttons at the bar's end (light `border` edge, 500 weight, hover tint; `ListPage` applies it, the area adds nothing), in this order: search, then selects, then period filters. Saved views and columns (`tools`) sit at the bar's right end.
-- Each input: placeholder = its name, the same text as `aria-label`, a 16px leading icon, `clearable` when optional, one width per kind from `filterWidth` in `theme.ts`:
+- The search box, then one **filter chip** per filter, `xs` (8px) apart, 30px tall; saved views and columns (`tools`) sit at the bar's right end. Order: search, then the record's own choices (status, type), then its dimensions (org unit, legal entity), then the period.
+- A chip is a `default` button named after the filter, with the 18px icon of any page-level button (it takes the icon component and sizes it) and a 16px chevron. Picking a value turns it into "Name: value", tinted (`variant="light"`), with its own ✕ that clears just that filter; a value too long for the chip (320px at most) ends in "…" and shows whole on hover. A filter that always holds a value (the legal entity of settings, a calendar's year: `clearable={false}`) keeps the plain look and has no ✕.
+- An on/off filter ("Expiring in 30 days", "Only failed") is a `Button` that turns `variant="light"` with `aria-pressed` while on.
+- While any filter is set, "Clear filters" (a `default` button) ends the chips: the page passes `onClearFilters` only then, and it resets every filter, search included. `useListParams` gives the page a `filterBar`: `active` (a filter is off its default), `clear`, and `bind(key)`, the `value`/`onChange` pair a chip takes.
+- When the bar is full the search box narrows first (down to 160px); chips keep their full text and wrap to a second line rather than truncate. Below 1024px the search box takes a line of its own and the chips wrap under it, on the page; there is no filter drawer.
 
-| Kind | Component | Width |
-| --- | --- | --- |
-| Search | `SearchInput` (applies on Enter or blur; `/` focuses it) | `filterWidth.search` (280), built in |
-| Status, type, any select | Mantine `Select` | `filterWidth.select` (200) |
-| Org unit, legal entity | `OrgUnitSelect product="hrm" permission="hrm.leave.view"` (only units where the user has that permission; width built in), `Select` | `filterWidth.unit` (240) |
-| Month | `MonthFilter` (value `YYYY-MM`) | `filterWidth.month` (160), built in |
-| Year | `YearSelect` | `filterWidth.year` (120), built in |
+| Filter | Component |
+| --- | --- |
+| Search | `SearchInput` (applies on Enter or blur; `/` focuses it) |
+| Status, type, any choice | `FilterChip` with `data`; `searchable` for long lists |
+| Org unit | `OrgUnitFilter product="hrm" permission="hrm.leave.view"` (only units where the user has that permission, as a tree, with a search) |
+| Legal entity | `FilterChip` with the entities |
+| Month | `MonthFilter` (value `YYYY-MM`, shown 08/2026) |
+| Year | `YearFilter` (always holds a year) |
 
 - Every business list has a search and sorts on its identifier and date; documents also filter by status and their key dimension (employee, org unit, period).
 - Filters, sort, page and page size live in the URL (`useListParams`); copying the URL reopens the same list. Changing a filter goes back to page 1.
-- Below 1024px the bar folds into a bottom drawer behind a Filter button (`ListPage` does it).
 
 ```tsx
-<Select
-  aria-label={t('sales.customer.status')}
-  placeholder={t('sales.customer.status')}
-  leftSection={<IconCircleDot {...icon.text} />}
-  w={{ base: '100%', md: filterWidth.select }}
-  data={…}
-  value={active || null}
-  onChange={(v) => set({ filters: { active: v ?? '' } })}
-  clearable
-/>
+<ListPage
+  …
+  onClearFilters={filterBar.active ? filterBar.clear : undefined}
+  filters={
+    <>
+      <SearchInput label={t('sales.customers.search')} value={q} onSearch={(v) => set({ filters: { q: v } })} />
+      <FilterChip
+        label={t('sales.customer.status')}
+        icon={IconCircleDot}
+        data={…}
+        {...filterBar.bind('active')}
+      />
+    </>
+  }
+>
 ```
 
 ## Saved views and columns
@@ -64,15 +72,24 @@ Every list with more than four columns or with filters people reuse gets `useLis
 
 ## Columns
 
+Every column has a `kind`, what it holds (`text`, the default, is left out); `DataTable` sets the look and width from it, so the eye goes to names and figures first:
+
+| `kind` | Holds | Look | Width |
+| --- | --- | --- | --- |
+| `text` (default) | Names of things, types, descriptions | Main text colour | Shares the room the other columns leave |
+| `person` | `PersonName` (avatar + name) | Main text colour | Its content |
+| `code` | Document numbers, employee or customer codes, logins, tax codes, phones | `dimmed`, tabular figures | Its content |
+| `date` | Dates, periods, months (`formatDate`, `formatMonthShort`: 08/2026), date and time | `dimmed`, tabular figures | Its content |
+| `number` | Quantities, money, rates | Right-aligned, tabular figures; money in minor units through `formatNumber`, the unit in the header ("Đơn giá (đ)") | Its content |
+| `status` | `DocumentStatus`, `StatusBadge` | The badge | Its content |
+
 | Column | Rule |
 | --- | --- |
-| Identifier | First, `role: 'title'`, sticky on horizontal scroll, never wraps, links the row (`href`); a person shows `PersonName` |
-| Text | Left-aligned; long text wraps |
-| Dates | Left-aligned, `formatDate` |
-| Numbers, money | `numeric: true` (right-aligned, tabular figures); money in minor units through `formatNumber`, the unit in the header ("Đơn giá (đ)") |
-| Status | Last before the menu, `role: 'status'`: the document status (`DocumentStatus`), with any module progress badge beside it in the same cell (`<Group gap="xs" wrap="nowrap">`, see `sales/pages/DocsPage.tsx`) |
+| Identifier | First, `role: 'title'`, sticky on horizontal scroll (its edge rule shows only then), never wraps, links the row (`href`); weight 500 in the main text colour whatever its kind (`code` for a number, `person` for a name), linked or not. It takes its content's width while a `text` column after it takes the rest; without one it takes the rest itself |
+| Status | Last before the menu, `role: 'status'`, `kind: 'status'`: the document status (`DocumentStatus`), with any module progress badge beside it in the same cell (`<Group gap="xs" wrap="nowrap">`, see `sales/pages/DocsPage.tsx`) |
 | Results (net pay, total) | Last of the figures, `strong: true` |
 
+- A zero in a `number` column and an empty cell show "–" in `dimmed` (a total row leaves an empty cell blank), so the eye stops on cells that hold something; render `''`, never a dash of your own. A width the user dragged wins over the kind's.
 - Each column declares its `role` for the card layout below 1024px: `title`, `status`, `meta` (a line under the title) or `hidden`.
 - `sortable: true` only where the API sorts; sorting is server-side; the header button toggles ascending/descending.
 - Headers hold only the label and the sort button; no filters or buttons in headers.
@@ -132,7 +149,7 @@ const [selected, setSelected] = useState<Set<string | number>>(new Set())
 - Server-side, 50 rows by default, 20/50/100 to choose; one bar under the table: total count on the left, pages in the centre (ghost buttons, the current page filled primary), the page size on the right as a ghost select (no edge or fill until hovered).
 - Small admin lists (users, org units) load whole without paging.
 - Feeds (notifications) use a "Load more" button.
-- Reconciliation tables load whole inside a capped scroll area (`maxHeight="70dvh"`) so group and grand totals are never split across pages.
+- Reconciliation tables load whole inside a capped scroll area (a list page's frame, or `maxHeight="70dvh"` on a document page) so group and grand totals are never split across pages.
 
 ## Figures and totals
 
@@ -157,12 +174,12 @@ List tables never edit in place. Editing happens on the record's page or in its 
 
 ```tsx
 // Do
-{ key: 'total', header: t('sales.doc.total'), role: 'meta', numeric: true, render: (d) => formatNumber(d.total) }
+{ key: 'total', header: t('sales.doc.total'), role: 'meta', kind: 'number', render: (d) => formatNumber(d.total) }
 <DataTable … onRowClick={(r) => setEditing(r)} />            // settings row with one action
 
 // Don't
 <Table>…</Table>                                               // Mantine Table in an area: lint fails
 { render: (d) => <Button size="xs">{t('…edit')}</Button> }     // a button per row: use menu
-w={{ base: '100%', md: 190 }}                                  // a width outside filterWidth
+<Select aria-label={…} … />                                   // a Select in the filter bar: use FilterChip
 render: (d) => d.total.toLocaleString()                        // formatting outside shared/i18n
 ```

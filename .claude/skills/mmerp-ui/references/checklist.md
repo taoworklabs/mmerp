@@ -5,7 +5,7 @@ Run every item against the change before calling it done. An item that does not 
 ## Tokens
 
 - [ ] No colour code, `rgb(`, `hsl(` outside `theme.ts` (`make lint` checks).
-- [ ] No pixel or rem number for spacing, font size or radius in a component (a filter input's width is the one exception); only theme keys (`gap="xs"`, `fz="xs"`, `radius="lg"`) or `var(--mantine-…)` / `var(--mmerp-…)`. A component-specific size sits in a `shared/ui` CSS module with a comment.
+- [ ] No pixel or rem number for spacing, font size or radius in a component; only theme keys (`gap="xs"`, `fz="xs"`, `radius="lg"`) or `var(--mantine-…)` / `var(--mmerp-…)`. A component-specific size sits in a `shared/ui` CSS module with a comment.
 - [ ] Colours named by meaning (`color="danger"`, `c="dimmed"`), never by hue (`"red"`, `"orange"`) or step (`"gray.6"`).
 - [ ] Icons through `icon.text` / `icon.button` / `icon.empty`.
 - [ ] No `style` attribute and no CSS file in an area.
@@ -28,8 +28,8 @@ Run every item against the change before calling it done. An item that does not 
 
 ## Tables (`tables.md`)
 
-- [ ] Identifier first and linked, numbers `numeric`, status columns last, every column has a `role`.
-- [ ] Search and sort on identifier and date; filter widths from `filterWidth`; filters, sort, page, tab, side panel on the URL.
+- [ ] Identifier first and linked, status columns last, every column has a `role`, and a `kind` unless it is text (codes and dates step back, numbers right-aligned, zero and empty as "–").
+- [ ] Search and sort on identifier and date; filters as chips (`FilterChip`, `OrgUnitFilter`, `MonthFilter`, `YearFilter`) bound with `filterBar.bind`, and `onClearFilters={filterBar.active ? filterBar.clear : undefined}`; filters, sort, page, tab, side panel on the URL.
 - [ ] Rows: one action opens on row click (`onRowClick`), two or more in the "…" menu; no buttons per row.
 - [ ] Lists people reuse use `useListView` with a stable `listKey`.
 - [ ] Bulk actions only with a real bulk operation: `selection` + `BulkBar`, run as a job, confirmed with the count, selection cleared on filter/sort/page change.

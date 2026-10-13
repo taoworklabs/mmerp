@@ -1,4 +1,4 @@
-import { Badge, Button, Combobox, createTheme, Drawer, InputWrapper, Menu, Modal, NavLink, Paper, Popover, rem, Select, Tabs, Tooltip, type CSSVariablesResolver, type MantineColorsTuple } from '@mantine/core'
+import { Badge, Button, Combobox, createTheme, Drawer, InputWrapper, Menu, Modal, NavLink, Paper, Popover, rem, ScrollArea, Select, Tabs, Tooltip, type CSSVariablesResolver, type MantineColorsTuple } from '@mantine/core'
 
 // Ramps run from palest (0) to darkest (9). Index 6 is the shade filled components use,
 // 7 the text on a tinted background, 0 the tint itself.
@@ -47,13 +47,22 @@ export const theme = createTheme({
     Button: Button.extend({ styles: { root: { fontWeight: 500 } } }),
     // The chosen option is tinted, without a check mark that pushes every label sideways.
     Select: Select.extend({ defaultProps: { withCheckIcon: false } }),
-    Badge: Badge.extend({ defaultProps: { variant: 'light', radius: 'sm' }, styles: { root: { textTransform: 'none', fontWeight: 500, fontSize: 'var(--mantine-font-size-xs)' } } }),
+    // Tags stand out from the rows around them: a tint one step deeper than other tinted parts
+    // (two for neutral, whose first step is the sunken surface), with the darkest readable text.
+    Badge: Badge.extend({
+      defaultProps: { variant: 'light', radius: 'sm' },
+      styles: { root: { textTransform: 'none', fontWeight: 500, fontSize: 'var(--mantine-font-size-xs)' } },
+      vars: (_, { color = 'primary', variant = 'light' }) =>
+        variant === 'light' ? { root: { '--badge-bg': `var(--mantine-color-${color}-${color === 'gray' ? 2 : 1})`, '--badge-color': `var(--mantine-color-${color}-8)` } } : { root: {} },
+    }),
     Modal: Modal.extend({ defaultProps: { radius: 'xl' }, styles: { title: { fontWeight: 650, fontSize: 'var(--mantine-font-size-lg)' } } }),
     Drawer: Drawer.extend({ styles: { title: { fontWeight: 650, fontSize: 'var(--mantine-font-size-lg)' } } }),
     Popover: Popover.extend({ defaultProps: { radius: 'lg' } }),
     Combobox: Combobox.extend({ defaultProps: { radius: 'lg' } }),
     Menu: Menu.extend({ defaultProps: { radius: 'lg' } }),
     Tooltip: Tooltip.extend({ defaultProps: { radius: 'sm' } }),
+    // Thin scrollbars, so they do not compete with the content.
+    ScrollArea: ScrollArea.extend({ defaultProps: { scrollbarSize: 8 } }),
     Tabs: Tabs.extend({ styles: { tab: { fontWeight: 500 } } }),
     NavLink: NavLink.extend({ styles: { root: { borderRadius: 'var(--mantine-radius-md)', minHeight: 'var(--mmerp-control-height)' }, label: { fontWeight: 500 } } }),
   },
@@ -75,8 +84,9 @@ export const icon = {
   empty: { size: 24, stroke: 1.5 },
 } as const
 
-// Filter inputs take one width per kind, so filter bars line up from list to list.
-export const filterWidth = { search: 280, select: 200, unit: 240, month: 160, year: 120 } as const
+// Filter bar sizes: the search box (it narrows to searchMin when the bar is full), the widest a
+// filter chip grows before its value truncates, and a chip's dropdown.
+export const filterWidth = { search: 280, searchMin: 160, chip: 320, menu: 240 } as const
 
 // A tinted ("light") variant: the palest step behind, a dark step for text, so it reads at 4.5:1.
 function tint(name: string, ramp: MantineColorsTuple, bg = 0) {

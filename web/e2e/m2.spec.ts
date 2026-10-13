@@ -122,14 +122,15 @@ test('filters, sort and page live on the URL and Back restores each step', async
   await expect(page.getByLabel('Tìm kiếm')).toHaveValue('')
 })
 
-test('below 1024px the employee list becomes cards and the filters move behind a button', async ({ page }) => {
+test('below 1024px the employee list becomes cards and the filters wrap above them', async ({ page }) => {
   await page.setViewportSize({ width: 375, height: 800 })
   await signInAs(page, hrA, `/hrm/employees?q=${run}-0`)
   const cards = page.getByRole('list', { name: 'Nhân viên' })
   await expect(cards.getByRole('listitem').first()).toBeVisible()
   await expect(page.getByRole('table')).toHaveCount(0)
-  await page.getByRole('button', { name: 'Lọc' }).click()
-  await expect(page.getByRole('dialog').getByLabel('Tìm kiếm')).toBeVisible()
+  const filters = page.getByRole('search')
+  await expect(filters.getByLabel('Tìm kiếm')).toBeVisible()
+  await expect(filters.getByRole('button', { name: 'Trạng thái' })).toBeVisible()
 })
 
 test('an administrator builds the tree and grants a role from the admin screens', async ({ page }) => {

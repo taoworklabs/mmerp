@@ -29,8 +29,8 @@ export function UsersPage() {
   const needle = q.trim().toLocaleLowerCase()
   const shown = (users.data ?? []).filter((u) => !needle || u.name.toLocaleLowerCase().includes(needle) || u.login.toLocaleLowerCase().includes(needle))
   const columns: Column<User>[] = [
-    { key: 'name', header: t('core.user.name'), role: 'title', render: (u) => <PersonName name={u.name} /> },
-    { key: 'login', header: t('core.user.login'), role: 'meta', render: (u) => u.login },
+    { key: 'name', header: t('core.user.name'), role: 'title', kind: 'person', render: (u) => <PersonName name={u.name} /> },
+    { key: 'login', header: t('core.user.login'), role: 'meta', kind: 'code', render: (u) => u.login },
   ]
 
   let body

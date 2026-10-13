@@ -25,8 +25,8 @@ export function BalancesTab({ employee }: { employee: Employee }) {
   })
   const canAdjust = employee.allowed_actions.includes('adjust_leave_balance')
   const columns: Column<LeaveBalance>[] = [
-    { key: 'year', header: t('hrm.balance.year'), role: 'title', render: (b) => String(b.year) },
-    { key: 'days', header: t('hrm.balance.days'), role: 'meta', numeric: true, render: (b) => formatDecimal(b.days) },
+    { key: 'year', header: t('hrm.balance.year'), role: 'title', kind: 'date', render: (b) => String(b.year) },
+    { key: 'days', header: t('hrm.balance.days'), role: 'meta', kind: 'number', render: (b) => formatDecimal(b.days) },
   ]
   let body
   if (list.isPending) body = <ContentSkeleton />

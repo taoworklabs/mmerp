@@ -1,4 +1,4 @@
-import { Button, Select } from '@mantine/core'
+import { Button } from '@mantine/core'
 import { IconCircleDot, IconPlus } from '@tabler/icons-react'
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
@@ -8,12 +8,12 @@ import { DocumentStatus, useStatusLabel } from '@/shared/document'
 import { errorText, formatDate, formatDecimal } from '@/shared/i18n'
 import { PersonName } from '@/shared/ui/avatar'
 import { DataTable, type Column } from '@/shared/ui/DataTable'
-import { MonthFilter, OrgUnitSelect, SearchInput } from '@/shared/ui/form'
+import { FilterChip, MonthFilter, OrgUnitFilter, SearchInput } from '@/shared/ui/form'
 import { useListView } from '@/shared/ui/ListView'
 import { ListPage } from '@/shared/ui/page'
 import { SidePanel, usePeek } from '@/shared/ui/SidePanel'
 import { ContentSkeleton, EmptyState, ErrorState } from '@/shared/ui/states'
-import { filterWidth, icon } from '@/shared/ui/theme'
+import { icon } from '@/shared/ui/theme'
 import { useListParams } from '@/shared/url/listParams'
 import OvertimePreview from '../components/OvertimePreview'
 import { useOvertimeActions } from '../hooks/useOvertime'
@@ -29,7 +29,7 @@ export function OvertimesPage() {
   const { t } = useTranslation()
   const statusLabel = useStatusLabel()
   const canCreate = useOvertimeActions().data?.allowed_actions.includes('create') ?? false
-  const [params, set] = useListParams(defaults)
+  const [params, set, filterBar] = useListParams(defaults)
   const peek = usePeek()
   const { q, status, org_unit, month } = params.filters as typeof defaults.filters
   const query = { q, status, orgUnit: org_unit, month, sort: params.sort, page: params.page, pageSize: params.pageSize }
@@ -55,13 +55,13 @@ export function OvertimesPage() {
   })
 
   const columns: Column<OvertimeListItem>[] = [
-    { key: 'number', header: t('hrm.overtime.number'), role: 'title', sortable: true, render: (o) => o.number },
-    { key: 'employee', header: t('hrm.overtime.employee'), role: 'meta', render: (o) => <PersonName name={o.employee_name} /> },
-    { key: 'date', header: t('hrm.overtime.date'), role: 'meta', sortable: true, render: (o) => formatDate(o.date) },
+    { key: 'number', header: t('hrm.overtime.number'), role: 'title', kind: 'code', sortable: true, render: (o) => o.number },
+    { key: 'employee', header: t('hrm.overtime.employee'), role: 'meta', kind: 'person', render: (o) => <PersonName name={o.employee_name} /> },
+    { key: 'date', header: t('hrm.overtime.date'), role: 'meta', kind: 'date', sortable: true, render: (o) => formatDate(o.date) },
     { key: 'day_kind', header: t('hrm.overtime.day_kind'), role: 'hidden', render: (o) => t(`hrm.overtime.day_kind.${o.day_kind}`) },
-    { key: 'day_hours', header: t('hrm.overtime.day_hours'), role: 'hidden', numeric: true, render: (o) => formatDecimal(o.day_hours) },
-    { key: 'night_hours', header: t('hrm.overtime.night_hours'), role: 'hidden', numeric: true, render: (o) => formatDecimal(o.night_hours) },
-    { key: 'status', header: t('hrm.overtime.status'), role: 'status', render: (o) => <DocumentStatus docType={overtimeDocType} status={o.status} /> },
+    { key: 'day_hours', header: t('hrm.overtime.day_hours'), role: 'hidden', kind: 'number', render: (o) => formatDecimal(o.day_hours) },
+    { key: 'night_hours', header: t('hrm.overtime.night_hours'), role: 'hidden', kind: 'number', render: (o) => formatDecimal(o.night_hours) },
+    { key: 'status', header: t('hrm.overtime.status'), role: 'status', kind: 'status', render: (o) => <DocumentStatus docType={overtimeDocType} status={o.status} /> },
   ]
   const view = useListView('hrm.overtimes', columns)
   const open = list.data?.items.find((l) => String(l.id) === peek.id)
@@ -71,11 +71,11 @@ export function OvertimesPage() {
   else if (list.isError) body = <ErrorState message={errorText(t, list.error)} onRetry={() => void list.refetch()} />
   else if (list.data.items.length === 0)
     body =
-      q !== '' || status !== '' || org_unit !== '' || month !== '' ? (
+      filterBar.active ? (
         <EmptyState
           title={t('hrm.overtimes.no_results')}
           action={
-            <Button variant="default" onClick={() => set({ filters: defaults.filters })}>
+            <Button variant="default" onClick={filterBar.clear}>
               {t('hrm.common.clear_filters')}
             </Button>
           }
@@ -109,28 +109,23 @@ export function OvertimesPage() {
           </Button>
         )
       }
+      onClearFilters={filterBar.active ? filterBar.clear : undefined}
       filters={
         <>
           <SearchInput label={t('hrm.overtimes.search')} placeholder={t('hrm.common.search_request_hint')} value={q} onSearch={(v) => set({ filters: { q: v } })} />
-          <Select
-            aria-label={t('hrm.overtime.status')}
-            placeholder={t('hrm.overtime.status')}
-            leftSection={<IconCircleDot {...icon.text} />}
-            w={{ base: '100%', md: filterWidth.select }}
+          <FilterChip
+            label={t('hrm.overtime.status')}
+            icon={IconCircleDot}
             data={statuses.map((s) => ({ value: s, label: statusLabel(overtimeDocType, s) }))}
-            value={status || null}
-            onChange={(v) => set({ filters: { status: v ?? '' } })}
-            clearable
+            {...filterBar.bind('status')}
           />
-          <OrgUnitSelect
+          <OrgUnitFilter
             product="hrm"
             permission="hrm.overtime.view"
             label={t('hrm.common.org_unit')}
-            value={org_unit || null}
-            onChange={(v) => set({ filters: { org_unit: v ?? '' } })}
-            clearable
+            {...filterBar.bind('org_unit')}
           />
-          <MonthFilter label={t('hrm.common.month')} value={month || null} onChange={(v) => set({ filters: { month: v ?? '' } })} />
+          <MonthFilter label={t('hrm.common.month')} {...filterBar.bind('month')} />
         </>
       }
       tools={view.tools}

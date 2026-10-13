@@ -57,7 +57,7 @@ export function JobOutcome({ job, error }: { job: Job | undefined; error?: unkno
           rows={job.row_errors}
           rowKey={(e) => `${e.row}:${e.message}`}
           columns={[
-            { key: 'row', header: t('shared.jobs.row'), role: 'title', numeric: true, render: (e) => formatNumber(e.row) },
+            { key: 'row', header: t('shared.jobs.row'), role: 'title', kind: 'number', render: (e) => formatNumber(e.row) },
             { key: 'message', header: t('shared.jobs.reason'), role: 'meta', render: (e) => e.message },
           ]}
         />

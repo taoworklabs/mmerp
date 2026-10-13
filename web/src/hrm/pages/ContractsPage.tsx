@@ -1,4 +1,4 @@
-import { Button, Select } from '@mantine/core'
+import { Button } from '@mantine/core'
 import { IconCalendarDue, IconCircleDot, IconFileCertificate } from '@tabler/icons-react'
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
@@ -6,12 +6,12 @@ import { api, unwrap, type ContractListItem, type ContractSort } from '@/shared/
 import { DocumentStatus, useStatusLabel } from '@/shared/document'
 import { errorText, formatDate } from '@/shared/i18n'
 import { DataTable, type Column } from '@/shared/ui/DataTable'
-import { OrgUnitSelect, SearchInput } from '@/shared/ui/form'
+import { FilterChip, OrgUnitFilter, SearchInput } from '@/shared/ui/form'
 import { useListView } from '@/shared/ui/ListView'
 import { ListPage } from '@/shared/ui/page'
 import { SidePanel, usePeek } from '@/shared/ui/SidePanel'
 import { ContentSkeleton, EmptyState, ErrorState } from '@/shared/ui/states'
-import { filterWidth, icon } from '@/shared/ui/theme'
+import { icon } from '@/shared/ui/theme'
 import { useListParams } from '@/shared/url/listParams'
 import ContractPreview from '../components/ContractPreview'
 import { useContractTypes } from '../hooks/useContract'
@@ -27,7 +27,7 @@ export function ContractsPage() {
   const { t } = useTranslation()
   const statusLabel = useStatusLabel()
   const types = useContractTypes()
-  const [params, set] = useListParams(defaults)
+  const [params, set, filterBar] = useListParams(defaults)
   const peek = usePeek()
   const filters = params.filters as typeof defaults.filters
   const { q, status, contract_type_id, org_unit_id, expiring } = filters
@@ -55,7 +55,7 @@ export function ContractsPage() {
   })
 
   const columns: Column<ContractListItem>[] = [
-    { key: 'number', header: t('hrm.contract.number'), role: 'title', sortable: true, render: (c) => c.number },
+    { key: 'number', header: t('hrm.contract.number'), role: 'title', kind: 'code', sortable: true, render: (c) => c.number },
     { key: 'employee', header: t('hrm.contract.employee'), role: 'meta', render: (c) => `${c.employee_code} · ${c.employee_name}` },
     {
       key: 'kind',
@@ -63,29 +63,29 @@ export function ContractsPage() {
       role: 'hidden',
       render: (c) => (c.parent_number ? t('hrm.contract.appendix_of', { number: c.parent_number }) : c.contract_type_name),
     },
-    { key: 'start_date', header: t('hrm.contract.start_date'), role: 'meta', sortable: true, render: (c) => formatDate(c.start_date) },
+    { key: 'start_date', header: t('hrm.contract.start_date'), role: 'meta', kind: 'date', sortable: true, render: (c) => formatDate(c.start_date) },
     {
       key: 'end_date',
       header: t('hrm.contract.end_date'),
       role: 'hidden',
+      kind: 'date',
       sortable: true,
       render: (c) => (c.parent_id ? '' : c.end_date ? formatDate(c.end_date) : t('hrm.contract.no_end')),
     },
-    { key: 'status', header: t('hrm.contract.status'), role: 'status', render: (c) => <DocumentStatus docType={contractDocType} status={c.status} /> },
+    { key: 'status', header: t('hrm.contract.status'), role: 'status', kind: 'status', render: (c) => <DocumentStatus docType={contractDocType} status={c.status} /> },
   ]
   const view = useListView('hrm.contracts', columns)
   const open = list.data?.items.find((c) => String(c.id) === peek.id)
 
-  const filtered = Object.values(filters).some((v) => v !== '')
   let body
   if (list.isPending) body = <ContentSkeleton />
   else if (list.isError) body = <ErrorState message={errorText(t, list.error)} onRetry={() => void list.refetch()} />
   else if (list.data.items.length === 0)
-    body = filtered ? (
+    body = filterBar.active ? (
       <EmptyState
         title={t('hrm.contracts.no_results')}
         action={
-          <Button variant="default" onClick={() => set({ filters: defaults.filters })}>
+          <Button variant="default" onClick={filterBar.clear}>
             {t('hrm.common.clear_filters')}
           </Button>
         }
@@ -112,36 +112,27 @@ export function ContractsPage() {
     <ListPage
       title={t('hrm.contracts.title')}
       description={t('hrm.contracts.description')}
+      onClearFilters={filterBar.active ? filterBar.clear : undefined}
       filters={
         <>
           <SearchInput label={t('hrm.contracts.search')} placeholder={t('hrm.common.search_request_hint')} value={q} onSearch={(v) => set({ filters: { q: v } })} />
-          <Select
-            aria-label={t('hrm.contract.status')}
-            leftSection={<IconCircleDot {...icon.text} />}
-            w={{ base: '100%', md: filterWidth.select }}
+          <FilterChip
+            label={t('hrm.contract.status')}
+            icon={IconCircleDot}
             data={statuses.map((s) => ({ value: s, label: statusLabel(contractDocType, s) }))}
-            value={status || null}
-            onChange={(v) => set({ filters: { status: v ?? '' } })}
-            placeholder={t('hrm.contract.status')}
-            clearable
+            {...filterBar.bind('status')}
           />
-          <Select
-            aria-label={t('hrm.contract.kind')}
-            leftSection={<IconFileCertificate {...icon.text} />}
-            w={{ base: '100%', md: filterWidth.select }}
+          <FilterChip
+            label={t('hrm.contract.kind')}
+            icon={IconFileCertificate}
             data={(types.data ?? []).map((x) => ({ value: String(x.id), label: x.name }))}
-            value={contract_type_id || null}
-            onChange={(v) => set({ filters: { contract_type_id: v ?? '' } })}
-            placeholder={t('hrm.contract.kind')}
-            clearable
+            {...filterBar.bind('contract_type_id')}
           />
-          <OrgUnitSelect
+          <OrgUnitFilter
             label={t('hrm.contracts.org_unit')}
             product="hrm"
             permission="hrm.contract.view"
-            value={org_unit_id || null}
-            onChange={(v) => set({ filters: { org_unit_id: v ?? '' } })}
-            clearable
+            {...filterBar.bind('org_unit_id')}
           />
           <Button
             variant={expiring ? 'light' : 'default'}

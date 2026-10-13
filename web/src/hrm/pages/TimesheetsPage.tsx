@@ -1,4 +1,4 @@
-import { Button, Select } from '@mantine/core'
+import { Button } from '@mantine/core'
 import { IconCircleDot, IconPlus } from '@tabler/icons-react'
 import { keepPreviousData, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
@@ -7,14 +7,14 @@ import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router'
 import { api, unwrap, type TimesheetListItem, type TimesheetSort } from '@/shared/api/hrm'
 import { DocumentStatus, useStatusLabel } from '@/shared/document'
-import { errorText, formatMonth } from '@/shared/i18n'
+import { errorText, formatMonthShort } from '@/shared/i18n'
 import { DataTable, type Column } from '@/shared/ui/DataTable'
-import { Form, FormActions, MonthField, MonthFilter, OrgUnitField, OrgUnitSelect } from '@/shared/ui/form'
+import { FilterChip, Form, FormActions, MonthField, MonthFilter, OrgUnitField, OrgUnitFilter } from '@/shared/ui/form'
 import { useListView } from '@/shared/ui/ListView'
 import { notifySuccess } from '@/shared/ui/notify'
 import { FormModal, ListPage } from '@/shared/ui/page'
 import { ContentSkeleton, EmptyState, ErrorState } from '@/shared/ui/states'
-import { filterWidth, icon } from '@/shared/ui/theme'
+import { icon } from '@/shared/ui/theme'
 import { useListParams } from '@/shared/url/listParams'
 import { useTimesheetActions } from '../hooks/useTimesheet'
 import { hrmKeys, timesheetDocType } from '../keys'
@@ -28,7 +28,7 @@ export function TimesheetsPage() {
   const statusLabel = useStatusLabel()
   const canCreate = useTimesheetActions().data?.includes('create') ?? false
   const [creating, setCreating] = useState(false)
-  const [params, set] = useListParams(defaults)
+  const [params, set, filterBar] = useListParams(defaults)
   const { month, org_unit_id, status } = params.filters as typeof defaults.filters
   const query = { month, org_unit_id, status, sort: params.sort, page: params.page, pageSize: params.pageSize }
   const list = useQuery({
@@ -52,23 +52,22 @@ export function TimesheetsPage() {
   })
 
   const columns: Column<TimesheetListItem>[] = [
-    { key: 'number', header: t('hrm.timesheet.number'), role: 'title', sortable: true, render: (s) => s.number },
+    { key: 'number', header: t('hrm.timesheet.number'), role: 'title', kind: 'code', sortable: true, render: (s) => s.number },
     { key: 'org_unit', header: t('hrm.timesheet.org_unit'), role: 'meta', render: (s) => s.org_unit_name },
-    { key: 'period', header: t('hrm.timesheet.month'), role: 'meta', sortable: true, render: (s) => formatMonth(s.period_start.slice(0, 7)) },
-    { key: 'status', header: t('hrm.timesheet.status'), role: 'status', render: (s) => <DocumentStatus docType={timesheetDocType} status={s.status} /> },
+    { key: 'period', header: t('hrm.timesheet.month'), role: 'meta', kind: 'date', sortable: true, render: (s) => formatMonthShort(s.period_start.slice(0, 7)) },
+    { key: 'status', header: t('hrm.timesheet.status'), role: 'status', kind: 'status', render: (s) => <DocumentStatus docType={timesheetDocType} status={s.status} /> },
   ]
   const view = useListView('hrm.timesheets', columns)
 
-  const filtered = month !== '' || org_unit_id !== '' || status !== ''
   let body
   if (list.isPending) body = <ContentSkeleton />
   else if (list.isError) body = <ErrorState message={errorText(t, list.error)} onRetry={() => void list.refetch()} />
   else if (list.data.items.length === 0)
-    body = filtered ? (
+    body = filterBar.active ? (
       <EmptyState
         title={t('hrm.timesheets.no_results')}
         action={
-          <Button variant="default" onClick={() => set({ filters: defaults.filters })}>
+          <Button variant="default" onClick={filterBar.clear}>
             {t('hrm.common.clear_filters')}
           </Button>
         }
@@ -101,27 +100,22 @@ export function TimesheetsPage() {
           </Button>
         )
       }
+      onClearFilters={filterBar.active ? filterBar.clear : undefined}
       filters={
         <>
-          <OrgUnitSelect
+          <OrgUnitFilter
             label={t('hrm.timesheet.org_unit')}
             product="hrm"
             permission="hrm.timesheet.view"
-            value={org_unit_id || null}
-            onChange={(v) => set({ filters: { org_unit_id: v ?? '' } })}
-            clearable
+            {...filterBar.bind('org_unit_id')}
           />
-          <Select
-            aria-label={t('hrm.timesheet.status')}
-            leftSection={<IconCircleDot {...icon.text} />}
-            w={{ base: '100%', md: filterWidth.select }}
+          <FilterChip
+            label={t('hrm.timesheet.status')}
+            icon={IconCircleDot}
             data={statuses.map((s) => ({ value: s, label: statusLabel(timesheetDocType, s) }))}
-            value={status || null}
-            onChange={(v) => set({ filters: { status: v ?? '' } })}
-            placeholder={t('hrm.timesheet.status')}
-            clearable
+            {...filterBar.bind('status')}
           />
-          <MonthFilter label={t('hrm.timesheet.month')} value={month || null} onChange={(v) => set({ filters: { month: v ?? '' } })} />
+          <MonthFilter label={t('hrm.timesheet.month')} {...filterBar.bind('month')} />
         </>
       }
       tools={view.tools}

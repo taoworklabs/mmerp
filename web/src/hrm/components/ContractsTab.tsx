@@ -24,16 +24,16 @@ export function ContractsTab({ employee }: { employee: Employee }) {
   const numbers = new Map((list.data ?? []).map((c) => [c.id, c.number]))
   const newPath = `/hrm/contracts/new?employee=${employee.id}`
   const columns: Column<ContractListItem>[] = [
-    { key: 'number', header: t('hrm.contract.number'), role: 'title', render: (c) => c.number },
+    { key: 'number', header: t('hrm.contract.number'), role: 'title', kind: 'code', render: (c) => c.number },
     {
       key: 'kind',
       header: t('hrm.contract.kind'),
       role: 'meta',
       render: (c) => (c.parent_id ? t('hrm.contract.appendix_of', { number: numbers.get(c.parent_id) ?? '' }) : c.contract_type_name),
     },
-    { key: 'start_date', header: t('hrm.contract.start_date'), role: 'meta', render: (c) => formatDate(c.start_date) },
-    { key: 'end_date', header: t('hrm.contract.end_date'), role: 'hidden', render: (c) => (c.parent_id ? '' : c.end_date ? formatDate(c.end_date) : t('hrm.contract.no_end')) },
-    { key: 'status', header: t('hrm.contract.status'), role: 'status', render: (c) => <DocumentStatus docType={contractDocType} status={c.status} /> },
+    { key: 'start_date', header: t('hrm.contract.start_date'), role: 'meta', kind: 'date', render: (c) => formatDate(c.start_date) },
+    { key: 'end_date', header: t('hrm.contract.end_date'), role: 'hidden', kind: 'date', render: (c) => (c.parent_id ? '' : c.end_date ? formatDate(c.end_date) : t('hrm.contract.no_end')) },
+    { key: 'status', header: t('hrm.contract.status'), role: 'status', kind: 'status', render: (c) => <DocumentStatus docType={contractDocType} status={c.status} /> },
   ]
   let body
   if (list.isPending) body = <ContentSkeleton />

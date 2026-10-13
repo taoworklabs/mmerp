@@ -1,4 +1,4 @@
-import { Button, Group, Select } from '@mantine/core'
+import { Button, Group } from '@mantine/core'
 import { IconCircleDot, IconPlus } from '@tabler/icons-react'
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
@@ -7,11 +7,11 @@ import { api, unwrap, type DocListItem, type DocSort } from '@/shared/api/sales'
 import { DocumentStatus, useStatusLabel } from '@/shared/document'
 import { errorText, formatDate, formatNumber } from '@/shared/i18n'
 import { DataTable, type Column } from '@/shared/ui/DataTable'
-import { SearchInput } from '@/shared/ui/form'
+import { FilterChip, SearchInput } from '@/shared/ui/form'
 import { ListPage } from '@/shared/ui/page'
 import { ContentSkeleton, EmptyState, ErrorState } from '@/shared/ui/states'
 import { useListView } from '@/shared/ui/ListView'
-import { filterWidth, icon } from '@/shared/ui/theme'
+import { icon } from '@/shared/ui/theme'
 import { useListParams } from '@/shared/url/listParams'
 import { DocProgress } from '../components/DocProgress'
 import { useDocActions } from '../hooks/useSales'
@@ -22,17 +22,17 @@ const statuses = ['draft', 'pending_approval', 'posted', 'cancelled'] as const
 const defaults = { filters: { q: '', status: '' }, sort: '-date', sorts: [...sorts], pageSize: 50 }
 
 // DocsPage lists the quotations or the orders the user may see.
-export function DocsPage({ kind }: { kind: Kind }) {
+export function DocsPage({ kind: docKind }: { kind: Kind }) {
   const { t } = useTranslation()
   const statusLabel = useStatusLabel()
-  const docType = docTypeOf(kind)
-  const base = `/sales/${pathOf(kind)}`
-  const canCreate = useDocActions(kind).data?.includes('create') ?? false
-  const [params, set] = useListParams(defaults)
+  const docType = docTypeOf(docKind)
+  const base = `/sales/${pathOf(docKind)}`
+  const canCreate = useDocActions(docKind).data?.includes('create') ?? false
+  const [params, set, filterBar] = useListParams(defaults)
   const { q, status } = params.filters as typeof defaults.filters
   const query = { q, status, sort: params.sort, page: params.page, pageSize: params.pageSize }
   const list = useQuery({
-    queryKey: salesKeys.docs.list(kind, query),
+    queryKey: salesKeys.docs.list(docKind, query),
     queryFn: () => {
       const p = {
         params: {
@@ -45,24 +45,25 @@ export function DocsPage({ kind }: { kind: Kind }) {
           },
         },
       }
-      return unwrap(kind === 'quote' ? api.GET('/sales/quotes', p) : api.GET('/sales/orders', p))
+      return unwrap(docKind === 'quote' ? api.GET('/sales/quotes', p) : api.GET('/sales/orders', p))
     },
     placeholderData: keepPreviousData,
   })
 
   const columns: Column<DocListItem>[] = [
-    { key: 'number', header: t('sales.doc.number'), role: 'title', sortable: true, render: (d) => d.number },
+    { key: 'number', header: t('sales.doc.number'), role: 'title', kind: 'code', sortable: true, render: (d) => d.number },
     { key: 'customer', header: t('sales.doc.customer'), role: 'meta', render: (d) => d.customer_name },
-    { key: 'date', header: t(`sales.${kind}.date`), role: 'meta', sortable: true, render: (d) => formatDate(d.date) },
-    ...(kind === 'quote'
-      ? [{ key: 'valid_until', header: t('sales.quote.valid_until'), role: 'hidden' as const, render: (d: DocListItem) => formatDate(d.valid_until) }]
+    { key: 'date', header: t(`sales.${docKind}.date`), role: 'meta', kind: 'date', sortable: true, render: (d) => formatDate(d.date) },
+    ...(docKind === 'quote'
+      ? [{ key: 'valid_until', header: t('sales.quote.valid_until'), role: 'hidden' as const, kind: 'date' as const, render: (d: DocListItem) => formatDate(d.valid_until) }]
       : []),
     { key: 'org_unit', header: t('sales.doc.org_unit'), role: 'hidden', render: (d) => d.org_unit_name },
-    { key: 'total', header: t('sales.doc.total_vnd'), role: 'meta', numeric: true, sortable: true, render: (d) => formatNumber(d.total) },
+    { key: 'total', header: t('sales.doc.total_vnd'), role: 'meta', kind: 'number', sortable: true, render: (d) => formatNumber(d.total) },
     {
       key: 'status',
       header: t('sales.doc.status'),
       role: 'status',
+      kind: 'status',
       render: (d) => (
         <Group gap="xs" wrap="nowrap">
           <DocumentStatus docType={docType} status={d.status} />
@@ -71,29 +72,29 @@ export function DocsPage({ kind }: { kind: Kind }) {
       ),
     },
   ]
-  const view = useListView(`sales.${pathOf(kind)}`, columns)
+  const view = useListView(`sales.${pathOf(docKind)}`, columns)
 
   let body
   if (list.isPending) body = <ContentSkeleton />
   else if (list.isError) body = <ErrorState message={errorText(t, list.error)} onRetry={() => void list.refetch()} />
   else if (list.data.items.length === 0)
     body =
-      q !== '' || status !== '' ? (
+      filterBar.active ? (
         <EmptyState
           title={t('sales.common.no_results')}
           action={
-            <Button variant="default" onClick={() => set({ filters: defaults.filters })}>
+            <Button variant="default" onClick={filterBar.clear}>
               {t('sales.common.clear_filters')}
             </Button>
           }
         />
       ) : (
-        <EmptyState title={t(`sales.${pathOf(kind)}.empty`)} description={t(`sales.${pathOf(kind)}.empty_description`)} />
+        <EmptyState title={t(`sales.${pathOf(docKind)}.empty`)} description={t(`sales.${pathOf(docKind)}.empty_description`)} />
       )
   else
     body = (
       <DataTable
-        label={t(`sales.${pathOf(kind)}.title`)}
+        label={t(`sales.${pathOf(docKind)}.title`)}
         columns={view.columns}
         onResize={view.onResize}
         rows={list.data.items}
@@ -106,27 +107,24 @@ export function DocsPage({ kind }: { kind: Kind }) {
 
   return (
     <ListPage
-      title={t(`sales.${pathOf(kind)}.title`)}
-      description={t(`sales.${pathOf(kind)}.description`)}
+      title={t(`sales.${pathOf(docKind)}.title`)}
+      description={t(`sales.${pathOf(docKind)}.description`)}
       action={
         canCreate && (
           <Button component={Link} to={`${base}/new`} leftSection={<IconPlus {...icon.button} />}>
-            {t(`sales.${pathOf(kind)}.create`)}
+            {t(`sales.${pathOf(docKind)}.create`)}
           </Button>
         )
       }
+      onClearFilters={filterBar.active ? filterBar.clear : undefined}
       filters={
         <>
           <SearchInput label={t('sales.doc.search')} placeholder={t('sales.doc.search_hint')} value={q} onSearch={(v) => set({ filters: { q: v } })} />
-          <Select
-            aria-label={t('sales.doc.status')}
-            leftSection={<IconCircleDot {...icon.text} />}
-            w={{ base: '100%', md: filterWidth.select }}
+          <FilterChip
+            label={t('sales.doc.status')}
+            icon={IconCircleDot}
             data={statuses.map((s) => ({ value: s, label: statusLabel(docType, s) }))}
-            value={status || null}
-            onChange={(v) => set({ filters: { status: v ?? '' } })}
-            placeholder={t('sales.doc.status')}
-            clearable
+            {...filterBar.bind('status')}
           />
         </>
       }

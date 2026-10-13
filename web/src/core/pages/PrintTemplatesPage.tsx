@@ -42,7 +42,7 @@ export function PrintTemplatesPage() {
             key: 'saved',
             header: t('core.print.saved'),
             role: 'meta',
-            render: (p) => (p.saved_at ? t('core.print.saved_by', { at: formatDateTime(p.saved_at, me.timezone), name: p.saved_by_name }) : '—'),
+            render: (p) => (p.saved_at ? t('core.print.saved_by', { at: formatDateTime(p.saved_at, me.timezone), name: p.saved_by_name }) : ''),
           },
         ]}
         // One action per row: the row itself opens it.

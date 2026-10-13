@@ -1,5 +1,5 @@
-import { Anchor, Button, Checkbox, Select, Text } from '@mantine/core'
-import { IconRefresh } from '@tabler/icons-react'
+import { Anchor, Button, Text } from '@mantine/core'
+import { IconAlertTriangle, IconEye, IconRefresh } from '@tabler/icons-react'
 import { useQuery } from '@tanstack/react-query'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -9,7 +9,7 @@ import { can, useMe } from '@/shared/auth/me'
 import { finished, jobError, jobKeys, JobOutcome, type Job } from '@/shared/jobs'
 import { errorText, formatDateTime, formatNumber } from '@/shared/i18n'
 import { DataTable, type Column } from '@/shared/ui/DataTable'
-import { InputRow } from '@/shared/ui/form'
+import { FilterChip } from '@/shared/ui/form'
 import { FormModal, ListPage } from '@/shared/ui/page'
 import { ContentSkeleton, EmptyState, ErrorState } from '@/shared/ui/states'
 import { StatusBadge, type StatusTone } from '@/shared/ui/StatusBadge'
@@ -77,9 +77,9 @@ export default function JobsPage() {
   const columns: Column<Job>[] = [
     { key: 'kind', header: t('core.jobs.kind'), role: 'title', render: (j) => (printed(j) ? t('core.jobs.kind.print') : t(`core.jobs.kind.${j.kind}`, { defaultValue: j.kind })) },
     { key: 'target', header: t('core.jobs.target'), role: 'meta', render: targetName },
-    { key: 'created_at', header: t('core.jobs.created_at'), role: 'meta', render: (j) => formatDateTime(j.created_at, me.timezone) },
-    { key: 'state', header: t('core.jobs.state'), role: 'status', render: (j) => <StatusBadge tone={tone[j.state]}>{t(`core.jobs.state.${j.state}`)}</StatusBadge> },
-    ...(system ? [{ key: 'attempts', header: t('core.jobs.attempts'), role: 'meta' as const, numeric: true, render: (j: Job) => formatNumber(j.attempts) }] : []),
+    { key: 'created_at', header: t('core.jobs.created_at'), role: 'meta', kind: 'date', render: (j) => formatDateTime(j.created_at, me.timezone) },
+    { key: 'state', header: t('core.jobs.state'), role: 'status', kind: 'status', render: (j) => <StatusBadge tone={tone[j.state]}>{t(`core.jobs.state.${j.state}`)}</StatusBadge> },
+    ...(system ? [{ key: 'attempts', header: t('core.jobs.attempts'), role: 'meta' as const, kind: 'number' as const, render: (j: Job) => formatNumber(j.attempts) }] : []),
     { key: 'result', header: t('core.jobs.result'), role: 'meta', render: result },
   ]
 
@@ -93,22 +93,29 @@ export default function JobsPage() {
     <ListPage
       title={t('core.jobs.title')}
       description={t('core.jobs.description')}
+      onClearFilters={system || onlyFailed ? () => setSearch(new URLSearchParams(), { replace: true }) : undefined}
       filters={
         monitor && (
           <>
-            <Select
+            <FilterChip
               label={t('core.jobs.scope')}
+              icon={IconEye}
               data={[
                 { value: 'mine', label: t('core.jobs.scope.mine') },
                 { value: 'system', label: t('core.jobs.scope.system') },
               ]}
               value={system ? 'system' : 'mine'}
               onChange={(v) => filter('scope', v === 'system' ? 'system' : null)}
-              allowDeselect={false}
+              clearable={false}
             />
-            <InputRow>
-              <Checkbox label={t('core.jobs.only_failed')} checked={onlyFailed} onChange={(e) => filter('failed', e.currentTarget.checked ? '1' : null)} />
-            </InputRow>
+            <Button
+              variant={onlyFailed ? 'light' : 'default'}
+              aria-pressed={onlyFailed}
+              leftSection={<IconAlertTriangle {...icon.button} />}
+              onClick={() => filter('failed', onlyFailed ? null : '1')}
+            >
+              {t('core.jobs.only_failed')}
+            </Button>
           </>
         )
       }

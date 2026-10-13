@@ -197,7 +197,7 @@ function SavedLines({ lines }: { lines: Line[] }) {
       columns={[
         { key: 'name', header: t('hrm.contract.line_name_col'), role: 'title', render: (l) => l.name },
         { key: 'kind', header: t('hrm.contract.line_kind_col'), role: 'meta', render: (l) => t(`hrm.contract.line.${l.kind}`) },
-        { key: 'amount', header: t('hrm.contract.line_amount_col'), role: 'meta', numeric: true, render: (l) => formatNumber(l.amount ?? 0) },
+        { key: 'amount', header: t('hrm.contract.line_amount_col'), role: 'meta', kind: 'number', render: (l) => (l.amount == null ? '' : formatNumber(l.amount)) },
         { key: 'taxable', header: t('hrm.contract.line_taxable_col'), role: 'hidden', render: (l) => (l.kind === 'support' ? t(l.taxable ? 'hrm.common.yes' : 'hrm.common.no') : '') },
       ]}
     />

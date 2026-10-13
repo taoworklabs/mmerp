@@ -220,8 +220,9 @@ test.describe('contracts', () => {
     await page.goBack()
     await expect(table.getByRole('row').filter({ hasText: kinds.open }).first()).toBeVisible()
 
-    await page.getByRole('combobox', { name: 'Loại hợp đồng' }).click()
+    await page.getByRole('button', { name: 'Loại hợp đồng' }).click()
     await page.getByRole('option', { name: kinds.open, exact: true }).click()
+    await expect(page.getByRole('button', { name: `Loại hợp đồng: ${kinds.open}` })).toBeVisible()
     await expect(table.getByRole('row').filter({ hasText: kinds.fixed })).toHaveCount(0)
     await expect(table.getByRole('row').filter({ hasText: kinds.open }).first()).toBeVisible()
   })

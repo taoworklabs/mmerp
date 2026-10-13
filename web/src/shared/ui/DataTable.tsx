@@ -1,7 +1,7 @@
 import { Checkbox, Group, Paper, ScrollArea, Stack, Table, Text, UnstyledButton } from '@mantine/core'
-import { useMediaQuery } from '@mantine/hooks'
+import { useElementSize, useMediaQuery } from '@mantine/hooks'
 import { IconArrowDown, IconArrowUp, IconArrowsSort } from '@tabler/icons-react'
-import { Fragment, useRef, type KeyboardEvent, type PointerEvent, type ReactNode, type RefObject } from 'react'
+import { Fragment, useRef, useState, type CSSProperties, type KeyboardEvent, type PointerEvent, type ReactNode, type RefObject } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link, useNavigate } from 'react-router'
 import classes from './DataTable.module.css'
@@ -11,13 +11,18 @@ import { icon } from './theme'
 // Role decides where a column goes on the card list below 1024px.
 export type ColumnRole = 'title' | 'status' | 'meta' | 'hidden'
 
+// Kind is what a column holds; it sets the column's look and width (see looks). The first column
+// keeps the identifier's look whatever its kind.
+export type ColumnKind = 'text' | 'person' | 'code' | 'date' | 'number' | 'status'
+
 export type Column<T> = {
   key: string // also the sort key sent to the API
   header: string
   render: (row: T) => ReactNode
   role: ColumnRole
+  // Left out for text.
+  kind?: ColumnKind
   sortable?: boolean
-  numeric?: boolean
   // Columns sharing a band sit under one heading, the band set off by a rule on its left.
   band?: string
   // A result column (net pay, cost): bold.
@@ -73,6 +78,11 @@ export function DataTable<T>({ columns, rows, rowKey, href, onRowClick, selectio
   const { t } = useTranslation()
   const wide = useMediaQuery('(min-width: 64em)', true)
   const navigate = useNavigate()
+  const [scrolled, setScrolled] = useState(false)
+  // The sticky header's and footer's heights (wrapped titles and bands included) keep the vertical
+  // scrollbar between them.
+  const thead = useElementSize<HTMLTableSectionElement>()
+  const tfoot = useElementSize<HTMLTableSectionElement>()
   const banded = columns.some((c) => c.band)
   const keys = rows.map(rowKey)
   const all = selection && keys.length > 0 && keys.every((k) => selection.selected.has(k))
@@ -80,10 +90,14 @@ export function DataTable<T>({ columns, rows, rowKey, href, onRowClick, selectio
   const head = (n: number) => ({ columns, sort, onSort, onResize, rowSpan: n })
   if (!wide) return <Cards columns={columns} rows={rows} rowKey={rowKey} href={href} menu={menu} label={label} group={group} footer={footer} />
   return (
-    <div className={selection ? classes.selectable : undefined}>
-      <ScrollArea.Autosize type="auto" mah={maxHeight}>
+    <div
+      className={[classes.root, selection && classes.selectable, scrolled && classes.scrolled].filter(Boolean).join(' ')}
+      style={{ '--head-height': `${thead.height}px`, '--foot-height': `${tfoot.height}px` } as CSSProperties}
+    >
+      {/* Without maxHeight the table takes the room its parent gives it, e.g. a list page's frame. */}
+      <ScrollArea.Autosize type="auto" mah={maxHeight ?? '100%'} classNames={{ scrollbar: classes.scrollbar }} onScrollPositionChange={({ x }) => setScrolled(x > 0)}>
         <Table highlightOnHover stickyHeader verticalSpacing={0} className={classes.compact} aria-label={label}>
-          <Table.Thead>
+          <Table.Thead ref={thead.ref}>
             {banded && (
               <Table.Tr>
                 {selection && <SelectAll rowSpan={2} all={!!all} some={!!some} onToggle={() => toggleAll(selection, keys, !!all)} />}
@@ -147,7 +161,7 @@ export function DataTable<T>({ columns, rows, rowKey, href, onRowClick, selectio
                 {group?.total && (
                   <Table.Tr className={classes.totalRow}>
                     {selection && <Table.Td />}
-                    <Cells columns={columns} row={group.total(g.rows, g.name)} />
+                    <Cells columns={columns} row={group.total(g.rows, g.name)} total />
                     {menu && <Table.Td />}
                   </Table.Tr>
                 )}
@@ -155,10 +169,10 @@ export function DataTable<T>({ columns, rows, rowKey, href, onRowClick, selectio
             ))}
           </Table.Tbody>
           {footer !== undefined && (
-            <Table.Tfoot>
+            <Table.Tfoot ref={tfoot.ref}>
               <Table.Tr className={classes.totalRow}>
                 {selection && <Table.Td />}
-                <Cells columns={columns} row={footer} />
+                <Cells columns={columns} row={footer} total />
                 {menu && <Table.Td />}
               </Table.Tr>
             </Table.Tfoot>
@@ -180,9 +194,42 @@ function bandWidth<T>(columns: Column<T>[], i: number) {
   return n
 }
 
+// How each kind looks: tabular figures, the secondary colour, right alignment, and whether it takes
+// its content's width; text shares the room the others leave, so names and figures lead.
+type Look = { tabular?: boolean; secondary?: boolean; right?: boolean; fit: boolean }
+const looks: Record<ColumnKind, Look> = {
+  text: { fit: false },
+  person: { fit: true },
+  code: { tabular: true, secondary: true, fit: true },
+  date: { tabular: true, secondary: true, fit: true },
+  number: { tabular: true, right: true, fit: true },
+  status: { fit: true },
+}
+const look = <T,>(c: Column<T>) => looks[c.kind ?? 'text']
+
+// A column the user has not resized takes its content's width unless it is text; so does the first
+// column, while a text column after it takes the rest.
+function fits<T>(columns: Column<T>[], i: number) {
+  const c = columns[i]
+  if (!c || c.width !== undefined) return false
+  return look(c).fit || (i === 0 && columns.some((o, j) => j > 0 && !look(o).fit))
+}
+
 function cellClass<T>(columns: Column<T>[], i: number) {
   const c = columns[i]
-  return [i === 0 && classes.sticky, c?.numeric && classes.numeric, c?.strong && classes.strong, bandStart(columns, i) && classes.bandStart].filter(Boolean).join(' ') || undefined
+  if (!c) return undefined
+  return (
+    [
+      i === 0 && classes.sticky,
+      look(c).tabular && classes.tabular,
+      i > 0 && look(c).secondary && classes.secondary,
+      fits(columns, i) && classes.fit,
+      c.strong && classes.strong,
+      bandStart(columns, i) && classes.bandStart,
+    ]
+      .filter(Boolean)
+      .join(' ') || undefined
+  )
 }
 
 type HeaderProps<T> = { column: Column<T>; index: number; columns: Column<T>[]; sort?: string; onSort?: (s: string) => void; onResize?: (key: string, width: number) => void; rowSpan?: number }
@@ -190,7 +237,7 @@ type HeaderProps<T> = { column: Column<T>; index: number; columns: Column<T>[]; 
 function Header<T>({ column: c, index, columns, sort, onSort, onResize, rowSpan }: HeaderProps<T>) {
   const ref = useRef<HTMLTableCellElement>(null)
   return (
-    <Table.Th ref={ref} w={c.width} ta={c.numeric ? 'right' : undefined} rowSpan={rowSpan} className={cellClass(columns, index)} aria-sort={sortState(sort, c.key)}>
+    <Table.Th ref={ref} w={c.width} ta={look(c).right ? 'right' : undefined} rowSpan={rowSpan} className={cellClass(columns, index)} aria-sort={sortState(sort, c.key)}>
       {c.sortable && onSort ? <SortButton column={c} sort={sort} onSort={onSort} /> : c.header}
       {onResize && <ResizeHandle column={c} cell={ref} onResize={onResize} />}
     </Table.Th>
@@ -271,22 +318,30 @@ function toggleAll(selection: Selection, keys: (string | number)[], all: boolean
   selection.onChange(next)
 }
 
-function Cells<T>({ columns, row, href, onOpen }: { columns: Column<T>[]; row: T; href?: (row: T) => string; onOpen?: () => void }) {
-  return columns.map((c, i) => (
-    <Table.Td key={c.key} ta={c.numeric ? 'right' : undefined} className={cellClass(columns, i)}>
-      {i === 0 && href ? (
-        <Link to={href(row)} className={classes.idLink}>
-          {c.render(row)}
-        </Link>
-      ) : i === 0 && onOpen ? (
-        <UnstyledButton onClick={onOpen} className={classes.idLink}>
-          {c.render(row)}
-        </UnstyledButton>
-      ) : (
-        c.render(row)
-      )}
-    </Table.Td>
-  ))
+// A zero figure shows "–", and so does an empty cell of a row (a total row leaves it blank), so the
+// eye stops on cells that hold something.
+function Cells<T>({ columns, row, href, onOpen, total }: { columns: Column<T>[]; row: T; href?: (row: T) => string; onOpen?: () => void; total?: boolean }) {
+  return columns.map((c, i) => {
+    const value = c.render(row)
+    const blank = value === '' || value === null || value === undefined
+    const zero = c.kind === 'number' && (value === 0 || value === '0')
+    const shown = zero || (blank && !total) ? <span className={classes.secondary}>–</span> : value
+    return (
+      <Table.Td key={c.key} ta={look(c).right ? 'right' : undefined} className={cellClass(columns, i)}>
+        {i === 0 && href ? (
+          <Link to={href(row)} className={classes.idLink}>
+            {shown}
+          </Link>
+        ) : i === 0 && onOpen ? (
+          <UnstyledButton onClick={onOpen} className={classes.idLink}>
+            {shown}
+          </UnstyledButton>
+        ) : (
+          shown
+        )}
+      </Table.Td>
+    )
+  })
 }
 
 function sortState(sort: string | undefined, key: string) {

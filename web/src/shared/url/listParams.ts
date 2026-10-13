@@ -35,6 +35,14 @@ export function serializeList(p: ListParams, defaults: ListDefaults): URLSearchP
   return out
 }
 
+// FilterBar serves a list's filter bar: whether any filter is off its default, a reset of them
+// all, and the value/onChange pair a filter chip takes for one filter.
+export type FilterBar = {
+  active: boolean
+  clear: () => void
+  bind: (key: string) => { value: string | null; onChange: (value: string | null) => void }
+}
+
 // useListParams keeps list state on the URL. Each change is a history entry, so Back
 // returns to the previous filter, sort or page; changing anything but the page goes to page 1.
 export function useListParams(defaults: ListDefaults) {
@@ -51,5 +59,13 @@ export function useListParams(defaults: ListDefaults) {
     },
     [params, setSearch, stable],
   )
-  return [params, set] as const
+  const filterBar = useMemo<FilterBar>(
+    () => ({
+      active: Object.entries(params.filters).some(([k, v]) => v !== stable.filters[k]),
+      clear: () => set({ filters: stable.filters }),
+      bind: (key) => ({ value: params.filters[key] || null, onChange: (v) => set({ filters: { [key]: v ?? '' } }) }),
+    }),
+    [params, set, stable],
+  )
+  return [params, set, filterBar] as const
 }
