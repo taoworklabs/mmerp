@@ -1,4 +1,5 @@
 import { expect, request, test } from '@playwright/test'
+import { createUser, password, signedInApi } from './api'
 import { admin, signIn, signedIn } from './helpers'
 
 test('wrong password shows the error on the form; the right one opens the app', async ({ page }) => {
@@ -45,8 +46,14 @@ test('a session revoked on the server sends every open tab to the login screen o
   await expect(page).toHaveURL(/\/hrm\/employees$/)
 })
 
-test('changing the language changes the whole interface, menu included', async ({ page }) => {
-  await signedIn(page, '/hrm/overview')
+test('changing the language changes the whole interface, menu included', async ({ page, baseURL }) => {
+  // Its own user: the language is kept on the server, and other files sign in as admin meanwhile.
+  const login = `lang_${Date.now().toString(36)}`
+  await createUser(await signedInApi(baseURL!), login, [{ role: 'hrm.hr', unit: null }])
+  await page.goto('/hrm/overview')
+  await page.getByLabel('Tên đăng nhập').fill(login)
+  await page.getByLabel(/^Mật khẩu/).fill(password)
+  await page.getByRole('button', { name: 'Đăng nhập' }).click()
   const nav = page.getByRole('navigation')
   await expect(nav.getByRole('link', { name: 'Nhân viên' })).toBeVisible()
 

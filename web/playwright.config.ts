@@ -1,9 +1,15 @@
 import { defineConfig, devices } from '@playwright/test'
 
+// m6 removes approval rules other files rely on; m9 checks tenant-wide counts.
+const exclusive = /\/m(6|9)\.spec\.ts$/
+
 export default defineConfig({
   testDir: 'e2e',
-  // Tests share one admin user and change its language, so they run one at a time.
-  workers: 1,
+  // Files run in parallel; each creates its own data under a unique suffix. Tests inside a
+  // file share that data, so they stay in order. More workers starve the one server.
+  workers: 4,
+  // Some tests are a whole user journey; sharing the server, they outgrow the 30 s default.
+  timeout: 60_000,
   forbidOnly: !!process.env.CI,
   reporter: process.env.CI ? 'github' : 'list',
   use: {
@@ -15,7 +21,9 @@ export default defineConfig({
   },
   projects: [
     { name: 'setup', testMatch: /\.setup\.ts$/ },
-    { name: 'chromium', dependencies: ['setup'] },
+    { name: 'chromium', dependencies: ['setup'], testIgnore: exclusive },
+    // Files that change or count tenant-wide state run alone, after the rest.
+    { name: 'exclusive', testMatch: exclusive, dependencies: ['chromium'], workers: 1 },
     // Sample data for a dev database; only with E2E_SEED, so the e2e run never adds it.
     ...(process.env.E2E_SEED ? [{ name: 'seed', testMatch: /\.seed\.ts$/, dependencies: ['setup'] }] : []),
   ],
