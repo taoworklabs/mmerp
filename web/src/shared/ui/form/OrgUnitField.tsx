@@ -5,7 +5,7 @@ import { useController, useFormContext } from 'react-hook-form'
 import { useTranslation } from 'react-i18next'
 import { api, unwrap, type OrgUnit } from '@/shared/api/core'
 import { OrgUnitName } from '../OrgUnitName'
-import { filterWidth, icon } from '../theme'
+import { FilterChip } from './FilterChip'
 import { fieldId } from './Form'
 import { belowError, type Option } from './fields'
 
@@ -59,24 +59,22 @@ export function useOrgUnits({ product, permission }: Scope) {
   })
 }
 
-type SelectProps = Scope & { label: string; value: string | null; onChange: (v: string | null) => void; clearable?: boolean }
+type FilterProps = Scope & { label: string; value: string | null; onChange: (v: string | null) => void }
 
-// OrgUnitSelect is the unbound picker of a list's filter bar: the label names it for
-// assistive technology and shows as the placeholder.
-export function OrgUnitSelect({ product, permission, label, value, onChange, clearable }: SelectProps) {
+// OrgUnitFilter is the org-unit chip of a list's filter bar: the tree, limited to the units where
+// the user has the permission, with a search.
+export function OrgUnitFilter({ product, permission, label, value, onChange }: FilterProps) {
   const { data = [] } = useOrgUnits({ product, permission })
   const tree = useTreeSelect(data)
   return (
-    <Select
-      aria-label={label}
-      placeholder={label}
-      leftSection={<IconSitemap {...icon.text} />}
-      {...tree}
+    <FilterChip
+      label={label}
+      icon={IconSitemap}
+      data={tree.data}
       value={value}
       onChange={onChange}
       searchable
-      clearable={clearable}
-      w={{ base: '100%', md: filterWidth.unit }}
+      renderOption={(option) => tree.renderOption({ option })}
     />
   )
 }

@@ -21,7 +21,7 @@ export function PeriodLocksPage() {
   const locks = useQuery({ queryKey: coreKeys.periodLocks(), queryFn: async () => (await unwrap(api.GET('/period-locks'))) ?? [] })
   const columns: Column<PeriodLock>[] = [
     { key: 'name', header: t('core.period.legal_entity'), role: 'title', render: (l) => l.legal_entity_name },
-    { key: 'locked_until', header: t('core.period.locked_until'), role: 'meta', render: (l) => (l.locked_until ? formatDate(l.locked_until) : t('core.period.open')) },
+    { key: 'locked_until', header: t('core.period.locked_until'), role: 'meta', kind: 'date', render: (l) => (l.locked_until ? formatDate(l.locked_until) : t('core.period.open')) },
   ]
   let body
   if (locks.isPending) body = <ContentSkeleton />

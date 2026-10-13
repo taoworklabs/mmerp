@@ -80,6 +80,8 @@ Description
 1.234 records                                  [50 / page ▾] ‹ 1 2 3 … ›
 ```
 
+From 1024px the page is as tall as the window: the header, the filter bar and the paging bar stay put and only the content scrolls; a table that is the whole content scrolls inside itself under its sticky column headers (`ListPage` and `DataTable` do it). Below 1024px the page scrolls as a whole.
+
 With rows selected, the filter bar row becomes `BulkBar`: `☑ 12 selected  [Action] [Action]  ✕ Clear selection`. Clicking a row outside its link may open the side panel on the right (480px, the list stays usable). Details in `tables.md`.
 
 ### Document detail
@@ -144,7 +146,7 @@ A `ListPage` whose rows open their edit `FormModal` on click (`onRowClick`); "Cr
 Report title                                              [Export]
 Description
 [Period ▾] [Legal entity ▾] [Org unit ▾]
-┌ scroll area ≤ 70% of screen height; header and totals stick ──────┐
+┌ fills the page below the filters; header and totals stick ────────┐
 │ Name │ Income ───────────│ Deductions ─────│ Net                    │
 │      │ Base │ Allow │ OT │ Ins. │ Tax      │                        │
 │ ▸ Group                                                             │
@@ -171,4 +173,4 @@ Selection in the URL (`?item=`); after a decision the next item opens. Below 102
 
 ## Small screens
 
-Below 1024px the templates switch on their own: navigation drawer, tables as cards (each column's `role`), filter drawer, document tabs and bottom action bar, fullscreen modals, top-centre toasts, lines as cards, 44px touch targets. Only self-service flows (own leave and overtime requests, approving) are designed for this size. A screen writes no small-screen layout of its own.
+Below 1024px the templates switch on their own: navigation drawer, tables as cards (each column's `role`), filter chips wrapping under a full-width search box, document tabs and bottom action bar, fullscreen modals, top-centre toasts, lines as cards, 44px touch targets. Only self-service flows (own leave and overtime requests, approving) are designed for this size. A screen writes no small-screen layout of its own.

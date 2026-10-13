@@ -101,10 +101,18 @@ export function formatMoney(n: number): string {
   return new Intl.NumberFormat(intlLocale(i18n.language), { style: 'currency', currency: 'VND', maximumFractionDigits: 0 }).format(n)
 }
 
-// formatMonth shows a month (YYYY-MM) in the user's language: 03/2026.
+// formatMonth names a month (YYYY-MM) in the user's language, for headers and sentences:
+// tháng 03, 2026 in vi, 03/2026 in en. Where months line up (tables, chips) use formatMonthShort.
 export function formatMonth(ym: string | null | undefined): string {
   if (!ym) return ''
   return new Intl.DateTimeFormat(intlLocale(i18n.language), { timeZone: 'UTC', month: '2-digit', year: 'numeric' }).format(new Date(`${ym}-01T00:00:00Z`))
+}
+
+// formatMonthShort shows a month as 08/2026 in every language, so months line up in tables and
+// filter chips.
+export function formatMonthShort(ym: string | null | undefined): string {
+  if (!ym) return ''
+  return `${ym.slice(5, 7)}/${ym.slice(0, 4)}`
 }
 
 // formatDateTime shows an instant in the tenant time zone: 31/03/2026 14:05.

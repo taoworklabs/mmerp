@@ -28,9 +28,9 @@ export const readingWidth = 480
 
 // Page is the frame every page template builds on: header (breadcrumbs, title, at most one
 // primary action), then content.
-export function Page({ children, ...header }: PageHeaderProps & { children: ReactNode }) {
+export function Page({ children, className, ...header }: PageHeaderProps & { children: ReactNode; className?: string }) {
   return (
-    <Stack gap="lg" {...pageFrame}>
+    <Stack gap="lg" {...pageFrame} className={className}>
       <PageHeader {...header} />
       {children}
     </Stack>

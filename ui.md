@@ -4,7 +4,7 @@ Mandatory rules for every screen. **Agents and people must read this document be
 
 Sources of truth in code:
 
-- `web/src/shared/ui/theme.ts`: every colour, font size, spacing and radius. Sizes specific to one component (table row height, 44px touch target) live in its CSS module in `shared/ui`; areas set no other value apart from the width of a filter input.
+- `web/src/shared/ui/theme.ts`: every colour, font size, spacing and radius. Sizes specific to one component (table row height, 44px touch target) live in its CSS module in `shared/ui`; areas set no size apart from the column widths of a lines table.
 - `web/src/shared/ui/`: page templates and components. New screens are **assembled from what already exists here**.
 - The `/dev/ui` page, dev build only: shows every page template and component in every state. When unsure what to use, open this page first.
 
@@ -30,7 +30,7 @@ Below 1024px, page templates switch layout on their own. Areas do not write thei
 | Part | Below 1024px |
 | --- | --- |
 | Navigation bar | Hidden behind a menu button in the header, opens as a drawer |
-| `ListPage` | The table becomes a list of cards. Each `DataTable` column declares its role: `title` (first line of the card), `status`, `meta` (secondary line) or `hidden` (not shown on the card). The filter bar collapses into a "Lọc" (Filter) button that opens a drawer |
+| `ListPage` | The table becomes a list of cards. Each `DataTable` column declares its role: `title` (first line of the card), `status`, `meta` (secondary line) or `hidden` (not shown on the card). The search box takes a whole line and the filter chips wrap under it; saved views and columns are not offered |
 | `DocumentPage` | One column. The side column's content (approval, attachments, discussion, history) becomes tabs under the page header: "Chi tiết · Duyệt · Đính kèm · Trao đổi · Lịch sử" (Details · Approval · Attachments · Discussion · History). Action buttons become a bar fixed to the bottom of the screen |
 | `InboxPage` | Switches from two columns to list → detail: the list fills the screen; picking an item opens its detail full screen, with a back button. The browser's Back button also returns to the list |
 | `FormModal` | Full screen |
@@ -52,17 +52,17 @@ All of them live in `theme.ts`. Area code uses only token names or Mantine props
 | `text-secondary` (`dimmed`) | `#505258` | Secondary labels, captions, column headers |
 | `placeholder` | `#6B6E76` | Placeholders only |
 | `border` | `#0B120E24` (translucent) | Table borders, frames, dividers, outlined buttons |
-| input border | `#B4B7BD` | Edges of inputs, checkboxes, radios and inline edit; a list's filter bar uses `border` like the tool buttons beside it |
+| input border | `#B4B7BD` | Edges of inputs, checkboxes, radios and inline edit; a list's search box uses `border` like the filter chips and tool buttons beside it |
 | `background` | `#FFFFFF` | App background and content area |
 | `surface` | `#FFFFFF` | Background of tables, forms, cards |
-| `surface-sunken` | `#F8F8F8` | Background of group and total rows, tile hover, cells that take no value |
+| `surface-sunken` | `#F8F8F8` | Background of the table header row, group and total rows, tile hover, cells that take no value |
 | `success` | Green, `#5B7F24` | Posted status, success notifications |
 | `warning` | Orange, `#BD5B00` | Pending approval status, warnings |
 | `danger` | Red `#C9372C` (text `#AE2E24`) | Errors, destructive actions, cancelled status |
 | `info` | Blue, same as `primary` | Neutral information |
 | `discovery` | Purple `#964AC0` | Marks something new or in beta; nothing else |
 
-Each colour is a ten-step scale in `theme.ts`. Tinted badges, alerts and selected items use its palest step behind and its step 7 for text.
+Each colour is a ten-step scale in `theme.ts`. Alerts and selected items use its palest step behind and its step 7 for text; badges use step 1 behind (neutral: step 2) and step 8 for text, so statuses stand out in a column of rows. `theme.ts` applies it.
 
 Body text must have a contrast ratio of at least 4.5:1 against its background. Colour is never the only signal: a status always comes with text, an error always comes with text and an icon.
 
@@ -85,7 +85,7 @@ A document type may change the **label**, never the colour, through the translat
 - Base font size **14px** for tables, forms and content. Minimum 12px, reserved for captions, column headers and badges. Lines sit on a 4px grid: 12/16, 14/20, 16/24.
 - Page title 24px, weight 650. Section title 16px, sub-section 14px, weight 650. No more than three heading levels on a page.
 - Field label 12px, weight 600, colour `text-secondary`: a label is lighter than the value it names.
-- Every number and money column uses `font-variant-numeric: tabular-nums`, so digits line up.
+- Every number, money, code and date column uses `font-variant-numeric: tabular-nums`, so digits line up.
 
 ### Spacing, radius, shadow
 
@@ -153,7 +153,7 @@ General rules:
 
 Use `<DataTable>` from `shared/ui`, not Mantine's `Table` directly.
 
-- Rows are 40px tall. Tables are unframed. The column header row has no background: 12px text in `text-secondary` over a rule. A long table scrolls with the page and the column headers do not stick yet; when needed, cap the table's height so the headers stick inside its scroll area.
+- Rows are 40px tall. Tables are unframed. The column header row sits on the sunken tone (`#F8F8F8`): 12px text in `text-secondary` over a rule. From 1024px a list page is exactly as tall as the window: its header, filter bar and paging bar stay in place and only the content below the filters scrolls; a table that is the whole content scrolls inside itself, under its column headers, which stick. Scrollbars are thin (8px); a table's vertical scrollbar runs between its sticky header and footer, never behind them.
 - The first column is the identifier (document number, full name with avatar), weight 500 in the main text colour, underlined on hover. The whole row is clickable; the link is a real `<a>` tag, so middle-click or Ctrl+click opens a new tab.
 - Numbers and money are right-aligned and use `tabular-nums`. Text is left-aligned. Dates are left-aligned.
 - The status column uses `<DocumentStatus>` for documents and `<StatusBadge>` (tinted badge, 4px radius, sentence case) for master data, e.g. employees who are active or have left.
@@ -163,11 +163,12 @@ Use `<DataTable>` from `shared/ui`, not Mantine's `Table` directly.
 - A list whose records are often checked without being changed may open a read-only side panel on row click (`SidePanel`, 480px, not modal, `?peek=` on the URL) with a link to the full page; the identifier link still opens the page.
 - Users keep their own saved views (a named filter and sort) and column choices (show/hide, width) per list, on the server (`useListView`, [ADR-0031](./docs/adr/0031-personal-list-views.md)); the identifier column always shows.
 - A multi-select column exists only when the screen has bulk actions. When rows are selected, the bulk action bar (`BulkBar`) replaces the filter bar; a bulk action runs as a job and is confirmed with the count.
-- Filter inputs take one width per kind (`filterWidth`: search 280, select 200, org unit or legal entity 240, month 160, year 120).
-- A wide table scrolls horizontally inside its own scroll area, never making the whole page scroll horizontally. The identifier column sticks to the left while scrolling horizontally and does not wrap.
+- **Filter bar:** the search box, then one filter chip per filter (`FilterChip`, `OrgUnitFilter`, `MonthFilter`, `YearFilter`), then saved views and columns at the right end. A chip is a `default` button named after the filter, with the 18px icon of a page-level button; once set it reads "Trạng thái: Đã duyệt" (Status: Approved), tinted, with its own ✕ (with a tooltip). A filter that always holds a value (a legal entity, a year) keeps the plain look and has no ✕; an on/off filter is a button that turns tinted while on. While any filter is set, "Xóa bộ lọc" (Clear filters, a `default` button) ends the chips and resets them all. When the bar is full the search box narrows first and the chips wrap to a second line; below 1024px the search box takes a line of its own and the chips wrap under it, with no drawer. Areas set no filter width.
+- **Columns declare what they hold** (`kind`), and the table sets their look and width from it: `text` (names of things, types; the main colour; shares the room left), `person` (avatar and name), `code` (document numbers, codes, logins, phones) and `date` (dates and periods, months as 08/2026) in `text-secondary` with tabular figures, `number` (right-aligned, tabular), `status` (the badge). All but `text` (the default, left out) take their content's width, so the names and figures lead and the table does not spread its columns evenly; the identifier also takes its content's width while a `text` column after it takes the rest. The identifier keeps weight 500 in the main colour whatever its kind, linked or not. A zero figure and an empty cell show "–" in `text-secondary`.
+- A wide table scrolls horizontally inside its own scroll area, never making the whole page scroll horizontally. The identifier column sticks to the left while scrolling horizontally and does not wrap; the rule on its right edge shows only while columns slide under it.
 - **Reconciliation tables** (many number columns, e.g. payroll):
   - Columns are grouped by meaning (income, insurance, tax…): two-level headers, each group starting with a vertical line. Result columns (net pay, cost) go last, in bold.
-  - The table's scroll area is at most 70% of the screen tall, so the column headers stick to its top and the totals row sticks to the bottom.
+  - The column headers stick to the top of the table's scroll area and the totals row to its bottom: in a list page the page's frame bounds that area; on a document page it is at most 70% of the screen tall (`maxHeight`).
   - Zero is shown as "–" in the secondary colour, so the eye stops on cells that hold numbers.
   - A group's total row says only "Tổng" (Total); the group's name is already on the group's first row.
 
@@ -177,7 +178,7 @@ Use the fields of `shared/ui/form`, already wired to React Hook Form.
 
 - **Labels always sit above the input** and are always visible. Placeholders never replace labels. Required fields have a `*`. Help text sits below the input.
 - Layout: split into sections (`FormSection`) with a title, a one-sentence description and an optional icon; sections are separated by thin dividers, unframed. From 1280px, the title and description sit in the left column and the fields in the right column, laid out in two columns; long text fields span the whole row.
-- **A list's filter bar** is the only exception to the label rule: its inputs line up as a compact toolbar, each input's name shown as the placeholder and attached with `aria-label`, with an icon. They look like the `default` buttons beside them (saved views, columns): the light `border` edge, 500 weight, the same hover tint; `ListPage` applies it. Every data-entry form still has visible labels above.
+- **A list's filter bar** is the only exception to the label rule: the search box's name is its placeholder, attached with `aria-label`, with an icon, and each filter is a chip that carries its own name ("Trạng thái", then "Trạng thái: Đã duyệt"). The search box looks like the `default` buttons beside it: the light `border` edge, 500 weight, the same hover tint; `ListPage` applies it. Every data-entry form still has visible labels above.
 - **Validation:** validate on leaving a field and on submit. The error appears right under the field, linked to the input with `aria-describedby`, and does not repeat the field name because the label is right above ("Chưa nhập" (Not entered), not "Nhập Mã nhân viên" (Enter Employee code)). On failed submit there is no summary box at the top of the form: focus and scroll to the first invalid field; next to the submit button a `role="alert"` line "Còn N trường cần sửa · Đến trường tiếp theo" (N fields to fix · Go to next field) cycles through the invalid fields and disappears when no errors remain; the title of each `FormSection` with errors carries that section's error count. `Form`, `FormActions` and `FormSection` do this already.
 - **Server errors** that name a field are attached to that field; document-level errors (e.g. `period_locked`) show as a banner at the top of the page.
 - Leaving the page with unsaved changes asks for confirmation.
@@ -210,8 +211,8 @@ What `shared/ui` already has (see also `/dev/ui`), to use before building your o
 - Actions and feedback: `useConfirm` (confirmation dialog), `notifySuccess`/`notifyError` (`notify.ts`).
 - States (`states.tsx`): `EmptyState`, `ErrorState`, `PageSkeleton`, `ContentSkeleton`, `ForbiddenPage`, `NotFoundPage`, `ReadOnlyBanner`.
 - Display: `DataTable`, `FieldList`, `StatusBadge`, `CellGrid` (grid of inputs along two axes, like a timesheet), `TileGrid`/`StatTile`/`LinkTile`, `OrgUnitName`, `PersonName`/`PersonAvatar`.
-- Forms (`shared/ui/form`): `Form`, `FormSection`, `InputRow`, `FormActions`; fields `TextField`, `PasswordField`, `CheckboxField`, `DateField`, `MonthField`, `FileField`, `SelectField`, `DecimalField`, `MoneyField`, `SensitiveField`, `OrgUnitField`/`OrgUnitSelect`; filters `SearchInput`, `MonthFilter`.
-- Outside `shared/ui`: `useListParams` (`shared/url`: filters, sort, page in the URL), `ExportButton`/`ImportDialog` (`shared/jobs`), `OrgTree` (`shared/org`).
+- Forms (`shared/ui/form`): `Form`, `FormSection`, `InputRow`, `FormActions`; fields `TextField`, `PasswordField`, `CheckboxField`, `DateField`, `MonthField`, `FileField`, `SelectField`, `DecimalField`, `MoneyField`, `SensitiveField`, `OrgUnitField`; filters `SearchInput`, `FilterChip`, `OrgUnitFilter`, `MonthFilter`, `YearFilter`.
+- Outside `shared/ui`: `useListParams` (`shared/url`: filters, sort, page in the URL, and the `filterBar` a filter bar binds its chips to), `ExportButton`/`ImportDialog` (`shared/jobs`), `OrgTree` (`shared/org`).
 
 - Area components are **assembled from `shared/ui` primitives** and follow exactly the rules of this document: no custom colours, no inline `style`, no page-level layout of their own.
 - When an area needs a generic display pattern that `shared/ui` lacks (e.g. a new kind of input, a new state), add it to `shared/ui`, with an entry on `/dev/ui`, rather than building it inside the area.

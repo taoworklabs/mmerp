@@ -1,4 +1,4 @@
-import { Alert, Button, Menu, Select, Stack, Text } from '@mantine/core'
+import { Alert, Button, Menu, Stack, Text } from '@mantine/core'
 import { IconAlertCircle, IconBuildingSkyscraper, IconPencil, IconPlus, IconTrash } from '@tabler/icons-react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
@@ -9,12 +9,12 @@ import { useMe } from '@/shared/auth/me'
 import { currentYear, errorText, formatDate } from '@/shared/i18n'
 import { useConfirm } from '@/shared/ui/confirm'
 import { DataTable, type Column } from '@/shared/ui/DataTable'
-import { CheckboxField, DateField, Form, FormActions, TextField, useOrgUnits, YearSelect } from '@/shared/ui/form'
+import { CheckboxField, DateField, FilterChip, Form, FormActions, TextField, useOrgUnits, YearFilter } from '@/shared/ui/form'
 import { notifySuccess } from '@/shared/ui/notify'
 import { FormModal, ListPage } from '@/shared/ui/page'
 import { ContentSkeleton, EmptyState, ErrorState } from '@/shared/ui/states'
 import { Section } from '@/shared/ui/Section'
-import { filterWidth, icon } from '@/shared/ui/theme'
+import { icon } from '@/shared/ui/theme'
 import { useListParams } from '@/shared/url/listParams'
 import { hrmKeys } from '../keys'
 
@@ -59,11 +59,11 @@ export function WorkCalendarPage() {
   }
 
   const weekColumns: Column<WorkWeek>[] = [
-    { key: 'from', header: t('hrm.calendar.effective_from'), role: 'title', render: (w) => formatDate(w.effective_from) },
+    { key: 'from', header: t('hrm.calendar.effective_from'), role: 'title', kind: 'date', render: (w) => formatDate(w.effective_from) },
     { key: 'off', header: t('hrm.calendar.off_days'), role: 'meta', render: days },
   ]
   const holidayColumns: Column<Holiday>[] = [
-    { key: 'date', header: t('hrm.calendar.date'), role: 'title', render: (h) => formatDate(h.date) },
+    { key: 'date', header: t('hrm.calendar.date'), role: 'title', kind: 'date', render: (h) => formatDate(h.date) },
     { key: 'name', header: t('hrm.calendar.name'), role: 'meta', render: (h) => h.name },
   ]
 
@@ -166,17 +166,15 @@ export function WorkCalendarPage() {
       }
       filters={
         <>
-          <Select
-            aria-label={t('hrm.calendar.legal_entity')}
-            placeholder={t('hrm.calendar.legal_entity')}
-            leftSection={<IconBuildingSkyscraper {...icon.text} />}
-            w={{ base: '100%', md: filterWidth.unit }}
+          <FilterChip
+            label={t('hrm.calendar.legal_entity')}
+            icon={IconBuildingSkyscraper}
             data={entities.map((u) => ({ value: String(u.id), label: u.name }))}
             value={entity ? String(entity) : null}
             onChange={(v) => set({ filters: { legal_entity: v ?? '' } })}
-            allowDeselect={false}
+            clearable={false}
           />
-          <YearSelect label={t('hrm.calendar.year')} value={year} years={[thisYear - 1, thisYear, thisYear + 1]} onChange={(y) => set({ filters: { year: String(y) } })} />
+          <YearFilter label={t('hrm.calendar.year')} value={year} years={[thisYear - 1, thisYear, thisYear + 1]} onChange={(y) => set({ filters: { year: String(y) } })} />
         </>
       }
     >

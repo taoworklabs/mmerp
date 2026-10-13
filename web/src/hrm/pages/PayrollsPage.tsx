@@ -1,4 +1,4 @@
-import { Button, Select } from '@mantine/core'
+import { Button } from '@mantine/core'
 import { IconBuildingSkyscraper, IconCircleDot, IconPlus } from '@tabler/icons-react'
 import { keepPreviousData, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
@@ -7,13 +7,13 @@ import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router'
 import { api, unwrap, type PayrollListItem } from '@/shared/api/hrm'
 import { DocumentStatus, useStatusLabel } from '@/shared/document'
-import { errorText, formatMonth } from '@/shared/i18n'
+import { errorText, formatMonthShort } from '@/shared/i18n'
 import { DataTable, type Column } from '@/shared/ui/DataTable'
-import { Form, FormActions, MonthField, MonthFilter, SelectField, useOrgUnits } from '@/shared/ui/form'
+import { FilterChip, Form, FormActions, MonthField, MonthFilter, SelectField, useOrgUnits } from '@/shared/ui/form'
 import { notifySuccess } from '@/shared/ui/notify'
 import { FormModal, ListPage } from '@/shared/ui/page'
 import { ContentSkeleton, EmptyState, ErrorState } from '@/shared/ui/states'
-import { filterWidth, icon } from '@/shared/ui/theme'
+import { icon } from '@/shared/ui/theme'
 import { useListParams } from '@/shared/url/listParams'
 import { usePayrollActions } from '../hooks/usePayroll'
 import { hrmKeys, payrollDocType } from '../keys'
@@ -33,7 +33,7 @@ export function PayrollsPage() {
   const canCreate = usePayrollActions().data?.includes('create') ?? false
   const entities = useLegalEntities('hrm.payroll.view')
   const [creating, setCreating] = useState(false)
-  const [params, set] = useListParams(defaults)
+  const [params, set, filterBar] = useListParams(defaults)
   const { month, legal_entity_id, status } = params.filters as typeof defaults.filters
   const query = { month, legal_entity_id, status, page: params.page, pageSize: params.pageSize }
   const list = useQuery({
@@ -56,22 +56,21 @@ export function PayrollsPage() {
   })
 
   const columns: Column<PayrollListItem>[] = [
-    { key: 'number', header: t('hrm.payroll.number'), role: 'title', render: (p) => p.number },
+    { key: 'number', header: t('hrm.payroll.number'), role: 'title', kind: 'code', render: (p) => p.number },
     { key: 'legal_entity', header: t('hrm.payroll.legal_entity'), role: 'meta', render: (p) => p.legal_entity_name },
-    { key: 'month', header: t('hrm.payroll.month'), role: 'meta', render: (p) => formatMonth(p.period_start.slice(0, 7)) },
-    { key: 'status', header: t('hrm.payroll.status'), role: 'status', render: (p) => <DocumentStatus docType={payrollDocType} status={p.status} /> },
+    { key: 'month', header: t('hrm.payroll.month'), role: 'meta', kind: 'date', render: (p) => formatMonthShort(p.period_start.slice(0, 7)) },
+    { key: 'status', header: t('hrm.payroll.status'), role: 'status', kind: 'status', render: (p) => <DocumentStatus docType={payrollDocType} status={p.status} /> },
   ]
 
-  const filtered = month !== '' || legal_entity_id !== '' || status !== ''
   let body
   if (list.isPending) body = <ContentSkeleton />
   else if (list.isError) body = <ErrorState message={errorText(t, list.error)} onRetry={() => void list.refetch()} />
   else if (list.data.items.length === 0)
-    body = filtered ? (
+    body = filterBar.active ? (
       <EmptyState
         title={t('hrm.payrolls.no_results')}
         action={
-          <Button variant="default" onClick={() => set({ filters: defaults.filters })}>
+          <Button variant="default" onClick={filterBar.clear}>
             {t('hrm.common.clear_filters')}
           </Button>
         }
@@ -92,29 +91,22 @@ export function PayrollsPage() {
           </Button>
         )
       }
+      onClearFilters={filterBar.active ? filterBar.clear : undefined}
       filters={
         <>
-          <Select
-            aria-label={t('hrm.payroll.legal_entity')}
-            placeholder={t('hrm.payroll.legal_entity')}
-            leftSection={<IconBuildingSkyscraper {...icon.text} />}
-            w={{ base: '100%', md: filterWidth.unit }}
+          <FilterChip
+            label={t('hrm.payroll.legal_entity')}
+            icon={IconBuildingSkyscraper}
             data={entities}
-            value={legal_entity_id || null}
-            onChange={(v) => set({ filters: { legal_entity_id: v ?? '' } })}
-            clearable
+            {...filterBar.bind('legal_entity_id')}
           />
-          <Select
-            aria-label={t('hrm.payroll.status')}
-            leftSection={<IconCircleDot {...icon.text} />}
-            w={{ base: '100%', md: filterWidth.select }}
+          <FilterChip
+            label={t('hrm.payroll.status')}
+            icon={IconCircleDot}
             data={statuses.map((s) => ({ value: s, label: statusLabel(payrollDocType, s) }))}
-            value={status || null}
-            onChange={(v) => set({ filters: { status: v ?? '' } })}
-            placeholder={t('hrm.payroll.status')}
-            clearable
+            {...filterBar.bind('status')}
           />
-          <MonthFilter label={t('hrm.payroll.month')} value={month || null} onChange={(v) => set({ filters: { month: v ?? '' } })} />
+          <MonthFilter label={t('hrm.payroll.month')} {...filterBar.bind('month')} />
         </>
       }
       paging={

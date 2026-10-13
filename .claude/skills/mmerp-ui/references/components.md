@@ -112,7 +112,7 @@ Every field is wired to React Hook Form and renders: label above (12px, 600, `di
 | `IntegerField` | A whole number without digit grouping (port, year, levels) |
 | `FileField` | One file |
 | `SensitiveField` | Masked value with Show/Hide; reveal is audited |
-| `OrgUnitField`, `OrgUnitSelect` | An org unit within the user's scope |
+| `OrgUnitField` | An org unit within the user's scope |
 
 Every field takes `bare` for a table cell: no visible label (kept as `aria-label`), no description, numbers right-aligned without spin buttons.
 
@@ -127,14 +127,14 @@ Every field takes `bare` for a table cell: no visible label (kept as `aria-label
 | `LinesTotals` | Totals under the lines, right-aligned, the last row bold, with a `note` on where the figures come from |
 | `InlineEditField` | One value of a record page that turns into an input on click/Enter; Enter or ✓ saves, Esc or ✕ cancels, blur keeps it open; `readOnly` without permission |
 
-Filter inputs (`SearchInput`, `MonthFilter`, `YearSelect`, `OrgUnitSelect`, a plain `Select`) carry their name as placeholder plus `aria-label`, a 16px leading icon, and a width from `filterWidth` (`tables.md`).
+A list's filter bar holds `SearchInput` and filter chips: `FilterChip` (options from `data`; `icon` is the icon component, the chip sizes it; `searchable`; `clearable={false}` for a filter that always holds a value), `OrgUnitFilter`, `MonthFilter`, `YearFilter`. A chip is named after its filter and reads "Name: value", tinted with its own ✕ (with a tooltip), once set; `{...filterBar.bind(key)}` from `useListParams` wires one to the URL; areas set no width (`tables.md`).
 
 ## Data display
 
 | Component | Use |
 | --- | --- |
-| `DataTable` | Every table. Columns declare `role` (`title`, `status`, `meta`, `hidden`), `numeric`, `sortable`, `band`, `strong`, `width`. Unframed; rows 40px, header 36px with no fill over a rule, row hover tint, cards below 1024px. Props: `href` (first column links the row), `onRowClick` (side panel, settings modal), `menu` (row "…"), `selection` (checkbox column), `onResize` (drag or ←/→ on a column edge), `group`, `footer`, `maxHeight`. Rules in `tables.md` |
-| `ListPage` | `filters` (left), `tools` (right: `useListView().tools`), `bulk` (replaces the bar while rows are selected), `paging` |
+| `DataTable` | Every table. Columns declare `role` (`title`, `status`, `meta`, `hidden`), `kind` (`text`, the default, `person`, `code`, `date`, `number`, `status`: look and width), `sortable`, `band`, `strong`, `width`; a zero figure or an empty cell shows "–". Unframed; rows 40px, header 36px on the sunken tone over a rule, row hover tint, cards below 1024px. Props: `href` (first column links the row), `onRowClick` (side panel, settings modal), `menu` (row "…"), `selection` (checkbox column), `onResize` (drag or ←/→ on a column edge), `group`, `footer`, `maxHeight` (without it the table takes the height its parent gives, e.g. a list page's frame). Rules in `tables.md` |
+| `ListPage` | `filters` (left), `onClearFilters` (given while a filter is set: "Clear filters" ends the chips), `tools` (right: `useListView().tools`), `bulk` (replaces the bar while rows are selected), `paging`. From 1024px it fills the window and only its content scrolls |
 | `useListView(listKey, columns)` | The user's saved views and column choices for a list, stored on the server; returns `columns`, `onResize`, `tools` |
 | `BulkBar` | "N selected", the bulk actions (children), Clear selection |
 | `SidePanel` + `usePeek` | Read-only preview of a list row on the right, 480px, not modal, with "Open full page"; the open id on the URL (`?peek=`) |

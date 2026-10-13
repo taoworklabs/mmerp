@@ -1,4 +1,4 @@
-import { Button, Select } from '@mantine/core'
+import { Button } from '@mantine/core'
 import { IconCircleDot, IconPlus } from '@tabler/icons-react'
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
@@ -6,11 +6,11 @@ import { Link } from 'react-router'
 import { api, unwrap, type CustomerListItem, type CustomerSort } from '@/shared/api/sales'
 import { errorText } from '@/shared/i18n'
 import { DataTable, type Column } from '@/shared/ui/DataTable'
-import { SearchInput } from '@/shared/ui/form'
+import { FilterChip, SearchInput } from '@/shared/ui/form'
 import { ListPage } from '@/shared/ui/page'
 import { ContentSkeleton, EmptyState, ErrorState } from '@/shared/ui/states'
 import { useListView } from '@/shared/ui/ListView'
-import { filterWidth, icon } from '@/shared/ui/theme'
+import { icon } from '@/shared/ui/theme'
 import { useListParams } from '@/shared/url/listParams'
 import { CustomerStatus } from '../components/CustomerStatus'
 import { useCustomerActions } from '../hooks/useSales'
@@ -23,7 +23,7 @@ const defaults = { filters: { q: '', active: '' }, sort: 'code', sorts: [...sort
 export function CustomersPage() {
   const { t } = useTranslation()
   const canCreate = useCustomerActions().data?.includes('create') ?? false
-  const [params, set] = useListParams(defaults)
+  const [params, set, filterBar] = useListParams(defaults)
   const { q, active } = params.filters as typeof defaults.filters
   const query = { q, active, sort: params.sort, page: params.page, pageSize: params.pageSize }
   const list = useQuery({
@@ -47,11 +47,11 @@ export function CustomersPage() {
 
   const columns: Column<CustomerListItem>[] = [
     { key: 'name', header: t('sales.customer.name'), role: 'title', sortable: true, render: (c) => c.name },
-    { key: 'code', header: t('sales.customer.code'), role: 'meta', sortable: true, render: (c) => c.code },
-    { key: 'tax_code', header: t('sales.customer.tax_code'), role: 'hidden', render: (c) => c.tax_code ?? '' },
-    { key: 'phone', header: t('sales.customer.phone'), role: 'hidden', render: (c) => c.phone ?? '' },
+    { key: 'code', header: t('sales.customer.code'), role: 'meta', kind: 'code', sortable: true, render: (c) => c.code },
+    { key: 'tax_code', header: t('sales.customer.tax_code'), role: 'hidden', kind: 'code', render: (c) => c.tax_code ?? '' },
+    { key: 'phone', header: t('sales.customer.phone'), role: 'hidden', kind: 'code', render: (c) => c.phone ?? '' },
     { key: 'org_unit', header: t('sales.customer.org_unit'), role: 'meta', render: (c) => c.org_unit_name },
-    { key: 'active', header: t('sales.customer.status'), role: 'status', render: (c) => <CustomerStatus active={c.active} /> },
+    { key: 'active', header: t('sales.customer.status'), role: 'status', kind: 'status', render: (c) => <CustomerStatus active={c.active} /> },
   ]
   const view = useListView('sales.customers', columns)
 
@@ -60,11 +60,11 @@ export function CustomersPage() {
   else if (list.isError) body = <ErrorState message={errorText(t, list.error)} onRetry={() => void list.refetch()} />
   else if (list.data.items.length === 0)
     body =
-      q !== '' || active !== '' ? (
+      filterBar.active ? (
         <EmptyState
           title={t('sales.common.no_results')}
           action={
-            <Button variant="default" onClick={() => set({ filters: defaults.filters })}>
+            <Button variant="default" onClick={filterBar.clear}>
               {t('sales.common.clear_filters')}
             </Button>
           }
@@ -97,6 +97,7 @@ export function CustomersPage() {
           </Button>
         )
       }
+      onClearFilters={filterBar.active ? filterBar.clear : undefined}
       filters={
         <>
           <SearchInput
@@ -105,18 +106,14 @@ export function CustomersPage() {
             value={q}
             onSearch={(v) => set({ filters: { q: v } })}
           />
-          <Select
-            aria-label={t('sales.customer.status')}
-            leftSection={<IconCircleDot {...icon.text} />}
-            w={{ base: '100%', md: filterWidth.select }}
+          <FilterChip
+            label={t('sales.customer.status')}
+            icon={IconCircleDot}
             data={[
               { value: 'true', label: t('sales.customer.status.active') },
               { value: 'false', label: t('sales.customer.status.inactive') },
             ]}
-            value={active || null}
-            onChange={(v) => set({ filters: { active: v ?? '' } })}
-            placeholder={t('sales.customer.status')}
-            clearable
+            {...filterBar.bind('active')}
           />
         </>
       }

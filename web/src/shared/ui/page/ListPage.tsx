@@ -1,30 +1,32 @@
-import { Button, Drawer, Group, Pagination, Select, Stack, Text } from '@mantine/core'
-import { useDisclosure, useMediaQuery } from '@mantine/hooks'
-import { IconFilter } from '@tabler/icons-react'
+import { Button, Group, Pagination, Select, Text } from '@mantine/core'
+import { useMediaQuery } from '@mantine/hooks'
 import type { ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { formatNumber } from '@/shared/i18n'
 import { pageSizes } from '@/shared/url/listParams'
-import { icon } from '../theme'
 import classes from './ListPage.module.css'
 import { Page, type PageHeaderProps } from './Page'
 
 type Paging = { page: number; pageSize: number; total: number; onPage: (page: number) => void; onPageSize: (size: number) => void }
 
-// ListPage: title and the create button, a filter bar, the table, then paging.
-// Below 1024px the filter bar moves into a drawer behind a "Filter" button. tools (saved views,
-// columns) sit at the bar's right end; bulk, while rows are selected, takes the whole bar's place.
+// ListPage: title and the create button, a filter bar, the table, then paging. The filter bar's
+// chips wrap onto more lines when they do not fit; tools (saved views, columns) sit at its right end
+// from 1024px; bulk, while rows are selected, takes the whole bar's place. From 1024px the page fills
+// the window and only its content scrolls.
 export function ListPage({
   action,
   filters,
   tools,
   bulk,
   paging,
+  onClearFilters,
   children,
   ...header
 }: Omit<PageHeaderProps, 'actions' | 'leading'> & {
   action?: ReactNode
   filters?: ReactNode
+  // Given while any filter is set: a "Clear filters" button ends the bar.
+  onClearFilters?: () => void
   tools?: ReactNode
   bulk?: ReactNode
   paging?: Paging
@@ -32,36 +34,24 @@ export function ListPage({
 }) {
   const { t } = useTranslation()
   const wide = useMediaQuery('(min-width: 64em)', true)
-  const [open, { toggle, close }] = useDisclosure()
   return (
-    <Page {...header} actions={action}>
-      {wide && bulk ? (
-        bulk
-      ) : wide && (filters || tools) ? (
-        <Group gap="xs" align="flex-end" justify="space-between" wrap="nowrap">
-          <Group gap="xs" align="flex-end" role="search" className={classes.filters}>
-            {filters}
-          </Group>
-          {tools}
-        </Group>
-      ) : (
-        filters && (
-          <>
-            <Group>
-              <Button variant="default" leftSection={<IconFilter {...icon.button} />} onClick={toggle}>
-                {t('shared.list.filter')}
-              </Button>
-            </Group>
-            <Drawer opened={open} onClose={close} title={t('shared.list.filter')} position="bottom">
-              <Stack gap="sm" role="search" className={classes.filters}>
+    <Page {...header} actions={action} className={wide ? classes.frame : undefined}>
+      {wide && bulk
+        ? bulk
+        : (filters || (wide && tools)) && (
+            <Group gap="xs" align="flex-start" justify="space-between" wrap="nowrap">
+              <Group gap="xs" align="flex-end" flex={1} miw={0} role="search" className={classes.filters}>
                 {filters}
-                <Button onClick={close}>{t('shared.list.apply')}</Button>
-              </Stack>
-            </Drawer>
-          </>
-        )
-      )}
-      {children}
+                {onClearFilters && (
+                  <Button variant="default" onClick={onClearFilters}>
+                    {t('shared.list.clear_filters')}
+                  </Button>
+                )}
+              </Group>
+              {wide && tools}
+            </Group>
+          )}
+      <div className={classes.content}>{children}</div>
       {paging && paging.total > 0 && <PagingBar {...paging} />}
     </Page>
   )

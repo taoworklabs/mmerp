@@ -1,4 +1,4 @@
-import { Button, Select } from '@mantine/core'
+import { Button } from '@mantine/core'
 import { IconCircleDot, IconPlus } from '@tabler/icons-react'
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
@@ -8,12 +8,12 @@ import { DocumentStatus, useStatusLabel } from '@/shared/document'
 import { errorText, formatDate, formatDecimal } from '@/shared/i18n'
 import { PersonName } from '@/shared/ui/avatar'
 import { DataTable, type Column } from '@/shared/ui/DataTable'
-import { MonthFilter, OrgUnitSelect, SearchInput } from '@/shared/ui/form'
+import { FilterChip, MonthFilter, OrgUnitFilter, SearchInput } from '@/shared/ui/form'
 import { useListView } from '@/shared/ui/ListView'
 import { ListPage } from '@/shared/ui/page'
 import { SidePanel, usePeek } from '@/shared/ui/SidePanel'
 import { ContentSkeleton, EmptyState, ErrorState } from '@/shared/ui/states'
-import { filterWidth, icon } from '@/shared/ui/theme'
+import { icon } from '@/shared/ui/theme'
 import { useListParams } from '@/shared/url/listParams'
 import LeavePreview from '../components/LeavePreview'
 import { useLeaveActions } from '../hooks/useLeave'
@@ -29,7 +29,7 @@ export function LeavesPage() {
   const { t } = useTranslation()
   const statusLabel = useStatusLabel()
   const canCreate = useLeaveActions().data?.allowed_actions.includes('create') ?? false
-  const [params, set] = useListParams(defaults)
+  const [params, set, filterBar] = useListParams(defaults)
   const peek = usePeek()
   const { q, status, org_unit, month } = params.filters as typeof defaults.filters
   const query = { q, status, orgUnit: org_unit, month, sort: params.sort, page: params.page, pageSize: params.pageSize }
@@ -55,12 +55,12 @@ export function LeavesPage() {
   })
 
   const columns: Column<LeaveListItem>[] = [
-    { key: 'number', header: t('hrm.leave.number'), role: 'title', sortable: true, render: (l) => l.number },
-    { key: 'employee', header: t('hrm.leave.employee'), role: 'meta', render: (l) => <PersonName name={l.employee_name} /> },
+    { key: 'number', header: t('hrm.leave.number'), role: 'title', kind: 'code', sortable: true, render: (l) => l.number },
+    { key: 'employee', header: t('hrm.leave.employee'), role: 'meta', kind: 'person', render: (l) => <PersonName name={l.employee_name} /> },
     { key: 'type', header: t('hrm.leave.type'), role: 'hidden', render: (l) => l.leave_type_name },
-    { key: 'start_date', header: t('hrm.leave.period'), role: 'meta', sortable: true, render: (l) => `${formatDate(l.start_date)} – ${formatDate(l.end_date)}` },
-    { key: 'days', header: t('hrm.leave.days'), role: 'hidden', numeric: true, render: (l) => formatDecimal(l.days) },
-    { key: 'status', header: t('hrm.leave.status'), role: 'status', render: (l) => <DocumentStatus docType={leaveDocType} status={l.status} /> },
+    { key: 'start_date', header: t('hrm.leave.period'), role: 'meta', kind: 'date', sortable: true, render: (l) => `${formatDate(l.start_date)} – ${formatDate(l.end_date)}` },
+    { key: 'days', header: t('hrm.leave.days'), role: 'hidden', kind: 'number', render: (l) => formatDecimal(l.days) },
+    { key: 'status', header: t('hrm.leave.status'), role: 'status', kind: 'status', render: (l) => <DocumentStatus docType={leaveDocType} status={l.status} /> },
   ]
   const view = useListView('hrm.leaves', columns)
   const open = list.data?.items.find((l) => String(l.id) === peek.id)
@@ -70,11 +70,11 @@ export function LeavesPage() {
   else if (list.isError) body = <ErrorState message={errorText(t, list.error)} onRetry={() => void list.refetch()} />
   else if (list.data.items.length === 0)
     body =
-      q !== '' || status !== '' || org_unit !== '' || month !== '' ? (
+      filterBar.active ? (
         <EmptyState
           title={t('hrm.leaves.no_results')}
           action={
-            <Button variant="default" onClick={() => set({ filters: defaults.filters })}>
+            <Button variant="default" onClick={filterBar.clear}>
               {t('hrm.common.clear_filters')}
             </Button>
           }
@@ -108,28 +108,23 @@ export function LeavesPage() {
           </Button>
         )
       }
+      onClearFilters={filterBar.active ? filterBar.clear : undefined}
       filters={
         <>
           <SearchInput label={t('hrm.leaves.search')} placeholder={t('hrm.common.search_request_hint')} value={q} onSearch={(v) => set({ filters: { q: v } })} />
-          <Select
-            aria-label={t('hrm.leave.status')}
-            placeholder={t('hrm.leave.status')}
-            leftSection={<IconCircleDot {...icon.text} />}
-            w={{ base: '100%', md: filterWidth.select }}
+          <FilterChip
+            label={t('hrm.leave.status')}
+            icon={IconCircleDot}
             data={statuses.map((s) => ({ value: s, label: statusLabel(leaveDocType, s) }))}
-            value={status || null}
-            onChange={(v) => set({ filters: { status: v ?? '' } })}
-            clearable
+            {...filterBar.bind('status')}
           />
-          <OrgUnitSelect
+          <OrgUnitFilter
             product="hrm"
             permission="hrm.leave.view"
             label={t('hrm.common.org_unit')}
-            value={org_unit || null}
-            onChange={(v) => set({ filters: { org_unit: v ?? '' } })}
-            clearable
+            {...filterBar.bind('org_unit')}
           />
-          <MonthFilter label={t('hrm.common.month')} value={month || null} onChange={(v) => set({ filters: { month: v ?? '' } })} />
+          <MonthFilter label={t('hrm.common.month')} {...filterBar.bind('month')} />
         </>
       }
       tools={view.tools}

@@ -1,5 +1,5 @@
 import { Button, Group, Menu, Stack, Text } from '@mantine/core'
-import { IconDownload, IconPlus } from '@tabler/icons-react'
+import { IconCircleDot, IconDownload, IconPlus } from '@tabler/icons-react'
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { useTranslation } from 'react-i18next'
@@ -7,7 +7,7 @@ import { formatNumber } from '@/shared/i18n'
 import { BulkBar } from './BulkBar'
 import { DataTable, type Column } from './DataTable'
 import { FieldList } from './FieldList'
-import { DecimalField, Form, FormActions, FormRow, FormSection, IntegerField, LinesTable, LinesTotals, MoneyField, TextField, YearSelect } from './form'
+import { DecimalField, FilterChip, Form, FormActions, FormRow, FormSection, IntegerField, LinesTable, LinesTotals, MoneyField, MonthFilter, TextField, YearFilter } from './form'
 import { InlineEditField } from './InlineEditField'
 import { useListView } from './ListView'
 import { MoreActions } from './MoreActions'
@@ -30,12 +30,19 @@ export function DevUiPatterns() {
   const [selected, setSelected] = useState<Set<string | number>>(new Set())
   const [name, setName] = useState('Công ty CP Demo')
   const [year, setYear] = useState(2026)
+  const [choice, setChoice] = useState<string | null>('positive')
+  const [month, setMonth] = useState<string | null>('2026-08')
+  const choices = [
+    { value: 'positive', label: t('shared.devui.status_positive') },
+    { value: 'neutral', label: t('shared.devui.status_neutral') },
+    { value: 'long', label: t('shared.devui.long_value') },
+  ]
   const peek = usePeek()
   const form = useForm({ defaultValues: { levels: 2, lines: [{ description: 'Dịch vụ tư vấn', quantity: '2', unit_price: 1500000 }] } })
   const columns: Column<Row>[] = [
-    { key: 'code', header: t('shared.devui.code'), role: 'title', render: (r) => r.code },
+    { key: 'code', header: t('shared.devui.code'), role: 'title', kind: 'code', render: (r) => r.code },
     { key: 'name', header: t('shared.devui.name'), role: 'meta', render: (r) => r.name },
-    { key: 'amount', header: t('shared.devui.amount'), role: 'meta', numeric: true, render: (r) => formatNumber(r.amount) },
+    { key: 'amount', header: t('shared.devui.amount'), role: 'meta', kind: 'number', render: (r) => formatNumber(r.amount) },
   ]
   const view = useListView('dev.ui', columns)
   const open = rows.find((r) => String(r.id) === peek.id)
@@ -110,7 +117,15 @@ export function DevUiPatterns() {
           <Button variant="default" onClick={() => notifyUndo(t('shared.devui.undo_done'), t('shared.undo'), () => undefined)}>
             {t('shared.devui.undo')}
           </Button>
-          <YearSelect label={t('shared.devui.year')} value={year} years={[2025, 2026, 2027]} onChange={setYear} />
+        </Group>
+        {/* Filter chips: unset with a search (type to see no results), set (tinted, with its clear
+            button), a value too long for the chip, always set (a year), a month. */}
+        <Group gap="xs">
+          <FilterChip label={t('shared.devui.choice')} icon={IconCircleDot} data={choices} value={null} onChange={() => {}} searchable />
+          <FilterChip label={t('shared.devui.choice')} icon={IconCircleDot} data={choices} value={choice} onChange={setChoice} />
+          <FilterChip label={t('shared.devui.choice')} icon={IconCircleDot} data={choices} value="long" onChange={() => {}} />
+          <YearFilter label={t('shared.devui.year')} value={year} years={[2025, 2026, 2027]} onChange={setYear} />
+          <MonthFilter label={t('shared.devui.month')} value={month} onChange={setMonth} />
         </Group>
       </Section>
 

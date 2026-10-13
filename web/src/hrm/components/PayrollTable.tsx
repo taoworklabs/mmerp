@@ -52,7 +52,7 @@ function moneyColumns<T extends Amounts>(t: (k: string) => string, keys: Key[]):
       key: k,
       header: t(`hrm.payroll.col.${k}`),
       role: onCards.includes(k) ? 'meta' : 'hidden',
-      numeric: true,
+      kind: 'number',
       band: band ? t(`hrm.payroll.band.${band}`) : undefined,
       strong: results.includes(k),
       render: (r: T) => amount(r[k]),
@@ -72,7 +72,7 @@ export function PayrollTable({ payroll, onPrint }: { payroll: Payroll; onPrint?:
     type Row = PayrollTotal & { key: string }
     const columns: Column<Row>[] = [
       { key: 'org_unit', header: t('hrm.payroll.org_unit'), role: 'title', render: (r) => r.org_unit_name },
-      { key: 'employees', header: t('hrm.payroll.employees'), role: 'meta', numeric: true, render: (r) => formatNumber(r.employees) },
+      { key: 'employees', header: t('hrm.payroll.employees'), role: 'meta', kind: 'number', render: (r) => formatNumber(r.employees) },
       ...moneyColumns<Row>(t, totalsOnly),
     ]
     const rows = payroll.totals.map((x) => ({ ...x, key: String(x.org_unit_id) }))
@@ -118,12 +118,12 @@ export function PayrollTable({ payroll, onPrint }: { payroll: Payroll; onPrint?:
           l.employee_name
         ),
     },
-    { key: 'days', header: t('hrm.payroll.paid_days'), role: 'meta', numeric: true, band: t('hrm.payroll.band.attendance'), render: (l) => (l.paid_days ? `${formatDecimal(l.paid_days)}/${l.standard_days}` : '') },
+    { key: 'days', header: t('hrm.payroll.paid_days'), role: 'meta', kind: 'number', band: t('hrm.payroll.band.attendance'), render: (l) => (l.paid_days ? `${formatDecimal(l.paid_days)}/${l.standard_days}` : '') },
     {
       key: 'hours',
       header: t('hrm.payroll.overtime_hours'),
       role: 'hidden',
-      numeric: true,
+      kind: 'number',
       band: t('hrm.payroll.band.attendance'),
       render: (l) => (l.overtime_hours && l.overtime_hours !== '0' ? formatDecimal(l.overtime_hours) : ''),
     },

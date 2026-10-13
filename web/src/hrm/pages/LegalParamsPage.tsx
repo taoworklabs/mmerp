@@ -77,8 +77,8 @@ export function LegalParamsPage() {
   const rows = [...(list.data?.items ?? [])].sort((a, b) => keys.indexOf(a.key) - keys.indexOf(b.key) || a.effective_from.localeCompare(b.effective_from))
   const columns: Column<LegalParam>[] = [
     { key: 'key', header: t('hrm.legal_param.key'), role: 'title', render: (p) => t(`hrm.legal_param.${p.key}`) },
-    { key: 'from', header: t('hrm.legal_param.effective_from'), role: 'meta', render: (p) => formatDate(p.effective_from) },
-    { key: 'value', header: t('hrm.legal_param.value'), role: 'meta', numeric: true, render: (p) => paramValue(t, p) },
+    { key: 'from', header: t('hrm.legal_param.effective_from'), role: 'meta', kind: 'date', render: (p) => formatDate(p.effective_from) },
+    { key: 'value', header: t('hrm.legal_param.value'), role: 'meta', kind: 'number', render: (p) => paramValue(t, p) },
   ]
   let body
   if (list.isPending) body = <ContentSkeleton />

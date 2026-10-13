@@ -1,4 +1,3 @@
-import { Select } from '@mantine/core'
 import { IconBuildingSkyscraper } from '@tabler/icons-react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
@@ -7,11 +6,10 @@ import { useTranslation } from 'react-i18next'
 import { api, unwrap, type LegalEntitySetting } from '@/shared/api/core'
 import { errorText } from '@/shared/i18n'
 import { DataTable, type Column } from '@/shared/ui/DataTable'
-import { Form, FormActions, SelectField, useOrgUnits } from '@/shared/ui/form'
+import { FilterChip, Form, FormActions, SelectField, useOrgUnits } from '@/shared/ui/form'
 import { notifySuccess } from '@/shared/ui/notify'
 import { FormModal, ListPage } from '@/shared/ui/page'
 import { ContentSkeleton, EmptyState, ErrorState } from '@/shared/ui/states'
-import { icon } from '@/shared/ui/theme'
 import { useListParams } from '@/shared/url/listParams'
 import { coreKeys } from '../keys'
 
@@ -54,15 +52,13 @@ export function SettingsPage() {
       title={t('core.settings.title')}
       description={t('core.settings.description')}
       filters={
-        <Select
-          aria-label={t('core.period.legal_entity')}
-          placeholder={t('core.period.legal_entity')}
-          leftSection={<IconBuildingSkyscraper {...icon.text} />}
-          w={{ base: '100%', md: 240 }}
+        <FilterChip
+          label={t('core.period.legal_entity')}
+          icon={IconBuildingSkyscraper}
           data={entities.map((u) => ({ value: String(u.id), label: u.name }))}
           value={chosen ? String(chosen) : null}
           onChange={(v) => set({ filters: { legal_entity: v ?? '' } })}
-          allowDeselect={false}
+          clearable={false}
         />
       }
     >

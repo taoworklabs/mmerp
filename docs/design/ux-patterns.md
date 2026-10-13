@@ -193,7 +193,7 @@ ERP patterns the reference system has no equivalent for, designed in the same sp
 │ ▸ Group    │ Title                                    [Secondary] [Create]│
 │   Item ◼   │ One-line description                                         │
 │   Item     │ ─────────────────────────────────────────────────────────────│
-│ ▸ Group    │ [🔍 Search…      ] [Status ▾] [Org unit ▾] [Month ▾]          │ filter bar
+│ ▸ Group    │ [🔍 Search…] [Status: Posted ✕] [Unit ▾] [Month ▾] Clear      │ filter bar (chips)
 │   Item     │ ┌─────────────────────────────────────────────────────────┐ │
 │            │ │ Identifier ↕ │ Text      │ Date ↕  │ Amount ↕│ Status │…│ │ 36px header
 │            │ ├──────────────┼───────────┼─────────┼─────────┼────────┼─┤ │
@@ -460,7 +460,7 @@ Final decision: B (full width for lists and wide documents; forms and the docume
 | F8 | Same data, same input: `MonthField`, a year select, an integer field (I13) | Yes | Yes |
 | F9 | Read-only values: `FieldList` for record facts; read-only inputs only on a draft the user cannot edit (I14) | Yes | Yes |
 | F10 | People in tables shown as `PersonName`; documents list `code · name` only where codes matter (I15) | Yes | Yes |
-| F11 | Filters: placeholder + `aria-label`, never visible labels; one width per kind (I16) | Yes | Yes: search 280, select 200, org unit / legal entity 240, month 160, year 120 (`filterWidth` in `theme.ts`) |
+| F11 | Filters: placeholder + `aria-label`, never visible labels; one width per kind (I16) | Yes | Yes: search 280, select 200, org unit / legal entity 240, month 160, year 120 (`filterWidth` in `theme.ts`). Superseded: filters are now chips sized by their content, only the search box keeps a width (`ui.md`, filter bar) |
 | F12 | Discount shown the way it is entered (%), amount in its own column (I17) | Yes | Yes |
 | F13 | Attachments on every document type that may carry files (I18) | Decide per type with the product owner | Add attachments to overtime; timesheet and payroll stay without (system-generated data; payroll files would carry everyone's pay) |
 | F14 | A document's breadcrumb points to its own list (I19) | Yes | Yes |

@@ -1,4 +1,4 @@
-import { Alert, Button, Menu, Select } from '@mantine/core'
+import { Alert, Button, Menu } from '@mantine/core'
 import { IconAlertCircle, IconArchive, IconArchiveOff, IconCircleDot, IconPencil, IconPlus } from '@tabler/icons-react'
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
@@ -8,13 +8,13 @@ import { useCan, useProductOn } from '@/shared/auth/me'
 import { api, unwrap, type Item, type ItemList, type ItemSort } from '@/shared/api/sales'
 import { errorText, formatNumber } from '@/shared/i18n'
 import { DataTable, type Column } from '@/shared/ui/DataTable'
-import { CheckboxField, Form, FormActions, MoneyField, SearchInput, SelectField, TextField } from '@/shared/ui/form'
+import { CheckboxField, FilterChip, Form, FormActions, MoneyField, SearchInput, SelectField, TextField } from '@/shared/ui/form'
 import { useListView } from '@/shared/ui/ListView'
 import { notifySuccess, notifyUndo } from '@/shared/ui/notify'
 import { FormModal, ListPage } from '@/shared/ui/page'
 import { ContentSkeleton, EmptyState, ErrorState } from '@/shared/ui/states'
 import { StatusBadge } from '@/shared/ui/StatusBadge'
-import { filterWidth, icon } from '@/shared/ui/theme'
+import { icon } from '@/shared/ui/theme'
 import { useListParams } from '@/shared/url/listParams'
 import { useVatOptions } from '../components/vat'
 import { salesKeys } from '../keys'
@@ -34,7 +34,7 @@ export function ItemsPage() {
   const writable = canManage && on
   const [editing, setEditing] = useState<Item | 'new' | null>(null)
   const [error, setError] = useState<string | null>(null)
-  const [params, set] = useListParams(defaults)
+  const [params, set, filterBar] = useListParams(defaults)
   const { q, active } = params.filters as typeof defaults.filters
   const query = { q, active, sort: params.sort, page: params.page, pageSize: params.pageSize }
   const list = useQuery({
@@ -82,14 +82,15 @@ export function ItemsPage() {
 
   const columns: Column<Item>[] = [
     { key: 'name', header: t('sales.item.name'), role: 'title', sortable: true, render: (x) => x.name },
-    { key: 'code', header: t('sales.item.code'), role: 'meta', sortable: true, render: (x) => x.code },
-    { key: 'unit', header: t('sales.item.unit'), role: 'hidden', render: (x) => x.unit },
-    { key: 'price', header: t('sales.item.price'), role: 'meta', numeric: true, render: (x) => formatNumber(x.price) },
-    { key: 'vat_rate', header: t('sales.item.vat_rate'), role: 'hidden', render: (x) => vat.label(x.vat_rate) },
+    { key: 'code', header: t('sales.item.code'), role: 'meta', kind: 'code', sortable: true, render: (x) => x.code },
+    { key: 'unit', header: t('sales.item.unit'), role: 'hidden', kind: 'code', render: (x) => x.unit },
+    { key: 'price', header: t('sales.item.price'), role: 'meta', kind: 'number', render: (x) => formatNumber(x.price) },
+    { key: 'vat_rate', header: t('sales.item.vat_rate'), role: 'hidden', kind: 'number', render: (x) => vat.label(x.vat_rate) },
     {
       key: 'active',
       header: t('sales.item.status'),
       role: 'status',
+      kind: 'status',
       render: (x) => <StatusBadge tone={x.active ? 'positive' : 'neutral'}>{t(x.active ? 'sales.item.in_use' : 'sales.item.retired')}</StatusBadge>,
     },
   ]
@@ -99,11 +100,11 @@ export function ItemsPage() {
   else if (list.isError) body = <ErrorState message={errorText(t, list.error)} onRetry={() => void list.refetch()} />
   else if (list.data.items.length === 0)
     body =
-      q !== '' || active !== '' ? (
+      filterBar.active ? (
         <EmptyState
           title={t('sales.common.no_results')}
           action={
-            <Button variant="default" onClick={() => set({ filters: defaults.filters })}>
+            <Button variant="default" onClick={filterBar.clear}>
               {t('sales.common.clear_filters')}
             </Button>
           }
@@ -149,21 +150,18 @@ export function ItemsPage() {
           </Button>
         )
       }
+      onClearFilters={filterBar.active ? filterBar.clear : undefined}
       filters={
         <>
           <SearchInput label={t('sales.items.search')} placeholder={t('sales.items.search_hint')} value={q} onSearch={(v) => set({ filters: { q: v } })} />
-          <Select
-            aria-label={t('sales.item.status')}
-            placeholder={t('sales.item.status')}
-            leftSection={<IconCircleDot {...icon.text} />}
-            w={{ base: '100%', md: filterWidth.select }}
+          <FilterChip
+            label={t('sales.item.status')}
+            icon={IconCircleDot}
             data={[
               { value: 'true', label: t('sales.item.in_use') },
               { value: 'false', label: t('sales.item.retired') },
             ]}
-            value={active || null}
-            onChange={(v) => set({ filters: { active: v ?? '' } })}
-            clearable
+            {...filterBar.bind('active')}
           />
         </>
       }

@@ -25,7 +25,7 @@ const defaults = { filters: { q: '', active: '' }, sort: 'code', sorts: [...sort
 export function CustomersPage() {
   const { t } = useTranslation()
   const canCreate = useCustomerActions().data?.includes('create') ?? false
-  const [params, set] = useListParams(defaults)                    // filters, sort, page on the URL
+  const [params, set, filterBar] = useListParams(defaults)         // filters, sort, page on the URL
   const { q, active } = params.filters as typeof defaults.filters
   const list = useQuery({ queryKey: salesKeys.customers.list({ … }), queryFn: () => unwrap(api.GET('/sales/customers', { … })), placeholderData: keepPreviousData })
   const columns: Column<CustomerListItem>[] = [ /* identifier first, status last: tables.md */ ]
@@ -46,10 +46,10 @@ export function CustomersPage() {
       title={t('sales.customers.title')}
       description={t('sales.customers.description')}
       action={canCreate && <Button component={Link} to="/sales/customers/new" leftSection={<IconPlus {...icon.button} />}>{t('sales.customers.create')}</Button>}
+      onClearFilters={filterBar.active ? filterBar.clear : undefined}
       filters={<>
         <SearchInput label={t('sales.customers.search')} placeholder={t('sales.customers.search_hint')} value={q} onSearch={(v) => set({ filters: { q: v } })} />
-        <Select aria-label={t('sales.customer.status')} placeholder={t('sales.customer.status')} leftSection={<IconCircleDot {...icon.text} />}
-          w={{ base: '100%', md: filterWidth.select }} data={…} value={active || null} onChange={(v) => set({ filters: { active: v ?? '' } })} clearable />
+        <FilterChip label={t('sales.customer.status')} icon={IconCircleDot} data={…} {...filterBar.bind('active')} />
       </>}
       tools={view.tools}
       paging={list.data && { page: params.page, pageSize: params.pageSize, total: list.data.total, onPage: (page) => set({ page }), onPageSize: (pageSize) => set({ pageSize }) }}
@@ -133,7 +133,7 @@ Working example: `web/src/hrm/pages/OverviewPage.tsx`.
 
 ## Report
 
-`ListPage` without `paging`: `filters` (period, legal entity, org unit, on the URL), the export as its `action`; one `DataTable` with `band`ed columns, `group` totals, a `footer` grand total, `maxHeight="70dvh"`; zero as "–". Read-only, loaded whole (`tables.md`). The payroll table (`web/src/hrm/components/PayrollTable.tsx`) is the model.
+`ListPage` without `paging`: `filters` (period, legal entity, org unit, on the URL), the export as its `action`; one `DataTable` with `band`ed columns, `group` totals, a `footer` grand total, no `maxHeight` (the list page's frame keeps the header and totals in view); zero as "–". Read-only, loaded whole (`tables.md`). The payroll table (`web/src/hrm/components/PayrollTable.tsx`) is the model for the columns, bands and totals; it sits on a document page, so it caps itself with `maxHeight="70dvh"` instead.
 
 ## Inbox
 

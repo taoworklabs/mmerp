@@ -34,7 +34,7 @@ Sources of truth in code:
 
 ## Rules
 
-- **Tokens only.** Colour, font size, spacing, radius and shadow come from theme keys (`gap="xs"`, `c="dimmed"`, `color="danger"`, `radius="lg"`) or theme CSS variables (`var(--mantine-color-default-border)`, `var(--mmerp-elevation-surface-sunken)`). A pixel number or colour code is written only in `theme.ts`, and a size specific to one component (row height, column width) only in that component's CSS module in `shared/ui`. One exception: an area sets the width of a filter input, from `filterWidth` (`w={{ base: '100%', md: filterWidth.select }}`).
+- **Tokens only.** Colour, font size, spacing, radius and shadow come from theme keys (`gap="xs"`, `c="dimmed"`, `color="danger"`, `radius="lg"`) or theme CSS variables (`var(--mantine-color-default-border)`, `var(--mmerp-elevation-surface-sunken)`). A pixel number or colour code is written only in `theme.ts`, and a size specific to one component (row height, column width) only in that component's CSS module in `shared/ui`.
 - **Reuse first.** Look in the area's own `pages/` and `components/` for a screen or piece that already does the job (a list of the same records, a progress badge), then build from a `shared/ui/page` template and the existing components; `references/components.md` lists them.
 - **New components follow `references/components.md`**: built from theme tokens, in `shared/ui` with a CSS module when needed, every state covered, shown on `/dev/ui`.
 - **Areas carry no styling.** No `style` attribute, no CSS file, no colour code in an area: lint (`make lint`) rejects all three.

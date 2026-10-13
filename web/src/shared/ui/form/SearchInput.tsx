@@ -27,7 +27,11 @@ export function SearchInput({ label, placeholder, value, onSearch }: { label: st
       type="search"
       aria-label={label}
       placeholder={placeholder ?? label}
-      w={{ base: '100%', md: filterWidth.search }}
+      // From 1024px it shares the filter bar: it takes the room the chips leave, within its bounds.
+      w={{ base: '100%', md: 'auto' }}
+      flex={{ md: `1 1 ${filterWidth.searchMin}px` }}
+      miw={{ md: filterWidth.searchMin }}
+      maw={{ md: filterWidth.search }}
       leftSection={<IconSearch {...icon.text} />}
       value={draft}
       onChange={(e) => setDraft(e.currentTarget.value)}

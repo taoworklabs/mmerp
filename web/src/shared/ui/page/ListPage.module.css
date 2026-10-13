@@ -14,6 +14,34 @@
   border-color: var(--mantine-primary-color-filled);
 }
 
+/* A wide list fills the window below the app header, so title, filters and paging stay put and
+   only the content scrolls; a table that is the whole content scrolls under its own header. The
+   shell's main turns into a column for it, so a banner above the page (a read-only product) takes
+   its share of the window instead of pushing the paging bar out. */
+:global(.mantine-AppShell-main):has(> .frame) {
+  display: flex;
+  flex-direction: column;
+  height: 100dvh;
+}
+
+.frame {
+  flex: 1;
+  min-height: 0;
+}
+
+/* The content is one item of the page, its parts spaced like the page's. */
+.content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--mantine-spacing-lg);
+}
+
+.frame .content {
+  min-height: 0;
+  overflow: auto;
+  scrollbar-width: thin;
+}
+
 /* Pages sit in the middle whatever the widths of the count and the page-size select beside them. */
 .paging {
   display: grid;

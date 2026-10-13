@@ -23,7 +23,7 @@ export function OrgTree({ label, emptyDescription, menu }: { label: string; empt
   const columns: Column<Row>[] = [
     { key: 'name', header: t('shared.org.name'), role: 'title', render: (r) => <OrgUnitName unit={r.unit} depth={r.depth} /> },
     { key: 'kind', header: t('shared.org.kind'), role: 'status', render: (r) => t(`shared.org.kind.${r.unit.kind}`) },
-    { key: 'tax_code', header: t('shared.org.tax_code'), role: 'meta', render: (r) => r.unit.tax_code ?? '' },
+    { key: 'tax_code', header: t('shared.org.tax_code'), role: 'meta', kind: 'code', render: (r) => r.unit.tax_code ?? '' },
   ]
   return <DataTable label={label} columns={columns} rows={rows} rowKey={(r) => r.unit.id} menu={menu && ((r) => menu(r.unit))} />
 }

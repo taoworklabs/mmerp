@@ -5,7 +5,7 @@ import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { useTranslation } from 'react-i18next'
 import { api, unwrap, type Dependent, type DependentInput, type Employee } from '@/shared/api/hrm'
-import { errorText, formatDate, formatMonth } from '@/shared/i18n'
+import { errorText, formatDate, formatMonthShort } from '@/shared/i18n'
 import { DataTable, type Column } from '@/shared/ui/DataTable'
 import { DateField, Form, FormActions, MonthField, SelectField, TextField } from '@/shared/ui/form'
 import { useConfirm } from '@/shared/ui/confirm'
@@ -54,13 +54,13 @@ function Dependents({ employee }: { employee: Employee }) {
     notifySuccess(t('hrm.dependent.deleted'))
   }
 
-  const months = (d: Dependent) => [d.deduction_from, d.deduction_to].map((m) => formatMonth(m) || '…').join(' – ')
+  const months = (d: Dependent) => [d.deduction_from, d.deduction_to].map((m) => formatMonthShort(m) || '…').join(' – ')
   const columns: Column<Dependent>[] = [
     { key: 'full_name', header: t('hrm.dependent.full_name'), role: 'title', render: (d) => d.full_name },
     { key: 'relationship', header: t('hrm.dependent.relationship'), role: 'meta', render: (d) => t(`hrm.dependent.relationship.${d.relationship}`) },
-    { key: 'date_of_birth', header: t('hrm.dependent.date_of_birth'), role: 'meta', render: (d) => formatDate(d.date_of_birth) },
-    { key: 'id_number', header: t('hrm.dependent.id_number'), role: 'hidden', render: (d) => d.id_number ?? '' },
-    { key: 'deduction', header: t('hrm.dependent.deduction'), role: 'meta', render: months },
+    { key: 'date_of_birth', header: t('hrm.dependent.date_of_birth'), role: 'meta', kind: 'date', render: (d) => formatDate(d.date_of_birth) },
+    { key: 'id_number', header: t('hrm.dependent.id_number'), role: 'hidden', kind: 'code', render: (d) => d.id_number ?? '' },
+    { key: 'deduction', header: t('hrm.dependent.deduction'), role: 'meta', kind: 'date', render: months },
   ]
 
   let body

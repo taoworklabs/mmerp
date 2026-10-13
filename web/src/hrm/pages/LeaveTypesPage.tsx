@@ -32,6 +32,7 @@ export function LeaveTypesPage() {
       key: 'active',
       header: t('hrm.leave_type.active'),
       role: 'status',
+      kind: 'status',
       render: (x) => <StatusBadge tone={x.active ? 'positive' : 'neutral'}>{t(x.active ? 'hrm.leave_type.in_use' : 'hrm.leave_type.retired')}</StatusBadge>,
     },
   ]

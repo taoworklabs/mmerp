@@ -1,4 +1,4 @@
-import { Button, Group, Select } from '@mantine/core'
+import { Button, Group } from '@mantine/core'
 import { IconCircleDot, IconFileImport, IconPlus } from '@tabler/icons-react'
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { useState } from 'react'
@@ -9,11 +9,11 @@ import { errorText, formatDate } from '@/shared/i18n'
 import { ImportDialog } from '@/shared/jobs'
 import { PersonName } from '@/shared/ui/avatar'
 import { DataTable, type Column } from '@/shared/ui/DataTable'
-import { OrgUnitSelect, SearchInput } from '@/shared/ui/form'
+import { FilterChip, OrgUnitFilter, SearchInput } from '@/shared/ui/form'
 import { useListView } from '@/shared/ui/ListView'
 import { ListPage } from '@/shared/ui/page'
 import { ContentSkeleton, EmptyState, ErrorState } from '@/shared/ui/states'
-import { filterWidth, icon } from '@/shared/ui/theme'
+import { icon } from '@/shared/ui/theme'
 import { useListParams } from '@/shared/url/listParams'
 import { EmployeeStatus } from '../components/EmployeeStatus'
 import { useEmployeeActions } from '../hooks/useEmployeeActions'
@@ -28,7 +28,7 @@ export function EmployeesPage() {
   const actions = useEmployeeActions().data ?? []
   const canCreate = actions.includes('create')
   const [importing, setImporting] = useState(false)
-  const [params, set] = useListParams(defaults)
+  const [params, set, filterBar] = useListParams(defaults)
   const { q, status, org_unit_id } = params.filters as typeof defaults.filters
   const query = { q, status, org_unit_id, sort: params.sort, page: params.page, pageSize: params.pageSize }
   const list = useQuery({
@@ -52,24 +52,23 @@ export function EmployeesPage() {
   })
 
   const columns: Column<EmployeeListItem>[] = [
-    { key: 'full_name', header: t('hrm.employee.full_name'), role: 'title', sortable: true, render: (e) => <PersonName name={e.full_name} /> },
-    { key: 'code', header: t('hrm.employee.code'), role: 'meta', sortable: true, render: (e) => e.code },
+    { key: 'full_name', header: t('hrm.employee.full_name'), role: 'title', kind: 'person', sortable: true, render: (e) => <PersonName name={e.full_name} /> },
+    { key: 'code', header: t('hrm.employee.code'), role: 'meta', kind: 'code', sortable: true, render: (e) => e.code },
     { key: 'org_unit', header: t('hrm.employee.org_unit'), role: 'meta', render: (e) => e.org_unit_name },
-    { key: 'hire_date', header: t('hrm.employee.hire_date'), role: 'hidden', sortable: true, render: (e) => formatDate(e.hire_date) },
-    { key: 'status', header: t('hrm.employee.status'), role: 'status', render: (e) => <EmployeeStatus status={e.status} /> },
+    { key: 'hire_date', header: t('hrm.employee.hire_date'), role: 'hidden', kind: 'date', sortable: true, render: (e) => formatDate(e.hire_date) },
+    { key: 'status', header: t('hrm.employee.status'), role: 'status', kind: 'status', render: (e) => <EmployeeStatus status={e.status} /> },
   ]
 
-  const filtered = q !== '' || status !== '' || org_unit_id !== ''
   const view = useListView('hrm.employees', columns)
   let body
   if (list.isPending) body = <ContentSkeleton />
   else if (list.isError) body = <ErrorState message={errorText(t, list.error)} onRetry={() => void list.refetch()} />
   else if (list.data.items.length === 0)
-    body = filtered ? (
+    body = filterBar.active ? (
       <EmptyState
         title={t('hrm.employees.no_results')}
         action={
-          <Button variant="default" onClick={() => set({ filters: defaults.filters })}>
+          <Button variant="default" onClick={filterBar.clear}>
             {t('hrm.common.clear_filters')}
           </Button>
         }
@@ -112,29 +111,24 @@ export function EmployeesPage() {
       filters={
         <>
           <SearchInput label={t('hrm.employees.search')} placeholder={t('hrm.employees.search_hint')} value={q} onSearch={(v) => set({ filters: { q: v } })} />
-          <Select
-            aria-label={t('hrm.employee.status')}
-            leftSection={<IconCircleDot {...icon.text} />}
-            w={{ base: '100%', md: filterWidth.select }}
+          <FilterChip
+            label={t('hrm.employee.status')}
+            icon={IconCircleDot}
             data={[
               { value: 'active', label: t('hrm.employee.status.active') },
               { value: 'terminated', label: t('hrm.employee.status.terminated') },
             ]}
-            value={status || null}
-            onChange={(v) => set({ filters: { status: v ?? '' } })}
-            placeholder={t('hrm.employee.status')}
-            clearable
+            {...filterBar.bind('status')}
           />
-          <OrgUnitSelect
+          <OrgUnitFilter
             label={t('hrm.employee.org_unit')}
             product="hrm"
             permission="hrm.employee.view"
-            value={org_unit_id || null}
-            onChange={(v) => set({ filters: { org_unit_id: v ?? '' } })}
-            clearable
+            {...filterBar.bind('org_unit_id')}
           />
         </>
       }
+      onClearFilters={filterBar.active ? filterBar.clear : undefined}
       tools={view.tools}
       paging={
         list.data && {

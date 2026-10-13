@@ -271,11 +271,11 @@ function SavedLines({ doc }: { doc: Doc }) {
   const vat = useVatOptions()
   const columns: Column<LineRow>[] = [
     { key: 'description', header: t('sales.line.description_col'), role: 'title', render: (l) => l.description },
-    { key: 'quantity', header: t('sales.line.quantity_col'), role: 'meta', numeric: true, render: (l) => `${formatDecimal(l.quantity, 3)} ${l.unit}` },
-    { key: 'unit_price', header: t('sales.line.unit_price_col'), role: 'meta', numeric: true, render: (l) => formatNumber(l.unit_price) },
-    { key: 'discount', header: t('sales.line.discount_col'), role: 'hidden', numeric: true, render: (l) => (l.discount ? formatNumber(l.discount) : '–') },
-    { key: 'vat_rate', header: t('sales.line.vat_rate_col'), role: 'hidden', render: (l) => vat.label(l.vat_rate) },
-    { key: 'net', header: t('sales.line.net_col'), role: 'meta', numeric: true, strong: true, render: (l) => formatNumber(l.amount - l.discount) },
+    { key: 'quantity', header: t('sales.line.quantity_col'), role: 'meta', kind: 'number', render: (l) => `${formatDecimal(l.quantity, 3)} ${l.unit}` },
+    { key: 'unit_price', header: t('sales.line.unit_price_col'), role: 'meta', kind: 'number', render: (l) => formatNumber(l.unit_price) },
+    { key: 'discount', header: t('sales.line.discount_col'), role: 'hidden', kind: 'number', render: (l) => (l.discount ? formatNumber(l.discount) : '') },
+    { key: 'vat_rate', header: t('sales.line.vat_rate_col'), role: 'hidden', kind: 'number', render: (l) => vat.label(l.vat_rate) },
+    { key: 'net', header: t('sales.line.net_col'), role: 'meta', kind: 'number', strong: true, render: (l) => formatNumber(l.amount - l.discount) },
   ]
   return <DataTable label={t('sales.doc.section.lines')} columns={columns} rows={doc.lines.map((l, i) => ({ ...l, n: i + 1 }))} rowKey={(l) => l.n} />
 }
