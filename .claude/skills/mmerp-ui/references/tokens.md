@@ -29,10 +29,10 @@ Each colour is a ten-step scale, palest (0) to darkest (9). Components read it b
 | placeholder | automatic | `#6B6E76` | Input placeholders only (5.1:1) |
 | border | `withBorder`, `var(--mantine-color-default-border)` | `#0B120E24` (translucent) | Dividers, table rules, frames, outlined buttons. Translucent so it reads on white and on the sunken tone alike |
 | frame border | automatic on `Paper withBorder` and table rules (`gray-3`) | `#DDDEE1` | Same tone as `border`, drawn solid by Mantine |
-| input border | automatic (`gray-4`) | `#B4B7BD` | Edges of checkboxes, radios, inline edit and inputs outside a `Form` or filter bar. Form fields have no edge but a fill: `gray-1`, `gray-2` on hover, white with the primary edge on focus, none when read-only or disabled (`components.md`); filter bar inputs use `border` (`tables.md`) |
+| input border | automatic (`gray-4`) | `#B4B7BD` | Edges of inputs, checkboxes, radios and inline edit; filter bar inputs use `border` (`tables.md`) |
 | surface | `var(--mmerp-elevation-surface)`, default `Paper` background | `#FFFFFF` | Tables, forms, cards, the page |
 | surface sunken | `var(--mmerp-elevation-surface-sunken)` | `#F8F8F8` | Group and total rows, tile hover, grid cells that take no value |
-| disabled | automatic | `#F0F1F2` | Disabled input background outside a `Form` |
+| disabled | automatic | `#F0F1F2` | Disabled input background |
 | neutral | `color="gray"` | tint `#F0F1F2`, text `#505258` | Neutral badges, quiet icon buttons, empty-state icon |
 
 ### Primary and semantic scales

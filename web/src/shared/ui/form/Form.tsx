@@ -124,7 +124,7 @@ export function Form<T extends FieldValues>({ form, onSubmit, fieldOf, id, child
 
   return (
     <FormProvider {...form}>
-      <form ref={ref} id={id} onSubmit={submit} noValidate className={classes.form}>
+      <form ref={ref} id={id} onSubmit={submit} noValidate>
         <Stack gap="md">
           {banner && (
             <Alert color="danger" icon={<IconAlertCircle {...icon.button} />} role="alert">
