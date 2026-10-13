@@ -52,7 +52,7 @@ All of them live in `theme.ts`. Area code uses only token names or Mantine props
 | `text-secondary` (`dimmed`) | `#505258` | Secondary labels, captions, column headers |
 | `placeholder` | `#6B6E76` | Placeholders only |
 | `border` | `#0B120E24` (translucent) | Table borders, frames, dividers, outlined buttons |
-| input border | `#B4B7BD` | Edges of checkboxes, radios, inline edit and inputs outside a `Form` or filter bar. Inside a `Form` a field has no edge but a `gray-1` (`#F0F1F2`) fill, `gray-2` on hover, white with the primary edge on focus, no fill when read-only or disabled, so a form of many fields stays calm; a list's filter bar uses `border` like the tool buttons beside it |
+| input border | `#B4B7BD` | Edges of inputs, checkboxes, radios and inline edit; a list's filter bar uses `border` like the tool buttons beside it |
 | `background` | `#FFFFFF` | App background and content area |
 | `surface` | `#FFFFFF` | Background of tables, forms, cards |
 | `surface-sunken` | `#F8F8F8` | Background of group and total rows, tile hover, cells that take no value |

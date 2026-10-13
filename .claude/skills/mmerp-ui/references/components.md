@@ -98,7 +98,7 @@ Mantine `Alert`, default (tinted) variant, `color` by meaning, always with an ic
 
 ## Fields (`shared/ui/form`)
 
-Every field is wired to React Hook Form and renders: label above (12px, 600, `dimmed`), `*` when required, description under the input, error under that. Inputs are 30px, radius 6, a `gray-1` fill with no edge (`gray-2` on hover), white with the primary edge on focus; read-only and disabled fields have no fill, so they read as values, not fields to fill; `Form` applies it, so every field inside a `Form` looks the same.
+Every field is wired to React Hook Form and renders: label above (12px, 600, `dimmed`), `*` when required, description under the input, error under that. Inputs are 30px, radius 6, input border token (`gray-4`, see `tokens.md`), focus ring primary.
 
 | Field | Data |
 | --- | --- |
