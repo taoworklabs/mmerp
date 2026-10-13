@@ -117,6 +117,7 @@ test('filters, sort and page live on the URL and Back restores each step', async
   await expect(page).toHaveURL(/sort=full_name/)
   await expect(table.getByRole('row').nth(1)).toContainText(`A${run}-00`)
   await page.goBack()
+  await expect(page).toHaveURL(new RegExp(`\\?q=${run}$`))
   await page.goBack()
   await expect(page).toHaveURL(/\/hrm\/employees$/)
   await expect(page.getByLabel('Tìm kiếm')).toHaveValue('')
