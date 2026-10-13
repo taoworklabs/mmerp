@@ -70,7 +70,7 @@ Adding to it, when the list needs them (`tables.md`):
 
 Working example: `web/src/sales/pages/NewCustomerPage.tsx` with `sales/components/CustomerForm.tsx`.
 
-`Page` with a breadcrumb to the list → `Form` (`mode: 'onBlur'`, `fieldOf` for field error codes) → `FormSection`s → `FormActions` without `onCancel`. On success: invalidate the list's queries, `notifySuccess`, navigate to the new record (`replace: true`). The route checks the create permission and shows `ForbiddenPage` without it. Details in `forms.md`.
+`Page centered` with a breadcrumb to the list → `Form` (`mode: 'onBlur'`, `fieldOf` for field error codes) → `FormSection`s → `FormActions` with `cancelTo` (the list), without `onCancel`. On success: invalidate the list's queries, `notifySuccess`, navigate to the new record (`replace: true`). The route checks the create permission and shows `ForbiddenPage` without it. Details in `forms.md`.
 
 ## Document page
 
@@ -117,7 +117,7 @@ The page resolves its query with `loaded()` (skeleton, not found with a link bac
 
 Working example: `web/src/sales/pages/CustomerPage.tsx`, `web/src/hrm/pages/EmployeePage.tsx`.
 
-`RecordPage` with `leading` (avatar or icon), a description of key facts, `tabs` (`{ value, label, content }`, the selected one on the URL). The first tab holds the record's form (view = edit) or, for values changed one at a time, `InlineEditField`s; other tabs hold `DataTable`s with their own `TabActions` (`xs` buttons). Attachments and discussion are the last tabs.
+`RecordPage` with `leading` (avatar or icon), a description of key facts, `tabs` (`{ value, label, content }`, the selected one on the URL). The first tab holds the record's form (view = edit) or, for values changed one at a time, `InlineEditField`s; other tabs hold `DataTable`s with their own `TabActions` (default-size buttons). Attachments and discussion are the last tabs, in a 480px reading column centred under the tabs.
 
 ## Settings list
 
@@ -140,3 +140,10 @@ Working example: `web/src/hrm/pages/OverviewPage.tsx`.
 Working example: `web/src/core/pages/InboxPage.tsx`.
 
 `InboxPage` with an `InboxList` of `InboxRow`s (number, type · submitter, relative time; unread bold) and the selected item's detail: the area's record preview, then `ApprovalPanel` with its decision bar. The selection is on the URL; after a decision the next item opens.
+
+## Feed
+
+Working example: `web/src/core/pages/NotificationsPage.tsx`.
+
+`ListPage` with a framed `InboxList` that scrolls inside itself, newest first, under sticky day headings (`InboxGroup`: "Hôm nay", "Hôm qua", then the date in the tenant's time zone). Each `InboxRow` leads with the event's round icon in the colour of what it says (pending `warning`, done `success`, refused or failed `danger`, a mention `info`) and ends with the relative time (exact time in a tooltip) and the unread dot. Opening a row marks it read, then goes to its record. "Đánh dấu tất cả đã đọc" is the header action; older items load under the frame.
+

@@ -17,26 +17,30 @@ There is no "Create another" option; series entry goes through Excel import.
 
 ```
 ┌ FormSection ───────────────────────────────────────────────────────────┐
-│ ▣ Section title          Label *                 Label                 │
-│ One-sentence             [               ]       [               ]     │
-│ description              help text                                     │
+│ ▣ Section title          Label *                 Label                 │  title 16/650
+│ One-sentence             [               ]       [               ]     │  description 12px
+│ description              help text                                     │  half a row each
+│                          Date        Choice      Phone                 │
+│                          [▦ dd/mm/yyyy] [      ] [VD: 0912…]           │  short: a third
 │                          Label                                         │
 │                          [                                         ]   │  long text: wide
 ├────────────────────────────────────────────────────────────────────────┤  1px rule, 24px apart
 │ FormSection wide: title and description on top, content full width      │
 └────────────────────────────────────────────────────────────────────────┘
-▔ FormActions (page): Unsaved changes · Discard            [Save] ▔ sticky
+▔ FormActions (page):            ● Unsaved changes  [Discard] [Save] ▔ sticky
 ```
 
-- Sections (`FormSection`) are unframed, separated by a rule; from 1280px the title column is on the left and fields go two per row; long text (`wide` on `TextField`, `multiline`) spans the row. A section is at most 1200px wide.
+- Sections (`FormSection`) are unframed, separated by a rule; title 16px weight 650, description 12px `dimmed`. From 1280px the title column is on the left and the fields sit on six columns: half a row each by default, a third with `short` (dates, choices, phone numbers: values short whatever they hold), the whole row for long text (`wide` on `TextField`, `multiline`). A section is at most 1200px wide.
 - `FormSection wide` puts the title on top and gives its content the full width: for a lines table or any table inside a form.
 - `FormRow` spans the field grid for something that is not a field (a table, totals). `InputRow` puts a checkbox or a remove button level with the inputs beside it.
-- Order fields by how people fill them: what identifies the record first, then what it is about, then terms and notes. Group what is filled together; at most about eight fields per section.
+- Order fields by how people fill them: what identifies the record first, with its required fields together, then what it is about, then terms and notes. Group what is filled together; at most about eight fields per section.
+- A create form asks only what is known at creation: a field that only makes sense later (an employee's leaving date) shows on the record's page only, and a section usually filled later (sensitive details) keeps its title and description but shows, in place of its fields, a `variant="light"` "Add …" button in a `FormRow` that opens the fields there and focuses the first one.
 - A field that depends on another appears or changes only after that one is set (contract kind decides whether an end date shows). Picking from a catalogue fills dependent fields that stay editable (item → description, price, VAT); fill only empty fields when the user may already have typed one (customer → payment terms).
 
 ## Labels, help, required
 
 - Label above every field, always visible, 12px weight 600 `dimmed` (the theme does it); never a placeholder instead of a label.
+- A placeholder shows a format, never a label or a value: date fields show `dd/mm/yyyy` (month fields `mm/yyyy`) and a calendar icon by themselves; a `TextField` takes `placeholder` for a sample starting "VD:" when the label does not make the format plain (phone). Read-only fields show none.
 - `required` adds `*` after the label; no legend, no "(required)".
 - `description` is one sentence under the input, only when the label is not enough.
 - In a table cell, `bare` drops the visible label (kept as `aria-label`) and the description: the column header names the field.
@@ -55,20 +59,20 @@ Error text says what is wrong without repeating the label: "Chưa nhập." (Not 
 
 ## Footer and saving
 
-- **On a page**: `FormActions` without `onCancel`. Hidden while nothing changed; once dirty it sticks to the bottom: "Unsaved changes", a red Discard text button (asks first), Save. Ctrl/Cmd+S saves. Leaving the page with changes asks first.
-- **In a modal**: `FormActions` with `onCancel`: Cancel and the submit button, right-aligned, not sticky.
-- The submit button names the outcome: "Lưu", "Tạo khách hàng", "Tạo bản nháp".
+- **On a page**: `FormActions` without `onCancel`. It sticks to the bottom, right-aligned, under a neutral rule; while the form runs on under it, it casts a shadow upwards. Editing a record it is hidden while nothing changed; once dirty: "● Unsaved changes" (the error line takes its place after a failed submit), Discard (default button, asks first), Save. Creating one, pass `cancelTo` (the list): the footer shows from the start with Cancel and the create button, and no Discard. Ctrl/Cmd+S saves. Leaving the page with changes asks first.
+- **In a modal**: `FormActions` with `onCancel`: Cancel and the submit button, right-aligned, not sticky; the two keep together and the error line wraps above them.
+- The submit button names the outcome: "Lưu", "Tạo khách hàng", "Tạo bản nháp"; "Thêm" when a modal adds an entry to a record's list (a dependent), "Lưu" when it edits one.
 - While saving the button is busy (spinner only after 300ms); after a successful save: `notifySuccess`, then a create navigates to the new record's page.
 
 ```tsx
-<Page title={t('sales.customers.create')} breadcrumbs={[{ label: t('sales.customers.title'), to: '/sales/customers' }]}>
+<Page centered title={t('sales.customers.create')} breadcrumbs={[{ label: t('sales.customers.title'), to: '/sales/customers' }]}>
   <Form form={form} onSubmit={save} fieldOf={(err) => (err.code === 'customer_code_taken' ? 'code' : undefined)}>
     <FormSection title={t('sales.customer.section.general')} description={t('sales.customer.section.general_hint')} icon={IconAddressBook}>
       <TextField name="code" label={t('sales.customer.code')} required maxLength={50} />
       <TextField name="name" label={t('sales.customer.name')} required maxLength={300} />
       <TextField name="address" label={t('sales.customer.address')} maxLength={500} wide />
     </FormSection>
-    <FormActions submitLabel={t('sales.customers.create')} />
+    <FormActions submitLabel={t('sales.customers.create')} cancelTo="/sales/customers" />
   </Form>
 </Page>
 ```

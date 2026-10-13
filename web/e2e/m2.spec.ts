@@ -142,7 +142,7 @@ test('an administrator builds the tree and grants a role from the admin screens'
   await dialog.getByRole('textbox', { name: 'Tên', exact: true }).fill(`UI ${run}`)
   await dialog.getByLabel('Mã số thuế').fill('0309999999')
   await dialog.getByRole('button', { name: 'Lưu' }).click()
-  await expect(page.getByRole('table', { name: 'Cây tổ chức' }).getByText(`UI ${run}`)).toBeVisible()
+  await expect(page.getByRole('list', { name: 'Cây tổ chức' }).getByText(`UI ${run}`)).toBeVisible()
 
   await page.getByRole('navigation').getByRole('link', { name: 'Người dùng' }).click()
   await page.getByRole('button', { name: 'Tạo người dùng' }).click()
@@ -168,6 +168,8 @@ test('HR creates an employee with a sensitive field, edits it and adds a depende
   await page.getByRole('combobox', { name: 'Phòng ban' }).click()
   await page.getByRole('option', { name: `Phòng A ${run}` }).click()
   await page.getByRole('textbox', { name: 'Ngày vào làm' }).fill('05/01/2026')
+  await page.getByRole('button', { name: 'Thêm thông tin nhạy cảm' }).click()
+  await expect(page.getByRole('textbox', { name: 'Số CCCD hoặc hộ chiếu' })).toBeFocused()
   await page.getByRole('textbox', { name: 'Số CCCD hoặc hộ chiếu' }).fill('001099000111')
   await page.getByRole('button', { name: 'Tạo nhân viên' }).click()
 
@@ -193,7 +195,7 @@ test('HR creates an employee with a sensitive field, edits it and adds a depende
   // Months are picked, not typed: January of the year the picker opens on.
   await dialog.getByRole('button', { name: 'Giảm trừ từ tháng' }).click()
   await page.getByRole('button', { name: 'Th01' }).click()
-  await dialog.getByRole('button', { name: 'Lưu' }).click()
+  await dialog.getByRole('button', { name: 'Thêm', exact: true }).click()
   await expect(page.getByRole('table', { name: 'Người phụ thuộc' }).getByText('Lê Bé')).toBeVisible()
 })
 

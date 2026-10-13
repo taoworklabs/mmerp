@@ -8,7 +8,7 @@ import { useDocumentMutation } from '@/shared/document'
 import { formatDecimal, formatNumber } from '@/shared/i18n'
 import { DataTable, type Column } from '@/shared/ui/DataTable'
 import { DateField, DecimalField, Form, FormActions, FormRow, FormSection, LinesTable, LinesTotals, MoneyField, OrgUnitField, SelectField, TextField, type LineColumn } from '@/shared/ui/form'
-import { docTypeOf, type Kind } from '../keys'
+import { docTypeOf, pathOf, type Kind } from '../keys'
 import { CustomerField, ItemField } from './pickers'
 import { useVatOptions } from './vat'
 
@@ -257,7 +257,7 @@ export function DocForm({ kind, doc, onCreated }: Props) {
         <TextField name="delivery_terms" label={t('sales.doc.delivery_terms')} maxLength={1000} readOnly={ro} />
         <TextField name="note" label={t('sales.doc.note')} maxLength={2000} multiline readOnly={ro} />
       </FormSection>
-      {editable && <FormActions submitLabel={t(doc ? 'sales.common.save' : 'sales.common.create_draft')} />}
+      {editable && <FormActions submitLabel={t(doc ? 'sales.common.save' : 'sales.common.create_draft')} cancelTo={doc ? undefined : `/sales/${pathOf(kind)}`} />}
       {mutation.dialog}
     </Form>
   )

@@ -17,5 +17,5 @@
 .editable:hover,
 .editable:focus-visible {
   background: var(--mantine-color-gray-light);
-  border-color: var(--mantine-color-gray-4);
+  border-color: var(--mmerp-input-border);
 }

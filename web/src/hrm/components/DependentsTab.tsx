@@ -95,7 +95,7 @@ function Dependents({ employee }: { employee: Employee }) {
     <Stack gap="md">
       {canEdit && (
         <TabActions>
-          <Button size="xs" leftSection={<IconPlus {...icon.text} />} onClick={() => setEditing('new')}>
+          <Button leftSection={<IconPlus {...icon.button} />} onClick={() => setEditing('new')}>
             {t('hrm.dependent.create')}
           </Button>
         </TabActions>
@@ -164,7 +164,7 @@ function DependentModal({ employeeId, dependent, onClose }: { employeeId: number
         <TextField name="id_number" label={t('hrm.dependent.id_number')} maxLength={50} />
         <MonthField name="deduction_from" label={t('hrm.dependent.deduction_from')} clearable />
         <MonthField name="deduction_to" label={t('hrm.dependent.deduction_to')} clearable />
-        <FormActions submitLabel={t('hrm.common.save')} onCancel={onClose} cancelLabel={t('hrm.common.cancel')} />
+        <FormActions submitLabel={t(dependent ? 'hrm.common.save' : 'hrm.dependent.add')} onCancel={onClose} cancelLabel={t('hrm.common.cancel')} />
       </Form>
     </FormModal>
   )

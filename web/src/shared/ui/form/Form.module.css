@@ -19,7 +19,30 @@
   text-align: right;
 }
 
-.fullRow {
+/* A section's fields: one column below 1280px; from there six, where a field takes half a row,
+   a short one (a date, a choice, a phone number) a third, and a wide one the whole row. */
+.fields {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--mantine-spacing-md);
+}
+
+@media (min-width: 80em) {
+  .fields:not([data-wide]) {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+  }
+
+  .fields:not([data-wide]) > * {
+    grid-column: span 3;
+  }
+
+  .fields:not([data-wide]) > .short {
+    grid-column: span 2;
+  }
+}
+
+/* After the spans above, so it wins over them. */
+.fields > .fullRow {
   grid-column: 1 / -1;
 }
 
@@ -30,19 +53,19 @@
   height: var(--mmerp-control-height);
 }
 
-/* A page form's footer stays on screen however long the form; the rule turns primary once
-   something is edited. */
+/* A page form's footer stays on screen however long the form. Pinned 1px past the edge so
+   FormActions can tell when the form runs on under it, and lift it off with a shadow. */
 .bar {
   position: sticky;
-  bottom: 0;
+  bottom: -1px;
   z-index: 1;
   padding: var(--mantine-spacing-sm) 0;
   background: var(--mantine-color-body);
   border-top: 1px solid var(--mantine-color-default-border);
 }
 
-.bar[data-dirty] {
-  border-top-color: var(--mantine-color-primary-filled);
+.bar[data-stuck] {
+  box-shadow: var(--mmerp-shadow-footer);
 }
 
 .dot {

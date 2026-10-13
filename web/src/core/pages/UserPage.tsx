@@ -97,7 +97,7 @@ function RolesTab({ userId }: { userId: number }) {
   return (
     <Stack gap="md">
       <TabActions>
-        <Button size="xs" leftSection={<IconPlus {...icon.text} />} onClick={() => setGranting(true)}>
+        <Button leftSection={<IconPlus {...icon.button} />} onClick={() => setGranting(true)}>
           {t('core.user.grant')}
         </Button>
       </TabActions>

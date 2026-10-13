@@ -5,7 +5,7 @@ import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { useTranslation } from 'react-i18next'
 import { api, unwrap, type OrgUnit, type OrgUnitInput } from '@/shared/api/core'
-import { OrgTree } from '@/shared/org'
+import { OrgTree, useOrgView } from '@/shared/org'
 import { Form, FormActions, OrgUnitField, SelectField, TextField } from '@/shared/ui/form'
 import { notifySuccess } from '@/shared/ui/notify'
 import { FormModal, ListPage } from '@/shared/ui/page'
@@ -20,6 +20,7 @@ type Values = { kind: string; name: string; parent_id: string | null; tax_code: 
 export function OrgUnitsPage() {
   const { t } = useTranslation()
   const [editing, setEditing] = useState<OrgUnit | 'new' | null>(null)
+  const { view, tabs } = useOrgView()
   return (
     <ListPage
       title={t('core.org.title')}
@@ -29,9 +30,11 @@ export function OrgUnitsPage() {
           {t('core.org.create')}
         </Button>
       }
+      tabs={tabs}
     >
       <OrgTree
         label={t('core.org.title')}
+        view={view}
         emptyDescription={t('core.org.empty_description')}
         menu={(unit) => (
           <Menu.Item leftSection={<IconPencil {...icon.text} />} onClick={() => setEditing(unit)}>

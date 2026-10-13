@@ -61,10 +61,10 @@ function DocumentLayout({ actions, error, approval, history, sections = [], full
 
   if (wide && !fullWidth)
     return (
-      <Page {...header} actions={actions}>
+      <Page {...header} actions={actions} centered="calc(var(--mmerp-content-width) + var(--mmerp-side-width) + var(--mantine-spacing-xl))">
         {banner}
         <Flex gap="xl" align="flex-start">
-          <Box flex={1} miw={0} maw="var(--mmerp-content-width)">
+          <Box flex={1} miw={0}>
             {children}
           </Box>
           <Stack className={classes.side} gap="md">
@@ -100,13 +100,16 @@ function DocumentLayout({ actions, error, approval, history, sections = [], full
             </Tabs.Tab>
           ))}
         </Tabs.List>
-        <Tabs.Panel value="details" pt="md">
+        {/* The tab line runs the page's width; what is under it is centred unless full width. */}
+        <Tabs.Panel value="details" pt="md" maw={fullWidth ? undefined : 'var(--mmerp-content-width)'} mx="auto">
           {children}
         </Tabs.Panel>
         {/* On a wide screen the panels keep the side column's reading width. */}
         {side.map((p) => (
-          <Tabs.Panel key={p.key} value={p.key} pt="md" maw={wide ? readingWidth : undefined}>
-            {p.content}
+          <Tabs.Panel key={p.key} value={p.key} pt="md" maw={fullWidth ? undefined : 'var(--mmerp-content-width)'} mx="auto">
+            <Box maw={wide ? readingWidth : undefined} mx="auto">
+              {p.content}
+            </Box>
           </Tabs.Panel>
         ))}
       </Tabs>

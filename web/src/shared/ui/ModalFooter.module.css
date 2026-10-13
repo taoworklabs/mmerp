@@ -1,0 +1,6 @@
+/* Across the modal's whole width, set off from its content by a rule, like its header. */
+.footer {
+  margin-inline: calc(var(--mb-padding) * -1);
+  padding: var(--mantine-spacing-md) var(--mb-padding) 0;
+  border-top: 1px solid var(--mantine-color-default-border);
+}

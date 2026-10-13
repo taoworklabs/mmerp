@@ -99,14 +99,13 @@ function Instance({ docType, id, inst, onDone, sticky }: { docType: string; id: 
         // In the narrow side column the pair splits the width; as a sticky bar it sits on the right.
         <Group gap="xs" grow={!sticky} justify="flex-end" className={sticky ? classes.bar : undefined}>
           {has('reject') && (
-            <Button size="xs" variant="outline" color="danger" leftSection={<IconX {...icon.text} />} disabled={busy} onClick={() => setModal('reject')}>
+            <Button variant="outline" color="danger" leftSection={<IconX {...icon.button} />} disabled={busy} onClick={() => setModal('reject')}>
               {t('shared.approval.reject')}
             </Button>
           )}
           {has('approve') && (
             <Button
-              size="xs"
-              leftSection={<IconCheck {...icon.text} />}
+              leftSection={<IconCheck {...icon.button} />}
               disabled={busy}
               onClick={() => void decide('approve', () => unwrap(api.POST('/approvals/{id}/approve', { params: path, body: { step } }))).catch(() => {})}
             >
@@ -167,7 +166,7 @@ function StepBody({ step, current, onReassign, busy }: { step: ApprovalStep; cur
           {step.fallback && ` · ${t('shared.approval.fallback')}`}
         </Text>
         {onReassign && (
-          <Button size="compact-xs" variant="subtle" leftSection={<IconUserShare {...icon.text} />} disabled={busy} onClick={onReassign}>
+          <Button variant="subtle" leftSection={<IconUserShare {...icon.button} />} disabled={busy} onClick={onReassign}>
             {t('shared.approval.reassign')}
           </Button>
         )}

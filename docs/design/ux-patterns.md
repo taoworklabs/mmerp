@@ -2,6 +2,8 @@
 
 Status: **decided on 2026-10-12.** Nothing in `web/src` has changed yet. Visual tokens and components are already settled in `design-direction.md` and the `mmerp-ui` skill; this document is about behaviour and structure. Every proposal below uses the tokens and components named in that skill; what does not exist yet is listed in section 6.
 
+Superseded on 2026-10-13 (`ui.md` and the `mmerp-ui` skill are authoritative): a create page's footer shows from the start with Cancel (only an edit's footer waits for a change); there are no `xs` buttons, every button is the default size; and the attachments and discussion panels show their empty list in their own solid frame rather than `EmptyState`.
+
 Reference: the public Atlassian Design System guidance (components: form, inline edit, modal dialog, dynamic table, flag, banner, empty state, page header) read on 2026-10-12, and the publicly visible structure of Jira. Only behavioural and structural principles are taken; no asset, illustration or copy.
 
 ## 1. Audit of the current screens

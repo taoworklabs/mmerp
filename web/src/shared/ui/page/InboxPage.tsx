@@ -1,4 +1,4 @@
-import { Box, Button, Flex, NavLink, Stack, Text, VisuallyHidden } from '@mantine/core'
+import { Box, Button, Flex, Group, NavLink, Stack, Text, VisuallyHidden } from '@mantine/core'
 import { useMediaQuery } from '@mantine/hooks'
 import { IconArrowLeft } from '@tabler/icons-react'
 import type { ReactNode } from 'react'
@@ -54,29 +54,44 @@ export function InboxPage({ list, detail, onBack, ...header }: Props) {
   )
 }
 
-// InboxList holds the inbox's items as flat rows, without bullets or a box.
-export function InboxList({ label, children }: { label: string; children: ReactNode }) {
+// InboxList holds the inbox's items as flat rows, without bullets; framed, as a page's feed
+// (notifications), they sit in one frame ruled apart, like a table inside a page.
+export function InboxList({ label, framed = false, children }: { label: string; framed?: boolean; children: ReactNode }) {
   return (
-    <Stack gap="xxxs" component="ul" className={classes.items} aria-label={label}>
+    <Stack gap={framed ? 0 : 'xxxs'} component="ul" className={framed ? `${classes.items} ${classes.framed}` : classes.items} aria-label={label}>
       {children}
     </Stack>
   )
 }
 
+// InboxGroup heads the rows that follow it in a framed list, e.g. a day.
+export function InboxGroup({ label }: { label: string }) {
+  return (
+    <Text component="li" size="xs" fw={600} c="dimmed" className={classes.group}>
+      {label}
+    </Text>
+  )
+}
+
 // InboxRow is one item of a feed (waiting approvals, notifications); the selected one is
-// tinted, an unread one is bold and announced as such.
+// tinted, an unread one is bold, marked with a dot and announced as such. icon leads the row
+// (what kind of item it is), aside ends it (when it happened).
 export function InboxRow({
   active,
   unread = false,
   onClick,
   label,
   description,
+  icon: lead,
+  aside,
 }: {
   active: boolean
   unread?: boolean
   onClick: () => void
   label: ReactNode
   description: string
+  icon?: ReactNode
+  aside?: ReactNode
 }) {
   const { t } = useTranslation()
   return (
@@ -86,6 +101,15 @@ export function InboxRow({
         active={active}
         onClick={onClick}
         classNames={{ label: unread ? classes.unread : undefined }}
+        leftSection={lead}
+        rightSection={
+          (aside || unread) && (
+            <Group gap="sm" wrap="nowrap">
+              {aside}
+              <span className={classes.dot} data-unread={unread || undefined} aria-hidden />
+            </Group>
+          )
+        }
         label={
           <>
             {unread && <VisuallyHidden>{t('shared.inbox.unread')}: </VisuallyHidden>}

@@ -34,7 +34,7 @@ One-line description: what the list holds, or the record's key facts
 ```
 
 - Exactly one primary button per page, rightmost. Up to three buttons in total; beyond that the rest go into `MoreActions place="page"` (`actions.md`).
-- `RecordPage` adds an avatar or icon (`leading`) left of the title and replaces the rule with its tabs.
+- `RecordPage` adds an avatar or icon (`leading`) left of the title and replaces the rule with its tabs; so does a `ListPage` with view `tabs` (the org tree: tree, table).
 - Below 768px the actions wrap under the title at full width.
 
 ## Widths
@@ -42,10 +42,10 @@ One-line description: what the list holds, or the record's key facts
 | Region | Width |
 | --- | --- |
 | Lists, wide documents (`fullWidth`), reports | Full width of the content area |
-| Form sections (`FormSection`) and a document's main column | At most 1200px (`--mmerp-content-width`), applied by the components |
+| Form sections (`FormSection`) and a document's main column | At most 1200px (`--mmerp-content-width`), applied by the components; on record and form pages centred under the header's rule or the tab line (`RecordPage`, `DocumentPage`, `Page centered`), the header and tabs keeping the full width |
 | Document side column, inbox list | 360px |
 | Side panel, side-column content shown as a tab | 480px (`readingWidth`) |
-| Modal (`FormModal`) | `lg` (Mantine), fullscreen below 1024px |
+| Modal (`FormModal`) | 440px (`md`), 620px with `wide` (`lg`), fullscreen below 1024px |
 
 Screens set none of these; the templates and components do.
 
@@ -111,11 +111,11 @@ Employees › Nguyễn Văn An
 (NA) Nguyễn Văn An                                    [Secondary] [Primary]
      NV0001 · Kế toán · [Active]
 [Info] [Dependants] [Balances] [Contracts] [Attachments] [Discussion]
-───────────────────────────────────────────────────── [xs action] (TabActions)
+───────────────────────────────────────────────────── [action] (TabActions)
 tab content: form sections, inline-edit fields, or a DataTable
 ```
 
-The selected tab lives in the URL. A tab's own buttons sit in `TabActions`, size `xs`.
+The selected tab lives in the URL. A tab's own buttons sit in `TabActions`, at the default size.
 
 ### Create page
 
@@ -127,7 +127,7 @@ Section title        field            field
 Description          field            field
 ───────────────────────────────────────────────────────────────────────
 Lines (wide section: title on top, table full width)
-▔ sticky footer: Unsaved changes · Discard [Create draft] ▔
+▔ sticky footer from the start:                  [Cancel] [Create draft] ▔
 ```
 
 After a successful create: toast, then the new record's page.

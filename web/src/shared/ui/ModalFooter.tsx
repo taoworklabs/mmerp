@@ -1,0 +1,12 @@
+import { Group } from '@mantine/core'
+import type { ReactNode } from 'react'
+import classes from './ModalFooter.module.css'
+
+// ModalFooter holds a modal's buttons, right-aligned in a band across the modal under a rule.
+export function ModalFooter({ children }: { children: ReactNode }) {
+  return (
+    <Group justify="flex-end" className={classes.footer}>
+      {children}
+    </Group>
+  )
+}

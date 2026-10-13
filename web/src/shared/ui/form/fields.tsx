@@ -1,6 +1,6 @@
 import { Checkbox, FileInput, NumberInput, PasswordInput, Select, Textarea, TextInput } from '@mantine/core'
 import { DateInput, MonthPickerInput } from '@mantine/dates'
-import { IconFileSpreadsheet } from '@tabler/icons-react'
+import { IconCalendar, IconFileSpreadsheet } from '@tabler/icons-react'
 import { useController, useFormContext, type RegisterOptions } from 'react-hook-form'
 import { useTranslation } from 'react-i18next'
 import { icon } from '../theme'
@@ -13,14 +13,15 @@ function separators(language: string) {
 }
 
 // bare drops the visible label (kept as aria-label) and the description, for a field in a table
-// cell under a column header that already names it.
-type Base = { name: string; label: string; required?: boolean; description?: string; readOnly?: boolean; bare?: boolean }
+// cell under a column header that already names it. short takes a third of a FormSection row
+// instead of half, for a value that is short whatever it holds (a date, a choice, a phone number).
+type Base = { name: string; label: string; required?: boolean; description?: string; readOnly?: boolean; bare?: boolean; short?: boolean }
 
 // Long text spans the whole row of a FormSection grid.
 const wideStyle = { gridColumn: '1 / -1' }
 
 // Every field: label above, * when required, error under the input, checked on blur and submit.
-function useField({ name, label, required, bare }: Base, rules: RegisterOptions = {}) {
+function useField({ name, label, required, bare, short }: Base, rules: RegisterOptions = {}) {
   const { t } = useTranslation()
   const { control } = useFormContext()
   const { field, fieldState } = useController({
@@ -32,6 +33,7 @@ function useField({ name, label, required, bare }: Base, rules: RegisterOptions 
     field,
     common: {
       id: fieldId(name),
+      className: short ? classes.short : undefined,
       label: bare ? undefined : label,
       'aria-label': bare ? label : undefined,
       withAsterisk: required,
@@ -43,7 +45,16 @@ function useField({ name, label, required, bare }: Base, rules: RegisterOptions 
 }
 
 export function TextField(
-  props: Base & { type?: 'text' | 'email' | 'tel'; maxLength?: number; multiline?: boolean; wide?: boolean; autoComplete?: string; rules?: RegisterOptions },
+  props: Base & {
+    type?: 'text' | 'email' | 'tel'
+    maxLength?: number
+    multiline?: boolean
+    wide?: boolean
+    autoComplete?: string
+    // An example of the format ("VD: 0912 345 678"), only where the label does not make it plain.
+    placeholder?: string
+    rules?: RegisterOptions
+  },
 ) {
   const { field, common } = useField(props, props.rules)
   const shared = {
@@ -51,6 +62,8 @@ export function TextField(
     description: props.description,
     readOnly: props.readOnly,
     maxLength: props.maxLength,
+    // A read-only field shows only its value; a sample there would read as data.
+    placeholder: props.readOnly ? undefined : props.placeholder,
     style: props.wide || props.multiline ? wideStyle : undefined,
     value: field.value ?? '',
     onChange: (e: { currentTarget: { value: string } }) => field.onChange(e.currentTarget.value),
@@ -84,14 +97,23 @@ export function parseDate(input: string): string | null {
   return date.toISOString().slice(0, 10)
 }
 
+// A date in a form shows a calendar and, while it can be edited, its format; a table cell has no
+// room for either.
+function dateLook({ bare, readOnly }: Base, format: string) {
+  if (bare) return {}
+  return { leftSection: <IconCalendar {...icon.text} />, leftSectionPointerEvents: 'none' as const, placeholder: readOnly ? undefined : format }
+}
+
 // DateField holds a business date as YYYY-MM-DD; shown in the user's format, weeks start on Monday.
 export function DateField(props: Base & { clearable?: boolean }) {
+  const { t } = useTranslation()
   const { field, common } = useField(props)
   return (
     <DateInput
       {...common}
       description={props.bare ? undefined : props.description}
       readOnly={props.readOnly}
+      {...dateLook(props, t('shared.form.date_placeholder'))}
       value={field.value ?? null}
       onChange={(v) => field.onChange(v ?? null)}
       valueFormat="DD/MM/YYYY"
@@ -103,12 +125,14 @@ export function DateField(props: Base & { clearable?: boolean }) {
 
 // MonthField holds a month as YYYY-MM, shown as MM/YYYY.
 export function MonthField(props: Base & { clearable?: boolean }) {
+  const { t } = useTranslation()
   const { field, common } = useField(props)
   return (
     <MonthPickerInput
       {...common}
       description={props.bare ? undefined : props.description}
       readOnly={props.readOnly}
+      {...dateLook(props, t('shared.form.month_placeholder'))}
       value={field.value ? `${field.value}-01` : null}
       onChange={(v) => field.onChange(v ? v.slice(0, 7) : null)}
       valueFormat="MM/YYYY"

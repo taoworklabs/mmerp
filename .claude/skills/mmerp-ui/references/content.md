@@ -18,8 +18,9 @@ Every visible string is an i18n key (`<area>.<screen>.<element>`) with both `vi`
 | Help text | One sentence under the input, only when the label is not enough | "Dùng cho hóa đơn điện tử." |
 | Filter placeholder | The filter's name, same as its `aria-label` | "Trạng thái" / "Status" |
 | Search placeholder | What can be searched, plus how it applies | "Mã hoặc họ tên, nhấn Enter" |
+| Field placeholder | Only a format: dates show it by themselves; otherwise a sample after "VD:", where the label does not make the format plain | "VD: 0912 345 678" / "e.g. 0912 345 678" |
 | Column header | Short noun; the unit of a money column goes here | "Lương cơ bản (₫)" |
-| Section title + description | Title is a noun; description one sentence on what the section holds | "Thông tin chung" · "Mã, tên và cách liên hệ." |
+| Section title + description | Title is a noun; description one sentence on what the section holds | "Thông tin chính" · "Danh tính và vị trí của nhân viên trong tổ chức." |
 | Page description | One line: what the list holds, or the record's key facts | "Hồ sơ nhân viên trong các đơn vị được phân quyền." |
 
 ## Buttons

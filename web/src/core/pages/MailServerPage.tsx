@@ -68,6 +68,7 @@ export function MailServerPage() {
 
   return (
     <Page
+      centered
       title={t('core.mail.title')}
       description={t('core.mail.description')}
       actions={

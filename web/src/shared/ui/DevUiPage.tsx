@@ -11,6 +11,7 @@ import { DevUiPatterns } from './DevUiPatterns'
 import { FieldList } from './FieldList'
 import { OrgUnitName } from './OrgUnitName'
 import { StatusBadge } from './StatusBadge'
+import { TreeList } from './TreeList'
 import { LinkTile, StatTile, TileGrid } from './Tile'
 import { CellGrid } from './CellGrid'
 import { CheckboxField, DateField, DecimalField, FileField, Form, FormActions, FormRow, FormSection, InputRow, MoneyField, MonthField, MonthFilter, OrgUnitField, OrgUnitFilter, PasswordField, SearchInput, SelectField, SensitiveField, TextField } from './form'
@@ -102,6 +103,22 @@ export default function DevUiPage({ withSections: WithSections }: Props) {
             ['Lý do', 'Du lịch nước ngoài'],
           ]}
         />
+        <TreeList
+          label={t('shared.devui.people')}
+          nodes={[
+            {
+              key: 1,
+              item: 'Công ty CP Demo',
+              children: [
+                { key: 2, item: 'Kế toán', children: [] },
+                { key: 3, item: 'Chi nhánh Hà Nội', children: [{ key: 4, item: 'Kinh doanh', children: [] }] },
+              ],
+            },
+          ]}
+          render={(name) => <Text inherit>{name}</Text>}
+          meta={() => 'Meta'}
+          toggleLabel={(name) => name}
+        />
       </Stack>
       <Stack gap="xs">
         <Title order={2}>{t('shared.devui.tiles')}</Title>
@@ -166,12 +183,13 @@ export default function DevUiPage({ withSections: WithSections }: Props) {
             <TextField name="code" label={t('shared.devui.code')} required description={t('shared.devui.hint')} />
             <PasswordField name="password" label={t('shared.devui.password')} />
             <OrgUnitField name="unit" label={t('shared.devui.org_unit')} clearable />
-            <DateField name="date" label={t('shared.devui.date')} clearable />
-            <MonthField name="month" label={t('shared.devui.month')} />
             <FileField name="file" label={t('shared.devui.file')} accept=".xlsx" description={t('shared.devui.hint')} />
+            <DateField name="date" label={t('shared.devui.date')} clearable short />
+            <MonthField name="month" label={t('shared.devui.month')} short />
             <SelectField
               name="choice"
               label={t('shared.devui.choice')}
+              short
               data={[
                 { value: 'a', label: 'A' },
                 { value: 'b', label: 'B' },
@@ -285,7 +303,7 @@ export default function DevUiPage({ withSections: WithSections }: Props) {
             content: (
               <Stack gap="md">
                 <TabActions>
-                  <Button size="xs">{t('shared.devui.primary')}</Button>
+                  <Button>{t('shared.devui.primary')}</Button>
                 </TabActions>
                 <EmptyState title={t('shared.devui.empty')} />
               </Stack>

@@ -39,7 +39,7 @@ export function BalancesTab({ employee }: { employee: Employee }) {
     <Stack gap="md">
       {canAdjust && (
         <TabActions>
-          <Button size="xs" leftSection={<IconPlusMinus {...icon.text} />} onClick={() => setAdjusting(true)}>
+          <Button leftSection={<IconPlusMinus {...icon.button} />} onClick={() => setAdjusting(true)}>
             {t('hrm.balance.adjust')}
           </Button>
         </TabActions>

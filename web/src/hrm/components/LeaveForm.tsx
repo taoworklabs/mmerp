@@ -97,7 +97,7 @@ export function LeaveForm({ leave, self, chooseEmployee, onCreated }: Props) {
         <DateField name="end_date" label={t('hrm.leave.end_date')} required readOnly={ro} />
         <TextField name="reason" label={t('hrm.leave.reason')} description={t('hrm.leave.reason_hint')} multiline maxLength={1000} readOnly={ro} />
       </FormSection>
-      {editable && <FormActions submitLabel={leave ? t('hrm.common.save') : t('hrm.common.create_draft')} />}
+      {editable && <FormActions submitLabel={leave ? t('hrm.common.save') : t('hrm.common.create_draft')} cancelTo={leave ? undefined : '/hrm/leaves'} />}
       {mutation.dialog}
     </Form>
   )

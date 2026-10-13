@@ -33,7 +33,7 @@ test('an HRM user reads the whole org tree inside HRM, without edit actions', as
   await signInAs(page, hr, '/hrm/overview')
   await page.getByRole('navigation').getByRole('link', { name: 'Cơ cấu tổ chức' }).click()
   await expect(page).toHaveURL(/\/hrm\/org$/)
-  await expect(page.getByRole('table', { name: 'Cơ cấu tổ chức' }).getByText(dept)).toBeVisible()
+  await expect(page.getByRole('list', { name: 'Cơ cấu tổ chức' }).getByText(dept)).toBeVisible()
   await expect(page.getByRole('link', { name: 'Sửa cơ cấu' })).toHaveCount(0)
   await expect(page.getByRole('button', { name: 'Thao tác khác' })).toHaveCount(0)
 

@@ -1,0 +1,24 @@
+/* The panel measures its own width: a side column is too narrow for the empty list's icon. */
+.panel {
+  container-type: inline-size;
+}
+
+/* The list lights up while files are dragged over the panel. */
+.list {
+  transition: background-color 100ms ease;
+}
+
+.list[data-active] {
+  border-color: var(--mantine-primary-color-filled);
+  background: var(--mantine-primary-color-light);
+}
+
+.row + .row {
+  border-top: 1px solid var(--mantine-color-default-border);
+}
+
+@container (max-width: 25em) {
+  .bigIcon {
+    display: none;
+  }
+}

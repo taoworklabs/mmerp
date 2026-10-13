@@ -31,9 +31,11 @@ Each colour is a ten-step scale, palest (0) to darkest (9). Components read it b
 | placeholder | automatic | `#6B6E76` | Input placeholders only (5.1:1) |
 | border | `withBorder`, `var(--mantine-color-default-border)` | `#0B120E24` (translucent) | Dividers, table rules, frames, outlined buttons. Translucent so it reads on white and on the sunken tone alike |
 | frame border | automatic on `Paper withBorder` and table rules (`gray-3`) | `#DDDEE1` | Same tone as `border`, drawn solid by Mantine |
-| input border | automatic (`gray-4`) | `#B4B7BD` | Edges of inputs, checkboxes, radios and inline edit; the filter bar's search box uses `border`, like the chips and tool buttons beside it (`tables.md`) |
+| input border | automatic on fields (`global.css`), `var(--mmerp-input-border)` | `#0B120E33` (translucent) | Edges of text fields and inline edit, a step stronger than `border`; the filter bar's search box uses `border`, like the chips and tool buttons beside it (`tables.md`) |
+| control border | automatic (`gray-4`) | `#B4B7BD` | Edges of checkboxes and radios: small, so they keep the stronger edge |
 | surface | `var(--mmerp-elevation-surface)`, default `Paper` background | `#FFFFFF` | Tables, forms, cards, the page |
-| surface sunken | `var(--mmerp-elevation-surface-sunken)` | `#F8F8F8` | Table header row, group and total rows, tile hover, grid cells that take no value |
+| surface sunken | `var(--mmerp-elevation-surface-sunken)` | `#F8F8F8` | Group and total rows, tile hover, grid cells that take no value |
+| table header | `var(--mmerp-table-header)` | `#F0F1F2` | A table's column header row (`DataTable`, `LinesTable`, `CellGrid`): a step deeper than the sunken rows |
 | disabled | automatic | `#F0F1F2` | Disabled input background |
 | neutral | `color="gray"` | tint `#F0F1F2`, text `#505258` (badges: `#DDDEE1`, `#3B3D42`) | Neutral badges, quiet icon buttons, empty-state icon |
 
@@ -67,6 +69,7 @@ Don't:
 <Text c="#666">…</Text>            // colour code: lint fails outside shared/ui
 <Text c="gray.6">…</Text>          // a step instead of a role: use c="dimmed"
 <Alert color="orange">…</Alert>    // a hue instead of a meaning: use color="warning"
+// Accent hues (grape, blue, teal, orange, red, green) only name a kind: PersonAvatar, OrgUnitIcon, the file-type icons of AttachmentPanel.
 <Alert color="discovery">…</Alert> // discovery for something that is not new
 ```
 
@@ -76,16 +79,16 @@ Font: Inter Variable, self-hosted. Lines sit on a 4px grid.
 
 | Key | Size / line | Use |
 | --- | --- | --- |
-| `xs` | 12 / 16 | Captions, column headers, badges, field labels. The minimum size |
-| `sm` | 14 / 20 | Body text, table cells, inputs, buttons, descriptions |
+| `xs` | 12 / 16 | Captions, column headers, badges, field labels, form section descriptions. The minimum size |
+| `sm` | 14 / 20 | Body text, table cells, inputs, buttons, page descriptions |
 | `md` | 14 / 20 | Same as `sm` (Mantine's default size) |
-| `lg` | 16 / 24 | Modal titles, larger body text |
-| `xl` | 20 / 24 | Stat values in tiles |
+| `lg` | 16 / 24 | Larger body text |
+| `xl` | 20 / 24 | Modal titles (weight 650), stat values in tiles |
 | `h1` (`<Title order={1}>`) | 24 / 28, weight 650 | Page title, one per page, set by the page template |
 | `h2` (`<Title order={2}>`) | 16 / 20, weight 650 | Section title |
 | `h3` (`<Title order={3}>`) | 14 / 20, weight 650 | Sub-section title |
 
-Weights: 400 body, 500 buttons, tabs, navigation, identifiers and column headers; 600 field labels, totals, emphasis; 650 headings. At most three heading levels on a page.
+Weights: 400 body, 500 buttons, tabs, navigation and identifiers; 600 field labels, column headers, totals, emphasis; 650 headings. At most three heading levels on a page.
 
 Field labels are 12px, weight 600, `dimmed`: lighter than the value they name. The theme sets this on every input; a screen sets nothing.
 
@@ -129,10 +132,11 @@ Components already carry their radius through theme defaults; set `radius` only 
 
 | Level | Surface | Shadow | Use |
 | --- | --- | --- | --- |
-| Sunken | `--mmerp-elevation-surface-sunken` | none | A well inside the page: table headers, group and total rows, unavailable cells |
+| Sunken | `--mmerp-elevation-surface-sunken` | none | A well inside the page: group and total rows, unavailable cells; a table's header row sits a step deeper (`--mmerp-table-header`) |
 | Default | `--mmerp-elevation-surface` | none | The page and everything flat on it; framed with `withBorder` |
 | Raised | surface | `shadow="xs"` | Reserved for a card that can be dragged; no screen has one yet |
 | Overlay | surface | `md`, `lg`, `xl` (all `0 8px 12px #1E1F2126, 0 0 1px #1E1F214F`) | Menus, popovers, modals, toasts: Mantine applies it |
+| Pinned footer | body | `--mmerp-shadow-footer` (`0 -6px 8px -6px #1E1F2126`, upwards only) | A page form's footer while the form runs on under it (`FormActions`) |
 
 A card on the page is `Paper withBorder`, never a shadow.
 
@@ -140,16 +144,15 @@ A card on the page is `Paper withBorder`, never a shadow.
 
 | What | Value | Where |
 | --- | --- | --- |
-| Page-level control (button, input, select, pagination, `ActionIcon size="input-sm"`) | 30px, `size="sm"` (default) | `--mmerp-control-height`, applied in `global.css` |
-| Section-level control | 24px, `size="xs"` | `--mmerp-control-height-compact` |
+| Control (button, input, select, pagination, `ActionIcon size="input-sm"`), wherever it sits | 30px, `size="sm"` (default) | `--mmerp-control-height`, applied in `global.css` |
 | Touch target below 1024px | 44px | `global.css` |
 | Header | 48px | `app/AppLayout.tsx` |
 | Navigation | 240px, 56px collapsed | `app/AppLayout.tsx` |
 | Table row / header row | 40px / 36px | `DataTable.module.css` |
 | Grid cell (timesheet) | 30px | `CellGrid.module.css` |
 | Scrollbar (`ScrollArea`) | 8px; in a table it runs between the sticky header and footer | `theme.ts`, `DataTable.module.css` |
-| Document side column, inbox list | 360px | `DocumentPage`, `InboxPage` |
-| Content width (form sections, a document's main column) | 1200px | `--mmerp-content-width`, applied by `FormSection` and `DocumentPage` |
+| Document side column, inbox list | 360px | `--mmerp-side-width` (`DocumentPage`), `InboxPage` |
+| Content width (form sections, a document's main column) | 1200px | `--mmerp-content-width`, applied by `FormSection`, `DocumentPage`, `RecordPage` and `Page centered` |
 | Side panel, side-column tab | 480px | `readingWidth` (`page/Page.tsx`) |
 | Breakpoints | `sm` 768, `md` 1024 (navigation becomes a drawer, tables become cards), `lg` 1280 (design size) | `theme.ts` |
 
@@ -161,8 +164,8 @@ Tabler icons (`@tabler/icons-react`), outline, stroke 1.5, always through `icon`
 
 | Constant | Size | Use |
 | --- | --- | --- |
-| `icon.text` | 16 | In text, tables, inputs, `xs` buttons |
-| `icon.button` | 18 | In `sm` buttons, alerts, icon buttons |
+| `icon.text` | 16 | In text, tables, inputs |
+| `icon.button` | 18 | In every button, alerts, icon buttons |
 | `icon.empty` | 24 | Empty-state illustration icon |
 
 Decorative icons are `aria-hidden` and always sit next to text.

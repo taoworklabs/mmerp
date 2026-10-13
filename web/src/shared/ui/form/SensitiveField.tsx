@@ -54,7 +54,7 @@ export function SensitiveField({ name, label, present, canView, canEdit, reveal 
         <Group gap="sm" wrap="nowrap">
           <Text aria-hidden>••••••</Text>
           <VisuallyHidden>{t('shared.sensitive.masked')}</VisuallyHidden>
-          <Button size="xs" variant="subtle" leftSection={<IconEye {...icon.text} />} loading={busy} onClick={() => void show()} aria-label={t('shared.sensitive.show_field', { field: label })}>
+          <Button variant="subtle" leftSection={<IconEye {...icon.button} />} loading={busy} onClick={() => void show()} aria-label={t('shared.sensitive.show_field', { field: label })}>
             {t('shared.sensitive.show')}
           </Button>
         </Group>

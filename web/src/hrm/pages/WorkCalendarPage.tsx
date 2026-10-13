@@ -117,7 +117,7 @@ export function WorkCalendarPage() {
           title={t('hrm.calendar.weeks')}
           actions={
             manage && (
-              <Button size="xs" variant="default" leftSection={<IconPlus {...icon.text} />} onClick={() => setEditingWeek('new')}>
+              <Button variant="default" leftSection={<IconPlus {...icon.button} />} onClick={() => setEditingWeek('new')}>
                 {t('hrm.calendar.add_week')}
               </Button>
             )

@@ -91,6 +91,7 @@ export function DataTable<T>({ columns, rows, rowKey, href, onRowClick, selectio
   if (!wide) return <Cards columns={columns} rows={rows} rowKey={rowKey} href={href} menu={menu} label={label} group={group} footer={footer} />
   return (
     <div
+      data-table
       className={[classes.root, selection && classes.selectable, scrolled && classes.scrolled].filter(Boolean).join(' ')}
       style={{ '--head-height': `${thead.height}px`, '--foot-height': `${tfoot.height}px` } as CSSProperties}
     >
@@ -194,8 +195,8 @@ function bandWidth<T>(columns: Column<T>[], i: number) {
   return n
 }
 
-// How each kind looks: tabular figures, the secondary colour, right alignment, and whether it takes
-// its content's width; text shares the room the others leave, so names and figures lead.
+// How each kind looks: tabular figures, the secondary colour, right alignment, and whether it stays
+// on one line; only text wraps when the table runs out of room.
 type Look = { tabular?: boolean; secondary?: boolean; right?: boolean; fit: boolean }
 const looks: Record<ColumnKind, Look> = {
   text: { fit: false },
@@ -207,8 +208,8 @@ const looks: Record<ColumnKind, Look> = {
 }
 const look = <T,>(c: Column<T>) => looks[c.kind ?? 'text']
 
-// A column the user has not resized takes its content's width unless it is text; so does the first
-// column, while a text column after it takes the rest.
+// A column the user has not resized stays on one line unless it is text; so does the first column
+// while a text column after it can wrap instead.
 function fits<T>(columns: Column<T>[], i: number) {
   const c = columns[i]
   if (!c || c.width !== undefined) return false
@@ -354,7 +355,8 @@ function SortButton<T>({ column, sort, onSort }: { column: Column<T>; sort?: str
   const state = sortState(sort, column.key)
   const Icon = state === 'ascending' ? IconArrowUp : state === 'descending' ? IconArrowDown : IconArrowsSort
   return (
-    <UnstyledButton onClick={() => onSort(state === 'ascending' ? `-${column.key}` : column.key)} fw={500} fz="xs" c={state ? 'var(--mantine-color-text)' : undefined}>
+    // Weight and size follow the header cell, so sortable titles read like the others.
+    <UnstyledButton onClick={() => onSort(state === 'ascending' ? `-${column.key}` : column.key)} fw="inherit" fz="inherit" c={state ? 'var(--mantine-color-text)' : undefined}>
       <Group gap="xxs" wrap="nowrap">
         {column.header}
         <Icon {...icon.text} />

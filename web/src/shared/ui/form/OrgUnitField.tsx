@@ -4,7 +4,7 @@ import { useQuery } from '@tanstack/react-query'
 import { useController, useFormContext } from 'react-hook-form'
 import { useTranslation } from 'react-i18next'
 import { api, unwrap, type OrgUnit } from '@/shared/api/core'
-import { OrgUnitName } from '../OrgUnitName'
+import { OrgUnitIcon, OrgUnitName } from '../OrgUnitName'
 import { FilterChip } from './FilterChip'
 import { fieldId } from './Form'
 import { belowError, type Option } from './fields'
@@ -39,6 +39,7 @@ function useTreeSelect(units: OrgUnit[]) {
   const byValue = new Map(options.map((o) => [o.value, { depth: o.depth, unit: byId.get(o.value) }]))
   return {
     data: options.map(({ value, label }) => ({ value, label })),
+    unitOf: (value: string | null) => (value ? byId.get(value) : undefined),
     renderOption: ({ option }: ComboboxLikeRenderOptionInput<ComboboxItem>) => {
       const row = byValue.get(option.value)
       return row?.unit ? <OrgUnitName unit={row.unit} depth={row.depth} /> : option.label
@@ -94,9 +95,14 @@ export function OrgUnitField({
   const { field, fieldState } = useController({ name, control, rules: { required: required ? t('shared.form.required') : false } })
   const { data = [] } = useOrgUnits({ product, permission })
   const tree = useTreeSelect(data)
+  const chosen = tree.unitOf(field.value ?? null)
   return (
     <Select
-      {...tree}
+      data={tree.data}
+      renderOption={tree.renderOption}
+      // The chosen unit keeps the kind icon it has in the list.
+      leftSection={chosen && <OrgUnitIcon kind={chosen.kind} size="sm" />}
+      leftSectionPointerEvents="none"
       id={fieldId(name)}
       ref={field.ref}
       label={label}

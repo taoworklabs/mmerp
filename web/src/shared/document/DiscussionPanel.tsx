@@ -1,12 +1,15 @@
-import { Button, Combobox, Group, Stack, Text, Textarea, useCombobox } from '@mantine/core'
+import { Box, Button, Combobox, Group, Paper, Stack, Text, Textarea, ThemeIcon, Tooltip, useCombobox } from '@mantine/core'
+import { IconMessages } from '@tabler/icons-react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { api, unwrap } from '@/shared/api/core'
 import { useMe } from '@/shared/auth/me'
-import { errorText, formatDateTime } from '@/shared/i18n'
+import { errorText, formatAgo, formatDateTime } from '@/shared/i18n'
+import { PersonAvatar } from '@/shared/ui/avatar'
 import type { DocumentSection } from '@/shared/ui/page'
 import { ContentSkeleton, ErrorState } from '@/shared/ui/states'
+import { icon } from '@/shared/ui/theme'
 import classes from './DiscussionPanel.module.css'
 import { documentKeys } from './keys'
 import { mentionAt, splitMentions } from './mentions'
@@ -30,7 +33,8 @@ export function useDiscussionSection(docType: string, id: number): DocumentSecti
   }
 }
 
-// DiscussionPanel is the comments on a record, oldest first, and a box to add one when allowed_actions say so.
+// DiscussionPanel is the comments on a record as a conversation, oldest first, each under its
+// author's avatar and name, and a box to add one when allowed_actions say so.
 function DiscussionPanel({ docType, id }: { docType: string; id: number }) {
   const { t } = useTranslation()
   const me = useMe()
@@ -58,42 +62,66 @@ function DiscussionPanel({ docType, id }: { docType: string; id: number }) {
   }
 
   return (
-    <Stack gap="sm">
+    <Stack gap="md" className={classes.panel}>
       {q.data.items.length === 0 ? (
-        <Text size="sm" c="dimmed">
-          {t('shared.discussion.none')}
-        </Text>
+        <Paper withBorder>
+          <Stack align="center" gap="xs" p="lg">
+            <ThemeIcon variant="light" color="gray" size={40} radius="xl" className={classes.bigIcon} aria-hidden>
+              <IconMessages {...icon.button} />
+            </ThemeIcon>
+            <Text size="sm" c="dimmed">
+              {t('shared.discussion.none')}
+            </Text>
+          </Stack>
+        </Paper>
       ) : (
-        <Stack gap="sm">
+        <Stack component="ol" gap="md" className={classes.thread}>
           {q.data.items.map((c) => (
-            <Stack key={c.id} gap="xxxs">
-              <Text size="xs" c="dimmed">
-                {c.author_name} · {formatDateTime(c.created_at, me.timezone)}
-              </Text>
-              <Text size="sm" className={classes.body}>
-                {splitMentions(c.body).map((part, i) =>
-                  part.mention ? (
-                    <Text key={i} span fw={600} c="primary">
-                      {part.text}
+            <Group key={c.id} component="li" align="flex-start" gap="sm" wrap="nowrap">
+              <PersonAvatar name={c.author_name} size="md" />
+              <Stack gap="xxs" miw={0} flex={1}>
+                <Group gap="xs" wrap="nowrap">
+                  <Text size="sm" fw={600} truncate>
+                    {c.author_name}
+                  </Text>
+                  {/* How long ago reads at a glance; the exact time is a hover away. */}
+                  <Tooltip label={formatDateTime(c.created_at, me.timezone)}>
+                    <Text component="time" dateTime={c.created_at} size="xs" c="dimmed" className={classes.time}>
+                      {formatAgo(c.created_at, me.timezone)}
                     </Text>
-                  ) : (
-                    part.text
-                  ),
-                )}
-              </Text>
-            </Stack>
+                  </Tooltip>
+                </Group>
+                <Box className={classes.bubble}>
+                  <Text size="sm" className={classes.body}>
+                    {splitMentions(c.body).map((part, i) =>
+                      part.mention ? (
+                        <Text key={i} span fw={600} c="primary">
+                          {part.text}
+                        </Text>
+                      ) : (
+                        part.text
+                      ),
+                    )}
+                  </Text>
+                </Box>
+              </Stack>
+            </Group>
           ))}
         </Stack>
       )}
       {q.data.allowed_actions.includes('comment') && (
-        <Stack gap="xs">
-          <MentionTextarea docType={docType} id={id} maxLength={q.data.max_length} value={body} error={error} onChange={setBody} />
-          <Group justify="flex-end">
-            <Button size="xs" variant="default" loading={busy} disabled={!body.trim()} onClick={() => void send()}>
-              {t('shared.discussion.send')}
-            </Button>
-          </Group>
-        </Stack>
+        // The box sits where the next comment will, under the writer's own avatar.
+        <Group align="flex-start" gap="sm" wrap="nowrap">
+          <PersonAvatar name={me.name} size="md" />
+          <Stack gap="xs" miw={0} flex={1}>
+            <MentionTextarea docType={docType} id={id} maxLength={q.data.max_length} value={body} error={error} onChange={setBody} />
+            <Group justify="flex-end">
+              <Button variant="default" loading={busy} disabled={!body.trim()} onClick={() => void send()}>
+                {t('shared.discussion.send')}
+              </Button>
+            </Group>
+          </Stack>
+        </Group>
       )}
     </Stack>
   )

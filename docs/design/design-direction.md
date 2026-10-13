@@ -2,6 +2,8 @@
 
 Status: **decided on 2026-10-12** (every recommendation accepted). Phase 2 has started: the token layer (`theme.ts`, `global.css`), `StatusBadge` and the `ui.md` values match these decisions, and the `mmerp-ui` skill describes the result. Still to do: see the end of section 5.
 
+Superseded on 2026-10-13 (`ui.md` and the `mmerp-ui` skill are authoritative): C7 and the `compact-xs` mention, since every button is the one 30px size; C12, since a table's header row sits on its own tone (`--mmerp-table-header`, `#F0F1F2`) at weight 600; and "no shadow outside overlays", since a pinned page-form footer casts an upward shadow (`--mmerp-shadow-footer`).
+
 Reference: the public Atlassian Design System (ADS) docs at atlassian.design (foundations: spacing, radius, typography, elevation; components: button, lozenge) and the values published in the `@atlaskit/tokens` npm package, version 20.4.1 (Apache-2.0), read on 2026-10-12. Only principles and design values (scales, ratios, structure) are taken. No logo, icon asset, illustration or proprietary font (Atlassian Sans, Atlassian Mono, Charlie) is copied. Values marked *(unverified)* come from memory of the product, not from the docs or package, and must be checked before phase 2 relies on them.
 
 ## 1. Audit of the current design

@@ -1,7 +1,16 @@
-import { ActionIcon, Anchor, Button, FileButton, Group, Stack, Text } from '@mantine/core'
-import { IconFile, IconPaperclip, IconTrash } from '@tabler/icons-react'
+import { ActionIcon, Anchor, Button, FileButton, Group, Paper, Stack, Text, ThemeIcon } from '@mantine/core'
+import {
+  IconFile,
+  IconFileTypeDocx,
+  IconFileTypePdf,
+  IconFileTypeXls,
+  IconPaperclip,
+  IconPhoto,
+  IconTrash,
+  type Icon as TablerIcon,
+} from '@tabler/icons-react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { useState } from 'react'
+import { useState, type DragEvent } from 'react'
 import { useTranslation } from 'react-i18next'
 import { api, unwrap, type Attachment } from '@/shared/api/core'
 import { useMe } from '@/shared/auth/me'
@@ -11,6 +20,7 @@ import { notifySuccess } from '@/shared/ui/notify'
 import type { DocumentSection } from '@/shared/ui/page'
 import { ContentSkeleton, ErrorState } from '@/shared/ui/states'
 import { icon } from '@/shared/ui/theme'
+import classes from './AttachmentPanel.module.css'
 import { documentKeys } from './keys'
 import { sectionTitle } from './sectionTitle'
 
@@ -32,7 +42,20 @@ export function useAttachmentSection(docType: string, id: number): DocumentSecti
   }
 }
 
-// AttachmentPanel lists a record's files to download and, as allowed_actions say, adds and removes them.
+// Each kind of file has its own icon and accent colour, so a list of them reads at a glance.
+const photo = { Icon: IconPhoto, color: 'teal' }
+const fileLooks: Record<string, { Icon: TablerIcon; color: string }> = {
+  pdf: { Icon: IconFileTypePdf, color: 'red' },
+  png: photo,
+  jpg: photo,
+  jpeg: photo,
+  docx: { Icon: IconFileTypeDocx, color: 'blue' },
+  xlsx: { Icon: IconFileTypeXls, color: 'green' },
+}
+const fileLook = (name: string) => fileLooks[name.toLowerCase().split('.').pop() ?? ''] ?? { Icon: IconFile, color: 'gray' }
+
+// AttachmentPanel lists a record's files to download and, as allowed_actions say, adds and removes
+// them: through the button above the list, or by dropping files anywhere on the panel.
 function AttachmentPanel({ docType, id }: { docType: string; id: number }) {
   const { t } = useTranslation()
   const me = useMe()
@@ -40,6 +63,7 @@ function AttachmentPanel({ docType, id }: { docType: string; id: number }) {
   const q = useAttachments(docType, id)
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
+  const [dragging, setDragging] = useState(false)
   const [ask, confirm] = useConfirm()
   if (q.isPending) return <ContentSkeleton />
   if (q.isError) return <ErrorState message={errorText(t, q.error)} onRetry={() => void q.refetch()} />
@@ -52,6 +76,13 @@ function AttachmentPanel({ docType, id }: { docType: string; id: number }) {
   // The server tells a file's type from its content; checking the name first only spares
   // a long upload that would be refused.
   const { max_mb: maxMB, accept } = q.data
+  const canAttach = q.data.allowed_actions.includes('attach')
+  const empty = q.data.items.length === 0
+
+  // One file at a time, so each upload succeeds or fails on its own.
+  async function addAll(files: File[]) {
+    for (const f of files) await add(f)
+  }
 
   async function add(file: File | null) {
     if (!file) return
@@ -98,51 +129,81 @@ function AttachmentPanel({ docType, id }: { docType: string; id: number }) {
     }
   }
 
+  const drop = canAttach
+    ? {
+        onDragOver: (e: DragEvent) => {
+          if (!e.dataTransfer.types.includes('Files')) return
+          e.preventDefault()
+          setDragging(true)
+        },
+        // Leaving for a child of the panel is not leaving the panel.
+        onDragLeave: (e: DragEvent) => {
+          if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setDragging(false)
+        },
+        onDrop: (e: DragEvent) => {
+          e.preventDefault()
+          setDragging(false)
+          void addAll([...e.dataTransfer.files])
+        },
+      }
+    : {}
+
   return (
-    <Stack gap="sm">
+    <Stack gap="sm" className={classes.panel} {...drop}>
       {confirm}
-      {q.data.items.length === 0 ? (
-        <Text size="sm" c="dimmed">
-          {t('shared.attachments.none')}
-        </Text>
-      ) : (
-        <Stack gap="xs">
-          {q.data.items.map((a) => (
-            <Group key={a.id} gap="xs" wrap="nowrap" align="center">
-              <IconFile {...icon.text} aria-hidden />
-              <Stack gap={0} miw={0} flex={1}>
-                <Anchor href={`/api/attachments/${a.id}`} size="sm" truncate="end">
-                  {a.name}
-                </Anchor>
-                <Text size="xs" c="dimmed">
-                  {[formatFileSize(a.size), a.uploaded_by_name, formatDateTime(a.uploaded_at, me.timezone)].join(' · ')}
-                </Text>
-              </Stack>
-              {a.allowed_actions.includes('delete') && (
-                <ActionIcon variant="subtle" color="gray" size="lg" aria-label={t('shared.attachments.remove_named', { name: a.name })} onClick={() => void remove(a)}>
-                  <IconTrash {...icon.text} />
-                </ActionIcon>
-              )}
-            </Group>
-          ))}
-        </Stack>
-      )}
-      {error && (
-        <Text size="xs" c="danger" role="alert">
-          {error}
-        </Text>
-      )}
-      {q.data.allowed_actions.includes('attach') && (
+      {canAttach && (
         <Group justify="flex-end">
-          <FileButton onChange={(f) => void add(f)} accept={accept.join(',')}>
+          <FileButton multiple onChange={(files) => void addAll(files)} accept={accept.join(',')}>
             {(props) => (
-              <Button {...props} size="xs" variant="default" loading={busy} leftSection={<IconPaperclip {...icon.text} />}>
+              <Button {...props} variant="default" loading={busy} leftSection={<IconPaperclip {...icon.button} />}>
                 {t('shared.attachments.add')}
               </Button>
             )}
           </FileButton>
         </Group>
       )}
+      {error && (
+        <Text size="xs" c="danger" role="alert">
+          {error}
+        </Text>
+      )}
+      {/* The files sit in a frame, like a table inside a page; it lights up while files are dragged over the panel. */}
+      <Paper withBorder className={classes.list} data-active={dragging || undefined}>
+        {empty ? (
+          <Stack align="center" gap="xs" p="lg">
+            <ThemeIcon variant="light" color={dragging ? 'primary' : 'gray'} size={40} radius="xl" className={classes.bigIcon} aria-hidden>
+              <IconPaperclip {...icon.button} />
+            </ThemeIcon>
+            <Text size="sm" c="dimmed">
+              {t(dragging ? 'shared.attachments.drop' : 'shared.attachments.none')}
+            </Text>
+          </Stack>
+        ) : (
+          q.data.items.map((a) => {
+            const { Icon, color } = fileLook(a.name)
+            return (
+              <Group key={a.id} gap="sm" wrap="nowrap" align="center" p="sm" className={classes.row}>
+                <ThemeIcon variant="light" color={color} size={36} radius="md" aria-hidden>
+                  <Icon {...icon.button} />
+                </ThemeIcon>
+                <Stack gap={0} miw={0} flex={1}>
+                  <Anchor href={`/api/attachments/${a.id}`} size="sm" truncate="end">
+                    {a.name}
+                  </Anchor>
+                  <Text size="xs" c="dimmed">
+                    {[formatFileSize(a.size), a.uploaded_by_name, formatDateTime(a.uploaded_at, me.timezone)].join(' · ')}
+                  </Text>
+                </Stack>
+                {a.allowed_actions.includes('delete') && (
+                  <ActionIcon variant="subtle" color="gray" size="lg" aria-label={t('shared.attachments.remove_named', { name: a.name })} onClick={() => void remove(a)}>
+                    <IconTrash {...icon.text} />
+                  </ActionIcon>
+                )}
+              </Group>
+            )
+          })
+        )}
+      </Paper>
     </Stack>
   )
 }

@@ -21,7 +21,6 @@ export function notifyUndo(message: string, undoLabel: string, onUndo: () => voi
       <Group justify="space-between" wrap="nowrap" gap="sm">
         <span>{message}</span>
         <Button
-          size="xs"
           variant="subtle"
           onClick={() => {
             notifications.hide(id)
