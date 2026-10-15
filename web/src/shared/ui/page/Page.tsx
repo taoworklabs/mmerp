@@ -1,4 +1,4 @@
-import { ActionIcon, Anchor, Breadcrumbs, Flex, Group, Stack, Text, Title, Tooltip } from '@mantine/core'
+import { ActionIcon, Anchor, Box, Breadcrumbs, Flex, Group, Stack, Text, Title, Tooltip } from '@mantine/core'
 import { IconArrowLeft, IconChevronRight } from '@tabler/icons-react'
 import type { ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -21,7 +21,7 @@ export type PageHeaderProps = {
   tabs?: ReactNode
   // No rule under the header: the content draws its own frame.
   plain?: boolean
-  // One record's page (RecordPage, DocumentPage): the breadcrumb ends with the page itself and a
+  // One record's page (DetailPage, DocumentPage): the breadcrumb ends with the page itself and a
   // back button leads the title.
   withBack?: boolean
 }
@@ -33,19 +33,23 @@ export const pageFrame = { px: { base: 'md', md: 'xl', lg: 'xxl' }, py: 'lg' } a
 export const readingWidth = 480
 
 // Page is the frame every page template builds on: header (breadcrumbs, title, at most one
-// primary action), then content. A record's or a form's content is centred at the width it stops
-// at (centered: the content width, or the given one); lists and dashboards use the whole width.
+// primary action), then content. A record's or a form's page is centred at the width it stops at
+// (centered: the content width, or the given one), its header too, so both share a left edge;
+// lists and dashboards use the whole width.
 export function Page({ children, className, centered, ...header }: PageHeaderProps & { children: ReactNode; className?: string; centered?: boolean | string }) {
+  if (centered)
+    return (
+      <Box {...pageFrame} className={className}>
+        <Stack gap="lg" w="100%" maw={centered === true ? 'var(--mmerp-content-width)' : centered} mx="auto">
+          <PageHeader {...header} />
+          {children}
+        </Stack>
+      </Box>
+    )
   return (
     <Stack gap="lg" {...pageFrame} className={className}>
       <PageHeader {...header} />
-      {centered ? (
-        <Stack gap="lg" w="100%" maw={centered === true ? 'var(--mmerp-content-width)' : centered} mx="auto">
-          {children}
-        </Stack>
-      ) : (
-        children
-      )}
+      {children}
     </Stack>
   )
 }

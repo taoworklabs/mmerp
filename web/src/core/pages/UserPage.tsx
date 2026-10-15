@@ -1,4 +1,4 @@
-import { Button, Divider, Menu, Stack, Text } from '@mantine/core'
+import { Button, Menu, Stack, Text } from '@mantine/core'
 import { IconMail, IconPlus, IconTrash, IconUserCircle } from '@tabler/icons-react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
@@ -10,12 +10,12 @@ import { api, ApiError, unwrap, type Grant } from '@/shared/api/core'
 import { errorText } from '@/shared/i18n'
 import { PersonAvatar } from '@/shared/ui/avatar'
 import { DataTable, type Column } from '@/shared/ui/DataTable'
-import { EditableSection, Form, FormActions, OrgUnitField, SelectField } from '@/shared/ui/form'
+import { Form, FormActions, OrgUnitField, SelectField } from '@/shared/ui/form'
 import { FieldList } from '@/shared/ui/FieldList'
 import { InlineEditField } from '@/shared/ui/InlineEditField'
 import { useConfirm } from '@/shared/ui/confirm'
 import { notifySuccess } from '@/shared/ui/notify'
-import { FormModal, RecordPage, TabActions } from '@/shared/ui/page'
+import { DetailPage, DetailTabs, FormModal, Panel, TabActions } from '@/shared/ui/page'
 import { ContentSkeleton, EmptyState, ErrorState, NotFoundPage, PageSkeleton } from '@/shared/ui/states'
 import { icon } from '@/shared/ui/theme'
 import { coreKeys } from '../keys'
@@ -29,14 +29,15 @@ export function UserPage() {
   if (user.error instanceof ApiError && user.error.status === 404) return <NotFoundPage back={{ to: '/admin/users', label: t('core.user.back') }} />
   if (user.isError) return <ErrorState message={errorText(t, user.error)} onRetry={() => void user.refetch()} />
   return (
-    <RecordPage
+    <DetailPage
       title={user.data.name}
       description={user.data.login}
       leading={<PersonAvatar name={user.data.name} size="lg" />}
       breadcrumbs={[{ label: t('core.user.title'), to: '/admin/users' }]}
-      aside={{ label: t('core.user.info'), content: <UserProfile userId={id} login={user.data.login} name={user.data.name} email={user.data.email} /> }}
-      tabs={[{ value: 'roles', label: t('core.user.roles'), content: <RolesTab userId={id} /> }]}
-    />
+      side={<DetailTabs tabs={[{ value: 'roles', label: t('core.user.roles'), content: <RolesTab userId={id} /> }]} />}
+    >
+      <UserProfile userId={id} login={user.data.login} name={user.data.name} email={user.data.email} />
+    </DetailPage>
   )
 }
 
@@ -82,6 +83,7 @@ function RolesTab({ userId }: { userId: number }) {
     body = (
       <DataTable
         label={t('core.user.roles')}
+        cards
         columns={columns}
         rows={grants.data}
         rowKey={(g) => g.id}
@@ -153,17 +155,16 @@ function UserProfile({ userId, login, name, email }: { userId: number; login: st
   const { t } = useTranslation()
   const qc = useQueryClient()
   return (
-    <Stack gap="md">
-      <EditableSection title={t('core.user.account')} icon={IconUserCircle}>
+    <>
+      <Panel title={t('core.user.account')} icon={IconUserCircle}>
         <FieldList
           rows={[
             [t('core.user.login'), login],
             [t('core.user.name'), name],
           ]}
         />
-      </EditableSection>
-      <Divider />
-      <EditableSection title={t('core.user.contact')} icon={IconMail}>
+      </Panel>
+      <Panel title={t('core.user.contact')} icon={IconMail}>
         <Stack gap="xxs">
           <InlineEditField
             label={t('core.user.email')}
@@ -179,7 +180,7 @@ function UserProfile({ userId, login, name, email }: { userId: number; login: st
             {t('core.user.email_hint')}
           </Text>
         </Stack>
-      </EditableSection>
-    </Stack>
+      </Panel>
+    </>
   )
 }

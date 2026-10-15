@@ -1,0 +1,29 @@
+/* One column below 1024px, the side column under the main one; from there about 60/40. The
+   cards' label–value pairs share one label width, so their values line up down the page. */
+.columns {
+  --field-list-label: 11rem;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--mantine-spacing-xl);
+  align-items: start;
+}
+
+@media (min-width: 64em) {
+  .columns {
+    grid-template-columns: minmax(0, 62fr) minmax(0, 38fr);
+  }
+}
+
+/* Below 1024px the actions stay reachable at the bottom of the screen instead. */
+.bar {
+  position: fixed;
+  inset: auto 0 0 0;
+  z-index: 100;
+  padding: var(--mantine-spacing-sm) var(--mantine-spacing-md);
+  background: var(--mantine-color-body);
+  border-top: 1px solid var(--mantine-color-default-border);
+}
+
+.barSpace {
+  height: 64px;
+}

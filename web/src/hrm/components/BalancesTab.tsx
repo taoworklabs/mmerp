@@ -34,7 +34,7 @@ export function BalancesTab({ employee }: { employee: Employee }) {
   else if (list.error instanceof ApiError && list.error.status === 404) body = <EmptyState title={t('hrm.balance.no_permission')} />
   else if (list.isError) body = <ErrorState message={errorText(t, list.error)} onRetry={() => void list.refetch()} />
   else if (list.data.length === 0) body = <EmptyState title={t('hrm.balance.empty')} />
-  else body = <DataTable label={t('hrm.employee.tab.balances')} columns={columns} rows={list.data} rowKey={(b) => b.year} />
+  else body = <DataTable label={t('hrm.employee.tab.balances')} columns={columns} rows={list.data} rowKey={(b) => b.year} cards />
   return (
     <Stack gap="md">
       {canAdjust && (

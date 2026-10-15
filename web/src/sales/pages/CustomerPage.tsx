@@ -6,7 +6,7 @@ import { ActivityFeed, documentKeys, useAttachmentSection } from '@/shared/docum
 import { PersonAvatar } from '@/shared/ui/avatar'
 import { loaded } from '@/shared/ui/loaded'
 import { notifySuccess } from '@/shared/ui/notify'
-import { RecordPage } from '@/shared/ui/page'
+import { DetailPage, Panel } from '@/shared/ui/page'
 import { CustomerProfile } from '../components/CustomerProfile'
 import { CustomerStatus } from '../components/CustomerStatus'
 import { useCustomer } from '../hooks/useSales'
@@ -23,7 +23,7 @@ export function CustomerPage() {
   if (!state.ok) return state.fallback
   const c = state.data
   return (
-    <RecordPage
+    <DetailPage
       title={c.name}
       breadcrumbs={[{ label: t('sales.customers.title'), to: '/sales/customers' }]}
       leading={<PersonAvatar name={c.name} size="lg" />}
@@ -35,24 +35,26 @@ export function CustomerPage() {
           <CustomerStatus active={c.active} />
         </Group>
       }
-      aside={{
-        label: t('sales.customer.tab.info'),
-        content: (
-          <CustomerProfile
-            key={c.id}
-            customer={c}
-            onSaved={async () => {
-              await Promise.all([
-                qc.invalidateQueries({ queryKey: salesKeys.customers.all() }),
-                qc.invalidateQueries({ queryKey: documentKeys.history(customerDocType, c.id) }),
-              ])
-              notifySuccess(t('sales.customer.saved'))
-            }}
-          />
-        ),
-      }}
-      tabs={[{ value: attachments.key, label: attachments.title, content: attachments.content, panel: true }]}
-      activity={<ActivityFeed docType={customerDocType} id={c.id} />}
-    />
+      side={
+        <>
+          <Panel title={attachments.title}>{attachments.content}</Panel>
+          <Panel title={t('shared.document.tab.activity')}>
+            <ActivityFeed docType={customerDocType} id={c.id} />
+          </Panel>
+        </>
+      }
+    >
+      <CustomerProfile
+        key={c.id}
+        customer={c}
+        onSaved={async () => {
+          await Promise.all([
+            qc.invalidateQueries({ queryKey: salesKeys.customers.all() }),
+            qc.invalidateQueries({ queryKey: documentKeys.history(customerDocType, c.id) }),
+          ])
+          notifySuccess(t('sales.customer.saved'))
+        }}
+      />
+    </DetailPage>
   )
 }

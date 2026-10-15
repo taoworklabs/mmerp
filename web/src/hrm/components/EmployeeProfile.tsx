@@ -1,76 +1,91 @@
-import { Divider, Stack } from '@mantine/core'
-import { IconAddressBook, IconLock, IconUser, type Icon as TablerIcon } from '@tabler/icons-react'
-import { useRef, useState } from 'react'
-import { useQueryClient } from '@tanstack/react-query'
+import { Anchor } from '@mantine/core'
+import { IconAddressBook, IconLock, IconUser } from '@tabler/icons-react'
+import { useState } from 'react'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
-import type { Employee } from '@/shared/api/hrm'
-import { formatDate } from '@/shared/i18n'
+import { api, unwrap, type Employee } from '@/shared/api/hrm'
+import { useMe } from '@/shared/auth/me'
+import { formatDate, today } from '@/shared/i18n'
 import { documentKeys } from '@/shared/document'
 import { FieldList } from '@/shared/ui/FieldList'
-import { EditableSection, Form, FormActions, SensitiveValue } from '@/shared/ui/form'
+import { DateField, EditablePanel, Form, FormActions, FormFields, OrgUnitField, SensitiveValue } from '@/shared/ui/form'
 import { FormModal } from '@/shared/ui/page'
-import { employeeDocType } from '../keys'
+import { employeeDocType, hrmKeys } from '../keys'
+import { tenure } from '../tenure'
+import { EmployeeField } from './EmployeeField'
+import { EmployeeLink } from './EmployeeLink'
 import { MainFields, PersonalFields, revealSensitive, SensitiveFields, sensitiveFields, useEmployeeForm } from './EmployeeForm'
 
 type Part = 'main' | 'personal' | 'sensitive'
+// A move is saved like any edit, through a form that holds only what it changes.
+export type Move = 'transfer' | 'terminate'
 
 const orDash = (s: string | null | undefined) => s || '—'
 
-// EmployeeProfile is an employee's values in three parts, each read as label–value pairs and
-// edited on its own in a modal: the column is too narrow for a form.
+// EmployeeProfile is an employee's values in three cards, each read as label–value pairs and
+// edited in place. A card shows every value its form edits, those in the page header included,
+// so what can be changed is where it is read.
 export function EmployeeProfile({ employee: e, onSaved }: { employee: Employee; onSaved: () => Promise<void> }) {
   const { t } = useTranslation()
+  const me = useMe()
   const qc = useQueryClient()
-  const [open, setOpen] = useState<Part | null>(null)
   // Bumped by each save, so a sensitive value shown before it is masked again rather than left stale.
   const [saves, setSaves] = useState(0)
-  // The modal unmounts on closing, before it could hand the focus back; this does it.
-  const opener = useRef<HTMLElement | null>(null)
   const canEdit = e.allowed_actions.includes('edit')
-  const part = (p: Part, title: string, icon: TablerIcon) => ({
-    title,
-    icon,
-    editable: canEdit,
-    onEdit: () => {
-      opener.current = document.activeElement as HTMLElement | null
-      setOpen(p)
-    },
+  const canContracts = e.allowed_actions.includes('view_contracts')
+  const contracts = useQuery({
+    queryKey: hrmKeys.contracts.employee(e.id),
+    queryFn: async () => (await unwrap(api.GET('/hrm/employees/{id}/contracts', { params: { path: { id: e.id } } }))) ?? [],
+    enabled: canContracts,
   })
-  const close = () => {
-    setOpen(null)
-    requestAnimationFrame(() => opener.current?.focus())
+  const now = today(me.timezone)
+  // The original contract in force today; appendices only amend it.
+  const current = contracts.data?.find((c) => !c.parent_id && c.status === 'posted' && c.start_date <= now && (!c.end_date || c.end_date >= now))
+  const served = tenure(e.hire_date, e.termination_date && e.termination_date < now ? e.termination_date : now)
+  const servedText =
+    served.years + served.months === 0
+      ? t('hrm.employee.tenure_new')
+      : [served.years && t('hrm.employee.tenure_years', { count: served.years }), served.months && t('hrm.employee.tenure_months', { count: served.months })].filter(Boolean).join(' ')
+  const saved = async () => {
+    await onSaved()
+    setSaves((n) => n + 1)
   }
+  const edit = (part: Part) => (close: () => void) => <PartForm employee={e} part={part} onClose={close} onSaved={saved} />
 
   return (
-    <Stack gap="md">
-      <EditableSection {...part('main', t('hrm.employee.section.main'), IconUser)}>
+    <>
+      <EditablePanel title={t('hrm.employee.section.main')} icon={IconUser} editable={canEdit} edit={edit('main')}>
         <FieldList
           rows={[
             [t('hrm.employee.full_name'), e.full_name],
             [t('hrm.employee.code'), e.code],
             [t('hrm.employee.org_unit'), e.org_unit_name],
-            [t('hrm.employee.hire_date'), formatDate(e.hire_date)],
-            [t('hrm.employee.manager'), e.manager_code && e.manager_name ? `${e.manager_code} · ${e.manager_name}` : '—'],
+            [t('hrm.employee.job_title'), '—'],
+            [t('hrm.employee.work_location'), '—'],
+            ...(canContracts ? [[t('hrm.employee.contract_type'), current ? current.contract_type_name : '—'] as [string, string]] : []),
+            [t('hrm.employee.hire_date'), `${formatDate(e.hire_date)} · ${servedText}`],
+            [
+              t('hrm.employee.manager'),
+              e.manager_id && e.manager_code && e.manager_name ? <EmployeeLink id={e.manager_id}>{`${e.manager_code} · ${e.manager_name}`}</EmployeeLink> : '—',
+            ],
             [t('hrm.employee.user_login'), orDash(e.user_login)],
             ...(e.termination_date ? [[t('hrm.employee.termination_date'), formatDate(e.termination_date)] as [string, string]] : []),
           ]}
         />
-      </EditableSection>
-      <Divider />
-      <EditableSection {...part('personal', t('hrm.employee.section.personal'), IconAddressBook)}>
+      </EditablePanel>
+      <EditablePanel title={t('hrm.employee.section.personal')} icon={IconAddressBook} editable={canEdit} edit={edit('personal')}>
         <FieldList
           rows={[
             [t('hrm.employee.date_of_birth'), orDash(formatDate(e.date_of_birth))],
             [t('hrm.employee.gender'), e.gender ? t(`hrm.employee.gender.${e.gender}`) : '—'],
-            [t('hrm.employee.phone'), orDash(e.phone)],
-            [t('hrm.employee.email'), orDash(e.email)],
+            [t('hrm.employee.phone'), e.phone ? <Anchor href={`tel:${e.phone.replace(/\s/g, '')}`} size="sm" inherit>{e.phone}</Anchor> : '—'],
+            [t('hrm.employee.email'), e.email ? <Anchor href={`mailto:${e.email}`} size="sm" inherit>{e.email}</Anchor> : '—'],
             [t('hrm.employee.address'), orDash(e.address)],
           ]}
         />
-      </EditableSection>
-      <Divider />
+      </EditablePanel>
       {/* Masked in both views: showing a value is its own audited read, editing or not. */}
-      <EditableSection {...part('sensitive', t('hrm.employee.section.sensitive'), IconLock)}>
+      <EditablePanel title={t('hrm.employee.section.sensitive')} icon={IconLock} editable={canEdit} edit={edit('sensitive')}>
         <FieldList
           key={saves}
           rows={sensitiveFields.map((f) => [
@@ -89,37 +104,55 @@ export function EmployeeProfile({ employee: e, onSaved }: { employee: Employee; 
             />,
           ])}
         />
-      </EditableSection>
-      {open && (
-        <PartModal
-          employee={e}
-          part={open}
-          onClose={close}
-          onSaved={async () => {
-            await onSaved()
-            setSaves((n) => n + 1)
-          }}
-        />
-      )}
-    </Stack>
+      </EditablePanel>
+    </>
   )
 }
 
-// PartModal edits one part with a form holding the whole employee: the API saves it as a whole.
-function PartModal({ employee: e, part, onClose, onSaved }: { employee: Employee; part: Part; onClose: () => void; onSaved: () => Promise<void> }) {
+// PartForm edits one part in its card with a form holding the whole employee: the API saves it as a whole.
+function PartForm({ employee: e, part, onClose, onSaved }: { employee: Employee; part: Part; onClose: () => void; onSaved: () => Promise<void> }) {
   const { t } = useTranslation()
   const { form, save, fieldOf } = useEmployeeForm(e, async () => {
     await onSaved()
     onClose()
   })
   return (
-    <FormModal opened title={t(`hrm.employee.edit.${part}`)} onClose={onClose}>
-      {/* Errors mapped to a field belong to the main part; elsewhere they show as the form's banner. */}
-      <Form form={form} onSubmit={save} fieldOf={part === 'main' ? fieldOf : undefined}>
+    // Errors mapped to a field belong to the main part; elsewhere they show as the form's banner.
+    <Form form={form} onSubmit={save} fieldOf={part === 'main' ? fieldOf : undefined}>
+      <FormFields>
         {part === 'main' && <MainFields employee={e} />}
         {part === 'personal' && <PersonalFields />}
         {part === 'sensitive' && <SensitiveFields employee={e} canView={e.allowed_actions.includes('view_sensitive')} canEdit />}
-        <FormActions submitLabel={t('hrm.common.save')} onCancel={onClose} cancelLabel={t('hrm.common.cancel')} />
+      </FormFields>
+      <FormActions submitLabel={t('hrm.common.save')} onCancel={onClose} cancelLabel={t('hrm.common.cancel')} />
+    </Form>
+  )
+}
+
+// MoveModal moves an employee to another department (and manager), or records their leaving.
+export function MoveModal({ employee: e, move, onClose, onSaved }: { employee: Employee; move: Move; onClose: () => void; onSaved: () => Promise<void> }) {
+  const { t } = useTranslation()
+  const { form, save, fieldOf } = useEmployeeForm(e, async () => {
+    await onSaved()
+    onClose()
+  })
+  return (
+    <FormModal opened title={t(`hrm.employee.${move}_title`, { name: e.full_name })} onClose={onClose}>
+      <Form form={form} onSubmit={save} fieldOf={fieldOf}>
+        {move === 'transfer' ? (
+          <>
+            <OrgUnitField name="org_unit_id" label={t('hrm.employee.org_unit')} required product="hrm" permission="hrm.employee.edit" />
+            <EmployeeField
+              name="manager_id"
+              label={t('hrm.employee.manager')}
+              managerOf={e.id}
+              current={e.manager_id && e.manager_code && e.manager_name ? { id: e.manager_id, code: e.manager_code, name: e.manager_name } : undefined}
+            />
+          </>
+        ) : (
+          <DateField name="termination_date" label={t('hrm.employee.termination_date')} description={t('hrm.employee.terminate_hint')} required />
+        )}
+        <FormActions submitLabel={t(`hrm.employee.${move}`)} onCancel={onClose} cancelLabel={t('hrm.common.cancel')} />
       </Form>
     </FormModal>
   )

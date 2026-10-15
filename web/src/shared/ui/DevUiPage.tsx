@@ -1,4 +1,4 @@
-import { Button, Divider, Group, Menu, SegmentedControl, Stack, Text, Title } from '@mantine/core'
+import { Button, Group, Menu, SegmentedControl, Stack, Text, Title } from '@mantine/core'
 import { IconUsersGroup } from '@tabler/icons-react'
 import { useState, type ReactNode } from 'react'
 import { useForm } from 'react-hook-form'
@@ -14,9 +14,9 @@ import { StatusBadge } from './StatusBadge'
 import { TreeList } from './TreeList'
 import { LinkTile, StatTile, TileGrid } from './Tile'
 import { CellGrid } from './CellGrid'
-import { CheckboxField, CodeField, DateField, DecimalField, EditableSection, FileField, Form, FormActions, FormRow, FormSection, InputRow, MoneyField, MonthField, MonthFilter, OrgUnitField, OrgUnitFilter, PasswordField, SearchInput, SelectField, SensitiveField, SensitiveValue, TextField } from './form'
+import { CheckboxField, CodeField, DateField, DecimalField, EditablePanel, FileField, Form, FormActions, FormRow, FormSection, InputRow, MoneyField, MonthField, MonthFilter, OrgUnitField, OrgUnitFilter, PasswordField, SearchInput, SelectField, SensitiveField, SensitiveValue, TextField } from './form'
 import { useConfirm } from './confirm'
-import { DocumentPage, type DocumentSection, FormModal, InboxList, InboxPage, InboxRow, ListPage, Page, RecordPage, TabActions } from './page'
+import { DetailPage, DetailTabs, DocumentPage, type DocumentSection, FormModal, InboxList, InboxPage, InboxRow, ListPage, Page, Panel, TabActions } from './page'
 import { ContentSkeleton, EmptyState, ErrorState, NotFoundPage, ReadOnlyBanner } from './states'
 
 const rows = [
@@ -52,7 +52,7 @@ export default function DevUiPage({ withSections: WithSections }: Props) {
           onChange={(v) => setSearch({ template: v })}
           data={['page', 'list', 'record', 'document', 'inbox'].map((v) => ({
             value: v,
-            label: { page: 'Page', list: 'ListPage', record: 'RecordPage', document: 'DocumentPage', inbox: 'InboxPage' }[v] ?? v,
+            label: { page: 'Page', list: 'ListPage', record: 'DetailPage', document: 'DocumentPage', inbox: 'InboxPage' }[v] ?? v,
           }))}
         />
         <Group>
@@ -297,53 +297,63 @@ export default function DevUiPage({ withSections: WithSections }: Props) {
     return (
       <WithSections>
         {(_, activity) => (
-          <RecordPage
+          <DetailPage
             title={title}
             breadcrumbs={[{ label: t('shared.app.title'), to: '/' }]}
-            activity={activity}
             leading={<PersonAvatar name="Nguyễn Văn An" size="lg" />}
-            // The profile column: one group edited in a modal, one that only reads, with a masked value.
-            aside={{
-              label: `${t('shared.devui.tab')} 0`,
-              content: (
-                <Stack gap="md">
-                  <EditableSection title={t('shared.devui.section')} icon={IconUsersGroup} onEdit={() => setModal(true)}>
-                    <FieldList
-                      rows={[
-                        ['Mã nhân viên', 'NV0019'],
-                        ['Phòng ban', 'Kế toán'],
-                        ['Trạng thái', <StatusBadge key="s" tone="positive">{t('shared.devui.status_positive')}</StatusBadge>],
-                      ]}
-                    />
-                  </EditableSection>
-                  <Divider />
-                  <EditableSection title={t('shared.devui.section_hint')}>
-                    <FieldList
-                      rows={[
-                        ['Ngày sinh', '02/11/1988'],
-                        ['Số CCCD', <SensitiveValue key="m" label="Số CCCD" present canView reveal={async () => '001088000123'} />],
-                      ]}
-                    />
-                  </EditableSection>
-                </Stack>
-              ),
-            }}
-            tabs={[
-              { value: 'one', label: `${t('shared.devui.tab')} 1`, content },
-              {
-                value: 'two',
-                label: `${t('shared.devui.tab')} 2`,
-                content: (
-                  <Stack gap="md">
-                    <TabActions>
-                      <Button>{t('shared.devui.primary')}</Button>
-                    </TabActions>
-                    <EmptyState title={t('shared.devui.empty')} />
-                  </Stack>
-                ),
-              },
-            ]}
-          />
+            side={
+              <>
+                <DetailTabs
+                  tabs={[
+                    { value: 'one', label: `${t('shared.devui.tab')} 1`, content },
+                    {
+                      value: 'two',
+                      label: `${t('shared.devui.tab')} 2`,
+                      content: (
+                        <Stack gap="md">
+                          <TabActions>
+                            <Button>{t('shared.devui.primary')}</Button>
+                          </TabActions>
+                          <EmptyState title={t('shared.devui.empty')} />
+                        </Stack>
+                      ),
+                    },
+                  ]}
+                />
+                <Panel title={t('shared.document.tab.activity')}>{activity}</Panel>
+              </>
+            }
+          >
+            {/* One group edited in place, one that only reads, with a masked value. */}
+            <EditablePanel
+              title={t('shared.devui.section')}
+              icon={IconUsersGroup}
+              editable
+              edit={(close) => (
+                <Group justify="flex-end">
+                  <Button variant="default" onClick={close}>
+                    {t('shared.devui.secondary')}
+                  </Button>
+                </Group>
+              )}
+            >
+              <FieldList
+                rows={[
+                  ['Mã nhân viên', 'NV0019'],
+                  ['Phòng ban', 'Kế toán'],
+                  ['Trạng thái', <StatusBadge key="s" tone="positive">{t('shared.devui.status_positive')}</StatusBadge>],
+                ]}
+              />
+            </EditablePanel>
+            <Panel title={t('shared.devui.section_hint')}>
+              <FieldList
+                rows={[
+                  ['Ngày sinh', '02/11/1988'],
+                  ['Số CCCD', <SensitiveValue key="m" label="Số CCCD" present canView reveal={async () => '001088000123'} />],
+                ]}
+              />
+            </Panel>
+          </DetailPage>
         )}
       </WithSections>
     )

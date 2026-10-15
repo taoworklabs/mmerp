@@ -103,6 +103,8 @@ function MentionTextarea({
   const combobox = useCombobox({ onDropdownClose: () => combobox.resetSelectedOption() })
   const ref = useRef<HTMLTextAreaElement>(null)
   const [token, setToken] = useState<{ start: number; query: string } | null>(null)
+  // One line until the writer comes to it, so the box does not push the feed down.
+  const [focused, setFocused] = useState(false)
   const users = useQuery({
     queryKey: documentKeys.mentionable(docType, id),
     queryFn: () => unwrap(api.GET('/records/{type}/{id}/mentionable', { params: { path: { type: docType, id } } })),
@@ -143,14 +145,18 @@ function MentionTextarea({
           placeholder={t('shared.discussion.placeholder')}
           description={hint ? t('shared.discussion.mention_hint') : undefined}
           autosize
-          minRows={2}
+          minRows={focused || value ? 3 : 1}
           maxRows={8}
           maxLength={maxLength}
           value={value}
           error={error}
           onChange={(e) => follow(e.currentTarget.value, e.currentTarget.selectionStart)}
           onClick={(e) => setToken(mentionAt(value, e.currentTarget.selectionStart))}
-          onBlur={() => setToken(null)}
+          onFocus={() => setFocused(true)}
+          onBlur={() => {
+            setToken(null)
+            setFocused(false)
+          }}
           onKeyDown={(e) => {
             if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
               e.preventDefault()

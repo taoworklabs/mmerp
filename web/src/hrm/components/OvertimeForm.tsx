@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next'
 import { api, unwrap, type Overtime } from '@/shared/api/hrm'
 import { useDocumentMutation } from '@/shared/document'
 import { notifySuccess } from '@/shared/ui/notify'
-import { DateField, DecimalField, Form, FormActions, FormSection, SelectField, TextField } from '@/shared/ui/form'
+import { DateField, DecimalField, Form, FormActions, FormFields, FormSection, SelectField, TextField } from '@/shared/ui/form'
 import { overtimeDocType } from '../keys'
 import { EmployeeField } from './EmployeeField'
 
@@ -34,11 +34,13 @@ type Props = {
   self?: { id: number; name: string } | null
   chooseEmployee?: boolean
   onCreated?: (id: number) => Promise<void>
+  // Editing a draft in its card on the request's page: Cancel, and after saving, close the form.
+  onClose?: () => void
 }
 
-// OvertimeForm creates an overtime request, or edits a draft when its allowed_actions has edit;
-// otherwise it is read-only.
-export function OvertimeForm({ overtime, self, chooseEmployee, onCreated }: Props) {
+// OvertimeForm creates an overtime request, or edits a draft when its allowed_actions has edit (in
+// its card with onClose); otherwise it is read-only.
+export function OvertimeForm({ overtime, self, chooseEmployee, onCreated, onClose }: Props) {
   const { t } = useTranslation()
   const mutation = useDocumentMutation(overtimeDocType, overtime?.id ?? 0, overtime?.version ?? 0)
   const form = useForm<Values>({
@@ -66,6 +68,7 @@ export function OvertimeForm({ overtime, self, chooseEmployee, onCreated }: Prop
     if (overtime) {
       await mutation.run((version) => unwrap(api.PUT('/hrm/overtimes/{id}', { params: { path: { id: overtime.id } }, body: { version, ...fields } })))
       notifySuccess(t('hrm.overtime.saved'))
+      onClose?.()
       return
     }
     const employee = chooseEmployee && v.employee_id && Number(v.employee_id) !== self?.id ? Number(v.employee_id) : undefined
@@ -73,24 +76,38 @@ export function OvertimeForm({ overtime, self, chooseEmployee, onCreated }: Prop
     await onCreated?.(id)
   }
 
+  const inputs = (
+    <>
+      {!overtime && chooseEmployee && (
+        <EmployeeField name="employee_id" label={t('hrm.overtime.employee')} required current={self ? { id: self.id, code: '', name: self.name } : undefined} />
+      )}
+      <DateField name="date" label={t('hrm.overtime.date')} required readOnly={ro} />
+      <SelectField
+        name="day_kind"
+        label={t('hrm.overtime.day_kind')}
+        description={t('hrm.overtime.day_kind_hint')}
+        required
+        readOnly={ro}
+        data={dayKinds.map((k) => ({ value: k, label: t(`hrm.overtime.day_kind.${k}`) }))}
+      />
+      <DecimalField name="day_hours" label={t('hrm.overtime.day_hours')} description={t('hrm.overtime.hours_hint')} required readOnly={ro} scale={1} step={0.5} min={0} />
+      <DecimalField name="night_hours" label={t('hrm.overtime.night_hours')} description={t('hrm.overtime.night_hint')} required readOnly={ro} scale={1} step={0.5} min={0} />
+      <TextField name="reason" label={t('hrm.overtime.reason')} multiline maxLength={1000} readOnly={ro} />
+    </>
+  )
+
+  if (onClose)
+    return (
+      <Form form={form} onSubmit={save} fieldOf={(err) => fieldOfCode[err.code]}>
+        <FormFields>{inputs}</FormFields>
+        <FormActions submitLabel={t('hrm.common.save')} onCancel={onClose} cancelLabel={t('hrm.common.cancel')} />
+        {mutation.dialog}
+      </Form>
+    )
   return (
     <Form form={form} onSubmit={save} fieldOf={(err) => fieldOfCode[err.code]}>
-      <FormSection title={t('hrm.overtime.section')} description={t('hrm.overtime.section_hint')} icon={IconClockHour4}>
-        {!overtime && chooseEmployee && (
-          <EmployeeField name="employee_id" label={t('hrm.overtime.employee')} required current={self ? { id: self.id, code: '', name: self.name } : undefined} />
-        )}
-        <DateField name="date" label={t('hrm.overtime.date')} required readOnly={ro} />
-        <SelectField
-          name="day_kind"
-          label={t('hrm.overtime.day_kind')}
-          description={t('hrm.overtime.day_kind_hint')}
-          required
-          readOnly={ro}
-          data={dayKinds.map((k) => ({ value: k, label: t(`hrm.overtime.day_kind.${k}`) }))}
-        />
-        <DecimalField name="day_hours" label={t('hrm.overtime.day_hours')} description={t('hrm.overtime.hours_hint')} required readOnly={ro} scale={1} step={0.5} min={0} />
-        <DecimalField name="night_hours" label={t('hrm.overtime.night_hours')} description={t('hrm.overtime.night_hint')} required readOnly={ro} scale={1} step={0.5} min={0} />
-        <TextField name="reason" label={t('hrm.overtime.reason')} multiline maxLength={1000} readOnly={ro} />
+      <FormSection title={t('hrm.overtime.section')} description={t('hrm.overtime.section_hint')} icon={IconClockHour4} compact>
+        {inputs}
       </FormSection>
       {editable && <FormActions submitLabel={overtime ? t('hrm.common.save') : t('hrm.common.create_draft')} cancelTo={overtime ? undefined : '/hrm/overtimes'} />}
       {mutation.dialog}

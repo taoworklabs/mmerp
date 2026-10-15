@@ -1,4 +1,4 @@
-import { Alert, Box, Flex, Stack, Tabs } from '@mantine/core'
+import { Alert, Tabs } from '@mantine/core'
 import { useMediaQuery } from '@mantine/hooks'
 import { IconAlertCircle } from '@tabler/icons-react'
 import type { ReactNode } from 'react'
@@ -7,8 +7,9 @@ import { useSearchParams } from 'react-router'
 import { UnsavedProvider } from '../form'
 import { icon } from '../theme'
 import { Activity, Panel, type DocumentSection } from './Activity'
+import { DetailPage } from './DetailPage'
 import classes from './DocumentPage.module.css'
-import { Page, readingWidth, type PageHeaderProps } from './Page'
+import { Page, type PageHeaderProps } from './Page'
 
 // maxGrownTabs is how many tabs share a phone's width evenly; more scroll in one row.
 const maxGrownTabs = 3
@@ -32,10 +33,10 @@ type Props = Omit<PageHeaderProps, 'actions' | 'leading' | 'tabs'> & {
   children: ReactNode
 }
 
-// DocumentPage: one document. Header with number, status and actions; the form in the
-// main column; approval, the sections and the activity in a side column. Below 1024px the
-// side column becomes tabs (details · approval · … · activity, on the URL) and the actions a
-// bar at the bottom.
+// DocumentPage: one document. Header with number, status and actions; the document's values in
+// the main column; approval, the sections and the activity in the side column (DetailPage), under
+// the main one below 1024px, where the actions become a bar at the bottom. A full-width document
+// moves the side column to tabs instead (details · approval · … · activity, on the URL).
 // The page knows whether its form holds unsaved edits, so its actions can ask to save first.
 export function DocumentPage(props: Props) {
   return (
@@ -58,28 +59,26 @@ function DocumentLayout({ actions, error, approval, activity, sections = [], ful
     </Alert>
   )
 
-  if (wide && !fullWidth)
+  if (!fullWidth)
     return (
-      <Page {...header} withBack actions={actions} centered="calc(var(--mmerp-content-width) + var(--mmerp-aside-width) + var(--mantine-spacing-xl))">
-        {banner}
-        <Flex gap="xl" align="flex-start">
-          <Box flex={1} miw={0}>
-            {children}
-          </Box>
-          <Stack className={classes.side} gap="md">
-            {side.map((p) => (
-              <Panel key={p.key} title={p.title} plain={p === log}>
-                {p.content}
-              </Panel>
-            ))}
-          </Stack>
-        </Flex>
-      </Page>
+      <DetailPage
+        {...header}
+        actions={actions}
+        narrowActions={actions}
+        banner={banner}
+        side={side.map((p) => (
+          <Panel key={p.key} title={p.title}>
+            {p.content}
+          </Panel>
+        ))}
+      >
+        {children}
+      </DetailPage>
     )
 
   // On a wide screen a full-width document gathers the side column in one tab, laid out like the
   // side column itself, rather than spreading a few lines over the whole width per tab.
-  const gathered = wide && fullWidth
+  const gathered = wide
   const tabs: DocumentSection[] = gathered ? [{ key: 'activity', title: t('shared.document.tab.activity'), content: <Activity top={top} history={log} /> }] : side
   // The activity took over the discussion and history tabs, so old links to them still land there.
   const asked = ['discussion', 'history'].includes(search.get('tab') ?? '') ? 'activity' : search.get('tab')
@@ -113,16 +112,10 @@ function DocumentLayout({ actions, error, approval, activity, sections = [], ful
         }
       >
         {banner}
-        {/* The tab line runs the page's width; what is under it is centred unless full width. */}
-        <Tabs.Panel value="details" w="100%" maw={fullWidth ? undefined : 'var(--mmerp-content-width)'} mx="auto">
-          {children}
-        </Tabs.Panel>
-        {/* On a wide screen a single part keeps the side column's reading width. */}
+        <Tabs.Panel value="details">{children}</Tabs.Panel>
         {tabs.map((p) => (
           <Tabs.Panel key={p.key} value={p.key} w="100%" maw="var(--mmerp-content-width)" mx="auto">
-            <Box maw={wide && !gathered ? readingWidth : undefined} mx="auto">
-              {p.content}
-            </Box>
+            {p.content}
           </Tabs.Panel>
         ))}
         {actions && !wide && (

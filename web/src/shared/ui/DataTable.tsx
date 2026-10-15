@@ -59,6 +59,8 @@ type Props<T> = {
   footer?: T
   // Caps the table's height (e.g. "70dvh") so the header and footer stay in view inside it.
   maxHeight?: string
+  // The card list at every width, for a table in a page's narrow side column.
+  cards?: boolean
 }
 
 // grouped splits rows into runs of the same group, in order; one run without a name when not grouped.
@@ -74,7 +76,7 @@ function grouped<T>(rows: T[], of?: (row: T) => string): { name: string; rows: T
 }
 
 // DataTable is the only table areas use: compact, sortable on the server, a card list below 1024px.
-export function DataTable<T>({ columns, rows, rowKey, href, onRowClick, selection, onResize, menu, sort, onSort, label, group, footer, maxHeight }: Props<T>) {
+export function DataTable<T>({ columns, rows, rowKey, href, onRowClick, selection, onResize, menu, sort, onSort, label, group, footer, maxHeight, cards }: Props<T>) {
   const { t } = useTranslation()
   const wide = useMediaQuery('(min-width: 64em)', true)
   const navigate = useNavigate()
@@ -88,7 +90,7 @@ export function DataTable<T>({ columns, rows, rowKey, href, onRowClick, selectio
   const all = selection && keys.length > 0 && keys.every((k) => selection.selected.has(k))
   const some = selection && keys.some((k) => selection.selected.has(k))
   const head = (n: number) => ({ columns, sort, onSort, onResize, rowSpan: n })
-  if (!wide) return <Cards columns={columns} rows={rows} rowKey={rowKey} href={href} menu={menu} label={label} group={group} footer={footer} />
+  if (!wide || cards) return <Cards columns={columns} rows={rows} rowKey={rowKey} href={href} menu={menu} label={label} group={group} footer={footer} />
   return (
     <div
       data-table

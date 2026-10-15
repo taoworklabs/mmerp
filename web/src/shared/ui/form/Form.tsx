@@ -144,18 +144,20 @@ export function Form<T extends FieldValues>({ form, onSubmit, fieldOf, id, child
 // left column and the fields on six columns on the right: half a row each, a third when short,
 // the whole row when wide; below that, everything is one column.
 // wide puts the title on top and gives the content the whole width, for a table of lines.
+// compact puts the title on top too, with four fields to a row, for a short request of a few fields.
 // After a failed submit its title carries the number of its fields still to fix.
-export function FormSection({ title, description, icon: Icon, wide, children }: { title: string; description?: string; icon?: TablerIcon; wide?: boolean; children: ReactNode }) {
+export function FormSection({ title, description, icon: Icon, wide, compact, children }: { title: string; description?: string; icon?: TablerIcon; wide?: boolean; compact?: boolean; children: ReactNode }) {
   const { t } = useTranslation()
   const { errors, submitCount } = useFormState()
   const ref = useRef<HTMLFieldSetElement>(null)
   const [count, setCount] = useState(0)
   // Which fields are in this section is known only from the page, so count after rendering.
   useEffect(() => setCount(submitCount > 0 ? invalidInputs(errors).filter((el) => ref.current?.contains(el)).length : 0))
+  const top = wide || compact
   return (
     <Box component="fieldset" className={classes.section} ref={ref}>
       <Grid gap={{ base: 'sm', lg: 'xl' }}>
-        <Grid.Col span={{ base: 12, lg: wide ? 12 : 4 }}>
+        <Grid.Col span={{ base: 12, lg: top ? 12 : 4 }}>
           <Group gap="xs" wrap="nowrap">
             {Icon && <Icon {...icon.text} aria-hidden />}
             <Text component="legend" fz="h2" lh="h2" fw="var(--mantine-h2-font-weight)">
@@ -174,13 +176,23 @@ export function FormSection({ title, description, icon: Icon, wide, children }: 
             </Text>
           )}
         </Grid.Col>
-        <Grid.Col span={{ base: 12, lg: wide ? 12 : 8 }}>
-          <div className={classes.fields} data-wide={wide || undefined}>
+        <Grid.Col span={{ base: 12, lg: top ? 12 : 8 }}>
+          <div className={classes.fields} data-wide={wide || undefined} data-compact={compact || undefined}>
             {children}
           </div>
         </Grid.Col>
       </Grid>
     </Box>
+  )
+}
+
+// FormFields lays out fields without a section's title: two to a row from 768px, for a group of a
+// record's values edited in place in its card.
+export function FormFields({ children }: { children: ReactNode }) {
+  return (
+    <div className={classes.fields} data-pair>
+      {children}
+    </div>
   )
 }
 

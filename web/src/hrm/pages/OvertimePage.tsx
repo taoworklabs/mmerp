@@ -3,10 +3,11 @@ import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate, useParams } from 'react-router'
 import { api, unwrap } from '@/shared/api/hrm'
-import { ActivityFeed, ApprovalPanel, DocumentActions, DocumentStatus, useAttachmentSection } from '@/shared/document'
+import { ActivityFeed, ApprovalDecision, ApprovalPanel, DocumentActions, DocumentStatus, useAttachmentSection } from '@/shared/document'
 import { formatDate } from '@/shared/i18n'
 import { DocumentPage } from '@/shared/ui/page'
-import { OvertimeForm } from '../components/OvertimeForm'
+import { OvertimeDetails } from '../components/OvertimeDetails'
+import { EmployeeLink } from '../components/EmployeeLink'
 import { loaded } from '@/shared/ui/loaded'
 import { useOvertime } from '../hooks/useOvertime'
 import { overtimeDocType } from '../keys'
@@ -28,7 +29,7 @@ export function OvertimePage() {
       breadcrumbs={[{ label: t('hrm.overtimes.title'), to: '/hrm/overtimes' }]}
       description={
         <Group gap="xs" component="span">
-          <span>{o.employee_name}</span>
+          <EmployeeLink id={o.employee_id}>{o.employee_name}</EmployeeLink>
           <span aria-hidden>·</span>
           <span>{formatDate(o.date)}</span>
           <DocumentStatus docType={overtimeDocType} status={o.status} />
@@ -36,27 +37,29 @@ export function OvertimePage() {
       }
       error={error}
       actions={
-        o.allowed_actions.length > 0 && (
-          <DocumentActions
-            docType={overtimeDocType}
-            id={o.id}
-            version={o.version}
-            number={o.number}
-            actions={o.allowed_actions}
-            onError={setError}
-            onDelete={async (version) => {
-              await unwrap(api.DELETE('/hrm/overtimes/{id}', { params: { path: { id: o.id }, query: { version } } }))
-              navigate('/hrm/overtimes', { replace: true })
-            }}
-          />
-        )
+        <Group gap="xs" justify="flex-end">
+          <ApprovalDecision docType={overtimeDocType} id={o.id} onError={setError} />
+          {o.allowed_actions.length > 0 && (
+            <DocumentActions
+              docType={overtimeDocType}
+              id={o.id}
+              version={o.version}
+              number={o.number}
+              actions={o.allowed_actions}
+              onError={setError}
+              onDelete={async (version) => {
+                await unwrap(api.DELETE('/hrm/overtimes/{id}', { params: { path: { id: o.id }, query: { version } } }))
+                navigate('/hrm/overtimes', { replace: true })
+              }}
+            />
+          )}
+        </Group>
       }
-      approval={<ApprovalPanel docType={overtimeDocType} id={o.id} />}
+      approval={<ApprovalPanel docType={overtimeDocType} id={o.id} subject={o.employee_name} decideElsewhere />}
       sections={[attachments]}
       activity={<ActivityFeed docType={overtimeDocType} id={o.id} />}
     >
-      {/* Keyed by version: a reload after a conflict starts from the saved data. */}
-      <OvertimeForm key={o.version} overtime={o} />
+      <OvertimeDetails overtime={o} />
     </DocumentPage>
   )
 }

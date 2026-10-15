@@ -13,4 +13,8 @@ describe('runs', () => {
     const changed = { changes: { days: { old: 1, new: 2 } } }
     expect(runs([entry(1, 'u', 'Hà', changed), entry(2, 'u', 'Hà', changed)])).toHaveLength(2)
   })
+  it('shows a creation once when the record and the module both log it', () => {
+    const out = runs([entry(1, 'hrm.leave_request_created', 'Hà'), entry(2, 'record.created', 'Hà'), entry(3, 'record.created', 'An')])
+    expect(out.map((r) => r.entry.id)).toEqual([1, 3])
+  })
 })

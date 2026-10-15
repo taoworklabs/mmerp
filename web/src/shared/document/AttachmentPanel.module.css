@@ -1,14 +1,10 @@
-/* The panel measures its own width: a side column is too narrow for the empty list's icon. */
-.panel {
-  container-type: inline-size;
-}
-
 /* The list lights up while files are dragged over the panel. */
 .list {
   transition: background-color 100ms ease;
 }
 
-.list[data-active] {
+.list[data-active],
+.drop[data-active] {
   border-color: var(--mantine-primary-color-filled);
   background: var(--mantine-primary-color-light);
 }
@@ -17,8 +13,18 @@
   border-top: 1px solid var(--mantine-color-default-border);
 }
 
-@container (max-width: 25em) {
-  .bigIcon {
-    display: none;
-  }
+/* The empty list: a low dashed frame to click or drop files on. */
+.drop {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 80px;
+  border: 1px dashed var(--mantine-color-default-border);
+  border-radius: var(--mantine-radius-md);
+  transition: background-color 100ms ease;
+}
+
+.drop:hover {
+  background: var(--mantine-color-default-hover);
 }

@@ -1,4 +1,4 @@
-import { ActionIcon, Anchor, Button, FileButton, Group, Paper, Stack, Text, ThemeIcon } from '@mantine/core'
+import { ActionIcon, Anchor, Button, FileButton, Group, Loader, Paper, Stack, Text, ThemeIcon, UnstyledButton } from '@mantine/core'
 import {
   IconFile,
   IconFileTypeDocx,
@@ -6,11 +6,12 @@ import {
   IconFileTypeXls,
   IconPaperclip,
   IconPhoto,
+  IconPlus,
   IconTrash,
   type Icon as TablerIcon,
 } from '@tabler/icons-react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { useState, type DragEvent } from 'react'
+import { useState, type DragEvent, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { api, unwrap, type Attachment } from '@/shared/api/core'
 import { useMe } from '@/shared/auth/me'
@@ -55,7 +56,7 @@ const fileLooks: Record<string, { Icon: TablerIcon; color: string }> = {
 const fileLook = (name: string) => fileLooks[name.toLowerCase().split('.').pop() ?? ''] ?? { Icon: IconFile, color: 'gray' }
 
 // AttachmentPanel lists a record's files to download and, as allowed_actions say, adds and removes
-// them: through the button above the list, or by dropping files anywhere on the panel.
+// them: by clicking the empty list or "Add file" under the files, or by dropping files anywhere on the panel.
 function AttachmentPanel({ docType, id }: { docType: string; id: number }) {
   const { t } = useTranslation()
   const me = useMe()
@@ -148,38 +149,40 @@ function AttachmentPanel({ docType, id }: { docType: string; id: number }) {
       }
     : {}
 
+  const picker = (child: (open: () => void) => ReactNode) => (
+    <FileButton multiple onChange={(files) => void addAll(files)} accept={accept.join(',')}>
+      {(props) => child(props.onClick)}
+    </FileButton>
+  )
+
   return (
-    <Stack gap="sm" className={classes.panel} {...drop}>
+    <Stack gap="sm" {...drop}>
       {confirm}
-      {canAttach && (
-        <Group justify="flex-end">
-          <FileButton multiple onChange={(files) => void addAll(files)} accept={accept.join(',')}>
-            {(props) => (
-              <Button {...props} variant="default" loading={busy} leftSection={<IconPaperclip {...icon.button} />}>
-                {t('shared.attachments.add')}
-              </Button>
-            )}
-          </FileButton>
-        </Group>
-      )}
       {error && (
         <Text size="xs" c="danger" role="alert">
           {error}
         </Text>
       )}
-      {/* The files sit in a frame, like a table inside a page; it lights up while files are dragged over the panel. */}
-      <Paper withBorder className={classes.list} data-active={dragging || undefined}>
-        {empty ? (
-          <Stack align="center" gap="xs" p="lg">
-            <ThemeIcon variant="light" color={dragging ? 'primary' : 'gray'} size={40} radius={1000} className={classes.bigIcon} aria-hidden>
-              <IconPaperclip {...icon.button} />
-            </ThemeIcon>
-            <Text size="sm" c="dimmed">
-              {t(dragging ? 'shared.attachments.drop' : 'shared.attachments.none')}
-            </Text>
-          </Stack>
-        ) : (
-          q.data.items.map((a) => {
+      {empty && canAttach ? (
+        // The empty list is where files go: click it to pick them, or drop them on it.
+        picker((open) => (
+          <UnstyledButton onClick={open} disabled={busy} className={classes.drop} data-active={dragging || undefined}>
+            <Group gap="xs" justify="center" wrap="nowrap">
+              {busy ? <Loader size="xs" /> : <IconPaperclip {...icon.text} aria-hidden />}
+              <Text size="sm" c="dimmed">
+                {t(dragging ? 'shared.attachments.drop' : 'shared.attachments.drop_hint')}
+              </Text>
+            </Group>
+          </UnstyledButton>
+        ))
+      ) : empty ? (
+        <Text size="sm" c="dimmed">
+          {t('shared.attachments.none')}
+        </Text>
+      ) : (
+        // The files sit in a frame, like a table inside a page; it lights up while files are dragged over the panel.
+        <Paper withBorder className={classes.list} data-active={dragging || undefined}>
+          {q.data.items.map((a) => {
             const { Icon, color } = fileLook(a.name)
             return (
               <Group key={a.id} gap="sm" wrap="nowrap" align="center" p="sm" className={classes.row}>
@@ -201,9 +204,16 @@ function AttachmentPanel({ docType, id }: { docType: string; id: number }) {
                 )}
               </Group>
             )
-          })
-        )}
-      </Paper>
+          })}
+        </Paper>
+      )}
+      {!empty &&
+        canAttach &&
+        picker((open) => (
+          <Button variant="subtle" onClick={open} loading={busy} leftSection={<IconPlus {...icon.button} />} w="fit-content">
+            {t('shared.attachments.add')}
+          </Button>
+        ))}
     </Stack>
   )
 }

@@ -158,8 +158,8 @@ test('an administrator builds the tree and grants a role from the admin screens'
   await page.getByRole('dialog').getByRole('combobox', { name: 'Vai trò' }).click()
   await page.getByRole('option', { name: 'Xem hồ sơ nhân viên' }).click()
   await page.getByRole('dialog').getByRole('button', { name: 'Cấp vai trò' }).click()
-  await expect(page.getByRole('table', { name: 'Vai trò' }).getByText('Xem hồ sơ nhân viên')).toBeVisible()
-  await expect(page.getByRole('table', { name: 'Vai trò' }).getByText('Toàn công ty')).toBeVisible()
+  await expect(page.getByRole('list', { name: 'Vai trò' }).getByText('Xem hồ sơ nhân viên')).toBeVisible()
+  await expect(page.getByRole('list', { name: 'Vai trò' }).getByText('Toàn công ty')).toBeVisible()
 })
 
 test('HR creates an employee with a sensitive field, edits it and adds a dependent', async ({ page }) => {
@@ -184,13 +184,13 @@ test('HR creates an employee with a sensitive field, edits it and adds a depende
   await expect(main.getByText('05/01/2026')).toBeVisible()
   await expect(page.getByText('••••••').first()).toBeVisible()
 
-  // Each part of the profile is edited on its own, in a modal.
+  // Each part of the profile is edited on its own, in place in its card.
   await main.getByRole('button', { name: 'Sửa Thông tin chính' }).click()
-  const edit = page.getByRole('dialog', { name: 'Sửa thông tin chính' })
-  await edit.getByRole('textbox', { name: 'Họ tên' }).fill('Lê Văn Đổi')
-  await edit.getByRole('button', { name: 'Lưu' }).click()
+  await main.getByRole('textbox', { name: 'Họ tên' }).fill('Lê Văn Đổi')
+  await main.getByRole('button', { name: 'Lưu' }).click()
   await expect(page.getByRole('heading', { name: 'Lê Văn Đổi' })).toBeVisible()
-  await expect(edit).toHaveCount(0)
+  await expect(main.getByRole('textbox', { name: 'Họ tên' })).toHaveCount(0)
+  await expect(main.getByText('Lê Văn Đổi')).toBeVisible()
 
   await page.getByRole('tab', { name: 'Người phụ thuộc' }).click()
   await expect(page).toHaveURL(/tab=dependents/)
@@ -203,7 +203,7 @@ test('HR creates an employee with a sensitive field, edits it and adds a depende
   await dialog.getByRole('button', { name: 'Giảm trừ từ tháng' }).click()
   await page.getByRole('button', { name: 'Th01' }).click()
   await dialog.getByRole('button', { name: 'Thêm', exact: true }).click()
-  await expect(page.getByRole('table', { name: 'Người phụ thuộc' }).getByText('Lê Bé')).toBeVisible()
+  await expect(page.getByRole('list', { name: 'Người phụ thuộc' }).getByText('Lê Bé')).toBeVisible()
 })
 
 test('leaving a record asks only when something was edited', async ({ page }) => {
@@ -213,8 +213,8 @@ test('leaving a record asks only when something was edited', async ({ page }) =>
   await expect(page).toHaveURL(/\/hrm\/employees$/)
   await expect(page.getByRole('dialog')).toHaveCount(0)
 
-  // The edit modal covers the menu, so the way out is the browser's Back, within the app: the
-  // record is opened from the list, not loaded afresh.
+  // The way out is the browser's Back, within the app: the record is opened from the list, not
+  // loaded afresh.
   const openFromList = async () => {
     await page.goto(`/hrm/employees?q=A${run}-00`)
     await page.getByRole('table', { name: 'Nhân viên' }).getByRole('link', { name: `A${run}-00` }).click()
@@ -231,7 +231,7 @@ test('leaving a record asks only when something was edited', async ({ page }) =>
   // Typing into a revealed sensitive field counts too.
   await openFromList()
   await page.getByRole('button', { name: 'Sửa Thông tin nhạy cảm' }).click()
-  const sensitive = page.getByRole('dialog', { name: 'Sửa thông tin nhạy cảm' })
+  const sensitive = page.getByRole('region', { name: 'Thông tin nhạy cảm' })
   await sensitive.getByRole('button', { name: 'Hiện Số CCCD hoặc hộ chiếu' }).click()
   await sensitive.getByRole('textbox', { name: 'Số CCCD hoặc hộ chiếu' }).fill('123')
   await page.evaluate(() => history.back())

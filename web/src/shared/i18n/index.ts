@@ -151,3 +151,8 @@ export function formatDecimal(s: string | null | undefined, maxDigits = 2): stri
 export function currentYear(timeZone: string): number {
   return Number(new Intl.DateTimeFormat('en-GB', { timeZone, year: 'numeric' }).format(new Date()))
 }
+
+// today is today's date (YYYY-MM-DD) in the tenant time zone, not the browser's.
+export function today(timeZone: string): string {
+  return new Intl.DateTimeFormat('en-CA', { timeZone, year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date())
+}

@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate, useParams, useSearchParams } from 'react-router'
 import { api, unwrap, type Payroll, type PayrollLine } from '@/shared/api/hrm'
-import { ActivityFeed, ApprovalPanel, DocumentActions, DocumentStatus, documentKeys, useDocumentMutation } from '@/shared/document'
+import { ActivityFeed, ApprovalDecision, ApprovalPanel, DocumentActions, DocumentStatus, documentKeys, useDocumentMutation } from '@/shared/document'
 import { errorText, formatDateTime, formatMonth } from '@/shared/i18n'
 import { ExportButton, finished, jobError, useJobStatus } from '@/shared/jobs'
 import { useMe } from '@/shared/auth/me'
@@ -52,8 +52,9 @@ export function PayrollPage() {
       }
       error={error}
       actions={
-        p.allowed_actions.length > 0 && (
+        (
           <Group gap="xs">
+            <ApprovalDecision docType={payrollDocType} id={p.id} onError={setError} />
             {can('compute') && <ComputeButton payroll={p} busy={computing} onQueued={follow} onError={setError} />}
             {can('export') && <ExportButton kind={payrollDocType} params={{ payroll_id: p.id }} label={t('hrm.payroll.export')} />}
             {can('print') && <ExportButton kind={payslipTemplate} params={{ id: p.id }} label={t('hrm.payroll.print_payslips')} icon={IconPrinter} />}
@@ -73,7 +74,7 @@ export function PayrollPage() {
         )
       }
       fullWidth
-      approval={<ApprovalPanel docType={payrollDocType} id={p.id} />}
+      approval={<ApprovalPanel docType={payrollDocType} id={p.id} decideElsewhere />}
       activity={<ActivityFeed docType={payrollDocType} id={p.id} />}
     >
       <Stack gap="md">

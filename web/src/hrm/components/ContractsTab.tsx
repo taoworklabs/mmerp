@@ -43,6 +43,7 @@ export function ContractsTab({ employee }: { employee: Employee }) {
     body = (
       <DataTable
         label={t('hrm.employee.tab.contracts')}
+        cards
         columns={columns}
         rows={list.data}
         rowKey={(c) => c.id}

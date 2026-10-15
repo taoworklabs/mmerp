@@ -5,7 +5,7 @@ import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link, useNavigate, useParams } from 'react-router'
 import { api, unwrap } from '@/shared/api/sales'
-import { ActivityFeed, ApprovalPanel, DocumentActions, DocumentStatus, useAttachmentSection } from '@/shared/document'
+import { ActivityFeed, ApprovalDecision, ApprovalPanel, DocumentActions, DocumentStatus, useAttachmentSection } from '@/shared/document'
 import { errorText } from '@/shared/i18n'
 import { ExportButton } from '@/shared/jobs'
 import { loaded } from '@/shared/ui/loaded'
@@ -71,8 +71,9 @@ export function DocPage({ kind }: { kind: Kind }) {
       }
       error={error}
       actions={
-        d.allowed_actions.length > 0 && (
+        (
           <Group gap="xs">
+            <ApprovalDecision docType={docType} id={d.id} onError={setError} />
             {d.allowed_actions.includes('print') && (
               <ExportButton kind={`printing.${docType}`} params={{ id: d.id }} label={t(`sales.${kind}.print`)} icon={IconPrinter} />
             )}
@@ -101,7 +102,7 @@ export function DocPage({ kind }: { kind: Kind }) {
           </Group>
         )
       }
-      approval={<ApprovalPanel docType={docType} id={d.id} />}
+      approval={<ApprovalPanel docType={docType} id={d.id} decideElsewhere />}
       sections={[attachments]}
       // The editable lines table needs the whole width; approval and history become tabs.
       fullWidth
