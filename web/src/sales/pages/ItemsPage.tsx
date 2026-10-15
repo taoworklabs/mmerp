@@ -188,7 +188,7 @@ export function ItemsPage() {
 }
 
 // fieldsOf is what the API takes for an item: its editable fields.
-const fieldsOf = (x: Item) => ({ code: x.code, name: x.name, unit: x.unit, price: x.price, vat_rate: x.vat_rate, active: x.active })
+const fieldsOf = (x: Item) => ({ name: x.name, unit: x.unit, price: x.price, vat_rate: x.vat_rate, active: x.active })
 
 type Values = { code: string; name: string; unit: string; price: number | null; vat_rate: string; active: boolean }
 
@@ -199,7 +199,6 @@ function ItemModal({ item, onClose }: { item: Item | null; onClose: () => void }
   const form = useForm<Values>({ mode: 'onBlur', defaultValues: item ?? { code: '', name: '', unit: '', price: null, vat_rate: '10', active: true } })
   async function save(v: Values) {
     const body = {
-      code: v.code.trim(),
       name: v.name.trim(),
       unit: v.unit.trim(),
       price: v.price ?? 0,
@@ -207,7 +206,7 @@ function ItemModal({ item, onClose }: { item: Item | null; onClose: () => void }
       active: v.active,
     }
     if (item) await unwrap(api.PUT('/sales/items/{id}', { params: { path: { id: item.id } }, body }))
-    else await unwrap(api.POST('/sales/items', { body }))
+    else await unwrap(api.POST('/sales/items', { body: { ...body, code: v.code.trim() } }))
     await qc.invalidateQueries({ queryKey: salesKeys.items.all() })
     notifySuccess(t('sales.items.saved'))
     onClose()
@@ -215,7 +214,12 @@ function ItemModal({ item, onClose }: { item: Item | null; onClose: () => void }
   return (
     <FormModal opened title={t(item ? 'sales.items.edit' : 'sales.items.create')} onClose={onClose}>
       <Form form={form} onSubmit={save} fieldOf={(err) => (err.code === 'item_code_taken' ? 'code' : undefined)}>
-        <TextField name="code" label={t('sales.item.code')} required maxLength={50} />
+        {/* The code is typed or issued at creation and never changes after. */}
+        {item ? (
+          <TextField name="code" label={t('sales.item.code')} readOnly />
+        ) : (
+          <TextField name="code" label={t('sales.item.code')} description={t('sales.item.code_hint')} maxLength={50} />
+        )}
         <TextField name="name" label={t('sales.item.name')} required maxLength={300} />
         <TextField name="unit" label={t('sales.item.unit')} description={t('sales.item.unit_hint')} required maxLength={30} />
         <MoneyField name="price" label={t('sales.item.price')} description={t('sales.item.price_hint')} required />

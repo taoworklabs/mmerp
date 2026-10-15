@@ -55,12 +55,13 @@ func newFixture(t *testing.T) *fixture {
 	pool := pgtest.New(t)
 	ctx := platform.WithKeyring(platform.WithProducts(platform.WithDB(t.Context(), pool), []string{"hrm"}), pgtest.Keyring())
 	ids := iam.NewService(iam.Deps{Setting: setting.NewService(), Audit: audit.NewService()})
-	rec := record.NewService(record.Deps{IAM: ids, Numbering: numbering.NewService(), Audit: audit.NewService()})
+	num := numbering.NewService(numbering.Deps{IAM: ids, Audit: audit.NewService()})
+	rec := record.NewService(record.Deps{IAM: ids, Numbering: num, Audit: audit.NewService()})
 	appr := approval.NewService(approval.Deps{IAM: ids, Record: rec, Audit: audit.NewService(), Notification: notification.NewService(notification.Deps{Record: rec, IAM: ids, Audit: audit.NewService(), Setting: setting.NewService()})})
 	rec.SetApprovalGate(appr)
 	dio := dataio.NewService(dataio.Deps{IAM: ids, Audit: audit.NewService()})
 	h := hrm.NewService(hrm.Deps{IAM: ids, Record: rec, Audit: audit.NewService(), Setting: setting.NewService(), DataIO: dio,
-		Printing: printing.NewService(printing.Deps{Record: rec, Audit: audit.NewService(), DataIO: dio, IAM: ids}), Posting: posting.NewService(posting.Hooks{})})
+		Printing: printing.NewService(printing.Deps{Record: rec, Audit: audit.NewService(), DataIO: dio, IAM: ids}), Posting: posting.NewService(posting.Hooks{}), Numbering: num})
 	// Jobs are queued in ctx's transaction and worked only once work is called.
 	workers := river.NewWorkers()
 	hrm.Module(h).Workers(workers)
@@ -115,8 +116,36 @@ func must(t *testing.T) func(int64, error) int64 {
 
 func str(s string) *string { return &s }
 
-func employee(code string, unit int64) hrm.EmployeeInput {
-	return hrm.EmployeeInput{EmployeeFields: hrm.EmployeeFields{Code: code, FullName: "Nhân viên " + code, OrgUnitID: unit, HireDate: "2026-01-05"}}
+func employee(code string, unit int64) hrm.NewEmployee {
+	return hrm.NewEmployee{Code: code, EmployeeInput: hrm.EmployeeInput{EmployeeFields: hrm.EmployeeFields{FullName: "Nhân viên " + code, OrgUnitID: unit, HireDate: "2026-01-05"}}}
+}
+
+// An employee saved without a code gets the next one of the series, past typed codes;
+// the code then never changes.
+func TestIssuedEmployeeCodes(t *testing.T) {
+	f := newFixture(t)
+	hr := f.ctxFor("hr", "hr@A")
+	code := func(id int64) string {
+		e, err := f.hrm.Employee(hr, id)
+		if err != nil {
+			t.Fatal(err)
+		}
+		return e.Code
+	}
+	first := must(t)(f.hrm.CreateEmployee(hr, employee("", f.a)))
+	if c := code(first); c != "NV00001" {
+		t.Fatalf("issued %q", c)
+	}
+	must(t)(f.hrm.CreateEmployee(hr, employee("nv00002", f.a)))
+	if c := code(must(t)(f.hrm.CreateEmployee(hr, employee(" ", f.a)))); c != "NV00003" {
+		t.Fatalf("issued past a typed code: %q", c)
+	}
+	if err := f.hrm.UpdateEmployee(hr, first, employee("", f.a).EmployeeInput); err != nil {
+		t.Fatal(err)
+	}
+	if c := code(first); c != "NV00001" {
+		t.Fatalf("code after edit: %q", c)
+	}
 }
 
 func TestScopeLimitsEmployees(t *testing.T) {
@@ -152,11 +181,11 @@ func TestScopeLimitsEmployees(t *testing.T) {
 	if err != nil || !slices.Equal(e.AllowedActions, []string{"view"}) {
 		t.Fatalf("viewer actions = %v %v", e.AllowedActions, err)
 	}
-	if err := f.hrm.UpdateEmployee(viewer, ea, employee("A1", f.a)); !errors.Is(err, platform.ErrForbidden) {
+	if err := f.hrm.UpdateEmployee(viewer, ea, employee("A1", f.a).EmployeeInput); !errors.Is(err, platform.ErrForbidden) {
 		t.Fatalf("viewer edits: %v", err)
 	}
 	moved := employee("A1", f.b)
-	if err := f.hrm.UpdateEmployee(hrA, ea, moved); !errors.Is(err, platform.ErrForbidden) {
+	if err := f.hrm.UpdateEmployee(hrA, ea, moved.EmployeeInput); !errors.Is(err, platform.ErrForbidden) {
 		t.Fatalf("hr_a moves employee out of scope: %v", err)
 	}
 
@@ -277,14 +306,14 @@ func TestSensitiveFields(t *testing.T) {
 	// Plain fields edited without touching sensitive ones keep them.
 	upd := employee("A1", f.a)
 	upd.FullName = "Tên mới"
-	if err := f.hrm.UpdateEmployee(hrA, id, upd); err != nil {
+	if err := f.hrm.UpdateEmployee(hrA, id, upd.EmployeeInput); err != nil {
 		t.Fatal(err)
 	}
 	if v, _ := f.hrm.RevealSensitive(sens, id, "national_id"); v == nil || *v != "079123456789" {
 		t.Fatalf("after plain update: %v", v)
 	}
 	upd.Sensitive = &hrm.SensitiveValues{NationalID: str("")}
-	if err := f.hrm.UpdateEmployee(sens, id, upd); err != nil {
+	if err := f.hrm.UpdateEmployee(sens, id, upd.EmployeeInput); err != nil {
 		t.Fatal(err)
 	}
 	if e, _ := f.hrm.Employee(sens, id); e.Sensitive.NationalID || e.FullName != "Tên mới" {
@@ -296,11 +325,11 @@ func TestMoveCannotGrantSensitiveAccess(t *testing.T) {
 	f := newFixture(t)
 	mover := f.ctxFor("mover", "hr@A", "hr@B", "sensitive_viewer@B")
 	id := must(t)(f.hrm.CreateEmployee(mover, employee("A1", f.a)))
-	if err := f.hrm.UpdateEmployee(mover, id, employee("A1", f.b)); !errors.Is(err, platform.ErrForbidden) {
+	if err := f.hrm.UpdateEmployee(mover, id, employee("A1", f.b).EmployeeInput); !errors.Is(err, platform.ErrForbidden) {
 		t.Fatalf("move into own sensitive scope: %v", err)
 	}
 	both := f.ctxFor("both", "hr@A", "hr@B", "sensitive_viewer@A", "sensitive_viewer@B")
-	if err := f.hrm.UpdateEmployee(both, id, employee("A1", f.b)); err != nil {
+	if err := f.hrm.UpdateEmployee(both, id, employee("A1", f.b).EmployeeInput); err != nil {
 		t.Fatalf("move with sensitive access on both sides: %v", err)
 	}
 }
@@ -336,11 +365,11 @@ func TestManagerAndAccountLinks(t *testing.T) {
 	cyc := employee("M", f.a)
 	cyc.ManagerID = &e
 	var perr *platform.Error
-	if err := f.hrm.UpdateEmployee(hr, boss, cyc); !errors.Is(err, hrm.ErrManagerCycle) || !errors.As(err, &perr) || perr.Params["name"] != "E · Nhân viên E" {
+	if err := f.hrm.UpdateEmployee(hr, boss, cyc.EmployeeInput); !errors.Is(err, hrm.ErrManagerCycle) || !errors.As(err, &perr) || perr.Params["name"] != "E · Nhân viên E" {
 		t.Fatalf("manager cycle: %v %+v", err, perr)
 	}
 	cyc.ManagerID = &boss
-	if err := f.hrm.UpdateEmployee(hr, boss, cyc); !errors.Is(err, hrm.ErrManagerSelf) {
+	if err := f.hrm.UpdateEmployee(hr, boss, cyc.EmployeeInput); !errors.Is(err, hrm.ErrManagerSelf) {
 		t.Fatalf("own manager: %v", err)
 	}
 	// The manager picker for the boss offers neither the boss nor anyone under them.
@@ -438,7 +467,7 @@ func TestRevealFailsWhenItsAuditFails(t *testing.T) {
 func TestManagerCycleFormedAtOnce(t *testing.T) {
 	f := newFixture(t)
 	hr := f.ctxFor("hr", "hr@*")
-	managed := func(code string, manager *int64) hrm.EmployeeInput {
+	managed := func(code string, manager *int64) hrm.NewEmployee {
 		in := employee(code, f.a)
 		in.ManagerID = manager
 		return in
@@ -450,10 +479,10 @@ func TestManagerCycleFormedAtOnce(t *testing.T) {
 	var second error
 	var wg sync.WaitGroup
 	if err := platform.InTx(hr, func(ctx context.Context) error {
-		if err := f.hrm.UpdateEmployee(ctx, a, managed("A", &b)); err != nil {
+		if err := f.hrm.UpdateEmployee(ctx, a, managed("A", &b).EmployeeInput); err != nil {
 			return err
 		}
-		wg.Go(func() { second = f.hrm.UpdateEmployee(hr, c, managed("C", &d)) })
+		wg.Go(func() { second = f.hrm.UpdateEmployee(hr, c, managed("C", &d).EmployeeInput) })
 		time.Sleep(100 * time.Millisecond)
 		return nil
 	}); err != nil {

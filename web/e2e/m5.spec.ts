@@ -17,7 +17,8 @@ async function ensureEmployee(code: string, unit: number, hire: string) {
   expect(res.status(), await res.text()).toBe(409)
   const list = (await (await api.get(`/api/hrm/employees?q=${code}`)).json()) as { items: { id: number; code: string }[] }
   const id = list.items.find((e) => e.code === code)!.id
-  const put = await api.put(`/api/hrm/employees/${id}`, { data })
+  // The code never changes; an update does not send it.
+  const put = await api.put(`/api/hrm/employees/${id}`, { data: { ...data, code: undefined } })
   expect(put.status(), await put.text()).toBe(204)
 }
 

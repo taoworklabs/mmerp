@@ -34,7 +34,7 @@ type Service struct {
 
 func NewService(d Deps) *Service {
 	s := &Service{d: d, roles: map[string]map[string][]string{}, tenantWide: map[[2]string]bool{}, sensitive: map[[2]string]bool{}}
-	s.RegisterRoles("core", map[string][]string{"admin": {PermManageOrg, PermManageUsers, PermManagePeriods, PermManageApproval, PermMonitorJobs, PermManageMail, PermManagePrint, setting.PermManage}}, "admin")
+	s.RegisterRoles("core", map[string][]string{"admin": {PermManageOrg, PermManageUsers, PermManagePeriods, PermManageApproval, PermMonitorJobs, PermManageMail, PermManagePrint, PermManageCodeSeries, setting.PermManage}}, "admin")
 	return s
 }
 
@@ -271,6 +271,8 @@ const (
 	PermManageMail = "core.mail.manage"
 	// PermManagePrint edits the text blocks of print templates; the printing module checks it.
 	PermManagePrint = "core.print_template.manage"
+	// PermManageCodeSeries edits the prefixes of code series; the numbering module checks it.
+	PermManageCodeSeries = "core.code_series.manage"
 )
 
 // RegisterRoles declares a product's roles and the permissions each grants;

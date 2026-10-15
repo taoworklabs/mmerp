@@ -45,10 +45,13 @@ VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
 RETURNING id;
 
 -- name: UpdateEmployee :exec
-UPDATE hrm.employees SET code = $2, full_name = $3, date_of_birth = $4, gender = $5, phone = $6, email = $7,
-    address = $8, org_unit_id = $9, manager_id = $10, user_id = $11, hire_date = $12, termination_date = $13,
-    national_id = $14, social_insurance_no = $15, tax_code = $16, bank_account = $17
+UPDATE hrm.employees SET full_name = $2, date_of_birth = $3, gender = $4, phone = $5, email = $6,
+    address = $7, org_unit_id = $8, manager_id = $9, user_id = $10, hire_date = $11, termination_date = $12,
+    national_id = $13, social_insurance_no = $14, tax_code = $15, bank_account = $16
 WHERE id = $1;
+
+-- name: EmployeeCodeTaken :one
+SELECT EXISTS (SELECT 1 FROM hrm.employees WHERE lower(code) = lower($1));
 
 -- name: ListDependents :many
 SELECT id, data FROM hrm.dependents WHERE employee_id = $1 ORDER BY id;

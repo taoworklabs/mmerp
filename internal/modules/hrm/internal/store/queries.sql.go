@@ -588,6 +588,17 @@ func (q *Queries) EmployeeByUser(ctx context.Context, userID pgtype.Int8) (Emplo
 	return i, err
 }
 
+const employeeCodeTaken = `-- name: EmployeeCodeTaken :one
+SELECT EXISTS (SELECT 1 FROM hrm.employees WHERE lower(code) = lower($1))
+`
+
+func (q *Queries) EmployeeCodeTaken(ctx context.Context, lower string) (bool, error) {
+	row := q.db.QueryRow(ctx, employeeCodeTaken, lower)
+	var exists bool
+	err := row.Scan(&exists)
+	return exists, err
+}
+
 const employeesByCodes = `-- name: EmployeesByCodes :many
 SELECT id, code, org_unit_id FROM hrm.employees WHERE lower(code) = ANY($1::text[])
 `
@@ -2892,15 +2903,14 @@ func (q *Queries) UpdateDependent(ctx context.Context, arg UpdateDependentParams
 }
 
 const updateEmployee = `-- name: UpdateEmployee :exec
-UPDATE hrm.employees SET code = $2, full_name = $3, date_of_birth = $4, gender = $5, phone = $6, email = $7,
-    address = $8, org_unit_id = $9, manager_id = $10, user_id = $11, hire_date = $12, termination_date = $13,
-    national_id = $14, social_insurance_no = $15, tax_code = $16, bank_account = $17
+UPDATE hrm.employees SET full_name = $2, date_of_birth = $3, gender = $4, phone = $5, email = $6,
+    address = $7, org_unit_id = $8, manager_id = $9, user_id = $10, hire_date = $11, termination_date = $12,
+    national_id = $13, social_insurance_no = $14, tax_code = $15, bank_account = $16
 WHERE id = $1
 `
 
 type UpdateEmployeeParams struct {
 	ID                int64
-	Code              string
 	FullName          string
 	DateOfBirth       pgtype.Date
 	Gender            pgtype.Text
@@ -2921,7 +2931,6 @@ type UpdateEmployeeParams struct {
 func (q *Queries) UpdateEmployee(ctx context.Context, arg UpdateEmployeeParams) error {
 	_, err := q.db.Exec(ctx, updateEmployee,
 		arg.ID,
-		arg.Code,
 		arg.FullName,
 		arg.DateOfBirth,
 		arg.Gender,

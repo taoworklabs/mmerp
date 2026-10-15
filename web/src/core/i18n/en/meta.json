@@ -81,5 +81,6 @@
   "core.jobs.kind.hrm.payroll_compute": "Payroll computation",
   "core.nav.mail_server": "Mail server",
   "core.nav.print_templates": "Print templates",
+  "core.nav.code_series": "Code series",
   "core.jobs.kind.print": "Print to PDF"
 }

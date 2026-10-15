@@ -1,6 +1,7 @@
 import { Route, Routes } from 'react-router'
 import { useCan } from '@/shared/auth/me'
 import { ForbiddenPage, NotFoundPage } from '@/shared/ui/states'
+import { CodeSeriesPage } from './pages/CodeSeriesPage'
 import { MailServerPage } from './pages/MailServerPage'
 import { OrgUnitsPage } from './pages/OrgUnitsPage'
 import { PeriodLocksPage } from './pages/PeriodLocksPage'
@@ -16,6 +17,7 @@ export default function CoreRoutes() {
   const canSettings = useCan('core.setting.manage')
   const canMail = useCan('core.mail.manage')
   const canPrint = useCan('core.print_template.manage')
+  const canCodes = useCan('core.code_series.manage')
   return (
     <Routes>
       <Route path="org-units" element={canOrg ? <OrgUnitsPage /> : <ForbiddenPage />} />
@@ -24,6 +26,7 @@ export default function CoreRoutes() {
       <Route path="period-locks" element={canPeriods ? <PeriodLocksPage /> : <ForbiddenPage />} />
       <Route path="settings" element={canSettings ? <SettingsPage /> : <ForbiddenPage />} />
       <Route path="mail-server" element={canMail ? <MailServerPage /> : <ForbiddenPage />} />
+      <Route path="code-series" element={canCodes ? <CodeSeriesPage /> : <ForbiddenPage />} />
       <Route path="print-templates" element={canPrint ? <PrintTemplatesPage /> : <ForbiddenPage />} />
       <Route path="*" element={<NotFoundPage />} />
     </Routes>

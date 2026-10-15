@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"slices"
+	"strings"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
@@ -133,9 +134,9 @@ func (s *Service) Employee(ctx context.Context, id int64) (Employee, error) {
 		return Employee{}, err
 	}
 	return Employee{
-		ID: e.ID,
+		ID: e.ID, Code: e.Code,
 		EmployeeFields: EmployeeFields{
-			Code: e.Code, FullName: e.FullName, DateOfBirth: platform.DatePtr(e.DateOfBirth), Gender: platform.TextPtr(e.Gender),
+			FullName: e.FullName, DateOfBirth: platform.DatePtr(e.DateOfBirth), Gender: platform.TextPtr(e.Gender),
 			Phone: platform.TextPtr(e.Phone), Email: platform.TextPtr(e.Email), Address: platform.TextPtr(e.Address), OrgUnitID: e.OrgUnitID,
 			ManagerID: platform.Int8Ptr(e.ManagerID), UserLogin: platform.TextPtr(e.UserLogin), HireDate: *platform.DatePtr(e.HireDate),
 			TerminationDate: platform.DatePtr(e.TerminationDate),
@@ -185,14 +186,19 @@ func (s *Service) RevealSensitive(ctx context.Context, id int64, field string) (
 }
 
 // CreateEmployee adds an employee in an org unit where the actor may edit.
-func (s *Service) CreateEmployee(ctx context.Context, in EmployeeInput) (int64, error) {
+func (s *Service) CreateEmployee(ctx context.Context, in NewEmployee) (int64, error) {
 	var id int64
 	err := platform.InTx(ctx, func(ctx context.Context) error {
-		row, err := s.prepare(ctx, store.HrmEmployee{}, in)
+		row, err := s.prepare(ctx, store.HrmEmployee{}, in.EmployeeInput)
 		if err != nil {
 			return err
 		}
 		q := store.New(platform.DBFrom(ctx))
+		if row.Code = strings.TrimSpace(in.Code); row.Code == "" {
+			if row.Code, err = s.d.Numbering.NextCode(ctx, employeeType, q.EmployeeCodeTaken); err != nil {
+				return err
+			}
+		}
 		id, err = q.CreateEmployee(ctx, store.CreateEmployeeParams{
 			Code: row.Code, FullName: row.FullName, DateOfBirth: row.DateOfBirth, Gender: row.Gender, Phone: row.Phone,
 			Email: row.Email, Address: row.Address, OrgUnitID: row.OrgUnitID, ManagerID: row.ManagerID, UserID: row.UserID,
@@ -246,7 +252,12 @@ func (s *Service) UpdateEmployee(ctx context.Context, id int64, in EmployeeInput
 				return &platform.Error{Status: ErrManagerCycle.Status, Code: ErrManagerCycle.Code, Params: map[string]any{"name": m.Code + " · " + m.FullName}}
 			}
 		}
-		if err := q.UpdateEmployee(ctx, store.UpdateEmployeeParams(row)); err != nil {
+		if err := q.UpdateEmployee(ctx, store.UpdateEmployeeParams{
+			ID: row.ID, FullName: row.FullName, DateOfBirth: row.DateOfBirth, Gender: row.Gender, Phone: row.Phone, Email: row.Email,
+			Address: row.Address, OrgUnitID: row.OrgUnitID, ManagerID: row.ManagerID, UserID: row.UserID, HireDate: row.HireDate,
+			TerminationDate: row.TerminationDate, NationalID: row.NationalID, SocialInsuranceNo: row.SocialInsuranceNo, TaxCode: row.TaxCode,
+			BankAccount: row.BankAccount,
+		}); err != nil {
 			return writeErr(err)
 		}
 		return s.recordChanges(ctx, "hrm.employee_updated", id, old, row)
@@ -262,7 +273,7 @@ func (s *Service) prepare(ctx context.Context, old store.HrmEmployee, in Employe
 		return old, ErrTerminationBeforeHire
 	}
 	row := store.HrmEmployee{
-		ID: old.ID, Code: in.Code, FullName: in.FullName, DateOfBirth: platform.NullDate(in.DateOfBirth), Gender: platform.NullText(in.Gender),
+		ID: old.ID, Code: old.Code, FullName: in.FullName, DateOfBirth: platform.NullDate(in.DateOfBirth), Gender: platform.NullText(in.Gender),
 		Phone: platform.NullText(in.Phone), Email: platform.NullText(in.Email), Address: platform.NullText(in.Address), OrgUnitID: in.OrgUnitID,
 		ManagerID: platform.NullInt8(in.ManagerID), HireDate: platform.NullDate(&in.HireDate), TerminationDate: platform.NullDate(in.TerminationDate),
 		NationalID: old.NationalID, SocialInsuranceNo: old.SocialInsuranceNo, TaxCode: old.TaxCode, BankAccount: old.BankAccount,

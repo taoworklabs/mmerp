@@ -75,7 +75,8 @@ func newIAM(set *setting.Service) *iam.Service {
 func Modules() []platform.Module {
 	set := setting.NewService()
 	ids := newIAM(set)
-	rec := record.NewService(record.Deps{IAM: ids, Numbering: numbering.NewService(), Audit: audit.NewService()})
+	num := numbering.NewService(numbering.Deps{IAM: ids, Audit: audit.NewService()})
+	rec := record.NewService(record.Deps{IAM: ids, Numbering: num, Audit: audit.NewService()})
 	ids.SetTreeHook(rec)
 	ids.SetDataProducts(rec)
 	ntf := notification.NewService(notification.Deps{Record: rec, IAM: ids, Audit: audit.NewService(), Setting: set})
@@ -87,9 +88,9 @@ func Modules() []platform.Module {
 	dis := discussion.NewService(discussion.Deps{Record: rec, Audit: audit.NewService(), IAM: ids, Notification: ntf})
 	// No accounting yet: nothing reacts to posting lines.
 	pst := posting.NewService(posting.Hooks{})
-	h := hrm.NewService(hrm.Deps{IAM: ids, Record: rec, Audit: audit.NewService(), Setting: set, DataIO: dio, Printing: prn, Posting: pst})
-	sal := sales.NewService(sales.Deps{IAM: ids, Record: rec, Audit: audit.NewService(), Setting: set, Printing: prn})
-	return []platform.Module{iam.Module(ids), setting.Module(set), record.Module(rec), approval.Module(appr), dataio.Module(dio), attachment.Module(att), printing.Module(prn), discussion.Module(dis), notification.Module(ntf), hrm.Module(h), sales.Module(sal)}
+	h := hrm.NewService(hrm.Deps{IAM: ids, Record: rec, Audit: audit.NewService(), Setting: set, DataIO: dio, Printing: prn, Posting: pst, Numbering: num})
+	sal := sales.NewService(sales.Deps{IAM: ids, Record: rec, Audit: audit.NewService(), Setting: set, Printing: prn, Numbering: num})
+	return []platform.Module{iam.Module(ids), setting.Module(set), numbering.Module(num), record.Module(rec), approval.Module(appr), dataio.Module(dio), attachment.Module(att), printing.Module(prn), discussion.Module(dis), notification.Module(ntf), hrm.Module(h), sales.Module(sal)}
 }
 
 // CreateAdmin adds the first administrator at install time.

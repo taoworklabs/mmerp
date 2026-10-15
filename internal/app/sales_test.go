@@ -77,7 +77,7 @@ func TestPrintQuote(t *testing.T) {
 
 	f.moveQuote("posted")
 	first := f.printed(f.staffA, "sales.quote", params)
-	f.ok(f.staffA, "PUT", fmt.Sprintf("/api/sales/customers/%d", f.customer), fmt.Sprintf(`{"code":"KH1","name":"Công ty Mới","tax_code":null,
+	f.ok(f.staffA, "PUT", fmt.Sprintf("/api/sales/customers/%d", f.customer), fmt.Sprintf(`{"name":"Công ty Mới","tax_code":null,
 		"address":null,"phone":null,"email":null,"contact_name":null,"payment_terms":null,"org_unit_id":%d,"active":true}`, f.a), 204)
 	f.ok(f.admin, "PUT", fmt.Sprintf("/api/org-units/%d", f.company), `{"parent_id":null,"kind":"company","name":"C","legal_name":"Công ty Cổ phần C"}`, 204)
 	if again := f.printed(f.staffA, "sales.quote", params); !slices.Equal(again, first) || strings.Contains(first[0], "BẢN NHÁP") {

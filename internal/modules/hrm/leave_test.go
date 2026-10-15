@@ -386,7 +386,7 @@ func TestTheEmployeeNeverApprovesTheirOwnLeave(t *testing.T) {
 	// Linking head's account to E after the step started does not let head approve E's leave.
 	e := employee("E", f.a)
 	e.UserLogin = str("head")
-	f.check(f.hrm.UpdateEmployee(f.hr, f.emp, e))
+	f.check(f.hrm.UpdateEmployee(f.hr, f.emp, e.EmployeeInput))
 	wantErr(t, f.appr.Approve(f.loginCtx("head"), f.ticket(id), 1), "self_approval")
 }
 

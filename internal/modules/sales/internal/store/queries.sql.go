@@ -117,6 +117,17 @@ func (q *Queries) CustomerActive(ctx context.Context, id int64) (bool, error) {
 	return active, err
 }
 
+const customerCodeTaken = `-- name: CustomerCodeTaken :one
+SELECT EXISTS (SELECT 1 FROM sales.customers WHERE lower(code) = lower($1))
+`
+
+func (q *Queries) CustomerCodeTaken(ctx context.Context, lower string) (bool, error) {
+	row := q.db.QueryRow(ctx, customerCodeTaken, lower)
+	var exists bool
+	err := row.Scan(&exists)
+	return exists, err
+}
+
 const deleteHeader = `-- name: DeleteHeader :exec
 DELETE FROM sales.headers WHERE id = $1
 `
@@ -442,6 +453,17 @@ func (q *Queries) InsertLine(ctx context.Context, arg InsertLineParams) error {
 		arg.Vat,
 	)
 	return err
+}
+
+const itemCodeTaken = `-- name: ItemCodeTaken :one
+SELECT EXISTS (SELECT 1 FROM sales.items WHERE lower(code) = lower($1))
+`
+
+func (q *Queries) ItemCodeTaken(ctx context.Context, lower string) (bool, error) {
+	row := q.db.QueryRow(ctx, itemCodeTaken, lower)
+	var exists bool
+	err := row.Scan(&exists)
+	return exists, err
 }
 
 const itemsByID = `-- name: ItemsByID :many
@@ -772,14 +794,13 @@ func (q *Queries) PrintLegalEntity(ctx context.Context, id int64) (PrintLegalEnt
 
 const updateCustomer = `-- name: UpdateCustomer :exec
 UPDATE sales.customers
-SET code = $2, name = $3, tax_code = $4, address = $5, phone = $6, email = $7, contact_name = $8,
-    payment_terms = $9, org_unit_id = $10, active = $11
+SET name = $2, tax_code = $3, address = $4, phone = $5, email = $6, contact_name = $7,
+    payment_terms = $8, org_unit_id = $9, active = $10
 WHERE id = $1
 `
 
 type UpdateCustomerParams struct {
 	ID           int64
-	Code         string
 	Name         string
 	TaxCode      pgtype.Text
 	Address      pgtype.Text
@@ -794,7 +815,6 @@ type UpdateCustomerParams struct {
 func (q *Queries) UpdateCustomer(ctx context.Context, arg UpdateCustomerParams) error {
 	_, err := q.db.Exec(ctx, updateCustomer,
 		arg.ID,
-		arg.Code,
 		arg.Name,
 		arg.TaxCode,
 		arg.Address,
@@ -863,12 +883,11 @@ func (q *Queries) UpdateHeader(ctx context.Context, arg UpdateHeaderParams) erro
 }
 
 const updateItem = `-- name: UpdateItem :execrows
-UPDATE sales.items SET code = $2, name = $3, unit = $4, price = $5, vat_rate = $6, active = $7 WHERE id = $1
+UPDATE sales.items SET name = $2, unit = $3, price = $4, vat_rate = $5, active = $6 WHERE id = $1
 `
 
 type UpdateItemParams struct {
 	ID      int64
-	Code    string
 	Name    string
 	Unit    string
 	Price   int64
@@ -879,7 +898,6 @@ type UpdateItemParams struct {
 func (q *Queries) UpdateItem(ctx context.Context, arg UpdateItemParams) (int64, error) {
 	result, err := q.db.Exec(ctx, updateItem,
 		arg.ID,
-		arg.Code,
 		arg.Name,
 		arg.Unit,
 		arg.Price,

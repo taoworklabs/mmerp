@@ -23,40 +23,69 @@ func (s *Service) Items(ctx context.Context, f ItemFilter) (ItemList, error) {
 	})
 	for _, r := range rows {
 		out.Total = r.Total
-		out.Items = append(out.Items, Item{ID: r.ID, ItemFields: ItemFields{Code: r.Code, Name: r.Name, Unit: r.Unit, Price: r.Price, VatRate: r.VatRate, Active: r.Active}})
+		out.Items = append(out.Items, Item{ID: r.ID, Code: r.Code, ItemFields: ItemFields{Name: r.Name, Unit: r.Unit, Price: r.Price, VatRate: r.VatRate, Active: r.Active}})
 	}
 	return out, err
 }
 
-// SaveItem creates an item (id 0) or replaces one; the catalogue is managed tenant-wide.
-func (s *Service) SaveItem(ctx context.Context, id int64, in ItemFields) (int64, error) {
-	if err := platform.ProductGate(ctx, "sales", platform.ClassWrite); err != nil {
-		return 0, err
-	}
-	if err := s.d.IAM.RequireTenantWide(ctx, "sales", PermItemManage); err != nil {
-		return 0, err
-	}
-	err := platform.InTx(ctx, func(ctx context.Context) error {
-		q := store.New(platform.DBFrom(ctx))
-		in.Code, in.Name, in.Unit = strings.TrimSpace(in.Code), strings.TrimSpace(in.Name), strings.TrimSpace(in.Unit)
+// CreateItem adds an item; the catalogue is managed tenant-wide.
+func (s *Service) CreateItem(ctx context.Context, in NewItem) (int64, error) {
+	var id int64
+	err := s.writeItem(ctx, func(ctx context.Context, q *store.Queries) error {
 		var err error
-		if id == 0 {
-			id, err = q.CreateItem(ctx, store.CreateItemParams{Code: in.Code, Name: in.Name, Unit: in.Unit, Price: in.Price, VatRate: in.VatRate, Active: in.Active})
-		} else {
-			var n int64
-			n, err = q.UpdateItem(ctx, store.UpdateItemParams{ID: id, Code: in.Code, Name: in.Name, Unit: in.Unit, Price: in.Price, VatRate: in.VatRate, Active: in.Active})
-			if err == nil && n == 0 {
-				return platform.ErrNotFound
+		if in.Code = strings.TrimSpace(in.Code); in.Code == "" {
+			if in.Code, err = s.d.Numbering.NextCode(ctx, itemSeries, q.ItemCodeTaken); err != nil {
+				return err
 			}
 		}
+		in.ItemFields = trimItem(in.ItemFields)
+		id, err = q.CreateItem(ctx, store.CreateItemParams{Code: in.Code, Name: in.Name, Unit: in.Unit, Price: in.Price, VatRate: in.VatRate, Active: in.Active})
 		if platform.Violates(err, "items_code_key") {
 			return ErrItemCodeTaken
 		}
 		if err != nil {
 			return err
 		}
-		return s.d.Audit.Record(ctx, "sales.item_saved", map[string]any{"id": id, "code": in.Code, "name": in.Name, "unit": in.Unit,
-			"price": in.Price, "vat_rate": in.VatRate, "active": in.Active})
+		return s.auditItem(ctx, id, in.Code, in.ItemFields)
 	})
 	return id, err
+}
+
+// UpdateItem replaces an item's fields; its code never changes.
+func (s *Service) UpdateItem(ctx context.Context, id int64, in ItemFields) error {
+	return s.writeItem(ctx, func(ctx context.Context, q *store.Queries) error {
+		in = trimItem(in)
+		n, err := q.UpdateItem(ctx, store.UpdateItemParams{ID: id, Name: in.Name, Unit: in.Unit, Price: in.Price, VatRate: in.VatRate, Active: in.Active})
+		if err != nil {
+			return err
+		}
+		if n == 0 {
+			return platform.ErrNotFound
+		}
+		it, err := q.GetItem(ctx, id)
+		if err != nil {
+			return err
+		}
+		return s.auditItem(ctx, id, it.Code, in)
+	})
+}
+
+func (s *Service) writeItem(ctx context.Context, fn func(context.Context, *store.Queries) error) error {
+	if err := platform.ProductGate(ctx, "sales", platform.ClassWrite); err != nil {
+		return err
+	}
+	if err := s.d.IAM.RequireTenantWide(ctx, "sales", PermItemManage); err != nil {
+		return err
+	}
+	return platform.InTx(ctx, func(ctx context.Context) error { return fn(ctx, store.New(platform.DBFrom(ctx))) })
+}
+
+func trimItem(in ItemFields) ItemFields {
+	in.Name, in.Unit = strings.TrimSpace(in.Name), strings.TrimSpace(in.Unit)
+	return in
+}
+
+func (s *Service) auditItem(ctx context.Context, id int64, code string, in ItemFields) error {
+	return s.d.Audit.Record(ctx, "sales.item_saved", map[string]any{"id": id, "code": code, "name": in.Name, "unit": in.Unit,
+		"price": in.Price, "vat_rate": in.VatRate, "active": in.Active})
 }

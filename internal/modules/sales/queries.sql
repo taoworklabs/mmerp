@@ -5,8 +5,8 @@ RETURNING id;
 
 -- name: UpdateCustomer :exec
 UPDATE sales.customers
-SET code = $2, name = $3, tax_code = $4, address = $5, phone = $6, email = $7, contact_name = $8,
-    payment_terms = $9, org_unit_id = $10, active = $11
+SET name = $2, tax_code = $3, address = $4, phone = $5, email = $6, contact_name = $7,
+    payment_terms = $8, org_unit_id = $9, active = $10
 WHERE id = $1;
 
 -- name: GetCustomer :one
@@ -41,7 +41,13 @@ LIMIT @lim OFFSET @off;
 INSERT INTO sales.items (code, name, unit, price, vat_rate, active) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id;
 
 -- name: UpdateItem :execrows
-UPDATE sales.items SET code = $2, name = $3, unit = $4, price = $5, vat_rate = $6, active = $7 WHERE id = $1;
+UPDATE sales.items SET name = $2, unit = $3, price = $4, vat_rate = $5, active = $6 WHERE id = $1;
+
+-- name: CustomerCodeTaken :one
+SELECT EXISTS (SELECT 1 FROM sales.customers WHERE lower(code) = lower($1));
+
+-- name: ItemCodeTaken :one
+SELECT EXISTS (SELECT 1 FROM sales.items WHERE lower(code) = lower($1));
 
 -- name: GetItem :one
 SELECT * FROM sales.items WHERE id = $1;

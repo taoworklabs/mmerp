@@ -81,5 +81,6 @@
   "core.jobs.kind.hrm.payroll_compute": "Tính lương",
   "core.nav.mail_server": "Máy chủ mail",
   "core.nav.print_templates": "Mẫu in",
+  "core.nav.code_series": "Dãy mã",
   "core.jobs.kind.print": "In PDF"
 }
