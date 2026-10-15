@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"maps"
-	"net/http"
 	"slices"
 	"strings"
 	"unicode"
@@ -18,8 +17,6 @@ import (
 	"github.com/taoworklabs/mmerp/internal/core/numbering/internal/store"
 	"github.com/taoworklabs/mmerp/internal/platform"
 )
-
-var ErrInvalidPrefix = &platform.Error{Status: http.StatusUnprocessableEntity, Code: "invalid_code_prefix"}
 
 // series is a registered code series: its product and default prefix.
 type series struct {
@@ -48,9 +45,12 @@ func (s *Service) RegisterSeries(code, product, prefix string) {
 	s.series[code] = series{product: product, prefix: prefix}
 }
 
-// NextCode issues the next code of a series, skipping codes taken reports as used.
-// Call it inside the transaction that creates the entry.
-func (s *Service) NextCode(ctx context.Context, code string, taken func(context.Context, string) (bool, error)) (string, error) {
+// Code returns typed, trimmed, or when it is empty the next code of a series, skipping codes
+// taken reports as used. Call it inside the transaction that creates the entry.
+func (s *Service) Code(ctx context.Context, code, typed string, taken func(context.Context, string) (bool, error)) (string, error) {
+	if typed = strings.TrimSpace(typed); typed != "" {
+		return typed, nil
+	}
 	sr, ok := s.series[code]
 	if !ok {
 		return "", fmt.Errorf("numbering: unknown series %q", code)

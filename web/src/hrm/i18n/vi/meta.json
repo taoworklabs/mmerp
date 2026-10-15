@@ -53,7 +53,7 @@
   "hrm.wage_region.2": "Vùng II",
   "hrm.wage_region.3": "Vùng III",
   "hrm.wage_region.4": "Vùng IV",
-  "numbering.series.hrm.employee": "Nhân viên",
+  "hrm.employee.code_series": "Nhân viên",
   "hrm.nav.work_calendar": "Lịch làm việc",
   "hrm.nav.legal_params": "Tham số pháp lý",
   "hrm.role.payroll_viewer": "Xem tổng bảng lương",

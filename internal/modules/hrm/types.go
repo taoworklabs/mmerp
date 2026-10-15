@@ -80,7 +80,7 @@ type SensitivePresence struct {
 }
 
 type NewEmployee struct {
-	Code string `json:"code" maxLength:"50" doc:"Empty: issued from the hrm.employee code series"`
+	Code string `json:"code,omitempty" maxLength:"50" doc:"Empty or absent: issued from the hrm.employee code series"`
 	EmployeeInput
 }
 

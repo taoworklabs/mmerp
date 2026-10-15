@@ -882,8 +882,8 @@ func (q *Queries) UpdateHeader(ctx context.Context, arg UpdateHeaderParams) erro
 	return err
 }
 
-const updateItem = `-- name: UpdateItem :execrows
-UPDATE sales.items SET name = $2, unit = $3, price = $4, vat_rate = $5, active = $6 WHERE id = $1
+const updateItem = `-- name: UpdateItem :one
+UPDATE sales.items SET name = $2, unit = $3, price = $4, vat_rate = $5, active = $6 WHERE id = $1 RETURNING code
 `
 
 type UpdateItemParams struct {
@@ -895,8 +895,8 @@ type UpdateItemParams struct {
 	Active  bool
 }
 
-func (q *Queries) UpdateItem(ctx context.Context, arg UpdateItemParams) (int64, error) {
-	result, err := q.db.Exec(ctx, updateItem,
+func (q *Queries) UpdateItem(ctx context.Context, arg UpdateItemParams) (string, error) {
+	row := q.db.QueryRow(ctx, updateItem,
 		arg.ID,
 		arg.Name,
 		arg.Unit,
@@ -904,8 +904,7 @@ func (q *Queries) UpdateItem(ctx context.Context, arg UpdateItemParams) (int64, 
 		arg.VatRate,
 		arg.Active,
 	)
-	if err != nil {
-		return 0, err
-	}
-	return result.RowsAffected(), nil
+	var code string
+	err := row.Scan(&code)
+	return code, err
 }

@@ -287,10 +287,11 @@ func TestIssuedCodes(t *testing.T) {
 	}
 
 	catalog := f.ctxFor("catalog2", "catalog_admin@*")
+	must(t)(f.sales.CreateItem(catalog, sales.NewItem{Code: "hh00001", ItemFields: sales.ItemFields{Name: "Mực", Unit: "lọ", VatRate: "8", Active: true}}))
 	id := must(t)(f.sales.CreateItem(catalog, sales.NewItem{ItemFields: sales.ItemFields{Name: "Giấy", Unit: "ram", VatRate: "8", Active: true}}))
 	f.check(f.sales.UpdateItem(catalog, id, sales.ItemFields{Name: "Giấy A4", Unit: "ram", VatRate: "8", Active: true}))
 	l, err := f.sales.Items(catalog, sales.ItemFilter{Q: "giấy", Paging: platform.Paging{Page: 1, PageSize: 50}})
-	if err != nil || l.Total != 1 || l.Items[0].Code != "HH00001" || l.Items[0].Name != "Giấy A4" {
+	if err != nil || l.Total != 1 || l.Items[0].Code != "HH00002" || l.Items[0].Name != "Giấy A4" {
 		t.Fatalf("items %+v %v", l, err)
 	}
 }

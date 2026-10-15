@@ -2,7 +2,10 @@ package sales
 
 import (
 	"context"
+	"errors"
 	"strings"
+
+	"github.com/jackc/pgx/v5"
 
 	"github.com/taoworklabs/mmerp/internal/modules/sales/internal/store"
 	"github.com/taoworklabs/mmerp/internal/platform"
@@ -33,10 +36,8 @@ func (s *Service) CreateItem(ctx context.Context, in NewItem) (int64, error) {
 	var id int64
 	err := s.writeItem(ctx, func(ctx context.Context, q *store.Queries) error {
 		var err error
-		if in.Code = strings.TrimSpace(in.Code); in.Code == "" {
-			if in.Code, err = s.d.Numbering.NextCode(ctx, itemSeries, q.ItemCodeTaken); err != nil {
-				return err
-			}
+		if in.Code, err = s.d.Numbering.Code(ctx, itemSeries, in.Code, itemCodeTaken); err != nil {
+			return err
 		}
 		in.ItemFields = trimItem(in.ItemFields)
 		id, err = q.CreateItem(ctx, store.CreateItemParams{Code: in.Code, Name: in.Name, Unit: in.Unit, Price: in.Price, VatRate: in.VatRate, Active: in.Active})
@@ -55,18 +56,14 @@ func (s *Service) CreateItem(ctx context.Context, in NewItem) (int64, error) {
 func (s *Service) UpdateItem(ctx context.Context, id int64, in ItemFields) error {
 	return s.writeItem(ctx, func(ctx context.Context, q *store.Queries) error {
 		in = trimItem(in)
-		n, err := q.UpdateItem(ctx, store.UpdateItemParams{ID: id, Name: in.Name, Unit: in.Unit, Price: in.Price, VatRate: in.VatRate, Active: in.Active})
-		if err != nil {
-			return err
-		}
-		if n == 0 {
+		code, err := q.UpdateItem(ctx, store.UpdateItemParams{ID: id, Name: in.Name, Unit: in.Unit, Price: in.Price, VatRate: in.VatRate, Active: in.Active})
+		if errors.Is(err, pgx.ErrNoRows) {
 			return platform.ErrNotFound
 		}
-		it, err := q.GetItem(ctx, id)
 		if err != nil {
 			return err
 		}
-		return s.auditItem(ctx, id, it.Code, in)
+		return s.auditItem(ctx, id, code, in)
 	})
 }
 
@@ -88,4 +85,9 @@ func trimItem(in ItemFields) ItemFields {
 func (s *Service) auditItem(ctx context.Context, id int64, code string, in ItemFields) error {
 	return s.d.Audit.Record(ctx, "sales.item_saved", map[string]any{"id": id, "code": code, "name": in.Name, "unit": in.Unit,
 		"price": in.Price, "vat_rate": in.VatRate, "active": in.Active})
+}
+
+// itemCodeTaken reports whether a code is used, for numbering to skip it.
+func itemCodeTaken(ctx context.Context, code string) (bool, error) {
+	return store.New(platform.DBFrom(ctx)).ItemCodeTaken(ctx, code)
 }
