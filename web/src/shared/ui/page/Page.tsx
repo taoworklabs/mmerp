@@ -1,7 +1,8 @@
-import { Anchor, Breadcrumbs, Flex, Group, Stack, Text, Title } from '@mantine/core'
-import { IconChevronRight } from '@tabler/icons-react'
+import { ActionIcon, Anchor, Breadcrumbs, Flex, Group, Stack, Text, Title, Tooltip } from '@mantine/core'
+import { IconArrowLeft, IconChevronRight } from '@tabler/icons-react'
 import type { ReactNode } from 'react'
-import { Link } from 'react-router'
+import { useTranslation } from 'react-i18next'
+import { Link, useLocation, useNavigate } from 'react-router'
 import { icon } from '../theme'
 import classes from './Page.module.css'
 
@@ -16,14 +17,19 @@ export type PageHeaderProps = {
   // Shown left of the title, e.g. a person's avatar.
   leading?: ReactNode
   actions?: ReactNode
-  // Templates with their own rule under the header (RecordPage's tabs) turn the header's off.
-  divider?: boolean
+  // A Tabs.List (inside a Tabs around the page) that sits on the header's rule.
+  tabs?: ReactNode
+  // No rule under the header: the content draws its own frame.
+  plain?: boolean
+  // One record's page (RecordPage, DocumentPage): the breadcrumb ends with the page itself and a
+  // back button leads the title.
+  withBack?: boolean
 }
 
 // pageFrame is the padding around a page, shared with the page-level skeleton.
-export const pageFrame = { px: { base: 'md', md: 'xl' }, py: 'lg' } as const
+export const pageFrame = { px: { base: 'md', md: 'xl', lg: 'xxl' }, py: 'lg' } as const
 
-// readingWidth is the width of a side panel (approval, attachments, discussion) shown full width as a tab.
+// readingWidth is the width of a side panel (approval, attachments) shown full width as a tab.
 export const readingWidth = 480
 
 // Page is the frame every page template builds on: header (breadcrumbs, title, at most one
@@ -44,9 +50,10 @@ export function Page({ children, className, centered, ...header }: PageHeaderPro
   )
 }
 
-function PageHeader({ title, breadcrumbs, description, leading, actions, divider = true }: PageHeaderProps) {
+function PageHeader({ title, breadcrumbs, description, leading, actions, tabs, plain, withBack }: PageHeaderProps) {
+  const parent = breadcrumbs?.at(-1)
   return (
-    <Stack gap="xs" className={divider ? classes.header : undefined}>
+    <Stack gap="xs" className={classes.header} data-tabs={tabs ? true : undefined} data-plain={plain || undefined}>
       {breadcrumbs && breadcrumbs.length > 0 && (
         <Breadcrumbs separator={<IconChevronRight {...icon.text} />} separatorMargin="xxs">
           {breadcrumbs.map((c) => (
@@ -54,11 +61,17 @@ function PageHeader({ title, breadcrumbs, description, leading, actions, divider
               {c.label}
             </Anchor>
           ))}
+          {withBack && (
+            <Text size="sm" fw={500} aria-current="page" truncate>
+              {title}
+            </Text>
+          )}
         </Breadcrumbs>
       )}
       {/* Narrow screens stack the actions under the title instead of squeezing them. */}
       <Flex direction={{ base: 'column', sm: 'row' }} justify="space-between" align={{ base: 'stretch', sm: 'center' }} gap="sm">
         <Group gap="md" wrap="nowrap" miw={0}>
+          {withBack && parent && <BackButton to={parent.to} />}
           {leading}
           <Stack gap={0} miw={0}>
             <Title order={1} lineClamp={1}>
@@ -73,6 +86,37 @@ function PageHeader({ title, breadcrumbs, description, leading, actions, divider
         </Group>
         {actions}
       </Flex>
+      {tabs && <div className={classes.tabs}>{tabs}</div>}
     </Stack>
+  )
+}
+
+// BackButton returns to where the user came from, the list with its filters and page; opened
+// directly (a link from elsewhere, a new tab), it goes to the page above. A real link, so it also
+// opens in a new tab.
+function BackButton({ to }: { to: string }) {
+  const { t } = useTranslation()
+  const navigate = useNavigate()
+  const location = useLocation()
+  const label = t('shared.page.back')
+  return (
+    <Tooltip label={label}>
+      <ActionIcon
+        component={Link}
+        to={to}
+        variant="default"
+        radius={1000}
+        size="input-sm"
+        aria-label={label}
+        onClick={(e) => {
+          // The first entry of the session has the default key: there is nothing in the app to go back to.
+          if (location.key === 'default' || e.metaKey || e.ctrlKey || e.shiftKey) return
+          e.preventDefault()
+          void navigate(-1)
+        }}
+      >
+        <IconArrowLeft {...icon.button} />
+      </ActionIcon>
+    </Tooltip>
   )
 }

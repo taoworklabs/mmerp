@@ -61,7 +61,7 @@ What slips through (all inside `shared/ui`, `shared/document` or `app`, plus two
 - Display: `DataTable` (40px rows, subtle header, sticky id column, card list below 1024px, reconciliation tables with grouped headers and sticky totals), `FieldList`, `StatusBadge` (badge + dot), `DocumentStatus`, `CellGrid` (timesheet), `StatTile`/`LinkTile`, `OrgUnitName`, `PersonName`/`PersonAvatar`.
 - Forms: `Form`, `FormSection` (unframed, ruled), `InputRow`, `FormActions` (sticky footer with dirty state), fields (`TextField`, `DateField`, `MoneyField`, `SelectField`, `SensitiveField`, `OrgUnitField`, …), filters (`SearchInput`, `MonthFilter`).
 - Feedback: `useConfirm`, `notifySuccess`/`notifyError` (bottom-right), states (`EmptyState` dashed frame + icon, `ErrorState`, skeletons, 403/404, `ReadOnlyBanner`).
-- Documents (`shared/document`): `DocumentActions`, `ApprovalPanel`, `DocumentHistory`, `AttachmentPanel`, `DiscussionPanel`.
+- Documents (`shared/document`): `DocumentActions`, `ApprovalPanel`, `ActivityFeed`, `AttachmentPanel`.
 - App shell (`app/AppLayout.tsx`): 48px header (home logo, area title, notifications/inbox/jobs icons, avatar menu), 240px left navigation per area, home page of tiles.
 - 69 screen files across `core`, `hrm`, `sales`; every one built from the above.
 

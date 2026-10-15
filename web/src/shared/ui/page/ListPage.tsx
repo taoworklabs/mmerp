@@ -9,7 +9,7 @@ import { Page, type PageHeaderProps } from './Page'
 
 type Paging = { page: number; pageSize: number; total: number; onPage: (page: number) => void; onPageSize: (size: number) => void }
 
-// ListPage: title and the create button, optional view tabs in place of the header's rule, a filter bar, the table, then paging. The filter bar's
+// ListPage: title and the create button, optional view tabs on the header's rule, a filter bar, the table, then paging. The filter bar's
 // chips wrap onto more lines when they do not fit; tools (saved views, columns) sit at its right end
 // from 1024px; bulk, while rows are selected, takes the whole bar's place. From 1024px the page fills
 // the window and only its content scrolls.
@@ -25,7 +25,7 @@ export function ListPage({
   ...header
 }: Omit<PageHeaderProps, 'actions' | 'leading'> & {
   action?: ReactNode
-  // Ways to view the same list (tree, table): a Tabs element whose list replaces the header's rule.
+  // Ways to view the same list (tree, table): a Tabs element holding only its list, set on the header's rule.
   tabs?: ReactNode
   filters?: ReactNode
   // Given while any filter is set: a "Clear filters" button ends the bar.
@@ -38,8 +38,7 @@ export function ListPage({
   const { t } = useTranslation()
   const wide = useMediaQuery('(min-width: 64em)', true)
   return (
-    <Page {...header} actions={action} divider={!tabs} className={wide ? classes.frame : undefined}>
-      {tabs}
+    <Page {...header} actions={action} tabs={tabs} className={wide ? classes.frame : undefined}>
       {wide && bulk
         ? bulk
         : (filters || (wide && tools)) && (

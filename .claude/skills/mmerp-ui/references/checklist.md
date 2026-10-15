@@ -16,6 +16,7 @@ Run every item against the change before calling it done. An item that does not 
 - [ ] One primary button per view; others by `components.md` (default, subtle, light); the way out beside the primary is `subtle` grey; `color="danger"` only for a step that loses data.
 - [ ] Buttons keep the default size (30px) everywhere, with `icon.button`; no `size` on a button. Controls in one strip share one height.
 - [ ] Status through `DocumentStatus` (documents) or `StatusBadge` (everything else).
+- [ ] Comments and history through `ActivityFeed` (`activity` on `RecordPage` / `DocumentPage`), never a panel of their own.
 - [ ] Selection shown by the primary tint and primary text only.
 - [ ] Shadows only on overlays and a pinned form footer (`--mmerp-shadow-footer`); cards are `Paper withBorder`.
 
@@ -23,6 +24,7 @@ Run every item against the change before calling it done. An item that does not 
 
 - [ ] The screen type is named (list, document, record, create page, modal, settings, dashboard, report, inbox) and uses that type's template; no page-level layout of its own.
 - [ ] Create in a `FormModal` only for ≤ 6 fields whose result lives in a list or is worked on its own page; otherwise a page.
+- [ ] A master-data record page shows its values in the profile column (`RecordPage` `aside`, `EditableSection` + `FieldList`), each group edited in its own `FormModal`; a fully read-only form reads as text, never as locked inputs.
 - [ ] A document with a wide table (editable lines, grid, payroll) uses `fullWidth`; forms and main columns rely on the 1200px cap, not their own width.
 - [ ] Breadcrumb points to the record's own list.
 

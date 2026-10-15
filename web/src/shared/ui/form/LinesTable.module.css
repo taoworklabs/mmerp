@@ -1,5 +1,7 @@
-/* Clips the header's tinted cells to the frame's rounded corners. */
+/* Clips the header's tinted cells to the frame's rounded corners. Cell inputs keep the compact
+   height inside a form's taller fields. */
 .frame {
+  --mmerp-control-height: 30px;
   overflow: hidden;
 }
 
@@ -10,6 +12,11 @@
   font-size: var(--mantine-font-size-xs);
   font-weight: 600;
   white-space: nowrap;
+}
+
+/* "Add line" sits under the table, outside its frame, yet keeps the table's compact height. */
+.add {
+  --mmerp-control-height: 30px;
 }
 
 /* The line number and the remove button take only their own width. */

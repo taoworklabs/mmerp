@@ -33,6 +33,8 @@
   "sales.customer.section.sales_hint": "Đơn vị phụ trách và điều kiện mặc định",
   "sales.customer.tab.info": "Thông tin",
   "sales.customer.created": "Đã thêm khách hàng.",
+  "sales.customer.edit.general": "Sửa thông tin chung",
+  "sales.customer.edit.sales": "Sửa thông tin bán hàng",
   "sales.customer.saved": "Đã lưu khách hàng.",
   "sales.customer_created": "Thêm khách hàng",
   "sales.customer_updated": "Sửa khách hàng",

@@ -1,4 +1,4 @@
-import { ActionIcon, Button, Group, Input, Text, TextInput, Tooltip, VisuallyHidden } from '@mantine/core'
+import { ActionIcon, Anchor, Group, Input, Text, TextInput, Tooltip, VisuallyHidden } from '@mantine/core'
 import { IconEye, IconEyeOff } from '@tabler/icons-react'
 import { useState } from 'react'
 import { useController, useFormContext } from 'react-hook-form'
@@ -54,9 +54,7 @@ export function SensitiveField({ name, label, present, canView, canEdit, reveal 
         <Group gap="sm" wrap="nowrap">
           <Text aria-hidden>••••••</Text>
           <VisuallyHidden>{t('shared.sensitive.masked')}</VisuallyHidden>
-          <Button variant="subtle" leftSection={<IconEye {...icon.button} />} loading={busy} onClick={() => void show()} aria-label={t('shared.sensitive.show_field', { field: label })}>
-            {t('shared.sensitive.show')}
-          </Button>
+          <RevealLink label={label} busy={busy} onClick={() => void show()} />
         </Group>
       </Input.Wrapper>
     )
@@ -93,5 +91,70 @@ export function SensitiveField({ name, label, present, canView, canEdit, reveal 
         ) : undefined
       }
     />
+  )
+}
+
+// RevealLink asks to show a masked value: a link that underlines on hover, quieter than a button.
+function RevealLink({ label, busy, onClick }: { label: string; busy?: boolean; onClick: () => void }) {
+  const { t } = useTranslation()
+  return (
+    <Anchor component="button" type="button" size="sm" disabled={busy} onClick={onClick} aria-label={t('shared.sensitive.show_field', { field: label })}>
+      <Group gap="xxs" wrap="nowrap" component="span">
+        <IconEye {...icon.text} aria-hidden />
+        {t('shared.sensitive.show')}
+      </Group>
+    </Anchor>
+  )
+}
+
+type ValueProps = Omit<Props, 'name' | 'canEdit'>
+
+// SensitiveValue is the read-only face of a SensitiveField, for a label–value list: masked until
+// asked for, then the value as text with a link to mask it again. Showing it again is another
+// audited read.
+export function SensitiveValue({ label, present, canView, reveal }: ValueProps) {
+  const { t } = useTranslation()
+  const [shown, setShown] = useState<string | null>(null)
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  if (!canView) return <Text c="dimmed">{t('shared.sensitive.no_permission')}</Text>
+  if (!present) return <Text c="dimmed">—</Text>
+  async function show() {
+    setBusy(true)
+    setError(null)
+    try {
+      setShown((await reveal()) ?? '')
+    } catch (err) {
+      setError(errorText(t, err))
+    } finally {
+      setBusy(false)
+    }
+  }
+  return (
+    <>
+      <Group gap="sm" wrap="nowrap" component="span">
+        {shown === null ? (
+          <>
+            <Text span aria-hidden>
+              ••••••
+            </Text>
+            <VisuallyHidden>{t('shared.sensitive.masked')}</VisuallyHidden>
+            <RevealLink label={label} busy={busy} onClick={() => void show()} />
+          </>
+        ) : (
+          <>
+            <Text span>{shown}</Text>
+            <Anchor component="button" type="button" size="sm" onClick={() => setShown(null)} aria-label={t('shared.sensitive.hide_field', { field: label })}>
+              {t('shared.sensitive.hide')}
+            </Anchor>
+          </>
+        )}
+      </Group>
+      {error && (
+        <Text size="xs" c="danger" role="alert">
+          {error}
+        </Text>
+      )}
+    </>
   )
 }

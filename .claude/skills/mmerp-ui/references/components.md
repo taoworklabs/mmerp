@@ -93,7 +93,7 @@ Mantine `Alert`, default (tinted) variant, `color` by meaning, always with an ic
 
 ## Fields (`shared/ui/form`)
 
-Every field is wired to React Hook Form and renders: label above (12px, 600, `dimmed`), `*` when required, description under the input, error under that. Inputs are 30px, radius 6, input border token (`--mmerp-input-border`, see `tokens.md`), focus ring primary. Every field takes `short` (a third of a section row instead of half); `DateField` and `MonthField` show a calendar icon and their format as placeholder (not when `bare` or read-only); `TextField` takes `placeholder` for a "VD:" sample.
+Every field is wired to React Hook Form and renders: label above (12px, 600, `dimmed`), `*` when required, description under the input, error under that. Inputs are 40px among a form section's fields and in a modal's body, 30px elsewhere (filter bar, lines table), radius 6, input border token (`--mmerp-input-border`, see `tokens.md`), focus ring primary. Every field takes `short` (a third of a section row instead of half); `DateField` and `MonthField` show a calendar icon and their format as placeholder (not when `bare` or read-only); `TextField` takes `placeholder` for a "VD:" sample.
 
 | Field | Data |
 | --- | --- |
@@ -106,7 +106,9 @@ Every field is wired to React Hook Form and renders: label above (12px, 600, `di
 | `DecimalField` | Fractional quantity with declared decimals |
 | `IntegerField` | A whole number without digit grouping (port, year, levels) |
 | `FileField` | One file |
-| `SensitiveField` | Masked value with Show/Hide; reveal is audited |
+| `SensitiveField` | Masked value with a "Hiện" (Show) link that underlines on hover; once shown and not edited, an eye-off button inside the input masks it again; each reveal is audited |
+| `SensitiveValue` | The read-only face of a sensitive value in a `FieldList`: masked, "Hiện" shows it as text with "Ẩn" beside it; each reveal is audited |
+| `EditableSection` | A group of a record's values in the profile column: icon and title, its read view (a `FieldList`); with `onEdit`, it always shows "Sửa", grey until the group is hovered or focused (which also tints it), and a click opens the group's `FormModal` |
 | `OrgUnitField` | An org unit within the user's scope; the chosen unit shows its kind icon, as in the list |
 
 Every field takes `bare` for a table cell: no visible label (kept as `aria-label`), no description, numbers right-aligned without spin buttons.
@@ -124,17 +126,20 @@ Every field takes `bare` for a table cell: no visible label (kept as `aria-label
 
 A list's filter bar holds `SearchInput` and filter chips: `FilterChip` (options from `data`; `icon` is the icon component, the chip sizes it; `searchable`; `clearable={false}` for a filter that always holds a value), `OrgUnitFilter`, `MonthFilter`, `YearFilter`. A chip is named after its filter and reads "Name: value", tinted with its own ✕ (with a tooltip), once set; `{...filterBar.bind(key)}` from `useListParams` wires one to the URL; areas set no width (`tables.md`).
 
+To switch between views of one feed (an activity feed's All · Comments · Changes · Views), use Mantine's `SegmentedControl`: the theme draws it as a thin frame of plain labels with the chosen one tinted and edged in primary (`SegmentedControl.module.css`); set nothing on it but `w="fit-content"`.
+
 ## Data display
 
 | Component | Use |
 | --- | --- |
-| `DataTable` | Every table. Columns declare `role` (`title`, `status`, `meta`, `hidden`), `kind` (`text`, the default, `person`, `code`, `date`, `number`, `status`: look and width), `sortable`, `band`, `strong`, `width`; a zero figure or an empty cell shows "–". Framed (1px `border`, radius 8) wherever it is part of a page; as a list page's whole content it fills the page unframed (`ListPage` drops the frame); rows 40px, header 36px on the table header tone (12px, 600) over a rule, row hover tint, cards below 1024px. Props: `href` (first column links the row), `onRowClick` (side panel, settings modal), `menu` (row "…"), `selection` (checkbox column), `onResize` (drag or ←/→ on a column edge), `group`, `footer`, `maxHeight` (without it the table takes the height its parent gives, e.g. a list page's frame). Rules in `tables.md` |
+| `DataTable` | Every table. Columns declare `role` (`title`, `status`, `meta`, `hidden`), `kind` (`text`, the default, `person`, `code`, `date`, `number`, `status`: look and width), `sortable`, `band`, `strong`, `width`; a zero figure or an empty cell shows "–". Framed (1px `border`, radius 6) wherever it is part of a page; as a list page's whole content it fills the page unframed (`ListPage` drops the frame); rows 40px, header 36px on the table header tone (12px, 600) over a rule, row hover tint, cards below 1024px. Props: `href` (first column links the row), `onRowClick` (side panel, settings modal), `menu` (row "…"), `selection` (checkbox column), `onResize` (drag or ←/→ on a column edge), `group`, `footer`, `maxHeight` (without it the table takes the height its parent gives, e.g. a list page's frame). Rules in `tables.md` |
 | `TreeList` | A hierarchy (the org tree): rows 36px joined to their parent by guide lines, each branch folds (all open at first; from 1024px a folded one says how many units sit directly under it). Props: `nodes` (nested), `render` (the name), `meta` (quiet facts after it), `menu` (row "…"), `toggleLabel`. Unframed; below 1024px rows and toggles are 44px and `meta` is left out |
 | `ListPage` | `tabs` (ways to view the same list, e.g. tree and table: a `Tabs` element under the header, its line replacing the header rule; the choice is on the URL), `filters` (left), `onClearFilters` (given while a filter is set: "Clear filters" ends the chips), `tools` (right: `useListView().tools`), `bulk` (replaces the bar while rows are selected), `paging`. From 1024px it fills the window and only its content scrolls |
 | `useListView(listKey, columns)` | The user's saved views and column choices for a list, stored on the server; returns `columns`, `onResize`, `tools` |
 | `BulkBar` | "N selected", the bulk actions (children), Clear selection |
 | `SidePanel` + `usePeek` | Read-only preview of a list row on the right, 480px, not modal, with "Open full page"; the open id on the URL (`?peek=`) |
-| `FieldList` | Read-only label/value pairs, label left in `dimmed` |
+| `ActivityFeed` (`shared/document`) | A record's or document's comments and audit log in one timeline: comment box, filter (All · Comments · Changes · Views), days as uppercase headings with a rule; each line the time of day (3rem column), a 20px bullet (avatar for plain doings and comments; a coloured round icon for a status reached, a decision, a creation, a sensitive read) and a sentence (who 600, doing `dimmed`, what 600); a comment or two or more changed fields in a sunken well, tied to the bullet by a thread; consecutive reads fold; 30 lines, then "Show more". Passed as `activity` to `RecordPage` and `DocumentPage`; never build a separate history or discussion panel |
+| `FieldList` | Read-only label/value pairs, label left in `dimmed`; a value may be a node (a badge, a `SensitiveValue`); a container fixes the label width with `--field-list-label` (the profile column does) |
 | `CellGrid` | A grid of number inputs on two axes (timesheet). Inside a form, pass `invalidId={fieldId('<field>')}` and `errorId` and render the field's error under the grid: the first invalid cell then takes the focus from the footer's "Go to next field" |
 | `TileGrid`, `StatTile`, `LinkTile` | Home and overview pages: a count that opens its list, a destination |
 | `PersonName`, `PersonAvatar` | A person: initials on a colour derived from the name, round |
@@ -144,7 +149,7 @@ A list's filter bar holds `SearchInput` and filter chips: `FilterChip` (options 
 
 | Component | Use |
 | --- | --- |
-| `FormModal` | A form of at most 6 fields: 440px, one column (`wide`: 620px, for long text or a table), a header band (title 20/24 weight 650) under a rule, padding 24px at the sides and 16px above and below, radius 12, fullscreen below 1024px |
+| `FormModal` | A form of at most 6 fields, or one group of a record's values from its profile column: 440px, one column (`wide`: 620px, for long text or a table), a header band (title 20/24 weight 650) under a rule, padding 24px at the sides and 16px above and below, radius 6, fullscreen below 1024px |
 | `ModalFooter` | A modal's buttons, right-aligned in a band across the modal under a rule; every modal's buttons sit in it: `FormActions` in a modal, `useConfirm`, and modals with their own buttons |
 | `useConfirm` | Before deleting, cancelling a posted document, rejecting; the confirm button repeats the verb; `danger: true` for destructive steps |
 | `notifySuccess` | After a save: bottom right, closes after 3 seconds |

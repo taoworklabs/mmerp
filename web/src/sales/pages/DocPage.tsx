@@ -5,7 +5,7 @@ import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link, useNavigate, useParams } from 'react-router'
 import { api, unwrap } from '@/shared/api/sales'
-import { ApprovalPanel, DocumentActions, DocumentHistory, DocumentStatus, useAttachmentSection, useDiscussionSection } from '@/shared/document'
+import { ActivityFeed, ApprovalPanel, DocumentActions, DocumentStatus, useAttachmentSection } from '@/shared/document'
 import { errorText } from '@/shared/i18n'
 import { ExportButton } from '@/shared/jobs'
 import { loaded } from '@/shared/ui/loaded'
@@ -27,7 +27,6 @@ export function DocPage({ kind }: { kind: Kind }) {
   const list = `/sales/${pathOf(kind)}`
   const doc = useDoc(kind, id)
   const attachments = useAttachmentSection(docType, id)
-  const discussion = useDiscussionSection(docType, id)
   const [error, setError] = useState<string | null>(null)
   const [ordering, setOrdering] = useState(false)
 
@@ -103,10 +102,10 @@ export function DocPage({ kind }: { kind: Kind }) {
         )
       }
       approval={<ApprovalPanel docType={docType} id={d.id} />}
-      sections={[attachments, discussion]}
+      sections={[attachments]}
       // The editable lines table needs the whole width; approval and history become tabs.
       fullWidth
-      history={<DocumentHistory docType={docType} id={d.id} />}
+      activity={<ActivityFeed docType={docType} id={d.id} />}
     >
       {/* Keyed by version: a reload after a conflict starts from the saved data. */}
       <DocForm key={d.version} kind={kind} doc={d} />

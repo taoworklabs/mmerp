@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate, useParams, useSearchParams } from 'react-router'
 import { api, unwrap, type Payroll, type PayrollLine } from '@/shared/api/hrm'
-import { ApprovalPanel, DocumentActions, DocumentHistory, DocumentStatus, documentKeys, useDocumentMutation, useDiscussionSection } from '@/shared/document'
+import { ActivityFeed, ApprovalPanel, DocumentActions, DocumentStatus, documentKeys, useDocumentMutation } from '@/shared/document'
 import { errorText, formatDateTime, formatMonth } from '@/shared/i18n'
 import { ExportButton, finished, jobError, useJobStatus } from '@/shared/jobs'
 import { useMe } from '@/shared/auth/me'
@@ -24,7 +24,6 @@ export function PayrollPage() {
   const { t } = useTranslation()
   const navigate = useNavigate()
   const id = Number(useParams().id)
-  const discussion = useDiscussionSection(payrollDocType, id)
   const [search, setSearch] = useSearchParams()
   const job = Number(search.get('job')) || null
   const payroll = usePayroll(id)
@@ -75,8 +74,7 @@ export function PayrollPage() {
       }
       fullWidth
       approval={<ApprovalPanel docType={payrollDocType} id={p.id} />}
-      sections={[discussion]}
-      history={<DocumentHistory docType={payrollDocType} id={p.id} />}
+      activity={<ActivityFeed docType={payrollDocType} id={p.id} />}
     >
       <Stack gap="md">
         <PayrollState payroll={p} computing={computing} failed={status.data?.state === 'failed' ? jobError(t, status.data) : status.isError ? errorText(t, status.error) : null} />

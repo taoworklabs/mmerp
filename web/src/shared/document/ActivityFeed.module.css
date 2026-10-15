@@ -1,0 +1,20 @@
+/* A feed reads down one column at a comfortable line length, from the tab's left edge. */
+.feed {
+  max-width: 45rem;
+}
+
+/* A day heads its events in small capitals, its rule running on to the right. */
+.day {
+  display: flex;
+  align-items: center;
+  gap: var(--mantine-spacing-sm);
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.day::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--mantine-color-default-border);
+}

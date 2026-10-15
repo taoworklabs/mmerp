@@ -2,12 +2,12 @@ import { Group } from '@mantine/core'
 import { useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { useParams } from 'react-router'
-import { useAttachmentSection, useDiscussionSection } from '@/shared/document'
+import { ActivityFeed, documentKeys, useAttachmentSection } from '@/shared/document'
 import { PersonAvatar } from '@/shared/ui/avatar'
 import { loaded } from '@/shared/ui/loaded'
 import { notifySuccess } from '@/shared/ui/notify'
 import { RecordPage } from '@/shared/ui/page'
-import { CustomerForm } from '../components/CustomerForm'
+import { CustomerProfile } from '../components/CustomerProfile'
 import { CustomerStatus } from '../components/CustomerStatus'
 import { useCustomer } from '../hooks/useSales'
 import { customerDocType, salesKeys } from '../keys'
@@ -17,12 +17,7 @@ export function CustomerPage() {
   const qc = useQueryClient()
   const id = Number(useParams().id)
   const customer = useCustomer(id)
-  const sections = [useAttachmentSection(customerDocType, id), useDiscussionSection(customerDocType, id)].map((s) => ({
-    value: s.key,
-    label: s.title,
-    content: s.content,
-    panel: true,
-  }))
+  const attachments = useAttachmentSection(customerDocType, id)
 
   const state = loaded(customer, t, { to: '/sales/customers', label: t('sales.customers.back') })
   if (!state.ok) return state.fallback
@@ -40,24 +35,24 @@ export function CustomerPage() {
           <CustomerStatus active={c.active} />
         </Group>
       }
-      tabs={[
-        {
-          value: 'info',
-          label: t('sales.customer.tab.info'),
-          content: (
-            <CustomerForm
-              key={JSON.stringify(c)}
-              customer={c}
-              canEdit={c.allowed_actions.includes('edit')}
-              onSaved={async () => {
-                await qc.invalidateQueries({ queryKey: salesKeys.customers.all() })
-                notifySuccess(t('sales.customer.saved'))
-              }}
-            />
-          ),
-        },
-        ...sections,
-      ]}
+      aside={{
+        label: t('sales.customer.tab.info'),
+        content: (
+          <CustomerProfile
+            key={c.id}
+            customer={c}
+            onSaved={async () => {
+              await Promise.all([
+                qc.invalidateQueries({ queryKey: salesKeys.customers.all() }),
+                qc.invalidateQueries({ queryKey: documentKeys.history(customerDocType, c.id) }),
+              ])
+              notifySuccess(t('sales.customer.saved'))
+            }}
+          />
+        ),
+      }}
+      tabs={[{ value: attachments.key, label: attachments.title, content: attachments.content, panel: true }]}
+      activity={<ActivityFeed docType={customerDocType} id={c.id} />}
     />
   )
 }

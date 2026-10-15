@@ -2,3 +2,22 @@
   padding-bottom: var(--mantine-spacing-md);
   border-bottom: 1px solid var(--mantine-color-default-border);
 }
+
+.header[data-plain] {
+  padding-bottom: 0;
+  border-bottom: 0;
+}
+
+/* Tabs sit on the header's rule instead of drawing their own; the selected tab's bar covers it. */
+.header[data-tabs] {
+  padding-bottom: 0;
+}
+
+.tabs {
+  margin-top: var(--mantine-spacing-xs);
+  margin-bottom: -1px;
+}
+
+.tabs :global(.mantine-Tabs-list)::before {
+  display: none;
+}

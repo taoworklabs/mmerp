@@ -3,7 +3,7 @@ import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate, useParams } from 'react-router'
 import { api, unwrap } from '@/shared/api/hrm'
-import { ApprovalPanel, DocumentActions, DocumentHistory, DocumentStatus, useAttachmentSection, useDiscussionSection } from '@/shared/document'
+import { ActivityFeed, ApprovalPanel, DocumentActions, DocumentStatus, useAttachmentSection } from '@/shared/document'
 import { formatDate } from '@/shared/i18n'
 import { DocumentPage } from '@/shared/ui/page'
 import { OvertimeForm } from '../components/OvertimeForm'
@@ -16,7 +16,6 @@ export function OvertimePage() {
   const navigate = useNavigate()
   const id = Number(useParams().id)
   const attachments = useAttachmentSection(overtimeDocType, id)
-  const discussion = useDiscussionSection(overtimeDocType, id)
   const overtime = useOvertime(id)
   const [error, setError] = useState<string | null>(null)
 
@@ -53,8 +52,8 @@ export function OvertimePage() {
         )
       }
       approval={<ApprovalPanel docType={overtimeDocType} id={o.id} />}
-      sections={[attachments, discussion]}
-      history={<DocumentHistory docType={overtimeDocType} id={o.id} />}
+      sections={[attachments]}
+      activity={<ActivityFeed docType={overtimeDocType} id={o.id} />}
     >
       {/* Keyed by version: a reload after a conflict starts from the saved data. */}
       <OvertimeForm key={o.version} overtime={o} />

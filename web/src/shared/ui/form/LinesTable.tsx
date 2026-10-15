@@ -52,7 +52,7 @@ export function LinesTable({ name, label, columns, newLine, addLabel, lineLabel,
     </Tooltip>
   )
   const add = (
-    <Group>
+    <Group className={classes.add}>
       <Button variant="light" leftSection={<IconPlus {...icon.button} />} onClick={() => lines.append(newLine())}>
         {addLabel}
       </Button>

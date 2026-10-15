@@ -3,35 +3,3 @@
   white-space: pre-wrap;
   overflow-wrap: anywhere;
 }
-
-/* The panel measures its own width: a side column is too narrow for the empty thread's icon. */
-.panel {
-  container-type: inline-size;
-}
-
-/* An ordered list for its meaning, without the list's own marks and indent. */
-.thread {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-}
-
-/* A comment is a speech bubble on the sunken tone, its corner pointing at the author. */
-.bubble {
-  align-self: flex-start;
-  max-width: 100%;
-  padding: var(--mantine-spacing-xs) var(--mantine-spacing-sm);
-  background: var(--mmerp-elevation-surface-sunken);
-  border-radius: var(--mantine-radius-xs) var(--mantine-radius-lg) var(--mantine-radius-lg) var(--mantine-radius-lg);
-}
-
-.time {
-  flex: none;
-  cursor: default;
-}
-
-@container (max-width: 25em) {
-  .bigIcon {
-    display: none;
-  }
-}

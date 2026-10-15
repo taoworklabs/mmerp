@@ -171,7 +171,7 @@ function AttachmentPanel({ docType, id }: { docType: string; id: number }) {
       <Paper withBorder className={classes.list} data-active={dragging || undefined}>
         {empty ? (
           <Stack align="center" gap="xs" p="lg">
-            <ThemeIcon variant="light" color={dragging ? 'primary' : 'gray'} size={40} radius="xl" className={classes.bigIcon} aria-hidden>
+            <ThemeIcon variant="light" color={dragging ? 'primary' : 'gray'} size={40} radius={1000} className={classes.bigIcon} aria-hidden>
               <IconPaperclip {...icon.button} />
             </ThemeIcon>
             <Text size="sm" c="dimmed">

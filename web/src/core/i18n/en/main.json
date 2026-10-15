@@ -89,6 +89,8 @@
   "core.print.block_en": "{{label}} (English)",
   "core.print.save": "Save new version",
   "core.print.saved_notice": "New version of the print template saved.",
+  "core.user.info": "Details",
+  "core.user.account": "Account",
   "core.user.contact": "Contact",
   "core.user.email": "Email",
   "core.user.email_hint": "Where email notifications go. Leave blank to keep notifications in the app only.",
