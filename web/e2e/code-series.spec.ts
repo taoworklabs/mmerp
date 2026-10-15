@@ -29,7 +29,7 @@ test('an administrator changes the customer prefix; a customer saved without a c
   await page.getByRole('option', { name: team }).click()
   await page.getByRole('button', { name: 'Thêm khách hàng' }).click()
   await expect(page.getByRole('heading', { name: `Công ty Bình Minh ${run}` })).toBeVisible()
-  await expect(page.getByText(new RegExp(`^${prefix}\\d{5}$`))).toBeVisible()
+  await expect(page.getByRole('region', { name: 'Thông tin chung' }).getByText(new RegExp(`^${prefix}\\d{5}$`))).toBeVisible()
 
   // The code reads but no longer edits.
   await page.getByRole('button', { name: 'Sửa Thông tin chung' }).click()
