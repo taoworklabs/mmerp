@@ -1,10 +1,10 @@
 import { expect, test, type APIRequestContext } from '@playwright/test'
-import { created, employee, signedInApi } from './api'
+import { created, employee, signedInApi, runId } from './api'
 import { signedIn } from './helpers'
 
 // Guards that keep a user's work or a failure from vanishing without a word: unsaved edits
 // before submitting, an invalid timesheet cell, a delete the server refused.
-const run = Date.now().toString(36)
+const run = runId()
 let api: APIRequestContext
 let company: number
 let unit: number

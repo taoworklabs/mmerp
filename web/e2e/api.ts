@@ -15,6 +15,10 @@ export async function created(res: Promise<{ status(): number; json(): Promise<u
   return ((await r.json()) as { id: number }).id
 }
 
+// runId tags one spec file's data. Files run in parallel and may start in the same millisecond,
+// so the time alone can repeat across them; the random tail keeps names apart.
+export const runId = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 6)
+
 export const password = 'e2e password'
 
 export async function createUser(api: APIRequestContext, login: string, grants: { role: string; unit: number | null }[]) {

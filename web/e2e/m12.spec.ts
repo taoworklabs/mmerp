@@ -1,9 +1,9 @@
 import { expect, test, type Browser, type Page } from '@playwright/test'
-import { created, createUser, employee, password, signedInApi } from './api'
+import { created, createUser, employee, password, signedInApi, runId } from './api'
 import { signedIn } from './helpers'
 
 // One run: staff files leave requests; boss, their manager, approves them.
-const run = Date.now().toString(36)
+const run = runId()
 const login = { staff: `m12staff_${run}`, boss: `m12boss_${run}` }
 let leave: number
 

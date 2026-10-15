@@ -1,5 +1,5 @@
 import { expect, test, type Browser, type Page } from '@playwright/test'
-import { created, createUser, employee, password, signedInApi } from './api'
+import { created, createUser, employee, password, signedInApi, runId } from './api'
 import { signedIn } from './helpers'
 
 // Covers the parts of notifications and the approval inbox the other specs leave out: the
@@ -9,7 +9,7 @@ import { signedIn } from './helpers'
 // filtered list (TB-07). TB-05 still observes and logs, since what should happen to a
 // notification nobody may read any more is not settled; the rest assert.
 
-const run = Date.now().toString(36)
+const run = runId()
 const login = { staff: `tbstaff_${run}`, boss: `tbboss_${run}`, peer: `tbpeer_${run}` }
 let dept: number
 let leave: number

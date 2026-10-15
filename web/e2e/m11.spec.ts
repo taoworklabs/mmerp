@@ -1,9 +1,9 @@
 import { expect, test, type APIRequestContext, type Browser, type Page } from '@playwright/test'
-import { created, createUser, employee, password, signedInApi } from './api'
+import { created, createUser, employee, password, signedInApi, runId } from './api'
 
 // One run: department Q; pay (HR with the payroll role) handles contracts, hr (no salaries)
 // sees them without their attachments. staff files a leave request; boss is their manager.
-const run = Date.now().toString(36)
+const run = runId()
 const login = { pay: `m11pay_${run}`, hr: `m11hr_${run}`, staff: `m11staff_${run}`, boss: `m11boss_${run}` }
 let api: APIRequestContext
 let ids: { contract: number; leave: number }

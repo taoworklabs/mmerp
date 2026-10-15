@@ -1,10 +1,10 @@
 import { expect, test, type APIRequestContext, type Browser, type Page } from '@playwright/test'
-import { created, createUser, employee, password, signedInApi } from './api'
+import { created, createUser, employee, password, signedInApi, runId } from './api'
 import { signedIn } from './helpers'
 
 // One run: department P with M5E01, M5E02 and M5E03 (who joins on 16/03), the codes the
 // committed Excel files use (go run ./scripts/e2e-fixtures). hr is HR of P; dir approves timesheets.
-const run = Date.now().toString(36)
+const run = runId()
 const login = { hr: `m5hr_${run}`, dir: `m5dir_${run}` }
 const fixture = (name: string) => new URL(`fixtures/${name}`, import.meta.url).pathname
 let api: APIRequestContext

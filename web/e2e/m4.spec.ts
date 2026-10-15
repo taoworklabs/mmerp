@@ -1,10 +1,10 @@
 import { expect, test, type APIRequestContext, type Browser, type Page } from '@playwright/test'
-import { created, createUser, employee, password, signedInApi } from './api'
+import { created, createUser, employee, password, signedInApi, runId } from './api'
 import { admin } from './helpers'
 
 // One run: department Q with manager M; employees E, E2 and E3 report to M. HR users of Q: hr
 // (no salaries) and pay (with the payroll role); dir approves contracts and holiday overtime.
-const run = Date.now().toString(36)
+const run = runId()
 const login = { m: `m4m_${run}`, e: `m4e_${run}`, hr: `m4hr_${run}`, pay: `m4pay_${run}`, dir: `m4dir_${run}` }
 const kinds = { open: `Không xác định thời hạn ${run}`, fixed: `Có thời hạn 12 tháng ${run}` }
 let ids: { q: number; m: number; e: number; e2: number; e3: number; open: number; fixed: number }

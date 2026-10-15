@@ -1,9 +1,9 @@
 import { expect, test, type Page } from '@playwright/test'
-import { created, createUser, employee, password, signedInApi } from './api'
+import { created, createUser, employee, password, signedInApi, runId } from './api'
 import { admin } from './helpers'
 
 // One run: a company with departments A and B, employees in both, and an HR user scoped to A.
-const run = Date.now().toString(36)
+const run = runId()
 const hrA = `hr_a_${run}`
 const nationalId = '079123456789'
 let ids: { a: number; b: number; ea: number; eb: number; hrA: number }
