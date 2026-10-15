@@ -349,5 +349,9 @@
   "shared.devui.long_value": "Công ty TNHH Thương mại và Dịch vụ Kỹ thuật Minh Phát",
   "shared.devui.year": "Năm",
   "shared.devui.grand_total": "Tổng thanh toán",
-  "shared.document.save_first": "Lưu thay đổi trước khi gửi duyệt hoặc rút lại."
+  "shared.document.save_first": "Lưu thay đổi trước khi gửi duyệt hoặc rút lại.",
+  "shared.approval.submitted_for": "{{name}} gửi thay cho {{subject}} lúc {{at}}",
+  "shared.approval.later": "Chưa tới",
+  "shared.document.confirm.withdraw": "Rút {{number}} về nháp? Lượt duyệt đang chạy dừng lại; gửi lại thì duyệt từ bước 1.",
+  "shared.attachments.drop_hint": "Kéo thả file vào đây hoặc bấm để chọn"
 }

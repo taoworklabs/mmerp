@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next'
 import { api, unwrap, type Leave } from '@/shared/api/hrm'
 import { useDocumentMutation } from '@/shared/document'
 import { notifySuccess } from '@/shared/ui/notify'
-import { DateField, DecimalField, Form, FormActions, FormSection, SelectField, TextField } from '@/shared/ui/form'
+import { DateField, DecimalField, Form, FormActions, FormFields, FormSection, SelectField, TextField } from '@/shared/ui/form'
 import { useLeaveTypes, useLeaveWorkingDays } from '../hooks/useLeave'
 import { EmployeeField } from './EmployeeField'
 import { leaveDocType } from '../keys'
@@ -35,11 +35,13 @@ type Props = {
   self?: { id: number; name: string } | null
   chooseEmployee?: boolean
   onCreated?: (id: number) => Promise<void>
+  // Editing a draft in its card on the request's page: Cancel, and after saving, close the form.
+  onClose?: () => void
 }
 
-// LeaveForm creates a leave request, or edits a draft when its allowed_actions has edit;
-// otherwise it is read-only.
-export function LeaveForm({ leave, self, chooseEmployee, onCreated }: Props) {
+// LeaveForm creates a leave request, or edits a draft when its allowed_actions has edit (in its
+// card with onClose); otherwise it is read-only.
+export function LeaveForm({ leave, self, chooseEmployee, onCreated, onClose }: Props) {
   const { t } = useTranslation()
   const types = useLeaveTypes()
   const mutation = useDocumentMutation(leaveDocType, leave?.id ?? 0, leave?.version ?? 0)
@@ -78,6 +80,7 @@ export function LeaveForm({ leave, self, chooseEmployee, onCreated }: Props) {
     if (leave) {
       await mutation.run((version) => unwrap(api.PUT('/hrm/leaves/{id}', { params: { path: { id: leave.id } }, body: { version, ...fields } })))
       notifySuccess(t('hrm.leave.saved'))
+      onClose?.()
       return
     }
     const employee = chooseEmployee && v.employee_id && Number(v.employee_id) !== self?.id ? Number(v.employee_id) : undefined
@@ -85,17 +88,31 @@ export function LeaveForm({ leave, self, chooseEmployee, onCreated }: Props) {
     await onCreated?.(id)
   }
 
+  const inputs = (
+    <>
+      {!leave && chooseEmployee && (
+        <EmployeeField name="employee_id" label={t('hrm.leave.employee')} required current={self ? { id: self.id, code: '', name: self.name } : undefined} />
+      )}
+      <SelectField name="leave_type_id" label={t('hrm.leave.type')} required readOnly={ro} data={options} />
+      <DecimalField name="days" label={t('hrm.leave.days')} description={daysHint} required readOnly={ro} scale={1} step={0.5} min={0.5} />
+      <DateField name="start_date" label={t('hrm.leave.start_date')} required readOnly={ro} />
+      <DateField name="end_date" label={t('hrm.leave.end_date')} required readOnly={ro} />
+      <TextField name="reason" label={t('hrm.leave.reason')} description={t('hrm.leave.reason_hint')} multiline maxLength={1000} readOnly={ro} />
+    </>
+  )
+
+  if (onClose)
+    return (
+      <Form form={form} onSubmit={save} fieldOf={(err) => fieldOfCode[err.code]}>
+        <FormFields>{inputs}</FormFields>
+        <FormActions submitLabel={t('hrm.common.save')} onCancel={onClose} cancelLabel={t('hrm.common.cancel')} />
+        {mutation.dialog}
+      </Form>
+    )
   return (
     <Form form={form} onSubmit={save} fieldOf={(err) => fieldOfCode[err.code]}>
-      <FormSection title={t('hrm.leave.section')} description={t('hrm.leave.section_hint')} icon={IconCalendarEvent}>
-        {!leave && chooseEmployee && (
-          <EmployeeField name="employee_id" label={t('hrm.leave.employee')} required current={self ? { id: self.id, code: '', name: self.name } : undefined} />
-        )}
-        <SelectField name="leave_type_id" label={t('hrm.leave.type')} required readOnly={ro} data={options} />
-        <DecimalField name="days" label={t('hrm.leave.days')} description={daysHint} required readOnly={ro} scale={1} step={0.5} min={0.5} />
-        <DateField name="start_date" label={t('hrm.leave.start_date')} required readOnly={ro} />
-        <DateField name="end_date" label={t('hrm.leave.end_date')} required readOnly={ro} />
-        <TextField name="reason" label={t('hrm.leave.reason')} description={t('hrm.leave.reason_hint')} multiline maxLength={1000} readOnly={ro} />
+      <FormSection title={t('hrm.leave.section')} description={t('hrm.leave.section_hint')} icon={IconCalendarEvent} compact>
+        {inputs}
       </FormSection>
       {editable && <FormActions submitLabel={leave ? t('hrm.common.save') : t('hrm.common.create_draft')} cancelTo={leave ? undefined : '/hrm/leaves'} />}
       {mutation.dialog}

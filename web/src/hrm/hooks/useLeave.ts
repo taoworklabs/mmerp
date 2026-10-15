@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
-import { api, unwrap } from '@/shared/api/hrm'
+import { api, unwrap, type Leave } from '@/shared/api/hrm'
 import { hrmKeys } from '../keys'
 
 // useLeaveActions: what the user may do before picking a leave request, and their own employee record.
@@ -24,4 +24,19 @@ export function useLeaveWorkingDays(start: string | null, end: string | null, em
 
 export function useLeave(id: number) {
   return useQuery({ queryKey: hrmKeys.leaves.detail(id), queryFn: () => unwrap(api.GET('/hrm/leaves/{id}', { params: { path: { id } } })) })
+}
+
+// useOverlappingLeaves: the other requests of the same department over the same days, waiting or
+// approved, as far as the user may see them. Idle until the department is known.
+export function useOverlappingLeaves(leave: Leave | undefined, orgUnitId: number | undefined) {
+  return useQuery({
+    queryKey: hrmKeys.leaves.overlapping(leave?.id ?? 0),
+    queryFn: async () => {
+      const { items } = await unwrap(
+        api.GET('/hrm/leaves', { params: { query: { org_unit_id: orgUnitId, from: leave!.start_date, to: leave!.end_date, sort: 'start_date', page: 1, page_size: 50 } } }),
+      )
+      return items.filter((x) => x.id !== leave!.id && (x.status === 'pending_approval' || x.status === 'posted'))
+    },
+    enabled: !!leave && !!orgUnitId,
+  })
 }

@@ -50,7 +50,8 @@ test.describe('attachments', () => {
   test('a signed contract is attached and downloads unchanged; without salary rights it stays hidden', async ({ browser }) => {
     const pay = await as(browser, login.pay, `/hrm/contracts/${ids.contract}`)
     const chooser = pay.waitForEvent('filechooser')
-    await pay.getByRole('button', { name: 'Thêm file' }).click()
+    // The empty list is itself where files go.
+    await pay.getByRole('button', { name: /Kéo thả file/ }).click()
     await (await chooser).setFiles(fixture('contract-scan.pdf'))
     await expect(pay.getByText('Đính kèm (1)')).toBeVisible()
 

@@ -31,29 +31,42 @@
 }
 
 @media (min-width: 80em) {
-  .fields:not([data-wide]) {
+  .fields:not([data-wide], [data-compact], [data-pair]) {
     grid-template-columns: repeat(6, minmax(0, 1fr));
   }
 
-  .fields:not([data-wide]) > * {
+  .fields:not([data-wide], [data-compact], [data-pair]) > * {
     grid-column: span 3;
   }
 
-  .fields:not([data-wide]) > .short {
+  .fields:not([data-wide], [data-compact], [data-pair]) > .short {
     grid-column: span 2;
   }
 }
 
-/* In a form with nothing left to edit (a posted document), a read-only field reads as its value
-   under its label, keeping the row's height. Beside fields still open it keeps its box. */
-form:not(:has(:global(.mantine-InputWrapper-root):not([data-readonly]) :global(.mantine-Input-input))) .fields [data-readonly] :global(.mantine-Input-input) {
-  padding-inline: 0;
+/* A compact section, and fields edited in a card: two fields to a row from 768px; a compact
+   section four from 1280px. Long text keeps the row. */
+@media (min-width: 48em) {
+  .fields:is([data-compact], [data-pair]) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 80em) {
+  .fields[data-compact] {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+/* A read-only field keeps its box as a grey fill without an edge, so its value stays framed and
+   the layout does not move between viewing and editing; it shows nothing that invites typing. */
+.fields [data-readonly] :global(.mantine-Input-input) {
   border-color: transparent;
-  background: transparent;
+  background: var(--mantine-color-default-hover);
   cursor: default;
 }
 
-form:not(:has(:global(.mantine-InputWrapper-root):not([data-readonly]) :global(.mantine-Input-input))) .fields [data-readonly] :is(:global(.mantine-Input-section), :global(.mantine-InputWrapper-required), :global(.mantine-InputWrapper-description)) {
+.fields [data-readonly] :is(:global(.mantine-InputWrapper-required), :global(.mantine-InputWrapper-description)) {
   display: none;
 }
 

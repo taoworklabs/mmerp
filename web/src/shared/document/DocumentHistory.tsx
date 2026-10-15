@@ -47,8 +47,9 @@ const foldWithin = 30 * 60_000
 // of each other into one line with a count, e.g. viewing four sensitive fields in a row. Entries
 // that change fields always stand alone: each change is worth reading. Reads fold even when they
 // read different things; the line then names them.
-export function runs(entries: HistoryEntry[]): Run[] {
+export function runs(all: HistoryEntry[]): Run[] {
   const out: Run[] = []
+  const entries = all.filter((e, i) => !createdTwin(e, all[i - 1]) && !createdTwin(e, all[i + 1]))
   for (const e of entries) {
     const last = out[out.length - 1]
     const prev = last?.entries[last.entries.length - 1]
@@ -68,6 +69,19 @@ export function runs(entries: HistoryEntry[]): Run[] {
     } else out.push({ entry: e, count: 1, entries: [e] })
   }
   return out
+}
+
+// createdTwin: e is the record's generic "created" written together with the module's own
+// ("created request"), which says the same thing better, so the line shows once.
+function createdTwin(e: HistoryEntry, other: HistoryEntry | undefined) {
+  return (
+    e.action === 'record.created' &&
+    !!other &&
+    other.action !== 'record.created' &&
+    isCreated(other) &&
+    other.actor_name === e.actor_name &&
+    Math.abs(new Date(other.at).getTime() - new Date(e.at).getTime()) <= 60_000
+  )
 }
 
 export type Look = { color: string; icon: TablerIcon; filled?: boolean }

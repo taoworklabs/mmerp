@@ -123,6 +123,8 @@ export const cssVariablesResolver: CSSVariablesResolver = () => ({
     '--mmerp-side-width': rem(360),
     // A record's own values beside its tabs: label–value pairs need more room than side panels.
     '--mmerp-aside-width': rem(480),
+    // A record's or document's page, both columns: wide enough for a 60/40 split, no wider.
+    '--mmerp-detail-width': rem(1440),
   },
   light: {
     '--mantine-color-text': gray[9],

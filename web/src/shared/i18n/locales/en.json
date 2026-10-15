@@ -349,5 +349,9 @@
   "shared.devui.long_value": "Minh Phat Trading and Engineering Services Co., Ltd",
   "shared.devui.year": "Year",
   "shared.devui.grand_total": "Total",
-  "shared.document.save_first": "Save changes before submitting or withdrawing."
+  "shared.document.save_first": "Save changes before submitting or withdrawing.",
+  "shared.approval.submitted_for": "Sent by {{name}} for {{subject}} at {{at}}",
+  "shared.approval.later": "Not yet",
+  "shared.document.confirm.withdraw": "Withdraw {{number}} to draft? The running approval stops; sending it again starts from step 1.",
+  "shared.attachments.drop_hint": "Drop files here or click to choose"
 }

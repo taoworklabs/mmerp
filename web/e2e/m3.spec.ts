@@ -80,7 +80,7 @@ test('HR grants the start-of-year leave balance through the UI', async ({ page }
   await dialog.getByRole('textbox', { name: /^Số ngày cộng thêm/ }).fill('12')
   await dialog.getByRole('textbox', { name: /^Lý do/ }).fill('Cấp phép năm 2026')
   await dialog.getByRole('button', { name: 'Lưu điều chỉnh' }).click()
-  await expect(page.getByRole('table', { name: 'Quỹ phép' }).getByRole('row', { name: /2026.*12/ })).toBeVisible()
+  await expect(page.getByRole('list', { name: 'Quỹ phép' }).getByRole('listitem').filter({ hasText: /2026[\s\S]*12/ })).toBeVisible()
 })
 
 test('an employee sends, withdraws and sends again; the manager approves one request and rejects another', async ({ browser }) => {
@@ -91,6 +91,8 @@ test('an employee sends, withdraws and sends again; the manager approves one req
   await e.getByRole('button', { name: 'Gửi duyệt' }).click()
   await status(e, 'Chờ duyệt')
   await e.getByRole('button', { name: 'Rút lại' }).click()
+  // Withdrawing undoes the approvals so far, so it asks first.
+  await e.getByRole('dialog').getByRole('button', { name: 'Rút lại' }).click()
   await status(e, 'Nháp')
   await e.getByRole('button', { name: 'Gửi duyệt' }).click()
   await status(e, 'Chờ duyệt')
@@ -121,8 +123,11 @@ test('two tabs editing the same draft: the second save gets the reload dialog', 
   const id = await newLeave(one, '06', '1')
   const two = await ctx.newPage()
   await two.goto(`/hrm/leaves/${id}`)
+  // A draft reads as values; its card turns into the form on Edit.
+  await two.getByRole('button', { name: 'Sửa Thông tin nghỉ' }).click()
   await expect(two.getByRole('textbox', { name: /^Số ngày/ })).toHaveValue('1')
 
+  await one.getByRole('button', { name: 'Sửa Thông tin nghỉ' }).click()
   await one.getByRole('textbox', { name: /^Số ngày/ }).fill('2')
   await one.getByRole('button', { name: 'Lưu' }).click()
   await expect(one.getByText('Thông tin nghỉ')).toBeVisible()
@@ -131,14 +136,14 @@ test('two tabs editing the same draft: the second save gets the reload dialog', 
   await two.getByRole('button', { name: 'Lưu' }).click()
   await expect(two.getByRole('dialog', { name: 'Dữ liệu đã thay đổi' })).toBeVisible()
   await two.getByRole('button', { name: 'Tải lại' }).click()
-  await expect(two.getByRole('textbox', { name: /^Số ngày/ })).toHaveValue('2')
+  await expect(two.getByRole('region', { name: 'Thông tin nghỉ' }).getByText('2 ngày làm việc')).toBeVisible()
 })
 
 test('approving from the inbox refreshes the leave balance on the HRM screen', async ({ page, baseURL }) => {
   await sendViaApi(baseURL!, login.e3, '07', '2')
   await signInAs(page, login.b, `/hrm/employees/${ids.e3}?tab=balances`)
-  const balances = page.getByRole('table', { name: 'Quỹ phép' })
-  await expect(balances.getByRole('row', { name: /2026.*12/ })).toBeVisible()
+  const balances = page.getByRole('list', { name: 'Quỹ phép' })
+  await expect(balances.getByRole('listitem').filter({ hasText: /2026[\s\S]*12/ })).toBeVisible()
 
   await page.getByRole('link', { name: /Hộp duyệt/ }).click()
   await page.getByRole('button', { name: new RegExp(`NP-2026-.*`) }).first().click()
@@ -148,7 +153,7 @@ test('approving from the inbox refreshes the leave balance on the HRM screen', a
   // Back in the app, without reloading: the balance is already fresh.
   await expect(page.getByRole('heading', { name: 'Hộp duyệt' })).toBeVisible()
   await page.goBack()
-  await expect(balances.getByRole('row', { name: /2026.*10/ })).toBeVisible()
+  await expect(balances.getByRole('listitem').filter({ hasText: /2026[\s\S]*10/ })).toBeVisible()
 })
 
 test('at 375px an employee sends a request and the manager approves it', async ({ browser }) => {

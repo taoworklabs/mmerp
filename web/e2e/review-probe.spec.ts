@@ -88,6 +88,8 @@ test('TB-04 approving a request the submitter already withdrew', async ({ browse
 
   // The submitter withdraws behind the approver's back.
   await staff.getByRole('button', { name: 'Rút lại' }).click()
+  // Withdrawing undoes the approvals so far, so it asks first.
+  await staff.getByRole('dialog').getByRole('button', { name: 'Rút lại' }).click()
   await expect(staff.getByText('Nháp').first()).toBeVisible()
 
   await boss.getByRole('button', { name: 'Duyệt', exact: true }).click()

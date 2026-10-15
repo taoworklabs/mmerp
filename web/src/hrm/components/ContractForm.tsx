@@ -8,7 +8,7 @@ import { useDocumentMutation } from '@/shared/document'
 import { notifySuccess } from '@/shared/ui/notify'
 import { formatNumber } from '@/shared/i18n'
 import { DataTable } from '@/shared/ui/DataTable'
-import { CheckboxField, DateField, Form, FormActions, FormRow, FormSection, LinesTable, MoneyField, SelectField, TextField, type LineColumn } from '@/shared/ui/form'
+import { CheckboxField, DateField, Form, FormActions, FormFields, FormRow, FormSection, LinesTable, MoneyField, SelectField, TextField, type LineColumn } from '@/shared/ui/form'
 import { useContractTypes } from '../hooks/useContract'
 import { contractDocType } from '../keys'
 
@@ -37,11 +37,17 @@ type Props = {
   employeeId?: number
   parent?: Contract
   onCreated?: (id: number) => Promise<void>
+  // Editing one card of a draft on the contract's page: its part's fields only (the form still holds
+  // the whole contract, which saves as a whole), Cancel, and after saving, close the form.
+  part?: ContractPart
+  onClose?: () => void
 }
+
+export type ContractPart = 'main' | 'terms' | 'lines'
 
 // ContractForm creates a contract or an appendix, or edits a draft when its allowed_actions
 // has edit; otherwise it is read-only. Terms are null when the user may not see salaries.
-export function ContractForm({ contract, employeeId, parent, onCreated }: Props) {
+export function ContractForm({ contract, employeeId, parent, onCreated, part, onClose }: Props) {
   const { t } = useTranslation()
   const types = useContractTypes()
   const mutation = useDocumentMutation(contractDocType, contract?.id ?? 0, contract?.version ?? 0)
@@ -78,12 +84,46 @@ export function ContractForm({ contract, employeeId, parent, onCreated }: Props)
     if (contract) {
       await mutation.run((version) => unwrap(api.PUT('/hrm/contracts/{id}', { params: { path: { id: contract.id } }, body: { version, ...body } })))
       notifySuccess(t('hrm.contract.saved'))
+      onClose?.()
       return
     }
     const { id } = await unwrap(api.POST('/hrm/contracts', { body: { employee_id: employeeId ?? 0, parent_id: parent?.id, ...body } }))
     await onCreated?.(id)
   }
 
+  const mainInputs = (
+    <>
+      <SelectField name="contract_type_id" label={t('hrm.contract.kind')} required readOnly={ro || appendix} data={options} />
+      <DateField name="start_date" label={t('hrm.contract.start_date')} required readOnly={ro} />
+      {!appendix && (fixedTerm || (ro && contract?.end_date)) && (
+        <DateField name="end_date" label={t('hrm.contract.end_date')} description={t('hrm.contract.end_date_required_hint')} required readOnly={ro} />
+      )}
+    </>
+  )
+  const linesTable = (
+    <LinesTable
+      name="lines"
+      label={t('hrm.contract.section_lines')}
+      columns={lineColumns(t)}
+      newLine={() => ({ kind: 'allowance', name: '', amount: null, taxable: true })}
+      addLabel={t('hrm.contract.add_line')}
+      lineLabel={(n) => t('hrm.contract.line_title', { n })}
+      removeLabel={(n) => t('hrm.contract.remove_line', { n })}
+    />
+  )
+
+  if (part && onClose)
+    return (
+      <Form form={form} onSubmit={save} fieldOf={(err) => fieldOfCode[err.code]}>
+        {part === 'lines' ? (
+          linesTable
+        ) : (
+          <FormFields>{part === 'main' ? mainInputs : <MoneyField name="salary" label={t('hrm.contract.salary')} required />}</FormFields>
+        )}
+        <FormActions submitLabel={t('hrm.common.save')} onCancel={onClose} cancelLabel={t('hrm.common.cancel')} />
+        {mutation.dialog}
+      </Form>
+    )
   return (
     <Form form={form} onSubmit={save} fieldOf={(err) => fieldOfCode[err.code]}>
       <FormSection
@@ -91,11 +131,7 @@ export function ContractForm({ contract, employeeId, parent, onCreated }: Props)
         description={t(appendix ? 'hrm.contract.section_appendix_hint' : 'hrm.contract.section_hint')}
         icon={IconFileText}
       >
-        <SelectField name="contract_type_id" label={t('hrm.contract.kind')} required readOnly={ro || appendix} data={options} />
-        <DateField name="start_date" label={t('hrm.contract.start_date')} required readOnly={ro} />
-        {!appendix && (fixedTerm || (ro && contract?.end_date)) && (
-          <DateField name="end_date" label={t('hrm.contract.end_date')} description={t('hrm.contract.end_date_required_hint')} required readOnly={ro} />
-        )}
+        {mainInputs}
       </FormSection>
       <FormSection title={t('hrm.contract.section_terms')} description={t('hrm.contract.section_terms_hint')} icon={IconCash}>
         {terms === null && contract ? (
@@ -109,19 +145,7 @@ export function ContractForm({ contract, employeeId, parent, onCreated }: Props)
       {!(terms === null && contract) && (
         <FormSection title={t('hrm.contract.section_lines')} description={t('hrm.contract.section_lines_hint')} icon={IconListDetails} wide>
           <FormRow>
-            {ro ? (
-              <SavedLines lines={terms?.lines ?? []} />
-            ) : (
-              <LinesTable
-                name="lines"
-                label={t('hrm.contract.section_lines')}
-                columns={lineColumns(t)}
-                newLine={() => ({ kind: 'allowance', name: '', amount: null, taxable: true })}
-                addLabel={t('hrm.contract.add_line')}
-                lineLabel={(n) => t('hrm.contract.line_title', { n })}
-                removeLabel={(n) => t('hrm.contract.remove_line', { n })}
-              />
-            )}
+            {ro ? <SavedLines lines={terms?.lines ?? []} /> : linesTable}
           </FormRow>
         </FormSection>
       )}
@@ -181,7 +205,7 @@ function TaxableCell({ index, bare }: { index: number; bare: boolean }) {
 }
 
 // SavedLines shows the allowances and supports of a contract that is not edited.
-function SavedLines({ lines }: { lines: Line[] }) {
+export function SavedLines({ lines }: { lines: Line[] }) {
   const { t } = useTranslation()
   if (lines.length === 0)
     return (

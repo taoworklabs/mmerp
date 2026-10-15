@@ -55,6 +55,12 @@ export function DocumentActions({ docType, id, version, number, actions, onDelet
     if (await ask({ title: label, message: t(`shared.document.confirm.${action}`, { number }), confirmLabel: label, danger: true })) await act(action, call)
   }
 
+  // Withdrawing undoes the approvals given so far, so it asks first, though nothing is lost for good.
+  const withdraw = async () => {
+    const label = t('shared.document.action.withdraw')
+    if (await ask({ title: label, message: t('shared.document.confirm.withdraw', { number }), confirmLabel: label })) await act('withdraw', transition('draft'))
+  }
+
   const has = (a: string) => actions.includes(a)
   return (
     <Group gap="xs" justify="flex-end">
@@ -69,7 +75,7 @@ export function DocumentActions({ docType, id, version, number, actions, onDelet
         </Button>
       )}
       {has('withdraw') && (
-        <Button variant="default" leftSection={<IconArrowBackUp {...icon.button} />} disabled={busy} onClick={() => void act('withdraw', transition('draft'))}>
+        <Button variant="default" leftSection={<IconArrowBackUp {...icon.button} />} disabled={busy} onClick={() => void withdraw()}>
           {t('shared.document.action.withdraw')}
         </Button>
       )}

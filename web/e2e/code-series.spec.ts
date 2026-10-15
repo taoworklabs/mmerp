@@ -33,5 +33,5 @@ test('an administrator changes the customer prefix; a customer saved without a c
 
   // The code reads but no longer edits.
   await page.getByRole('button', { name: 'Sửa Thông tin chung' }).click()
-  await expect(page.getByRole('dialog').getByRole('textbox', { name: 'Mã khách hàng' })).toHaveAttribute('readonly')
+  await expect(page.getByRole('region', { name: 'Thông tin chung' }).getByRole('textbox', { name: 'Mã khách hàng' })).toHaveAttribute('readonly')
 })
