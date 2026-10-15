@@ -1,0 +1,20 @@
+/* Padded and pulled out by the same amount, so the tint frames the values without moving them. */
+.section {
+  margin-inline: calc(var(--mantine-spacing-sm) * -1);
+  padding: var(--mantine-spacing-sm);
+  border-radius: var(--mantine-radius-md);
+}
+
+.section[data-editable] {
+  cursor: pointer;
+}
+
+.section[data-editable]:hover,
+.section[data-editable]:focus-within {
+  background: var(--mantine-color-gray-light);
+}
+
+/* Always in view, so a group plainly can be edited; quiet grey until the group is hovered or focused. */
+.section:not(:hover, :focus-within) .edit {
+  color: var(--mantine-color-dimmed);
+}

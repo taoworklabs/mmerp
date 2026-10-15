@@ -3,7 +3,7 @@ import type { ReactNode } from 'react'
 import type { AttachmentList, Discussion } from '@/shared/api/core'
 import type { DocumentSection } from '@/shared/ui/page'
 import { useAttachmentSection } from './AttachmentPanel'
-import { useDiscussionSection } from './DiscussionPanel'
+import { ActivityFeed } from './ActivityFeed'
 import { documentKeys } from './keys'
 
 const sample = { type: 'dev.sample', id: 1 }
@@ -40,9 +40,10 @@ const client = new QueryClient({ defaultOptions: { queries: { staleTime: Infinit
 client.setQueryData(documentKeys.attachments(sample.type, sample.id), attachments)
 client.setQueryData(documentKeys.discussion(sample.type, sample.id), discussion)
 client.setQueryData(documentKeys.mentionable(sample.type, sample.id), mentionable)
+client.setQueryData(documentKeys.history(sample.type, sample.id), [])
 
-// WithSampleSections renders the attachment and discussion panels on sample data, for /dev/ui.
-export function WithSampleSections({ children }: { children: (sections: DocumentSection[]) => ReactNode }) {
+// WithSampleSections renders the attachment panel and the activity feed on sample data, for /dev/ui.
+export function WithSampleSections({ children }: { children: (sections: DocumentSection[], activity: ReactNode) => ReactNode }) {
   return (
     <QueryClientProvider client={client}>
       <Sections>{children}</Sections>
@@ -50,6 +51,6 @@ export function WithSampleSections({ children }: { children: (sections: Document
   )
 }
 
-function Sections({ children }: { children: (sections: DocumentSection[]) => ReactNode }) {
-  return children([useAttachmentSection(sample.type, sample.id), useDiscussionSection(sample.type, sample.id)])
+function Sections({ children }: { children: (sections: DocumentSection[], activity: ReactNode) => ReactNode }) {
+  return children([useAttachmentSection(sample.type, sample.id)], <ActivityFeed docType={sample.type} id={sample.id} />)
 }

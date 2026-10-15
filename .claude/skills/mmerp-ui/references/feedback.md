@@ -61,7 +61,7 @@ Never a full-page spinner; never a spinner where a skeleton fits the layout.
 | An empty sub-table inside a page (no weeks yet, no dependants) | Same component, shorter text | Its section's add button if any |
 | Out of scope or missing record | `NotFoundPage` with a link back to its list | — |
 
-One exception: the attachments and discussion panels of a record show their empty list in their own frame (solid edge, a 40px round icon that hides in a narrow side column, one line), because the frame is also where files and comments appear.
+Two exceptions: the attachments panel of a record shows its empty list in its own frame (solid edge, a 40px round icon that hides in a narrow side column, one line), because the frame is also where files appear; an empty activity feed says so in one `dimmed` line under its comment box and filter.
 | No permission | `ForbiddenPage`, chosen in the area's `routes.tsx` | — |
 
 The description never depends on permissions; only the button does.

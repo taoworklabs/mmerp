@@ -97,7 +97,7 @@ export default function NotificationsPage() {
                   unread={!n.read}
                   onClick={() => void open(n)}
                   icon={
-                    <ThemeIcon variant="light" color={color} size={36} radius="xl" aria-hidden>
+                    <ThemeIcon variant="light" color={color} size={36} radius={1000} aria-hidden>
                       <Icon {...icon.button} />
                     </ThemeIcon>
                   }

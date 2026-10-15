@@ -55,14 +55,15 @@ test('a sensitive field is masked, shown on request, and cleared when the permis
   const field = 'Số CCCD hoặc hộ chiếu'
   await expect(page.getByText('••••••').first()).toBeVisible()
   await expect(page.getByText(nationalId)).toHaveCount(0)
+  // Shown as text in the profile, not as an input: viewing is not editing.
   await page.getByRole('button', { name: `Hiện ${field}` }).click()
-  await expect(page.getByRole('textbox', { name: field })).toHaveValue(nationalId)
+  await expect(page.getByText(nationalId)).toBeVisible()
+  await expect(page.getByRole('textbox', { name: field })).toHaveCount(0)
   // Hide masks it again; showing it again is another audited read.
   await page.getByRole('button', { name: `Ẩn ${field}` }).click()
   await expect(page.getByText(nationalId)).toHaveCount(0)
-  await expect(page.getByRole('textbox', { name: field })).toHaveCount(0)
   await page.getByRole('button', { name: `Hiện ${field}` }).click()
-  await expect(page.getByRole('textbox', { name: field })).toHaveValue(nationalId)
+  await expect(page.getByText(nationalId)).toBeVisible()
 
   // The administrator revokes the sensitive-data role while the page is open.
   const admin = await signedInApi(baseURL!)
@@ -179,12 +180,17 @@ test('HR creates an employee with a sensitive field, edits it and adds a depende
   await expect(page.getByText('Đã tạo nhân viên.')).toBeVisible()
   await page.mouse.move(0, 0)
   await expect(page.getByText('Đã tạo nhân viên.')).toBeHidden()
-  await expect(page.getByRole('textbox', { name: 'Ngày vào làm' })).toHaveValue('05/01/2026')
+  const main = page.getByRole('region', { name: 'Thông tin chính' })
+  await expect(main.getByText('05/01/2026')).toBeVisible()
   await expect(page.getByText('••••••').first()).toBeVisible()
 
-  await page.getByRole('textbox', { name: 'Họ tên' }).fill('Lê Văn Đổi')
-  await page.getByRole('button', { name: 'Lưu hồ sơ' }).click()
+  // Each part of the profile is edited on its own, in a modal.
+  await main.getByRole('button', { name: 'Sửa Thông tin chính' }).click()
+  const edit = page.getByRole('dialog', { name: 'Sửa thông tin chính' })
+  await edit.getByRole('textbox', { name: 'Họ tên' }).fill('Lê Văn Đổi')
+  await edit.getByRole('button', { name: 'Lưu' }).click()
   await expect(page.getByRole('heading', { name: 'Lê Văn Đổi' })).toBeVisible()
+  await expect(edit).toHaveCount(0)
 
   await page.getByRole('tab', { name: 'Người phụ thuộc' }).click()
   await expect(page).toHaveURL(/tab=dependents/)
@@ -207,18 +213,28 @@ test('leaving a record asks only when something was edited', async ({ page }) =>
   await expect(page).toHaveURL(/\/hrm\/employees$/)
   await expect(page.getByRole('dialog')).toHaveCount(0)
 
-  await page.goto(`/hrm/employees/${ids.ea}`)
+  // The edit modal covers the menu, so the way out is the browser's Back, within the app: the
+  // record is opened from the list, not loaded afresh.
+  const openFromList = async () => {
+    await page.goto(`/hrm/employees?q=A${run}-00`)
+    await page.getByRole('table', { name: 'Nhân viên' }).getByRole('link', { name: `A${run}-00` }).click()
+    await expect(page).toHaveURL(new RegExp(`/hrm/employees/${ids.ea}$`))
+  }
+  await openFromList()
+  await page.getByRole('button', { name: 'Sửa Thông tin chính' }).click()
   await page.getByRole('textbox', { name: 'Họ tên' }).fill('Tên đang sửa')
-  await nav.click()
+  await page.evaluate(() => history.back())
   await expect(page.getByRole('dialog', { name: 'Rời trang?' })).toBeVisible()
   await page.getByRole('button', { name: 'Quay lại' }).click()
   await expect(page).toHaveURL(new RegExp(`/hrm/employees/${ids.ea}$`))
 
   // Typing into a revealed sensitive field counts too.
-  await page.goto(`/hrm/employees/${ids.ea}`)
-  await page.getByRole('button', { name: 'Hiện Số CCCD hoặc hộ chiếu' }).click()
-  await page.getByRole('textbox', { name: 'Số CCCD hoặc hộ chiếu' }).fill('123')
-  await nav.click()
+  await openFromList()
+  await page.getByRole('button', { name: 'Sửa Thông tin nhạy cảm' }).click()
+  const sensitive = page.getByRole('dialog', { name: 'Sửa thông tin nhạy cảm' })
+  await sensitive.getByRole('button', { name: 'Hiện Số CCCD hoặc hộ chiếu' }).click()
+  await sensitive.getByRole('textbox', { name: 'Số CCCD hoặc hộ chiếu' }).fill('123')
+  await page.evaluate(() => history.back())
   await expect(page.getByRole('dialog', { name: 'Rời trang?' })).toBeVisible()
 })
 
@@ -236,6 +252,7 @@ test('status comes from the API, and the manager picker keeps one stable label',
   page.on('request', (r) => r.url().includes('/api/hrm/employees?') && searches++)
   await page.goto(`/hrm/employees/${left}`)
   await expect(page.getByText('Đã nghỉ việc')).toBeVisible()
+  await page.getByRole('button', { name: 'Sửa Thông tin chính' }).click()
   const manager = page.getByRole('combobox', { name: 'Quản lý trực tiếp' })
   await expect(manager).toHaveValue(`M${run} · Nhân viên M${run}`)
   searches = 0

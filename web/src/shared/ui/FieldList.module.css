@@ -1,6 +1,7 @@
 .fields {
   display: grid;
-  grid-template-columns: minmax(8rem, max-content) 1fr;
+  /* A container may fix the label width, so lists stacked in it line their values up. */
+  grid-template-columns: var(--field-list-label, minmax(8rem, max-content)) minmax(0, 1fr);
   gap: var(--mantine-spacing-xs) var(--mantine-spacing-lg);
   margin: 0;
 }

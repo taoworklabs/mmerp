@@ -102,8 +102,8 @@ return (
     )}
     error={error}
     approval={<ApprovalPanel docType={docType} id={d.id} />}
-    sections={[attachments, discussion]}                                           // useAttachmentSection, useDiscussionSection
-    history={<DocumentHistory docType={docType} id={d.id} />}
+    sections={[attachments]}                                                       // useAttachmentSection
+    activity={<ActivityFeed docType={docType} id={d.id} />}
     fullWidth                                                                      // only with a wide table (lines, grid, payroll)
   >
     <DocForm key={d.version} kind={kind} doc={d} />                                // view = edit; remounts on a new version
@@ -117,7 +117,7 @@ The page resolves its query with `loaded()` (skeleton, not found with a link bac
 
 Working example: `web/src/sales/pages/CustomerPage.tsx`, `web/src/hrm/pages/EmployeePage.tsx`.
 
-`RecordPage` with `leading` (avatar or icon), a description of key facts, `tabs` (`{ value, label, content }`, the selected one on the URL). The first tab holds the record's form (view = edit) or, for values changed one at a time, `InlineEditField`s; other tabs hold `DataTable`s with their own `TabActions` (default-size buttons). Attachments and discussion are the last tabs, in a 480px reading column centred under the tabs.
+`RecordPage` with `leading` (avatar or icon), a description of key facts, an `aside` (`{ label, content }`: the profile column, the first tab below 1024px), `activity` (`<ActivityFeed>`, the first tab) and `tabs` (`{ value, label, content }`, the selected one on the URL). The profile is an area component (`EmployeeProfile`, `CustomerProfile`): one `EditableSection` per group, its read view a `FieldList`, and one `FormModal` per group built from the same field groups as the create form (`MainFields`, `GeneralFields`…) and a form hook holding the whole record (`useEmployeeForm`, `useCustomerForm`), since the API saves the record as a whole. Other tabs hold `DataTable`s with their own `TabActions` (default-size buttons). Attachments are the last tab, in a 480px reading column.
 
 ## Settings list
 

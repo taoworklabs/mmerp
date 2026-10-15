@@ -21,7 +21,10 @@
 
 /* A section's fields: one column below 1280px; from there six, where a field takes half a row,
    a short one (a date, a choice, a phone number) a third, and a wide one the whole row. */
+/* Data entry gets taller fields than toolbars and filters; buttons and input rows among them
+   follow, so a row still lines up. */
 .fields {
+  --mmerp-control-height: 40px;
   display: grid;
   grid-template-columns: minmax(0, 1fr);
   gap: var(--mantine-spacing-md);
@@ -39,6 +42,19 @@
   .fields:not([data-wide]) > .short {
     grid-column: span 2;
   }
+}
+
+/* In a form with nothing left to edit (a posted document), a read-only field reads as its value
+   under its label, keeping the row's height. Beside fields still open it keeps its box. */
+form:not(:has(:global(.mantine-InputWrapper-root):not([data-readonly]) :global(.mantine-Input-input))) .fields [data-readonly] :global(.mantine-Input-input) {
+  padding-inline: 0;
+  border-color: transparent;
+  background: transparent;
+  cursor: default;
+}
+
+form:not(:has(:global(.mantine-InputWrapper-root):not([data-readonly]) :global(.mantine-Input-input))) .fields [data-readonly] :is(:global(.mantine-Input-section), :global(.mantine-InputWrapper-required), :global(.mantine-InputWrapper-description)) {
+  display: none;
 }
 
 /* After the spans above, so it wins over them. */

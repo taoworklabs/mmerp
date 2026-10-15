@@ -1,0 +1,14 @@
+/* An area's menu is a quiet list: 32px rows set close (the theme sizes a NavLink by the control
+   height), the label and its 16px icon in the secondary text colour until chosen. */
+.item {
+  --mmerp-control-height: 2rem;
+  padding-block: 0;
+}
+
+.item:not([data-active]) {
+  color: var(--mantine-color-dimmed);
+}
+
+.section {
+  margin-inline-end: var(--mantine-spacing-xs);
+}

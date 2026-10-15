@@ -8,7 +8,7 @@ import { DateField, Form, FormActions, FormRow, FormSection, OrgUnitField, Selec
 import { icon } from '@/shared/ui/theme'
 import { EmployeeField } from './EmployeeField'
 
-const sensitiveFields = ['national_id', 'social_insurance_no', 'tax_code', 'bank_account'] as const
+export const sensitiveFields = ['national_id', 'social_insurance_no', 'tax_code', 'bank_account'] as const
 type SensitiveName = (typeof sensitiveFields)[number]
 
 export type EmployeeValues = {
@@ -26,7 +26,7 @@ export type EmployeeValues = {
   termination_date: string | null
 } & Partial<Record<SensitiveName, string>>
 
-function defaults(e?: Employee): EmployeeValues {
+function employeeValues(e?: Employee): EmployeeValues {
   return {
     code: e?.code ?? '',
     full_name: e?.full_name ?? '',
@@ -75,16 +75,9 @@ const fieldOfCode: Record<string, keyof EmployeeValues> = {
   termination_before_hire: 'termination_date',
 }
 
-// EmployeeForm creates (no employee) or edits an employee: read-only without `edit`, or for a new one without `create`.
-// actions: the employee's allowed_actions, or for a new one, the list-level actions from the API.
-export function EmployeeForm({ employee, actions, onSaved }: { employee?: Employee; actions: string[]; onSaved: (id: number) => Promise<void> | void }) {
-  const { t } = useTranslation()
-  const form = useForm<EmployeeValues>({ mode: 'onBlur', defaultValues: defaults(employee) })
-  const canEdit = actions.includes(employee ? 'edit' : 'create')
-  const canViewSensitive = actions.includes('view_sensitive')
-  // Creating, the sensitive details stay folded until asked for: they usually come later, with the papers.
-  const [sensitiveOpen, setSensitiveOpen] = useState(false)
-
+// useEmployeeForm holds the whole employee whichever part of it is on screen: the API saves it as a whole.
+export function useEmployeeForm(employee: Employee | undefined, onSaved: (id: number) => Promise<void> | void) {
+  const form = useForm<EmployeeValues>({ mode: 'onBlur', defaultValues: employeeValues(employee) })
   async function save(v: EmployeeValues) {
     const dirty = form.formState.dirtyFields
     const edited = sensitiveFields.filter((f) => dirty[f])
@@ -97,71 +90,105 @@ export function EmployeeForm({ employee, actions, onSaved }: { employee?: Employ
       await onSaved(id)
     }
   }
+  return { form, save, fieldOf: (err: { code: string }) => fieldOfCode[err.code] }
+}
 
-  const ro = !canEdit
-  const reveal = (field: SensitiveName) => async () => {
-    if (!employee) return null
-    const { value } = await unwrap(api.GET('/hrm/employees/{id}/sensitive/{field}', { params: { path: { id: employee.id, field } } }))
-    return value
-  }
+// MainFields: what every employee needs, the four required fields together.
+export function MainFields({ employee }: { employee?: Employee }) {
+  const { t } = useTranslation()
+  return (
+    <>
+      <TextField name="full_name" label={t('hrm.employee.full_name')} required maxLength={200} wide />
+      <TextField name="code" label={t('hrm.employee.code')} required maxLength={50} />
+      <OrgUnitField
+        name="org_unit_id"
+        label={t('hrm.employee.org_unit')}
+        required
+        product="hrm"
+        permission="hrm.employee.edit"
+       
+      />
+      <DateField name="hire_date" label={t('hrm.employee.hire_date')} required />
+      <EmployeeField
+        name="manager_id"
+        label={t('hrm.employee.manager')}
+       
+        managerOf={employee?.id}
+        current={
+          employee?.manager_id && employee.manager_code && employee.manager_name
+            ? { id: employee.manager_id, code: employee.manager_code, name: employee.manager_name }
+            : undefined
+        }
+      />
+      <TextField name="user_login" label={t('hrm.employee.user_login')} description={t('hrm.employee.user_login_hint')} maxLength={200} />
+      {/* Leaving is recorded on an existing employee, never when creating one. */}
+      {employee && <DateField name="termination_date" label={t('hrm.employee.termination_date')} clearable />}
+    </>
+  )
+}
+
+export function PersonalFields() {
+  const { t } = useTranslation()
+  return (
+    <>
+      <DateField name="date_of_birth" label={t('hrm.employee.date_of_birth')} clearable short />
+      <SelectField
+        name="gender"
+        label={t('hrm.employee.gender')}
+        clearable
+       
+        short
+        data={['male', 'female', 'other'].map((g) => ({ value: g, label: t(`hrm.employee.gender.${g}`) }))}
+      />
+      <TextField name="phone" label={t('hrm.employee.phone')} type="tel" maxLength={50} short placeholder={t('hrm.employee.phone_placeholder')} />
+      <TextField name="email" label={t('hrm.employee.email')} type="email" maxLength={200} />
+      <TextField name="address" label={t('hrm.employee.address')} maxLength={500} wide />
+    </>
+  )
+}
+
+// revealSensitive fetches one sensitive value; the backend audits each call.
+export const revealSensitive = (id: number, field: SensitiveName) => async () => {
+  const { value } = await unwrap(api.GET('/hrm/employees/{id}/sensitive/{field}', { params: { path: { id, field } } }))
+  return value
+}
+
+// SensitiveFields are masked until shown; each reveal is an audited read.
+export function SensitiveFields({ employee, canView, canEdit }: { employee?: Employee; canView: boolean; canEdit: boolean }) {
+  const { t } = useTranslation()
+  const reveal = (field: SensitiveName) => (employee ? revealSensitive(employee.id, field) : async () => null)
+  return sensitiveFields.map((f) => (
+    <SensitiveField
+      key={f}
+      name={f}
+      label={t(`hrm.employee.${f}`)}
+      present={employee?.sensitive[f] ?? false}
+      canView={canView}
+      canEdit={canEdit}
+      reveal={reveal(f)}
+    />
+  ))
+}
+
+// EmployeeForm creates an employee; an existing one is edited a part at a time on its page.
+// actions: the list-level actions from the API (it is shown only with create).
+export function EmployeeForm({ actions, onSaved }: { actions: string[]; onSaved: (id: number) => Promise<void> | void }) {
+  const { t } = useTranslation()
+  const { form, save, fieldOf } = useEmployeeForm(undefined, onSaved)
+  // The sensitive details stay folded until asked for: they usually come later, with the papers.
+  const [sensitiveOpen, setSensitiveOpen] = useState(false)
 
   return (
-    <Form form={form} onSubmit={save} fieldOf={(err) => fieldOfCode[err.code]}>
-      {/* What every employee needs comes first, the four required fields together. */}
+    <Form form={form} onSubmit={save} fieldOf={fieldOf}>
       <FormSection title={t('hrm.employee.section.main')} description={t('hrm.employee.section.main_hint')} icon={IconUser}>
-        <TextField name="full_name" label={t('hrm.employee.full_name')} required maxLength={200} readOnly={ro} wide />
-        <TextField name="code" label={t('hrm.employee.code')} required maxLength={50} readOnly={ro} />
-        <OrgUnitField
-          name="org_unit_id"
-          label={t('hrm.employee.org_unit')}
-          required
-          product="hrm"
-          permission={ro ? 'hrm.employee.view' : 'hrm.employee.edit'}
-          readOnly={ro}
-        />
-        <DateField name="hire_date" label={t('hrm.employee.hire_date')} required readOnly={ro} />
-        <EmployeeField
-          name="manager_id"
-          label={t('hrm.employee.manager')}
-          readOnly={ro}
-          managerOf={employee?.id}
-          current={
-            employee?.manager_id && employee.manager_code && employee.manager_name
-              ? { id: employee.manager_id, code: employee.manager_code, name: employee.manager_name }
-              : undefined
-          }
-        />
-        <TextField name="user_login" label={t('hrm.employee.user_login')} description={t('hrm.employee.user_login_hint')} maxLength={200} readOnly={ro} />
-        {/* Leaving is recorded on an existing employee, never when creating one. */}
-        {employee && <DateField name="termination_date" label={t('hrm.employee.termination_date')} clearable readOnly={ro} />}
+        <MainFields />
       </FormSection>
       <FormSection title={t('hrm.employee.section.personal')} description={t('hrm.employee.section.personal_hint')} icon={IconAddressBook}>
-        <DateField name="date_of_birth" label={t('hrm.employee.date_of_birth')} clearable readOnly={ro} short />
-        <SelectField
-          name="gender"
-          label={t('hrm.employee.gender')}
-          clearable
-          readOnly={ro}
-          short
-          data={['male', 'female', 'other'].map((g) => ({ value: g, label: t(`hrm.employee.gender.${g}`) }))}
-        />
-        <TextField name="phone" label={t('hrm.employee.phone')} type="tel" maxLength={50} readOnly={ro} short placeholder={t('hrm.employee.phone_placeholder')} />
-        <TextField name="email" label={t('hrm.employee.email')} type="email" maxLength={200} readOnly={ro} />
-        <TextField name="address" label={t('hrm.employee.address')} maxLength={500} readOnly={ro} wide />
+        <PersonalFields />
       </FormSection>
       <FormSection title={t('hrm.employee.section.sensitive')} description={t('hrm.employee.section.sensitive_hint')} icon={IconLock}>
-        {employee || sensitiveOpen ? (
-          sensitiveFields.map((f) => (
-            <SensitiveField
-              key={f}
-              name={f}
-              label={t(`hrm.employee.${f}`)}
-              present={employee?.sensitive[f] ?? false}
-              canView={canViewSensitive}
-              canEdit={canEdit}
-              reveal={reveal(f)}
-            />
-          ))
+        {sensitiveOpen ? (
+          <SensitiveFields canView={actions.includes('view_sensitive')} canEdit />
         ) : (
           // Where the fields will appear, so the section keeps its place in the form.
           <FormRow>
@@ -179,9 +206,7 @@ export function EmployeeForm({ employee, actions, onSaved }: { employee?: Employ
           </FormRow>
         )}
       </FormSection>
-      {canEdit && (
-        <FormActions submitLabel={t(employee ? 'hrm.employee.save' : 'hrm.employees.create')} cancelTo={employee ? undefined : '/hrm/employees'} />
-      )}
+      <FormActions submitLabel={t('hrm.employees.create')} cancelTo="/hrm/employees" />
     </Form>
   )
 }

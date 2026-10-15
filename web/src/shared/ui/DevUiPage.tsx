@@ -1,4 +1,4 @@
-import { Button, Group, Menu, SegmentedControl, Stack, Text, Title } from '@mantine/core'
+import { Button, Divider, Group, Menu, SegmentedControl, Stack, Text, Title } from '@mantine/core'
 import { IconUsersGroup } from '@tabler/icons-react'
 import { useState, type ReactNode } from 'react'
 import { useForm } from 'react-hook-form'
@@ -14,7 +14,7 @@ import { StatusBadge } from './StatusBadge'
 import { TreeList } from './TreeList'
 import { LinkTile, StatTile, TileGrid } from './Tile'
 import { CellGrid } from './CellGrid'
-import { CheckboxField, DateField, DecimalField, FileField, Form, FormActions, FormRow, FormSection, InputRow, MoneyField, MonthField, MonthFilter, OrgUnitField, OrgUnitFilter, PasswordField, SearchInput, SelectField, SensitiveField, TextField } from './form'
+import { CheckboxField, DateField, DecimalField, EditableSection, FileField, Form, FormActions, FormRow, FormSection, InputRow, MoneyField, MonthField, MonthFilter, OrgUnitField, OrgUnitFilter, PasswordField, SearchInput, SelectField, SensitiveField, SensitiveValue, TextField } from './form'
 import { useConfirm } from './confirm'
 import { DocumentPage, type DocumentSection, FormModal, InboxList, InboxPage, InboxRow, ListPage, Page, RecordPage, TabActions } from './page'
 import { ContentSkeleton, EmptyState, ErrorState, NotFoundPage, ReadOnlyBanner } from './states'
@@ -27,8 +27,8 @@ const rows = [
 // DevUiPage shows every shared/ui template and primitive in each state; dev builds only.
 // The template is chosen with ?template=page|list|record|document|inbox, so each one can be opened directly.
 type Props = {
-  // Renders its child with sample side sections (attachments, discussion) of a document.
-  withSections: (p: { children: (sections: DocumentSection[]) => ReactNode }) => ReactNode
+  // Renders its child with a document's sample side sections (attachments) and activity feed.
+  withSections: (p: { children: (sections: DocumentSection[], activity: ReactNode) => ReactNode }) => ReactNode
 }
 
 export default function DevUiPage({ withSections: WithSections }: Props) {
@@ -246,13 +246,14 @@ export default function DevUiPage({ withSections: WithSections }: Props) {
   if (template === 'document')
     return (
       <WithSections>
-        {(sections) => (
+        {(sections, activity) => (
           <DocumentPage
             title="NP-2026-00001"
+            breadcrumbs={[{ label: t('shared.app.title'), to: '/' }]}
             actions={action}
             error={t('shared.error.network_error')}
             approval={<EmptyState title={t('shared.devui.empty')} />}
-            history={<EmptyState title={t('shared.devui.empty')} />}
+            activity={activity}
             sections={sections}
           >
             {content}
@@ -293,24 +294,57 @@ export default function DevUiPage({ withSections: WithSections }: Props) {
     )
   if (template === 'record')
     return (
-      <RecordPage
-        title={title}
-        tabs={[
-          { value: 'one', label: `${t('shared.devui.tab')} 1`, content },
-          {
-            value: 'two',
-            label: `${t('shared.devui.tab')} 2`,
-            content: (
-              <Stack gap="md">
-                <TabActions>
-                  <Button>{t('shared.devui.primary')}</Button>
-                </TabActions>
-                <EmptyState title={t('shared.devui.empty')} />
-              </Stack>
-            ),
-          },
-        ]}
-      />
+      <WithSections>
+        {(_, activity) => (
+          <RecordPage
+            title={title}
+            breadcrumbs={[{ label: t('shared.app.title'), to: '/' }]}
+            activity={activity}
+            leading={<PersonAvatar name="Nguyễn Văn An" size="lg" />}
+            // The profile column: one group edited in a modal, one that only reads, with a masked value.
+            aside={{
+              label: `${t('shared.devui.tab')} 0`,
+              content: (
+                <Stack gap="md">
+                  <EditableSection title={t('shared.devui.section')} icon={IconUsersGroup} onEdit={() => setModal(true)}>
+                    <FieldList
+                      rows={[
+                        ['Mã nhân viên', 'NV0019'],
+                        ['Phòng ban', 'Kế toán'],
+                        ['Trạng thái', <StatusBadge key="s" tone="positive">{t('shared.devui.status_positive')}</StatusBadge>],
+                      ]}
+                    />
+                  </EditableSection>
+                  <Divider />
+                  <EditableSection title={t('shared.devui.section_hint')}>
+                    <FieldList
+                      rows={[
+                        ['Ngày sinh', '02/11/1988'],
+                        ['Số CCCD', <SensitiveValue key="m" label="Số CCCD" present canView reveal={async () => '001088000123'} />],
+                      ]}
+                    />
+                  </EditableSection>
+                </Stack>
+              ),
+            }}
+            tabs={[
+              { value: 'one', label: `${t('shared.devui.tab')} 1`, content },
+              {
+                value: 'two',
+                label: `${t('shared.devui.tab')} 2`,
+                content: (
+                  <Stack gap="md">
+                    <TabActions>
+                      <Button>{t('shared.devui.primary')}</Button>
+                    </TabActions>
+                    <EmptyState title={t('shared.devui.empty')} />
+                  </Stack>
+                ),
+              },
+            ]}
+          />
+        )}
+      </WithSections>
     )
   return (
     <Page title={title} description={t('shared.devui.description')} breadcrumbs={[{ label: t('shared.app.title'), to: '/' }]} actions={action}>

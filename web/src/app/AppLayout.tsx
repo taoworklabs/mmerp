@@ -16,6 +16,7 @@ import { PersonAvatar } from '@/shared/ui/avatar'
 import { pageFrame } from '@/shared/ui/page'
 import { ErrorState, PageSkeleton, ReadOnlyBanner } from '@/shared/ui/states'
 import { icon } from '@/shared/ui/theme'
+import classes from './AppLayout.module.css'
 
 const join = (base: string, path: string) => `${base.replace(/\/$/, '')}/${path}`
 const inArea = (a: AreaManifest, pathname: string) => pathname === a.basePath || pathname.startsWith(`${a.basePath}/`)
@@ -185,7 +186,7 @@ export function AppLayout({ areas }: { areas: AreaManifest[] }) {
           <AppShell.Section grow component={ScrollArea} p="xs">
             {/* Only the open area's menu; other areas are reached from home. Ungrouped items
                 first, then each group in manifest order; a group emptied by permissions is gone. */}
-            <Stack gap="xxs">
+            <Stack gap={0}>
               {[...new Set(nav.map((item) => item.group))].map((group) => {
                 const links = nav.filter((item) => item.group === group).map((item) => <AreaLink key={item.path} area={area} item={item} narrow={narrow} onClick={closeDrawer} />)
                 return group && !narrow ? (
@@ -245,9 +246,10 @@ function AreaLink({ area, item, narrow, onClick }: { area: AreaManifest; item: N
       to={to}
       label={narrow ? undefined : label}
       aria-label={label}
-      leftSection={<item.icon {...icon.button} />}
+      leftSection={<item.icon {...icon.text} />}
       active={pathname === to || pathname.startsWith(`${to}/`)}
       variant="light"
+      classNames={{ root: classes.item, section: classes.section }}
       onClick={onClick}
     />
   )
@@ -268,9 +270,9 @@ function NavGroup({ userId, group, collapsible, children }: { userId: number; gr
   const [folded, setFolded] = useLocalStorage<boolean>({ key: `mmerp.nav.folded.${userId}.${group}`, defaultValue: false })
   const open = !collapsible || !folded
   return (
-    <Stack gap="xxs" role="group" aria-label={label}>
+    <Stack gap={0} role="group" aria-label={label}>
       {collapsible ? (
-        <UnstyledButton px="xs" onClick={() => setFolded(open)} aria-expanded={open}>
+        <UnstyledButton px="xs" mt="sm" mb="xxs" onClick={() => setFolded(open)} aria-expanded={open}>
           <Group gap="xxs" justify="space-between" wrap="nowrap">
             <Text size="xs" c="dimmed">
               {label}
@@ -279,7 +281,7 @@ function NavGroup({ userId, group, collapsible, children }: { userId: number; gr
           </Group>
         </UnstyledButton>
       ) : (
-        <Text size="xs" c="dimmed" px="xs">
+        <Text size="xs" c="dimmed" px="xs" mt="sm" mb="xxs">
           {label}
         </Text>
       )}

@@ -114,6 +114,7 @@ export function OrgUnitField({
       searchable
       clearable={clearable}
       readOnly={readOnly}
+      wrapperProps={{ 'data-readonly': readOnly || undefined }}
       comboboxProps={belowError(fieldState.error?.message)}
     />
   )

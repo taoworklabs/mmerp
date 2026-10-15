@@ -21,7 +21,7 @@ type Base = { name: string; label: string; required?: boolean; description?: str
 const wideStyle = { gridColumn: '1 / -1' }
 
 // Every field: label above, * when required, error under the input, checked on blur and submit.
-function useField({ name, label, required, bare, short }: Base, rules: RegisterOptions = {}) {
+function useField({ name, label, required, bare, short, readOnly }: Base, rules: RegisterOptions = {}) {
   const { t } = useTranslation()
   const { control } = useFormContext()
   const { field, fieldState } = useController({
@@ -37,6 +37,8 @@ function useField({ name, label, required, bare, short }: Base, rules: RegisterO
       label: bare ? undefined : label,
       'aria-label': bare ? label : undefined,
       withAsterisk: required,
+      // A select that cannot be typed into is a readonly input too; this says the field itself is read-only.
+      wrapperProps: { 'data-readonly': readOnly || undefined },
       error: fieldState.error?.message,
       onBlur: field.onBlur,
       ref: field.ref,

@@ -1,5 +1,7 @@
+/* Wider as the page widens, from the side panels' width up to a record's profile column, so the
+   panels read comfortably on a large screen while the form keeps its room on a smaller one. */
 .side {
-  flex: 0 0 var(--mmerp-side-width);
+  flex: 0 0 clamp(var(--mmerp-side-width), 35%, var(--mmerp-aside-width));
   min-width: 0;
 }
 

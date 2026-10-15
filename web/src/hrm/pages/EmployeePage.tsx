@@ -3,14 +3,14 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { useParams } from 'react-router'
 import { api, unwrap } from '@/shared/api/hrm'
-import { useAttachmentSection, useDiscussionSection } from '@/shared/document'
+import { ActivityFeed, documentKeys, useAttachmentSection } from '@/shared/document'
 import { PersonAvatar } from '@/shared/ui/avatar'
 import { notifySuccess } from '@/shared/ui/notify'
 import { RecordPage } from '@/shared/ui/page'
 import { BalancesTab } from '../components/BalancesTab'
 import { ContractsTab } from '../components/ContractsTab'
 import { DependentsTab } from '../components/DependentsTab'
-import { EmployeeForm } from '../components/EmployeeForm'
+import { EmployeeProfile } from '../components/EmployeeProfile'
 import { EmployeeStatus } from '../components/EmployeeStatus'
 import { loaded } from '@/shared/ui/loaded'
 import { employeeDocType, hrmKeys } from '../keys'
@@ -23,12 +23,7 @@ export function EmployeePage() {
     queryKey: hrmKeys.employees.detail(id),
     queryFn: () => unwrap(api.GET('/hrm/employees/{id}', { params: { path: { id } } })),
   })
-  const sections = [useAttachmentSection(employeeDocType, id), useDiscussionSection(employeeDocType, id)].map((s) => ({
-    value: s.key,
-    label: s.title,
-    content: s.content,
-    panel: true,
-  }))
+  const attachments = useAttachmentSection(employeeDocType, id)
 
   const state = loaded(employee, t, { to: '/hrm/employees', label: t('hrm.employees.back') })
   if (!state.ok) return state.fallback
@@ -46,29 +41,31 @@ export function EmployeePage() {
           <EmployeeStatus status={e.status} />
         </Group>
       }
+      aside={{
+        label: t('hrm.employee.tab.info'),
+        content: (
+          <EmployeeProfile
+            key={e.id}
+            employee={e}
+            onSaved={async () => {
+              await Promise.all([
+                qc.invalidateQueries({ queryKey: hrmKeys.employees.all() }),
+                qc.invalidateQueries({ queryKey: documentKeys.history(employeeDocType, e.id) }),
+              ])
+              notifySuccess(t('hrm.employee.saved'))
+            }}
+          />
+        ),
+      }}
       tabs={[
-        {
-          value: 'info',
-          label: t('hrm.employee.tab.info'),
-          content: (
-            <EmployeeForm
-              key={e.id}
-              employee={e}
-              actions={e.allowed_actions}
-              onSaved={async () => {
-                await qc.invalidateQueries({ queryKey: hrmKeys.employees.all() })
-                notifySuccess(t('hrm.employee.saved'))
-              }}
-            />
-          ),
-        },
         { value: 'dependents', label: t('hrm.employee.tab.dependents'), content: <DependentsTab employee={e} /> },
         { value: 'balances', label: t('hrm.employee.tab.balances'), content: <BalancesTab employee={e} /> },
         ...(e.allowed_actions.includes('view_contracts')
           ? [{ value: 'contracts', label: t('hrm.employee.tab.contracts'), content: <ContractsTab employee={e} /> }]
           : []),
-        ...sections,
+        { value: attachments.key, label: attachments.title, content: attachments.content, panel: true },
       ]}
+      activity={<ActivityFeed docType={employeeDocType} id={e.id} />}
     />
   )
 }

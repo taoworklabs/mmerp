@@ -1,4 +1,5 @@
-import { Badge, Button, Combobox, createTheme, Drawer, InputWrapper, Menu, Modal, NavLink, Paper, Popover, rem, ScrollArea, Select, Tabs, Tooltip, type CSSVariablesResolver, type MantineColorsTuple } from '@mantine/core'
+import { Badge, Button, Combobox, createTheme, Drawer, InputWrapper, Menu, Modal, NavLink, Paper, Popover, rem, ScrollArea, SegmentedControl, Select, Tabs, Tooltip, type CSSVariablesResolver, type MantineColorsTuple } from '@mantine/core'
+import segmented from './SegmentedControl.module.css'
 
 // Ramps run from palest (0) to darkest (9). Index 6 is the shade filled components use,
 // 7 the text on a tinted background, 0 the tint itself.
@@ -24,8 +25,8 @@ export const theme = createTheme({
   // Lines sit on a 4px grid: 12/16, 14/20, 16/24, 20/24.
   fontSizes: { xs: rem(12), sm: rem(14), md: rem(14), lg: rem(16), xl: rem(20) },
   lineHeights: { xs: '1.34', sm: '1.43', md: '1.43', lg: '1.5', xl: '1.2' },
-  spacing: { xxxs: rem(2), xxs: rem(4), xs: rem(8), sm: rem(12), md: rem(16), lg: rem(24), xl: rem(32) },
-  // Radius grows with the size of what it rounds: tags 4, controls 6, menus and frames 8, modals 12.
+  spacing: { xxxs: rem(2), xxs: rem(4), xs: rem(8), sm: rem(12), md: rem(16), lg: rem(24), xl: rem(32), xxl: rem(48) },
+  // Radius follows role: tags 4; controls, frames and modals 6; menus 8.
   radius: { xs: rem(2), sm: rem(4), md: rem(6), lg: rem(8), xl: rem(12) },
   defaultRadius: 'md',
   // Only overlays (menus, popovers, modals, toasts) cast a shadow, and a footer while content scrolls
@@ -40,7 +41,7 @@ export const theme = createTheme({
   // md is where the navigation becomes a drawer (1024px), lg where it stops auto-collapsing (1280px).
   // Content regions sit on the surface colour, not the app background.
   components: {
-    Paper: Paper.extend({ defaultProps: { bg: 'var(--mmerp-elevation-surface)', radius: 'lg' } }),
+    Paper: Paper.extend({ defaultProps: { bg: 'var(--mmerp-elevation-surface)', radius: 'md' } }),
     // Labels are quieter than the values they name.
     InputWrapper: InputWrapper.extend({
       defaultProps: { inputWrapperOrder: ['label', 'input', 'description', 'error'] },
@@ -58,12 +59,13 @@ export const theme = createTheme({
         variant === 'light' ? { root: { '--badge-bg': `var(--mantine-color-${color}-${color === 'gray' ? 2 : 1})`, '--badge-color': `var(--mantine-color-${color}-8)` } } : { root: {} },
     }),
     // A modal is its own small page: a 20px heading in a header band set off by a rule (its footer
-    // band is ModalFooter), 24px of room at the sides and 16px above and below.
+    // band is ModalFooter), 24px of room at the sides and 16px above and below. Its fields are
+    // 40px, like a form section's; ModalFooter keeps its buttons at 30px.
     Modal: Modal.extend({
-      defaultProps: { radius: 'xl', padding: 'lg' },
+      defaultProps: { radius: 'md', padding: 'lg' },
       styles: {
         header: { minHeight: 0, paddingBlock: 'var(--mantine-spacing-md)', borderBottom: '1px solid var(--mantine-color-default-border)' },
-        body: { paddingBlock: 'var(--mantine-spacing-md)' },
+        body: { paddingBlock: 'var(--mantine-spacing-md)', '--mmerp-control-height': rem(40) },
         title: { fontWeight: 650, fontSize: 'var(--mantine-font-size-xl)', lineHeight: 'var(--mantine-line-height-xl)' },
       },
     }),
@@ -71,6 +73,7 @@ export const theme = createTheme({
     Popover: Popover.extend({ defaultProps: { radius: 'lg' } }),
     Combobox: Combobox.extend({ defaultProps: { radius: 'lg' } }),
     Menu: Menu.extend({ defaultProps: { radius: 'lg' } }),
+    SegmentedControl: SegmentedControl.extend({ classNames: segmented }),
     Tooltip: Tooltip.extend({ defaultProps: { radius: 'sm' } }),
     // Thin scrollbars, so they do not compete with the content.
     ScrollArea: ScrollArea.extend({ defaultProps: { scrollbarSize: 8 } }),
@@ -116,8 +119,10 @@ export const cssVariablesResolver: CSSVariablesResolver = () => ({
     '--mmerp-control-height': rem(30),
     // Forms and a document's main column stop here, so fields stay near their labels on wide screens.
     '--mmerp-content-width': rem(1200),
-    // A document's side column (approval, attachments, discussion).
+    // The inbox list, and the least a document's side column (approval, attachments, activity) shrinks to.
     '--mmerp-side-width': rem(360),
+    // A record's own values beside its tabs: label–value pairs need more room than side panels.
+    '--mmerp-aside-width': rem(480),
   },
   light: {
     '--mantine-color-text': gray[9],
@@ -130,7 +135,7 @@ export const cssVariablesResolver: CSSVariablesResolver = () => ({
     '--mmerp-elevation-surface': '#FFFFFF',
     '--mmerp-elevation-surface-sunken': gray[0],
     // A table's column header row: a step deeper than the sunken tone of its group and total rows.
-    '--mmerp-table-header': gray[1],
+    '--mmerp-table-header': '#F4F5F6',
     // Edges of text fields: a step stronger than border, quieter than the checkbox edge (gray[4]).
     '--mmerp-input-border': '#0B120E33',
     // A footer pinned over content that scrolls under it (a page form's footer): shadow upwards only.

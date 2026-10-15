@@ -1,5 +1,5 @@
-import { Button, Menu, Stack, Text } from '@mantine/core'
-import { IconPlus, IconTrash } from '@tabler/icons-react'
+import { Button, Divider, Menu, Stack, Text } from '@mantine/core'
+import { IconMail, IconPlus, IconTrash, IconUserCircle } from '@tabler/icons-react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
@@ -10,7 +10,8 @@ import { api, ApiError, unwrap, type Grant } from '@/shared/api/core'
 import { errorText } from '@/shared/i18n'
 import { PersonAvatar } from '@/shared/ui/avatar'
 import { DataTable, type Column } from '@/shared/ui/DataTable'
-import { Form, FormActions, OrgUnitField, SelectField } from '@/shared/ui/form'
+import { EditableSection, Form, FormActions, OrgUnitField, SelectField } from '@/shared/ui/form'
+import { FieldList } from '@/shared/ui/FieldList'
 import { InlineEditField } from '@/shared/ui/InlineEditField'
 import { useConfirm } from '@/shared/ui/confirm'
 import { notifySuccess } from '@/shared/ui/notify'
@@ -33,10 +34,8 @@ export function UserPage() {
       description={user.data.login}
       leading={<PersonAvatar name={user.data.name} size="lg" />}
       breadcrumbs={[{ label: t('core.user.title'), to: '/admin/users' }]}
-      tabs={[
-        { value: 'roles', label: t('core.user.roles'), content: <RolesTab userId={id} /> },
-        { value: 'contact', label: t('core.user.contact'), content: <ContactTab userId={id} email={user.data.email} /> },
-      ]}
+      aside={{ label: t('core.user.info'), content: <UserProfile userId={id} login={user.data.login} name={user.data.name} email={user.data.email} /> }}
+      tabs={[{ value: 'roles', label: t('core.user.roles'), content: <RolesTab userId={id} /> }]}
     />
   )
 }
@@ -148,25 +147,39 @@ function GrantModal({ userId, onClose }: { userId: number; onClose: () => void }
   )
 }
 
-// ContactTab: where the user's email notifications go, if anywhere; the address is edited in place.
-function ContactTab({ userId, email }: { userId: number; email: string | null }) {
+// UserProfile: the account, read only, and where the user's email notifications go, if anywhere;
+// the address is one value changed on its own, so it is edited in place.
+function UserProfile({ userId, login, name, email }: { userId: number; login: string; name: string; email: string | null }) {
   const { t } = useTranslation()
   const qc = useQueryClient()
   return (
-    <Stack gap="xxs" maw={480}>
-      <InlineEditField
-        label={t('core.user.email')}
-        value={email ?? ''}
-        maxLength={254}
-        validate={(v) => (v && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(v) ? t('core.user.email_invalid') : null)}
-        onSave={async (v) => {
-          await unwrap(api.PUT('/users/{id}/email', { params: { path: { id: userId } }, body: { email: v || null } }))
-          await qc.invalidateQueries({ queryKey: coreKeys.users.detail(userId) })
-        }}
-      />
-      <Text size="sm" c="dimmed">
-        {t('core.user.email_hint')}
-      </Text>
+    <Stack gap="md">
+      <EditableSection title={t('core.user.account')} icon={IconUserCircle}>
+        <FieldList
+          rows={[
+            [t('core.user.login'), login],
+            [t('core.user.name'), name],
+          ]}
+        />
+      </EditableSection>
+      <Divider />
+      <EditableSection title={t('core.user.contact')} icon={IconMail}>
+        <Stack gap="xxs">
+          <InlineEditField
+            label={t('core.user.email')}
+            value={email ?? ''}
+            maxLength={254}
+            validate={(v) => (v && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(v) ? t('core.user.email_invalid') : null)}
+            onSave={async (v) => {
+              await unwrap(api.PUT('/users/{id}/email', { params: { path: { id: userId } }, body: { email: v || null } }))
+              await qc.invalidateQueries({ queryKey: coreKeys.users.detail(userId) })
+            }}
+          />
+          <Text size="xs" c="dimmed">
+            {t('core.user.email_hint')}
+          </Text>
+        </Stack>
+      </EditableSection>
     </Stack>
   )
 }

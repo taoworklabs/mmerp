@@ -3,7 +3,7 @@ import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate, useParams } from 'react-router'
 import { api, unwrap } from '@/shared/api/hrm'
-import { ApprovalPanel, DocumentActions, DocumentHistory, DocumentStatus, useAttachmentSection, useDiscussionSection } from '@/shared/document'
+import { ActivityFeed, ApprovalPanel, DocumentActions, DocumentStatus, useAttachmentSection } from '@/shared/document'
 import { formatDecimal } from '@/shared/i18n'
 import { DocumentPage } from '@/shared/ui/page'
 import { LeaveForm } from '../components/LeaveForm'
@@ -17,7 +17,6 @@ export function LeavePage() {
   const id = Number(useParams().id)
   const leave = useLeave(id)
   const attachments = useAttachmentSection(leaveDocType, id)
-  const discussion = useDiscussionSection(leaveDocType, id)
   const [error, setError] = useState<string | null>(null)
 
   const state = loaded(leave, t, { to: '/hrm/leaves', label: t('hrm.leaves.back') })
@@ -54,8 +53,8 @@ export function LeavePage() {
         )
       }
       approval={<ApprovalPanel docType={leaveDocType} id={l.id} />}
-      sections={[attachments, discussion]}
-      history={<DocumentHistory docType={leaveDocType} id={l.id} />}
+      sections={[attachments]}
+      activity={<ActivityFeed docType={leaveDocType} id={l.id} />}
     >
       {l.balance !== null && l.balance !== undefined && (
         <Text size="sm" c="dimmed" mb="md">

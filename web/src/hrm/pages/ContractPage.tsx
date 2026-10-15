@@ -5,7 +5,7 @@ import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link, useNavigate, useParams } from 'react-router'
 import { api, unwrap } from '@/shared/api/hrm'
-import { ApprovalPanel, DocumentActions, DocumentHistory, DocumentStatus, useAttachmentSection, useDiscussionSection } from '@/shared/document'
+import { ActivityFeed, ApprovalPanel, DocumentActions, DocumentStatus, useAttachmentSection } from '@/shared/document'
 import { ExportButton } from '@/shared/jobs'
 import { DocumentPage } from '@/shared/ui/page'
 import { ContractForm } from '../components/ContractForm'
@@ -20,7 +20,6 @@ export function ContractPage() {
   const id = Number(useParams().id)
   const contract = useContract(id)
   const attachments = useAttachmentSection(contractDocType, id)
-  const discussion = useDiscussionSection(contractDocType, id)
   const [error, setError] = useState<string | null>(null)
 
   const state = loaded(contract, t, { to: '/hrm/contracts', label: t('hrm.contracts.back') })
@@ -65,8 +64,8 @@ export function ContractPage() {
         )
       }
       approval={<ApprovalPanel docType={contractDocType} id={c.id} />}
-      sections={[attachments, discussion]}
-      history={<DocumentHistory docType={contractDocType} id={c.id} />}
+      sections={[attachments]}
+      activity={<ActivityFeed docType={contractDocType} id={c.id} />}
     >
       {/* Keyed by version: a reload after a conflict starts from the saved data. */}
       <ContractForm key={c.version} contract={c} />

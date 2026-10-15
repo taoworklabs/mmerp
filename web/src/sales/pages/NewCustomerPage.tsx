@@ -20,7 +20,6 @@ export function NewCustomerPage() {
   return (
     <Page centered title={t('sales.customers.create')} breadcrumbs={[{ label: t('sales.customers.title'), to: '/sales/customers' }]}>
       <CustomerForm
-        canEdit
         onSaved={async (id) => {
           await qc.invalidateQueries({ queryKey: salesKeys.customers.all() })
           notifySuccess(t('sales.customer.created'))

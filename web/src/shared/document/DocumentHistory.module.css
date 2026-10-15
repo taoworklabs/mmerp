@@ -1,0 +1,83 @@
+/* An ordered list for its meaning, without the list's own marks and indent. */
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--mantine-spacing-md);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* Time of day, bullet, sentence: the times line up in one column the eye runs down. */
+.row {
+  --feed-line: 1.25rem;
+  display: grid;
+  grid-template-columns: 3rem var(--feed-line) minmax(0, 1fr);
+  column-gap: var(--mantine-spacing-sm);
+  align-items: start;
+}
+
+.time {
+  line-height: var(--feed-line);
+  font-variant-numeric: tabular-nums;
+  cursor: default;
+}
+
+/* The bullet sits on the sentence's first line; with a detail, a thread runs from it down. */
+.bullet {
+  position: relative;
+  align-self: stretch;
+  display: flex;
+  justify-content: center;
+}
+
+.bullet > * {
+  flex: none;
+}
+
+.row[data-detail] .bullet::after {
+  content: '';
+  position: absolute;
+  top: calc(var(--feed-line) + var(--mantine-spacing-xxs));
+  bottom: 0;
+  left: calc(50% - 0.5px);
+  width: 1px;
+  background: var(--mantine-color-default-border);
+}
+
+.body {
+  min-width: 0;
+  line-height: var(--feed-line);
+}
+
+/* What the event carries (a comment, the fields it changed) in a well on the sunken tone under the sentence. */
+.detail {
+  margin-top: var(--mantine-spacing-xs);
+  padding: var(--mantine-spacing-xs) var(--mantine-spacing-sm);
+  background: var(--mmerp-elevation-surface-sunken);
+  border-radius: var(--mantine-radius-md);
+  overflow-wrap: anywhere;
+}
+
+/* The fields changed, one a row. */
+.changes {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: var(--mantine-spacing-xxs) var(--mantine-spacing-sm);
+  margin: 0;
+}
+
+.changes dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.old {
+  text-decoration: line-through;
+}
+
+/* Inline between the two values, on their line. */
+.arrow {
+  margin-inline: var(--mantine-spacing-xxs);
+  vertical-align: -0.125em;
+}

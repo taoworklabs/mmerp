@@ -73,13 +73,14 @@ test.describe('discussion', () => {
     const staff = await as(browser, login.staff, url)
     await staff.getByRole('textbox', { name: 'Bình luận' }).fill('Em xin nghỉ khám bệnh.\nGiấy hẹn em gửi kèm.')
     await staff.getByRole('button', { name: 'Gửi bình luận' }).click()
-    await expect(staff.getByText('Trao đổi (1)')).toBeVisible()
+    // The comment joins the document's activity feed.
+    await expect(staff.getByText('Giấy hẹn em gửi kèm.', { exact: false })).toBeVisible()
 
     const boss = await as(browser, login.boss, url)
     await expect(boss.getByText('Giấy hẹn em gửi kèm.', { exact: false })).toBeVisible()
     await boss.getByRole('textbox', { name: 'Bình luận' }).fill('Ai làm thay việc của em?')
     await boss.getByRole('button', { name: 'Gửi bình luận' }).click()
-    await expect(boss.getByText('Trao đổi (2)')).toBeVisible()
+    await expect(boss.getByText('Ai làm thay việc của em?')).toBeVisible()
 
     await staff.reload()
     await expect(staff.getByText('Ai làm thay việc của em?')).toBeVisible()

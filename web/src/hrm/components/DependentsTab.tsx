@@ -6,6 +6,7 @@ import { useForm } from 'react-hook-form'
 import { useTranslation } from 'react-i18next'
 import { api, unwrap, type Dependent, type DependentInput, type Employee } from '@/shared/api/hrm'
 import { errorText, formatDate, formatMonthShort } from '@/shared/i18n'
+import { documentKeys } from '@/shared/document'
 import { DataTable, type Column } from '@/shared/ui/DataTable'
 import { DateField, Form, FormActions, MonthField, SelectField, TextField } from '@/shared/ui/form'
 import { useConfirm } from '@/shared/ui/confirm'
@@ -13,7 +14,7 @@ import { notifySuccess } from '@/shared/ui/notify'
 import { FormModal, TabActions } from '@/shared/ui/page'
 import { ContentSkeleton, EmptyState, ErrorState } from '@/shared/ui/states'
 import { icon } from '@/shared/ui/theme'
-import { hrmKeys } from '../keys'
+import { employeeDocType, hrmKeys } from '../keys'
 
 const relationships = ['child', 'spouse', 'parent', 'other'] as const
 
@@ -50,7 +51,7 @@ function Dependents({ employee }: { employee: Employee }) {
       setError(errorText(t, err))
       return
     }
-    await qc.invalidateQueries({ queryKey: key })
+    await Promise.all([qc.invalidateQueries({ queryKey: key }), qc.invalidateQueries({ queryKey: documentKeys.history(employeeDocType, employee.id) })])
     notifySuccess(t('hrm.dependent.deleted'))
   }
 
@@ -145,7 +146,10 @@ function DependentModal({ employeeId, dependent, onClose }: { employeeId: number
     const path = { id: employeeId }
     if (dependent) await unwrap(api.PUT('/hrm/employees/{id}/dependents/{dependent}', { params: { path: { ...path, dependent: dependent.id } }, body }))
     else await unwrap(api.POST('/hrm/employees/{id}/dependents', { params: { path }, body }))
-    await qc.invalidateQueries({ queryKey: hrmKeys.employees.dependents(employeeId) })
+    await Promise.all([
+      qc.invalidateQueries({ queryKey: hrmKeys.employees.dependents(employeeId) }),
+      qc.invalidateQueries({ queryKey: documentKeys.history(employeeDocType, employeeId) }),
+    ])
     notifySuccess(t('hrm.dependent.saved'))
     onClose()
   }

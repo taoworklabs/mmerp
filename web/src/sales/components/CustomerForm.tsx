@@ -19,9 +19,8 @@ type Values = {
 
 const orNull = (s: string) => (s.trim() === '' ? null : s.trim())
 
-// CustomerForm creates (no customer) or edits a customer; read-only without edit (or create).
-export function CustomerForm({ customer, canEdit, onSaved }: { customer?: Customer; canEdit: boolean; onSaved: (id: number) => Promise<void> | void }) {
-  const { t } = useTranslation()
+// useCustomerForm holds the whole customer whichever part of it is on screen: the API saves it as a whole.
+export function useCustomerForm(customer: Customer | undefined, onSaved: (id: number) => Promise<void> | void) {
   const form = useForm<Values>({
     mode: 'onBlur',
     defaultValues: {
@@ -37,7 +36,6 @@ export function CustomerForm({ customer, canEdit, onSaved }: { customer?: Custom
       active: customer?.active ?? true,
     },
   })
-  const ro = !canEdit
 
   async function save(v: Values) {
     const body: CustomerFields = {
@@ -61,36 +59,55 @@ export function CustomerForm({ customer, canEdit, onSaved }: { customer?: Custom
     }
   }
 
+  return { form, save, fieldOf: (err: { code: string }) => (err.code === 'customer_code_taken' ? ('code' as const) : undefined) }
+}
+
+export function GeneralFields() {
+  const { t } = useTranslation()
   return (
-    <Form form={form} onSubmit={save} fieldOf={(err) => (err.code === 'customer_code_taken' ? 'code' : undefined)}>
+    <>
+      <TextField name="code" label={t('sales.customer.code')} required maxLength={50} />
+      <TextField name="name" label={t('sales.customer.name')} required maxLength={300} />
+      <TextField name="tax_code" label={t('sales.customer.tax_code')} maxLength={20} />
+      <TextField name="contact_name" label={t('sales.customer.contact_name')} maxLength={200} />
+      <TextField name="phone" label={t('sales.customer.phone')} type="tel" maxLength={50} />
+      <TextField name="email" label={t('sales.customer.email')} type="email" maxLength={200} />
+      <TextField name="address" label={t('sales.customer.address')} maxLength={500} wide />
+    </>
+  )
+}
+
+export function SalesFields() {
+  const { t } = useTranslation()
+  return (
+    <>
+      <OrgUnitField
+        name="org_unit_id"
+        label={t('sales.customer.org_unit')}
+        required
+        product="sales"
+        permission="sales.customer.edit"
+       
+      />
+      <TextField name="payment_terms" label={t('sales.customer.payment_terms')} description={t('sales.customer.payment_terms_hint')} maxLength={1000} />
+      <CheckboxField name="active" label={t('sales.customer.active')} description={t('sales.customer.active_hint')} />
+    </>
+  )
+}
+
+// CustomerForm creates a customer; an existing one is edited a part at a time on its page.
+export function CustomerForm({ onSaved }: { onSaved: (id: number) => Promise<void> | void }) {
+  const { t } = useTranslation()
+  const { form, save, fieldOf } = useCustomerForm(undefined, onSaved)
+  return (
+    <Form form={form} onSubmit={save} fieldOf={fieldOf}>
       <FormSection title={t('sales.customer.section.general')} description={t('sales.customer.section.general_hint')} icon={IconAddressBook}>
-        <TextField name="code" label={t('sales.customer.code')} required maxLength={50} readOnly={ro} />
-        <TextField name="name" label={t('sales.customer.name')} required maxLength={300} readOnly={ro} />
-        <TextField name="tax_code" label={t('sales.customer.tax_code')} maxLength={20} readOnly={ro} />
-        <TextField name="contact_name" label={t('sales.customer.contact_name')} maxLength={200} readOnly={ro} />
-        <TextField name="phone" label={t('sales.customer.phone')} type="tel" maxLength={50} readOnly={ro} />
-        <TextField name="email" label={t('sales.customer.email')} type="email" maxLength={200} readOnly={ro} />
-        <TextField name="address" label={t('sales.customer.address')} maxLength={500} readOnly={ro} wide />
+        <GeneralFields />
       </FormSection>
       <FormSection title={t('sales.customer.section.sales')} description={t('sales.customer.section.sales_hint')} icon={IconBuildingStore}>
-        <OrgUnitField
-          name="org_unit_id"
-          label={t('sales.customer.org_unit')}
-          required
-          product="sales"
-          permission={ro ? 'sales.customer.view' : 'sales.customer.edit'}
-          readOnly={ro}
-        />
-        <TextField
-          name="payment_terms"
-          label={t('sales.customer.payment_terms')}
-          description={t('sales.customer.payment_terms_hint')}
-          maxLength={1000}
-          readOnly={ro}
-        />
-        <CheckboxField name="active" label={t('sales.customer.active')} description={t('sales.customer.active_hint')} readOnly={ro} />
+        <SalesFields />
       </FormSection>
-      {canEdit && <FormActions submitLabel={t(customer ? 'sales.common.save' : 'sales.customers.create')} cancelTo={customer ? undefined : '/sales/customers'} />}
+      <FormActions submitLabel={t('sales.customers.create')} cancelTo="/sales/customers" />
     </Form>
   )
 }

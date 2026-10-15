@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate, useParams } from 'react-router'
 import { api, unwrap } from '@/shared/api/hrm'
-import { ApprovalPanel, DocumentActions, DocumentHistory, DocumentStatus, documentKeys, useDiscussionSection } from '@/shared/document'
+import { ActivityFeed, ApprovalPanel, DocumentActions, DocumentStatus, documentKeys } from '@/shared/document'
 import { formatMonth } from '@/shared/i18n'
 import { ExportButton, ImportDialog } from '@/shared/jobs'
 import { DocumentPage } from '@/shared/ui/page'
@@ -18,7 +18,6 @@ export function TimesheetPage() {
   const { t } = useTranslation()
   const navigate = useNavigate()
   const id = Number(useParams().id)
-  const discussion = useDiscussionSection(timesheetDocType, id)
   const timesheet = useTimesheet(id)
   const [error, setError] = useState<string | null>(null)
   const [importing, setImporting] = useState(false)
@@ -67,8 +66,7 @@ export function TimesheetPage() {
         )
       }
       approval={<ApprovalPanel docType={timesheetDocType} id={ts.id} />}
-      sections={[discussion]}
-      history={<DocumentHistory docType={timesheetDocType} id={ts.id} />}
+      activity={<ActivityFeed docType={timesheetDocType} id={ts.id} />}
     >
       {/* Keyed by version: an import or a reload after a conflict starts from the saved data. */}
       <TimesheetGrid key={ts.version} timesheet={ts} />

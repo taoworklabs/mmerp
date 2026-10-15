@@ -6,7 +6,8 @@ Forms use React Hook Form through `@/shared/ui/form`: `Form`, `FormSection`, `Fo
 
 | The form | Where |
 | --- | --- |
-| Is the record itself (a document, an employee, a customer) | A page: `Page` + `Form` to create, the record's own page to view and edit (view = edit) |
+| Is the record itself (a document, an employee, a customer) | A page: `Page` + `Form` to create; a document is viewed and edited on its own page (view = edit) |
+| One group of a master-data record's values (an employee's personal details), on its page | A `FormModal` opened from the group in the profile column, whatever the number of fields; it saves the whole record |
 | Needs at most 6 fields, and the result is worked on its own page or lives in a list (timesheet period, payroll period, item, user, a setting) | `FormModal` on the list |
 | Configuration with more than 6 fields or tables of its own (approval rules, mail server) | A page |
 | One value of a master-data record, changed often | `InlineEditField` on the record page (below) |
@@ -41,6 +42,7 @@ There is no "Create another" option; series entry goes through Excel import.
 
 - Label above every field, always visible, 12px weight 600 `dimmed` (the theme does it); never a placeholder instead of a label.
 - A placeholder shows a format, never a label or a value: date fields show `dd/mm/yyyy` (month fields `mm/yyyy`) and a calendar icon by themselves; a `TextField` takes `placeholder` for a sample starting "VD:" when the label does not make the format plain (phone). Read-only fields show none.
+- When nothing in the form can be edited (a posted document), its read-only fields in a `FormSection` read as their values under their labels, in the inputs' place: no box, no `*`, no help text, no calendar or chevron. A read-only field among fields still open keeps its box. Each shared field marks its wrapper `data-readonly` when `readOnly`, and `FormSection` does the rest; a screen sets nothing. A custom field built on a Mantine input must pass the same `wrapperProps` (as `OrgUnitField` does), or it counts as still editable.
 - `required` adds `*` after the label; no legend, no "(required)".
 - `description` is one sentence under the input, only when the label is not enough.
 - In a table cell, `bare` drops the visible label (kept as `aria-label`) and the description: the column header names the field.
@@ -115,7 +117,7 @@ The same data uses the same field everywhere (a month is never a text input chec
 
 ## Document lines
 
-A document with lines (quotation, order) edits them in `LinesTable`, inside a `FormSection wide`, on a `DocumentPage fullWidth` (the table needs the width; approval and history move to tabs):
+A document with lines (quotation, order) edits them in `LinesTable`, inside a `FormSection wide`, on a `DocumentPage fullWidth` (the table needs the width; approval, attachments and the activity feed move to one "Activity" tab):
 
 ```
 # │ Item *        │ Description *   │ Qty * │ Unit price * │ Disc. % │ VAT *  │
@@ -165,11 +167,11 @@ const lineColumns: LineColumn[] = [
 
 ```tsx
 <InlineEditField
-  label={t('sales.customer.phone')}
-  value={c.phone ?? ''}
-  readOnly={!c.allowed_actions.includes('edit')}
-  validate={(v) => (v ? null : t('shared.form.required'))}
-  onSave={(phone) => save({ ...current, phone })} // sends the whole record with its version
+  label={t('core.user.email')}
+  value={email ?? ''}
+  maxLength={254}
+  validate={(v) => (v && !isEmail(v) ? t('core.user.email_invalid') : null)}
+  onSave={(v) => unwrap(api.PUT('/users/{id}/email', { params: { path: { id } }, body: { email: v || null } }))} // its own endpoint
 />
 ```
 
@@ -182,7 +184,7 @@ const lineColumns: LineColumn[] = [
 | Leaving the input | Keeps it open: a half-typed value is neither saved nor lost |
 | No permission | `readOnly`: plain text, not a button |
 
-Use it only for single values of master data that people change one at a time (phone, email, address, a name). Never for documents (they save as a whole with their version and approval), money, rates, quantities, sensitive fields, or a value whose change affects other fields; those stay in the form with one Save. Each inline save is one request, one version, one audit entry, and a toast is not needed: the value itself shows the result.
+Use it only for a single value of master data that saves on its own, apart from the record (a user's email, in `core/pages/UserPage.tsx`); a record with a profile column edits its groups in a `FormModal` instead (`EmployeeProfile`, `CustomerProfile`). Never for documents (they save as a whole with their version and approval), money, rates, quantities, sensitive fields, or a value whose change affects other fields; those stay in the form with one Save. Each inline save is one request, one version, one audit entry, and a toast is not needed: the value itself shows the result.
 
 ## Do / Don't
 

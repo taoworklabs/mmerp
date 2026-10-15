@@ -35,7 +35,7 @@ Each colour is a ten-step scale, palest (0) to darkest (9). Components read it b
 | control border | automatic (`gray-4`) | `#B4B7BD` | Edges of checkboxes and radios: small, so they keep the stronger edge |
 | surface | `var(--mmerp-elevation-surface)`, default `Paper` background | `#FFFFFF` | Tables, forms, cards, the page |
 | surface sunken | `var(--mmerp-elevation-surface-sunken)` | `#F8F8F8` | Group and total rows, tile hover, grid cells that take no value |
-| table header | `var(--mmerp-table-header)` | `#F0F1F2` | A table's column header row (`DataTable`, `LinesTable`, `CellGrid`): a step deeper than the sunken rows |
+| table header | `var(--mmerp-table-header)` | `#F4F5F6` | A table's column header row (`DataTable`, `LinesTable`, `CellGrid`): a step deeper than the sunken rows |
 | disabled | automatic | `#F0F1F2` | Disabled input background |
 | neutral | `color="gray"` | tint `#F0F1F2`, text `#505258` (badges: `#DDDEE1`, `#3B3D42`) | Neutral badges, quiet icon buttons, empty-state icon |
 
@@ -98,13 +98,14 @@ Numbers and money use `font-variant-numeric: tabular-nums` (`DataTable` `number`
 
 | Key | Value | Use |
 | --- | --- | --- |
-| `xxxs` | 2 | Between a line and its caption (name over date in a history entry) |
+| `xxxs` | 2 | Between a line and its caption (a name over a date) |
 | `xxs` | 4 | Icon to its text, label to its input |
 | `xs` | 8 | Controls in one strip (filter bar, button group), rows of a `FieldList` |
 | `sm` | 12 | Inside a dense block, between filter bar and table in a drawer |
 | `md` | 16 | Between fields, around card content, header to divider |
 | `lg` | 24 | Between page regions (the page template's gap), between form sections |
 | `xl` | 32 | Page side padding from 1024px, empty-state padding |
+| `xxl` | 48 | Page side padding from 1280px; a record page's tabs and tab content, in from the frame's edge |
 
 The scale is closed: if a gap seems to need 6, 10 or 20, the layout needs another level instead (a `Stack` inside a `Stack`).
 
@@ -121,9 +122,9 @@ The scale is closed: if a gap seems to need 6, 10 or 20, the layout needs anothe
 | --- | --- | --- |
 | `xs` | 2 | Not assigned to any component yet |
 | `sm` | 4 | Badges, tooltips, small icon tiles (`ThemeIcon` up to 28px) |
-| `md` | 6 | Default: buttons, inputs, navigation items, alerts |
-| `lg` | 8 | `Paper` (cards, tiles), menus, popovers, dropdowns |
-| `xl` | 12 | Modals |
+| `md` | 6 | Default: buttons, inputs, navigation items, alerts, `Paper` (cards, tiles), table and feed frames, the activity feed's detail well, modals |
+| `lg` | 8 | Menus, popovers, dropdowns |
+| `xl` | 12 | Not assigned to any component's frame (round icon tiles use it) |
 | round | — | Avatars, page numbers in the paging bar |
 
 Components already carry their radius through theme defaults; set `radius` only on a new component, by this table.
@@ -144,15 +145,16 @@ A card on the page is `Paper withBorder`, never a shadow.
 
 | What | Value | Where |
 | --- | --- | --- |
-| Control (button, input, select, pagination, `ActionIcon size="input-sm"`), wherever it sits | 30px, `size="sm"` (default) | `--mmerp-control-height`, applied in `global.css` |
+| Control (button, input, select, pagination, `ActionIcon size="input-sm"`), wherever it sits | 30px, `size="sm"` (default); 40px among a form section's fields and in a modal's body (a lines table and `ModalFooter` keep 30px) | `--mmerp-control-height`, applied in `global.css`, raised in `Form.module.css` and the `Modal` body (`theme.ts`) |
 | Touch target below 1024px | 44px | `global.css` |
 | Header | 48px | `app/AppLayout.tsx` |
-| Navigation | 240px, 56px collapsed | `app/AppLayout.tsx` |
+| Navigation | 240px, 56px collapsed; items 32px | `app/AppLayout.tsx`, `AppLayout.module.css` |
 | Table row / header row | 40px / 36px | `DataTable.module.css` |
 | Grid cell (timesheet) | 30px | `CellGrid.module.css` |
 | Scrollbar (`ScrollArea`) | 8px; in a table it runs between the sticky header and footer | `theme.ts`, `DataTable.module.css` |
-| Document side column, inbox list | 360px | `--mmerp-side-width` (`DocumentPage`), `InboxPage` |
+| Document side column, inbox list | 360px; the document's side column grows to 35% of the page, up to 480px | `--mmerp-side-width` (`InboxPage`; the least of `DocumentPage`'s side column), `--mmerp-aside-width` (its most, and a record's profile column) |
 | Content width (form sections, a document's main column) | 1200px | `--mmerp-content-width`, applied by `FormSection`, `DocumentPage`, `RecordPage` and `Page centered` |
+| Record profile column | 480px | `--mmerp-aside-width` (`RecordPage`) |
 | Side panel, side-column tab | 480px | `readingWidth` (`page/Page.tsx`) |
 | Breakpoints | `sm` 768, `md` 1024 (navigation becomes a drawer, tables become cards), `lg` 1280 (design size) | `theme.ts` |
 
