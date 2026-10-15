@@ -1,13 +1,13 @@
 # Forms
 
-Forms use React Hook Form through `@/shared/ui/form`: `Form`, `FormSection`, `FormRow`, `InputRow`, `FormActions` and the fields. A field is wired by `name`; the screen never renders a bare Mantine input inside a form.
+Forms use React Hook Form through `@/shared/ui/form`: `Form`, `FormSection`, `FormFields`, `FormRow`, `InputRow`, `FormActions` and the fields. A field is wired by `name`; the screen never renders a bare Mantine input inside a form.
 
 ## Page or modal
 
 | The form | Where |
 | --- | --- |
-| Is the record itself (a document, an employee, a customer) | A page: `Page` + `Form` to create; a document is viewed and edited on its own page (view = edit) |
-| One group of a master-data record's values (an employee's personal details), on its page | A `FormModal` opened from the group in the profile column, whatever the number of fields; it saves the whole record |
+| Is the record itself (a document, an employee, a customer) | A page: `Page` + `Form` to create; a record or document is then read and edited on its own `DetailPage` |
+| One group of a record's or document's values (an employee's personal details, a leave request), on its page | In its `EditablePanel` card, in place, whatever the number of fields: `Form` → `FormFields` → `FormActions onCancel`; a master-data group saves the whole record. Never a `FormModal` |
 | Needs at most 6 fields, and the result is worked on its own page or lives in a list (timesheet period, payroll period, item, user, a setting) | `FormModal` on the list |
 | Configuration with more than 6 fields or tables of its own (approval rules, mail server) | A page |
 | One value of a master-data record, changed often | `InlineEditField` on the record page (below) |
@@ -33,6 +33,8 @@ There is no "Create another" option; series entry goes through Excel import.
 
 - Sections (`FormSection`) are unframed, separated by a rule; title 16px weight 650, description 12px `dimmed`. From 1280px the title column is on the left and the fields sit on six columns: half a row each by default, a third with `short` (dates, choices, phone numbers: values short whatever they hold), the whole row for long text (`wide` on `TextField`, `multiline`). A section is at most 1200px wide.
 - `FormSection wide` puts the title on top and gives its content the full width: for a lines table or any table inside a form.
+- `FormSection compact` puts the title on top with four fields to a row: a short request of a few fields (new leave, new overtime).
+- `FormFields` lays out fields with no section title, two to a row: the edit view of an `EditablePanel` card.
 - `FormRow` spans the field grid for something that is not a field (a table, totals). `InputRow` puts a checkbox or a remove button level with the inputs beside it.
 - Order fields by how people fill them: what identifies the record first, with its required fields together, then what it is about, then terms and notes. Group what is filled together; at most about eight fields per section.
 - A create form asks only what is known at creation: a field that only makes sense later (an employee's leaving date) shows on the record's page only, and a section usually filled later (sensitive details) keeps its title and description but shows, in place of its fields, a `variant="light"` "Add …" button in a `FormRow` that opens the fields there and focuses the first one.
@@ -42,7 +44,8 @@ There is no "Create another" option; series entry goes through Excel import.
 
 - Label above every field, always visible, 12px weight 600 `dimmed` (the theme does it); never a placeholder instead of a label.
 - A placeholder shows a format, never a label or a value: date fields show `dd/mm/yyyy` (month fields `mm/yyyy`) and a calendar icon by themselves; a `TextField` takes `placeholder` for a sample starting "VD:" when the label does not make the format plain (phone). Read-only fields show none.
-- When nothing in the form can be edited (a posted document), its read-only fields in a `FormSection` read as their values under their labels, in the inputs' place: no box, no `*`, no help text, no calendar or chevron. A read-only field among fields still open keeps its box. Each shared field marks its wrapper `data-readonly` when `readOnly`, and `FormSection` does the rest; a screen sets nothing. A custom field built on a Mantine input must pass the same `wrapperProps` (as `OrgUnitField` does), or it counts as still editable.
+- A read-only field in a form is a grey fill without an edge, in the input's place, so rows keep their height and the layout does not move between viewing and editing: no `*`, no help text. Each shared field marks its wrapper `data-readonly` when `readOnly`, and `FormSection`/`FormFields` do the rest; a screen sets nothing. A custom field built on a Mantine input must pass the same `wrapperProps` (as `OrgUnitField` does), or it counts as still editable.
+- Values that are only read (a record, a document out of draft) are label–value pairs (`FieldList` in an `EditablePanel`), never a form of read-only inputs. Only `fullWidth` documents (payroll, timesheet, quotation, order) show their form read-only.
 - `required` adds `*` after the label; no legend, no "(required)".
 - `description` is one sentence under the input, only when the label is not enough.
 - In a table cell, `bare` drops the visible label (kept as `aria-label`) and the description: the column header names the field.
@@ -62,7 +65,7 @@ Error text says what is wrong without repeating the label: "Chưa nhập." (Not 
 ## Footer and saving
 
 - **On a page**: `FormActions` without `onCancel`. It sticks to the bottom, right-aligned, under a neutral rule; while the form runs on under it, it casts a shadow upwards. Editing a record it is hidden while nothing changed; once dirty: "● Unsaved changes" (the error line takes its place after a failed submit), Discard (default button, asks first), Save. Creating one, pass `cancelTo` (the list): the footer shows from the start with Cancel and the create button, and no Discard. Ctrl/Cmd+S saves. Leaving the page with changes asks first.
-- **In a modal**: `FormActions` with `onCancel`: Cancel and the submit button, right-aligned, not sticky; the two keep together and the error line wraps above them.
+- **In a modal or an `EditablePanel` card**: `FormActions` with `onCancel` (the card's `close`): Cancel and the submit button, right-aligned, not sticky; the two keep together and the error line wraps above them.
 - The submit button names the outcome: "Lưu", "Tạo khách hàng", "Tạo bản nháp"; "Thêm" when a modal adds an entry to a record's list (a dependent), "Lưu" when it edits one.
 - While saving the button is busy (spinner only after 300ms); after a successful save: `notifySuccess`, then a create navigates to the new record's page.
 
@@ -184,7 +187,7 @@ const lineColumns: LineColumn[] = [
 | Leaving the input | Keeps it open: a half-typed value is neither saved nor lost |
 | No permission | `readOnly`: plain text, not a button |
 
-Use it only for a single value of master data that saves on its own, apart from the record (a user's email, in `core/pages/UserPage.tsx`); a record with a profile column edits its groups in a `FormModal` instead (`EmployeeProfile`, `CustomerProfile`). Never for documents (they save as a whole with their version and approval), money, rates, quantities, sensitive fields, or a value whose change affects other fields; those stay in the form with one Save. Each inline save is one request, one version, one audit entry, and a toast is not needed: the value itself shows the result.
+Use it only for a single value of master data that saves on its own, apart from the record (a user's email, in `core/pages/UserPage.tsx`); a record's groups of values are edited in their `EditablePanel` card instead (`EmployeeProfile`, `CustomerProfile`). Never for documents (they save as a whole with their version and approval), money, rates, quantities, sensitive fields, or a value whose change affects other fields; those stay in the form with one Save. Each inline save is one request, one version, one audit entry, and a toast is not needed: the value itself shows the result.
 
 ## Do / Don't
 

@@ -16,7 +16,7 @@ Run every item against the change before calling it done. An item that does not 
 - [ ] One primary button per view; others by `components.md` (default, subtle, light); the way out beside the primary is `subtle` grey; `color="danger"` only for a step that loses data.
 - [ ] Buttons keep the default size (30px) everywhere, with `icon.button`; no `size` on a button. Controls in one strip share one height.
 - [ ] Status through `DocumentStatus` (documents) or `StatusBadge` (everything else).
-- [ ] Comments and history through `ActivityFeed` (`activity` on `RecordPage` / `DocumentPage`), never a panel of their own.
+- [ ] Comments and history through `ActivityFeed`, a card of its own (`activity` on `DocumentPage`, a `Panel` in a `DetailPage`'s `side`), never a tab and never a history or discussion panel of their own.
 - [ ] Selection shown by the primary tint and primary text only.
 - [ ] Shadows only on overlays and a pinned form footer (`--mmerp-shadow-footer`); cards are `Paper withBorder`.
 
@@ -24,8 +24,11 @@ Run every item against the change before calling it done. An item that does not 
 
 - [ ] The screen type is named (list, document, record, create page, modal, settings, dashboard, report, inbox) and uses that type's template; no page-level layout of its own.
 - [ ] Create in a `FormModal` only for ≤ 6 fields whose result lives in a list or is worked on its own page; otherwise a page.
-- [ ] A master-data record page shows its values in the profile column (`RecordPage` `aside`, `EditableSection` + `FieldList`), each group edited in its own `FormModal`; a fully read-only form reads as text, never as locked inputs.
-- [ ] A document with a wide table (editable lines, grid, payroll) uses `fullWidth`; forms and main columns rely on the 1200px cap, not their own width.
+- [ ] A record's or document's page is a `DetailPage` (a `DocumentPage` builds on it): its values in `EditablePanel` cards (`FieldList`), each showing every value its form edits (header facts included), each group edited in place in its card, never in a `FormModal`; read values are label–value pairs, never read-only inputs.
+- [ ] The record's own lists are `DetailTabs` in the side column (first tab default, on the URL; buttons in `TabActions`; tables with `DataTable` `cards`).
+- [ ] On a document page, Approve / Reject are in the header (`ApprovalDecision`) and `ApprovalPanel` gets `decideElsewhere`; "Rút lại" confirms.
+- [ ] People link to their profile (`EmployeeLink`); a phone is `tel:`, an email `mailto:`.
+- [ ] A document with a wide table (editable lines, grid, payroll) uses `fullWidth`; form pages rely on the 1200px cap and detail pages on the 1440px one, not their own width.
 - [ ] Breadcrumb points to the record's own list.
 
 ## Tables (`tables.md`)
@@ -41,7 +44,7 @@ Run every item against the change before calling it done. An item that does not 
 ## Forms (`forms.md`)
 
 - [ ] Labels above, `*` on required, `mode: 'onBlur'`, server field errors through `fieldOf`, others as the form banner.
-- [ ] `FormActions` without `onCancel` on a page, with it in a modal; a create page passes `cancelTo` (its list); submit never disabled to signal errors.
+- [ ] `FormActions` without `onCancel` on a page, with it in a modal or an `EditablePanel` card; a create page passes `cancelTo` (its list); submit never disabled to signal errors.
 - [ ] Same data, same field (`MonthField`, `IntegerField`, `MoneyField`…).
 - [ ] Lines in `LinesTable` inside `FormSection wide`; totals only from the server, with their note.
 - [ ] `InlineEditField` only for single master-data values; never documents, money, rates, sensitive fields.

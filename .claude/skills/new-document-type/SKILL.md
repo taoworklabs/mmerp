@@ -28,7 +28,7 @@ The rules live in `documents.md`; this skill is the order to apply them in. Each
 6. **Prove it.** Run `recordtest` for the type, and add tests for the module's own concurrent cases (e.g. two approvals racing on the same balance row).
    Done when: `recordtest` and the module tests are green under `make test`.
 
-7. **Frontend.** Add the type to the area manifest's `recordTypes` with `path`, `invalidate`, and `preview` when it goes through approval. Add status label overrides under `<doc_type>.status.*` in the area's `meta` translations. Build the screen with the `new-screen` skill using `DocumentPage`, passing `activity={<ActivityFeed docType={…} id={…} />}` and, when `Can` answers `view_files`, `sections` from `useAttachmentSection`.
+7. **Frontend.** Add the type to the area manifest's `recordTypes` with `path`, `invalidate`, and `preview` when it goes through approval. Add status label overrides under `<doc_type>.status.*` in the area's `meta` translations. Build the screen with the `new-screen` skill using `DocumentPage`: the values as `EditablePanel` cards edited in place while `allowed_actions` has `edit` (`fullWidth` with the form instead only for a wide table), `ApprovalDecision` in `actions`, `approval={<ApprovalPanel … decideElsewhere />}`, `activity={<ActivityFeed docType={…} id={…} />}` and, when `Can` answers `view_files`, `sections` from `useAttachmentSection`.
    Done when: the document opens from the approval inbox, and approving it refreshes every query listed in `invalidate`.
 
 8. **Name it.** Add the type and any new status meaning to `CONTEXT.md`.

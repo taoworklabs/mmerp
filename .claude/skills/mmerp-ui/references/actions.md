@@ -40,10 +40,10 @@ A document moves between `draft`, `pending_approval`, `posted`, `cancelled` only
 | Button | Look | Confirms |
 | --- | --- | --- |
 | Submit for approval ("Gửi duyệt") | Primary | No |
-| Withdraw ("Rút lại") | Secondary | No |
+| Withdraw ("Rút lại") | Secondary | Yes: it undoes the approvals given so far |
 | Delete draft ("Xóa nháp") | Red text | Yes, names the document |
 | Cancel document ("Hủy chứng từ") | Red text | Yes, names the document |
-| Approve / Reject | In `ApprovalPanel` and the inbox's decision bar; Reject asks for a reason | Reject yes |
+| Approve / Reject | In the document page's header (`ApprovalDecision`, with `ApprovalPanel` `decideElsewhere`) and the inbox's sticky decision bar; Reject asks for a reason | Reject yes |
 
 - Status changes are explicit verb buttons, never a status dropdown: the next step depends on approval rules and permissions the server decides.
 - When no lifecycle step is left, the area's follow-up action (Create order from a posted quotation) may be the page's primary button.
