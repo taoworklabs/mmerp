@@ -317,7 +317,7 @@
             "type": "array"
           },
           "code": {
-            "description": "Translated as numbering.series.\u003ccode\u003e",
+            "description": "Translated as \u003ccode\u003e.code_series",
             "type": "string"
           },
           "next": {
@@ -3676,7 +3676,7 @@
             ]
           },
           "code": {
-            "description": "Empty: issued from the sales.customer code series",
+            "description": "Empty or absent: issued from the sales.customer code series",
             "maxLength": 50,
             "type": "string"
           },
@@ -3728,7 +3728,6 @@
           }
         },
         "required": [
-          "code",
           "name",
           "tax_code",
           "address",
@@ -3848,7 +3847,7 @@
             ]
           },
           "code": {
-            "description": "Empty: issued from the hrm.employee code series",
+            "description": "Empty or absent: issued from the hrm.employee code series",
             "maxLength": 50,
             "type": "string"
           },
@@ -3924,7 +3923,6 @@
           }
         },
         "required": [
-          "code",
           "full_name",
           "date_of_birth",
           "gender",
@@ -3955,7 +3953,7 @@
             "type": "boolean"
           },
           "code": {
-            "description": "Empty: issued from the sales.item code series",
+            "description": "Empty or absent: issued from the sales.item code series",
             "maxLength": 50,
             "type": "string"
           },
@@ -3987,7 +3985,6 @@
           }
         },
         "required": [
-          "code",
           "name",
           "unit",
           "price",

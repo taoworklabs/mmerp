@@ -40,8 +40,8 @@ LIMIT @lim OFFSET @off;
 -- name: CreateItem :one
 INSERT INTO sales.items (code, name, unit, price, vat_rate, active) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id;
 
--- name: UpdateItem :execrows
-UPDATE sales.items SET name = $2, unit = $3, price = $4, vat_rate = $5, active = $6 WHERE id = $1;
+-- name: UpdateItem :one
+UPDATE sales.items SET name = $2, unit = $3, price = $4, vat_rate = $5, active = $6 WHERE id = $1 RETURNING code;
 
 -- name: CustomerCodeTaken :one
 SELECT EXISTS (SELECT 1 FROM sales.customers WHERE lower(code) = lower($1));

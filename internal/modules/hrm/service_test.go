@@ -39,6 +39,7 @@ type fixture struct {
 	rec  *record.Service
 	appr *approval.Service
 	hrm  *hrm.Service
+	num  *numbering.Service
 	jobs *river.Client[pgx.Tx]
 	// started once work runs the jobs.
 	started bool
@@ -82,7 +83,7 @@ func newFixture(t *testing.T) *fixture {
 	adminID := must(t)(ids.CreateAdmin(ctx, "admin", "Admin", "long enough"))
 	admin := platform.WithActor(ctx, adminID)
 	c := must(t)(ids.CreateOrgUnit(admin, iam.OrgUnitInput{Kind: "company", Name: "C"}))
-	f := &fixture{t: t, pool: pool, iam: ids, rec: rec, appr: appr, hrm: h, jobs: jobs, admin: admin, c: c}
+	f := &fixture{t: t, pool: pool, iam: ids, rec: rec, appr: appr, hrm: h, num: num, jobs: jobs, admin: admin, c: c}
 	f.a = must(t)(ids.CreateOrgUnit(admin, iam.OrgUnitInput{ParentID: &c, Kind: "department", Name: "A"}))
 	f.b = must(t)(ids.CreateOrgUnit(admin, iam.OrgUnitInput{ParentID: &c, Kind: "department", Name: "B"}))
 	f.ctxFor = func(login string, grants ...string) context.Context {
@@ -145,6 +146,12 @@ func TestIssuedEmployeeCodes(t *testing.T) {
 	}
 	if c := code(first); c != "NV00001" {
 		t.Fatalf("code after edit: %q", c)
+	}
+	if err := f.num.SetPrefix(f.admin, "hrm.employee", "E-"); err != nil {
+		t.Fatal(err)
+	}
+	if c := code(must(t)(f.hrm.CreateEmployee(hr, employee("", f.a)))); c != "E-00004" {
+		t.Fatalf("after a prefix change: %q", c)
 	}
 }
 

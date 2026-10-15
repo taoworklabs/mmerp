@@ -1657,7 +1657,7 @@ export interface components {
         };
         CodeSeries: {
             allowed_actions: string[];
-            /** @description Translated as numbering.series.<code> */
+            /** @description Translated as <code>.code_series */
             code: string;
             next: string;
             prefix: string;
@@ -2693,8 +2693,8 @@ export interface components {
             readonly $schema?: string;
             active: boolean;
             address: string | null;
-            /** @description Empty: issued from the sales.customer code series */
-            code: string;
+            /** @description Empty or absent: issued from the sales.customer code series */
+            code?: string;
             contact_name: string | null;
             email: string | null;
             name: string;
@@ -2743,8 +2743,8 @@ export interface components {
              */
             readonly $schema?: string;
             address: string | null;
-            /** @description Empty: issued from the hrm.employee code series */
-            code: string;
+            /** @description Empty or absent: issued from the hrm.employee code series */
+            code?: string;
             /** Format: date */
             date_of_birth: string | null;
             email: string | null;
@@ -2772,8 +2772,8 @@ export interface components {
              */
             readonly $schema?: string;
             active: boolean;
-            /** @description Empty: issued from the sales.item code series */
-            code: string;
+            /** @description Empty or absent: issued from the sales.item code series */
+            code?: string;
             name: string;
             /**
              * Format: int64

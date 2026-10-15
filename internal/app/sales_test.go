@@ -117,7 +117,8 @@ func TestSalesCatalogueIsData(t *testing.T) {
 		t.Fatal(err)
 	}
 	f := &jobsFixture{t: t, pool: pool, env: env(t, pool, []string{"sales"})}
-	f.id(f.login("admin"), "/api/sales/items", `{"code":"BUT","name":"Bút bi","unit":"hộp","price":10005,"vat_rate":"8","active":true}`)
+	// Without a code, the item gets one issued.
+	f.id(f.login("admin"), "/api/sales/items", `{"name":"Bút bi","unit":"hộp","price":10005,"vat_rate":"8","active":true}`)
 	f.env = env(t, pool, nil)
 	var me struct {
 		ProductsWithData []string `json:"products_with_data"`

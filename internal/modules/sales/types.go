@@ -39,7 +39,7 @@ type CustomerFields struct {
 }
 
 type NewCustomer struct {
-	Code string `json:"code" maxLength:"50" doc:"Empty: issued from the sales.customer code series"`
+	Code string `json:"code,omitempty" maxLength:"50" doc:"Empty or absent: issued from the sales.customer code series"`
 	CustomerFields
 }
 
@@ -91,7 +91,7 @@ type ItemFields struct {
 }
 
 type NewItem struct {
-	Code string `json:"code" maxLength:"50" doc:"Empty: issued from the sales.item code series"`
+	Code string `json:"code,omitempty" maxLength:"50" doc:"Empty or absent: issued from the sales.item code series"`
 	ItemFields
 }
 

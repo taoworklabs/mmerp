@@ -90,10 +90,8 @@ func (s *Service) CreateCustomer(ctx context.Context, in NewCustomer) (int64, er
 	err := platform.InTx(ctx, func(ctx context.Context) error {
 		q := store.New(platform.DBFrom(ctx))
 		var err error
-		if in.Code = strings.TrimSpace(in.Code); in.Code == "" {
-			if in.Code, err = s.d.Numbering.NextCode(ctx, customerType, q.CustomerCodeTaken); err != nil {
-				return err
-			}
+		if in.Code, err = s.d.Numbering.Code(ctx, customerType, in.Code, customerCodeTaken); err != nil {
+			return err
 		}
 		id, err = q.CreateCustomer(ctx, store.CreateCustomerParams{
 			Code: in.Code, Name: strings.TrimSpace(in.Name), TaxCode: platform.NullText(in.TaxCode),
@@ -176,4 +174,9 @@ func customerChanges(old, n CustomerFields) []audit.Change {
 // boolFilter reads an optional "true"/"false" query value.
 func boolFilter(v string) pgtype.Bool {
 	return pgtype.Bool{Bool: v == "true", Valid: v != ""}
+}
+
+// customerCodeTaken reports whether a code is used, for numbering to skip it.
+func customerCodeTaken(ctx context.Context, code string) (bool, error) {
+	return store.New(platform.DBFrom(ctx)).CustomerCodeTaken(ctx, code)
 }

@@ -17,7 +17,7 @@ export function CodeSeriesPage() {
   const [editing, setEditing] = useState<CodeSeries | null>(null)
   const series = useQuery({ queryKey: coreKeys.codeSeries(), queryFn: async () => (await unwrap(api.GET('/code-series'))) ?? [] })
   const columns: Column<CodeSeries>[] = [
-    { key: 'name', header: t('core.code_series.name'), role: 'title', render: (s) => t(`numbering.series.${s.code}`) },
+    { key: 'name', header: t('core.code_series.name'), role: 'title', render: (s) => t(`${s.code}.code_series`) },
     { key: 'prefix', header: t('core.code_series.prefix'), role: 'meta', kind: 'code', render: (s) => s.prefix || t('core.code_series.no_prefix') },
     { key: 'next', header: t('core.code_series.next'), role: 'meta', kind: 'code', render: (s) => s.next },
   ]
@@ -57,7 +57,7 @@ function PrefixModal({ series, onClose }: { series: CodeSeries; onClose: () => v
   }
 
   return (
-    <FormModal opened title={t('core.code_series.change_title', { name: t(`numbering.series.${series.code}`) })} onClose={onClose}>
+    <FormModal opened title={t('core.code_series.change_title', { name: t(`${series.code}.code_series`) })} onClose={onClose}>
       <Form form={form} onSubmit={save} fieldOf={(err) => (err.code === 'invalid_code_prefix' ? 'prefix' : undefined)}>
         <TextField name="prefix" label={t('core.code_series.prefix')} description={t('core.code_series.prefix_hint')} maxLength={10} />
         <FormActions submitLabel={t('core.common.save')} onCancel={onClose} cancelLabel={t('core.common.cancel')} />

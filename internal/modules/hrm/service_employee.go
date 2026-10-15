@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"slices"
-	"strings"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
@@ -194,10 +193,8 @@ func (s *Service) CreateEmployee(ctx context.Context, in NewEmployee) (int64, er
 			return err
 		}
 		q := store.New(platform.DBFrom(ctx))
-		if row.Code = strings.TrimSpace(in.Code); row.Code == "" {
-			if row.Code, err = s.d.Numbering.NextCode(ctx, employeeType, q.EmployeeCodeTaken); err != nil {
-				return err
-			}
+		if row.Code, err = s.d.Numbering.Code(ctx, employeeType, in.Code, employeeCodeTaken); err != nil {
+			return err
 		}
 		id, err = q.CreateEmployee(ctx, store.CreateEmployeeParams{
 			Code: row.Code, FullName: row.FullName, DateOfBirth: row.DateOfBirth, Gender: row.Gender, Phone: row.Phone,
@@ -412,4 +409,9 @@ func writeErr(err error) error {
 		return platform.ErrNotFound
 	}
 	return err
+}
+
+// employeeCodeTaken reports whether a code is used, for numbering to skip it.
+func employeeCodeTaken(ctx context.Context, code string) (bool, error) {
+	return store.New(platform.DBFrom(ctx)).EmployeeCodeTaken(ctx, code)
 }
