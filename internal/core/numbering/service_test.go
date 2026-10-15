@@ -104,11 +104,11 @@ func TestSetPrefix(t *testing.T) {
 		t.Fatal(err)
 	}
 	want := []numbering.CodeSeries{
-		{Code: "hrm.employee", Product: "hrm", Prefix: "NV", Next: "NV00001", AllowedActions: []string{}},
-		{Code: "sales.customer", Product: "sales", Prefix: "", Next: "00003", AllowedActions: []string{"edit"}},
+		{Code: "hrm.employee", Product: "hrm", Prefix: "NV", AllowedActions: []string{}},
+		{Code: "sales.customer", Product: "sales", Prefix: "", AllowedActions: []string{"edit"}},
 	}
 	if !slices.EqualFunc(l, want, func(a, b numbering.CodeSeries) bool {
-		return a.Code == b.Code && a.Product == b.Product && a.Prefix == b.Prefix && a.Next == b.Next && slices.Equal(a.AllowedActions, b.AllowedActions)
+		return a.Code == b.Code && a.Product == b.Product && a.Prefix == b.Prefix && slices.Equal(a.AllowedActions, b.AllowedActions)
 	}) {
 		t.Fatalf("series = %+v", l)
 	}

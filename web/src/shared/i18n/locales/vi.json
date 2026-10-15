@@ -39,6 +39,7 @@
   "shared.list.last": "Trang cuối",
   "shared.table.actions": "Thao tác khác",
   "shared.form.required": "Chưa nhập.",
+  "shared.form.code_hint": "Để trống để hệ thống tự cấp mã.",
   "shared.form.date_placeholder": "dd/mm/yyyy",
   "shared.form.month_placeholder": "mm/yyyy",
   "shared.form.invalid": "Còn {{count}} trường cần sửa",

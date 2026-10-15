@@ -68,7 +68,7 @@ func (s *Service) Code(ctx context.Context, code, typed string, taken func(conte
 	}
 }
 
-// Series lists every code series with its prefix and next code.
+// Series lists every code series with its prefix.
 func (s *Service) Series(ctx context.Context) ([]CodeSeries, error) {
 	if err := s.d.IAM.RequireCore(ctx, iam.PermManageCodeSeries); err != nil {
 		return nil, err
@@ -92,7 +92,7 @@ func (s *Service) Series(ctx context.Context) ([]CodeSeries, error) {
 		if platform.ProductGate(ctx, sr.product, platform.ClassWrite) == nil {
 			actions = append(actions, "edit")
 		}
-		out = append(out, CodeSeries{Code: code, Product: sr.product, Prefix: r.Prefix, Next: format(r.Prefix, r.Last+1), AllowedActions: actions})
+		out = append(out, CodeSeries{Code: code, Product: sr.product, Prefix: r.Prefix, AllowedActions: actions})
 	}
 	return out, nil
 }

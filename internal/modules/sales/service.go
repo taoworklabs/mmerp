@@ -18,9 +18,10 @@ import (
 
 const (
 	customerType = "sales.customer"
-	itemSeries   = "sales.item"
-	quoteType    = "sales.quote"
-	orderType    = "sales.order"
+	// The code series of items; an item is not a record type.
+	itemCodeSeries = "sales.item"
+	quoteType      = "sales.quote"
+	orderType      = "sales.order"
 )
 
 // kind is what differs between quotations and orders; everything else is shared.
@@ -64,7 +65,7 @@ func NewService(d Deps) *Service {
 		"approval_admin": {PermApprovalManage},
 	}, "catalog_admin", "approval_admin")
 	d.Numbering.RegisterSeries(customerType, "sales", "KH")
-	d.Numbering.RegisterSeries(itemSeries, "sales", "HH")
+	d.Numbering.RegisterSeries(itemCodeSeries, "sales", "HH")
 	d.Record.Register(record.Type{Code: customerType, Product: "sales", Kind: record.Catalog, Can: s.canCustomer,
 		HasData: func(ctx context.Context) (bool, error) { return store.New(platform.DBFrom(ctx)).AnyCatalog(ctx) }})
 	for _, k := range []kind{quoteKind, orderKind} {
