@@ -1,10 +1,10 @@
 import { expect, test, type APIRequestContext, type Page } from '@playwright/test'
-import { created, createUser, employee, password, signedInApi } from './api'
+import { created, createUser, employee, password, signedInApi, runId } from './api'
 import { admin } from './helpers'
 
 // One run: department P with manager M and employees E and E2 (both reporting to M), E3
 // reporting to B, an HR user of P, all with accounts. Every leave request needs the direct manager.
-const run = Date.now().toString(36)
+const run = runId()
 const login = { m: `m_${run}`, e: `e_${run}`, e2: `e2_${run}`, e3: `e3_${run}`, b: `b_${run}` }
 let ids: { e: number; e2: number; e3: number; annual: number }
 let api: APIRequestContext

@@ -1,9 +1,9 @@
 import { expect, test, type APIRequestContext, type Browser } from '@playwright/test'
-import { created, createUser, employee, password, signedInApi } from './api'
+import { created, createUser, employee, password, signedInApi, runId } from './api'
 
 // One run: a company of its own with department P and employee M6E01 under contract, March
 // timesheet posted. pay runs payrolls; dir approves them.
-const run = Date.now().toString(36)
+const run = runId()
 const company = `Công ty M6 ${run}`
 const login = { pay: `m6pay_${run}`, dir: `m6dir_${run}` }
 let api: APIRequestContext

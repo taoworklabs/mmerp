@@ -1,9 +1,9 @@
 import { expect, test, type Browser, type Page } from '@playwright/test'
-import { created, createUser, password, signedInApi } from './api'
+import { created, createUser, password, signedInApi, runId } from './api'
 
 // One run: team A (staff and their manager) and team B; a catalogue admin. Quotations with a
 // discount above 10 % wait for a manager.
-const run = Date.now().toString(36)
+const run = runId()
 const login = { staff: `m14staff_${run}`, manager: `m14mgr_${run}`, other: `m14b_${run}`, catalog: `m14cat_${run}` }
 const team = `Kinh doanh A ${run}`
 

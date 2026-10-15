@@ -1,10 +1,10 @@
 import { expect, test, type Page } from '@playwright/test'
-import { created, createUser, password, signedInApi } from './api'
+import { created, createUser, password, signedInApi, runId } from './api'
 import { signedIn } from './helpers'
 
 // One run: a company with a department, an HR user scoped to that department, and an HRM
 // approval rule administrator.
-const run = Date.now().toString(36)
+const run = runId()
 const hr = `m8_hr_${run}`
 const rules = `m8_rules_${run}`
 const dept = `Phòng M8 ${run}`

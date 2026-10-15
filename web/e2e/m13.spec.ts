@@ -1,9 +1,9 @@
 import { expect, test, type APIRequestContext } from '@playwright/test'
-import { created, createUser, employee, password, signedInApi } from './api'
+import { created, createUser, employee, password, signedInApi, runId } from './api'
 import { signedIn } from './helpers'
 
 // One run: department Q, where pay (HR with the payroll role) prints a draft contract.
-const run = Date.now().toString(36)
+const run = runId()
 const login = { pay: `m13pay_${run}` }
 let api: APIRequestContext
 let contract: { id: number; number: string }

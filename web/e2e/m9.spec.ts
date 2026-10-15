@@ -1,9 +1,9 @@
 import { expect, test, type Page } from '@playwright/test'
-import { created, createUser, employee, password, signedInApi } from './api'
+import { created, createUser, employee, password, signedInApi, runId } from './api'
 import { signedIn } from './helpers'
 
 // One run: a company with departments A (3 employees) and B (2), an HR user and a viewer scoped to A.
-const run = Date.now().toString(36)
+const run = runId()
 const hr = `m9_hr_${run}`
 const viewer = `m9_viewer_${run}`
 const menuViewer = `m9_menu_${run}`
