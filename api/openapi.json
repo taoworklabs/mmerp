@@ -307,6 +307,38 @@
         ],
         "type": "object"
       },
+      "CodeSeries": {
+        "additionalProperties": false,
+        "properties": {
+          "allowed_actions": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "code": {
+            "description": "Translated as numbering.series.\u003ccode\u003e",
+            "type": "string"
+          },
+          "next": {
+            "type": "string"
+          },
+          "prefix": {
+            "type": "string"
+          },
+          "product": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "code",
+          "product",
+          "prefix",
+          "next",
+          "allowed_actions"
+        ],
+        "type": "object"
+      },
       "Comment": {
         "additionalProperties": false,
         "properties": {
@@ -841,8 +873,6 @@
             "type": "array"
           },
           "code": {
-            "maxLength": 50,
-            "minLength": 1,
             "type": "string"
           },
           "contact_name": {
@@ -901,9 +931,9 @@
         },
         "required": [
           "id",
+          "code",
           "org_unit_name",
           "allowed_actions",
-          "code",
           "name",
           "tax_code",
           "address",
@@ -994,11 +1024,6 @@
               "null"
             ]
           },
-          "code": {
-            "maxLength": 50,
-            "minLength": 1,
-            "type": "string"
-          },
           "contact_name": {
             "maxLength": 200,
             "type": [
@@ -1047,7 +1072,6 @@
           }
         },
         "required": [
-          "code",
           "name",
           "tax_code",
           "address",
@@ -1732,8 +1756,6 @@
             "type": "array"
           },
           "code": {
-            "maxLength": 50,
-            "minLength": 1,
             "type": "string"
           },
           "date_of_birth": {
@@ -1835,13 +1857,13 @@
         },
         "required": [
           "id",
+          "code",
           "org_unit_name",
           "manager_code",
           "manager_name",
           "status",
           "sensitive",
           "allowed_actions",
-          "code",
           "full_name",
           "date_of_birth",
           "gender",
@@ -1874,11 +1896,6 @@
               "string",
               "null"
             ]
-          },
-          "code": {
-            "maxLength": 50,
-            "minLength": 1,
-            "type": "string"
           },
           "date_of_birth": {
             "format": "date",
@@ -1952,7 +1969,6 @@
           }
         },
         "required": [
-          "code",
           "full_name",
           "date_of_birth",
           "gender",
@@ -2442,8 +2458,6 @@
             "type": "boolean"
           },
           "code": {
-            "maxLength": 50,
-            "minLength": 1,
             "type": "string"
           },
           "id": {
@@ -2503,11 +2517,6 @@
           "active": {
             "type": "boolean"
           },
-          "code": {
-            "maxLength": 50,
-            "minLength": 1,
-            "type": "string"
-          },
           "name": {
             "maxLength": 300,
             "minLength": 1,
@@ -2536,7 +2545,6 @@
           }
         },
         "required": [
-          "code",
           "name",
           "unit",
           "price",
@@ -3645,6 +3653,94 @@
         ],
         "type": "object"
       },
+      "NewCustomer": {
+        "additionalProperties": false,
+        "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "/api/schemas/NewCustomer.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
+          "active": {
+            "type": "boolean"
+          },
+          "address": {
+            "maxLength": 500,
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "code": {
+            "description": "Empty: issued from the sales.customer code series",
+            "maxLength": 50,
+            "type": "string"
+          },
+          "contact_name": {
+            "maxLength": 200,
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "email": {
+            "maxLength": 200,
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "name": {
+            "maxLength": 300,
+            "minLength": 1,
+            "type": "string"
+          },
+          "org_unit_id": {
+            "description": "Owning org unit: who may see the customer",
+            "format": "int64",
+            "type": "integer"
+          },
+          "payment_terms": {
+            "description": "Prefilled on new quotations and orders",
+            "maxLength": 1000,
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "phone": {
+            "maxLength": 50,
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "tax_code": {
+            "maxLength": 20,
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "code",
+          "name",
+          "tax_code",
+          "address",
+          "phone",
+          "email",
+          "contact_name",
+          "payment_terms",
+          "org_unit_id",
+          "active"
+        ],
+        "type": "object"
+      },
       "NewDoc": {
         "additionalProperties": false,
         "properties": {
@@ -3729,6 +3825,174 @@
           "delivery_terms",
           "note",
           "lines"
+        ],
+        "type": "object"
+      },
+      "NewEmployee": {
+        "additionalProperties": false,
+        "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "/api/schemas/NewEmployee.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
+          "address": {
+            "maxLength": 500,
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "code": {
+            "description": "Empty: issued from the hrm.employee code series",
+            "maxLength": 50,
+            "type": "string"
+          },
+          "date_of_birth": {
+            "format": "date",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "email": {
+            "maxLength": 200,
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "full_name": {
+            "maxLength": 200,
+            "minLength": 1,
+            "type": "string"
+          },
+          "gender": {
+            "enum": [
+              "male",
+              "female",
+              "other"
+            ],
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "hire_date": {
+            "format": "date",
+            "type": "string"
+          },
+          "manager_id": {
+            "format": "int64",
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "org_unit_id": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "phone": {
+            "maxLength": 50,
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "sensitive": {
+            "$ref": "#/components/schemas/SensitiveValues"
+          },
+          "termination_date": {
+            "format": "date",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "user_login": {
+            "description": "Login of the linked account",
+            "maxLength": 200,
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "code",
+          "full_name",
+          "date_of_birth",
+          "gender",
+          "phone",
+          "email",
+          "address",
+          "org_unit_id",
+          "manager_id",
+          "user_login",
+          "hire_date",
+          "termination_date"
+        ],
+        "type": "object"
+      },
+      "NewItem": {
+        "additionalProperties": false,
+        "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "/api/schemas/NewItem.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
+          "active": {
+            "type": "boolean"
+          },
+          "code": {
+            "description": "Empty: issued from the sales.item code series",
+            "maxLength": 50,
+            "type": "string"
+          },
+          "name": {
+            "maxLength": 300,
+            "minLength": 1,
+            "type": "string"
+          },
+          "price": {
+            "description": "Default unit price in đồng",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "unit": {
+            "maxLength": 30,
+            "minLength": 1,
+            "type": "string"
+          },
+          "vat_rate": {
+            "enum": [
+              "none",
+              "0",
+              "5",
+              "8",
+              "10"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "code",
+          "name",
+          "unit",
+          "price",
+          "vat_rate",
+          "active"
         ],
         "type": "object"
       },
@@ -5416,6 +5680,28 @@
         ],
         "type": "object"
       },
+      "SetPrefixInputBody": {
+        "additionalProperties": false,
+        "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "/api/schemas/SetPrefixInputBody.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
+          "prefix": {
+            "description": "0 to 10 characters, no whitespace",
+            "type": "string"
+          }
+        },
+        "required": [
+          "prefix"
+        ],
+        "type": "object"
+      },
       "Step": {
         "additionalProperties": false,
         "properties": {
@@ -6551,6 +6837,87 @@
         ]
       }
     },
+    "/code-series": {
+      "get": {
+        "operationId": "list-code-series",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/CodeSeries"
+                  },
+                  "type": [
+                    "array",
+                    "null"
+                  ]
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "tags": [
+          "core",
+          "core"
+        ]
+      }
+    },
+    "/code-series/{code}/prefix": {
+      "put": {
+        "operationId": "set-code-series-prefix",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "code",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetPrefixInputBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "tags": [
+          "core",
+          "core"
+        ]
+      }
+    },
     "/documents/{type}/{id}/approval": {
       "get": {
         "operationId": "get-document-approval",
@@ -7628,7 +7995,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/EmployeeInput"
+                "$ref": "#/components/schemas/NewEmployee"
               }
             }
           },
@@ -11311,7 +11678,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/CustomerFields"
+                "$ref": "#/components/schemas/NewCustomer"
               }
             }
           },
@@ -11561,7 +11928,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/ItemFields"
+                "$ref": "#/components/schemas/NewItem"
               }
             }
           },

@@ -16,7 +16,7 @@ Nothing is specific to a trade: an item is anything sold with a unit and a price
 
 ## Module
 
-A single module `internal/modules/sales`, schema `sales`, product `sales`. Depends on no other product. Uses `iam`, `record`, `audit`, `setting`, `printing` directly; `approval`, `numbering`, `attachment`, `discussion` and `notification` work through `record` with nothing to add. Emits no hooks.
+A single module `internal/modules/sales`, schema `sales`, product `sales`. Depends on no other product. Uses `iam`, `record`, `audit`, `setting`, `printing` and `numbering` (customer and item codes) directly; `approval`, document numbers, `attachment`, `discussion` and `notification` work through `record` with nothing to add. Emits no hooks.
 
 ## Entities
 

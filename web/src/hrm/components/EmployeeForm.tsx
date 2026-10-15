@@ -49,7 +49,6 @@ const orNull = (s: string) => (s.trim() === '' ? null : s.trim())
 function toInput(v: EmployeeValues, edited: SensitiveName[]): EmployeeInput {
   const sensitive = Object.fromEntries(edited.map((f) => [f, v[f] ?? '']))
   return {
-    code: v.code.trim(),
     full_name: v.full_name.trim(),
     date_of_birth: v.date_of_birth,
     gender: v.gender as EmployeeInput['gender'],
@@ -86,7 +85,7 @@ export function useEmployeeForm(employee: Employee | undefined, onSaved: (id: nu
       await unwrap(api.PUT('/hrm/employees/{id}', { params: { path: { id: employee.id } }, body }))
       await onSaved(employee.id)
     } else {
-      const { id } = await unwrap(api.POST('/hrm/employees', { body }))
+      const { id } = await unwrap(api.POST('/hrm/employees', { body: { ...body, code: v.code.trim() } }))
       await onSaved(id)
     }
   }
@@ -99,7 +98,12 @@ export function MainFields({ employee }: { employee?: Employee }) {
   return (
     <>
       <TextField name="full_name" label={t('hrm.employee.full_name')} required maxLength={200} wide />
-      <TextField name="code" label={t('hrm.employee.code')} required maxLength={50} />
+      {/* The code is typed or issued at creation and never changes after. */}
+      {employee ? (
+        <TextField name="code" label={t('hrm.employee.code')} readOnly />
+      ) : (
+        <TextField name="code" label={t('hrm.employee.code')} description={t('hrm.employee.code_hint')} maxLength={50} />
+      )}
       <OrgUnitField
         name="org_unit_id"
         label={t('hrm.employee.org_unit')}

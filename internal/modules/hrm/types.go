@@ -41,10 +41,9 @@ const (
 // SettingWageRegion is a legal entity's minimum-wage region, 1 to 4: it sets the unemployment insurance cap.
 const SettingWageRegion = "hrm.wage_region"
 
-// EmployeeFields are the plain fields of an employee record. Nullable fields
-// must be sent as null to clear them.
+// EmployeeFields are the plain fields of an employee record an edit may change; the code
+// is set once, at creation. Nullable fields must be sent as null to clear them.
 type EmployeeFields struct {
-	Code            string  `json:"code" minLength:"1" maxLength:"50"`
 	FullName        string  `json:"full_name" minLength:"1" maxLength:"200"`
 	DateOfBirth     *string `json:"date_of_birth" format:"date"`
 	Gender          *string `json:"gender" enum:"male,female,other"`
@@ -80,8 +79,14 @@ type SensitivePresence struct {
 	BankAccount       bool `json:"bank_account"`
 }
 
+type NewEmployee struct {
+	Code string `json:"code" maxLength:"50" doc:"Empty: issued from the hrm.employee code series"`
+	EmployeeInput
+}
+
 type Employee struct {
-	ID int64 `json:"id"`
+	ID   int64  `json:"id"`
+	Code string `json:"code"`
 	EmployeeFields
 	OrgUnitName string            `json:"org_unit_name"`
 	ManagerCode *string           `json:"manager_code"`

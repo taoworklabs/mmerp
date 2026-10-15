@@ -38,7 +38,7 @@ func newFixture(t *testing.T) *fixture {
 	f := &fixture{t: t, users: map[string]int64{}, managers: map[int][]int64{}}
 	f.ids = iam.NewService(iam.Deps{Setting: setting.NewService(), Audit: audit.NewService()})
 	f.ids.RegisterRoles("test", map[string][]string{"hr": {"test.doc.view"}, "approval_admin": {"test.approval.manage"}}, "approval_admin")
-	f.rec = record.NewService(record.Deps{IAM: f.ids, Numbering: numbering.NewService(), Audit: audit.NewService()})
+	f.rec = record.NewService(record.Deps{IAM: f.ids, Numbering: numbering.NewService(numbering.Deps{}), Audit: audit.NewService()})
 	f.appr = approval.NewService(approval.Deps{IAM: f.ids, Record: f.rec, Audit: audit.NewService(), Notification: notification.NewService(notification.Deps{Record: f.rec, IAM: f.ids, Audit: audit.NewService(), Setting: setting.NewService()})})
 	f.rec.SetApprovalGate(f.appr)
 	f.rec.Register(record.Type{

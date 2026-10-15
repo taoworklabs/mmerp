@@ -39,7 +39,6 @@ export function useCustomerForm(customer: Customer | undefined, onSaved: (id: nu
 
   async function save(v: Values) {
     const body: CustomerFields = {
-      code: v.code.trim(),
       name: v.name.trim(),
       tax_code: orNull(v.tax_code),
       address: orNull(v.address),
@@ -54,7 +53,7 @@ export function useCustomerForm(customer: Customer | undefined, onSaved: (id: nu
       await unwrap(api.PUT('/sales/customers/{id}', { params: { path: { id: customer.id } }, body }))
       await onSaved(customer.id)
     } else {
-      const { id } = await unwrap(api.POST('/sales/customers', { body }))
+      const { id } = await unwrap(api.POST('/sales/customers', { body: { ...body, code: v.code.trim() } }))
       await onSaved(id)
     }
   }
@@ -62,11 +61,16 @@ export function useCustomerForm(customer: Customer | undefined, onSaved: (id: nu
   return { form, save, fieldOf: (err: { code: string }) => (err.code === 'customer_code_taken' ? ('code' as const) : undefined) }
 }
 
-export function GeneralFields() {
+// The code is typed or issued at creation and never changes after.
+export function GeneralFields({ existing }: { existing?: boolean }) {
   const { t } = useTranslation()
   return (
     <>
-      <TextField name="code" label={t('sales.customer.code')} required maxLength={50} />
+      {existing ? (
+        <TextField name="code" label={t('sales.customer.code')} readOnly />
+      ) : (
+        <TextField name="code" label={t('sales.customer.code')} description={t('sales.customer.code_hint')} maxLength={50} />
+      )}
       <TextField name="name" label={t('sales.customer.name')} required maxLength={300} />
       <TextField name="tax_code" label={t('sales.customer.tax_code')} maxLength={20} />
       <TextField name="contact_name" label={t('sales.customer.contact_name')} maxLength={200} />

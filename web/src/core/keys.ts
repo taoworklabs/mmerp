@@ -11,6 +11,7 @@ export const coreKeys = {
   },
   roles: documentKeys.roles,
   periodLocks: () => ['core', 'period-locks'] as const,
+  codeSeries: () => ['core', 'code-series'] as const,
   settings: (legalEntity: number) => ['core', 'settings', legalEntity] as const,
   mailServer: () => ['core', 'mail-server'] as const,
   printTemplates: {

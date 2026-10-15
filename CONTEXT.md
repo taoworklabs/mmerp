@@ -43,6 +43,7 @@ A term used by two products must have the same meaning, or the two must use diff
 - **Print snapshot** (vi: "Dữ liệu in đã chốt"): the print data of a posted document, frozen in the transaction that posts it (or at the first print, for documents posted before printing existed). With the layout version, locale and text blocks pinned at the first print, every reprint of a posted document is identical.
 - **Period lock** (vi: "Khóa kỳ"): the closing date of a legal entity. Documents dated on or before the lock date cannot be created, edited or cancelled.
 - **Document number** (vi: "Số chứng từ"): a number issued by `numbering` when a draft is created, per type × legal entity × year, in the form `NP-2026-00001`. Deleting a draft leaves a gap.
+- **Code series** (vi: "Dãy mã"): a counter of `numbering` issuing codes for one catalogue (`sales.customer`, `sales.item`, `hrm.employee`) when the user leaves the code empty, in the form `<prefix><5 digits>` (`KH00001`). One per tenant; tenant administrators edit the prefix, the count goes on. Issued codes skip codes typed by hand. See [ADR-0032](./docs/adr/0032-code-series.md).
 - **Approval rule** (vi: "Quy tắc duyệt"): the chain of approval steps for a document type; each step has an optional condition and an approver (by role, a specific user, or by module), plus a fallback role.
 - **Approval inbox** (inbox, vi: "Hộp duyệt"): the list of approval instances waiting for the user to approve at the current step.
 - **Approval gate** (vi: "Cổng phê duyệt"): an interface defined by `record` to ask whether a status transition needs approval; `approval` implements it.
@@ -62,7 +63,7 @@ A term used by two products must have the same meaning, or the two must use diff
 Product description: [products/hrm.md](./products/hrm.md).
 
 - **Employee** (`hrm.employee`, vi: "Nhân viên"): a worker's profile. Not synonymous with User; an employee may have no sign-in account.
-- **Employee code** (`code`, vi: "Mã nhân viên"): a code set by HR, unique within the tenant, case-insensitive.
+- **Employee code** (`code`, vi: "Mã nhân viên"): typed by HR or issued from the `hrm.employee` code series, unique within the tenant, case-insensitive. Never changes after creation.
 - **HRM roles** (vi: "Vai trò HRM"): `hr` (view and edit employee profiles and leave requests), `viewer` (view profiles only), `sensitive_viewer` (permission `hrm.employee.sensitive`: view and edit sensitive fields and dependants), `leave_admin` (grant and adjust leave balances and manage leave types), `payroll_viewer` (view payroll totals by department, without anyone's amounts), `payroll` (view, create, compute and finalize payrolls; `hrm.salary.view`: view the money items of contracts and payrolls; edit the work calendar; edit legal parameters when granted tenant-wide), `approval_admin` (`hrm.approval.manage`: configure HRM approval rules; can only be granted tenant-wide). `hr` also views and edits contracts, overtime requests and timesheets and manages contract types; entering contract amounts also needs `payroll`. See [ADR-0013](./docs/adr/0013-employee-profile.md), [ADR-0016](./docs/adr/0016-leave-requests.md), [ADR-0017](./docs/adr/0017-contracts-overtime-payroll-lock.md).
 - **Employee status** (vi: "Trạng thái nhân viên"): `active` (working) or `terminated` (left, once the termination date has passed in the tenant time zone).
 - **Dependant** (vi: "Người phụ thuộc"): a person counted for an employee's family deduction (giảm trừ gia cảnh), from month `deduction_from` to month `deduction_to` (`YYYY-MM`; without `deduction_from` the deduction has not started). All their data are sensitive fields.
@@ -109,7 +110,7 @@ Product description: [products/hrm.md](./products/hrm.md).
 Product description: [products/sales.md](./products/sales.md).
 
 - **Customer** (`sales.customer`, vi: "Khách hàng"): a party the organisation sells to, a company or a person. Has an **owning org unit** that decides who sees it. Not synonymous with User.
-- **Customer code** (`code`, vi: "Mã khách hàng"): set by the user, unique within the tenant, case-insensitive.
+- **Customer code** (`code`, vi: "Mã khách hàng"): typed by the user or issued from the `sales.customer` code series, unique within the tenant, case-insensitive. Never changes after creation.
 - **Item** (`sales.items`, vi: "Hàng hóa, dịch vụ"): one entry of the catalogue of what is sold, goods or a service alike: code, name, unit, default unit price, default VAT rate. Tenant-wide.
 - **Quotation** (`sales.quote`, vi: "Báo giá"): a document offering items to a customer at stated prices until its validity date (`valid_until`). `posted` means approved.
 - **Sales order** (`sales.order`, vi: "Đơn bán hàng"): a document recording what a customer ordered. `posted` means confirmed. Created from a quotation or directly.

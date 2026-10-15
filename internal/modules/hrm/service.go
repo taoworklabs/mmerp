@@ -57,6 +57,7 @@ func NewService(d Deps) *Service {
 	}, "approval_admin")
 	// Sensitive fields and every person's pay need a role of their own, even for administrators.
 	d.IAM.RegisterSensitive("hrm", PermSensitive, PermSalaryView)
+	d.Numbering.RegisterSeries(employeeType, "hrm", "NV")
 	d.Record.Register(record.Type{Code: employeeType, Product: "hrm", Kind: record.Catalog, Can: s.can,
 		HasData: func(ctx context.Context) (bool, error) { return store.New(platform.DBFrom(ctx)).AnyEmployee(ctx) }})
 	// A profile's viewer sees neither leave balances nor what sensitive data was read or changed;

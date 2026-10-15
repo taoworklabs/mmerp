@@ -37,7 +37,7 @@ type customersOutput struct{ Body CustomerList }
 
 type customerOutput struct{ Body Customer }
 
-type customerInput struct{ Body CustomerFields }
+type customerInput struct{ Body NewCustomer }
 
 type updateCustomerInput struct {
 	ID   int64 `path:"id"`
@@ -46,7 +46,7 @@ type updateCustomerInput struct {
 
 type itemsOutput struct{ Body ItemList }
 
-type itemInput struct{ Body ItemFields }
+type itemInput struct{ Body NewItem }
 
 type updateItemInput struct {
 	ID   int64 `path:"id"`
@@ -96,12 +96,11 @@ func registerHandlers(api huma.API, s *Service) {
 		})
 	huma.Register(api, huma.Operation{OperationID: "create-item", Method: http.MethodPost, Path: "/sales/items", DefaultStatus: http.StatusCreated},
 		func(ctx context.Context, in *itemInput) (*createdOutput, error) {
-			return created(s.SaveItem(ctx, 0, in.Body))
+			return created(s.CreateItem(ctx, in.Body))
 		})
 	huma.Register(api, huma.Operation{OperationID: "update-item", Method: http.MethodPut, Path: "/sales/items/{id}", DefaultStatus: http.StatusNoContent},
 		func(ctx context.Context, in *updateItemInput) (*struct{}, error) {
-			_, err := s.SaveItem(ctx, in.ID, in.Body)
-			return nil, err
+			return nil, s.UpdateItem(ctx, in.ID, in.Body)
 		})
 
 	docs := []struct {

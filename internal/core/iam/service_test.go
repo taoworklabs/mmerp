@@ -26,7 +26,7 @@ func setup(t *testing.T) (*iam.Service, context.Context) {
 func setupWithRecord(t *testing.T) (*iam.Service, *record.Service, context.Context) {
 	t.Helper()
 	s := iam.NewService(iam.Deps{Setting: setting.NewService(), Audit: audit.NewService()})
-	rec := record.NewService(record.Deps{IAM: s, Numbering: numbering.NewService(), Audit: audit.NewService()})
+	rec := record.NewService(record.Deps{IAM: s, Numbering: numbering.NewService(numbering.Deps{}), Audit: audit.NewService()})
 	rec.Register(record.Type{Code: "test.doc", Product: "test", Kind: record.Document, NumberPrefix: "T",
 		Can: func(context.Context, int64, record.Action) (bool, error) { return true, nil }})
 	s.SetDataProducts(rec)

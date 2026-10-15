@@ -3,3 +3,9 @@
 //   sqlc v1.30.0
 
 package store
+
+type NumberingSeries struct {
+	Code   string
+	Prefix string
+	Last   int64
+}

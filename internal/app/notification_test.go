@@ -180,7 +180,7 @@ func TestApprovalRequestedNotifications(t *testing.T) {
 
 	// Boss no longer manages staff, so no longer sees the request: its notification stays,
 	// emptied of what names the record.
-	f.ok(f.admin, "PUT", fmt.Sprintf("/api/hrm/employees/%d", f.staffEmp), fmt.Sprintf(`{"code":"E2","full_name":"staff","date_of_birth":null,"gender":null,"phone":null,
+	f.ok(f.admin, "PUT", fmt.Sprintf("/api/hrm/employees/%d", f.staffEmp), fmt.Sprintf(`{"full_name":"staff","date_of_birth":null,"gender":null,"phone":null,
 		"email":null,"address":null,"org_unit_id":%d,"manager_id":null,"user_login":"staff","hire_date":"2026-01-05","termination_date":null}`, f.dept), 204)
 	p = notifications(f.boss)
 	if len(p.Items) != 1 || p.Items[0].RecordID != nil || p.Items[0].Label != nil || p.Items[0].ActorName != nil || *p.Items[0].RecordType != "hrm.leave_request" {

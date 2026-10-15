@@ -166,6 +166,38 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/code-series": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["list-code-series"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/code-series/{code}/prefix": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put: operations["set-code-series-prefix"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/documents/{type}/{id}/approval": {
         parameters: {
             query?: never;
@@ -1623,6 +1655,14 @@ export interface components {
             /** @description Every block of the template */
             blocks: components["schemas"]["BlockText"][];
         };
+        CodeSeries: {
+            allowed_actions: string[];
+            /** @description Translated as numbering.series.<code> */
+            code: string;
+            next: string;
+            prefix: string;
+            product: string;
+        };
         Comment: {
             author_name: string;
             /** @description Plain text; line breaks kept */
@@ -1834,7 +1874,6 @@ export interface components {
             readonly $schema?: string;
             active: boolean;
             address: string | null;
-            code: string;
             contact_name: string | null;
             email: string | null;
             name: string;
@@ -2079,7 +2118,6 @@ export interface components {
              */
             readonly $schema?: string;
             address: string | null;
-            code: string;
             /** Format: date */
             date_of_birth: string | null;
             email: string | null;
@@ -2275,7 +2313,6 @@ export interface components {
              */
             readonly $schema?: string;
             active: boolean;
-            code: string;
             name: string;
             /**
              * Format: int64
@@ -2647,6 +2684,30 @@ export interface components {
             start_date: string;
             terms: components["schemas"]["ContractTerms"];
         };
+        NewCustomer: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example /api/schemas/NewCustomer.json
+             */
+            readonly $schema?: string;
+            active: boolean;
+            address: string | null;
+            /** @description Empty: issued from the sales.customer code series */
+            code: string;
+            contact_name: string | null;
+            email: string | null;
+            name: string;
+            /**
+             * Format: int64
+             * @description Owning org unit: who may see the customer
+             */
+            org_unit_id: number;
+            /** @description Prefilled on new quotations and orders */
+            payment_terms: string | null;
+            phone: string | null;
+            tax_code: string | null;
+        };
         NewDoc: {
             /**
              * Format: uri
@@ -2673,6 +2734,55 @@ export interface components {
             request_id: string;
             /** Format: date */
             valid_until: string | null;
+        };
+        NewEmployee: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example /api/schemas/NewEmployee.json
+             */
+            readonly $schema?: string;
+            address: string | null;
+            /** @description Empty: issued from the hrm.employee code series */
+            code: string;
+            /** Format: date */
+            date_of_birth: string | null;
+            email: string | null;
+            full_name: string;
+            /** @enum {string|null} */
+            gender: "male" | "female" | "other" | null;
+            /** Format: date */
+            hire_date: string;
+            /** Format: int64 */
+            manager_id: number | null;
+            /** Format: int64 */
+            org_unit_id: number;
+            phone: string | null;
+            sensitive?: components["schemas"]["SensitiveValues"];
+            /** Format: date */
+            termination_date: string | null;
+            /** @description Login of the linked account */
+            user_login: string | null;
+        };
+        NewItem: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example /api/schemas/NewItem.json
+             */
+            readonly $schema?: string;
+            active: boolean;
+            /** @description Empty: issued from the sales.item code series */
+            code: string;
+            name: string;
+            /**
+             * Format: int64
+             * @description Default unit price in đồng
+             */
+            price: number;
+            unit: string;
+            /** @enum {string} */
+            vat_rate: "none" | "0" | "5" | "8" | "10";
         };
         NewLeave: {
             /**
@@ -3270,6 +3380,16 @@ export interface components {
             /** Format: date */
             locked_until: string | null;
         };
+        SetPrefixInputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example /api/schemas/SetPrefixInputBody.json
+             */
+            readonly $schema?: string;
+            /** @description 0 to 10 characters, no whitespace */
+            prefix: string;
+        };
         Step: {
             approver: components["schemas"]["Approver"];
             condition?: components["schemas"]["Condition"];
@@ -3846,6 +3966,68 @@ export interface operations {
             204: {
                 headers: {
                     "Set-Cookie"?: string;
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "list-code-series": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CodeSeries"][] | null;
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "set-code-series-prefix": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                code: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SetPrefixInputBody"];
+            };
+        };
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
                     [name: string]: unknown;
                 };
                 content?: never;
@@ -4502,7 +4684,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["EmployeeInput"];
+                "application/json": components["schemas"]["NewEmployee"];
             };
         };
         responses: {
@@ -6951,7 +7133,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["CustomerFields"];
+                "application/json": components["schemas"]["NewCustomer"];
             };
         };
         responses: {
@@ -7112,7 +7294,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["ItemFields"];
+                "application/json": components["schemas"]["NewItem"];
             };
         };
         responses: {

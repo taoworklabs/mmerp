@@ -76,7 +76,7 @@ function PartModal({ customer: c, part, onClose, onSaved }: { customer: Customer
     <FormModal opened title={t(`sales.customer.edit.${part}`)} onClose={onClose}>
       {/* The one error mapped to a field (code taken) belongs to the general part. */}
       <Form form={form} onSubmit={save} fieldOf={part === 'general' ? fieldOf : undefined}>
-        {part === 'general' ? <GeneralFields /> : <SalesFields />}
+        {part === 'general' ? <GeneralFields existing /> : <SalesFields />}
         <FormActions submitLabel={t('sales.common.save')} onCancel={onClose} cancelLabel={t('sales.common.cancel')} />
       </Form>
     </FormModal>

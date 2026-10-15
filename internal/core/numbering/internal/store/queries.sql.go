@@ -9,6 +9,41 @@ import (
 	"context"
 )
 
+const listSeries = `-- name: ListSeries :many
+SELECT code, prefix, last FROM numbering.series
+`
+
+func (q *Queries) ListSeries(ctx context.Context) ([]NumberingSeries, error) {
+	rows, err := q.db.Query(ctx, listSeries)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []NumberingSeries
+	for rows.Next() {
+		var i NumberingSeries
+		if err := rows.Scan(&i.Code, &i.Prefix, &i.Last); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const lockSeries = `-- name: LockSeries :one
+SELECT code, prefix, last FROM numbering.series WHERE code = $1 FOR UPDATE
+`
+
+func (q *Queries) LockSeries(ctx context.Context, code string) (NumberingSeries, error) {
+	row := q.db.QueryRow(ctx, lockSeries, code)
+	var i NumberingSeries
+	err := row.Scan(&i.Code, &i.Prefix, &i.Last)
+	return i, err
+}
+
 const next = `-- name: Next :one
 INSERT INTO numbering.counters (doc_type, legal_entity_id, year, last) VALUES ($1, $2, $3, 1)
 ON CONFLICT (doc_type, legal_entity_id, year) DO UPDATE SET last = numbering.counters.last + 1
@@ -27,4 +62,43 @@ func (q *Queries) Next(ctx context.Context, arg NextParams) (int64, error) {
 	var last int64
 	err := row.Scan(&last)
 	return last, err
+}
+
+const nextInSeries = `-- name: NextInSeries :one
+INSERT INTO numbering.series (code, prefix, last) VALUES ($1, $2, 1)
+ON CONFLICT (code) DO UPDATE SET last = numbering.series.last + 1
+RETURNING prefix, last
+`
+
+type NextInSeriesParams struct {
+	Code   string
+	Prefix string
+}
+
+type NextInSeriesRow struct {
+	Prefix string
+	Last   int64
+}
+
+// Locks the series row until the transaction ends, like Next.
+func (q *Queries) NextInSeries(ctx context.Context, arg NextInSeriesParams) (NextInSeriesRow, error) {
+	row := q.db.QueryRow(ctx, nextInSeries, arg.Code, arg.Prefix)
+	var i NextInSeriesRow
+	err := row.Scan(&i.Prefix, &i.Last)
+	return i, err
+}
+
+const setPrefix = `-- name: SetPrefix :exec
+INSERT INTO numbering.series (code, prefix, last) VALUES ($1, $2, 0)
+ON CONFLICT (code) DO UPDATE SET prefix = excluded.prefix
+`
+
+type SetPrefixParams struct {
+	Code   string
+	Prefix string
+}
+
+func (q *Queries) SetPrefix(ctx context.Context, arg SetPrefixParams) error {
+	_, err := q.db.Exec(ctx, setPrefix, arg.Code, arg.Prefix)
+	return err
 }

@@ -26,7 +26,7 @@ func TestContract(t *testing.T) {
 		ctx := platform.WithKeyring(platform.WithProducts(platform.WithDB(t.Context(), pool), []string{"test"}), pgtest.Keyring())
 		ids := iam.NewService(iam.Deps{Setting: setting.NewService(), Audit: audit.NewService()})
 		ids.RegisterRoles("test", map[string][]string{"approver": {"test.doc.approve"}})
-		rec := record.NewService(record.Deps{IAM: ids, Numbering: numbering.NewService(), Audit: audit.NewService()})
+		rec := record.NewService(record.Deps{IAM: ids, Numbering: numbering.NewService(numbering.Deps{}), Audit: audit.NewService()})
 		ids.SetTreeHook(rec)
 		appr := approval.NewService(approval.Deps{IAM: ids, Record: rec, Audit: audit.NewService(), Notification: notification.NewService(notification.Deps{Record: rec, IAM: ids, Audit: audit.NewService(), Setting: setting.NewService()})})
 		rec.SetApprovalGate(appr)
@@ -106,7 +106,7 @@ func TestUnitWithDocumentsCannotChangeLegalEntity(t *testing.T) {
 	pool := pgtest.New(t)
 	ctx := platform.WithKeyring(platform.WithProducts(platform.WithDB(t.Context(), pool), []string{"test"}), pgtest.Keyring())
 	ids := iam.NewService(iam.Deps{Setting: setting.NewService(), Audit: audit.NewService()})
-	rec := record.NewService(record.Deps{IAM: ids, Numbering: numbering.NewService(), Audit: audit.NewService()})
+	rec := record.NewService(record.Deps{IAM: ids, Numbering: numbering.NewService(numbering.Deps{}), Audit: audit.NewService()})
 	ids.SetTreeHook(rec)
 	rec.Register(record.Type{Code: "test.doc", Product: "test", Kind: record.Document, NumberPrefix: "T",
 		Can: func(context.Context, int64, record.Action) (bool, error) { return true, nil }})
@@ -133,7 +133,7 @@ func TestCreateWaitsForATreeMove(t *testing.T) {
 	pool := pgtest.New(t)
 	ctx := platform.WithKeyring(platform.WithProducts(platform.WithDB(t.Context(), pool), []string{"test"}), pgtest.Keyring())
 	ids := iam.NewService(iam.Deps{Setting: setting.NewService(), Audit: audit.NewService()})
-	rec := record.NewService(record.Deps{IAM: ids, Numbering: numbering.NewService(), Audit: audit.NewService()})
+	rec := record.NewService(record.Deps{IAM: ids, Numbering: numbering.NewService(numbering.Deps{}), Audit: audit.NewService()})
 	ids.SetTreeHook(rec)
 	rec.Register(record.Type{Code: "test.doc", Product: "test", Kind: record.Document, NumberPrefix: "T",
 		Can: func(context.Context, int64, record.Action) (bool, error) { return true, nil }})
@@ -165,7 +165,7 @@ func TestBeforeSubmitKeepsADraft(t *testing.T) {
 	pool := pgtest.New(t)
 	ctx := platform.WithKeyring(platform.WithProducts(platform.WithDB(t.Context(), pool), []string{"test"}), pgtest.Keyring())
 	ids := iam.NewService(iam.Deps{Setting: setting.NewService(), Audit: audit.NewService()})
-	rec := record.NewService(record.Deps{IAM: ids, Numbering: numbering.NewService(), Audit: audit.NewService()})
+	rec := record.NewService(record.Deps{IAM: ids, Numbering: numbering.NewService(numbering.Deps{}), Audit: audit.NewService()})
 	refuse := errors.New("not ready")
 	var calls int
 	rec.Register(record.Type{Code: "test.doc", Product: "test", Kind: record.Document, NumberPrefix: "T",

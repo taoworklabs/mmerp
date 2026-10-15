@@ -236,6 +236,7 @@
   "shared.modal.close": "Đóng hộp thoại",
   "shared.error.import_header": "Cột {{column}} của dòng tiêu đề là \"{{got}}\", cần \"{{expected}}\". File có thể dành cho dữ liệu hoặc kỳ khác; dùng file mẫu hoặc file xuất từ chính màn hình này.",
   "shared.error.invalid_setting_value": "Giá trị không hợp lệ cho thiết lập này.",
+  "shared.error.invalid_code_prefix": "Tiền tố tối đa 10 ký tự và không có khoảng trắng.",
   "shared.devui.grouped": "Bảng nhóm có dòng tổng",
   "shared.org.name": "Tên",
   "shared.org.kind": "Loại",

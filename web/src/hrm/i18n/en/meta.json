@@ -53,6 +53,7 @@
   "hrm.wage_region.2": "Region II",
   "hrm.wage_region.3": "Region III",
   "hrm.wage_region.4": "Region IV",
+  "numbering.series.hrm.employee": "Employees",
   "hrm.nav.work_calendar": "Work calendar",
   "hrm.nav.legal_params": "Legal parameters",
   "hrm.role.payroll_viewer": "Payroll totals",

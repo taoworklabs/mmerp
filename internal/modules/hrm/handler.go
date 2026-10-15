@@ -21,7 +21,7 @@ type actionsOutput struct {
 	}
 }
 
-type employeeInput struct{ Body EmployeeInput }
+type employeeInput struct{ Body NewEmployee }
 
 type updateEmployeeInput struct {
 	ID   int64 `path:"id"`

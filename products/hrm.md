@@ -19,7 +19,7 @@ A single module `internal/modules/hrm`, schema `hrm`, belonging to the `hrm` pro
 ### Dependencies
 
 - **Dependency on other products:** none.
-- **Used directly:** `iam` (users, org tree, `Scope`), `record`, `setting`, `audit`, `dataio`, `shared/posting`. `approval` and `numbering` are used only indirectly through `record`.
+- **Used directly:** `iam` (users, org tree, `Scope`), `record`, `setting`, `audit`, `dataio`, `shared/posting`. `numbering` issues employee codes (series `hrm.employee`); `approval` and document numbers work only through `record`.
 - **Hooks emitted:** none yet. The first hook may be "employee terminated", but it is added only when another module needs to react.
 
 ## Entities

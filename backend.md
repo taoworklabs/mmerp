@@ -51,7 +51,7 @@ A module is created when it first starts being used, not ahead of time. The firs
 | --- | --- |
 | `iam` | users, sessions, roles and permissions, org units, legal entities; API keys when needed (not yet) |
 | `setting` | settings per module and legal entity; keys prefixed by the module name (`<module>.<key>`) |
-| `numbering` | document number sequences; fixed numbering scope `(doc_type, legal entity, year)`, called by `record` |
+| `numbering` | document number sequences; fixed numbering scope `(doc_type, legal entity, year)`, called by `record`. Code series for catalogue codes, tenant-wide, called by modules when a code is left empty ([ADR-0032](./docs/adr/0032-code-series.md)) |
 | `audit` | audit log and change history; `action` prefixed by the module name |
 | `record` | record type registration, document status and lifecycle, period lock |
 | `approval` | approval rules and flows; the adapter for `record`'s approval gate |

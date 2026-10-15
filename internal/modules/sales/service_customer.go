@@ -75,11 +75,11 @@ func (s *Service) Customer(ctx context.Context, id int64) (Customer, error) {
 		return Customer{}, err
 	}
 	actions, err := s.d.Record.AllowedActions(ctx, customerType, id, record.Edit, record.Attach)
-	return Customer{ID: id, CustomerFields: customerFields(c), OrgUnitName: c.OrgUnitName, AllowedActions: actions}, err
+	return Customer{ID: id, Code: c.Code, CustomerFields: customerFields(c), OrgUnitName: c.OrgUnitName, AllowedActions: actions}, err
 }
 
 // CreateCustomer adds a customer owned by an org unit where the actor may edit customers.
-func (s *Service) CreateCustomer(ctx context.Context, in CustomerFields) (int64, error) {
+func (s *Service) CreateCustomer(ctx context.Context, in NewCustomer) (int64, error) {
 	if err := platform.ProductGate(ctx, "sales", platform.ClassWrite); err != nil {
 		return 0, err
 	}
@@ -88,9 +88,15 @@ func (s *Service) CreateCustomer(ctx context.Context, in CustomerFields) (int64,
 	}
 	var id int64
 	err := platform.InTx(ctx, func(ctx context.Context) error {
+		q := store.New(platform.DBFrom(ctx))
 		var err error
-		id, err = store.New(platform.DBFrom(ctx)).CreateCustomer(ctx, store.CreateCustomerParams{
-			Code: strings.TrimSpace(in.Code), Name: strings.TrimSpace(in.Name), TaxCode: platform.NullText(in.TaxCode),
+		if in.Code = strings.TrimSpace(in.Code); in.Code == "" {
+			if in.Code, err = s.d.Numbering.NextCode(ctx, customerType, q.CustomerCodeTaken); err != nil {
+				return err
+			}
+		}
+		id, err = q.CreateCustomer(ctx, store.CreateCustomerParams{
+			Code: in.Code, Name: strings.TrimSpace(in.Name), TaxCode: platform.NullText(in.TaxCode),
 			Address: platform.NullText(in.Address), Phone: platform.NullText(in.Phone), Email: platform.NullText(in.Email),
 			ContactName: platform.NullText(in.ContactName), PaymentTerms: platform.NullText(in.PaymentTerms), OrgUnitID: in.OrgUnitID, Active: in.Active,
 		})
@@ -103,7 +109,7 @@ func (s *Service) CreateCustomer(ctx context.Context, in CustomerFields) (int64,
 		if err != nil {
 			return err
 		}
-		return s.d.Audit.RecordChanges(ctx, "sales.customer_created", audit.Ref{Type: customerType, ID: id}, customerChanges(CustomerFields{}, in))
+		return s.d.Audit.RecordChanges(ctx, "sales.customer_created", audit.Ref{Type: customerType, ID: id}, append([]audit.Change{{Field: "code", New: in.Code}}, customerChanges(CustomerFields{}, in.CustomerFields)...))
 	})
 	return id, err
 }
@@ -126,13 +132,10 @@ func (s *Service) UpdateCustomer(ctx context.Context, id int64, in CustomerField
 			return err
 		}
 		err = store.New(platform.DBFrom(ctx)).UpdateCustomer(ctx, store.UpdateCustomerParams{
-			ID: id, Code: strings.TrimSpace(in.Code), Name: strings.TrimSpace(in.Name), TaxCode: platform.NullText(in.TaxCode),
+			ID: id, Name: strings.TrimSpace(in.Name), TaxCode: platform.NullText(in.TaxCode),
 			Address: platform.NullText(in.Address), Phone: platform.NullText(in.Phone), Email: platform.NullText(in.Email),
 			ContactName: platform.NullText(in.ContactName), PaymentTerms: platform.NullText(in.PaymentTerms), OrgUnitID: in.OrgUnitID, Active: in.Active,
 		})
-		if platform.Violates(err, "customers_code_key") {
-			return ErrCustomerCodeTaken
-		}
 		if platform.Violates(err, "customers_org_unit_id_fkey") {
 			return platform.ErrNotFound
 		}
@@ -151,14 +154,13 @@ func (s *Service) visibleCustomer(ctx context.Context, id int64) (store.GetCusto
 }
 
 func customerFields(c store.GetCustomerRow) CustomerFields {
-	return CustomerFields{Code: c.Code, Name: c.Name, TaxCode: platform.TextPtr(c.TaxCode), Address: platform.TextPtr(c.Address),
+	return CustomerFields{Name: c.Name, TaxCode: platform.TextPtr(c.TaxCode), Address: platform.TextPtr(c.Address),
 		Phone: platform.TextPtr(c.Phone), Email: platform.TextPtr(c.Email), ContactName: platform.TextPtr(c.ContactName),
 		PaymentTerms: platform.TextPtr(c.PaymentTerms), OrgUnitID: c.OrgUnitID, Active: c.Active}
 }
 
 func customerChanges(old, n CustomerFields) []audit.Change {
 	return []audit.Change{
-		{Field: "code", Old: old.Code, New: n.Code},
 		{Field: "name", Old: old.Name, New: n.Name},
 		{Field: "tax_code", Old: old.TaxCode, New: n.TaxCode},
 		{Field: "address", Old: old.Address, New: n.Address},

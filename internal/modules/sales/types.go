@@ -25,8 +25,8 @@ const (
 // VatRates are the VAT rates a line may carry; none is not subject to VAT.
 var VatRates = []string{"none", "0", "5", "8", "10"}
 
+// CustomerFields are what an edit may change; the code is set once, at creation.
 type CustomerFields struct {
-	Code         string  `json:"code" minLength:"1" maxLength:"50"`
 	Name         string  `json:"name" minLength:"1" maxLength:"300"`
 	TaxCode      *string `json:"tax_code" maxLength:"20"`
 	Address      *string `json:"address" maxLength:"500"`
@@ -38,8 +38,14 @@ type CustomerFields struct {
 	Active       bool    `json:"active"`
 }
 
+type NewCustomer struct {
+	Code string `json:"code" maxLength:"50" doc:"Empty: issued from the sales.customer code series"`
+	CustomerFields
+}
+
 type Customer struct {
-	ID int64 `json:"id"`
+	ID   int64  `json:"id"`
+	Code string `json:"code"`
 	CustomerFields
 	OrgUnitName string `json:"org_unit_name"`
 	// edit, attach.
@@ -75,8 +81,8 @@ type Actions struct {
 	AllowedActions []string `json:"allowed_actions" nullable:"false"`
 }
 
+// ItemFields are what an edit may change; the code is set once, at creation.
 type ItemFields struct {
-	Code    string `json:"code" minLength:"1" maxLength:"50"`
 	Name    string `json:"name" minLength:"1" maxLength:"300"`
 	Unit    string `json:"unit" minLength:"1" maxLength:"30"`
 	Price   int64  `json:"price" minimum:"0" doc:"Default unit price in đồng"`
@@ -84,8 +90,14 @@ type ItemFields struct {
 	Active  bool   `json:"active"`
 }
 
+type NewItem struct {
+	Code string `json:"code" maxLength:"50" doc:"Empty: issued from the sales.item code series"`
+	ItemFields
+}
+
 type Item struct {
-	ID int64 `json:"id"`
+	ID   int64  `json:"id"`
+	Code string `json:"code"`
 	ItemFields
 }
 

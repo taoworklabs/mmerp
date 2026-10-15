@@ -11,6 +11,7 @@
   "hrm.employees.search_hint": "Code or name, then Enter",
   "hrm.employees.all": "All",
   "hrm.employee.code": "Employee code",
+  "hrm.employee.code_hint": "Leave empty to have a code issued automatically.",
   "hrm.employee.full_name": "Full name",
   "hrm.employee.date_of_birth": "Date of birth",
   "hrm.employee.gender": "Gender",

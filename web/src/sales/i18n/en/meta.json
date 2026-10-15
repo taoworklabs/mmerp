@@ -25,6 +25,8 @@
   "sales.preview.discount_total": "Discount total (VND)",
   "sales.preview.total": "Total (VND)",
   "sales.error.customer_code_taken": "This customer code is already used.",
+  "numbering.series.sales.customer": "Customers",
+  "numbering.series.sales.item": "Items",
   "sales.error.item_code_taken": "This item code is already used.",
   "sales.error.customer_inactive": "The customer is inactive. Reactivate the customer or choose another one.",
   "sales.error.item_inactive": "Line {{line}}: the item is no longer sold.",

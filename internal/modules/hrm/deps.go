@@ -4,6 +4,7 @@ import (
 	"github.com/taoworklabs/mmerp/internal/core/audit"
 	"github.com/taoworklabs/mmerp/internal/core/dataio"
 	"github.com/taoworklabs/mmerp/internal/core/iam"
+	"github.com/taoworklabs/mmerp/internal/core/numbering"
 	"github.com/taoworklabs/mmerp/internal/core/printing"
 	"github.com/taoworklabs/mmerp/internal/core/record"
 	"github.com/taoworklabs/mmerp/internal/core/setting"
@@ -11,11 +12,12 @@ import (
 )
 
 type Deps struct {
-	IAM      *iam.Service
-	Record   *record.Service
-	Audit    *audit.Service
-	Setting  *setting.Service
-	DataIO   *dataio.Service
-	Printing *printing.Service
-	Posting  *posting.Service
+	IAM       *iam.Service
+	Record    *record.Service
+	Audit     *audit.Service
+	Setting   *setting.Service
+	DataIO    *dataio.Service
+	Printing  *printing.Service
+	Posting   *posting.Service
+	Numbering *numbering.Service
 }

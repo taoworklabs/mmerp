@@ -236,6 +236,7 @@
   "shared.modal.close": "Close the dialog",
   "shared.error.import_header": "Column {{column}} of the header reads \"{{got}}\" instead of \"{{expected}}\". The file may be for other data or another period; use the template or a file exported from this screen.",
   "shared.error.invalid_setting_value": "That value is not valid for this setting.",
+  "shared.error.invalid_code_prefix": "A prefix has up to 10 characters and no spaces.",
   "shared.devui.grouped": "Grouped table with totals",
   "shared.org.name": "Name",
   "shared.org.kind": "Type",
