@@ -25,7 +25,7 @@ Sources of truth in code:
 
 ## UX principles
 
-1. **A record has one page.** Lists lead to it; a side panel only previews; viewing and editing are the same page with one Save.
+1. **A record has one page.** Lists lead to it; a side panel only previews; viewing and editing are the same page (`DetailPage`): each group of values is a card edited in place, with its own Save.
 2. **One primary action per place**, named by its outcome; the rest are secondary or behind "…".
 3. **Ask before what cannot be undone; offer Undo for what can.** Lifecycle actions confirm and never undo; reversible side-effect-free changes apply at once with Undo.
 4. **Errors stay next to their cause**; successes toast; nothing fails silently.
@@ -45,7 +45,7 @@ Sources of truth in code:
 | --- | --- |
 | New or changed list screen (table, filters, bulk actions, side panel) | `layout.md`, `tables.md`, `actions.md`, `feedback.md`, then `patterns.md` for the recipe |
 | Create or edit form, a document, document lines | `layout.md`, `forms.md`, `actions.md`, `feedback.md`, then `patterns.md` |
-| Detail screen (document or record page, inline edit) | `layout.md`, `forms.md`, `actions.md` |
+| Detail screen (document or record page, editable cards, inline edit) | `layout.md`, `forms.md`, `actions.md`, then `patterns.md` |
 | Settings list, dashboard, report, inbox | `layout.md`, `patterns.md`, then the part it uses (`tables.md`, `forms.md`) |
 | A confirmation, undo, status change, shortcut | `actions.md` |
 | Loading, empty, error or success messages | `feedback.md` |

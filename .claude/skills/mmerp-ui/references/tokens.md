@@ -152,10 +152,10 @@ A card on the page is `Paper withBorder`, never a shadow.
 | Table row / header row | 40px / 36px | `DataTable.module.css` |
 | Grid cell (timesheet) | 30px | `CellGrid.module.css` |
 | Scrollbar (`ScrollArea`) | 8px; in a table it runs between the sticky header and footer | `theme.ts`, `DataTable.module.css` |
-| Document side column, inbox list | 360px; the document's side column grows to 35% of the page, up to 480px | `--mmerp-side-width` (`InboxPage`; the least of `DocumentPage`'s side column), `--mmerp-aside-width` (its most, and a record's profile column) |
-| Content width (form sections, a document's main column) | 1200px | `--mmerp-content-width`, applied by `FormSection`, `DocumentPage`, `RecordPage` and `Page centered` |
-| Record profile column | 480px | `--mmerp-aside-width` (`RecordPage`) |
-| Side panel, side-column tab | 480px | `readingWidth` (`page/Page.tsx`) |
+| Inbox list | 360px | `--mmerp-side-width` |
+| Content width (form sections, a form page, a `fullWidth` document's tab) | 1200px | `--mmerp-content-width`, applied by `FormSection` and `Page centered` |
+| Record or document page (`DetailPage`, `DocumentPage`) | 1440px, header included; main and side column about 62/38, one column below 1024px; card labels 11rem (`--field-list-label`) | `--mmerp-detail-width`, `DetailPage.module.css` |
+| Side panel, side-column tab | 480px | `--mmerp-aside-width`, `readingWidth` (`page/Page.tsx`) |
 | Breakpoints | `sm` 768, `md` 1024 (navigation becomes a drawer, tables become cards), `lg` 1280 (design size) | `theme.ts` |
 
 Filter bar sizes live in `filterWidth` (`theme.ts`) and only the filter components read them: `search` 280 and `searchMin` 160 (the search box, narrowing when the bar is full), `chip` 320 (the widest a filter chip grows before its value truncates), `menu` 240 (a chip's dropdown). Areas set no size apart from the column widths of a lines table (`forms.md`).

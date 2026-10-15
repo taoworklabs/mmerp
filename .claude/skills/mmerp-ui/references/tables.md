@@ -160,7 +160,7 @@ const [selected, setSelected] = useState<Set<string | number>>(new Set())
 
 ## Inline editing in cells
 
-List tables never edit in place. Editing happens on the record's page or in its modal. Tables made for entry are their own components: `LinesTable` for a document's lines, `CellGrid` for a grid on two axes (timesheet).
+List tables never edit in place. Editing happens on the record's page (its `EditablePanel` cards) or, for a settings row, in its modal. Tables made for entry are their own components: `LinesTable` for a document's lines, `CellGrid` for a grid on two axes (timesheet).
 
 ## States
 

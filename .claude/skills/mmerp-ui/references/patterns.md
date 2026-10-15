@@ -6,7 +6,7 @@ Code recipes, one per screen type: which template, which components, in which or
 | --- | --- | --- |
 | A list of documents or master data | `ListPage` | List page |
 | One document | `DocumentPage` | Document page |
-| One master-data record with tabs | `RecordPage` | Record page |
+| One master-data record | `DetailPage` | Record page |
 | A form that creates a record | `Page` + `Form` | Create page |
 | A small configuration list | `ListPage` + `FormModal` | Settings list |
 | Counts and entry points | `Page` + `TileGrid` | Dashboard |
@@ -74,7 +74,7 @@ Working example: `web/src/sales/pages/NewCustomerPage.tsx` with `sales/component
 
 ## Document page
 
-Working example: `web/src/sales/pages/DocPage.tsx` with `sales/components/DocForm.tsx` (lines), `web/src/hrm/pages/LeavePage.tsx` (no lines).
+Working example: `web/src/hrm/pages/LeavePage.tsx` with `hrm/components/LeaveDetails.tsx` (values in `EditablePanel` cards, the side column), `web/src/sales/pages/DocPage.tsx` with `sales/components/DocForm.tsx` (lines, `fullWidth`).
 
 ```tsx
 const doc = useDoc(kind, id)                                                       // the area's query hook
@@ -87,8 +87,9 @@ return (
     title={d.number}
     breadcrumbs={[{ label: t('sales.quotes.title'), to: '/sales/quotes' }]}       // its own list
     description={<Group gap="xs" component="span"><span>{d.customer.name}</span><span aria-hidden>·</span><DocumentStatus docType={docType} status={d.status} /></Group>}
-    actions={d.allowed_actions.length > 0 && (                                    // nothing to show without actions
+    actions={
       <Group gap="xs">
+        <ApprovalDecision docType={docType} id={d.id} onError={setError} />        // Từ chối · Duyệt, for the actor at the current step
         {d.allowed_actions.includes('print') && (
           <ExportButton kind={`printing.${docType}`} params={{ id: d.id }} label={t('sales.quote.print')} icon={IconPrinter} />   // printing is a job
         )}
@@ -99,9 +100,9 @@ return (
             navigate(list, { replace: true })
           }} />
       </Group>
-    )}
+    }
     error={error}
-    approval={<ApprovalPanel docType={docType} id={d.id} />}
+    approval={<ApprovalPanel docType={docType} id={d.id} decideElsewhere />}             // steps only; decisions are in the header; `subject` names who it is for (leave)
     sections={[attachments]}                                                       // useAttachmentSection
     activity={<ActivityFeed docType={docType} id={d.id} />}
     fullWidth                                                                      // only with a wide table (lines, grid, payroll)
@@ -111,13 +112,30 @@ return (
 )
 ```
 
-The page resolves its query with `loaded()` (skeleton, not found with a link back to the list, error). Lines: `LinesTable` in a `FormSection wide` (`forms.md`).
+The page resolves its query with `loaded()` (skeleton, not found with a link back to the list, error). Without `fullWidth` the children are `EditablePanel` cards (`LeaveDetails`: `editable={allowed_actions.includes('edit')}`, `edit={(close) => <LeaveForm … onClose={close} />}`), keyed by `version`. Lines: `LinesTable` in a `FormSection wide` on a `fullWidth` page (`forms.md`). The person a document is for is an `EmployeeLink` in the description.
 
 ## Record page
 
-Working example: `web/src/sales/pages/CustomerPage.tsx`, `web/src/hrm/pages/EmployeePage.tsx`.
+Working example: `web/src/hrm/pages/EmployeePage.tsx`, `web/src/sales/pages/CustomerPage.tsx`, `web/src/core/pages/UserPage.tsx`.
 
-`RecordPage` with `leading` (avatar or icon), a description of key facts, an `aside` (`{ label, content }`: the profile column, the first tab below 1024px), `activity` (`<ActivityFeed>`, the first tab) and `tabs` (`{ value, label, content }`, the selected one on the URL). The profile is an area component (`EmployeeProfile`, `CustomerProfile`): one `EditableSection` per group, its read view a `FieldList`, and one `FormModal` per group built from the same field groups as the create form (`MainFields`, `GeneralFields`…) and a form hook holding the whole record (`useEmployeeForm`, `useCustomerForm`), since the API saves the record as a whole. Other tabs hold `DataTable`s with their own `TabActions` (default-size buttons). Attachments are the last tab, in a 480px reading column.
+```tsx
+<DetailPage
+  title={e.full_name}
+  breadcrumbs={[{ label: t('hrm.employees.title'), to: '/hrm/employees' }]}
+  leading={<PersonAvatar name={e.full_name} size="lg" />}
+  description={/* key facts joined by "·", then the status badge */}
+  actions={/* at most three buttons */}
+  more={/* Menu.Item children for the rest, optional */}
+  side={<>
+    <DetailTabs tabs={[{ value: 'contracts', label: …, content: <ContractsTab … /> }, …, attachments]} />   // first tab default, on the URL
+    <Panel title={t('shared.document.tab.activity')}><ActivityFeed docType={employeeDocType} id={e.id} /></Panel>
+  </>}
+>
+  <EmployeeProfile key={e.id} employee={e} onSaved={saved} />                       // EditablePanel cards
+</DetailPage>
+```
+
+The main column is an area component (`EmployeeProfile`, `CustomerProfile`): one `EditablePanel` per group, its read view a `FieldList` showing every value its form edits (name, code, unit included). Its `edit` renders the group's form in the card: `Form` → `FormFields` (two fields to a row) with the same field groups as the create form (`MainFields`, `GeneralFields`…) → `FormActions onCancel={close}`, from a form hook holding the whole record (`useEmployeeForm`, `useCustomerForm`), since the API saves the record as a whole. No `FormModal` for a group; a modal stays for a separate action (`MoveModal`: transfer, terminate). A tab holds a `DataTable` with `cards` and its own `TabActions`. A record with no lists of its own puts its attachments straight in a `Panel` (`CustomerPage`).
 
 ## Settings list
 
