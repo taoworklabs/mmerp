@@ -39,6 +39,7 @@
   "shared.list.last": "Last page",
   "shared.table.actions": "More actions",
   "shared.form.required": "Required.",
+  "shared.form.code_hint": "Leave empty to have a code issued automatically.",
   "shared.form.date_placeholder": "dd/mm/yyyy",
   "shared.form.month_placeholder": "mm/yyyy",
   "shared.form.invalid": "Fields to fix: {{count}}",

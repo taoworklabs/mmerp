@@ -8,7 +8,7 @@ import { useCan, useProductOn } from '@/shared/auth/me'
 import { api, unwrap, type Item, type ItemList, type ItemSort } from '@/shared/api/sales'
 import { errorText, formatNumber } from '@/shared/i18n'
 import { DataTable, type Column } from '@/shared/ui/DataTable'
-import { CheckboxField, FilterChip, Form, FormActions, MoneyField, SearchInput, SelectField, TextField } from '@/shared/ui/form'
+import { CheckboxField, CodeField, FilterChip, Form, FormActions, MoneyField, SearchInput, SelectField, TextField } from '@/shared/ui/form'
 import { useListView } from '@/shared/ui/ListView'
 import { notifySuccess, notifyUndo } from '@/shared/ui/notify'
 import { FormModal, ListPage } from '@/shared/ui/page'
@@ -214,12 +214,7 @@ function ItemModal({ item, onClose }: { item: Item | null; onClose: () => void }
   return (
     <FormModal opened title={t(item ? 'sales.items.edit' : 'sales.items.create')} onClose={onClose}>
       <Form form={form} onSubmit={save} fieldOf={(err) => (err.code === 'item_code_taken' ? 'code' : undefined)}>
-        {/* The code is typed or issued at creation and never changes after. */}
-        {item ? (
-          <TextField name="code" label={t('sales.item.code')} readOnly />
-        ) : (
-          <TextField name="code" label={t('sales.item.code')} description={t('sales.item.code_hint')} maxLength={50} />
-        )}
+        <CodeField name="code" label={t('sales.item.code')} existing={!!item} />
         <TextField name="name" label={t('sales.item.name')} required maxLength={300} />
         <TextField name="unit" label={t('sales.item.unit')} description={t('sales.item.unit_hint')} required maxLength={30} />
         <MoneyField name="price" label={t('sales.item.price')} description={t('sales.item.price_hint')} required />

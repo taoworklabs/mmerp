@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { useTranslation } from 'react-i18next'
 import { api, unwrap, type Employee, type EmployeeInput } from '@/shared/api/hrm'
-import { DateField, Form, FormActions, FormRow, FormSection, OrgUnitField, SelectField, SensitiveField, TextField } from '@/shared/ui/form'
+import { CodeField, DateField, Form, FormActions, FormRow, FormSection, OrgUnitField, SelectField, SensitiveField, TextField } from '@/shared/ui/form'
 import { icon } from '@/shared/ui/theme'
 import { EmployeeField } from './EmployeeField'
 
@@ -98,12 +98,7 @@ export function MainFields({ employee }: { employee?: Employee }) {
   return (
     <>
       <TextField name="full_name" label={t('hrm.employee.full_name')} required maxLength={200} wide />
-      {/* The code is typed or issued at creation and never changes after. */}
-      {employee ? (
-        <TextField name="code" label={t('hrm.employee.code')} readOnly />
-      ) : (
-        <TextField name="code" label={t('hrm.employee.code')} description={t('hrm.employee.code_hint')} maxLength={50} />
-      )}
+      <CodeField name="code" label={t('hrm.employee.code')} existing={!!employee} />
       <OrgUnitField
         name="org_unit_id"
         label={t('hrm.employee.org_unit')}

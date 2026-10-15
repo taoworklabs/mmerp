@@ -36,7 +36,7 @@ func (s *Service) CreateItem(ctx context.Context, in NewItem) (int64, error) {
 	var id int64
 	err := s.writeItem(ctx, func(ctx context.Context, q *store.Queries) error {
 		var err error
-		if in.Code, err = s.d.Numbering.Code(ctx, itemSeries, in.Code, itemCodeTaken); err != nil {
+		if in.Code, err = s.d.Numbering.Code(ctx, itemCodeSeries, in.Code, itemCodeTaken); err != nil {
 			return err
 		}
 		in.ItemFields = trimItem(in.ItemFields)

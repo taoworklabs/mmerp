@@ -320,9 +320,6 @@
             "description": "Translated as \u003ccode\u003e.code_series",
             "type": "string"
           },
-          "next": {
-            "type": "string"
-          },
           "prefix": {
             "type": "string"
           },
@@ -334,7 +331,6 @@
           "code",
           "product",
           "prefix",
-          "next",
           "allowed_actions"
         ],
         "type": "object"

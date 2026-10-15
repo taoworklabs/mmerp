@@ -2,7 +2,7 @@ import { IconAddressBook, IconBuildingStore } from '@tabler/icons-react'
 import { useForm } from 'react-hook-form'
 import { useTranslation } from 'react-i18next'
 import { api, unwrap, type Customer, type CustomerFields } from '@/shared/api/sales'
-import { CheckboxField, Form, FormActions, FormSection, OrgUnitField, TextField } from '@/shared/ui/form'
+import { CheckboxField, CodeField, Form, FormActions, FormSection, OrgUnitField, TextField } from '@/shared/ui/form'
 
 type Values = {
   code: string
@@ -61,16 +61,11 @@ export function useCustomerForm(customer: Customer | undefined, onSaved: (id: nu
   return { form, save, fieldOf: (err: { code: string }) => (err.code === 'customer_code_taken' ? ('code' as const) : undefined) }
 }
 
-// The code is typed or issued at creation and never changes after.
 export function GeneralFields({ existing }: { existing?: boolean }) {
   const { t } = useTranslation()
   return (
     <>
-      {existing ? (
-        <TextField name="code" label={t('sales.customer.code')} readOnly />
-      ) : (
-        <TextField name="code" label={t('sales.customer.code')} description={t('sales.customer.code_hint')} maxLength={50} />
-      )}
+      <CodeField name="code" label={t('sales.customer.code')} existing={!!existing} />
       <TextField name="name" label={t('sales.customer.name')} required maxLength={300} />
       <TextField name="tax_code" label={t('sales.customer.tax_code')} maxLength={20} />
       <TextField name="contact_name" label={t('sales.customer.contact_name')} maxLength={200} />

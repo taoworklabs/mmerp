@@ -11,7 +11,6 @@
   "hrm.employees.search_hint": "Mã hoặc họ tên, nhấn Enter",
   "hrm.employees.all": "Tất cả",
   "hrm.employee.code": "Mã nhân viên",
-  "hrm.employee.code_hint": "Để trống để hệ thống tự cấp mã.",
   "hrm.employee.full_name": "Họ tên",
   "hrm.employee.date_of_birth": "Ngày sinh",
   "hrm.employee.gender": "Giới tính",

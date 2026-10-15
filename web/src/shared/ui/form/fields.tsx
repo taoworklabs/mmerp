@@ -74,6 +74,13 @@ export function TextField(
   return <TextInput {...shared} type={props.type} autoComplete={props.autoComplete} />
 }
 
+// CodeField: an entry's code, typed or left empty to be issued at creation, read-only after.
+export function CodeField({ name, label, existing }: { name: string; label: string; existing: boolean }) {
+  const { t } = useTranslation()
+  if (existing) return <TextField name={name} label={label} readOnly />
+  return <TextField name={name} label={label} description={t('shared.form.code_hint')} maxLength={50} />
+}
+
 export function PasswordField(props: Base & { autoComplete?: string }) {
   const { t } = useTranslation()
   const { field, common } = useField(props)

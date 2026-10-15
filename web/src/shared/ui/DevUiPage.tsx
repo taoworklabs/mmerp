@@ -14,7 +14,7 @@ import { StatusBadge } from './StatusBadge'
 import { TreeList } from './TreeList'
 import { LinkTile, StatTile, TileGrid } from './Tile'
 import { CellGrid } from './CellGrid'
-import { CheckboxField, DateField, DecimalField, EditableSection, FileField, Form, FormActions, FormRow, FormSection, InputRow, MoneyField, MonthField, MonthFilter, OrgUnitField, OrgUnitFilter, PasswordField, SearchInput, SelectField, SensitiveField, SensitiveValue, TextField } from './form'
+import { CheckboxField, CodeField, DateField, DecimalField, EditableSection, FileField, Form, FormActions, FormRow, FormSection, InputRow, MoneyField, MonthField, MonthFilter, OrgUnitField, OrgUnitFilter, PasswordField, SearchInput, SelectField, SensitiveField, SensitiveValue, TextField } from './form'
 import { useConfirm } from './confirm'
 import { DocumentPage, type DocumentSection, FormModal, InboxList, InboxPage, InboxRow, ListPage, Page, RecordPage, TabActions } from './page'
 import { ContentSkeleton, EmptyState, ErrorState, NotFoundPage, ReadOnlyBanner } from './states'
@@ -181,6 +181,7 @@ export default function DevUiPage({ withSections: WithSections }: Props) {
         <Form form={form} onSubmit={async () => {}}>
           <FormSection title={t('shared.devui.form')} description={t('shared.devui.hint')}>
             <TextField name="code" label={t('shared.devui.code')} required description={t('shared.devui.hint')} />
+            <CodeField name="issued_code" label={t('shared.devui.code')} existing={false} />
             <PasswordField name="password" label={t('shared.devui.password')} />
             <OrgUnitField name="unit" label={t('shared.devui.org_unit')} clearable />
             <FileField name="file" label={t('shared.devui.file')} accept=".xlsx" description={t('shared.devui.hint')} />

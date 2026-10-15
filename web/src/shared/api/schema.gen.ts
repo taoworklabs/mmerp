@@ -1659,7 +1659,6 @@ export interface components {
             allowed_actions: string[];
             /** @description Translated as <code>.code_series */
             code: string;
-            next: string;
             prefix: string;
             product: string;
         };
