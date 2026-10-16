@@ -6,9 +6,9 @@ import { useForm } from 'react-hook-form'
 import { useTranslation } from 'react-i18next'
 import { useProductOn } from '@/shared/auth/me'
 import { api, unwrap, type LeaveType, type LeaveTypeInput } from '@/shared/api/hrm'
-import { errorText } from '@/shared/i18n'
+import { errorText, formatDecimal } from '@/shared/i18n'
 import { DataTable, type Column } from '@/shared/ui/DataTable'
-import { CheckboxField, Form, FormActions, TextField } from '@/shared/ui/form'
+import { CheckboxField, DecimalField, Form, FormActions, TextField } from '@/shared/ui/form'
 import { notifySuccess } from '@/shared/ui/notify'
 import { FormModal, ListPage } from '@/shared/ui/page'
 import { ContentSkeleton, EmptyState, ErrorState } from '@/shared/ui/states'
@@ -28,6 +28,13 @@ export function LeaveTypesPage() {
     { key: 'name', header: t('hrm.leave_type.name'), role: 'title', render: (x) => x.name },
     { key: 'deducts', header: t('hrm.leave_type.deducts_balance'), role: 'meta', render: (x) => t(x.deducts_balance ? 'hrm.leave_type.deducts' : 'hrm.leave_type.not_deducts') },
     { key: 'paid', header: t('hrm.leave_type.paid'), role: 'meta', render: (x) => t(x.paid ? 'hrm.leave_type.paid_yes' : 'hrm.leave_type.paid_no') },
+    {
+      key: 'max_days',
+      header: t('hrm.leave_type.max_days'),
+      role: 'meta',
+      kind: 'number',
+      render: (x) => (x.max_days ? t('hrm.leave_type.max_days_value', { days: formatDecimal(x.max_days) }) : '–'),
+    },
     {
       key: 'active',
       header: t('hrm.leave_type.active'),
@@ -72,9 +79,20 @@ export function LeaveTypesPage() {
 function LeaveTypeModal({ type, onClose }: { type: LeaveType | null; onClose: () => void }) {
   const { t } = useTranslation()
   const qc = useQueryClient()
-  const form = useForm<LeaveTypeInput>({ mode: 'onBlur', defaultValues: type ?? { name: '', deducts_balance: false, paid: false, active: true } })
+  const form = useForm<LeaveTypeInput>({
+    mode: 'onBlur',
+    defaultValues: type ?? { name: '', deducts_balance: false, paid: false, max_days: '', requires_attachment: false, active: true },
+  })
   async function save(v: LeaveTypeInput) {
-    const body = { name: v.name.trim(), deducts_balance: v.deducts_balance, paid: v.paid, active: v.active }
+    const body = {
+      name: v.name.trim(),
+      deducts_balance: v.deducts_balance,
+      paid: v.paid,
+      // Empty means no cap; the field is left out rather than sent empty.
+      max_days: v.max_days || undefined,
+      requires_attachment: v.requires_attachment,
+      active: v.active,
+    }
     if (type) await unwrap(api.PUT('/hrm/leave-types/{id}', { params: { path: { id: type.id } }, body }))
     else await unwrap(api.POST('/hrm/leave-types', { body }))
     await qc.invalidateQueries({ queryKey: hrmKeys.leaveTypes() })
@@ -83,10 +101,12 @@ function LeaveTypeModal({ type, onClose }: { type: LeaveType | null; onClose: ()
   }
   return (
     <FormModal opened title={t(type ? 'hrm.leave_type.edit' : 'hrm.leave_type.create')} onClose={onClose}>
-      <Form form={form} onSubmit={save} fieldOf={(err) => (err.code === 'leave_type_taken' ? 'name' : undefined)}>
+      <Form form={form} onSubmit={save} fieldOf={(err) => ({ leave_type_taken: 'name', invalid_leave_days: 'max_days' } as const)[err.code]}>
         <TextField name="name" label={t('hrm.leave_type.name')} required maxLength={100} />
         <CheckboxField name="deducts_balance" label={t('hrm.leave_type.deducts_balance')} description={t('hrm.leave_type.deducts_hint')} />
         <CheckboxField name="paid" label={t('hrm.leave_type.paid')} description={t('hrm.leave_type.paid_hint')} />
+        <DecimalField name="max_days" label={t('hrm.leave_type.max_days')} description={t('hrm.leave_type.max_days_hint')} scale={1} step={0.5} min={0.5} />
+        <CheckboxField name="requires_attachment" label={t('hrm.leave_type.requires_attachment')} description={t('hrm.leave_type.requires_attachment_hint')} />
         <CheckboxField name="active" label={t('hrm.leave_type.active')} description={t('hrm.leave_type.active_hint')} />
         <FormActions submitLabel={t('hrm.common.save')} onCancel={onClose} cancelLabel={t('hrm.common.cancel')} />
       </Form>
