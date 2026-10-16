@@ -30,7 +30,7 @@ A single module `internal/modules/hrm`, schema `hrm`, belonging to the `hrm` pro
 | `hrm.dependents` | Dependants for the family deduction (giảm trừ gia cảnh) |
 | `hrm.contract_types` | Contract types, with a fixed-term flag |
 | `hrm.contracts` | Employment contracts and addenda: type, term, salary, allowances |
-| `hrm.leave_types` | Leave types, with a deducts-from-balance flag and a company-paid flag |
+| `hrm.leave_types` | Leave types, with a deducts-from-balance flag, a company-paid flag, an optional cap on the days of one request and an attachment-required flag |
 | `hrm.leave_requests` | Leave requests |
 | `hrm.leave_balances` | Leave balances per employee and year |
 | `hrm.overtime_requests` | Overtime requests |
@@ -112,6 +112,7 @@ This lets tenants configure rules such as "leave over 3 days needs director appr
 - Deducting locks the `leave_balances` row (`FOR UPDATE`), and the table has a non-negative constraint. Two requests approved at the same time cannot make the balance negative: the later one fails, stays pending approval, and the approver gets an "insufficient leave days" error.
 - Only leave types that deduct from the balance (e.g. annual leave) touch the leave balance.
 - Leave types also have a **company-paid** flag: annual leave has it; sick leave (paid by social insurance (BHXH), outside payroll) and unpaid leave do not. This flag decides whether a leave day counts as paid workdays.
+- A leave type may cap the days of **one request** (`max_days`, e.g. 3 for one's own marriage under Article 115); a request over it is refused with `leave_days_exceed_type_max`, on entry and again on approval. A type may also require an attachment (e.g. a medical certificate for sick leave): a draft saves without files, but sending it, and approving it, are refused with `leave_attachment_required` while it has none ([ADR-0033](../docs/adr/0033-leave-type-limits.md)).
 
 ## Timekeeping
 
