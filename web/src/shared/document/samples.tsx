@@ -1,7 +1,8 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import type { ReactNode } from 'react'
-import type { AttachmentList, Discussion } from '@/shared/api/core'
+import type { ApprovalInstance, AttachmentList, Discussion } from '@/shared/api/core'
 import type { DocumentSection } from '@/shared/ui/page'
+import { ApprovalPanel } from './ApprovalPanel'
 import { useAttachmentSection } from './AttachmentPanel'
 import { ActivityFeed } from './ActivityFeed'
 import { documentKeys } from './keys'
@@ -29,21 +30,37 @@ const discussion: Discussion = {
   ],
 }
 
+// Two steps: the first decided, the second waiting, with no action for the viewer.
+const approval: ApprovalInstance = {
+  id: 1,
+  status: 'open',
+  current_step: 2,
+  submitted_by_name: 'Nguyễn Văn An',
+  submitted_at: '2026-03-09T08:20:00Z',
+  allowed_actions: [],
+  steps: [
+    { position: 1, approver_names: ['Trần Thị Bình'], fallback: false, decision: 'approved', decided_by_name: 'Trần Thị Bình', reason: null, decided_at: '2026-03-09T09:05:00Z' },
+    { position: 2, approver_names: ['Nguyễn Thị Lan'], fallback: false, decision: null, decided_by_name: null, reason: null, decided_at: null },
+  ],
+}
+
 // Who the comment box offers after @.
 const mentionable = [
   { login: 'lan.nguyen', name: 'Nguyễn Thị Lan' },
   { login: 'an', name: 'Nguyễn Văn An' },
 ]
 
-// The panels read sample data from a cache of their own, filled once and never refetched.
-const client = new QueryClient({ defaultOptions: { queries: { staleTime: Infinity, retry: false } } })
+// The panels read sample data from a cache of their own, filled once, never refetched nor
+// collected (an unused query is dropped after 5 minutes by default, then fetched from the API).
+const client = new QueryClient({ defaultOptions: { queries: { staleTime: Infinity, gcTime: Infinity, retry: false } } })
 client.setQueryData(documentKeys.attachments(sample.type, sample.id), attachments)
 client.setQueryData(documentKeys.discussion(sample.type, sample.id), discussion)
 client.setQueryData(documentKeys.mentionable(sample.type, sample.id), mentionable)
 client.setQueryData(documentKeys.history(sample.type, sample.id), [])
+client.setQueryData(documentKeys.approval(sample.type, sample.id), { instance: approval })
 
-// WithSampleSections renders the attachment panel and the activity feed on sample data, for /dev/ui.
-export function WithSampleSections({ children }: { children: (sections: DocumentSection[], activity: ReactNode) => ReactNode }) {
+// WithSampleSections renders the approval panel, the attachment panel and the activity feed on sample data, for the component catalogue.
+export function WithSampleSections({ children }: { children: (sections: DocumentSection[], activity: ReactNode, approval: ReactNode) => ReactNode }) {
   return (
     <QueryClientProvider client={client}>
       <Sections>{children}</Sections>
@@ -51,6 +68,6 @@ export function WithSampleSections({ children }: { children: (sections: Document
   )
 }
 
-function Sections({ children }: { children: (sections: DocumentSection[], activity: ReactNode) => ReactNode }) {
-  return children([useAttachmentSection(sample.type, sample.id)], <ActivityFeed docType={sample.type} id={sample.id} />)
+function Sections({ children }: { children: (sections: DocumentSection[], activity: ReactNode, approval: ReactNode) => ReactNode }) {
+  return children([useAttachmentSection(sample.type, sample.id)], <ActivityFeed docType={sample.type} id={sample.id} />, <ApprovalPanel docType={sample.type} id={sample.id} />)
 }

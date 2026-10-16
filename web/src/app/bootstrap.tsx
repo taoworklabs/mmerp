@@ -40,7 +40,11 @@ export async function bootstrap(root: HTMLElement) {
   await addTranslations(provisional, [core.i18n.meta[provisional]])
 
   let page: ReactNode
-  try {
+  if (import.meta.env.DEV && location.pathname.startsWith('/dev/ui')) {
+    // The component catalogue stands alone: no session, so it runs without a backend.
+    const { devUiRouter } = await import('./devui')
+    page = <RouterProvider router={devUiRouter()} />
+  } else try {
     const me = await fetchMe()
     if (!me) {
       page = <LoginPage />

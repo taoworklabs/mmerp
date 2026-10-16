@@ -1,0 +1,6 @@
+/* A group's entries hang under its heading on a guide line, so the two levels read apart. */
+.entries {
+  margin-inline-start: var(--mantine-spacing-sm);
+  padding-inline-start: var(--mantine-spacing-xxs);
+  border-inline-start: 1px solid var(--mantine-color-default-border);
+}
