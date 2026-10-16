@@ -90,6 +90,8 @@
   "hrm.error.invalid_leave_days": "Số ngày nghỉ phải là bội số của 0,5 và lớn hơn 0.",
   "hrm.error.leave_days_exceed_working_days": "Khoảng ngày đã chọn chỉ có {{working_days}} ngày làm việc. Nhập tối đa bằng số đó, hoặc đổi ngày.",
   "hrm.error.leave_no_working_days": "Những ngày này đều là ngày nghỉ hoặc ngày lễ nên không có ngày phép nào để nghỉ. Hãy đổi ngày.",
+  "hrm.error.leave_days_exceed_type_max": "Loại nghỉ này cho tối đa {{max_days}} ngày mỗi đơn. Phần còn lại hãy tạo đơn khác, chọn loại nghỉ khác.",
+  "hrm.error.leave_attachment_required": "Loại nghỉ này cần đính kèm giấy tờ. Hãy thêm tệp rồi gửi lại.",
   "hrm.error.leave_overlaps": "Nhân viên đã có đơn nghỉ được duyệt vào ngày {{date}} (đơn {{number}}). Hãy đổi ngày hoặc hủy đơn đó.",
   "hrm.error.insufficient_leave_balance": "Không đủ ngày phép. Đơn vẫn đang chờ duyệt.",
   "hrm.error.leave_balance_negative": "Điều chỉnh này làm quỹ phép âm.",

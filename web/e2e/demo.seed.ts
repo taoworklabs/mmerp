@@ -100,7 +100,7 @@ const leaves: [string, string, string, string, string, Outcome][] = [
   ['NV0010', 'Phép năm', '2026-07-13', '2026-07-17', 'Du lịch hè cùng gia đình', 'approved'],
   ['NV0017', 'Nghỉ ốm', '2026-07-20', '2026-07-21', 'Sốt xuất huyết', 'approved'],
   ['NV0028', 'Phép năm', '2026-07-24', '2026-07-24', 'Đi khám sức khỏe', 'approved'],
-  ['NV0035', 'Việc riêng có lương', '2026-07-27', '2026-07-29', 'Kết hôn', 'approved'],
+  ['NV0035', 'Kết hôn', '2026-07-27', '2026-07-29', 'Kết hôn', 'approved'],
   ['NV0038', 'Nghỉ không lương', '2026-07-30', '2026-07-31', 'Về quê có việc', 'approved'],
   ['NV0011', 'Phép năm', '2026-08-03', '2026-08-04', 'Việc cá nhân', 'approved'],
   ['NV0030', 'Thai sản', '2026-08-03', '2026-12-02', 'Nghỉ sinh con', 'approved'],
@@ -292,15 +292,21 @@ test('seed the Demo demo company', async ({ baseURL }) => {
   // Leave types and the 2026 balances: 12 days, a day more for each five years, prorated for
   // those who joined or left in 2026, and some days carried over from 2025.
   const leaveType: Record<string, number> = {}
-  for (const [name, deducts_balance, paid, active] of [
-    ['Phép năm', true, true, true],
-    ['Nghỉ ốm', false, false, true],
-    ['Việc riêng có lương', false, true, true],
-    ['Nghỉ không lương', false, false, true],
-    ['Thai sản', false, false, true],
-    ['Nghỉ bù (cũ)', false, true, false],
+  // Sick leave needs a medical certificate; the Article 115 kinds cap the days of one request.
+  const needsFile = new Set(['Nghỉ ốm'])
+  for (const [name, deducts_balance, paid, active, max_days] of [
+    ['Phép năm', true, true, true, undefined],
+    ['Nghỉ ốm', false, false, true, undefined],
+    ['Việc riêng có lương', false, true, true, undefined],
+    ['Kết hôn', false, true, true, '3'],
+    ['Con kết hôn', false, true, true, '1'],
+    ['Tang cha mẹ, vợ chồng, con', false, true, true, '3'],
+    ['Nghỉ không lương', false, false, true, undefined],
+    ['Thai sản', false, false, true, undefined],
+    ['Nghỉ bù (cũ)', false, true, false, undefined],
   ] as const) {
-    leaveType[name] = await created(admin.post('/api/hrm/leave-types', { data: { name, deducts_balance, paid, active } }))
+    const data = { name, deducts_balance, paid, active, max_days, requires_attachment: needsFile.has(name) }
+    leaveType[name] = await created(admin.post('/api/hrm/leave-types', { data }))
   }
   const adjust = (e: Emp, delta: string, reason: string) => ok(admin.post(`/api/hrm/employees/${e.id}/leave-balances/2026/adjustments`, { data: { delta, reason } }), `balance ${e.code}`)
   for (const e of Object.values(emps)) {
@@ -456,7 +462,13 @@ test('seed the Demo demo company', async ({ baseURL }) => {
     const days = workdays(e.company, start_date, end_date)
     const as = filer(who)
     const data = { ...(as === admin ? { employee_id: e.id } : {}), leave_type_id: leaveType[type], start_date, end_date, days: String(days.length), reason }
-    await play(as, 'hrm.leave_request', await created(as.post('/api/hrm/leaves', { data })), outcome, 'Bộ phận đang thiếu người')
+    const id = await created(as.post('/api/hrm/leaves', { data }))
+    if (needsFile.has(type)) {
+      const form = new FormData()
+      form.set('file', new Blob(['%PDF-1.4\n% Giay kham benh mau\n%%EOF\n'], { type: 'application/pdf' }), 'giay-kham-benh.pdf')
+      await ok(as.post(`/api/records/hrm.leave_request/${id}/attachments`, { multipart: form }), `certificate ${who}`)
+    }
+    await play(as, 'hrm.leave_request', id, outcome, 'Bộ phận đang thiếu người')
     if (outcome === 'approved') onLeave.set(e.id, new Set([...(onLeave.get(e.id) ?? []), ...days]))
   }
   for (const [who, date, day_kind, day_hours, night_hours, reason, outcome] of overtimes) {

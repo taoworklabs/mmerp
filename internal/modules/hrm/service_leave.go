@@ -31,7 +31,8 @@ func (s *Service) LeaveTypes(ctx context.Context) ([]LeaveType, error) {
 	rows, err := store.New(platform.DBFrom(ctx)).ListLeaveTypes(ctx)
 	out := make([]LeaveType, len(rows))
 	for i, r := range rows {
-		out[i] = LeaveType{ID: r.ID, LeaveTypeInput: LeaveTypeInput{Name: r.Name, DeductsBalance: r.DeductsBalance, Paid: r.Paid, Active: r.Active}}
+		out[i] = LeaveType{ID: r.ID, LeaveTypeInput: LeaveTypeInput{Name: r.Name, DeductsBalance: r.DeductsBalance, Paid: r.Paid, Active: r.Active,
+			MaxDays: numericText(r.MaxDays), RequiresAttachment: r.RequiresAttachment}}
 	}
 	return out, err
 }
@@ -41,14 +42,21 @@ func (s *Service) SaveLeaveType(ctx context.Context, id int64, in LeaveTypeInput
 	if err := s.d.IAM.RequireTenantWide(ctx, "hrm", PermLeaveTypeManage); err != nil {
 		return 0, err
 	}
+	if in.MaxDays != nil {
+		if m, ok := record.ParseNumber(*in.MaxDays); !ok || !m.IsPositive() {
+			return 0, ErrLeaveDays
+		}
+	}
 	err := platform.InTx(ctx, func(ctx context.Context) error {
 		q := store.New(platform.DBFrom(ctx))
 		var err error
 		if id == 0 {
-			id, err = q.CreateLeaveType(ctx, store.CreateLeaveTypeParams{Name: in.Name, DeductsBalance: in.DeductsBalance, Paid: in.Paid, Active: in.Active})
+			id, err = q.CreateLeaveType(ctx, store.CreateLeaveTypeParams{Name: in.Name, DeductsBalance: in.DeductsBalance, Paid: in.Paid, Active: in.Active,
+				MaxDays: platform.NullText(in.MaxDays), RequiresAttachment: in.RequiresAttachment})
 		} else {
 			var n int64
-			n, err = q.UpdateLeaveType(ctx, store.UpdateLeaveTypeParams{ID: id, Name: in.Name, DeductsBalance: in.DeductsBalance, Paid: in.Paid, Active: in.Active})
+			n, err = q.UpdateLeaveType(ctx, store.UpdateLeaveTypeParams{ID: id, Name: in.Name, DeductsBalance: in.DeductsBalance, Paid: in.Paid, Active: in.Active,
+				MaxDays: platform.NullText(in.MaxDays), RequiresAttachment: in.RequiresAttachment})
 			if err == nil && n == 0 {
 				return platform.ErrNotFound
 			}
@@ -59,7 +67,8 @@ func (s *Service) SaveLeaveType(ctx context.Context, id int64, in LeaveTypeInput
 		if err != nil {
 			return err
 		}
-		return s.d.Audit.Record(ctx, "hrm.leave_type_saved", map[string]any{"id": id, "name": in.Name, "deducts_balance": in.DeductsBalance, "paid": in.Paid, "active": in.Active})
+		return s.d.Audit.Record(ctx, "hrm.leave_type_saved", map[string]any{"id": id, "name": in.Name, "deducts_balance": in.DeductsBalance, "paid": in.Paid, "active": in.Active,
+			"max_days": in.MaxDays, "requires_attachment": in.RequiresAttachment})
 	})
 	return id, err
 }
@@ -90,6 +99,26 @@ func (s *Service) leaveSubjects(ctx context.Context, id int64) ([]int64, error) 
 	return subjectOf(r.EmployeeUserID), err
 }
 
+// leaveBeforeSubmit refuses to send a request whose kind needs a file while it has none.
+func (s *Service) leaveBeforeSubmit(ctx context.Context, d record.Doc) error {
+	r, err := store.New(platform.DBFrom(ctx)).GetLeaveRequest(ctx, d.ID)
+	if err != nil {
+		return err
+	}
+	return checkLeaveAttachment(ctx, r)
+}
+
+func checkLeaveAttachment(ctx context.Context, r store.GetLeaveRequestRow) error {
+	if !r.RequiresAttachment {
+		return nil
+	}
+	ok, err := store.New(platform.DBFrom(ctx)).LeaveHasAttachment(ctx, r.ID)
+	if err == nil && !ok {
+		err = ErrLeaveAttachment
+	}
+	return err
+}
+
 // leaveTransition deducts the balance when a request is approved, records what it took,
 // and gives exactly that back when an approved request is cancelled. Either way the
 // leave's days must not fall in a closed payroll period.
@@ -113,6 +142,18 @@ func (s *Service) leaveTransition(ctx context.Context, d record.Doc, from record
 			return err
 		}
 		if err := s.checkLeaveDates(ctx, d, r); err != nil {
+			return err
+		}
+		// The file may have been removed while the request waited, and the kind may have
+		// been tightened since the draft was saved.
+		if err := checkLeaveAttachment(ctx, r); err != nil {
+			return err
+		}
+		days, err := decimal.NewFromString(r.Days)
+		if err != nil {
+			return err
+		}
+		if err := checkLeaveTypeMax(r.MaxDays, days); err != nil {
 			return err
 		}
 	}
@@ -399,6 +440,23 @@ func checkLeaveDaysOn(cal calendar, start, end string, days decimal.Decimal) err
 	return nil
 }
 
+// checkLeaveTypeMax refuses a request over its kind's cap, if the kind has one.
+func checkLeaveTypeMax(maxDays pgtype.Numeric, days decimal.Decimal) error {
+	if m := numericText(maxDays); m != nil && days.GreaterThan(decimal.RequireFromString(*m)) {
+		return &platform.Error{Status: http.StatusUnprocessableEntity, Code: "leave_days_exceed_type_max",
+			Params: map[string]any{"max_days": *m}}
+	}
+	return nil
+}
+
+func numericText(n pgtype.Numeric) *string {
+	if !n.Valid {
+		return nil
+	}
+	s := decimal.NewFromBigInt(n.Int, n.Exp).String()
+	return &s
+}
+
 // leaveHeader checks the fields and builds the record header and the row; the row's
 // leave type name comes back in typeName for the audit entry.
 func (s *Service) leaveHeader(ctx context.Context, unit int64, in LeaveFields) (h record.Header, row store.CreateLeaveRequestParams, typeName string, err error) {
@@ -433,6 +491,9 @@ func (s *Service) leaveHeader(ctx context.Context, unit int64, in LeaveFields) (
 	}
 	if !t.Active {
 		return h, row, "", ErrLeaveTypeInactive
+	}
+	if err := checkLeaveTypeMax(t.MaxDays, days); err != nil {
+		return h, row, "", err
 	}
 	row = store.CreateLeaveRequestParams{LeaveTypeID: t.ID, StartDate: start, EndDate: end, Days: in.Days, Reason: platform.NullText(in.Reason)}
 	h = record.Header{Date: in.StartDate, OrgUnitID: unit, Fields: map[string]string{"days": in.Days, "leave_type": strconv.FormatInt(t.ID, 10)}}

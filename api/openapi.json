@@ -2938,6 +2938,11 @@
             "format": "int64",
             "type": "integer"
           },
+          "max_days": {
+            "description": "Most days one request of this kind may take; absent for no cap",
+            "pattern": "^[0-9]{1,3}(\\.[05])?$",
+            "type": "string"
+          },
           "name": {
             "maxLength": 100,
             "minLength": 1,
@@ -2945,6 +2950,10 @@
           },
           "paid": {
             "description": "The company pays these days: they count as paid days in payroll",
+            "type": "boolean"
+          },
+          "requires_attachment": {
+            "description": "A request of this kind needs a file before it is sent",
             "type": "boolean"
           }
         },
@@ -2976,6 +2985,11 @@
             "description": "Approved requests of this kind deduct the leave balance",
             "type": "boolean"
           },
+          "max_days": {
+            "description": "Most days one request of this kind may take; absent for no cap",
+            "pattern": "^[0-9]{1,3}(\\.[05])?$",
+            "type": "string"
+          },
           "name": {
             "maxLength": 100,
             "minLength": 1,
@@ -2983,6 +2997,10 @@
           },
           "paid": {
             "description": "The company pays these days: they count as paid days in payroll",
+            "type": "boolean"
+          },
+          "requires_attachment": {
+            "description": "A request of this kind needs a file before it is sent",
             "type": "boolean"
           }
         },

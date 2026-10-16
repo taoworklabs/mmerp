@@ -347,14 +347,17 @@ func (q *Queries) CreateLeaveRequest(ctx context.Context, arg CreateLeaveRequest
 }
 
 const createLeaveType = `-- name: CreateLeaveType :one
-INSERT INTO hrm.leave_types (name, deducts_balance, paid, active) VALUES ($1, $2, $3, $4) RETURNING id
+INSERT INTO hrm.leave_types (name, deducts_balance, paid, active, max_days, requires_attachment)
+VALUES ($1, $2, $3, $4, CAST($5::text AS numeric), $6) RETURNING id
 `
 
 type CreateLeaveTypeParams struct {
-	Name           string
-	DeductsBalance bool
-	Paid           bool
-	Active         bool
+	Name               string
+	DeductsBalance     bool
+	Paid               bool
+	Active             bool
+	MaxDays            pgtype.Text
+	RequiresAttachment bool
 }
 
 func (q *Queries) CreateLeaveType(ctx context.Context, arg CreateLeaveTypeParams) (int64, error) {
@@ -363,6 +366,8 @@ func (q *Queries) CreateLeaveType(ctx context.Context, arg CreateLeaveTypeParams
 		arg.DeductsBalance,
 		arg.Paid,
 		arg.Active,
+		arg.MaxDays,
+		arg.RequiresAttachment,
 	)
 	var id int64
 	err := row.Scan(&id)
@@ -826,7 +831,7 @@ const getLeaveRequest = `-- name: GetLeaveRequest :one
 SELECT r.id, r.employee_id, r.leave_type_id, r.start_date, r.end_date, r.days::text AS days, r.reason,
        r.deducted::text AS deducted,
        e.code AS employee_code, e.full_name AS employee_name, e.user_id AS employee_user_id,
-       t.name AS leave_type_name, t.deducts_balance, d.org_unit_id
+       t.name AS leave_type_name, t.deducts_balance, t.max_days, t.requires_attachment, d.org_unit_id
 FROM hrm.leave_requests r
 JOIN hrm.employees e ON e.id = r.employee_id
 JOIN hrm.leave_types t ON t.id = r.leave_type_id
@@ -835,20 +840,22 @@ WHERE r.id = $1
 `
 
 type GetLeaveRequestRow struct {
-	ID             int64
-	EmployeeID     int64
-	LeaveTypeID    int64
-	StartDate      pgtype.Date
-	EndDate        pgtype.Date
-	Days           string
-	Reason         pgtype.Text
-	Deducted       string
-	EmployeeCode   string
-	EmployeeName   string
-	EmployeeUserID pgtype.Int8
-	LeaveTypeName  string
-	DeductsBalance bool
-	OrgUnitID      int64
+	ID                 int64
+	EmployeeID         int64
+	LeaveTypeID        int64
+	StartDate          pgtype.Date
+	EndDate            pgtype.Date
+	Days               string
+	Reason             pgtype.Text
+	Deducted           string
+	EmployeeCode       string
+	EmployeeName       string
+	EmployeeUserID     pgtype.Int8
+	LeaveTypeName      string
+	DeductsBalance     bool
+	MaxDays            pgtype.Numeric
+	RequiresAttachment bool
+	OrgUnitID          int64
 }
 
 func (q *Queries) GetLeaveRequest(ctx context.Context, id int64) (GetLeaveRequestRow, error) {
@@ -868,13 +875,15 @@ func (q *Queries) GetLeaveRequest(ctx context.Context, id int64) (GetLeaveReques
 		&i.EmployeeUserID,
 		&i.LeaveTypeName,
 		&i.DeductsBalance,
+		&i.MaxDays,
+		&i.RequiresAttachment,
 		&i.OrgUnitID,
 	)
 	return i, err
 }
 
 const getLeaveType = `-- name: GetLeaveType :one
-SELECT id, name, deducts_balance, active, paid FROM hrm.leave_types WHERE id = $1
+SELECT id, name, deducts_balance, active, paid, max_days, requires_attachment FROM hrm.leave_types WHERE id = $1
 `
 
 func (q *Queries) GetLeaveType(ctx context.Context, id int64) (HrmLeaveType, error) {
@@ -886,6 +895,8 @@ func (q *Queries) GetLeaveType(ctx context.Context, id int64) (HrmLeaveType, err
 		&i.DeductsBalance,
 		&i.Active,
 		&i.Paid,
+		&i.MaxDays,
+		&i.RequiresAttachment,
 	)
 	return i, err
 }
@@ -1212,6 +1223,17 @@ func (q *Queries) LeaveBalances(ctx context.Context, employeeID int64) ([]LeaveB
 		return nil, err
 	}
 	return items, nil
+}
+
+const leaveHasAttachment = `-- name: LeaveHasAttachment :one
+SELECT EXISTS (SELECT 1 FROM attachment.files WHERE doc_type = 'hrm.leave_request' AND doc_id = $1)
+`
+
+func (q *Queries) LeaveHasAttachment(ctx context.Context, docID int64) (bool, error) {
+	row := q.db.QueryRow(ctx, leaveHasAttachment, docID)
+	var exists bool
+	err := row.Scan(&exists)
+	return exists, err
 }
 
 const legalEntities = `-- name: LegalEntities :many
@@ -1680,7 +1702,7 @@ func (q *Queries) ListLeaveRequests(ctx context.Context, arg ListLeaveRequestsPa
 }
 
 const listLeaveTypes = `-- name: ListLeaveTypes :many
-SELECT id, name, deducts_balance, active, paid FROM hrm.leave_types ORDER BY lower(name)
+SELECT id, name, deducts_balance, active, paid, max_days, requires_attachment FROM hrm.leave_types ORDER BY lower(name)
 `
 
 func (q *Queries) ListLeaveTypes(ctx context.Context) ([]HrmLeaveType, error) {
@@ -1698,6 +1720,8 @@ func (q *Queries) ListLeaveTypes(ctx context.Context) ([]HrmLeaveType, error) {
 			&i.DeductsBalance,
 			&i.Active,
 			&i.Paid,
+			&i.MaxDays,
+			&i.RequiresAttachment,
 		); err != nil {
 			return nil, err
 		}
@@ -2978,24 +3002,30 @@ func (q *Queries) UpdateLeaveRequest(ctx context.Context, arg UpdateLeaveRequest
 }
 
 const updateLeaveType = `-- name: UpdateLeaveType :execrows
-UPDATE hrm.leave_types SET name = $2, deducts_balance = $3, paid = $4, active = $5 WHERE id = $1
+UPDATE hrm.leave_types SET name = $1, deducts_balance = $2, paid = $3, active = $4,
+    max_days = CAST($5::text AS numeric), requires_attachment = $6
+WHERE id = $7
 `
 
 type UpdateLeaveTypeParams struct {
-	ID             int64
-	Name           string
-	DeductsBalance bool
-	Paid           bool
-	Active         bool
+	Name               string
+	DeductsBalance     bool
+	Paid               bool
+	Active             bool
+	MaxDays            pgtype.Text
+	RequiresAttachment bool
+	ID                 int64
 }
 
 func (q *Queries) UpdateLeaveType(ctx context.Context, arg UpdateLeaveTypeParams) (int64, error) {
 	result, err := q.db.Exec(ctx, updateLeaveType,
-		arg.ID,
 		arg.Name,
 		arg.DeductsBalance,
 		arg.Paid,
 		arg.Active,
+		arg.MaxDays,
+		arg.RequiresAttachment,
+		arg.ID,
 	)
 	if err != nil {
 		return 0, err

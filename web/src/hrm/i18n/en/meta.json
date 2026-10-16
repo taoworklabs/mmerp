@@ -90,6 +90,8 @@
   "hrm.error.invalid_leave_days": "Days must be in steps of 0.5 and more than zero.",
   "hrm.error.leave_days_exceed_working_days": "The range holds only {{working_days}} working day(s). Enter at most that many, or change the dates.",
   "hrm.error.leave_no_working_days": "Those dates are all rest days or public holidays, so there is no leave to take. Change the dates.",
+  "hrm.error.leave_days_exceed_type_max": "This leave type allows at most {{max_days}} day(s) per request. Put the rest in another request of a different type.",
+  "hrm.error.leave_attachment_required": "This leave type needs a supporting document. Attach a file, then send again.",
   "hrm.error.leave_overlaps": "The employee already has approved leave on {{date}} (request {{number}}). Change the dates or cancel that request.",
   "hrm.error.insufficient_leave_balance": "Not enough leave days left. The request stays pending.",
   "hrm.error.leave_balance_negative": "This adjustment would make the leave balance negative.",

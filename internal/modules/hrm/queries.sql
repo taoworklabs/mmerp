@@ -88,21 +88,27 @@ SELECT * FROM hrm.leave_types ORDER BY lower(name);
 SELECT * FROM hrm.leave_types WHERE id = $1;
 
 -- name: CreateLeaveType :one
-INSERT INTO hrm.leave_types (name, deducts_balance, paid, active) VALUES ($1, $2, $3, $4) RETURNING id;
+INSERT INTO hrm.leave_types (name, deducts_balance, paid, active, max_days, requires_attachment)
+VALUES (@name, @deducts_balance, @paid, @active, CAST(sqlc.narg(max_days)::text AS numeric), @requires_attachment) RETURNING id;
 
 -- name: UpdateLeaveType :execrows
-UPDATE hrm.leave_types SET name = $2, deducts_balance = $3, paid = $4, active = $5 WHERE id = $1;
+UPDATE hrm.leave_types SET name = @name, deducts_balance = @deducts_balance, paid = @paid, active = @active,
+    max_days = CAST(sqlc.narg(max_days)::text AS numeric), requires_attachment = @requires_attachment
+WHERE id = @id;
 
 -- name: GetLeaveRequest :one
 SELECT r.id, r.employee_id, r.leave_type_id, r.start_date, r.end_date, r.days::text AS days, r.reason,
        r.deducted::text AS deducted,
        e.code AS employee_code, e.full_name AS employee_name, e.user_id AS employee_user_id,
-       t.name AS leave_type_name, t.deducts_balance, d.org_unit_id
+       t.name AS leave_type_name, t.deducts_balance, t.max_days, t.requires_attachment, d.org_unit_id
 FROM hrm.leave_requests r
 JOIN hrm.employees e ON e.id = r.employee_id
 JOIN hrm.leave_types t ON t.id = r.leave_type_id
 JOIN record.documents d ON d.id = r.id
 WHERE r.id = $1;
+
+-- name: LeaveHasAttachment :one
+SELECT EXISTS (SELECT 1 FROM attachment.files WHERE doc_type = 'hrm.leave_request' AND doc_id = $1);
 
 -- name: CreateLeaveRequest :exec
 INSERT INTO hrm.leave_requests (id, employee_id, leave_type_id, start_date, end_date, days, reason)
