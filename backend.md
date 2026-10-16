@@ -11,7 +11,7 @@ internal/
 │                     # file storage, currency and rounding, the platform.Module type
 ├── core/             # core modules, always on, business-agnostic
 │   ├── iam/  setting/  numbering/  audit/
-│   └── record/  approval/  attachment/  discussion/  printing/  dataio/  customfield/
+│   └── record/  approval/  attachment/  discussion/  notification/  printing/  dataio/
 ├── shared/           # master data and data shared between products
 │   └── partner/  item/  tax/  posting/
 ├── modules/          # business modules of each product, including accounting
@@ -57,9 +57,9 @@ A module is created when it first starts being used, not ahead of time. The firs
 | `approval` | approval rules and flows; the adapter for `record`'s approval gate |
 | `attachment` | file attachments |
 | `discussion` | comments on records; mentions work together with `notification` |
+| `notification` | in-app notifications, the tenant mail server, email through a system job |
 | `printing` | print templates, PDF export |
 | `dataio` | Excel import/export |
-| `customfield` | custom field definitions, value validation |
 
 Details of the document features are in [documents.md](./documents.md).
 
@@ -80,7 +80,7 @@ internal/modules/sales/
     └── store/      # sqlc-generated code; Go forbids any package outside the module from importing it
 ```
 
-A file with no content is left out, never created empty: a module without routes has no `handler.go` or `module.go`, a module that emits no hooks has no `hooks.go`. The files that do exist always have the names and roles above.
+A file with no content is left out, never created empty: a module without routes has no `handler.go` or `module.go`, a module that emits no hooks has no `hooks.go`. The files that do exist always have the names and roles above. Two more kinds of file sit beside them, with nothing exported: `jobs.go` holds the module's job args and workers, and a file named after a pure calculation (`calc.go`, `payroll_calc.go`, `password.go`) holds code with no database access, kept apart so it can be tested on its own.
 
 `NewService(d Deps)` (in `service.go`) creates the service and registers with the core modules received through deps; `module.go` is the module's manifest, written in code:
 
@@ -122,7 +122,7 @@ Rules a tool can enforce are enforced by a tool. For rules no tool can enforce, 
 | Level | Rule | What enforces it |
 | --- | --- | --- |
 | Code | Other modules cannot touch the store | Go's `internal/` directory: compile error |
-| Code | Exports only in `service.go`, the `service_<part>.go` files and `types.go`, plus `Deps` (`deps.go`), `Module` (`module.go`) and hook types (`hooks.go`). Go controls exports per package, not per file, so any exported identifier in another file is also visible from outside | Convention, checked in review |
+| Code | Exports only in `service.go`, the `service_<part>.go` files and `types.go`, plus `Deps` (`deps.go`), `Module` (`module.go`) and hook types (`hooks.go`); one exception, `core/printing` exports its page-building helpers (`Page`, `Column`) from `page.go`, since print templates in other modules call them. Go controls exports per package, not per file, so any exported identifier in another file is also visible from outside | Convention, checked in review |
 | Dependencies | The layer direction above; modules in `modules/` do not import each other | `depguard` in golangci-lint, run in CI |
 | Cross-product calls | Through interfaces in `deps.go` or `hooks.go`, wired in `internal/app` | If it cannot be imported, it has to go through an interface |
 | Database | One Postgres schema per module, named after the module (`sales.orders`, `iam.users`). Module X's `queries.sql` may only INSERT/UPDATE/DELETE into schema X, and only read the permitted schemas ([Rules between modules](#rules-between-modules)) | A CI script scans the writes and reads in `queries.sql`. SQL written outside `queries.sql` is not caught |

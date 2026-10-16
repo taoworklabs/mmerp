@@ -56,7 +56,8 @@ A term used by two products must have the same meaning, or the two must use diff
 - **Mention** (vi: "Nhắc tên"): `@login` in a comment. The mentioned user gets a notification if they can view the record; otherwise the mention is ignored, without telling the author.
 - **Notification** (`notification`, vi: "Thông báo"): a line telling a user about an event that concerns them (a document waiting for their approval, their document approved or rejected, being mentioned, their job finished or failed). Carries no record content; opening it re-checks view permission. May come with an email. See [ADR-0025](./docs/adr/0025-notifications.md).
 - **Mail server** (vi: "Máy chủ mail"): the tenant's SMTP configuration. Without it no email is sent; in-app notifications still work.
-- **Journal entry mapping** (vi: "Định khoản"): `accounting` turning business lines into debit/credit journal entries by configurable rules.
+- **List view** (`iam.list_settings`, vi: "Chế độ xem"): a named set of filters and sort a user saves on a list, kept as the list's URL query, together with their choice of visible columns and widths. Personal, on the server, never shared. See [ADR-0031](./docs/adr/0031-personal-list-views.md).
+- **Journal entry mapping** (vi: "Định khoản"): `accounting` turning business lines into debit/credit journal entries by configurable rules. Not built: accounting is out of scope.
 
 ## HRM
 
@@ -103,7 +104,7 @@ Product description: [products/hrm.md](./products/hrm.md).
 - **Recompute** (vi: "Tính lại"): a deliberate user action on a draft payroll: gather the current inputs again and recompute every item, run as a user job. Never runs on its own.
 - **Inputs hash** (`inputs_hash`, vi: "Mã băm đầu vào"): a hash of the set of source documents with their versions, legal parameters, work calendar, settings and employee data the payroll used. **Sources changed** (vi: "Nguồn đã đổi") when the recomputed hash differs from the stored one; the payroll then cannot be submitted for approval or finalized.
 - **Payroll samples** (vi: "Bộ mẫu lương"): sample payroll cases with the expected value of every item, used as the payroll acceptance test ([docs/payroll-samples](./docs/payroll-samples/README.md)).
-- **Initial import** (vi: "Nhập ban đầu"): loading the organisation's existing data (employees, dependants, contracts in effect) into the system when they start using it. Contracts imported this way take effect immediately, without approval. Only possible while the legal entity has no finalized pay period. Done in M10.
+- **Initial import** (vi: "Nhập ban đầu"): loading the organisation's existing data (employees, dependants, contracts in effect) into the system when they start using it. Contracts imported this way take effect immediately, without approval. Only possible while the legal entity has no finalized pay period. Not built: planned in M10, which is on hold.
 
 ## Sales
 

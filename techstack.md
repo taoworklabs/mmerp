@@ -42,7 +42,7 @@ Every choice below must satisfy these three constraints:
 | Data tables | Mantine's `Table`, wrapped in `DataTable` | Enough for predeclared columns. Add [TanStack Table](https://tanstack.com/table) when dynamic columns for custom fields arrive |
 | Router | [React Router](https://reactrouter.com), data mode | Builds the route tree from each area's manifest, lazily loaded ([frontend.md](./frontend.md#startup-flow)) |
 | Forms | [React Hook Form](https://react-hook-form.com) | |
-| UI kit | [Mantine](https://mantine.dev) (`core`, `dates`, `notifications`) | Areas do not use convention-bearing components directly; they use the wrappers in `shared/ui` ([ui.md](./ui.md#enforcement)). `@mantine/dates` needs `dayjs` (peer dependency), used only through `DateField`, `MonthField` and `MonthFilter` in `shared/ui/form` |
+| UI kit | [Mantine](https://mantine.dev) (`core`, `hooks`, `dates`, `notifications`) | Areas do not use convention-bearing components directly; they use the wrappers in `shared/ui` ([ui.md](./ui.md#enforcement)). `@mantine/dates` needs `dayjs` (peer dependency), used only through `DateField`, `MonthField` and `MonthFilter` in `shared/ui/form` |
 | Font | Inter, self-hosted via `@fontsource-variable/inter` | Full Vietnamese diacritics and tabular figures; not loaded from a CDN |
 | Icons | [Tabler Icons](https://tabler.io/icons) (`@tabler/icons-react`) | |
 | i18n | [`react-i18next`](https://react.i18next.com) | See the i18n section below |

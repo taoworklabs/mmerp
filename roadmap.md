@@ -25,7 +25,7 @@ A milestone only passes when what it adds keeps the contract intact from table t
 - **Module-specific status:** each status column has a single transition function, with tests for forbidden transitions.
 
 ```
-M11 Attachments and discussion ─► M12 Notifications ─► M13 PDF printing ─► M14 Sales
+M11 Attachments and discussion ─► M12 Notifications ─► M13 PDF printing ─► M14 Sales   (done)
    ┄► M10 On-premise operations ┄► [Gate: production readiness]   (on hold)
 ```
 
@@ -96,6 +96,8 @@ M11 Attachments and discussion ─► M12 Notifications ─► M13 PDF printing 
 
 ## M14. Sales
 
+**Done** (2026-10-16): [ADR-0027](./docs/adr/0027-sales-product.md). The next milestone is not chosen yet.
+
 **Goal:** a business of any trade keeps its customers and item catalogue, and issues quotations and sales orders through the same lifecycle, approval, printing, attachments and notifications as HRM ([ADR-0027](./docs/adr/0027-sales-product.md), [products/sales.md](./products/sales.md)).
 
 Vertical slices, each from migration to screen:
@@ -112,6 +114,17 @@ Vertical slices, each from migration to screen:
    Done when: `recordtest` passes for `sales.order`; creating the order twice gives one order; an expired quotation cannot become an order; cancelling the order lets the quotation become an order again.
 6. **End to end.** Playwright for the main flow and the team boundary; HRM suites unchanged and green.
    Done when: Playwright drives customer → item → quotation → manager approval from the inbox → PDF → order → confirmed order, and team B's user sees none of it.
+
+## HRM review
+
+Not a milestone. Alongside M14, a review of HRM in use (2026-10-10 to 2026-10-16) changed these rules, each with its ADR:
+
+- The tenant administrator holds every business permission except sensitive ones ([ADR-0028](./docs/adr/0028-tenant-admin-holds-business-permissions.md)).
+- Withdrawing needs the right that submitted; creating a document holds org-tree moves off ([ADR-0029](./docs/adr/0029-withdraw-right-and-tree-lock.md)).
+- A leave request places its days on dates, capped by the work calendar ([ADR-0030](./docs/adr/0030-leave-day-allocation.md)).
+- Each user keeps their own list views on the server ([ADR-0031](./docs/adr/0031-personal-list-views.md)).
+- Catalogue entries get issued codes from code series ([ADR-0032](./docs/adr/0032-code-series.md)).
+- A leave type may cap one request and require an attachment ([ADR-0033](./docs/adr/0033-leave-type-limits.md)).
 
 ## M10. On-premise operations
 
