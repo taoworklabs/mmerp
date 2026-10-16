@@ -83,6 +83,8 @@ export function Filters() {
   const [year, setYear] = useState(2026)
   const [choice, setChoice] = useState<string | null>('positive')
   const [month, setMonth] = useState<string | null>('2026-08')
+  const [q, setQ] = useState('')
+  const [unit, setUnit] = useState<string | null>(null)
   const choices = [
     { value: 'positive', label: t('shared.devui.status_positive') },
     { value: 'neutral', label: t('shared.devui.status_neutral') },
@@ -93,11 +95,11 @@ export function Filters() {
       {/* Unset with a search (type to see no results), set (tinted, with its clear button), a value
           too long for the chip, always set (a year), a month. */}
       <Group gap="xs">
-        <SearchInput label={t('shared.devui.name')} value="" onSearch={() => {}} />
+        <SearchInput label={t('shared.devui.name')} value={q} onSearch={setQ} />
         <FilterChip label={t('shared.devui.choice')} icon={IconCircleDot} data={choices} value={null} onChange={() => {}} searchable />
         <FilterChip label={t('shared.devui.choice')} icon={IconCircleDot} data={choices} value={choice} onChange={setChoice} />
         <FilterChip label={t('shared.devui.choice')} icon={IconCircleDot} data={choices} value="long" onChange={() => {}} />
-        <OrgUnitFilter label={t('shared.devui.org_unit')} value={null} onChange={() => {}} />
+        <OrgUnitFilter label={t('shared.devui.org_unit')} value={unit} onChange={setUnit} />
         <YearFilter label={t('shared.devui.year')} value={year} years={[2025, 2026, 2027]} onChange={setYear} />
         <MonthFilter label={t('shared.devui.month')} value={month} onChange={setMonth} />
       </Group>

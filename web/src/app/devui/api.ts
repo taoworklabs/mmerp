@@ -4,7 +4,7 @@ import type { components } from '@/shared/api/schema.gen'
 type OrgUnit = components['schemas']['OrgUnit']
 type ListSettings = components['schemas']['ListSettings']
 
-const orgUnits: OrgUnit[] = [
+export const orgUnits: OrgUnit[] = [
   { id: 1, kind: 'company', name: 'Công ty CP Demo', parent_id: null },
   { id: 2, kind: 'department', name: 'Kế toán', parent_id: 1 },
   { id: 3, kind: 'branch', name: 'Chi nhánh Hà Nội', parent_id: 1 },

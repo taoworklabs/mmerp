@@ -1,4 +1,4 @@
-import { Stack } from '@mantine/core'
+import { Stack, Text } from '@mantine/core'
 import type { ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Page } from '@/shared/ui/page'
@@ -11,12 +11,25 @@ export const rows: Row[] = [
   { id: 3, code: 'NV003', name: 'Lê Văn Cường', amount: 11200000 },
 ]
 
-// Demo frames one catalogue entry the way a real screen would: inside a Page.
+// Demo frames one catalogue entry the way a real screen would: inside a Page, centred, since an
+// entry rarely fills the width.
 export function Demo({ title, description, children }: { title: string; description?: string; children: ReactNode }) {
   const { t } = useTranslation()
   return (
-    <Page title={title} description={description} breadcrumbs={[{ label: t('shared.devui.title'), to: '/dev/ui' }]}>
+    <Page centered title={title} description={description} breadcrumbs={[{ label: t('shared.devui.title'), to: '/dev/ui' }]}>
       <Stack gap="lg">{children}</Stack>
     </Page>
+  )
+}
+
+// Case is one labelled example inside an entry: what it is for, then the thing itself.
+export function Case({ label, children }: { label: string; children: ReactNode }) {
+  return (
+    <Stack gap="xs">
+      <Text size="xs" fw={600} c="dimmed">
+        {label}
+      </Text>
+      {children}
+    </Stack>
   )
 }

@@ -3,7 +3,7 @@ import { IconUsersGroup } from '@tabler/icons-react'
 import { useTranslation } from 'react-i18next'
 import { useSearchParams } from 'react-router'
 import { WithSampleSections } from '@/shared/document/samples'
-import { formatNumber } from '@/shared/i18n'
+import { formatMonth, formatNumber } from '@/shared/i18n'
 import { PersonAvatar } from '@/shared/ui/avatar'
 import { DataTable } from '@/shared/ui/DataTable'
 import { FieldList } from '@/shared/ui/FieldList'
@@ -11,15 +11,17 @@ import { EditablePanel, MonthFilter, OrgUnitFilter, SearchInput, SensitiveValue 
 import { DetailPage, DetailTabs, DocumentPage, InboxList, InboxPage, InboxRow, ListPage, Page, Panel, TabActions } from '@/shared/ui/page'
 import { EmptyState } from '@/shared/ui/states'
 import { StatusBadge } from '@/shared/ui/StatusBadge'
-import { rows } from './Demo'
+import { useListParams } from '@/shared/url/listParams'
+import { orgUnits } from './api'
+import { type Row, rows } from './Demo'
 
 // The body every template shows, so the templates differ only in their frame.
-function Sample() {
+function Sample({ rows: data = rows }: { rows?: Row[] }) {
   const { t } = useTranslation()
   return (
     <DataTable
       label={t('shared.devui.table')}
-      rows={rows}
+      rows={data}
       rowKey={(r) => r.id}
       columns={[
         { key: 'code', header: t('shared.devui.code'), role: 'title', kind: 'code', render: (r) => r.code },
@@ -46,24 +48,72 @@ export function PageTemplate() {
   )
 }
 
+const unitName = new Map(orgUnits.map((u) => [u.id, u.name]))
+const unitParent = new Map(orgUnits.map((u) => [u.id, u.parent_id]))
+// inUnit says whether a unit is the filtered one or below it, as the real lists filter by org unit.
+const inUnit = (id: number | null | undefined, filter: number): boolean => id != null && (id === filter || inUnit(unitParent.get(id), filter))
+
+const names = ['Nguyễn Văn An', 'Trần Thị Bình', 'Lê Văn Cường', 'Phạm Thị Dung', 'Hoàng Văn Em', 'Vũ Thị Giang', 'Đặng Văn Hùng']
+// Enough rows across three months and the leaf units for the filters and paging to have something to do.
+const listRows = Array.from({ length: 60 }, (_, i) => ({
+  id: i + 1,
+  code: `NV${String(i + 1).padStart(3, '0')}`,
+  name: names[i % names.length]!,
+  amount: 8_000_000 + ((i * 731_000) % 9_000_000),
+  orgUnit: [2, 3, 4][i % 3]!,
+  month: `2026-0${7 + Math.floor(i / 20)}`,
+}))
+
+const listDefaults = { filters: { q: '', org_unit: '', month: '' }, sort: '', sorts: [] as string[], pageSize: 20 }
+
+// ListTemplate filters and pages its samples in the browser, with the state on the URL as on a real list.
 export function ListTemplate() {
   const { t } = useTranslation()
   const h = useHeader('ListPage')
+  const [params, set, filterBar] = useListParams(listDefaults)
+  const { q, org_unit, month } = params.filters as typeof listDefaults.filters
+  const needle = q.toLowerCase()
+  const found = listRows.filter(
+    (r) => (!needle || `${r.code} ${r.name}`.toLowerCase().includes(needle)) && (!org_unit || inUnit(r.orgUnit, Number(org_unit))) && (!month || r.month === month),
+  )
+  const start = (params.page - 1) * params.pageSize
   return (
     <ListPage
       title={h.title}
       action={h.action}
       filters={
         <>
-          <SearchInput label={t('shared.devui.name')} value="" onSearch={() => {}} />
-          <OrgUnitFilter label={t('shared.devui.org_unit')} value={null} onChange={() => {}} />
-          <MonthFilter label={t('shared.devui.month')} value="2026-08" onChange={() => {}} />
+          <SearchInput label={t('shared.devui.name')} value={q} onSearch={(v) => set({ filters: { q: v } })} />
+          <OrgUnitFilter label={t('shared.devui.org_unit')} {...filterBar.bind('org_unit')} />
+          <MonthFilter label={t('shared.devui.month')} {...filterBar.bind('month')} />
         </>
       }
-      onClearFilters={() => {}}
-      paging={{ page: 1, pageSize: 50, total: 120, onPage: () => {}, onPageSize: () => {} }}
+      onClearFilters={filterBar.active ? filterBar.clear : undefined}
+      paging={{ page: params.page, pageSize: params.pageSize, total: found.length, onPage: (page) => set({ page }), onPageSize: (pageSize) => set({ pageSize }) }}
     >
-      <Sample />
+      {found.length > 0 ? (
+        <DataTable
+          label={t('shared.devui.table')}
+          rows={found.slice(start, start + params.pageSize)}
+          rowKey={(r) => r.id}
+          columns={[
+            { key: 'code', header: t('shared.devui.code'), role: 'title', kind: 'code', render: (r) => r.code },
+            { key: 'name', header: t('shared.devui.name'), role: 'meta', render: (r) => r.name },
+            { key: 'unit', header: t('shared.devui.org_unit'), role: 'meta', render: (r) => unitName.get(r.orgUnit) },
+            { key: 'month', header: t('shared.devui.month'), role: 'meta', render: (r) => formatMonth(r.month) },
+            { key: 'amount', header: t('shared.devui.amount'), role: 'meta', kind: 'number', render: (r) => formatNumber(r.amount) },
+          ]}
+        />
+      ) : (
+        <EmptyState
+          title={t('shared.devui.no_results')}
+          action={
+            <Button variant="default" onClick={filterBar.clear}>
+              {t('shared.devui.clear_filters')}
+            </Button>
+          }
+        />
+      )}
     </ListPage>
   )
 }
