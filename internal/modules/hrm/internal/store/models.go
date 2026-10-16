@@ -36,11 +36,13 @@ type HrmEmployee struct {
 }
 
 type HrmLeaveType struct {
-	ID             int64
-	Name           string
-	DeductsBalance bool
-	Active         bool
-	Paid           bool
+	ID                 int64
+	Name               string
+	DeductsBalance     bool
+	Active             bool
+	Paid               bool
+	MaxDays            pgtype.Numeric
+	RequiresAttachment bool
 }
 
 type HrmLegalParam struct {

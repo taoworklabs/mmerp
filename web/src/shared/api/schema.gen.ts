@@ -2452,9 +2452,13 @@ export interface components {
             deducts_balance: boolean;
             /** Format: int64 */
             id: number;
+            /** @description Most days one request of this kind may take; absent for no cap */
+            max_days?: string;
             name: string;
             /** @description The company pays these days: they count as paid days in payroll */
             paid: boolean;
+            /** @description A request of this kind needs a file before it is sent */
+            requires_attachment?: boolean;
         };
         LeaveTypeInput: {
             /**
@@ -2466,9 +2470,13 @@ export interface components {
             active: boolean;
             /** @description Approved requests of this kind deduct the leave balance */
             deducts_balance: boolean;
+            /** @description Most days one request of this kind may take; absent for no cap */
+            max_days?: string;
             name: string;
             /** @description The company pays these days: they count as paid days in payroll */
             paid: boolean;
+            /** @description A request of this kind needs a file before it is sent */
+            requires_attachment?: boolean;
         };
         LeaveUpdate: {
             /**

@@ -143,6 +143,9 @@ type LeaveTypeInput struct {
 	DeductsBalance bool   `json:"deducts_balance" doc:"Approved requests of this kind deduct the leave balance"`
 	Paid           bool   `json:"paid" doc:"The company pays these days: they count as paid days in payroll"`
 	Active         bool   `json:"active"`
+	// Article 115 kinds are granted per event, so the cap is per request.
+	MaxDays            *string `json:"max_days,omitempty" pattern:"^[0-9]{1,3}(\\.[05])?$" doc:"Most days one request of this kind may take; absent for no cap"`
+	RequiresAttachment bool    `json:"requires_attachment,omitempty" doc:"A request of this kind needs a file before it is sent"`
 }
 
 type LeaveType struct {
@@ -657,6 +660,7 @@ var (
 	ErrTerminationBeforeHire = &platform.Error{Status: http.StatusUnprocessableEntity, Code: "termination_before_hire"}
 	ErrLeaveTypeTaken        = &platform.Error{Status: http.StatusConflict, Code: "leave_type_taken"}
 	ErrLeaveTypeInactive     = &platform.Error{Status: http.StatusUnprocessableEntity, Code: "leave_type_inactive"}
+	ErrLeaveAttachment       = &platform.Error{Status: http.StatusUnprocessableEntity, Code: "leave_attachment_required"}
 	ErrNotAnEmployee         = &platform.Error{Status: http.StatusUnprocessableEntity, Code: "not_an_employee"}
 	ErrLeaveDates            = &platform.Error{Status: http.StatusUnprocessableEntity, Code: "leave_end_before_start"}
 	ErrLeaveSpansYears       = &platform.Error{Status: http.StatusUnprocessableEntity, Code: "leave_spans_years"}
