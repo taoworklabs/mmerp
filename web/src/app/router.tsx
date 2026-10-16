@@ -21,8 +21,6 @@ function areaRoute(area: AreaManifest): RouteObject | null {
   return { path: `${area.basePath}/*`, Component: Area }
 }
 
-const DevUi = lazy(() => import('./DevUi'))
-
 // Every user's own pages: at the root from home, and inside each area so its menu stays.
 const own: RouteObject[] = [
   { path: 'inbox', Component: InboxPage },
@@ -40,6 +38,5 @@ export function createAppRouter(areas: AreaManifest[]) {
     ...areas.map(areaRoute).filter((r) => r !== null),
     { path: '*', Component: NotFoundPage },
   ]
-  if (import.meta.env.DEV) children.push({ path: 'dev/ui', Component: DevUi })
   return createBrowserRouter([{ path: '/', element: <AppLayout areas={areas} />, errorElement: <BootError />, children }])
 }

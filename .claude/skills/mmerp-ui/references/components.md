@@ -171,7 +171,7 @@ To switch between views of one feed (an activity feed's All · Comments · Chang
 3. Build it on Mantine primitives and theme tokens. Styling that props cannot express goes in a CSS module next to it, using only `var(--mantine-…)` and `var(--mmerp-…)` variables; a size specific to the component is allowed there with a one-line comment saying why.
 4. Pick the variant, size, radius and colour from the tables above and in `tokens.md`; a new look needs a new row here first, agreed before code.
 5. Cover every state it can be in: loading, empty, error, disabled, selected, focus, read-only; keyboard reachable, `aria-label` on icon-only controls.
-6. Add it to `/dev/ui` (`shared/ui/DevUiPage.tsx`) in each state, and add a row to this file.
+6. Add it to `/dev/ui` (`app/devui`, one sidebar entry per component) in each state, and add a row to this file.
 
 ```tsx
 // shared/ui/Example.tsx

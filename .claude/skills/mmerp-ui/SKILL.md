@@ -11,7 +11,7 @@ Sources of truth in code:
 
 - `web/src/shared/ui/theme.ts`: colour scales, type, spacing, radius, shadows, component defaults, the `icon` and `filterWidth` constants, and the semantic CSS variables (`cssVariablesResolver`).
 - `web/src/shared/ui/global.css`: control heights and the 44px touch target below 1024px.
-- `web/src/shared/ui/` and `web/src/shared/document/`: the components; `/dev/ui` (dev build) shows each one in every state.
+- `web/src/shared/ui/` and `web/src/shared/document/`: the components; `/dev/ui` (dev build) shows the foundations (principles, colour, type, spacing, radius, elevation, icons, read live from the theme) and each component in every state.
 - `ui.md`: the written rules of the app. This skill and `ui.md` must agree; when you change a rule, change both.
 
 ## Principles
