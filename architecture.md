@@ -58,7 +58,7 @@ flowchart TB
   wire["internal/app<br/>wires deps, hooks, no-op versions"]
   subgraph mods ["modules: per enabled product"]
     hrm["hrm"]
-    next["later products"]
+    sales["sales"]
   end
   subgraph shr ["shared: always on"]
     posting["posting"]
@@ -71,11 +71,15 @@ flowchart TB
     record["record"]
     approval["approval"]
     dataio["dataio"]
+    attachment["attachment"]
+    discussion["discussion"]
+    notification["notification"]
+    printing["printing"]
   end
   plat["platform: no tables"]
   mods --> shr --> cor --> plat
   approval --> record
-  hrm -. "never import each other;<br/>deps.go, hooks.go wired in internal/app" .- next
+  hrm -. "never import each other;<br/>deps.go, hooks.go wired in internal/app" .- sales
   wire -.-> mods
 ```
 
