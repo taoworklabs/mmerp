@@ -11,7 +11,7 @@ import { icon } from '@/shared/ui/theme'
 import classes from '../AppLayout.module.css'
 import { offline } from './api'
 import devui from './DevUi.module.css'
-import { Buttons, People, Sections, Signals, Tiles } from './basics'
+import { Alerts, Avatars, Badges, Buttons, FieldLists, IconButtons, Links, Menus, Overlays, Sections, TabsDemo, Tiles, Tree } from './basics'
 import { Bulk, Grid, GroupedTable, Table } from './data'
 import { Dialogs, States } from './feedback'
 import { Colour, Icons, Principles, Spacing, Surfaces, Typography } from './foundations'
@@ -34,17 +34,32 @@ const groups: { label: string; entries: Entry[] }[] = [
     ],
   },
   {
-    label: 'shared.devui.group_basics',
+    label: 'shared.devui.group_actions',
     entries: [
       { path: 'buttons', label: 'shared.devui.buttons', Component: Buttons },
-      { path: 'signals', label: 'shared.devui.signals', Component: Signals },
-      { path: 'people', label: 'shared.devui.people', Component: People },
-      { path: 'tiles', label: 'shared.devui.tiles', Component: Tiles },
-      { path: 'sections', label: 'shared.devui.section', Component: Sections },
+      { path: 'icon-buttons', label: 'shared.devui.icon_buttons', Component: IconButtons },
+      { path: 'menus', label: 'shared.devui.menus', Component: Menus },
     ],
   },
   {
-    label: 'shared.devui.group_data',
+    label: 'shared.devui.group_navigation',
+    entries: [
+      { path: 'links', label: 'shared.devui.links', Component: Links },
+      { path: 'tabs', label: 'shared.devui.tabs', Component: TabsDemo },
+    ],
+  },
+  {
+    label: 'shared.devui.group_display',
+    entries: [
+      { path: 'badges', label: 'shared.devui.badges', Component: Badges },
+      { path: 'avatars', label: 'shared.devui.avatars', Component: Avatars },
+      { path: 'field-list', label: 'shared.devui.field_list', Component: FieldLists },
+      { path: 'tree', label: 'shared.devui.tree', Component: Tree },
+      { path: 'tiles', label: 'shared.devui.tiles', Component: Tiles },
+    ],
+  },
+  {
+    label: 'shared.devui.group_tables',
     entries: [
       { path: 'table', label: 'shared.devui.table', Component: Table },
       { path: 'grouped', label: 'shared.devui.grouped', Component: GroupedTable },
@@ -64,13 +79,21 @@ const groups: { label: string; entries: Entry[] }[] = [
   {
     label: 'shared.devui.group_feedback',
     entries: [
+      { path: 'alerts', label: 'shared.devui.alerts', Component: Alerts },
       { path: 'states', label: 'shared.devui.states', Component: States },
+    ],
+  },
+  {
+    label: 'shared.devui.group_overlays',
+    entries: [
+      { path: 'overlays', label: 'shared.devui.overlays', Component: Overlays },
       { path: 'dialogs', label: 'shared.devui.dialogs', Component: Dialogs },
     ],
   },
   {
-    label: 'shared.devui.template',
+    label: 'shared.devui.group_layout',
     entries: [
+      { path: 'sections', label: 'shared.devui.section', Component: Sections },
       { path: 'page', name: 'Page', Component: PageTemplate },
       { path: 'list', name: 'ListPage', Component: ListTemplate },
       { path: 'record', name: 'DetailPage', Component: DetailTemplate },
@@ -83,14 +106,36 @@ const groups: { label: string; entries: Entry[] }[] = [
 // The signed-in user the catalogue pretends to be: components such as the activity feed read it.
 const me: Me = { authz_version: '0', id: 1, locale: 'vi', login: 'an.nguyen', name: 'Nguyễn Văn An', permissions: {}, products: [], products_with_data: [], timezone: 'Asia/Ho_Chi_Minh' }
 
+// Usage sits above a template, outside it: when to reach for it, and when another one fits better.
+function Usage({ path }: { path: string }) {
+  const { t } = useTranslation()
+  return (
+    <Stack gap="xxxs" px="md" py="xs" className={devui.usage}>
+      <Text size="sm">
+        <Text span fw={600}>
+          {t('shared.devui.use_when')}
+        </Text>{' '}
+        {t(`shared.devui.use_${path}`)}
+      </Text>
+      <Text size="sm">
+        <Text span fw={600}>
+          {t('shared.devui.avoid_when')}
+        </Text>{' '}
+        {t(`shared.devui.avoid_${path}`)}
+      </Text>
+    </Stack>
+  )
+}
+
 // DevUiLayout stands in for the app shell: a sidebar of catalogue entries, no session and no API.
 function DevUiLayout() {
   const { t } = useTranslation()
   const { pathname } = useLocation()
   const [drawer, { toggle, close }] = useDisclosure()
+  const template = groups.flatMap((g) => g.entries).find((e) => e.name && pathname === `/dev/ui/${e.path}`)
   return (
     <MeProvider me={me}>
-      <AppShell header={{ height: 48 }} navbar={{ width: 240, breakpoint: 'md', collapsed: { mobile: !drawer } }} padding={0}>
+      <AppShell header={{ height: 48 }} navbar={{ width: 280, breakpoint: 'md', collapsed: { mobile: !drawer } }} padding={0}>
         <AppShell.Header px="md">
           <Group h="100%" gap="xs" wrap="nowrap">
             <Burger opened={drawer} onClick={toggle} hiddenFrom="md" size="sm" aria-label={t('core.shell.menu')} aria-expanded={drawer} />
@@ -130,6 +175,7 @@ function DevUiLayout() {
           </AppShell.Section>
         </AppShell.Navbar>
         <AppShell.Main>
+          {template && <Usage path={template.path} />}
           <Outlet />
         </AppShell.Main>
       </AppShell>
