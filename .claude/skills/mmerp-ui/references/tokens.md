@@ -125,7 +125,7 @@ The scale is closed: if a gap seems to need 6, 10 or 20, the layout needs anothe
 | `md` | 6 | Default: buttons, inputs, navigation items, alerts, `Paper` (cards, tiles), table and feed frames, the activity feed's detail well, modals |
 | `lg` | 8 | Menus, popovers, dropdowns |
 | `xl` | 12 | Not assigned to any component's frame (round icon tiles use it) |
-| round | — | Avatars, page numbers in the paging bar |
+| round | `100%` | Avatars, page numbers in the paging bar, dots |
 
 Components already carry their radius through theme defaults; set `radius` only on a new component, by this table.
 

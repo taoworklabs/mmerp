@@ -58,7 +58,7 @@
 
 /* Page numbers are round, so they read as positions rather than buttons. */
 .page {
-  border-radius: 50%;
+  border-radius: 100%;
 }
 
 .pageSize {
