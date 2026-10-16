@@ -135,6 +135,9 @@ export function Menus() {
   )
 }
 
+// Sample values the links point at; data, not interface text.
+const sample = { person: 'NV0019 · Lâm Đức Thịnh', phone: '0912 345 678', email: 'thinh.lam@demo.vn' }
+
 export function Links() {
   const { t } = useTranslation()
   return (
@@ -142,17 +145,17 @@ export function Links() {
       <Case label={t('shared.devui.case_link_record')}>
         <Group>
           <Anchor component={Link} to="/dev/ui/links" size="sm">
-            NV0019 · Lâm Đức Thịnh
+            {sample.person}
           </Anchor>
         </Group>
       </Case>
       <Case label={t('shared.devui.case_link_contact')}>
         <Group>
           <Anchor href="tel:0912345678" size="sm">
-            0912 345 678
+            {sample.phone}
           </Anchor>
           <Anchor href="mailto:thinh.lam@demo.vn" size="sm">
-            thinh.lam@demo.vn
+            {sample.email}
           </Anchor>
         </Group>
       </Case>
@@ -326,7 +329,7 @@ export function FieldLists() {
           [
             'Nhân viên',
             <Anchor key="p" component={Link} to="/dev/ui/field-list" size="sm" inherit>
-              NV0019 · Lâm Đức Thịnh
+              {sample.person}
             </Anchor>,
           ],
           ['Thời gian nghỉ', '12/10/2026 – 16/10/2026'],
