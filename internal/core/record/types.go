@@ -42,35 +42,35 @@ type Perms struct {
 	View, Edit, Post, Cancel, Export, Print, ViewFiles, Attach, Create, Import string
 }
 
+// permFields lists every action with the Perms field naming its permission and the
+// action it follows when that field is empty.
+var permFields = []struct {
+	action  Action
+	field   func(Perms) string
+	follows Action
+}{
+	{View, func(p Perms) string { return p.View }, ""},
+	{Edit, func(p Perms) string { return p.Edit }, ""},
+	{Post, func(p Perms) string { return p.Post }, Edit},
+	{Cancel, func(p Perms) string { return p.Cancel }, Edit},
+	{Create, func(p Perms) string { return p.Create }, Edit},
+	{Export, func(p Perms) string { return p.Export }, View},
+	{Print, func(p Perms) string { return p.Print }, View},
+	{ViewFiles, func(p Perms) string { return p.ViewFiles }, ""},
+	{Attach, func(p Perms) string { return p.Attach }, ""},
+	{Import, func(p Perms) string { return p.Import }, ""},
+}
+
 // of is the permission that grants a, or "" when the type has none.
 func (p Perms) of(a Action) string {
-	follow := func(own, base string) string {
-		if own != "" {
+	for _, f := range permFields {
+		if f.action != a {
+			continue
+		}
+		if own := f.field(p); own != "" || f.follows == "" {
 			return own
 		}
-		return base
-	}
-	switch a {
-	case View:
-		return p.View
-	case Edit:
-		return p.Edit
-	case Post:
-		return follow(p.Post, p.Edit)
-	case Cancel:
-		return follow(p.Cancel, p.Edit)
-	case Create:
-		return follow(p.Create, p.Edit)
-	case Export:
-		return follow(p.Export, p.View)
-	case Print:
-		return follow(p.Print, p.View)
-	case ViewFiles:
-		return p.ViewFiles
-	case Attach:
-		return p.Attach
-	case Import:
-		return p.Import
+		return p.of(f.follows)
 	}
 	return ""
 }

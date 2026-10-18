@@ -99,9 +99,8 @@ func (s *Service) checkDeclaration(t Type) {
 	if t.Perms.View == "" {
 		fail("declares no view permission")
 	}
-	p := t.Perms
-	for _, perm := range []string{p.View, p.Edit, p.Post, p.Cancel, p.Export, p.Print, p.ViewFiles, p.Attach, p.Create, p.Import} {
-		if perm != "" && !s.d.IAM.Registered(t.Product, perm) {
+	for _, f := range permFields {
+		if perm := f.field(t.Perms); perm != "" && !s.d.IAM.Registered(t.Product, perm) {
 			fail("declares " + perm + ", which no role of " + t.Product + " grants")
 		}
 	}
