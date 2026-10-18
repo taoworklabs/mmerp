@@ -230,7 +230,7 @@ func (s *Service) Actions(ctx context.Context, d Doc, extra ...string) ([]string
 		return nil, err
 	}
 	for _, a := range []Action{Print, Export} {
-		ok, err := s.Can(ctx, d.Type, d.ID, a)
+		ok, err := s.canOn(ctx, d, a)
 		if err != nil {
 			return nil, err
 		}
@@ -239,6 +239,14 @@ func (s *Service) Actions(ctx context.Context, d Doc, extra ...string) ([]string
 		}
 	}
 	return append(out, extra...), nil
+}
+
+// canOn is Can on a document already read; a catalog record is located first.
+func (s *Service) canOn(ctx context.Context, d Doc, a Action) (bool, error) {
+	if t := s.types[d.Type]; t.Kind == Document {
+		return s.answer(ctx, t, d.ID, d.OrgUnitID, a)
+	}
+	return s.Can(ctx, d.Type, d.ID, a)
 }
 
 // TypeActions lists what the actor may do with a type before picking a record: create
@@ -339,7 +347,7 @@ func (s *Service) lifecycleActions(ctx context.Context, d Doc) ([]string, error)
 		if a.name == "withdraw" && !submittedBy(ctx, d) {
 			continue
 		}
-		ok, err := s.Can(ctx, d.Type, d.ID, a.action)
+		ok, err := s.answer(ctx, s.types[d.Type], d.ID, d.OrgUnitID, a.action)
 		if err != nil {
 			return nil, err
 		}
