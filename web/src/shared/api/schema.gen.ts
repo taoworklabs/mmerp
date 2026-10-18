@@ -198,6 +198,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/documents/{type}/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete: operations["delete-document"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/documents/{type}/{id}/approval": {
         parameters: {
             query?: never;
@@ -389,7 +405,7 @@ export interface paths {
         get: operations["get-contract"];
         put: operations["update-contract"];
         post?: never;
-        delete: operations["delete-contract"];
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -635,7 +651,7 @@ export interface paths {
         get: operations["get-leave"];
         put: operations["update-leave"];
         post?: never;
-        delete: operations["delete-leave"];
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -717,7 +733,7 @@ export interface paths {
         get: operations["get-overtime"];
         put: operations["update-overtime"];
         post?: never;
-        delete: operations["delete-overtime"];
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -768,7 +784,7 @@ export interface paths {
         get: operations["get-payroll"];
         put?: never;
         post?: never;
-        delete: operations["delete-payroll"];
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -852,7 +868,7 @@ export interface paths {
         /** @description Replaces the period and every line of a draft. */
         put: operations["update-timesheet"];
         post?: never;
-        delete: operations["delete-timesheet"];
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -1392,7 +1408,7 @@ export interface paths {
         get: operations["get-order"];
         put: operations["update-order"];
         post?: never;
-        delete: operations["delete-order"];
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -1441,7 +1457,7 @@ export interface paths {
         get: operations["get-quote"];
         put: operations["update-quote"];
         post?: never;
-        delete: operations["delete-quote"];
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -4050,6 +4066,38 @@ export interface operations {
             };
         };
     };
+    "delete-document": {
+        parameters: {
+            query: {
+                version: number;
+            };
+            header?: never;
+            path: {
+                type: string;
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
     "get-document-approval": {
         parameters: {
             query?: never;
@@ -4594,37 +4642,6 @@ export interface operations {
                 "application/json": components["schemas"]["ContractUpdate"];
             };
         };
-        responses: {
-            /** @description No Content */
-            204: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Error */
-            default: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Error"];
-                };
-            };
-        };
-    };
-    "delete-contract": {
-        parameters: {
-            query: {
-                version: number;
-            };
-            header?: never;
-            path: {
-                id: number;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
         responses: {
             /** @description No Content */
             204: {
@@ -5365,37 +5382,6 @@ export interface operations {
             };
         };
     };
-    "delete-leave": {
-        parameters: {
-            query: {
-                version: number;
-            };
-            header?: never;
-            path: {
-                id: number;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description No Content */
-            204: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Error */
-            default: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Error"];
-                };
-            };
-        };
-    };
     "list-legal-params": {
         parameters: {
             query?: never;
@@ -5625,37 +5611,6 @@ export interface operations {
             };
         };
     };
-    "delete-overtime": {
-        parameters: {
-            query: {
-                version: number;
-            };
-            header?: never;
-            path: {
-                id: number;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description No Content */
-            204: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Error */
-            default: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Error"];
-                };
-            };
-        };
-    };
     "list-payrolls": {
         parameters: {
             query?: {
@@ -5773,37 +5728,6 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["Payroll"];
                 };
-            };
-            /** @description Error */
-            default: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Error"];
-                };
-            };
-        };
-    };
-    "delete-payroll": {
-        parameters: {
-            query: {
-                version: number;
-            };
-            header?: never;
-            path: {
-                id: number;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description No Content */
-            204: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
             };
             /** @description Error */
             default: {
@@ -6029,37 +5953,6 @@ export interface operations {
                 "application/json": components["schemas"]["TimesheetUpdate"];
             };
         };
-        responses: {
-            /** @description No Content */
-            204: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Error */
-            default: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Error"];
-                };
-            };
-        };
-    };
-    "delete-timesheet": {
-        parameters: {
-            query: {
-                version: number;
-            };
-            header?: never;
-            path: {
-                id: number;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
         responses: {
             /** @description No Content */
             204: {
@@ -7521,37 +7414,6 @@ export interface operations {
             };
         };
     };
-    "delete-order": {
-        parameters: {
-            query: {
-                version: number;
-            };
-            header?: never;
-            path: {
-                id: number;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description No Content */
-            204: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Error */
-            default: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Error"];
-                };
-            };
-        };
-    };
     "list-quotes": {
         parameters: {
             query?: {
@@ -7696,37 +7558,6 @@ export interface operations {
                 "application/json": components["schemas"]["DocUpdate"];
             };
         };
-        responses: {
-            /** @description No Content */
-            204: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Error */
-            default: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Error"];
-                };
-            };
-        };
-    };
-    "delete-quote": {
-        parameters: {
-            query: {
-                version: number;
-            };
-            header?: never;
-            path: {
-                id: number;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
         responses: {
             /** @description No Content */
             204: {

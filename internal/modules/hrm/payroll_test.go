@@ -47,9 +47,6 @@ func TestPayrollRecordContract(t *testing.T) {
 		return recordtest.Harness{
 			Core: f.core, Actor: f.pay, Admin: f.admin, LegalEntity: f.c,
 			Get: func(ctx context.Context, r record.Ref) (any, error) { return f.hrm.Payroll(ctx, r.ID) },
-			Delete: func(ctx context.Context, r record.Ref, version int32) error {
-				return f.hrm.DeletePayroll(ctx, r.ID, version)
-			},
 			Routes: map[string]func(context.Context, record.Ref) error{
 				"recompute": func(ctx context.Context, r record.Ref) error {
 					d, err := f.rec.Get(f.admin, r)

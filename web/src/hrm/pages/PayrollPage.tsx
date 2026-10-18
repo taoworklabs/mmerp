@@ -2,7 +2,7 @@ import { Alert, Button, Group, Loader, Stack, Text } from '@mantine/core'
 import { IconAlertTriangle, IconCalculator, IconPrinter } from '@tabler/icons-react'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { useNavigate, useParams, useSearchParams } from 'react-router'
+import { useParams, useSearchParams } from 'react-router'
 import { api, unwrap, type Payroll, type PayrollLine } from '@/shared/api/hrm'
 import { ActivityFeed, ApprovalDecision, ApprovalPanel, DocumentActions, DocumentStatus, useDocumentMutation } from '@/shared/document'
 import { errorText, formatDateTime, formatMonth } from '@/shared/i18n'
@@ -22,7 +22,6 @@ const payslipTemplate = 'printing.hrm.payslip'
 
 export function PayrollPage() {
   const { t } = useTranslation()
-  const navigate = useNavigate()
   const id = Number(useParams().id)
   const [search, setSearch] = useSearchParams()
   const job = Number(search.get('job')) || null
@@ -65,10 +64,7 @@ export function PayrollPage() {
               number={p.number}
               actions={computing ? [] : p.allowed_actions}
               onError={setError}
-              onDelete={async (version) => {
-                await unwrap(api.DELETE('/hrm/payrolls/{id}', { params: { path: { id: p.id }, query: { version } } }))
-                navigate('/hrm/payrolls', { replace: true })
-              }}
+              listPath="/hrm/payrolls"
             />
           </Group>
         )

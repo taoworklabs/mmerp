@@ -1,8 +1,7 @@
 import { Group } from '@mantine/core'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { useNavigate, useParams } from 'react-router'
-import { api, unwrap } from '@/shared/api/hrm'
+import { useParams } from 'react-router'
 import { ActivityFeed, ApprovalDecision, ApprovalPanel, DocumentActions, DocumentStatus, useAttachmentSection } from '@/shared/document'
 import { formatDate } from '@/shared/i18n'
 import { DocumentPage } from '@/shared/ui/page'
@@ -14,7 +13,6 @@ import { overtimeDocType } from '../keys'
 
 export function OvertimePage() {
   const { t } = useTranslation()
-  const navigate = useNavigate()
   const id = Number(useParams().id)
   const attachments = useAttachmentSection(overtimeDocType, id)
   const overtime = useOvertime(id)
@@ -47,10 +45,7 @@ export function OvertimePage() {
               number={o.number}
               actions={o.allowed_actions}
               onError={setError}
-              onDelete={async (version) => {
-                await unwrap(api.DELETE('/hrm/overtimes/{id}', { params: { path: { id: o.id }, query: { version } } }))
-                navigate('/hrm/overtimes', { replace: true })
-              }}
+              listPath="/hrm/overtimes"
             />
           )}
         </Group>

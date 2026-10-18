@@ -32,10 +32,7 @@ func TestTimesheetRecordContract(t *testing.T) {
 		approver := f.ctxFor("approver", "hr@*")
 		return recordtest.Harness{
 			Core: f.core, Actor: f.hr, Admin: f.admin, LegalEntity: f.c,
-			Get: func(ctx context.Context, r record.Ref) (any, error) { return f.hrm.Timesheet(ctx, r.ID) },
-			Delete: func(ctx context.Context, r record.Ref, version int32) error {
-				return f.hrm.DeleteTimesheet(ctx, r.ID, version)
-			},
+			Get:    func(ctx context.Context, r record.Ref) (any, error) { return f.hrm.Timesheet(ctx, r.ID) },
 			Reject: func(instance int64) error { return f.appr.Reject(approver, instance, 1, "không") },
 			Create: func(ctx context.Context, date string) (record.Ref, error) {
 				id, err := f.hrm.CreateTimesheet(ctx, hrm.NewTimesheet{OrgUnitID: f.a, Month: date[:7]})

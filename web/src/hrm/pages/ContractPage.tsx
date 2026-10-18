@@ -2,8 +2,7 @@ import { Group } from '@mantine/core'
 import { IconPrinter } from '@tabler/icons-react'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { useNavigate, useParams } from 'react-router'
-import { api, unwrap } from '@/shared/api/hrm'
+import { useParams } from 'react-router'
 import { ActivityFeed, ApprovalDecision, ApprovalPanel, DocumentActions, DocumentStatus, useAttachmentSection } from '@/shared/document'
 import { ExportButton } from '@/shared/jobs'
 import { DocumentPage } from '@/shared/ui/page'
@@ -15,7 +14,6 @@ import { contractDocType } from '../keys'
 
 export function ContractPage() {
   const { t } = useTranslation()
-  const navigate = useNavigate()
   const id = Number(useParams().id)
   const contract = useContract(id)
   const attachments = useAttachmentSection(contractDocType, id)
@@ -52,10 +50,7 @@ export function ContractPage() {
                 number={c.number}
                 actions={c.allowed_actions}
                 onError={setError}
-                onDelete={async (version) => {
-                  await unwrap(api.DELETE('/hrm/contracts/{id}', { params: { path: { id: c.id }, query: { version } } }))
-                  navigate('/hrm/contracts', { replace: true })
-                }}
+                listPath="/hrm/contracts"
               />
             </>
           )}

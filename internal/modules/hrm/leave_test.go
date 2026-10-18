@@ -343,10 +343,7 @@ func TestLeaveRecordContract(t *testing.T) {
 			Edit: func(ctx context.Context, r record.Ref, version int32, date string) error {
 				return f.hrm.UpdateLeave(ctx, r.ID, hrm.LeaveUpdate{Version: version, LeaveFields: f.fields(date, date, "1")})
 			},
-			Get: func(ctx context.Context, r record.Ref) (any, error) { return f.hrm.Leave(ctx, r.ID) },
-			Delete: func(ctx context.Context, r record.Ref, version int32) error {
-				return f.hrm.DeleteLeave(ctx, r.ID, version)
-			},
+			Get:             func(ctx context.Context, r record.Ref) (any, error) { return f.hrm.Leave(ctx, r.ID) },
 			RequireApproval: func(*testing.T) { f.ruleManager() },
 			Approve:         func(instance int64) error { return f.appr.Approve(f.m, instance, 1) },
 			Reject:          func(instance int64) error { return f.appr.Reject(f.m, instance, 1, "không") },

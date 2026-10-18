@@ -80,10 +80,7 @@ func TestContractRecordContract(t *testing.T) {
 		ref := func(id int64, err error) (record.Ref, error) { return record.Ref{Type: "hrm.contract", ID: id}, err }
 		return recordtest.Harness{
 			Core: f.core, Actor: f.pay, Admin: f.admin, LegalEntity: f.c,
-			Get: func(ctx context.Context, r record.Ref) (any, error) { return f.hrm.Contract(ctx, r.ID) },
-			Delete: func(ctx context.Context, r record.Ref, version int32) error {
-				return f.hrm.DeleteContract(ctx, r.ID, version)
-			},
+			Get:    func(ctx context.Context, r record.Ref) (any, error) { return f.hrm.Contract(ctx, r.ID) },
 			Reject: func(instance int64) error { return f.appr.Reject(f.head, instance, 1, "không") },
 			Create: func(ctx context.Context, date string) (record.Ref, error) {
 				return ref(f.hrm.CreateContract(ctx, hrm.NewContract{EmployeeID: f.emp, ContractFields: hrm.ContractFields{ContractTypeID: f.kind, StartDate: date, Terms: terms(10_000_000)}}))
@@ -181,7 +178,7 @@ func TestContractRules(t *testing.T) {
 	wantErr(t, err, "invalid_contract_parent")
 	// The appendix cannot go in force before its original.
 	wantErr(t, f.post(app), "contract_parent_not_posted")
-	wantErr(t, f.hrm.DeleteContract(f.pay, a, 1), "contract_has_appendices")
+	wantErr(t, f.core.Record.Delete(f.pay, record.Ref{Type: "hrm.contract", ID: a}, 1), "contract_has_appendices")
 	f.check(f.post(a))
 	f.check(f.post(app))
 

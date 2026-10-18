@@ -73,6 +73,7 @@ func NewService(d Deps) *Service {
 			{Key: "leave_type", Kind: record.Choice, Label: "hrm.leave.type", Options: s.leaveTypeOptions},
 		},
 		Can: s.canLeave, OnTransition: s.leaveTransition, BeforeSubmit: s.leaveBeforeSubmit, Approvers: s.leaveApprovers, Subjects: s.leaveSubjects,
+		OnDelete: deleteLeave,
 	})
 	d.Record.Register(record.Type{
 		Code: overtimeType, Product: "hrm", Kind: record.Document, NumberPrefix: "TC",
@@ -80,22 +81,23 @@ func NewService(d Deps) *Service {
 			{Key: "hours", Kind: record.Number, Label: "hrm.overtime.hours"},
 			{Key: "day_kind", Kind: record.Choice, Label: "hrm.overtime.day_kind", Options: s.dayKindOptions},
 		},
-		Can: s.canOvertime, OnTransition: s.overtimeTransition, Approvers: s.overtimeApprovers, Subjects: s.overtimeSubjects,
+		Can: s.canOvertime, OnTransition: s.overtimeTransition, Approvers: s.overtimeApprovers, Subjects: s.overtimeSubjects, OnDelete: deleteOvertime,
 	})
 	d.Record.Register(record.Type{
 		Code: contractType, Product: "hrm", Kind: record.Document, NumberPrefix: "HD",
 		Fields: []record.Field{{Key: "contract_kind", Kind: record.Choice, Label: "hrm.contract.kind", Options: s.contractTypeOptions}},
-		Can:    s.canContract, OnTransition: s.contractTransition, Subjects: s.contractSubjects,
+		Can:    s.canContract, OnTransition: s.contractTransition, Subjects: s.contractSubjects, OnDelete: deleteContract,
 	})
 	// No approval fields and no module-chosen approvers: timesheet rules go by role.
 	d.Record.Register(record.Type{
 		Code: timesheetType, Product: "hrm", Kind: record.Document, NumberPrefix: "BC",
-		Can: s.canTimesheet, OnTransition: s.timesheetTransition,
+		Can: s.canTimesheet, OnTransition: s.timesheetTransition, OnDelete: deleteTimesheet,
 	})
 	// The legal entity is the org unit; approval rules go by role.
 	d.Record.Register(record.Type{
 		Code: payrollType, Product: "hrm", Kind: record.Document, NumberPrefix: "BL",
 		Can: s.canPayroll, OnTransition: s.payrollTransition, BeforeSubmit: s.payrollBeforeSubmit,
+		OnDelete: deletePayroll,
 	})
 	s.registerDataIO()
 	s.registerPrints()

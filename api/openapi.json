@@ -6922,6 +6922,59 @@
         ]
       }
     },
+    "/documents/{type}/{id}": {
+      "delete": {
+        "operationId": "delete-document",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "type",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          },
+          {
+            "explode": false,
+            "in": "query",
+            "name": "version",
+            "required": true,
+            "schema": {
+              "format": "int32",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "tags": [
+          "core",
+          "core"
+        ]
+      }
+    },
     "/documents/{type}/{id}/approval": {
       "get": {
         "operationId": "get-document-approval",
@@ -7742,49 +7795,6 @@
       }
     },
     "/hrm/contracts/{id}": {
-      "delete": {
-        "operationId": "delete-contract",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "id",
-            "required": true,
-            "schema": {
-              "format": "int64",
-              "type": "integer"
-            }
-          },
-          {
-            "explode": false,
-            "in": "query",
-            "name": "version",
-            "required": true,
-            "schema": {
-              "format": "int32",
-              "type": "integer"
-            }
-          }
-        ],
-        "responses": {
-          "204": {
-            "description": "No Content"
-          },
-          "default": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            },
-            "description": "Error"
-          }
-        },
-        "tags": [
-          "hrm",
-          "hrm"
-        ]
-      },
       "get": {
         "description": "Terms come with hrm.salary.view; each such read is audited.",
         "operationId": "get-contract",
@@ -8966,49 +8976,6 @@
       }
     },
     "/hrm/leaves/{id}": {
-      "delete": {
-        "operationId": "delete-leave",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "id",
-            "required": true,
-            "schema": {
-              "format": "int64",
-              "type": "integer"
-            }
-          },
-          {
-            "explode": false,
-            "in": "query",
-            "name": "version",
-            "required": true,
-            "schema": {
-              "format": "int32",
-              "type": "integer"
-            }
-          }
-        ],
-        "responses": {
-          "204": {
-            "description": "No Content"
-          },
-          "default": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            },
-            "description": "Error"
-          }
-        },
-        "tags": [
-          "hrm",
-          "hrm"
-        ]
-      },
       "get": {
         "operationId": "get-leave",
         "parameters": [
@@ -9385,49 +9352,6 @@
       }
     },
     "/hrm/overtimes/{id}": {
-      "delete": {
-        "operationId": "delete-overtime",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "id",
-            "required": true,
-            "schema": {
-              "format": "int64",
-              "type": "integer"
-            }
-          },
-          {
-            "explode": false,
-            "in": "query",
-            "name": "version",
-            "required": true,
-            "schema": {
-              "format": "int32",
-              "type": "integer"
-            }
-          }
-        ],
-        "responses": {
-          "204": {
-            "description": "No Content"
-          },
-          "default": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            },
-            "description": "Error"
-          }
-        },
-        "tags": [
-          "hrm",
-          "hrm"
-        ]
-      },
       "get": {
         "operationId": "get-overtime",
         "parameters": [
@@ -9676,49 +9600,6 @@
       }
     },
     "/hrm/payrolls/{id}": {
-      "delete": {
-        "operationId": "delete-payroll",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "id",
-            "required": true,
-            "schema": {
-              "format": "int64",
-              "type": "integer"
-            }
-          },
-          {
-            "explode": false,
-            "in": "query",
-            "name": "version",
-            "required": true,
-            "schema": {
-              "format": "int32",
-              "type": "integer"
-            }
-          }
-        ],
-        "responses": {
-          "204": {
-            "description": "No Content"
-          },
-          "default": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            },
-            "description": "Error"
-          }
-        },
-        "tags": [
-          "hrm",
-          "hrm"
-        ]
-      },
       "get": {
         "description": "Each employee's pay comes with hrm.salary.view; each such read is audited.",
         "operationId": "get-payroll",
@@ -10052,49 +9933,6 @@
       }
     },
     "/hrm/timesheets/{id}": {
-      "delete": {
-        "operationId": "delete-timesheet",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "id",
-            "required": true,
-            "schema": {
-              "format": "int64",
-              "type": "integer"
-            }
-          },
-          {
-            "explode": false,
-            "in": "query",
-            "name": "version",
-            "required": true,
-            "schema": {
-              "format": "int32",
-              "type": "integer"
-            }
-          }
-        ],
-        "responses": {
-          "204": {
-            "description": "No Content"
-          },
-          "default": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            },
-            "description": "Error"
-          }
-        },
-        "tags": [
-          "hrm",
-          "hrm"
-        ]
-      },
       "get": {
         "operationId": "get-timesheet",
         "parameters": [
@@ -12193,49 +12031,6 @@
       }
     },
     "/sales/orders/{id}": {
-      "delete": {
-        "operationId": "delete-order",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "id",
-            "required": true,
-            "schema": {
-              "format": "int64",
-              "type": "integer"
-            }
-          },
-          {
-            "explode": false,
-            "in": "query",
-            "name": "version",
-            "required": true,
-            "schema": {
-              "format": "int32",
-              "type": "integer"
-            }
-          }
-        ],
-        "responses": {
-          "204": {
-            "description": "No Content"
-          },
-          "default": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            },
-            "description": "Error"
-          }
-        },
-        "tags": [
-          "sales",
-          "sales"
-        ]
-      },
       "get": {
         "operationId": "get-order",
         "parameters": [
@@ -12502,49 +12297,6 @@
       }
     },
     "/sales/quotes/{id}": {
-      "delete": {
-        "operationId": "delete-quote",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "id",
-            "required": true,
-            "schema": {
-              "format": "int64",
-              "type": "integer"
-            }
-          },
-          {
-            "explode": false,
-            "in": "query",
-            "name": "version",
-            "required": true,
-            "schema": {
-              "format": "int32",
-              "type": "integer"
-            }
-          }
-        ],
-        "responses": {
-          "204": {
-            "description": "No Content"
-          },
-          "default": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            },
-            "description": "Error"
-          }
-        },
-        "tags": [
-          "sales",
-          "sales"
-        ]
-      },
       "get": {
         "operationId": "get-quote",
         "parameters": [

@@ -2,7 +2,7 @@ import { Group } from '@mantine/core'
 import { useQuery } from '@tanstack/react-query'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { useNavigate, useParams } from 'react-router'
+import { useParams } from 'react-router'
 import { api, unwrap } from '@/shared/api/hrm'
 import { ActivityFeed, ApprovalDecision, ApprovalPanel, DocumentActions, DocumentStatus, useAttachmentSection } from '@/shared/document'
 import { DocumentPage } from '@/shared/ui/page'
@@ -14,7 +14,6 @@ import { hrmKeys, leaveDocType } from '../keys'
 
 export function LeavePage() {
   const { t } = useTranslation()
-  const navigate = useNavigate()
   const id = Number(useParams().id)
   const leave = useLeave(id)
   const types = useLeaveTypes()
@@ -64,10 +63,7 @@ export function LeavePage() {
               number={l.number}
               actions={l.allowed_actions}
               onError={setError}
-              onDelete={async (version) => {
-                await unwrap(api.DELETE('/hrm/leaves/{id}', { params: { path: { id: l.id }, query: { version } } }))
-                navigate('/hrm/leaves', { replace: true })
-              }}
+              listPath="/hrm/leaves"
             />
           )}
         </Group>

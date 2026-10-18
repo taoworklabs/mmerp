@@ -90,11 +90,7 @@ return (
           <ExportButton kind={`printing.${docType}`} params={{ id: d.id }} label={t('sales.quote.print')} icon={IconPrinter} />   // printing is a job
         )}
         <DocumentActions docType={docType} id={d.id} version={d.version} number={d.number} actions={d.allowed_actions} onError={setError}
-          onDelete={async (version) => {                                           // the area's delete route, then back to the list
-            await unwrap(api.DELETE('/sales/quotes/{id}', { params: { path: { id: d.id }, query: { version } } }))
-            await qc.invalidateQueries({ queryKey: salesKeys.docs.all('quote') })
-            navigate(list, { replace: true })
-          }} />
+          listPath={list} />                                                       // delete goes through the core route, then back to this list
       </Group>
     }
     error={error}

@@ -246,17 +246,8 @@ func (s *Service) SaveTimesheet(ctx context.Context, id int64, in TimesheetUpdat
 	})
 }
 
-// DeleteTimesheet removes a draft at the version the actor saw; its lines go with it.
-func (s *Service) DeleteTimesheet(ctx context.Context, id int64, version int32) error {
-	return platform.InTx(ctx, func(ctx context.Context) error {
-		if _, err := s.visibleTimesheet(ctx, id); err != nil {
-			return err
-		}
-		if err := s.d.Record.Delete(ctx, record.Ref{Type: timesheetType, ID: id}, version); err != nil {
-			return err
-		}
-		return store.New(platform.DBFrom(ctx)).DeleteTimesheet(ctx, id)
-	})
+func deleteTimesheet(ctx context.Context, id int64) error {
+	return store.New(platform.DBFrom(ctx)).DeleteTimesheet(ctx, id)
 }
 
 func (s *Service) visibleTimesheet(ctx context.Context, id int64) (store.GetTimesheetRow, error) {

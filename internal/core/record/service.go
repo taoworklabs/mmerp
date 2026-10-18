@@ -311,8 +311,12 @@ func (s *Service) Edit(ctx context.Context, ref Ref, version int32, h Header) (D
 	return out, err
 }
 
-// Delete removes a draft; the caller deletes its own row in the same transaction.
+// Delete removes a draft, its type's own rows (OnDelete) and what keepers hold about it.
 func (s *Service) Delete(ctx context.Context, ref Ref, version int32) error {
+	t, ok := s.types[ref.Type]
+	if !ok || t.Kind != Document {
+		return platform.ErrNotFound
+	}
 	return platform.InTx(ctx, func(ctx context.Context) error {
 		d, _, err := s.lockDraft(ctx, ref, version)
 		if err != nil {
@@ -320,6 +324,11 @@ func (s *Service) Delete(ctx context.Context, ref Ref, version int32) error {
 		}
 		if err := store.New(platform.DBFrom(ctx)).DeleteDocument(ctx, ref.ID); err != nil {
 			return err
+		}
+		if t.OnDelete != nil {
+			if err := t.OnDelete(ctx, ref.ID); err != nil {
+				return err
+			}
 		}
 		for _, k := range s.keepers {
 			if err := k.Deleted(ctx, ref); err != nil {

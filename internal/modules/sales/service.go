@@ -75,6 +75,7 @@ func NewService(d Deps) *Service {
 			Can:          s.canDoc(k),
 			OnTransition: s.transition,
 			BeforeSubmit: s.beforeSubmit,
+			OnDelete:     deleteDoc,
 		})
 	}
 	s.registerPrints()
