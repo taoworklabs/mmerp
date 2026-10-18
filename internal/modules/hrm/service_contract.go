@@ -346,11 +346,12 @@ func (s *Service) CreateContract(ctx context.Context, in NewContract) (int64, er
 		if err != nil {
 			return err
 		}
+		h.RequestID = in.RequestID
 		d, err := s.d.Record.Create(ctx, contractType, h)
-		if err != nil {
+		id = d.ID
+		if err != nil || d.Reused {
 			return err
 		}
-		id = d.ID
 		row.ID, row.EmployeeID, row.ParentID = id, e.ID, platform.NullInt8(in.ParentID)
 		if err := q.CreateContract(ctx, row); err != nil {
 			return err

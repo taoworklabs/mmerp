@@ -1,4 +1,5 @@
 import { IconClockHour4 } from '@tabler/icons-react'
+import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { useTranslation } from 'react-i18next'
 import { api, unwrap, type Overtime } from '@/shared/api/hrm'
@@ -42,6 +43,8 @@ type Props = {
 // its card with onClose); otherwise it is read-only.
 export function OvertimeForm({ overtime, self, chooseEmployee, onCreated, onClose }: Props) {
   const { t } = useTranslation()
+  // One id per opened form: sending it twice returns the document made the first time.
+  const [requestId] = useState(() => crypto.randomUUID())
   const mutation = useDocumentMutation(overtimeDocType, overtime?.id ?? 0, overtime?.version ?? 0)
   const form = useForm<Values>({
     mode: 'onBlur',
@@ -72,7 +75,7 @@ export function OvertimeForm({ overtime, self, chooseEmployee, onCreated, onClos
       return
     }
     const employee = chooseEmployee && v.employee_id && Number(v.employee_id) !== self?.id ? Number(v.employee_id) : undefined
-    const { id } = await unwrap(api.POST('/hrm/overtimes', { body: { employee_id: employee, ...fields } }))
+    const { id } = await unwrap(api.POST('/hrm/overtimes', { body: { request_id: requestId, employee_id: employee, ...fields } }))
     await onCreated?.(id)
   }
 

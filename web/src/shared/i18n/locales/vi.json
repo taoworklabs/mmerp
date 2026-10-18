@@ -259,6 +259,7 @@
   "shared.history.discussion.commented": "Bình luận",
   "shared.inbox.back": "Về danh sách",
   "shared.inbox.pick": "Chọn một việc trong danh sách để xem và duyệt.",
+  "shared.error.request_id_reused": "Yêu cầu này đã được dùng. Tải lại trang rồi thử lại.",
   "shared.error.version_conflict": "Dữ liệu đã thay đổi. Tải lại rồi thao tác lại.",
   "shared.error.document_not_editable": "Chứng từ không còn sửa được ở trạng thái hiện tại.",
   "shared.error.invalid_transition": "Không thực hiện được thao tác này ở trạng thái hiện tại của chứng từ. Tải lại để xem trạng thái mới.",

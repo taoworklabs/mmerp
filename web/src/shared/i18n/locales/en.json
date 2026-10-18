@@ -259,6 +259,7 @@
   "shared.history.discussion.commented": "Commented",
   "shared.inbox.back": "Back to the list",
   "shared.inbox.pick": "Pick an item in the list to review and approve it.",
+  "shared.error.request_id_reused": "This request was already used. Reload the page and try again.",
   "shared.error.version_conflict": "The data has changed. Reload and try again.",
   "shared.error.document_not_editable": "The document can no longer be edited in its current status.",
   "shared.error.invalid_transition": "This action is not possible in the document's current status. Reload to see its new status.",

@@ -105,6 +105,8 @@ type Header struct {
 	OrgUnitID int64
 	Amount    *int64
 	Fields    map[string]string
+	// RequestID makes Create once per user (a UUID, empty for none); Edit ignores it.
+	RequestID string
 }
 
 // Doc is a document as record keeps it.
@@ -121,6 +123,9 @@ type Doc struct {
 	ApprovalTicket *int64
 	// Who sent it while it is pending_approval; only they withdraw it.
 	SubmittedBy *int64
+	// Reused is set by Create when it returns the document of an earlier request with the
+	// same request id: the module then skips its own insert.
+	Reused bool
 }
 
 type PeriodLock struct {
@@ -143,6 +148,7 @@ var (
 	ErrInvalidTransition   = &platform.Error{Status: http.StatusConflict, Code: "invalid_transition"}
 	ErrLegalEntityChanged  = &platform.Error{Status: http.StatusUnprocessableEntity, Code: "legal_entity_changed"}
 	ErrOrgUnitHasDocuments = &platform.Error{Status: http.StatusUnprocessableEntity, Code: "org_unit_has_documents"}
+	ErrRequestReused       = &platform.Error{Status: http.StatusConflict, Code: "request_id_reused"}
 	// The approval instance no longer matches the document: withdrawn, resubmitted or already decided.
 	ErrApprovalStale = &platform.Error{Status: http.StatusConflict, Code: "approval_stale"}
 )

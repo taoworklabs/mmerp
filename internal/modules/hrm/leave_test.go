@@ -337,8 +337,8 @@ func TestLeaveRecordContract(t *testing.T) {
 		}
 		return recordtest.Harness{
 			Core: f.core, Actor: f.hr, Admin: f.admin, LegalEntity: f.c,
-			Create: func(ctx context.Context, date string) (record.Ref, error) {
-				return ref(f.hrm.CreateLeave(ctx, hrm.NewLeave{EmployeeID: &f.emp, LeaveFields: f.fields(date, date, "1")}))
+			Create: func(ctx context.Context, date, requestID string) (record.Ref, error) {
+				return ref(f.hrm.CreateLeave(ctx, hrm.NewLeave{RequestID: requestID, EmployeeID: &f.emp, LeaveFields: f.fields(date, date, "1")}))
 			},
 			Edit: func(ctx context.Context, r record.Ref, version int32, date string) error {
 				return f.hrm.UpdateLeave(ctx, r.ID, hrm.LeaveUpdate{Version: version, LeaveFields: f.fields(date, date, "1")})

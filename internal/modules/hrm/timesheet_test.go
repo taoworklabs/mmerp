@@ -37,8 +37,8 @@ func TestTimesheetRecordContract(t *testing.T) {
 				return f.hrm.DeleteTimesheet(ctx, r.ID, version)
 			},
 			Reject: func(instance int64) error { return f.appr.Reject(approver, instance, 1, "không") },
-			Create: func(ctx context.Context, date string) (record.Ref, error) {
-				id, err := f.hrm.CreateTimesheet(ctx, hrm.NewTimesheet{OrgUnitID: f.a, Month: date[:7]})
+			Create: func(ctx context.Context, date, requestID string) (record.Ref, error) {
+				id, err := f.hrm.CreateTimesheet(ctx, hrm.NewTimesheet{RequestID: requestID, OrgUnitID: f.a, Month: date[:7]})
 				return record.Ref{Type: "hrm.timesheet", ID: id}, err
 			},
 			Edit: func(ctx context.Context, r record.Ref, version int32, date string) error {

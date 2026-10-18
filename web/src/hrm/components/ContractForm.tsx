@@ -1,5 +1,6 @@
 import { Text } from '@mantine/core'
 import { IconCash, IconFileText, IconListDetails } from '@tabler/icons-react'
+import { useState } from 'react'
 import type { TFunction } from 'i18next'
 import { useForm, useWatch } from 'react-hook-form'
 import { useTranslation } from 'react-i18next'
@@ -50,6 +51,8 @@ export type ContractPart = 'main' | 'terms' | 'lines'
 // has edit; otherwise it is read-only. Terms are null when the user may not see salaries.
 export function ContractForm({ contract, employeeId, parent, onCreated, part, onClose }: Props) {
   const { t } = useTranslation()
+  // One id per opened form: sending it twice returns the document made the first time.
+  const [requestId] = useState(() => crypto.randomUUID())
   const types = useContractTypes()
   const mutation = useDocumentMutation(contractDocType, contract?.id ?? 0, contract?.version ?? 0)
   const appendix = contract ? contract.parent_id !== null && contract.parent_id !== undefined : !!parent
@@ -88,7 +91,7 @@ export function ContractForm({ contract, employeeId, parent, onCreated, part, on
       onClose?.()
       return
     }
-    const { id } = await unwrap(api.POST('/hrm/contracts', { body: { employee_id: employeeId ?? 0, parent_id: parent?.id, ...body } }))
+    const { id } = await unwrap(api.POST('/hrm/contracts', { body: { request_id: requestId, employee_id: employeeId ?? 0, parent_id: parent?.id, ...body } }))
     await onCreated?.(id)
   }
 

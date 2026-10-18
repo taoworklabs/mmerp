@@ -103,6 +103,8 @@ export function PayrollsPage() {
 // NewPayroll creates a draft for a legal entity and month, then opens it while the job computes it.
 function NewPayroll({ onClose }: { onClose: () => void }) {
   const { t } = useTranslation()
+  // One id per opened form: sending it twice returns the document made the first time.
+  const [requestId] = useState(() => crypto.randomUUID())
   const navigate = useNavigate()
   const invalidate = useInvalidateRecord()
   const form = useForm<{ legal_entity_id: string | null; month: string | null }>({
@@ -111,10 +113,10 @@ function NewPayroll({ onClose }: { onClose: () => void }) {
   })
 
   async function create(v: { legal_entity_id: string | null; month: string | null }) {
-    const { id, job_id } = await unwrap(api.POST('/hrm/payrolls', { body: { legal_entity_id: Number(v.legal_entity_id), month: v.month ?? '' } }))
+    const { id, job_id } = await unwrap(api.POST('/hrm/payrolls', { body: { request_id: requestId, legal_entity_id: Number(v.legal_entity_id), month: v.month ?? '' } }))
     await invalidate(payrollDocType, id)
     notifySuccess(t('hrm.payrolls.created'))
-    navigate(`/hrm/payrolls/${id}?job=${job_id}`)
+    navigate(job_id ? `/hrm/payrolls/${id}?job=${job_id}` : `/hrm/payrolls/${id}`)
   }
 
   return (

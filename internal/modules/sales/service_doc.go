@@ -2,9 +2,7 @@ package sales
 
 import (
 	"context"
-	"crypto/rand"
 	"errors"
-	"fmt"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
@@ -187,39 +185,14 @@ func (s *Service) visible(ctx context.Context, k kind, id int64) (store.GetHeade
 	return store.New(platform.DBFrom(ctx)).GetHeader(ctx, id)
 }
 
-// createOnce creates a draft unless its request id was seen: then it returns that draft,
-// also when a concurrent twin wins the unique index first.
 func (s *Service) createOnce(ctx context.Context, k kind, in NewDoc) (int64, error) {
-	if id, found, err := s.byRequest(ctx, k, in.RequestID); err != nil || found {
-		return id, err
-	}
 	var id int64
 	err := platform.InTx(ctx, func(ctx context.Context) error {
 		var err error
 		id, err = s.create(ctx, k, in.RequestID, in.DocFields, nil)
 		return err
 	})
-	if platform.Violates(err, "headers_request_id_key") {
-		id, _, err = s.byRequest(ctx, k, in.RequestID)
-	}
 	return id, err
-}
-
-func (s *Service) byRequest(ctx context.Context, k kind, requestID string) (int64, bool, error) {
-	r, err := store.New(platform.DBFrom(ctx)).HeaderByRequest(ctx, requestID)
-	if errors.Is(err, pgx.ErrNoRows) {
-		return 0, false, nil
-	}
-	if err != nil {
-		return 0, false, err
-	}
-	if r.Kind != k.name {
-		return 0, false, ErrRequestReused
-	}
-	if ok, err := s.d.Record.Can(ctx, k.docType, r.ID, record.View); err != nil || !ok {
-		return 0, false, platform.OrErr(err, ErrRequestReused)
-	}
-	return r.ID, true, nil
 }
 
 // create checks the actor may create at the org unit and see the customer, then adds the draft.
@@ -228,13 +201,14 @@ func (s *Service) create(ctx context.Context, k kind, requestID string, f DocFie
 	if err != nil {
 		return 0, err
 	}
+	p.header.RequestID = requestID
 	d, err := s.d.Record.Create(ctx, k.docType, p.header)
-	if err != nil {
-		return 0, err
+	if err != nil || d.Reused {
+		return d.ID, err
 	}
 	c := p.customer
 	if err := store.New(platform.DBFrom(ctx)).InsertHeader(ctx, store.InsertHeaderParams{
-		ID: d.ID, Kind: k.name, RequestID: requestID, CustomerID: c.ID, CustomerCode: c.Code, CustomerName: c.Name,
+		ID: d.ID, Kind: k.name, CustomerID: c.ID, CustomerCode: c.Code, CustomerName: c.Name,
 		CustomerTaxCode: platform.NullText(c.TaxCode), CustomerAddress: platform.NullText(c.Address), CustomerPhone: platform.NullText(c.Phone),
 		CustomerEmail: platform.NullText(c.Email), ContactName: platform.NullText(c.ContactName),
 		ValidUntil: platform.NullDate(f.ValidUntil), DeliveryDate: platform.NullDate(f.DeliveryDate), QuoteID: platform.NullInt8(quoteID),
@@ -435,7 +409,7 @@ func (s *Service) CreateOrderFromQuote(ctx context.Context, quoteID int64) (int6
 			f.Lines[i] = LineInput{ItemID: l.ItemID, Description: l.Description, Quantity: l.Quantity, UnitPrice: l.UnitPrice,
 				DiscountPercent: l.DiscountPercent, VatRate: l.VatRate}
 		}
-		id, err = s.create(ctx, orderKind, newRequestID(), f, &quoteID)
+		id, err = s.create(ctx, orderKind, "", f, &quoteID)
 		return err
 	})
 	return id, err
@@ -445,12 +419,4 @@ func customerCopy(h store.GetHeaderRow) CustomerCopy {
 	return CustomerCopy{ID: h.CustomerID, Code: h.CustomerCode, Name: h.CustomerName, TaxCode: platform.TextPtr(h.CustomerTaxCode),
 		Address: platform.TextPtr(h.CustomerAddress), Phone: platform.TextPtr(h.CustomerPhone), Email: platform.TextPtr(h.CustomerEmail),
 		ContactName: platform.TextPtr(h.ContactName)}
-}
-
-// newRequestID is a random UUID (version 4) for a create the server starts itself.
-func newRequestID() string {
-	var b [16]byte
-	_, _ = rand.Read(b[:]) // never fails (crypto/rand)
-	b[6], b[8] = b[6]&0x0f|0x40, b[8]&0x3f|0x80
-	return fmt.Sprintf("%x-%x-%x-%x-%x", b[0:4], b[4:6], b[6:8], b[8:10], b[10:])
 }

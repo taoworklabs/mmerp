@@ -173,11 +173,12 @@ func (s *Service) CreateOvertime(ctx context.Context, in NewOvertime) (int64, er
 		if err := s.checkDayKind(ctx, unit, in.Date, in.DayKind); err != nil {
 			return err
 		}
+		h.RequestID = in.RequestID
 		d, err := s.d.Record.Create(ctx, overtimeType, h)
-		if err != nil {
+		id = d.ID
+		if err != nil || d.Reused {
 			return err
 		}
-		id = d.ID
 		f := in.OvertimeFields
 		if err := store.New(platform.DBFrom(ctx)).CreateOvertimeRequest(ctx, store.CreateOvertimeRequestParams{
 			ID: id, EmployeeID: employee, Date: platform.NullDate(&f.Date), DayKind: f.DayKind,

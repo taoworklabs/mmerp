@@ -106,12 +106,14 @@ export function TimesheetsPage() {
 // NewTimesheet creates an empty draft for an org unit and month, then opens it.
 function NewTimesheet({ onClose }: { onClose: () => void }) {
   const { t } = useTranslation()
+  // One id per opened form: sending it twice returns the document made the first time.
+  const [requestId] = useState(() => crypto.randomUUID())
   const navigate = useNavigate()
   const invalidate = useInvalidateRecord()
   const form = useForm<{ org_unit_id: string | null; month: string | null }>({ mode: 'onBlur', defaultValues: { org_unit_id: null, month: null } })
 
   async function create(v: { org_unit_id: string | null; month: string | null }) {
-    const { id } = await unwrap(api.POST('/hrm/timesheets', { body: { org_unit_id: Number(v.org_unit_id), month: v.month ?? '' } }))
+    const { id } = await unwrap(api.POST('/hrm/timesheets', { body: { request_id: requestId, org_unit_id: Number(v.org_unit_id), month: v.month ?? '' } }))
     await invalidate(timesheetDocType, id)
     notifySuccess(t('hrm.timesheets.created'))
     navigate(`/hrm/timesheets/${id}`)

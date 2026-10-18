@@ -45,6 +45,38 @@ func (q *Queries) DocTypesInUse(ctx context.Context, types []string) ([]string, 
 	return items, nil
 }
 
+const documentByRequest = `-- name: DocumentByRequest :one
+SELECT id, doc_type, number, status, version, date, legal_entity_id, org_unit_id, amount, fields, approval_ticket, submitted_by, request_id, requested_by FROM record.documents
+WHERE request_id = CAST($1::text AS uuid) AND requested_by IS NOT DISTINCT FROM $2::bigint
+`
+
+type DocumentByRequestParams struct {
+	RequestID   string
+	RequestedBy pgtype.Int8
+}
+
+func (q *Queries) DocumentByRequest(ctx context.Context, arg DocumentByRequestParams) (RecordDocument, error) {
+	row := q.db.QueryRow(ctx, documentByRequest, arg.RequestID, arg.RequestedBy)
+	var i RecordDocument
+	err := row.Scan(
+		&i.ID,
+		&i.DocType,
+		&i.Number,
+		&i.Status,
+		&i.Version,
+		&i.Date,
+		&i.LegalEntityID,
+		&i.OrgUnitID,
+		&i.Amount,
+		&i.Fields,
+		&i.ApprovalTicket,
+		&i.SubmittedBy,
+		&i.RequestID,
+		&i.RequestedBy,
+	)
+	return i, err
+}
+
 const ensurePeriodLock = `-- name: EnsurePeriodLock :exec
 INSERT INTO record.period_locks (legal_entity_id) VALUES ($1) ON CONFLICT DO NOTHING
 `
@@ -55,7 +87,7 @@ func (q *Queries) EnsurePeriodLock(ctx context.Context, legalEntityID int64) err
 }
 
 const getDocument = `-- name: GetDocument :one
-SELECT id, doc_type, number, status, version, date, legal_entity_id, org_unit_id, amount, fields, approval_ticket, submitted_by FROM record.documents WHERE id = $1 AND doc_type = $2
+SELECT id, doc_type, number, status, version, date, legal_entity_id, org_unit_id, amount, fields, approval_ticket, submitted_by, request_id, requested_by FROM record.documents WHERE id = $1 AND doc_type = $2
 `
 
 type GetDocumentParams struct {
@@ -79,6 +111,8 @@ func (q *Queries) GetDocument(ctx context.Context, arg GetDocumentParams) (Recor
 		&i.Fields,
 		&i.ApprovalTicket,
 		&i.SubmittedBy,
+		&i.RequestID,
+		&i.RequestedBy,
 	)
 	return i, err
 }
@@ -130,8 +164,10 @@ func (q *Queries) History(ctx context.Context, arg HistoryParams) ([]HistoryRow,
 }
 
 const insertDocument = `-- name: InsertDocument :one
-INSERT INTO record.documents (doc_type, number, status, version, date, legal_entity_id, org_unit_id, amount, fields)
-VALUES ($1, $2, 'draft', 1, $3, $4, $5, $6, $7)
+INSERT INTO record.documents (doc_type, number, status, version, date, legal_entity_id, org_unit_id, amount, fields,
+    request_id, requested_by)
+VALUES ($1, $2, 'draft', 1, $3, $4, $5, $6, $7,
+    CAST($8::text AS uuid), $9::bigint)
 RETURNING id
 `
 
@@ -143,6 +179,8 @@ type InsertDocumentParams struct {
 	OrgUnitID     int64
 	Amount        pgtype.Int8
 	Fields        []byte
+	RequestID     pgtype.Text
+	RequestedBy   pgtype.Int8
 }
 
 func (q *Queries) InsertDocument(ctx context.Context, arg InsertDocumentParams) (int64, error) {
@@ -154,6 +192,8 @@ func (q *Queries) InsertDocument(ctx context.Context, arg InsertDocumentParams) 
 		arg.OrgUnitID,
 		arg.Amount,
 		arg.Fields,
+		arg.RequestID,
+		arg.RequestedBy,
 	)
 	var id int64
 	err := row.Scan(&id)
@@ -161,7 +201,7 @@ func (q *Queries) InsertDocument(ctx context.Context, arg InsertDocumentParams) 
 }
 
 const lockDocument = `-- name: LockDocument :one
-SELECT id, doc_type, number, status, version, date, legal_entity_id, org_unit_id, amount, fields, approval_ticket, submitted_by FROM record.documents WHERE id = $1 FOR UPDATE
+SELECT id, doc_type, number, status, version, date, legal_entity_id, org_unit_id, amount, fields, approval_ticket, submitted_by, request_id, requested_by FROM record.documents WHERE id = $1 FOR UPDATE
 `
 
 func (q *Queries) LockDocument(ctx context.Context, id int64) (RecordDocument, error) {
@@ -180,6 +220,8 @@ func (q *Queries) LockDocument(ctx context.Context, id int64) (RecordDocument, e
 		&i.Fields,
 		&i.ApprovalTicket,
 		&i.SubmittedBy,
+		&i.RequestID,
+		&i.RequestedBy,
 	)
 	return i, err
 }
@@ -193,6 +235,15 @@ func (q *Queries) LockPeriodLock(ctx context.Context, legalEntityID int64) (pgty
 	var locked_until pgtype.Date
 	err := row.Scan(&locked_until)
 	return locked_until, err
+}
+
+const lockRequest = `-- name: LockRequest :exec
+SELECT pg_advisory_xact_lock(hashtextextended($1::text, 0))
+`
+
+func (q *Queries) LockRequest(ctx context.Context, requestID string) error {
+	_, err := q.db.Exec(ctx, lockRequest, requestID)
+	return err
 }
 
 const lockedUntil = `-- name: LockedUntil :many

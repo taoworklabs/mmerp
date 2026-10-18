@@ -1,4 +1,5 @@
 import { IconCalendarEvent } from '@tabler/icons-react'
+import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { useTranslation } from 'react-i18next'
 import { api, unwrap, type Leave } from '@/shared/api/hrm'
@@ -45,6 +46,8 @@ type Props = {
 // card with onClose); otherwise it is read-only.
 export function LeaveForm({ leave, self, chooseEmployee, onCreated, onClose }: Props) {
   const { t } = useTranslation()
+  // One id per opened form: sending it twice returns the document made the first time.
+  const [requestId] = useState(() => crypto.randomUUID())
   const types = useLeaveTypes()
   const mutation = useDocumentMutation(leaveDocType, leave?.id ?? 0, leave?.version ?? 0)
   const form = useForm<Values>({
@@ -92,7 +95,7 @@ export function LeaveForm({ leave, self, chooseEmployee, onCreated, onClose }: P
       return
     }
     const employee = chooseEmployee && v.employee_id && Number(v.employee_id) !== self?.id ? Number(v.employee_id) : undefined
-    const { id } = await unwrap(api.POST('/hrm/leaves', { body: { employee_id: employee, ...fields } }))
+    const { id } = await unwrap(api.POST('/hrm/leaves', { body: { request_id: requestId, employee_id: employee, ...fields } }))
     await onCreated?.(id)
   }
 

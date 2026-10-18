@@ -122,11 +122,11 @@ func (s *Service) CreatePayroll(ctx context.Context, in NewPayroll) (PayrollJob,
 		return out, err
 	}
 	err = platform.InTx(ctx, func(ctx context.Context) error {
-		d, err := s.d.Record.Create(ctx, payrollType, record.Header{Date: *platform.DatePtr(end), OrgUnitID: in.LegalEntityID})
-		if err != nil {
+		d, err := s.d.Record.Create(ctx, payrollType, record.Header{Date: *platform.DatePtr(end), OrgUnitID: in.LegalEntityID, RequestID: in.RequestID})
+		out.ID = d.ID
+		if err != nil || d.Reused {
 			return err
 		}
-		out.ID = d.ID
 		if err := store.New(platform.DBFrom(ctx)).CreatePayroll(ctx, store.CreatePayrollParams{ID: d.ID, PeriodStart: start, PeriodEnd: end}); err != nil {
 			return err
 		}

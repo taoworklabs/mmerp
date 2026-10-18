@@ -77,8 +77,10 @@ func TestContract(t *testing.T) {
 		}
 		return recordtest.Harness{
 			Core: core, Actor: actor, Admin: admin, LegalEntity: c,
-			Create: func(ctx context.Context, date string) (record.Ref, error) {
-				d, err := rec.Create(ctx, "test.doc", header(date))
+			Create: func(ctx context.Context, date, requestID string) (record.Ref, error) {
+				h := header(date)
+				h.RequestID = requestID
+				d, err := rec.Create(ctx, "test.doc", h)
 				return d.Ref, err
 			},
 			Edit: func(ctx context.Context, ref record.Ref, version int32, date string) error {

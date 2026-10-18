@@ -241,6 +241,13 @@ func (s *Service) Create(ctx context.Context, code string, h Header) (Doc, error
 	}
 	var out Doc
 	err = platform.InTx(ctx, func(ctx context.Context) error {
+		if h.RequestID != "" {
+			found, ok, err := byRequest(ctx, code, h.RequestID)
+			if ok || err != nil {
+				out = found
+				return err
+			}
+		}
 		// Before the legal entity is read, so a tree move cannot place the document wrongly.
 		if err := s.d.IAM.ShareTree(ctx); err != nil {
 			return err
@@ -265,6 +272,7 @@ func (s *Service) Create(ctx context.Context, code string, h Header) (Doc, error
 		id, err := store.New(platform.DBFrom(ctx)).InsertDocument(ctx, store.InsertDocumentParams{
 			DocType: code, Number: number, Date: date, LegalEntityID: le, OrgUnitID: h.OrgUnitID,
 			Amount: platform.NullInt8(h.Amount), Fields: fields,
+			RequestID: pgtype.Text{String: h.RequestID, Valid: h.RequestID != ""}, RequestedBy: requester(ctx, h.RequestID),
 		})
 		if err != nil {
 			return err
@@ -274,6 +282,34 @@ func (s *Service) Create(ctx context.Context, code string, h Header) (Doc, error
 		return s.d.Audit.RecordFor(ctx, "record.created", audit.Ref(out.Ref), map[string]any{"number": number})
 	})
 	return out, err
+}
+
+// byRequest finds the document the actor created earlier with requestID. Its lock makes
+// a racing twin wait for the first to commit, then find it.
+func byRequest(ctx context.Context, code, requestID string) (Doc, bool, error) {
+	q := store.New(platform.DBFrom(ctx))
+	if err := q.LockRequest(ctx, requestID); err != nil {
+		return Doc{}, false, err
+	}
+	row, err := q.DocumentByRequest(ctx, store.DocumentByRequestParams{RequestID: requestID, RequestedBy: requester(ctx, requestID)})
+	if errors.Is(err, pgx.ErrNoRows) {
+		return Doc{}, false, nil
+	}
+	if err != nil {
+		return Doc{}, false, err
+	}
+	if row.DocType != code {
+		return Doc{}, false, ErrRequestReused
+	}
+	d, err := doc(row)
+	d.Reused = true
+	return d, true, err
+}
+
+// requester is who a create-once key belongs to; none without a key.
+func requester(ctx context.Context, requestID string) pgtype.Int8 {
+	actor, ok := platform.ActorFrom(ctx)
+	return pgtype.Int8{Int64: actor, Valid: ok && requestID != ""}
 }
 
 // Edit replaces the header of a draft the actor may edit, at the version they saw.
