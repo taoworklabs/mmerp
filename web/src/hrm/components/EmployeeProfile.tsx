@@ -1,12 +1,12 @@
 import { Anchor } from '@mantine/core'
 import { IconAddressBook, IconLock, IconUser } from '@tabler/icons-react'
 import { useState } from 'react'
-import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { api, unwrap, type Employee } from '@/shared/api/hrm'
+import { useInvalidateRecord } from '@/shared/area'
 import { useMe } from '@/shared/auth/me'
 import { formatDate, today } from '@/shared/i18n'
-import { documentKeys } from '@/shared/document'
 import { FieldList } from '@/shared/ui/FieldList'
 import { DateField, EditablePanel, Form, FormActions, FormFields, OrgUnitField, SensitiveValue } from '@/shared/ui/form'
 import { FormModal } from '@/shared/ui/page'
@@ -28,7 +28,7 @@ const orDash = (s: string | null | undefined) => s || '—'
 export function EmployeeProfile({ employee: e, onSaved }: { employee: Employee; onSaved: () => Promise<void> }) {
   const { t } = useTranslation()
   const me = useMe()
-  const qc = useQueryClient()
+  const invalidate = useInvalidateRecord()
   // Bumped by each save, so a sensitive value shown before it is masked again rather than left stale.
   const [saves, setSaves] = useState(0)
   const canEdit = e.allowed_actions.includes('edit')
@@ -98,7 +98,7 @@ export function EmployeeProfile({ employee: e, onSaved }: { employee: Employee; 
               reveal={async () => {
                 const value = await revealSensitive(e.id, f)()
                 // Each reveal is a read in the activity feed beside it.
-                void qc.invalidateQueries({ queryKey: documentKeys.history(employeeDocType, e.id) })
+                void invalidate(employeeDocType, e.id)
                 return value
               }}
             />,
@@ -112,13 +112,13 @@ export function EmployeeProfile({ employee: e, onSaved }: { employee: Employee; 
 // PartForm edits one part in its card with a form holding the whole employee: the API saves it as a whole.
 function PartForm({ employee: e, part, onClose, onSaved }: { employee: Employee; part: Part; onClose: () => void; onSaved: () => Promise<void> }) {
   const { t } = useTranslation()
-  const { form, save, fieldOf } = useEmployeeForm(e, async () => {
+  const { form, save, errorFields } = useEmployeeForm(e, async () => {
     await onSaved()
     onClose()
   })
   return (
     // Errors mapped to a field belong to the main part; elsewhere they show as the form's banner.
-    <Form form={form} onSubmit={save} fieldOf={part === 'main' ? fieldOf : undefined}>
+    <Form form={form} onSubmit={save} errorFields={part === 'main' ? errorFields : undefined}>
       <FormFields>
         {part === 'main' && <MainFields employee={e} />}
         {part === 'personal' && <PersonalFields />}
@@ -132,13 +132,13 @@ function PartForm({ employee: e, part, onClose, onSaved }: { employee: Employee;
 // MoveModal moves an employee to another department (and manager), or records their leaving.
 export function MoveModal({ employee: e, move, onClose, onSaved }: { employee: Employee; move: Move; onClose: () => void; onSaved: () => Promise<void> }) {
   const { t } = useTranslation()
-  const { form, save, fieldOf } = useEmployeeForm(e, async () => {
+  const { form, save, errorFields } = useEmployeeForm(e, async () => {
     await onSaved()
     onClose()
   })
   return (
     <FormModal opened title={t(`hrm.employee.${move}_title`, { name: e.full_name })} onClose={onClose}>
-      <Form form={form} onSubmit={save} fieldOf={fieldOf}>
+      <Form form={form} onSubmit={save} errorFields={errorFields}>
         {move === 'transfer' ? (
           <>
             <OrgUnitField name="org_unit_id" label={t('hrm.employee.org_unit')} required product="hrm" permission="hrm.employee.edit" />

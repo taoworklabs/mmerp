@@ -1,6 +1,6 @@
 import { IconUsersGroup, IconLayoutDashboard, IconCalendarCog, IconCash, IconCalendarEvent, IconCategory, IconScale, IconSitemap, IconClockHour4, IconFileCertificate, IconFileText, IconGitBranch, IconTable, IconUsers } from '@tabler/icons-react'
 import type { AreaManifest } from '@/shared/area'
-import { contractDocType, hrmKeys, leaveDocType, overtimeDocType, payrollDocType, timesheetDocType } from './keys'
+import { contractDocType, employeeDocType, hrmKeys, leaveDocType, overtimeDocType, payrollDocType, timesheetDocType } from './keys'
 
 export const hrm: AreaManifest = {
   product: 'hrm',
@@ -31,6 +31,11 @@ export const hrm: AreaManifest = {
     main: { vi: () => import('./i18n/vi/main.json'), en: () => import('./i18n/en/main.json') },
   },
   recordTypes: {
+    [employeeDocType]: {
+      path: (id) => `employees/${id}`,
+      // Names show in pickers and on other records' lines, so every employee query.
+      invalidate: () => [hrmKeys.employees.all()],
+    },
     [leaveDocType]: {
       path: (id) => `leaves/${id}`,
       preview: () => import('./components/LeavePreview'),

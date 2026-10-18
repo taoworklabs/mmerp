@@ -1,11 +1,12 @@
 import { Button, Group } from '@mantine/core'
 import { IconArrowsExchange, IconUserOff } from '@tabler/icons-react'
-import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { useQuery } from '@tanstack/react-query'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useParams } from 'react-router'
 import { api, unwrap } from '@/shared/api/hrm'
-import { ActivityFeed, documentKeys, useAttachmentSection } from '@/shared/document'
+import { useInvalidateRecord } from '@/shared/area'
+import { ActivityFeed, useAttachmentSection } from '@/shared/document'
 import { PersonAvatar } from '@/shared/ui/avatar'
 import { notifySuccess } from '@/shared/ui/notify'
 import { DetailPage, DetailTabs, Panel } from '@/shared/ui/page'
@@ -20,7 +21,7 @@ import { employeeDocType, hrmKeys } from '../keys'
 
 export function EmployeePage() {
   const { t } = useTranslation()
-  const qc = useQueryClient()
+  const invalidate = useInvalidateRecord()
   const id = Number(useParams().id)
   const [move, setMove] = useState<Move | null>(null)
   const employee = useQuery({
@@ -34,10 +35,7 @@ export function EmployeePage() {
   const e = state.data
   const canEdit = e.allowed_actions.includes('edit')
   const saved = async () => {
-    await Promise.all([
-      qc.invalidateQueries({ queryKey: hrmKeys.employees.all() }),
-      qc.invalidateQueries({ queryKey: documentKeys.history(employeeDocType, e.id) }),
-    ])
+    await invalidate(employeeDocType, e.id)
     notifySuccess(t('hrm.employee.saved'))
   }
   const tabs = [

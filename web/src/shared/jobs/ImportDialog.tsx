@@ -1,6 +1,6 @@
 import { Anchor, Button, Group, Stack, Text } from '@mantine/core'
 import { IconDownload } from '@tabler/icons-react'
-import { useQueryClient, type QueryKey } from '@tanstack/react-query'
+import { useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { useTranslation } from 'react-i18next'
@@ -10,28 +10,29 @@ import { FormModal } from '@/shared/ui/page'
 import { ModalFooter } from '@/shared/ui/ModalFooter'
 import { icon } from '@/shared/ui/theme'
 import { JobOutcome } from './JobOutcome'
-import { finished, followJob, useJobStatus } from './useJobStatus'
+import { finished, followJob, useJobRefresh, useJobStatus, type JobWrites } from './useJobStatus'
 
 type Props = {
   kind: string // the import, e.g. hrm.timesheet
   params?: Record<string, unknown>
   title: string
   description: string
-  // Queries to refresh once the import has written.
-  invalidate: QueryKey[]
+  // What the import writes, refreshed once it has: a record, or other queries.
+  writes: JobWrites
   onClose: () => void
 }
 
 // ImportDialog uploads an Excel file, then follows the import job to its end. The import
 // writes all rows or none; a failed one lists the rows to fix.
-export function ImportDialog({ kind, params = {}, title, description, invalidate, onClose }: Props) {
+export function ImportDialog({ kind, params = {}, title, description, writes, onClose }: Props) {
   const { t } = useTranslation()
   const qc = useQueryClient()
   const [job, setJob] = useState<number | null>(null)
-  const status = useJobStatus(job, invalidate)
+  const refresh = useJobRefresh(writes)
+  const status = useJobStatus(job, writes)
   // Closed while the import still runs: follow it from outside, so its result still shows.
   const close = () => {
-    if (job !== null && !finished(status.data) && !status.isError) void followJob(qc, job, invalidate)
+    if (job !== null && !finished(status.data) && !status.isError) void followJob(qc, job, refresh)
     onClose()
   }
   const form = useForm<{ file: File | null }>({ mode: 'onBlur', defaultValues: { file: null } })

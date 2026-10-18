@@ -1,7 +1,7 @@
 import { Alert, Anchor, Badge, Box, Button, Grid, Group, Stack, Text } from '@mantine/core'
 import { IconAlertCircle, type Icon as TablerIcon } from '@tabler/icons-react'
 import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from 'react'
-import { FormProvider, useFormContext, useFormState, type FieldErrors, type FieldValues, type Path, type UseFormReturn } from 'react-hook-form'
+import { FormProvider, useFormContext, useFormState, type FieldErrors, type FieldValues, type UseFormReturn } from 'react-hook-form'
 import { useTranslation } from 'react-i18next'
 import { Link, useBlocker } from 'react-router'
 import { ApiError } from '@/shared/api/error'
@@ -9,6 +9,7 @@ import { errorText } from '@/shared/i18n'
 import { useConfirm } from '../confirm'
 import { ModalFooter } from '../ModalFooter'
 import { icon } from '../theme'
+import { fieldOfError, type ErrorFields } from './errorFields'
 import classes from './Form.module.css'
 
 export const fieldId = (name: string) => `field-${name.replaceAll('.', '-')}`
@@ -58,8 +59,8 @@ function focusInvalid(errors: FieldErrors, after: HTMLElement | null): HTMLEleme
 type Props<T extends FieldValues> = {
   form: UseFormReturn<T>
   onSubmit: (values: T) => Promise<unknown>
-  // Maps an API error to the field it belongs to; other errors show as a banner.
-  fieldOf?: (err: ApiError) => Path<T> | undefined
+  // API error codes shown at a field; other errors show as a banner.
+  errorFields?: ErrorFields<T>
   id?: string
   children: ReactNode
 }
@@ -67,7 +68,7 @@ type Props<T extends FieldValues> = {
 // Form wires a React Hook Form to the rules every form follows: a failed submit focuses the
 // first invalid field, API errors at their field, Ctrl+S to save, and a confirmation before
 // leaving with unsaved changes.
-export function Form<T extends FieldValues>({ form, onSubmit, fieldOf, id, children }: Props<T>) {
+export function Form<T extends FieldValues>({ form, onSubmit, errorFields, id, children }: Props<T>) {
   const { t } = useTranslation()
   const [banner, setBanner] = useState<string | null>(null)
   const ref = useRef<HTMLFormElement>(null)
@@ -82,7 +83,7 @@ export function Form<T extends FieldValues>({ form, onSubmit, fieldOf, id, child
         await onSubmit(values)
         form.reset(values)
       } catch (err) {
-        const field = err instanceof ApiError ? fieldOf?.(err) : undefined
+        const field = err instanceof ApiError ? fieldOfError(errorFields, err) : undefined
         if (field) form.setError(field, { message: errorText(t, err) }, { shouldFocus: true })
         else setBanner(errorText(t, err))
       }

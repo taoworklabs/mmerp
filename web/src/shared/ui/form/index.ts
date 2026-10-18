@@ -1,3 +1,4 @@
+export type { ErrorFields } from './errorFields'
 export { Form, FormActions, FormFields, FormRow, FormSection, InputRow, UnsavedProvider, fieldId, useUnsaved } from './Form'
 export { CheckboxField, CodeField, DateField, DecimalField, FileField, IntegerField, MoneyField, MonthField, PasswordField, SelectField, TextField, type Option } from './fields'
 export { LinesTable, LinesTotals, type LineColumn } from './LinesTable'

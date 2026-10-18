@@ -2,6 +2,7 @@ package hrm_test
 
 import (
 	"context"
+	"errors"
 	"strings"
 	"sync"
 	"testing"
@@ -152,7 +153,14 @@ func TestContractRules(t *testing.T) {
 	_, err = f.hrm.CreateContract(f.pay, hrm.NewContract{EmployeeID: f.emp, ContractFields: hrm.ContractFields{
 		ContractTypeID: f.kind, StartDate: "2026-01-01", Terms: hrm.ContractTerms{Lines: []hrm.ContractLine{{Kind: "allowance", Name: " ", Amount: 1}}},
 	}})
-	wantErr(t, err, "invalid_contract_terms")
+	wantErr(t, err, "contract_line_name_required")
+	_, err = f.hrm.CreateContract(f.pay, hrm.NewContract{EmployeeID: f.emp, ContractFields: hrm.ContractFields{
+		ContractTypeID: f.kind, StartDate: "2026-01-01", Terms: hrm.ContractTerms{Lines: []hrm.ContractLine{{Kind: "support", Name: "Ăn trưa", Amount: 1}, {Kind: "support", Name: "Xăng xe", Amount: -1}}},
+	}})
+	wantErr(t, err, "invalid_contract_line_amount")
+	if pe, ok := errors.AsType[*platform.Error](err); !ok || pe.Params["line"] != 2 {
+		t.Fatalf("line of %v, want 2", err)
+	}
 	// A salary allowance is always taxable; only a support may be tax-free.
 	_, err = f.hrm.CreateContract(f.pay, hrm.NewContract{EmployeeID: f.emp, ContractFields: hrm.ContractFields{
 		ContractTypeID: f.kind, StartDate: "2026-01-01", Terms: hrm.ContractTerms{Lines: []hrm.ContractLine{{Kind: "allowance", Name: "Trách nhiệm", Amount: 1}}},

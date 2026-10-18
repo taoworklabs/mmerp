@@ -28,7 +28,7 @@ const defaults = { filters: { q: '', status: '', org_unit: '', month: '' }, sort
 export function OvertimesPage() {
   const { t } = useTranslation()
   const statusLabel = useStatusLabel()
-  const canCreate = useOvertimeActions().data?.allowed_actions.includes('create') ?? false
+  const canCreate = useOvertimeActions().data?.includes('create') ?? false
   const [params, set, filterBar] = useListParams(defaults)
   const peek = usePeek()
   const { q, status, org_unit, month } = params.filters as typeof defaults.filters

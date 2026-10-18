@@ -115,13 +115,13 @@ Every field takes `bare` for a table cell: no visible label (kept as `aria-label
 
 | Form part | Use |
 | --- | --- |
-| `Form` | The form: validation, focus on the first error, server errors via `fieldOf`, leave guard, Ctrl/Cmd+S; tells an enclosing `UnsavedProvider` whether it holds unsaved edits |
+| `Form` | The form: validation, focus on the first error, server errors at their field via `errorFields` (code → field, `lines.*.<field>` for a line), leave guard, Ctrl/Cmd+S; tells an enclosing `UnsavedProvider` whether it holds unsaved edits |
 | `UnsavedProvider`, `useUnsaved` | Whether a form of the page has unsaved edits; `DocumentPage` provides it, `DocumentActions` reads it. A page-level action that reloads the record reads `useUnsaved()` the same way |
 | `FormSection` | Titled group of fields: title 16/650, description 12px; fields on six columns from 1280px (half a row each, `short` a third, `wide` the whole row); `wide` on the section puts the title on top and the content full width (for a table); `compact` puts the title on top with four fields to a row (a short request: new leave, new overtime); at most 1200px wide; a read-only field is a grey fill without an edge |
 | `FormFields` | The fields of a form inside a card (`EditablePanel`'s edit view): two to a row from 768px |
 | `FormRow`, `InputRow` | Something that spans the field grid; a control level with the inputs beside it |
 | `FormActions` | The footer: sticky on a page (no `onCancel`), with a shadow while the form runs on under it; editing, it shows once dirty with "Unsaved changes" and Discard; creating (`cancelTo`: the list), it shows from the start with Cancel. In a modal or an `EditablePanel` card (`onCancel`): Cancel + submit, in a `ModalFooter` in a modal. Cancel is quiet grey everywhere |
-| `LinesTable` + `LineColumn` | A document's lines: one row per line, typed cells (`cell(index, bare, line)`), Enter to the next cell, add/remove (`minLines`), `footer`; cards below 1024px |
+| `LinesTable` + `LineColumn` | A document's lines: one row per line, typed cells (`cell(index, bare, line)`), Enter to the next cell, add/remove (`minLines`), `footer`; cards below 1024px. `readOnly` with `lines` shows saved lines as text through each column's `value`, without a form |
 | `LinesTotals` | Totals under the lines, right-aligned, the last row bold, with a `note` on where the figures come from |
 | `InlineEditField` | One value of a record page that saves on its own (a user's email), apart from the record's groups; turns into an input on click/Enter; Enter or ✓ saves, Esc or ✕ cancels, blur keeps it open; `readOnly` without permission |
 

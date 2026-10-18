@@ -28,7 +28,7 @@ const defaults = { filters: { q: '', status: '', org_unit: '', month: '' }, sort
 export function LeavesPage() {
   const { t } = useTranslation()
   const statusLabel = useStatusLabel()
-  const canCreate = useLeaveActions().data?.allowed_actions.includes('create') ?? false
+  const canCreate = useLeaveActions().data?.includes('create') ?? false
   const [params, set, filterBar] = useListParams(defaults)
   const peek = usePeek()
   const { q, status, org_unit, month } = params.filters as typeof defaults.filters

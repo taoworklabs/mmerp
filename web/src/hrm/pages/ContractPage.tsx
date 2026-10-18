@@ -1,6 +1,5 @@
 import { Group } from '@mantine/core'
 import { IconPrinter } from '@tabler/icons-react'
-import { useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate, useParams } from 'react-router'
@@ -12,12 +11,11 @@ import { ContractDetails } from '../components/ContractDetails'
 import { EmployeeLink } from '../components/EmployeeLink'
 import { loaded } from '@/shared/ui/loaded'
 import { useContract } from '../hooks/useContract'
-import { contractDocType, hrmKeys } from '../keys'
+import { contractDocType } from '../keys'
 
 export function ContractPage() {
   const { t } = useTranslation()
   const navigate = useNavigate()
-  const qc = useQueryClient()
   const id = Number(useParams().id)
   const contract = useContract(id)
   const attachments = useAttachmentSection(contractDocType, id)
@@ -56,7 +54,6 @@ export function ContractPage() {
                 onError={setError}
                 onDelete={async (version) => {
                   await unwrap(api.DELETE('/hrm/contracts/{id}', { params: { path: { id: c.id }, query: { version } } }))
-                  await qc.invalidateQueries({ queryKey: hrmKeys.contracts.all() })
                   navigate('/hrm/contracts', { replace: true })
                 }}
               />

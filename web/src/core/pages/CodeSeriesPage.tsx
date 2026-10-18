@@ -68,7 +68,7 @@ function PrefixModal({ series, onClose }: { series: CodeSeries; onClose: () => v
     )
   return (
     <FormModal opened title={title} onClose={onClose}>
-      <Form form={form} onSubmit={save} fieldOf={(err) => (err.code === 'invalid_code_prefix' ? 'prefix' : undefined)}>
+      <Form form={form} onSubmit={save} errorFields={{ invalid_code_prefix: 'prefix' }}>
         <TextField name="prefix" label={t('core.code_series.prefix')} description={t('core.code_series.prefix_hint')} maxLength={10} />
         <FormActions submitLabel={t('core.common.save')} onCancel={onClose} cancelLabel={t('core.common.cancel')} />
       </Form>

@@ -1,10 +1,10 @@
 import { Anchor, Button, Group } from '@mantine/core'
 import { IconPrinter, IconShoppingCartPlus } from '@tabler/icons-react'
-import { useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link, useNavigate, useParams } from 'react-router'
 import { api, unwrap } from '@/shared/api/sales'
+import { useInvalidateRecord } from '@/shared/area'
 import { ActivityFeed, ApprovalDecision, ApprovalPanel, DocumentActions, DocumentStatus, useAttachmentSection } from '@/shared/document'
 import { errorText } from '@/shared/i18n'
 import { ExportButton } from '@/shared/jobs'
@@ -15,13 +15,13 @@ import { icon } from '@/shared/ui/theme'
 import { DocForm } from '../components/DocForm'
 import { DocProgress } from '../components/DocProgress'
 import { useDoc } from '../hooks/useSales'
-import { docTypeOf, pathOf, salesKeys, type Kind } from '../keys'
+import { docTypeOf, pathOf, quoteDocType, type Kind } from '../keys'
 
 // DocPage shows a quotation or order; a draft the user may edit is edited in place.
 export function DocPage({ kind }: { kind: Kind }) {
   const { t } = useTranslation()
   const navigate = useNavigate()
-  const qc = useQueryClient()
+  const invalidate = useInvalidateRecord()
   const id = Number(useParams().id)
   const docType = docTypeOf(kind)
   const list = `/sales/${pathOf(kind)}`
@@ -39,8 +39,7 @@ export function DocPage({ kind }: { kind: Kind }) {
     setError(null)
     try {
       const { id: order } = await unwrap(api.POST('/sales/quotes/{id}/order', { params: { path: { id: d.id } } }))
-      await qc.invalidateQueries({ queryKey: salesKeys.docs.all('quote') })
-      await qc.invalidateQueries({ queryKey: salesKeys.docs.all('order') })
+      await invalidate(quoteDocType, d.id)
       notifySuccess(t('sales.quote.ordered'))
       navigate(`/sales/orders/${order}`)
     } catch (err) {
@@ -95,7 +94,6 @@ export function DocPage({ kind }: { kind: Kind }) {
                     ? api.DELETE('/sales/quotes/{id}', { params: { path: { id: d.id }, query: { version } } })
                     : api.DELETE('/sales/orders/{id}', { params: { path: { id: d.id }, query: { version } } }),
                 )
-                await qc.invalidateQueries({ queryKey: salesKeys.docs.all(kind) })
                 navigate(list, { replace: true })
               }}
             />

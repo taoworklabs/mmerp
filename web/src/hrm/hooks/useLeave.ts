@@ -2,9 +2,16 @@ import { useQuery } from '@tanstack/react-query'
 import { api, unwrap, type Leave } from '@/shared/api/hrm'
 import { hrmKeys } from '../keys'
 
-// useLeaveActions: what the user may do before picking a leave request, and their own employee record.
+const leaveActions = () => ({ queryKey: hrmKeys.leaves.actions(), queryFn: () => unwrap(api.GET('/hrm/leaves/actions')) })
+
+// useLeaveActions: what the user may do before picking a leave request.
 export function useLeaveActions() {
-  return useQuery({ queryKey: hrmKeys.leaves.actions(), queryFn: () => unwrap(api.GET('/hrm/leaves/actions')) })
+  return useQuery({ ...leaveActions(), select: (d) => d.allowed_actions })
+}
+
+// useLeaveSelf: the user's own employee record, whom a new request is for by default; null without one.
+export function useLeaveSelf() {
+  return useQuery({ ...leaveActions(), select: (d) => (d.self_employee_id ? { id: d.self_employee_id, name: d.self_employee_name ?? '' } : null) })
 }
 
 export function useLeaveTypes() {

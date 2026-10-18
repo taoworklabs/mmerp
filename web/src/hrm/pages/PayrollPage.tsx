@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate, useParams, useSearchParams } from 'react-router'
 import { api, unwrap, type Payroll, type PayrollLine } from '@/shared/api/hrm'
-import { ActivityFeed, ApprovalDecision, ApprovalPanel, DocumentActions, DocumentStatus, documentKeys, useDocumentMutation } from '@/shared/document'
+import { ActivityFeed, ApprovalDecision, ApprovalPanel, DocumentActions, DocumentStatus, useDocumentMutation } from '@/shared/document'
 import { errorText, formatDateTime, formatMonth } from '@/shared/i18n'
 import { ExportButton, finished, jobError, useJobStatus } from '@/shared/jobs'
 import { useMe } from '@/shared/auth/me'
@@ -15,7 +15,7 @@ import { loaded } from '@/shared/ui/loaded'
 import { ModalFooter } from '@/shared/ui/ModalFooter'
 import { PayrollTable } from '../components/PayrollTable'
 import { usePayroll } from '../hooks/usePayroll'
-import { hrmKeys, payrollDocType } from '../keys'
+import { payrollDocType } from '../keys'
 
 // Payslips print through the export of their template.
 const payslipTemplate = 'printing.hrm.payslip'
@@ -27,7 +27,7 @@ export function PayrollPage() {
   const [search, setSearch] = useSearchParams()
   const job = Number(search.get('job')) || null
   const payroll = usePayroll(id)
-  const status = useJobStatus(job, [hrmKeys.payrolls.detail(id), hrmKeys.payrolls.lists(), documentKeys.history(payrollDocType, id)])
+  const status = useJobStatus(job, { docType: payrollDocType, id })
   const [error, setError] = useState<string | null>(null)
   const [payslipOf, setPayslipOf] = useState<PayrollLine | null>(null)
   // The computing job is on the URL, so a reload keeps following it.
