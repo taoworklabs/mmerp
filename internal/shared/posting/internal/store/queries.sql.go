@@ -11,6 +11,27 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const documentHeader = `-- name: DocumentHeader :one
+SELECT legal_entity_id, date FROM record.documents WHERE doc_type = $1 AND id = $2
+`
+
+type DocumentHeaderParams struct {
+	DocType string
+	ID      int64
+}
+
+type DocumentHeaderRow struct {
+	LegalEntityID int64
+	Date          pgtype.Date
+}
+
+func (q *Queries) DocumentHeader(ctx context.Context, arg DocumentHeaderParams) (DocumentHeaderRow, error) {
+	row := q.db.QueryRow(ctx, documentHeader, arg.DocType, arg.ID)
+	var i DocumentHeaderRow
+	err := row.Scan(&i.LegalEntityID, &i.Date)
+	return i, err
+}
+
 const insertLines = `-- name: InsertLines :exec
 INSERT INTO posting.lines (doc_type, doc_id, legal_entity_id, date, kind, org_unit_id, amount)
 SELECT $1::text, $2::bigint, $3::bigint, $4::date,
@@ -40,6 +61,20 @@ func (q *Queries) InsertLines(ctx context.Context, arg InsertLinesParams) error 
 	return err
 }
 
+const insertRecording = `-- name: InsertRecording :exec
+INSERT INTO posting.recordings (doc_type, doc_id) VALUES ($1, $2)
+`
+
+type InsertRecordingParams struct {
+	DocType string
+	DocID   int64
+}
+
+func (q *Queries) InsertRecording(ctx context.Context, arg InsertRecordingParams) error {
+	_, err := q.db.Exec(ctx, insertRecording, arg.DocType, arg.DocID)
+	return err
+}
+
 const voidLines = `-- name: VoidLines :exec
 UPDATE posting.lines SET voided_at = now() WHERE doc_type = $1 AND doc_id = $2 AND voided_at IS NULL
 `
@@ -51,5 +86,19 @@ type VoidLinesParams struct {
 
 func (q *Queries) VoidLines(ctx context.Context, arg VoidLinesParams) error {
 	_, err := q.db.Exec(ctx, voidLines, arg.DocType, arg.DocID)
+	return err
+}
+
+const voidRecording = `-- name: VoidRecording :exec
+UPDATE posting.recordings SET voided_at = now() WHERE doc_type = $1 AND doc_id = $2 AND voided_at IS NULL
+`
+
+type VoidRecordingParams struct {
+	DocType string
+	DocID   int64
+}
+
+func (q *Queries) VoidRecording(ctx context.Context, arg VoidRecordingParams) error {
+	_, err := q.db.Exec(ctx, voidRecording, arg.DocType, arg.DocID)
 	return err
 }

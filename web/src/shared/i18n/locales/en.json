@@ -263,6 +263,7 @@
   "shared.error.document_not_editable": "The document can no longer be edited in its current status.",
   "shared.error.invalid_transition": "This action is not possible in the document's current status. Reload to see its new status.",
   "shared.error.period_locked": "The period up to {{locked_until}} is locked. Contact accounting if this document needs a change.",
+  "shared.error.posting_already_recorded": "This document already has posting lines. Cancel it before posting again.",
   "shared.error.period_has_pending_documents": "Documents in the period to lock still await approval. Approve, reject or withdraw them before locking.",
   "shared.error.legal_entity_changed": "A document cannot move to another legal entity.",
   "shared.error.org_unit_has_documents": "The unit has documents, so it cannot move to another legal entity.",
