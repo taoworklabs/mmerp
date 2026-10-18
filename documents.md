@@ -93,6 +93,8 @@ Modules call the following functions **inside the service's transaction, before 
 
 The lock date is always read from the row just locked in step 1, never earlier. Document writes for the same legal entity do not block each other (both are `FOR SHARE`). Thanks to the lock in step 2, operations on the same document run one after another.
 
+`Create` with a `request_id` first takes a transaction advisory lock on that key, before every lock above and before `iam.ShareTree`, so a retried twin waits for the first to commit and then finds its document. This adds no cycle: a transaction takes it once, as its first lock (no caller locks anything before `Create`; one that does, like making an order from a quotation, passes no `request_id`), so a transaction waiting for it holds nothing another one waits for.
+
 `Create` and `Edit` read the legal entity of the org unit only after `iam.ShareTree` (a `SHARE` lock on `iam.org_units`, which tree writes conflict with), so a concurrent move of the unit to another legal entity either finishes first or waits. Tree writes take no document or period lock, so this lock adds no cycle to the order above.
 
 A document's legal entity cannot change after `Create`, so each operation locks exactly one row in step 1.

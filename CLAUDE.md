@@ -46,7 +46,7 @@ The design docs are written in English; keep them in English when you edit them.
 ### Transactions and locking
 
 - Services get a connection only via `platform.DBFrom(ctx)` and open transactions with `platform.InTx(ctx, fn)`. Never pass `pgx.Tx`, or a store bound to one, as a parameter: helpers take the tx `ctx`, so audit rows land in the same transaction.
-- Document writes follow one lock order: legal-entity row in `record.period_locks` (`FOR SHARE`; `FOR UPDATE` only to move the lock date) → document row in `record.documents` (`FOR UPDATE`; in `Create`, the `numbering` counter row, then the insert) → module-owned rows (e.g. `hrm.payroll_locks`, then leave balances).
+- Document writes follow one lock order: in `Create` with a `request_id`, the advisory lock on that key, taken first and only when nothing is locked yet → legal-entity row in `record.period_locks` (`FOR SHARE`; `FOR UPDATE` only to move the lock date) → document row in `record.documents` (`FOR UPDATE`; in `Create`, the `numbering` counter row, then the insert) → module-owned rows (e.g. `hrm.payroll_locks`, then leave balances).
 - One transaction writes exactly one document. Bulk operations are jobs that process each document in its own transaction.
 
 ### Documents (`record`, `approval`, `posting`)
