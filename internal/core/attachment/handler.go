@@ -29,10 +29,6 @@ type addInput struct {
 	RawBody huma.MultipartFormFiles[addForm]
 }
 
-type idInput struct {
-	ID int64 `path:"id"`
-}
-
 type fileOutput struct {
 	ContentType        string `header:"Content-Type"`
 	ContentDisposition string `header:"Content-Disposition"`
@@ -60,12 +56,12 @@ func registerHandlers(api huma.API, s *Service) {
 		})
 	huma.Register(api, huma.Operation{OperationID: "remove-attachment", Method: http.MethodDelete, Path: "/attachments/{id}",
 		Description: "By its uploader, or whoever may attach to the record; the file goes at the next cleanup.", DefaultStatus: http.StatusNoContent},
-		func(ctx context.Context, in *idInput) (*struct{}, error) {
+		func(ctx context.Context, in *platform.IDInput) (*struct{}, error) {
 			return nil, s.Remove(ctx, in.ID)
 		})
 	huma.Register(api, huma.Operation{OperationID: "download-attachment", Method: http.MethodGet, Path: "/attachments/{id}",
 		Description: "Asks again whether the caller may see the record's files."},
-		func(ctx context.Context, in *idInput) (*fileOutput, error) {
+		func(ctx context.Context, in *platform.IDInput) (*fileOutput, error) {
 			meta, f, err := s.Open(ctx, in.ID)
 			if err != nil {
 				return nil, err

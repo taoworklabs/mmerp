@@ -119,10 +119,6 @@ type orgUnitsOutput struct{ Body []OrgUnit }
 
 type orgUnitInput struct{ Body OrgUnitInput }
 
-type idInput struct {
-	ID int64 `path:"id"`
-}
-
 type emailInput struct {
 	ID   int64 `path:"id"`
 	Body struct {
@@ -133,12 +129,6 @@ type emailInput struct {
 type updateOrgUnitInput struct {
 	ID   int64 `path:"id"`
 	Body OrgUnitInput
-}
-
-type createdOutput struct {
-	Body struct {
-		ID int64 `json:"id"`
-	}
 }
 
 type usersOutput struct{ Body []User }
@@ -171,15 +161,6 @@ type revokeInput struct {
 	GrantID int64 `path:"grant"`
 }
 
-func created(id int64, err error) (*createdOutput, error) {
-	if err != nil {
-		return nil, err
-	}
-	out := &createdOutput{}
-	out.Body.ID = id
-	return out, nil
-}
-
 func registerAdminHandlers(api huma.API, s *Service) {
 	huma.Register(api, huma.Operation{OperationID: "list-org-units", Method: http.MethodGet, Path: "/org-units"},
 		func(ctx context.Context, in *orgUnitsInput) (*orgUnitsOutput, error) {
@@ -187,8 +168,8 @@ func registerAdminHandlers(api huma.API, s *Service) {
 			return &orgUnitsOutput{Body: units}, err
 		})
 	huma.Register(api, huma.Operation{OperationID: "create-org-unit", Method: http.MethodPost, Path: "/org-units", DefaultStatus: http.StatusCreated},
-		func(ctx context.Context, in *orgUnitInput) (*createdOutput, error) {
-			return created(s.CreateOrgUnit(ctx, in.Body))
+		func(ctx context.Context, in *orgUnitInput) (*platform.CreatedOutput, error) {
+			return platform.Created(s.CreateOrgUnit(ctx, in.Body))
 		})
 	huma.Register(api, huma.Operation{OperationID: "update-org-unit", Method: http.MethodPut, Path: "/org-units/{id}", DefaultStatus: http.StatusNoContent},
 		func(ctx context.Context, in *updateOrgUnitInput) (*struct{}, error) {
@@ -201,11 +182,11 @@ func registerAdminHandlers(api huma.API, s *Service) {
 			return &usersOutput{Body: users}, err
 		})
 	huma.Register(api, huma.Operation{OperationID: "create-user", Method: http.MethodPost, Path: "/users", DefaultStatus: http.StatusCreated},
-		func(ctx context.Context, in *createUserInput) (*createdOutput, error) {
-			return created(s.CreateUser(ctx, in.Body.Login, in.Body.Name, in.Body.Password))
+		func(ctx context.Context, in *createUserInput) (*platform.CreatedOutput, error) {
+			return platform.Created(s.CreateUser(ctx, in.Body.Login, in.Body.Name, in.Body.Password))
 		})
 	huma.Register(api, huma.Operation{OperationID: "get-user", Method: http.MethodGet, Path: "/users/{id}"},
-		func(ctx context.Context, in *idInput) (*userOutput, error) {
+		func(ctx context.Context, in *platform.IDInput) (*userOutput, error) {
 			u, err := s.User(ctx, in.ID)
 			return &userOutput{Body: u}, err
 		})
@@ -218,13 +199,13 @@ func registerAdminHandlers(api huma.API, s *Service) {
 			return &rolesOutput{Body: s.Roles()}, nil
 		})
 	huma.Register(api, huma.Operation{OperationID: "list-user-roles", Method: http.MethodGet, Path: "/users/{id}/roles"},
-		func(ctx context.Context, in *idInput) (*grantsOutput, error) {
+		func(ctx context.Context, in *platform.IDInput) (*grantsOutput, error) {
 			grants, err := s.UserRoles(ctx, in.ID)
 			return &grantsOutput{Body: grants}, err
 		})
 	huma.Register(api, huma.Operation{OperationID: "grant-role", Method: http.MethodPost, Path: "/users/{id}/roles", DefaultStatus: http.StatusCreated},
-		func(ctx context.Context, in *grantInput) (*createdOutput, error) {
-			return created(s.GrantRole(ctx, in.ID, in.Body.Product, in.Body.Role, in.Body.OrgUnitID))
+		func(ctx context.Context, in *grantInput) (*platform.CreatedOutput, error) {
+			return platform.Created(s.GrantRole(ctx, in.ID, in.Body.Product, in.Body.Role, in.Body.OrgUnitID))
 		})
 	huma.Register(api, huma.Operation{OperationID: "revoke-role", Method: http.MethodDelete, Path: "/users/{id}/roles/{grant}", DefaultStatus: http.StatusNoContent},
 		func(ctx context.Context, in *revokeInput) (*struct{}, error) {

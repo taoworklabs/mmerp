@@ -66,8 +66,8 @@ func (s *Service) printData(ctx context.Context, id int64) ([]printing.Part, err
 		Lines:  make([]Line, len(lines)),
 		Totals: Totals{Subtotal: h.Subtotal, DiscountTotal: h.DiscountTotal, VatTotal: h.VatTotal, Total: h.Total}}
 	for i, l := range lines {
-		p.Lines[i] = Line{LineInput: LineInput{ItemID: l.ItemID, Description: l.Description, Quantity: plain(l.Quantity), UnitPrice: l.UnitPrice,
-			DiscountPercent: plain(l.DiscountPercent), VatRate: l.VatRate}, ItemCode: l.ItemCode, Unit: l.Unit, Amount: l.Amount, Discount: l.Discount, Vat: l.Vat}
+		p.Lines[i] = Line{LineInput: LineInput{ItemID: l.ItemID, Description: l.Description, Quantity: platform.PlainDecimal(l.Quantity), UnitPrice: l.UnitPrice,
+			DiscountPercent: platform.PlainDecimal(l.DiscountPercent), VatRate: l.VatRate}, ItemCode: l.ItemCode, Unit: l.Unit, Amount: l.Amount, Discount: l.Discount, Vat: l.Vat}
 	}
 	b, err := json.Marshal(p)
 	return []printing.Part{{Data: b}}, err
