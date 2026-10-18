@@ -147,9 +147,6 @@ ORDER BY
     h.id DESC
 LIMIT @lim OFFSET @off;
 
--- name: PrintLegalEntity :one
-SELECT coalesce(legal_name, name)::text AS name, tax_code, address FROM iam.org_units WHERE id = $1;
-
 -- name: CopyCustomer :one
 -- Takes the customer's details as they are now onto a document being sent; returns whether
 -- the customer is active.

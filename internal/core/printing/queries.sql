@@ -1,3 +1,6 @@
+-- name: LegalEntity :one
+SELECT coalesce(legal_name, name)::text AS name, tax_code, address FROM iam.org_units WHERE id = $1;
+
 -- name: CreateSnapshots :exec
 INSERT INTO printing.snapshots (doc_type, doc_id, part, position, data)
 SELECT @doc_type::text, @doc_id::bigint, unnest(@parts::bigint[]), unnest(@positions::int[]), unnest(@data::bytea[]);

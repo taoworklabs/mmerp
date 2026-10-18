@@ -202,7 +202,7 @@ func (s *Service) computePayroll(ctx context.Context, j *river.Job[payrollComput
 		if err != nil {
 			return err
 		}
-		res := calcPayroll(prm, platform.Rounding(b.Rounding), in)
+		res := calcPayroll(prm, b.Rounding, in)
 		var cost int64
 		for i := range b.Employees {
 			cost += res[i].Cost

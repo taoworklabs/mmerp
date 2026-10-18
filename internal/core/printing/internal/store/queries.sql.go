@@ -121,6 +121,23 @@ func (q *Queries) LatestBlocks(ctx context.Context) ([]LatestBlocksRow, error) {
 	return items, nil
 }
 
+const legalEntity = `-- name: LegalEntity :one
+SELECT coalesce(legal_name, name)::text AS name, tax_code, address FROM iam.org_units WHERE id = $1
+`
+
+type LegalEntityRow struct {
+	Name    string
+	TaxCode pgtype.Text
+	Address pgtype.Text
+}
+
+func (q *Queries) LegalEntity(ctx context.Context, id int64) (LegalEntityRow, error) {
+	row := q.db.QueryRow(ctx, legalEntity, id)
+	var i LegalEntityRow
+	err := row.Scan(&i.Name, &i.TaxCode, &i.Address)
+	return i, err
+}
+
 const saveBlocks = `-- name: SaveBlocks :one
 INSERT INTO printing.blocks (template, version, texts, saved_by)
 SELECT $1::text, coalesce(max(version), 0) + 1, $2::jsonb, $3::bigint
