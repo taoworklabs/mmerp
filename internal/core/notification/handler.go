@@ -5,6 +5,8 @@ import (
 	"net/http"
 
 	"github.com/danielgtaylor/huma/v2"
+
+	"github.com/taoworklabs/mmerp/internal/platform"
 )
 
 type listInput struct {
@@ -22,10 +24,6 @@ type unreadOutput struct {
 type mailServerOutput struct{ Body MailServer }
 
 type mailServerInput struct{ Body MailServerInput }
-
-type idInput struct {
-	ID int64 `path:"id"`
-}
 
 func registerHandlers(api huma.API, s *Service) {
 	huma.Register(api, huma.Operation{OperationID: "list-notifications", Method: http.MethodGet, Path: "/notifications",
@@ -46,7 +44,7 @@ func registerHandlers(api huma.API, s *Service) {
 			return out, err
 		})
 	huma.Register(api, huma.Operation{OperationID: "read-notification", Method: http.MethodPost, Path: "/notifications/{id}/read", DefaultStatus: http.StatusNoContent},
-		func(ctx context.Context, in *idInput) (*struct{}, error) { return nil, s.MarkRead(ctx, in.ID) })
+		func(ctx context.Context, in *platform.IDInput) (*struct{}, error) { return nil, s.MarkRead(ctx, in.ID) })
 	huma.Register(api, huma.Operation{OperationID: "read-all-notifications", Method: http.MethodPost, Path: "/notifications/read-all", DefaultStatus: http.StatusNoContent},
 		func(ctx context.Context, _ *struct{}) (*struct{}, error) { return nil, s.MarkAllRead(ctx) })
 	huma.Register(api, huma.Operation{OperationID: "get-mail-server", Method: http.MethodGet, Path: "/mail-server",

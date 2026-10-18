@@ -208,7 +208,7 @@ func (s *Service) Leaves(ctx context.Context, f LeaveFilter) (LeaveList, error) 
 		AllUnits: sc.All, Units: sc.Units, Actor: actor, Reports: reports, Status: f.Status, Q: strings.TrimSpace(f.Q),
 		OrgUnitID:  pgtype.Int8{Int64: f.OrgUnitID, Valid: f.OrgUnitID != 0},
 		EmployeeID: pgtype.Int8{Int64: f.EmployeeID, Valid: f.EmployeeID != 0},
-		FromDate:   platform.NullDate(optional(f.From)), ToDate: platform.NullDate(optional(f.To)),
+		FromDate:   platform.NullDate(platform.Optional(f.From)), ToDate: platform.NullDate(platform.Optional(f.To)),
 		Sort: f.Sort, Lim: f.Limit(), Off: f.Offset(),
 	})
 	for _, r := range rows {
@@ -216,7 +216,7 @@ func (s *Service) Leaves(ctx context.Context, f LeaveFilter) (LeaveList, error) 
 		out.Items = append(out.Items, LeaveListItem{
 			ID: r.ID, Number: r.Number, Status: r.Status, EmployeeID: r.EmployeeID, EmployeeCode: r.EmployeeCode,
 			EmployeeName: r.EmployeeName, LeaveTypeName: r.LeaveTypeName, StartDate: *platform.DatePtr(r.StartDate),
-			EndDate: *platform.DatePtr(r.EndDate), Days: plain(r.Days),
+			EndDate: *platform.DatePtr(r.EndDate), Days: platform.PlainDecimal(r.Days),
 		})
 	}
 	return out, err
@@ -245,7 +245,7 @@ func (s *Service) Leave(ctx context.Context, id int64) (Leave, error) {
 		ID: id, Number: d.Number, Status: string(d.Status), Version: d.Version, EmployeeID: r.EmployeeID,
 		EmployeeCode: r.EmployeeCode, EmployeeName: r.EmployeeName, LeaveTypeName: r.LeaveTypeName,
 		LeaveFields: LeaveFields{LeaveTypeID: r.LeaveTypeID, StartDate: *platform.DatePtr(r.StartDate), EndDate: *platform.DatePtr(r.EndDate),
-			Days: plain(r.Days), Reason: platform.TextPtr(r.Reason)},
+			Days: platform.PlainDecimal(r.Days), Reason: platform.TextPtr(r.Reason)},
 		AllowedActions: actions,
 	}
 	if ok, err := s.canSeeBalance(ctx, r.EmployeeID); err != nil {
@@ -258,7 +258,7 @@ func (s *Service) Leave(ctx context.Context, id int64) (Leave, error) {
 		out.Balance = new("0")
 		for _, b := range balances {
 			if b.Year == int32(r.StartDate.Time.Year()) {
-				out.Balance = new(plain(b.Days))
+				out.Balance = new(platform.PlainDecimal(b.Days))
 			}
 		}
 	}
@@ -313,7 +313,7 @@ func (s *Service) UpdateLeave(ctx context.Context, id int64, in LeaveUpdate) err
 		}); err != nil {
 			return err
 		}
-		before := LeaveFields{LeaveTypeID: old.LeaveTypeID, StartDate: *platform.DatePtr(old.StartDate), EndDate: *platform.DatePtr(old.EndDate), Days: plain(old.Days), Reason: platform.TextPtr(old.Reason)}
+		before := LeaveFields{LeaveTypeID: old.LeaveTypeID, StartDate: *platform.DatePtr(old.StartDate), EndDate: *platform.DatePtr(old.EndDate), Days: platform.PlainDecimal(old.Days), Reason: platform.TextPtr(old.Reason)}
 		return s.d.Audit.RecordChanges(ctx, "hrm.leave_request_updated", audit.Ref{Type: leaveType, ID: id}, leaveChanges(before, old.LeaveTypeName, in.LeaveFields, typeName))
 	})
 }
@@ -506,7 +506,7 @@ func leaveChanges(old LeaveFields, oldType string, n LeaveFields, newType string
 		{Field: "leave_type", Old: oldType, New: newType},
 		{Field: "start_date", Old: old.StartDate, New: n.StartDate},
 		{Field: "end_date", Old: old.EndDate, New: n.EndDate},
-		{Field: "days", Old: old.Days, New: plain(n.Days)},
+		{Field: "days", Old: old.Days, New: platform.PlainDecimal(n.Days)},
 		{Field: "reason", Old: old.Reason, New: n.Reason},
 	}
 }
@@ -537,7 +537,7 @@ func (s *Service) LeaveBalances(ctx context.Context, employeeID int64) ([]LeaveB
 	rows, err := store.New(platform.DBFrom(ctx)).LeaveBalances(ctx, employeeID)
 	out := make([]LeaveBalance, len(rows))
 	for i, r := range rows {
-		out[i] = LeaveBalance{Year: r.Year, Days: plain(r.Days)}
+		out[i] = LeaveBalance{Year: r.Year, Days: platform.PlainDecimal(r.Days)}
 	}
 	return out, err
 }
@@ -578,14 +578,6 @@ func (s *Service) AdjustLeaveBalance(ctx context.Context, employeeID int64, year
 			return err
 		}
 		return s.d.Audit.RecordFor(ctx, "hrm.leave_balance_adjusted", audit.Ref{Type: employeeType, ID: employeeID},
-			map[string]any{"year": year, "delta": in.Delta, "days": plain(after), "reason": in.Reason})
+			map[string]any{"year": year, "delta": in.Delta, "days": platform.PlainDecimal(after), "reason": in.Reason})
 	})
-}
-
-// plain writes a numeric column's text without trailing zeros: "1.0" is "1", "2.5" stays.
-func plain(s string) string {
-	if d, err := decimal.NewFromString(s); err == nil {
-		return d.String()
-	}
-	return s
 }

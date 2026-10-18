@@ -124,7 +124,7 @@ func (s *Service) Overtimes(ctx context.Context, f OvertimeFilter) (OvertimeList
 		AllUnits: sc.All, Units: sc.Units, Actor: actor, Reports: reports, Status: f.Status, Q: strings.TrimSpace(f.Q),
 		OrgUnitID:  pgtype.Int8{Int64: f.OrgUnitID, Valid: f.OrgUnitID != 0},
 		EmployeeID: pgtype.Int8{Int64: f.EmployeeID, Valid: f.EmployeeID != 0},
-		FromDate:   platform.NullDate(optional(f.From)), ToDate: platform.NullDate(optional(f.To)),
+		FromDate:   platform.NullDate(platform.Optional(f.From)), ToDate: platform.NullDate(platform.Optional(f.To)),
 		Sort: f.Sort, Lim: f.Limit(), Off: f.Offset(),
 	})
 	for _, r := range rows {
@@ -132,7 +132,7 @@ func (s *Service) Overtimes(ctx context.Context, f OvertimeFilter) (OvertimeList
 		out.Items = append(out.Items, OvertimeListItem{
 			ID: r.ID, Number: r.Number, Status: r.Status, EmployeeID: r.EmployeeID, EmployeeCode: r.EmployeeCode,
 			EmployeeName: r.EmployeeName, Date: *platform.DatePtr(r.Date), DayKind: r.DayKind,
-			DayHours: plain(r.DayHours), NightHours: plain(r.NightHours),
+			DayHours: platform.PlainDecimal(r.DayHours), NightHours: platform.PlainDecimal(r.NightHours),
 		})
 	}
 	return out, err
@@ -251,15 +251,15 @@ func overtimeHeader(unit int64, in OvertimeFields) (record.Header, error) {
 }
 
 func overtimeFields(r store.GetOvertimeRequestRow) OvertimeFields {
-	return OvertimeFields{Date: *platform.DatePtr(r.Date), DayKind: r.DayKind, DayHours: plain(r.DayHours), NightHours: plain(r.NightHours), Reason: platform.TextPtr(r.Reason)}
+	return OvertimeFields{Date: *platform.DatePtr(r.Date), DayKind: r.DayKind, DayHours: platform.PlainDecimal(r.DayHours), NightHours: platform.PlainDecimal(r.NightHours), Reason: platform.TextPtr(r.Reason)}
 }
 
 func overtimeChanges(old, n OvertimeFields) []audit.Change {
 	return []audit.Change{
 		{Field: "date", Old: old.Date, New: n.Date},
 		{Field: "day_kind", Old: old.DayKind, New: n.DayKind},
-		{Field: "day_hours", Old: old.DayHours, New: plain(n.DayHours)},
-		{Field: "night_hours", Old: old.NightHours, New: plain(n.NightHours)},
+		{Field: "day_hours", Old: old.DayHours, New: platform.PlainDecimal(n.DayHours)},
+		{Field: "night_hours", Old: old.NightHours, New: platform.PlainDecimal(n.NightHours)},
 		{Field: "reason", Old: old.Reason, New: n.Reason},
 	}
 }
