@@ -16,8 +16,7 @@ import (
 func TestKeepersGoWithTheDraft(t *testing.T) {
 	core := coretest.New(t, "test")
 	ids, rec, admin := core.IAM, core.Record, core.Admin
-	rec.Register(record.Type{Code: "test.doc", Product: "test", Kind: record.Document, NumberPrefix: "T",
-		Can: func(context.Context, int64, record.Action) (bool, error) { return true, nil }})
+	adminDoc(core, record.Type{})
 	c := must(t)(ids.CreateOrgUnit(admin, iam.OrgUnitInput{Kind: "company", Name: "C"}))
 	d, err := rec.Create(admin, "test.doc", record.Header{Date: "2026-03-10", OrgUnitID: c})
 	if err != nil {

@@ -88,7 +88,8 @@ A file with no content is left out, never created empty: a module without routes
 // service.go
 func NewService(d Deps) *Service {
     s := &Service{d: d}
-    d.Record.Register(record.Type{Code: "sales.order", Product: "sales", Kind: record.Document, Can: s.can})
+    d.Record.Register(record.Type{Code: "sales.order", Product: "sales", Kind: record.Document, NumberPrefix: "DH",
+        Perms: record.Perms{View: PermDocView, Edit: PermDocEdit}, OnDelete: deleteOrder})
     d.IAM.RegisterRoles("sales", roles) // extra parameter: roles assignable only tenant-wide
     return s
 }
@@ -180,7 +181,7 @@ A product module reaches the core only through these entry points. A need none o
 | Permission at org units | `iam.Allowed` / `iam.Require(ctx, product, perm, unit, more...)` (every unit must be in scope); lists filter with `iam.Scope`; tenant-wide catalogues use `iam.RequireTenantWide` |
 | Who may do what with a record | The record type's permission declaration, with an optional relation grant and refine hook; modules ask `record.Can`, or `record.Visible` to answer not found ([ADR-0034](./docs/adr/0034-record-types-declare-permissions.md)) |
 | Document lifecycle | `record.Create` / `Edit` before the module's own rows, in the same transaction; drafts are deleted through the core route, which calls the type's delete hook; status changes through `record`'s routes, reacting in `OnTransition` and `BeforeSubmit`; `record.Touch` before changing only a draft's child rows; `record.Lock` (module-facing, checks nothing) before a write that depends on a document without changing it |
-| `allowed_actions` | `record.DocumentActions` for lifecycle actions, `record.AllowedActions` for the rest |
+| `allowed_actions` | `record.Actions(ctx, doc, extra...)` for a record (lifecycle actions by status, `print`, `export`, then the module's own extras; a catalog record passes only its `Ref` and gets `edit`); `record.TypeActions` for `create` and `import` before a record exists |
 | Writes while a product is disabled | `platform.ProductGate`; `record`, the route middleware, settings, jobs, prints, imports and exports apply it by the registered product |
 | Audit | `audit.Record` / `RecordFor` / `RecordChanges` in the change's transaction; `record.RestrictHistory` keeps an entry off a record's timeline for who may not see it |
 | Today and settings | `setting.Today`; `setting.GetFor`; a product's legal-entity settings registered with `RegisterLegalEntityKey(product, …)` |

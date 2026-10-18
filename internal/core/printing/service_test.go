@@ -47,8 +47,11 @@ func setup(t *testing.T, data func(context.Context, int64) ([]Part, error), layo
 	ids := iam.NewService(iam.Deps{Setting: setting.NewService(), Audit: audit.NewService()})
 	rec := record.NewService(record.Deps{IAM: ids, Numbering: numbering.NewService(numbering.Deps{}), Audit: audit.NewService()})
 	ids.SetTreeHook(rec)
+	ids.RegisterRoles("test", map[string][]string{"member": {"test.all"}})
 	rec.Register(record.Type{Code: "test.doc", Product: "test", Kind: record.Document, NumberPrefix: "T",
-		Can: func(context.Context, int64, record.Action) (bool, error) { return true, nil }})
+		Perms:    record.Perms{View: "test.all", Edit: "test.all", ViewFiles: "test.all", Attach: "test.all"},
+		Grant:    func(context.Context, int64, record.Action) (bool, error) { return true, nil },
+		OnDelete: func(context.Context, int64) error { return nil }})
 	prn := NewService(Deps{Record: rec, Audit: audit.NewService(), IAM: ids,
 		DataIO: dataio.NewService(dataio.Deps{IAM: ids, Audit: audit.NewService()})})
 	prn.Register(Template{Code: "test.doc", DocType: "test.doc", Data: data, Layouts: []Layout{layout}})

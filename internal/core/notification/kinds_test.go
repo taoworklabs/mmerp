@@ -43,8 +43,11 @@ func TestProductKinds(t *testing.T) {
 	set := setting.NewService()
 	ids := iam.NewService(iam.Deps{Setting: set, Audit: audit.NewService()})
 	rec := record.NewService(record.Deps{IAM: ids, Numbering: numbering.NewService(numbering.Deps{}), Audit: audit.NewService()})
+	ids.RegisterRoles("test", map[string][]string{"member": {"test.all"}})
 	rec.Register(record.Type{Code: "test.doc", Product: "test", Kind: record.Document, NumberPrefix: "T",
-		Can: func(context.Context, int64, record.Action) (bool, error) { return true, nil }})
+		Perms:    record.Perms{View: "test.all", Edit: "test.all", ViewFiles: "test.all", Attach: "test.all"},
+		Grant:    func(context.Context, int64, record.Action) (bool, error) { return true, nil },
+		OnDelete: func(context.Context, int64) error { return nil }})
 	s := NewService(Deps{Record: rec, IAM: ids, Audit: audit.NewService(), Setting: set})
 	s.RegisterKind("test.pinged", true)
 

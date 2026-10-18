@@ -90,9 +90,7 @@ func (s *Service) Register(t Type) {
 	if t.Kind == Document && t.NumberPrefix == "" {
 		panic("record: document type " + t.Code + " has no number prefix")
 	}
-	if t.Can == nil {
-		s.checkDeclaration(t)
-	}
+	s.checkDeclaration(t)
 	s.types[t.Code] = t
 }
 
@@ -107,6 +105,9 @@ func (s *Service) checkDeclaration(t Type) {
 			fail("declares " + perm + ", which no role of " + t.Product + " grants")
 		}
 	}
+	if t.Kind == Document && t.OnDelete == nil {
+		fail("is a document without OnDelete")
+	}
 	if t.Kind == Catalog {
 		if t.NumberPrefix != "" || t.Fields != nil || t.OnTransition != nil || t.BeforeSubmit != nil || t.Approvers != nil || t.SubjectCreates {
 			fail("is a catalog with document-only fields")
@@ -118,7 +119,7 @@ func (s *Service) checkDeclaration(t Type) {
 }
 
 // Offer says a print template or an export (action Print or Export) exists for a type;
-// without one a declared type never answers that action. Called while wiring modules.
+// without one a type never answers that action. Called while wiring modules.
 func (s *Service) Offer(code string, action Action) {
 	s.offers[code] = append(s.offers[code], action)
 }
@@ -176,13 +177,6 @@ func (s *Service) Can(ctx context.Context, code string, id int64, action Action)
 	if !ok {
 		return false, fmt.Errorf("record: unknown type %q", code)
 	}
-	if t.Can != nil {
-		ok, err := t.Can(ctx, id, action)
-		if err != nil || !ok {
-			return false, err
-		}
-		return platform.ProductGate(ctx, t.Product, action.class()) == nil, nil
-	}
 	var unit int64
 	var err error
 	if t.Kind == Document {
@@ -201,7 +195,7 @@ func (s *Service) Can(ctx context.Context, code string, id int64, action Action)
 	return s.answer(ctx, t, id, unit, action)
 }
 
-// answer evaluates a declared type's action on record id at org unit unit.
+// answer evaluates a type's action on record id at org unit unit.
 func (s *Service) answer(ctx context.Context, t Type, id, unit int64, action Action) (bool, error) {
 	perm := t.Perms.of(action)
 	if perm == "" || (action == Print || action == Export) && !slices.Contains(s.offers[t.Code], action) {
@@ -230,8 +224,9 @@ func (s *Service) Read(ctx context.Context, ref Ref) (Doc, error) {
 
 // Actions is the whole allowed_actions of d: its lifecycle actions, print and export
 // when available, then extra, the module's own actions it has already decided on.
+// For a catalog record, d names only its Ref and the lifecycle is edit alone.
 func (s *Service) Actions(ctx context.Context, d Doc, extra ...string) ([]string, error) {
-	out, err := s.DocumentActions(ctx, d)
+	out, err := s.lifecycleActions(ctx, d)
 	if err != nil {
 		return nil, err
 	}
@@ -274,7 +269,7 @@ func (s *Service) TypeActions(ctx context.Context, code string) ([]string, error
 	return out, nil
 }
 
-// mayCreate checks a declared type's create permission at the header's org unit; the
+// mayCreate checks a type's create permission at the header's org unit; the
 // subject the header names may create without it if the type says so. Refused for a
 // named subject, the subject stays hidden as if it did not exist.
 func (s *Service) mayCreate(ctx context.Context, t Type, h Header) error {
@@ -306,21 +301,6 @@ func (s *Service) require(ctx context.Context, ref Ref, action Action) error {
 	return err
 }
 
-// AllowedActions filters actions down to those the actor may perform, for allowed_actions.
-func (s *Service) AllowedActions(ctx context.Context, code string, id int64, actions ...Action) ([]string, error) {
-	out := []string{}
-	for _, a := range actions {
-		ok, err := s.Can(ctx, code, id, a)
-		if err != nil {
-			return nil, err
-		}
-		if ok {
-			out = append(out, string(a))
-		}
-	}
-	return out, nil
-}
-
 // documentActions maps each status to the API actions and the permission each needs.
 var documentActions = map[Status][]struct {
 	name   string
@@ -331,9 +311,16 @@ var documentActions = map[Status][]struct {
 	Posted:          {{"cancel", Cancel}},
 }
 
-// DocumentActions lists the write actions on d for allowed_actions; none once its date is locked.
-func (s *Service) DocumentActions(ctx context.Context, d Doc) ([]string, error) {
+// lifecycleActions lists the write actions on d for allowed_actions; none once its date is locked.
+func (s *Service) lifecycleActions(ctx context.Context, d Doc) ([]string, error) {
 	out := []string{}
+	if s.types[d.Type].Kind == Catalog {
+		ok, err := s.Can(ctx, d.Type, d.ID, Edit)
+		if ok {
+			out = append(out, "edit")
+		}
+		return out, err
+	}
 	rows, err := store.New(platform.DBFrom(ctx)).LockedUntil(ctx, d.LegalEntityID)
 	if err != nil {
 		return nil, err
@@ -369,8 +356,7 @@ func (s *Service) Get(ctx context.Context, ref Ref) (Doc, error) {
 }
 
 // Create adds a draft and gives it a number; the caller then inserts its own row with
-// the returned id. A declared type's create permission is checked here; for a type with
-// a hand-written Can, the caller checks it.
+// the returned id. The type's create permission is checked here.
 func (s *Service) Create(ctx context.Context, code string, h Header) (Doc, error) {
 	t, ok := s.types[code]
 	if !ok || t.Kind != Document {
@@ -379,10 +365,8 @@ func (s *Service) Create(ctx context.Context, code string, h Header) (Doc, error
 	if err := platform.ProductGate(ctx, t.Product, platform.ClassWrite); err != nil {
 		return Doc{}, err
 	}
-	if t.Can == nil {
-		if err := s.mayCreate(ctx, t, h); err != nil {
-			return Doc{}, err
-		}
+	if err := s.mayCreate(ctx, t, h); err != nil {
+		return Doc{}, err
 	}
 	date, fields, err := s.check(ctx, t, h)
 	if err != nil {

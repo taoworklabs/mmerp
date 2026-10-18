@@ -32,7 +32,7 @@ func newDeclared(t *testing.T) *declared {
 	f.rec.Register(record.Type{
 		Code: "test.decl", Product: "test", Kind: record.Document, NumberPrefix: "D",
 		Perms:          record.Perms{View: "test.view", Edit: "test.edit", Attach: "test.edit"},
-		SubjectCreates: true,
+		SubjectCreates: true, OnDelete: noRows,
 		Grant: func(ctx context.Context, id int64, a record.Action) (bool, error) {
 			actor, _ := platform.ActorFrom(ctx)
 			return (a == record.View || a == record.Print) && f.subjects[id] == actor, nil
@@ -74,6 +74,9 @@ func ok[T any](t *testing.T) func(T, error) T {
 		return v
 	}
 }
+
+// noRows is the delete hook of a type that keeps no rows of its own.
+func noRows(context.Context, int64) error { return nil }
 
 func errorCode(err error) string {
 	if e, ok := errors.AsType[*platform.Error](err); ok {
@@ -136,7 +139,7 @@ func TestDeclaredCan(t *testing.T) {
 		t.Error("product off still edits")
 	}
 	f.rec.Register(record.Type{Code: "test.other", Product: "test", Kind: record.Document, NumberPrefix: "O",
-		Perms: record.Perms{View: "test.view", Edit: "test.edit"}})
+		Perms: record.Perms{View: "test.view", Edit: "test.edit"}, OnDelete: noRows})
 	other := ok[record.Doc](t)(f.rec.Create(f.editor, "test.other", record.Header{Date: "2026-03-10", OrgUnitID: f.a}))
 	if can(f.editor, other.ID, record.View) {
 		t.Error("an id of another type is visible")
@@ -180,8 +183,9 @@ func TestDeclaredReads(t *testing.T) {
 func TestDeclarationsAreCheckedAtRegistration(t *testing.T) {
 	f := newDeclared(t)
 	for name, typ := range map[string]record.Type{
-		"no view":             {Code: "test.a", Kind: record.Document, NumberPrefix: "A", Perms: record.Perms{Edit: "test.edit"}},
-		"unknown permission":  {Code: "test.b", Kind: record.Document, NumberPrefix: "B", Perms: record.Perms{View: "test.nope"}},
+		"no view":             {Code: "test.a", Kind: record.Document, NumberPrefix: "A", Perms: record.Perms{Edit: "test.edit"}, OnDelete: noRows},
+		"unknown permission":  {Code: "test.b", Kind: record.Document, NumberPrefix: "B", Perms: record.Perms{View: "test.nope"}, OnDelete: noRows},
+		"document, no delete": {Code: "test.e", Kind: record.Document, NumberPrefix: "E", Perms: record.Perms{View: "test.view"}},
 		"catalog, no locate":  {Code: "test.c", Kind: record.Catalog, Perms: record.Perms{View: "test.view"}},
 		"catalog with number": {Code: "test.d", Kind: record.Catalog, NumberPrefix: "D", Perms: record.Perms{View: "test.view"}, Locate: func(context.Context, int64) (int64, error) { return 0, nil }},
 	} {

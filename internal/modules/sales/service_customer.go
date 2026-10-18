@@ -61,7 +61,7 @@ func (s *Service) Customer(ctx context.Context, id int64) (Customer, error) {
 	if err != nil {
 		return Customer{}, err
 	}
-	actions, err := s.d.Record.AllowedActions(ctx, customerType, id, record.Edit, record.Attach)
+	actions, err := s.d.Record.Actions(ctx, record.Doc{Ref: record.Ref{Type: customerType, ID: id}})
 	return Customer{ID: id, Code: c.Code, CustomerFields: customerFields(c), OrgUnitName: c.OrgUnitName, AllowedActions: actions}, err
 }
 

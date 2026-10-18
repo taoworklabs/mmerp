@@ -97,7 +97,7 @@ func (s *Service) Employee(ctx context.Context, id int64) (Employee, error) {
 	if err != nil {
 		return Employee{}, err
 	}
-	actions, err := s.d.Record.AllowedActions(ctx, employeeType, id, record.View, record.Edit)
+	actions, err := s.d.Record.Actions(ctx, record.Doc{Ref: record.Ref{Type: employeeType, ID: id}})
 	if err != nil {
 		return Employee{}, err
 	}

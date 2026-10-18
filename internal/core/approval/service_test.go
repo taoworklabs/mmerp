@@ -35,10 +35,14 @@ func newFixture(t *testing.T) *fixture {
 	f.ids.RegisterRoles("test", map[string][]string{"hr": {"test.doc.view"}, "approval_admin": {"test.approval.manage"}}, "approval_admin")
 	f.rec.Register(record.Type{
 		Code: "test.doc", Product: "test", Kind: record.Document, NumberPrefix: "T",
-		Can: func(ctx context.Context, _ int64, _ record.Action) (bool, error) {
+		// Everyone but the outsider may do anything with it.
+		Perms: record.Perms{View: "test.doc.view", Edit: "test.doc.view"},
+		Grant: func(ctx context.Context, _ int64, _ record.Action) (bool, error) {
 			id, _ := platform.ActorFrom(ctx)
 			return id != f.users["outsider"], nil
 		},
+		OnDelete:       func(context.Context, int64) error { return nil },
+		SubjectCreates: true,
 		Fields: []record.Field{{Key: "days", Kind: record.Number}, {Key: "kind", Kind: record.Choice,
 			Options: func(context.Context) ([]record.Option, error) {
 				return []record.Option{{Value: "a"}, {Value: "b"}}, nil
@@ -46,8 +50,9 @@ func newFixture(t *testing.T) *fixture {
 		Approvers: func(_ context.Context, _ record.Ref, level int) ([]int64, error) { return f.managers[level], nil },
 	})
 	// A type of another product, for rules a product's administrator may not touch.
+	f.ids.RegisterRoles("other", map[string][]string{"member": {"other.doc.edit"}})
 	f.rec.Register(record.Type{Code: "other.doc", Product: "other", Kind: record.Document, NumberPrefix: "O",
-		Can: func(context.Context, int64, record.Action) (bool, error) { return true, nil }})
+		Perms: record.Perms{View: "other.doc.edit", Edit: "other.doc.edit"}, OnDelete: func(context.Context, int64) error { return nil }})
 	c, err := f.ids.CreateOrgUnit(f.admin, iam.OrgUnitInput{Kind: "company", Name: "C"})
 	f.check(err)
 	f.unit, err = f.ids.CreateOrgUnit(f.admin, iam.OrgUnitInput{ParentID: &c, Kind: "department", Name: "A"})
@@ -79,7 +84,8 @@ func (f *fixture) rule(steps ...approval.Step) {
 // send creates a draft with days and kind as the submitter and sends it.
 func (f *fixture) send(days, kind string) (record.Doc, error) {
 	f.t.Helper()
-	d, err := f.rec.Create(f.as("submitter"), "test.doc", record.Header{Date: "2026-03-10", OrgUnitID: f.unit, Fields: map[string]string{"days": days, "kind": kind}})
+	d, err := f.rec.Create(f.as("submitter"), "test.doc", record.Header{Date: "2026-03-10", OrgUnitID: f.unit, Subject: f.users["submitter"],
+		Fields: map[string]string{"days": days, "kind": kind}})
 	f.check(err)
 	if err := f.rec.Transition(f.as("submitter"), d.Ref, 1, record.Posted); err != nil {
 		return d, err

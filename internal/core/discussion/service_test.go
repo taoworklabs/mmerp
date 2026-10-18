@@ -7,7 +7,9 @@ import (
 
 	"github.com/taoworklabs/mmerp/internal/core/audit"
 	"github.com/taoworklabs/mmerp/internal/core/discussion"
+	"github.com/taoworklabs/mmerp/internal/core/iam"
 	"github.com/taoworklabs/mmerp/internal/core/record"
+	"github.com/taoworklabs/mmerp/internal/core/setting"
 	"github.com/taoworklabs/mmerp/internal/platform"
 	"github.com/taoworklabs/mmerp/internal/platform/pgtest"
 )
@@ -21,10 +23,15 @@ func TestDeletedWithTheDraft(t *testing.T) {
 		t.Fatal(err)
 	}
 	ctx = platform.WithActor(ctx, actor)
-	rec := record.NewService(record.Deps{Audit: audit.NewService()})
+	ids := iam.NewService(iam.Deps{Setting: setting.NewService(), Audit: audit.NewService()})
+	ids.RegisterRoles("test", map[string][]string{"member": {"test.all"}})
+	rec := record.NewService(record.Deps{IAM: ids, Audit: audit.NewService()})
 	thing := record.Ref{Type: "test.thing", ID: 1}
 	rec.Register(record.Type{Code: thing.Type, Product: "test", Kind: record.Catalog,
-		Can: func(context.Context, int64, record.Action) (bool, error) { return true, nil }})
+		// Anyone may do anything with it.
+		Perms:  record.Perms{View: "test.all", Edit: "test.all", ViewFiles: "test.all", Attach: "test.all"},
+		Grant:  func(context.Context, int64, record.Action) (bool, error) { return true, nil },
+		Locate: func(context.Context, int64) (int64, error) { return 0, nil }})
 	s := discussion.NewService(discussion.Deps{Record: rec, Audit: audit.NewService()})
 	if err := s.Add(ctx, thing, "nháp"); err != nil {
 		t.Fatal(err)

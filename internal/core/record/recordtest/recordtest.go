@@ -284,8 +284,10 @@ var cases = []testCase{
 
 	{"Can is false for an id of another type", func(t *testing.T, h Harness) {
 		ref := create(t, h, "2026-03-10")
+		h.Core.IAM.RegisterRoles("recordtest", map[string][]string{"member": {"recordtest.all"}})
 		h.Core.Record.Register(record.Type{Code: "recordtest.other", Product: "recordtest", Kind: record.Document, NumberPrefix: "RT",
-			Can: func(context.Context, int64, record.Action) (bool, error) { return true, nil }})
+			Perms:    record.Perms{View: "recordtest.all", Edit: "recordtest.all", ViewFiles: "recordtest.all", Attach: "recordtest.all"},
+			OnDelete: func(context.Context, int64) error { return nil }})
 		other, err := h.Core.Record.Create(platform.WithProducts(h.Admin, []string{"recordtest"}), "recordtest.other",
 			record.Header{Date: "2026-03-10", OrgUnitID: h.LegalEntity})
 		if err != nil {

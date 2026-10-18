@@ -7,16 +7,6 @@ import (
 	"github.com/taoworklabs/mmerp/internal/core/record"
 )
 
-// Every HRM record type declares its permissions instead of answering Can by hand.
-func TestHRMTypesDeclarePermissions(t *testing.T) {
-	f := newFixture(t)
-	for _, code := range []string{"hrm.employee", "hrm.leave_request", "hrm.overtime_request", "hrm.contract", "hrm.timesheet", "hrm.payroll"} {
-		if typ, ok := f.rec.TypeOf(code); !ok || typ.Can != nil || typ.Perms.View == "" {
-			t.Errorf("%s: registered %v, hand-written Can %v, view %q", code, ok, typ.Can != nil, typ.Perms.View)
-		}
-	}
-}
-
 type canCase struct {
 	ctx    context.Context
 	action record.Action

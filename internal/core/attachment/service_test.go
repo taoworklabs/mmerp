@@ -11,7 +11,9 @@ import (
 	"time"
 
 	"github.com/taoworklabs/mmerp/internal/core/audit"
+	"github.com/taoworklabs/mmerp/internal/core/iam"
 	"github.com/taoworklabs/mmerp/internal/core/record"
+	"github.com/taoworklabs/mmerp/internal/core/setting"
 	"github.com/taoworklabs/mmerp/internal/platform"
 	"github.com/taoworklabs/mmerp/internal/platform/pgtest"
 )
@@ -33,9 +35,14 @@ func setup(t *testing.T) (*Service, context.Context, platform.Files) {
 	if err := pool.QueryRow(ctx, `INSERT INTO iam.users (login, name, password_hash) VALUES ('u', 'U', '') RETURNING id`).Scan(&actor); err != nil {
 		t.Fatal(err)
 	}
-	rec := record.NewService(record.Deps{Audit: audit.NewService()})
+	ids := iam.NewService(iam.Deps{Setting: setting.NewService(), Audit: audit.NewService()})
+	ids.RegisterRoles("test", map[string][]string{"member": {"test.all"}})
+	rec := record.NewService(record.Deps{IAM: ids, Audit: audit.NewService()})
 	rec.Register(record.Type{Code: thing.Type, Product: "test", Kind: record.Catalog,
-		Can: func(context.Context, int64, record.Action) (bool, error) { return true, nil }})
+		// Anyone may do anything with it.
+		Perms:  record.Perms{View: "test.all", Edit: "test.all", ViewFiles: "test.all", Attach: "test.all"},
+		Grant:  func(context.Context, int64, record.Action) (bool, error) { return true, nil },
+		Locate: func(context.Context, int64) (int64, error) { return 0, nil }})
 	return NewService(Deps{Record: rec, Audit: audit.NewService()}), platform.WithActor(ctx, actor), root
 }
 

@@ -95,10 +95,6 @@ type Type struct {
 	Code    string // <module>.<type>, e.g. hrm.employee
 	Product string
 	Kind    Kind
-	// Can answers for the owning module; the product gate is applied on top. A type
-	// sets either Can or Perms; Can goes away once every type declares.
-	Can func(ctx context.Context, id int64, action Action) (bool, error)
-
 	// Perms declares the permission of each action, held at the record's org unit.
 	Perms Perms
 	// Grant, the relation grant, may still grant a declared action the permission did

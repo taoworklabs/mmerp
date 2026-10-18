@@ -27,16 +27,8 @@ func TestContract(t *testing.T) {
 		rec.Register(record.Type{
 			Code: "test.doc", Product: "test", Kind: record.Document, NumberPrefix: "T",
 			// Members of the document's unit may do anything with it.
-			Can: func(ctx context.Context, id int64, _ record.Action) (bool, error) {
-				d, err := rec.Get(ctx, record.Ref{Type: "test.doc", ID: id})
-				if errors.Is(err, platform.ErrNotFound) {
-					return false, nil
-				}
-				if err != nil {
-					return false, err
-				}
-				return ids.Allowed(ctx, "test", "test.doc.edit", d.OrgUnitID)
-			},
+			Perms:    record.Perms{View: "test.doc.edit", Edit: "test.doc.edit", ViewFiles: "test.doc.edit", Attach: "test.doc.edit"},
+			OnDelete: noRows,
 			BeforeSubmit: func(_ context.Context, d record.Doc) error {
 				mu.Lock()
 				defer mu.Unlock()
@@ -88,14 +80,11 @@ func TestContract(t *testing.T) {
 				return err
 			},
 			Get: func(ctx context.Context, ref record.Ref) (any, error) {
-				if err := rec.Visible(ctx, ref, record.View); err != nil {
-					return nil, err
-				}
-				d, err := rec.Get(ctx, ref)
+				d, err := rec.Read(ctx, ref)
 				if err != nil {
 					return nil, err
 				}
-				actions, err := rec.DocumentActions(ctx, d)
+				actions, err := rec.Actions(ctx, d)
 				return detail{d, actions}, err
 			},
 			Reject: func(instance int64) error { return appr.Reject(approver, instance, 1, "no") },
@@ -127,6 +116,15 @@ func TestContract(t *testing.T) {
 	})
 }
 
+// adminDoc registers t as the document type test.doc, which the tenant administrator may do anything with.
+func adminDoc(core *coretest.Core, t record.Type) {
+	core.IAM.RegisterRoles("test", map[string][]string{"member": {"test.doc.edit"}})
+	t.Code, t.Product, t.Kind, t.NumberPrefix = "test.doc", "test", record.Document, "T"
+	t.Perms = record.Perms{View: "test.doc.edit", Edit: "test.doc.edit"}
+	t.OnDelete = noRows
+	core.Record.Register(t)
+}
+
 func must(t *testing.T) func(int64, error) int64 {
 	return func(v int64, err error) int64 {
 		t.Helper()
@@ -140,8 +138,7 @@ func must(t *testing.T) func(int64, error) int64 {
 func TestUnitWithDocumentsCannotChangeLegalEntity(t *testing.T) {
 	core := coretest.New(t, "test")
 	ids, rec, admin := core.IAM, core.Record, core.Admin
-	rec.Register(record.Type{Code: "test.doc", Product: "test", Kind: record.Document, NumberPrefix: "T",
-		Can: func(context.Context, int64, record.Action) (bool, error) { return true, nil }})
+	adminDoc(core, record.Type{})
 	c1 := must(t)(ids.CreateOrgUnit(admin, iam.OrgUnitInput{Kind: "company", Name: "C1"}))
 	c2 := must(t)(ids.CreateOrgUnit(admin, iam.OrgUnitInput{Kind: "company", Name: "C2"}))
 	a := must(t)(ids.CreateOrgUnit(admin, iam.OrgUnitInput{ParentID: &c1, Kind: "department", Name: "A"}))
@@ -163,8 +160,7 @@ func TestUnitWithDocumentsCannotChangeLegalEntity(t *testing.T) {
 func TestCreateWaitsForATreeMove(t *testing.T) {
 	core := coretest.New(t, "test")
 	ids, rec, admin := core.IAM, core.Record, core.Admin
-	rec.Register(record.Type{Code: "test.doc", Product: "test", Kind: record.Document, NumberPrefix: "T",
-		Can: func(context.Context, int64, record.Action) (bool, error) { return true, nil }})
+	adminDoc(core, record.Type{})
 	c1 := must(t)(ids.CreateOrgUnit(admin, iam.OrgUnitInput{Kind: "company", Name: "C1"}))
 	c2 := must(t)(ids.CreateOrgUnit(admin, iam.OrgUnitInput{Kind: "company", Name: "C2"}))
 	a := must(t)(ids.CreateOrgUnit(admin, iam.OrgUnitInput{ParentID: &c1, Kind: "department", Name: "A"}))
@@ -193,8 +189,7 @@ func TestBeforeSubmitKeepsADraft(t *testing.T) {
 	ids, rec, admin := core.IAM, core.Record, core.Admin
 	refuse := errors.New("not ready")
 	var calls int
-	rec.Register(record.Type{Code: "test.doc", Product: "test", Kind: record.Document, NumberPrefix: "T",
-		Can: func(context.Context, int64, record.Action) (bool, error) { return true, nil },
+	adminDoc(core, record.Type{
 		BeforeSubmit: func(context.Context, record.Doc) error {
 			calls++
 			if calls == 1 {
