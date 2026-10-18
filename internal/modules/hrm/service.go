@@ -6,6 +6,7 @@ import (
 	"context"
 	"embed"
 	"io/fs"
+	"slices"
 	"sync"
 
 	"github.com/taoworklabs/mmerp/internal/core/record"
@@ -58,7 +59,10 @@ func NewService(d Deps) *Service {
 	// Sensitive fields and every person's pay need a role of their own, even for administrators.
 	d.IAM.RegisterSensitive("hrm", PermSensitive, PermSalaryView)
 	d.Numbering.RegisterSeries(employeeType, "hrm", "NV")
-	d.Record.Register(record.Type{Code: employeeType, Product: "hrm", Kind: record.Catalog, Can: s.can,
+	d.Record.Register(record.Type{Code: employeeType, Product: "hrm", Kind: record.Catalog,
+		// Papers on a profile (an ID card) show what the sensitive fields hold.
+		Perms:  record.Perms{View: PermView, Edit: PermEdit, ViewFiles: PermView, Attach: PermEdit},
+		Locate: employeeUnit, Refine: s.employeeRefine,
 		HasData: func(ctx context.Context) (bool, error) { return store.New(platform.DBFrom(ctx)).AnyEmployee(ctx) }})
 	// A profile's viewer sees neither leave balances nor what sensitive data was read or changed;
 	// on an employee, ViewFiles is view plus the sensitive permission.
@@ -84,22 +88,33 @@ func NewService(d Deps) *Service {
 			{Key: "hours", Kind: record.Number, Label: "hrm.overtime.hours"},
 			{Key: "day_kind", Kind: record.Choice, Label: "hrm.overtime.day_kind", Options: s.dayKindOptions},
 		},
-		Can: s.canOvertime, OnTransition: s.overtimeTransition, Approvers: s.overtimeApprovers, Subjects: s.overtimeSubjects, OnDelete: deleteOvertime,
+		// Attachments (a signed overtime sheet) go with the request, asking nothing more.
+		Perms: record.Perms{View: PermOvertimeView, Edit: PermOvertimeEdit, ViewFiles: PermOvertimeView, Attach: PermOvertimeEdit},
+		Grant: s.overtimeGrant, SubjectCreates: true,
+		OnTransition: s.overtimeTransition, Approvers: s.overtimeApprovers, Subjects: s.overtimeSubjects, OnDelete: deleteOvertime,
 	})
 	d.Record.Register(record.Type{
 		Code: contractType, Product: "hrm", Kind: record.Document, NumberPrefix: "HD",
 		Fields: []record.Field{{Key: "contract_kind", Kind: record.Choice, Label: "hrm.contract.kind", Options: s.contractTypeOptions}},
-		Can:    s.canContract, OnTransition: s.contractTransition, Subjects: s.contractSubjects, OnDelete: deleteContract,
+		// Sending and cancelling show and change no terms; writing, the signed scan and the
+		// print do, so they need the salary permission too. Attaching also once posted:
+		// contracts are often signed after they are entered.
+		Perms:        record.Perms{View: PermContractView, Edit: PermContractEdit, ViewFiles: PermContractView, Attach: PermContractEdit},
+		Refine:       s.needsSalary(contractType, record.Edit, record.ViewFiles, record.Attach, record.Print),
+		OnTransition: s.contractTransition, Subjects: s.contractSubjects, OnDelete: deleteContract,
 	})
 	// No approval fields and no module-chosen approvers: timesheet rules go by role.
 	d.Record.Register(record.Type{
 		Code: timesheetType, Product: "hrm", Kind: record.Document, NumberPrefix: "BC",
-		Can: s.canTimesheet, OnTransition: s.timesheetTransition, OnDelete: deleteTimesheet,
+		Perms: record.Perms{View: PermTimesheetView, Edit: PermTimesheetEdit}, OnTransition: s.timesheetTransition, OnDelete: deleteTimesheet,
 	})
-	// The legal entity is the org unit; approval rules go by role.
+	// The legal entity is the org unit; approval rules go by role. No attachments: a file on
+	// a payroll would carry per-person amounts its view permission does not cover. Payslips
+	// and the export show each person's pay.
 	d.Record.Register(record.Type{
 		Code: payrollType, Product: "hrm", Kind: record.Document, NumberPrefix: "BL",
-		Can: s.canPayroll, OnTransition: s.payrollTransition, BeforeSubmit: s.payrollBeforeSubmit,
+		Perms:  record.Perms{View: PermPayrollView, Edit: PermPayrollEdit},
+		Refine: s.needsSalary(payrollType, record.Print, record.Export), OnTransition: s.payrollTransition, BeforeSubmit: s.payrollBeforeSubmit,
 		OnDelete: deletePayroll,
 	})
 	s.registerDataIO()
@@ -107,17 +122,19 @@ func NewService(d Deps) *Service {
 	return s
 }
 
-// filesAction maps the attachment actions onto a record's own: seeing its files as
-// viewing it, attaching as editing it, whatever its status. A type whose files may show
-// more than the record asks for a further permission on top.
-func filesAction(a record.Action) (base record.Action, files bool) {
-	switch a {
-	case record.ViewFiles:
-		return record.View, true
-	case record.Attach:
-		return record.Edit, true
+// needsSalary refines a document type so that actions also need hrm.salary.view at the
+// document's org unit.
+func (s *Service) needsSalary(code string, actions ...record.Action) func(context.Context, int64, record.Action) (bool, error) {
+	return func(ctx context.Context, id int64, a record.Action) (bool, error) {
+		if !slices.Contains(actions, a) {
+			return true, nil
+		}
+		d, err := s.d.Record.Get(ctx, record.Ref{Type: code, ID: id})
+		if err != nil {
+			return false, err
+		}
+		return s.allowed(ctx, PermSalaryView, d.OrgUnitID)
 	}
-	return a, false
 }
 
 func (s *Service) allowed(ctx context.Context, perm string, unit int64, more ...int64) (bool, error) {

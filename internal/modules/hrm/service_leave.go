@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"net/http"
-	"slices"
 	"strconv"
 	"strings"
 
@@ -187,20 +186,7 @@ func (s *Service) leaveTransition(ctx context.Context, d record.Doc, from record
 
 // LeaveActions lists what the actor may do before picking a leave request.
 func (s *Service) LeaveActions(ctx context.Context) (SelfServiceActions, error) {
-	out, err := selfEmployee(ctx)
-	if err != nil {
-		return out, err
-	}
-	acts, err := s.d.Record.TypeActions(ctx, leaveType)
-	switch {
-	case err != nil:
-		return out, err
-	case slices.Contains(acts, "create"):
-		out.AllowedActions = append(out.AllowedActions, "create", "create_for_others")
-	case out.SelfEmployeeID != nil && platform.ProductGate(ctx, "hrm", platform.ClassWrite) == nil:
-		out.AllowedActions = append(out.AllowedActions, "create")
-	}
-	return out, nil
+	return s.selfServiceActions(ctx, leaveType)
 }
 
 // Leaves lists the leave requests the actor may see: their own, their reports', and those in scope.

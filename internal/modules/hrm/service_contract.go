@@ -74,38 +74,6 @@ func (s *Service) canWriteContract(ctx context.Context, unit int64) (bool, error
 	return s.allowed(ctx, PermSalaryView, unit)
 }
 
-// canContract goes by the contract's org unit. Sending and cancelling need no salary
-// permission, since neither shows nor changes the terms; its attachments do.
-func (s *Service) canContract(ctx context.Context, id int64, action record.Action) (bool, error) {
-	r, err := store.New(platform.DBFrom(ctx)).GetContract(ctx, id)
-	if errors.Is(err, pgx.ErrNoRows) {
-		return false, nil
-	}
-	if err != nil {
-		return false, err
-	}
-	// The signed scan shows the salary, and so does the print. Attaching also once posted:
-	// contracts are often signed after they are entered.
-	if action == record.Print {
-		action = record.ViewFiles
-	}
-	action, files := filesAction(action)
-	if files {
-		if ok, err := s.allowed(ctx, PermSalaryView, r.OrgUnitID); err != nil || !ok {
-			return false, err
-		}
-	}
-	switch action {
-	case record.View, record.Export:
-		return s.allowed(ctx, PermContractView, r.OrgUnitID)
-	case record.Edit:
-		return s.canWriteContract(ctx, r.OrgUnitID)
-	case record.Post, record.Cancel:
-		return s.allowed(ctx, PermContractEdit, r.OrgUnitID)
-	}
-	return false, nil
-}
-
 // contractSubjects is the account of the employee, who never approves their own contract.
 func (s *Service) contractSubjects(ctx context.Context, id int64) ([]int64, error) {
 	r, err := store.New(platform.DBFrom(ctx)).GetContract(ctx, id)
@@ -274,25 +242,19 @@ func (s *Service) Contracts(ctx context.Context, f ContractFilter) (ContractList
 func (s *Service) Contract(ctx context.Context, id int64) (Contract, error) {
 	var out Contract
 	err := platform.InTx(ctx, func(ctx context.Context) error {
-		r, err := s.visibleContract(ctx, id)
-		if err != nil {
-			return err
-		}
 		ref := record.Ref{Type: contractType, ID: id}
-		d, err := s.d.Record.Get(ctx, ref)
+		d, err := s.d.Record.Read(ctx, ref)
 		if err != nil {
 			return err
 		}
-		actions, err := s.d.Record.DocumentActions(ctx, d)
+		r, err := store.New(platform.DBFrom(ctx)).GetContract(ctx, id)
 		if err != nil {
 			return err
 		}
-		// Printing changes nothing, so a locked period does not hold it back.
-		print, err := s.d.Record.AllowedActions(ctx, contractType, id, record.Print)
+		actions, err := s.d.Record.Actions(ctx, d)
 		if err != nil {
 			return err
 		}
-		actions = append(actions, print...)
 		out = Contract{
 			ID: id, Number: d.Number, Status: string(d.Status), Version: d.Version, EmployeeID: r.EmployeeID,
 			EmployeeCode: r.EmployeeCode, EmployeeName: r.EmployeeName, ParentID: platform.Int8Ptr(r.ParentID),
@@ -328,8 +290,9 @@ func (s *Service) CreateContract(ctx context.Context, in NewContract) (int64, er
 		if err != nil {
 			return err
 		}
-		if ok, err := s.canWriteContract(ctx, e.OrgUnitID); err != nil || !ok {
-			return platform.OrErr(err, platform.ErrForbidden)
+		// Create checks the contract permission; writing one also means entering its money terms.
+		if err := s.require(ctx, PermSalaryView, e.OrgUnitID); err != nil {
+			return err
 		}
 		var parent *store.GetContractRow
 		if in.ParentID != nil {
@@ -364,7 +327,10 @@ func (s *Service) CreateContract(ctx context.Context, in NewContract) (int64, er
 func (s *Service) UpdateContract(ctx context.Context, id int64, in ContractUpdate) error {
 	return platform.InTx(ctx, func(ctx context.Context) error {
 		q := store.New(platform.DBFrom(ctx))
-		old, err := s.visibleContract(ctx, id)
+		if _, err := s.d.Record.Read(ctx, record.Ref{Type: contractType, ID: id}); err != nil {
+			return err
+		}
+		old, err := q.GetContract(ctx, id)
 		if err != nil {
 			return err
 		}
@@ -405,13 +371,6 @@ func deleteContract(ctx context.Context, id int64) error {
 		return ErrContractHasAppendices
 	}
 	return err
-}
-
-func (s *Service) visibleContract(ctx context.Context, id int64) (store.GetContractRow, error) {
-	if ok, err := s.d.Record.Can(ctx, contractType, id, record.View); err != nil || !ok {
-		return store.GetContractRow{}, platform.OrErr(err, platform.ErrNotFound)
-	}
-	return store.New(platform.DBFrom(ctx)).GetContract(ctx, id)
 }
 
 // contractHeader checks the fields and builds the record header and the row. An appendix

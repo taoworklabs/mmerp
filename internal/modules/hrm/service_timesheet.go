@@ -2,11 +2,9 @@ package hrm
 
 import (
 	"context"
-	"errors"
 	"slices"
 	"time"
 
-	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/shopspring/decimal"
 
@@ -15,24 +13,6 @@ import (
 	"github.com/taoworklabs/mmerp/internal/modules/hrm/internal/store"
 	"github.com/taoworklabs/mmerp/internal/platform"
 )
-
-// canTimesheet goes by the timesheet's org unit.
-func (s *Service) canTimesheet(ctx context.Context, id int64, action record.Action) (bool, error) {
-	t, err := store.New(platform.DBFrom(ctx)).GetTimesheet(ctx, id)
-	if errors.Is(err, pgx.ErrNoRows) {
-		return false, nil
-	}
-	if err != nil {
-		return false, err
-	}
-	switch action {
-	case record.View, record.Export:
-		return s.allowed(ctx, PermTimesheetView, t.OrgUnitID)
-	case record.Edit, record.Post, record.Cancel:
-		return s.allowed(ctx, PermTimesheetEdit, t.OrgUnitID)
-	}
-	return false, nil
-}
 
 // timesheetTransition keeps posting and cancelling out of closed payroll periods; a
 // cancelled timesheet frees its unit and period for a new one.
@@ -56,15 +36,7 @@ func (s *Service) timesheetTransition(ctx context.Context, d record.Doc, from re
 
 // TimesheetActions lists what the actor may do before picking a timesheet: create.
 func (s *Service) TimesheetActions(ctx context.Context) ([]string, error) {
-	out := []string{}
-	sc, err := s.d.IAM.Scope(ctx, "hrm", PermTimesheetEdit)
-	if err != nil {
-		return nil, err
-	}
-	if sc.Any() && platform.ProductGate(ctx, "hrm", platform.ClassWrite) == nil {
-		out = append(out, "create")
-	}
-	return out, nil
+	return s.d.Record.TypeActions(ctx, timesheetType)
 }
 
 // Timesheets lists the timesheets of the org units in the actor's scope, latest period first.
@@ -96,23 +68,17 @@ func (s *Service) Timesheets(ctx context.Context, f TimesheetFilter) (TimesheetL
 
 // Timesheet returns a timesheet with its grid; one the actor may not view does not exist.
 func (s *Service) Timesheet(ctx context.Context, id int64) (Timesheet, error) {
-	t, err := s.visibleTimesheet(ctx, id)
+	d, err := s.d.Record.Read(ctx, record.Ref{Type: timesheetType, ID: id})
 	if err != nil {
 		return Timesheet{}, err
 	}
-	ref := record.Ref{Type: timesheetType, ID: id}
-	d, err := s.d.Record.Get(ctx, ref)
+	t, err := store.New(platform.DBFrom(ctx)).GetTimesheet(ctx, id)
 	if err != nil {
 		return Timesheet{}, err
 	}
-	actions, err := s.d.Record.DocumentActions(ctx, d)
+	actions, err := s.d.Record.Actions(ctx, d)
 	if err != nil {
 		return Timesheet{}, err
-	}
-	if ok, err := s.d.Record.Can(ctx, timesheetType, id, record.Export); err != nil {
-		return Timesheet{}, err
-	} else if ok {
-		actions = append(actions, "export")
 	}
 	// Importing replaces the lines of a draft: whoever may edit it may import into it.
 	if slices.Contains(actions, "edit") {
@@ -184,9 +150,6 @@ func (s *Service) CreateTimesheet(ctx context.Context, in NewTimesheet) (int64, 
 	if err != nil {
 		return 0, err
 	}
-	if err := s.require(ctx, PermTimesheetEdit, in.OrgUnitID); err != nil {
-		return 0, err
-	}
 	var id int64
 	err = platform.InTx(ctx, func(ctx context.Context) error {
 		d, err := s.d.Record.Create(ctx, timesheetType, record.Header{Date: *platform.DatePtr(end), OrgUnitID: in.OrgUnitID})
@@ -210,7 +173,10 @@ func (s *Service) SaveTimesheet(ctx context.Context, id int64, in TimesheetUpdat
 		return err
 	}
 	return platform.InTx(ctx, func(ctx context.Context) error {
-		t, err := s.visibleTimesheet(ctx, id)
+		if _, err := s.d.Record.Read(ctx, record.Ref{Type: timesheetType, ID: id}); err != nil {
+			return err
+		}
+		t, err := store.New(platform.DBFrom(ctx)).GetTimesheet(ctx, id)
 		if err != nil {
 			return err
 		}
@@ -248,13 +214,6 @@ func (s *Service) SaveTimesheet(ctx context.Context, id int64, in TimesheetUpdat
 
 func deleteTimesheet(ctx context.Context, id int64) error {
 	return store.New(platform.DBFrom(ctx)).DeleteTimesheet(ctx, id)
-}
-
-func (s *Service) visibleTimesheet(ctx context.Context, id int64) (store.GetTimesheetRow, error) {
-	if ok, err := s.d.Record.Can(ctx, timesheetType, id, record.View); err != nil || !ok {
-		return store.GetTimesheetRow{}, platform.OrErr(err, platform.ErrNotFound)
-	}
-	return store.New(platform.DBFrom(ctx)).GetTimesheet(ctx, id)
 }
 
 func (s *Service) timesheetEmployees(ctx context.Context, t store.GetTimesheetRow) ([]TimesheetEmployee, error) {

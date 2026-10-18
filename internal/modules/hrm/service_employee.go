@@ -18,28 +18,25 @@ import (
 // sensitiveFields lists the encrypted columns of hrm.employees, in API order.
 var sensitiveFields = []string{"national_id", "social_insurance_no", "tax_code", "bank_account"}
 
-func (s *Service) can(ctx context.Context, id int64, action record.Action) (bool, error) {
+// employeeUnit locates an employee for record: the org unit the profile belongs to.
+func employeeUnit(ctx context.Context, id int64) (int64, error) {
 	e, err := store.New(platform.DBFrom(ctx)).GetEmployee(ctx, id)
 	if errors.Is(err, pgx.ErrNoRows) {
-		return false, nil
+		return 0, platform.ErrNotFound
 	}
+	return e.OrgUnitID, err
+}
+
+// employeeRefine: a profile's files also need the sensitive permission.
+func (s *Service) employeeRefine(ctx context.Context, id int64, action record.Action) (bool, error) {
+	if action != record.ViewFiles && action != record.Attach {
+		return true, nil
+	}
+	unit, err := employeeUnit(ctx, id)
 	if err != nil {
 		return false, err
 	}
-	// Papers on the profile (an ID card) show what the sensitive fields hold.
-	action, files := filesAction(action)
-	if files {
-		if ok, err := s.allowed(ctx, PermSensitive, e.OrgUnitID); err != nil || !ok {
-			return false, err
-		}
-	}
-	switch action {
-	case record.View, record.Export:
-		return s.allowed(ctx, PermView, e.OrgUnitID)
-	case record.Edit:
-		return s.allowed(ctx, PermEdit, e.OrgUnitID)
-	}
-	return false, nil
+	return s.allowed(ctx, PermSensitive, unit)
 }
 
 // Employees lists the employees within the actor's view scope.
@@ -73,13 +70,9 @@ func (s *Service) Employees(ctx context.Context, f EmployeeFilter) (EmployeeList
 // fields when creating) and import_leave_balances. The frontend shows the create button
 // and fields from this.
 func (s *Service) EmployeeActions(ctx context.Context) ([]string, error) {
-	out := []string{}
-	edit, err := s.d.IAM.Scope(ctx, "hrm", PermEdit)
+	out, err := s.d.Record.TypeActions(ctx, employeeType)
 	if err != nil {
 		return nil, err
-	}
-	if edit.Any() && platform.ProductGate(ctx, "hrm", platform.ClassWrite) == nil {
-		out = append(out, "create")
 	}
 	sens, err := s.d.IAM.Scope(ctx, "hrm", PermSensitive)
 	if err != nil {
@@ -149,18 +142,12 @@ func (s *Service) Employee(ctx context.Context, id int64) (Employee, error) {
 	}, nil
 }
 
+// visible returns an employee the actor may view; one they may not does not exist.
 func (s *Service) visible(ctx context.Context, id int64) (store.GetEmployeeRow, error) {
-	e, err := store.New(platform.DBFrom(ctx)).GetEmployee(ctx, id)
-	if errors.Is(err, pgx.ErrNoRows) {
-		return e, platform.ErrNotFound
+	if err := s.d.Record.Visible(ctx, record.Ref{Type: employeeType, ID: id}, record.View); err != nil {
+		return store.GetEmployeeRow{}, err
 	}
-	if err != nil {
-		return e, err
-	}
-	if ok, err := s.allowed(ctx, PermView, e.OrgUnitID); err != nil || !ok {
-		return e, platform.OrErr(err, platform.ErrNotFound)
-	}
-	return e, nil
+	return store.New(platform.DBFrom(ctx)).GetEmployee(ctx, id)
 }
 
 // RevealSensitive returns one sensitive field. The read is audited before the value

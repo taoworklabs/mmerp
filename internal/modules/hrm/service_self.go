@@ -3,6 +3,7 @@ package hrm
 import (
 	"context"
 	"errors"
+	"slices"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
@@ -14,38 +15,6 @@ import (
 
 // Self-service documents (leave and overtime requests) are filed by the employee
 // themself, viewed by their managers, and handled by HR through view and edit permissions.
-
-// selfService is who a self-service document is about.
-type selfService struct {
-	employee int64
-	user     pgtype.Int8 // the employee's account, if any
-	unit     int64       // the document's org unit
-}
-
-// canSelfService: one's own documents need no role; managers up the chain may view;
-// others need view or edit at the document's org unit. Only HR cancels.
-func (s *Service) canSelfService(ctx context.Context, d selfService, action record.Action, viewPerm, editPerm string) (bool, error) {
-	actor, _ := platform.ActorFrom(ctx)
-	self := d.user.Valid && d.user.Int64 == actor
-	switch action {
-	case record.View, record.Export:
-		if self {
-			return true, nil
-		}
-		if ok, err := s.allowed(ctx, viewPerm, d.unit); err != nil || ok {
-			return ok, err
-		}
-		return store.New(platform.DBFrom(ctx)).IsManager(ctx, store.IsManagerParams{Employee: d.employee, Actor: actor})
-	case record.Edit, record.Post:
-		if self {
-			return true, nil
-		}
-		return s.allowed(ctx, editPerm, d.unit)
-	case record.Cancel:
-		return s.allowed(ctx, editPerm, d.unit)
-	}
-	return false, nil
-}
 
 // selfGrant is the relation grant of a self-service document: one's own need no role,
 // except to cancel; managers up the chain may see them.
@@ -81,24 +50,21 @@ func subjectOf(user pgtype.Int8) []int64 {
 	return []int64{user.Int64}
 }
 
-// selfServiceActions lists what the actor may do before picking a self-service document.
-func (s *Service) selfServiceActions(ctx context.Context, editPerm string) (SelfServiceActions, error) {
+// selfServiceActions lists what the actor may do before picking a self-service document
+// of type code: create for others where its create permission holds, for oneself always.
+func (s *Service) selfServiceActions(ctx context.Context, code string) (SelfServiceActions, error) {
 	out, err := selfEmployee(ctx)
 	if err != nil {
 		return out, err
 	}
-	edit, err := s.d.IAM.Scope(ctx, "hrm", editPerm)
-	if err != nil {
+	acts, err := s.d.Record.TypeActions(ctx, code)
+	switch {
+	case err != nil:
 		return out, err
-	}
-	if platform.ProductGate(ctx, "hrm", platform.ClassWrite) != nil {
-		return out, nil
-	}
-	if out.SelfEmployeeID != nil || edit.Any() {
+	case slices.Contains(acts, "create"):
+		out.AllowedActions = append(out.AllowedActions, "create", "create_for_others")
+	case out.SelfEmployeeID != nil && platform.ProductGate(ctx, "hrm", platform.ClassWrite) == nil:
 		out.AllowedActions = append(out.AllowedActions, "create")
-	}
-	if edit.Any() {
-		out.AllowedActions = append(out.AllowedActions, "create_for_others")
 	}
 	return out, nil
 }

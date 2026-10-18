@@ -32,6 +32,8 @@ func (s *Service) registerDataIO() {
 			_, err := s.exportablePayroll(ctx, params)
 			return err
 		}})
+	s.d.Record.Offer(timesheetType, record.Export)
+	s.d.Record.Offer(payrollType, record.Export)
 	s.d.DataIO.RegisterImport(dataio.Import{Kind: leaveBalanceImport, Product: "hrm", Header: s.leaveBalanceHeader, Run: s.importLeaveBalances})
 }
 
@@ -47,17 +49,10 @@ func (s *Service) sheetTimesheet(ctx context.Context, params json.RawMessage, ac
 	if err := json.Unmarshal(params, &p); err != nil || p.TimesheetID == 0 {
 		return store.GetTimesheetRow{}, dataio.ErrInvalidParams
 	}
-	t, err := s.visibleTimesheet(ctx, p.TimesheetID)
-	if errors.Is(err, platform.ErrNotFound) {
-		return t, platform.ErrForbidden
+	if ok, err := s.d.Record.Can(ctx, timesheetType, p.TimesheetID, action); err != nil || !ok {
+		return store.GetTimesheetRow{}, platform.OrErr(err, platform.ErrForbidden)
 	}
-	if err != nil {
-		return t, err
-	}
-	if ok, err := s.d.Record.Can(ctx, timesheetType, t.ID, action); err != nil || !ok {
-		return t, platform.OrErr(err, platform.ErrForbidden)
-	}
-	return t, nil
+	return store.New(platform.DBFrom(ctx)).GetTimesheet(ctx, p.TimesheetID)
 }
 
 func (s *Service) timesheetHeader(ctx context.Context, params json.RawMessage) ([]string, error) {
