@@ -1,5 +1,5 @@
 import { Alert, Button, Group, Text, ThemeIcon, Tooltip } from '@mantine/core'
-import { IconAlertCircle, IconAlertTriangle, IconAt, IconChecks, IconCircleCheck, IconCircleX, IconHourglassHigh, type Icon as TablerIcon } from '@tabler/icons-react'
+import { IconAlertCircle, IconAlertTriangle, IconAt, IconBell, IconChecks, IconCircleCheck, IconCircleX, IconHourglassHigh, type Icon as TablerIcon } from '@tabler/icons-react'
 import { useInfiniteQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Fragment, useState } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -13,8 +13,9 @@ import { ContentSkeleton, EmptyState, ErrorState } from '@/shared/ui/states'
 import { icon } from '@/shared/ui/theme'
 import { notificationKeys } from '../notificationKeys'
 
-// Each kind of notification has its icon, in the colour of what it says: waiting, done, refused, a mention.
-const kindLooks: Record<Notification['kind'], { Icon: TablerIcon; color: string }> = {
+// Each core kind has its icon, in the colour of what it says: waiting, done, refused, a mention.
+// A product's own kind (<product>.<name>) gets the plain bell and its label from the product's area.
+const kindLooks: Record<string, { Icon: TablerIcon; color: string } | undefined> = {
   approval_requested: { Icon: IconHourglassHigh, color: 'warning' },
   approval_approved: { Icon: IconCircleCheck, color: 'success' },
   approval_rejected: { Icon: IconCircleX, color: 'danger' },
@@ -22,6 +23,8 @@ const kindLooks: Record<Notification['kind'], { Icon: TablerIcon; color: string 
   job_completed: { Icon: IconChecks, color: 'success' },
   job_failed: { Icon: IconAlertTriangle, color: 'danger' },
 }
+const productLook = { Icon: IconBell, color: 'gray' }
+const kindLabelKey = (kind: string) => (kind.includes('.') ? `${kind}.notification` : `core.notifications.kind.${kind}`)
 
 // The user's notifications, newest first, under the day they came. Opening one marks it read
 // and goes to its record, or to the background jobs; a record the user may no longer view only gets read.
@@ -87,7 +90,7 @@ export default function NotificationsPage() {
       <>
         <InboxList label={t('core.notifications.title')} framed>
           {items.map((n, i) => {
-            const { Icon, color } = kindLooks[n.kind]
+            const { Icon, color } = kindLooks[n.kind] ?? productLook
             const day = dayOf(n.created_at)
             return (
               <Fragment key={n.id}>
@@ -103,7 +106,7 @@ export default function NotificationsPage() {
                   }
                   label={
                     <Text size="sm" fw="inherit">
-                      {t(`core.notifications.kind.${n.kind}`)}
+                      {t(kindLabelKey(n.kind))}
                     </Text>
                   }
                   description={describe(n)}
