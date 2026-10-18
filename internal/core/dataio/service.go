@@ -63,7 +63,10 @@ func (s *Service) RegisterExport(e Export) {
 	}
 	s.exports[e.Kind] = e
 	// An export named after a record type exports its documents; other kinds offer nothing.
-	s.d.Record.Offer(e.Kind, record.Export)
+	// Types register before their exports.
+	if _, ok := s.d.Record.TypeOf(e.Kind); ok {
+		s.d.Record.Offer(e.Kind, record.Export)
+	}
 }
 
 // StartImport keeps the uploaded file and queues its import. Rights are checked
