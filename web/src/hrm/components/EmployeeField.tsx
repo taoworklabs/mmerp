@@ -1,13 +1,6 @@
-import { useQuery } from '@tanstack/react-query'
-import { useDebouncedValue } from '@mantine/hooks'
-import { useState } from 'react'
 import { api, unwrap } from '@/shared/api/hrm'
-import { SelectField } from '@/shared/ui/form'
+import { RemoteSelectField } from '@/shared/ui/form'
 import { hrmKeys } from '../keys'
-
-// One label for an employee everywhere in the picker; a label that changes makes Select
-// rewrite its search text, which re-queries and flickers.
-const employeeLabel = (code: string, fullName: string) => (code ? `${code} · ${fullName}` : fullName)
 
 // EmployeeField picks an employee by code or name among those the user can see.
 export function EmployeeField({
@@ -31,18 +24,21 @@ export function EmployeeField({
   managerOf?: number
   bare?: boolean
 }) {
-  const [search, setSearch] = useState('')
-  const [q] = useDebouncedValue(search, 300)
-  const found = useQuery({
-    queryKey: [...hrmKeys.employees.picker(q), !!withTerminated, managerOf ?? 0],
-    queryFn: () =>
-      unwrap(api.GET('/hrm/employees', { params: { query: { q: q || undefined, page_size: 20, status: withTerminated ? undefined : 'active', manager_of: managerOf } } })),
-    enabled: !readOnly,
-  })
-  const options = (found.data?.items ?? []).map((e) => ({ value: String(e.id), label: employeeLabel(e.code, e.full_name) }))
-  // Keep the current one selectable even when the search does not return it.
-  if (current && !options.some((o) => o.value === String(current.id))) options.unshift({ value: String(current.id), label: employeeLabel(current.code, current.name) })
-  // Select puts the chosen option's label into the search box; that is not a search.
-  const onSearch = (q: string) => setSearch(options.some((o) => o.label === q) ? '' : q)
-  return <SelectField name={name} label={label} data={options} onSearch={onSearch} clearable={!required} required={required} readOnly={readOnly} bare={bare} />
+  return (
+    <RemoteSelectField
+      name={name}
+      label={label}
+      current={current}
+      readOnly={readOnly}
+      required={required}
+      bare={bare}
+      queryKey={(q) => [...hrmKeys.employees.picker(q), !!withTerminated, managerOf ?? 0]}
+      search={async (q) => {
+        const page = await unwrap(
+          api.GET('/hrm/employees', { params: { query: { q: q || undefined, page_size: 20, status: withTerminated ? undefined : 'active', manager_of: managerOf } } }),
+        )
+        return page.items.map((e) => ({ id: e.id, code: e.code, name: e.full_name }))
+      }}
+    />
+  )
 }

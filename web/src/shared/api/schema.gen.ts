@@ -2864,8 +2864,8 @@ export interface components {
             id: number;
             /** Format: int64 */
             job_id: number | null;
-            /** @enum {string} */
-            kind: "approval_requested" | "approval_approved" | "approval_rejected" | "mentioned" | "job_completed" | "job_failed";
+            /** @description A core kind (approval_requested, approval_approved, approval_rejected, mentioned, job_completed, job_failed) or a product's own, <product>.<name> */
+            kind: string;
             /** @description The document number; null for a catalogue */
             label: string | null;
             read: boolean;

@@ -163,6 +163,8 @@
   "shared.error.request_too_large": "What was sent is too large. Reduce it and try again.",
   "shared.error.unsupported_media_type": "This data format is not supported. Reload the page and try again.",
   "shared.devui.org_unit": "Org unit",
+  "shared.devui.legal_entity": "Legal entity",
+  "shared.devui.remote": "Employee",
   "shared.devui.status_info": "Info",
   "shared.devui.hint": "Help text sits under the input.",
   "shared.devui.password": "Password",
