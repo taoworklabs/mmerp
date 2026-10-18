@@ -15,6 +15,9 @@ SELECT * FROM record.documents WHERE id = $1 FOR UPDATE;
 UPDATE record.documents SET date = $2, org_unit_id = $3, amount = $4, fields = $5, version = version + 1
 WHERE id = $1;
 
+-- name: BumpVersion :exec
+UPDATE record.documents SET version = version + 1 WHERE id = $1;
+
 -- name: SetStatus :exec
 -- Sending for approval keeps the version, so the approval instance can compare it.
 UPDATE record.documents SET status = @status, approval_ticket = @approval_ticket, submitted_by = @submitted_by,

@@ -11,6 +11,15 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const bumpVersion = `-- name: BumpVersion :exec
+UPDATE record.documents SET version = version + 1 WHERE id = $1
+`
+
+func (q *Queries) BumpVersion(ctx context.Context, id int64) error {
+	_, err := q.db.Exec(ctx, bumpVersion, id)
+	return err
+}
+
 const deleteDocument = `-- name: DeleteDocument :exec
 DELETE FROM record.documents WHERE id = $1
 `

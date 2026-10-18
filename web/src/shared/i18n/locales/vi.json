@@ -264,6 +264,7 @@
   "shared.error.document_not_editable": "Chứng từ không còn sửa được ở trạng thái hiện tại.",
   "shared.error.invalid_transition": "Không thực hiện được thao tác này ở trạng thái hiện tại của chứng từ. Tải lại để xem trạng thái mới.",
   "shared.error.period_locked": "Kỳ đến ngày {{locked_until}} đã khóa sổ. Liên hệ kế toán nếu cần sửa chứng từ này.",
+  "shared.error.posting_already_recorded": "Chứng từ này đã ghi bút toán. Hủy chứng từ trước khi ghi lại.",
   "shared.error.period_has_pending_documents": "Còn chứng từ chờ duyệt trong kỳ sắp khóa. Duyệt, từ chối hoặc rút lại chúng trước khi khóa kỳ.",
   "shared.error.legal_entity_changed": "Không thể chuyển chứng từ sang pháp nhân khác.",
   "shared.error.org_unit_has_documents": "Đơn vị đã có chứng từ nên không thể chuyển sang pháp nhân khác.",
