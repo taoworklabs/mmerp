@@ -39,7 +39,7 @@ Most of the hand-written answers are the same shape: one permission per action, 
 
 A hand-written `Can` keeps working for types not yet moved, and is removed once every type declares.
 
-`Create` has no id, so the relation grant cannot ask about the record. The module names the subject of the new document in the `Create` call (the employee's account, read from its own data); when the type's relation grant answers `create` for subjects and the actor is that subject, `create` is granted. Otherwise `Create` checks the declared `create` permission at the header's org unit. The module no longer checks the create permission itself.
+`Create` has no id, so the relation grant cannot ask about the record. The module names the subject of the new document in the `Create` call (the employee's account, read from its own data); when the type's relation grant answers `create` for subjects and the actor is that subject, `create` is granted. Otherwise `Create` checks the declared `create` permission at the header's org unit. The module no longer checks the create permission itself. When its own validation would tell an outsider something (an employee's data, a customer), the module asks the same question first through `record.MayCreate`, so every refusal comes before any validation; for a type with subjects every refusal is `not_found`, so an outsider cannot tell whether the employee exists or has an account.
 
 ### One-call reads
 
