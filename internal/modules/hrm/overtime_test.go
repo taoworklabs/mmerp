@@ -38,7 +38,7 @@ func TestOvertimeRecordContract(t *testing.T) {
 			return record.Ref{Type: "hrm.overtime_request", ID: id}, err
 		}
 		return recordtest.Harness{
-			Core: f.core, Actor: f.hr, Admin: f.admin, LegalEntity: f.c,
+			Core: f.core, Actor: f.hr, Admin: f.admin, LegalEntity: f.c, Table: "hrm.overtime_requests",
 			Create: func(ctx context.Context, date, requestID string) (record.Ref, error) {
 				return ref(f.hrm.CreateOvertime(ctx, hrm.NewOvertime{RequestID: requestID, EmployeeID: &f.emp, OvertimeFields: overtime(date, "2", "0")}))
 			},

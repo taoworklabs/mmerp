@@ -174,7 +174,7 @@ func contract(t *testing.T, docType string) {
 			return fl
 		}
 		return recordtest.Harness{
-			Core: f.core, Actor: f.staff, Admin: f.admin, LegalEntity: f.c,
+			Core: f.core, Actor: f.staff, Admin: f.admin, LegalEntity: f.c, Table: "sales.headers",
 			Get:    func(ctx context.Context, r record.Ref) (any, error) { return read(ctx, r.ID) },
 			Routes: routes,
 			Gaps:   gaps,

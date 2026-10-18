@@ -31,7 +31,7 @@ func TestTimesheetRecordContract(t *testing.T) {
 		f := newLeaveFixture(t)
 		approver := f.ctxFor("approver", "hr@*")
 		return recordtest.Harness{
-			Core: f.core, Actor: f.hr, Admin: f.admin, LegalEntity: f.c,
+			Core: f.core, Actor: f.hr, Admin: f.admin, LegalEntity: f.c, Table: "hrm.timesheets",
 			Get:    func(ctx context.Context, r record.Ref) (any, error) { return f.hrm.Timesheet(ctx, r.ID) },
 			Reject: func(instance int64) error { return f.appr.Reject(approver, instance, 1, "không") },
 			Create: func(ctx context.Context, date, requestID string) (record.Ref, error) {

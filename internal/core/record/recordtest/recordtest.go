@@ -27,6 +27,9 @@ type Harness struct {
 	// Admin manages period locks.
 	Admin       context.Context
 	LegalEntity int64
+	// Table is the module's table of the type, keyed by the document id (e.g. "hrm.payrolls");
+	// empty for a type that keeps no table of its own.
+	Table string
 	// Create adds a draft dated date (YYYY-MM-DD); the module may already have edited it,
 	// so the suite reads its version rather than assuming 1. requestID is the create-once
 	// key the API takes, empty for none.
@@ -96,6 +99,27 @@ var cases = []testCase{
 			t.Fatalf("status %s, want posted", d.Status)
 		}
 		wantCode(t, h.Edit(h.Actor, ref, d.Version, "2026-03-11"), "document_not_editable")
+	}},
+
+	{"the module table refers to record.documents through a deferred foreign key", func(t *testing.T, h Harness) {
+		if h.Table == "" {
+			t.Skip("the type keeps no table of its own")
+		}
+		ref := create(t, h, "2026-03-10")
+		db := platform.DBFrom(h.Admin)
+		var found bool
+		if err := db.QueryRow(h.Admin, `SELECT EXISTS (SELECT 1 FROM `+h.Table+` WHERE id = $1)`, ref.ID).Scan(&found); err != nil || !found {
+			t.Fatalf("document %d not in %s: %v", ref.ID, h.Table, err)
+		}
+		// Record inserts its row first in the same transaction, and module code may write first.
+		var fks, deferred int
+		if err := db.QueryRow(h.Admin, `SELECT count(*), count(*) FILTER (WHERE condeferrable AND condeferred) FROM pg_constraint
+			WHERE contype = 'f' AND conrelid = $1::regclass AND confrelid = 'record.documents'::regclass`, h.Table).Scan(&fks, &deferred); err != nil {
+			t.Fatal(err)
+		}
+		if fks == 0 || deferred != fks {
+			t.Fatalf("%s: %d foreign keys to record.documents, %d DEFERRABLE INITIALLY DEFERRED", h.Table, fks, deferred)
+		}
 	}},
 
 	{"moving a draft to another org unit needs the edit permission there", func(t *testing.T, h Harness) {

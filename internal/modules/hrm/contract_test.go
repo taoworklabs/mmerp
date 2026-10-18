@@ -79,7 +79,7 @@ func TestContractRecordContract(t *testing.T) {
 		f := newContractFixture(t)
 		ref := func(id int64, err error) (record.Ref, error) { return record.Ref{Type: "hrm.contract", ID: id}, err }
 		return recordtest.Harness{
-			Core: f.core, Actor: f.pay, Admin: f.admin, LegalEntity: f.c,
+			Core: f.core, Actor: f.pay, Admin: f.admin, LegalEntity: f.c, Table: "hrm.contracts",
 			Get:    func(ctx context.Context, r record.Ref) (any, error) { return f.hrm.Contract(ctx, r.ID) },
 			Reject: func(instance int64) error { return f.appr.Reject(f.head, instance, 1, "không") },
 			Create: func(ctx context.Context, date, requestID string) (record.Ref, error) {
