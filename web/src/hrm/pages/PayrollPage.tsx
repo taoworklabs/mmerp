@@ -4,11 +4,11 @@ import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useParams, useSearchParams } from 'react-router'
 import { api, unwrap, type Payroll, type PayrollLine } from '@/shared/api/hrm'
-import { ActivityFeed, ApprovalDecision, ApprovalPanel, DocumentActions, DocumentStatus, useDocumentMutation } from '@/shared/document'
+import { DocumentScreen, useDocumentMutation } from '@/shared/document'
 import { errorText, formatDateTime, formatMonth } from '@/shared/i18n'
 import { ExportButton, finished, jobError, useJobStatus } from '@/shared/jobs'
 import { useMe } from '@/shared/auth/me'
-import { DocumentPage, FormModal } from '@/shared/ui/page'
+import { FormModal } from '@/shared/ui/page'
 import { icon } from '@/shared/ui/theme'
 import { AdjustmentsSection } from '../components/AdjustmentsSection'
 import { loaded } from '@/shared/ui/loaded'
@@ -27,7 +27,6 @@ export function PayrollPage() {
   const job = Number(search.get('job')) || null
   const payroll = usePayroll(id)
   const status = useJobStatus(job, { docType: payrollDocType, id })
-  const [error, setError] = useState<string | null>(null)
   const [payslipOf, setPayslipOf] = useState<PayrollLine | null>(null)
   // The computing job is on the URL, so a reload keeps following it.
   const follow = (jobId: number) => setSearch({ job: String(jobId) }, { replace: true })
@@ -38,41 +37,21 @@ export function PayrollPage() {
   const can = (a: string) => p.allowed_actions.includes(a)
   const computing = job !== null && !finished(status.data) && !status.isError
   return (
-    <DocumentPage
-      title={p.number}
-      breadcrumbs={[{ label: t('hrm.payrolls.title'), to: '/hrm/payrolls' }]}
-      description={
-        <Group gap="xs" component="span">
-          <span>{p.legal_entity_name}</span>
-          <span aria-hidden>·</span>
-          <span>{formatMonth(p.period_start.slice(0, 7))}</span>
-          <DocumentStatus docType={payrollDocType} status={p.status} />
-        </Group>
-      }
-      error={error}
-      actions={
-        (
-          <Group gap="xs">
-            <ApprovalDecision docType={payrollDocType} id={p.id} onError={setError} />
-            {can('compute') && <ComputeButton payroll={p} busy={computing} onQueued={follow} onError={setError} />}
-            {can('export') && <ExportButton kind={payrollDocType} params={{ payroll_id: p.id }} label={t('hrm.payroll.export')} />}
-            <DocumentActions
-              docType={payrollDocType}
-              id={p.id}
-              version={p.version}
-              number={p.number}
-              actions={computing ? [] : p.allowed_actions}
-              onError={setError}
-              listPath="/hrm/payrolls"
-              printLabel={t('hrm.payroll.print_payslips')}
-              printKind={payslipTemplate}
-            />
-          </Group>
-        )
-      }
+    <DocumentScreen
+      docType={payrollDocType}
+      doc={p}
+      list={{ label: t('hrm.payrolls.title'), to: '/hrm/payrolls' }}
+      facts={[p.legal_entity_name, formatMonth(p.period_start.slice(0, 7))]}
       fullWidth
-      approval={<ApprovalPanel docType={payrollDocType} id={p.id} decideElsewhere />}
-      activity={<ActivityFeed docType={payrollDocType} id={p.id} />}
+      extraActions={(onError) => (
+        <>
+          {can('compute') && <ComputeButton payroll={p} busy={computing} onQueued={follow} onError={onError} />}
+          {can('export') && <ExportButton kind={payrollDocType} params={{ payroll_id: p.id }} label={t('hrm.payroll.export')} />}
+        </>
+      )}
+      actions={computing ? [] : p.allowed_actions}
+      printLabel={t('hrm.payroll.print_payslips')}
+      printKind={payslipTemplate}
     >
       <Stack gap="md">
         <PayrollState payroll={p} computing={computing} failed={status.data?.state === 'failed' ? jobError(t, status.data) : status.isError ? errorText(t, status.error) : null} />
@@ -89,7 +68,7 @@ export function PayrollPage() {
           </Stack>
         </FormModal>
       )}
-    </DocumentPage>
+    </DocumentScreen>
   )
 }
 

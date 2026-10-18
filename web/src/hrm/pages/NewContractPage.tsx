@@ -1,12 +1,10 @@
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
-import { useNavigate, useSearchParams } from 'react-router'
+import { useSearchParams } from 'react-router'
 import { api, unwrap } from '@/shared/api/hrm'
-import { useInvalidateRecord } from '@/shared/area'
+import { CreatePage } from '@/shared/document'
 import { errorText } from '@/shared/i18n'
-import { notifySuccess } from '@/shared/ui/notify'
-import { Page } from '@/shared/ui/page'
-import { ErrorState, ForbiddenPage, NotFoundPage, PageSkeleton } from '@/shared/ui/states'
+import { ErrorState, NotFoundPage, PageSkeleton } from '@/shared/ui/states'
 import { ContractForm } from '../components/ContractForm'
 import { useContract } from '../hooks/useContract'
 import { contractDocType, hrmKeys } from '../keys'
@@ -14,8 +12,6 @@ import { contractDocType, hrmKeys } from '../keys'
 // NewContractPage adds a contract for ?employee=, or an appendix to ?parent=, starting from its terms.
 export function NewContractPage() {
   const { t } = useTranslation()
-  const navigate = useNavigate()
-  const invalidate = useInvalidateRecord()
   const [params] = useSearchParams()
   const employeeId = Number(params.get('employee'))
   const parentId = Number(params.get('parent'))
@@ -32,30 +28,23 @@ export function NewContractPage() {
   if (employee.isError) return <ErrorState message={errorText(t, employee.error)} onRetry={() => void employee.refetch()} />
   if (parent.isError) return <ErrorState message={errorText(t, parent.error)} onRetry={() => void parent.refetch()} />
   const e = employee.data
-  if (!e.allowed_actions.includes('create_contract')) return <ForbiddenPage />
   const p = parentId > 0 ? parent.data : undefined
   if (p && p.employee_id !== e.id) return <NotFoundPage back={back} />
-  const title = p ? t('hrm.contract.new_appendix', { number: p.number }) : t('hrm.contract.create')
   return (
-    <Page
-      centered
-      title={title}
+    <CreatePage
+      docType={contractDocType}
+      // A contract is created from the employee, as the employee's actions allow.
+      actions={e.allowed_actions}
+      action="create_contract"
+      title={p ? t('hrm.contract.new_appendix', { number: p.number }) : t('hrm.contract.create')}
       breadcrumbs={[
         { label: t('hrm.employees.title'), to: '/hrm/employees' },
         { label: e.full_name, to: `/hrm/employees/${e.id}?tab=contracts` },
       ]}
       description={t(p ? 'hrm.contract.new_appendix_description' : 'hrm.contract.create_description', { name: e.full_name })}
+      created={t('hrm.contract.created')}
     >
-      <ContractForm
-        employeeId={e.id}
-        parent={p}
-        onCreated={async (id) => {
-          await invalidate(contractDocType, id)
-          notifySuccess(t('hrm.contract.created'))
-          // The form is clean after a successful save, so leaving is not blocked.
-          setTimeout(() => navigate(`/hrm/contracts/${id}`, { replace: true }))
-        }}
-      />
-    </Page>
+      {(onCreated) => <ContractForm employeeId={e.id} parent={p} onCreated={onCreated} />}
+    </CreatePage>
   )
 }

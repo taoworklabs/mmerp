@@ -1,11 +1,8 @@
-import { Group } from '@mantine/core'
 import { useQuery } from '@tanstack/react-query'
-import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useParams } from 'react-router'
 import { api, unwrap } from '@/shared/api/hrm'
-import { ActivityFeed, ApprovalDecision, ApprovalPanel, DocumentActions, DocumentStatus, useAttachmentSection } from '@/shared/document'
-import { DocumentPage } from '@/shared/ui/page'
+import { DocumentScreen } from '@/shared/document'
 import { EmployeeLink } from '../components/EmployeeLink'
 import { LeaveDetails, LeaveImpact } from '../components/LeaveDetails'
 import { loaded } from '@/shared/ui/loaded'
@@ -26,54 +23,28 @@ export function LeavePage() {
     retry: false,
   })
   const overlapping = useOverlappingLeaves(leave.data, employee.data?.org_unit_id)
-  const attachments = useAttachmentSection(leaveDocType, id)
-  const [error, setError] = useState<string | null>(null)
 
   const state = loaded(leave, t, { to: '/hrm/leaves', label: t('hrm.leaves.back') })
   if (!state.ok) return state.fallback
   const l = state.data
   const deducts = types.data?.find((x) => x.id === l.leave_type_id)?.deducts_balance
   return (
-    <DocumentPage
-      title={l.number}
-      breadcrumbs={[{ label: t('hrm.leaves.title'), to: '/hrm/leaves' }]}
-      description={
-        <Group gap="xs" component="span">
-          <EmployeeLink id={l.employee_id}>{l.employee_name}</EmployeeLink>
-          {employee.data && (
-            <>
-              <span aria-hidden>·</span>
-              <span>{employee.data.org_unit_name}</span>
-            </>
-          )}
-          <span aria-hidden>·</span>
-          <span>{l.leave_type_name}</span>
-          <DocumentStatus docType={leaveDocType} status={l.status} />
-        </Group>
-      }
-      error={error}
-      actions={
-        <Group gap="xs" justify="flex-end">
-          <ApprovalDecision docType={leaveDocType} id={l.id} onError={setError} />
-          {l.allowed_actions.length > 0 && (
-            <DocumentActions
-              docType={leaveDocType}
-              id={l.id}
-              version={l.version}
-              number={l.number}
-              actions={l.allowed_actions}
-              onError={setError}
-              listPath="/hrm/leaves"
-            />
-          )}
-        </Group>
-      }
-      approval={<ApprovalPanel docType={leaveDocType} id={l.id} subject={l.employee_name} decideElsewhere />}
-      sections={[attachments]}
-      activity={<ActivityFeed docType={leaveDocType} id={l.id} />}
+    <DocumentScreen
+      docType={leaveDocType}
+      doc={l}
+      list={{ label: t('hrm.leaves.title'), to: '/hrm/leaves' }}
+      facts={[
+        <EmployeeLink key="employee" id={l.employee_id}>
+          {l.employee_name}
+        </EmployeeLink>,
+        employee.data?.org_unit_name,
+        l.leave_type_name,
+      ]}
+      subject={l.employee_name}
+      attachments
     >
       <LeaveDetails leave={l} deducts={deducts} />
       <LeaveImpact overlapping={overlapping.data} />
-    </DocumentPage>
+    </DocumentScreen>
   )
 }

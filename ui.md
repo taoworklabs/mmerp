@@ -209,7 +209,7 @@ A field that picks a business object (e.g. picking an employee) belongs to the a
 | Kind | Lives in | Examples |
 | --- | --- | --- |
 | Carries no business concept | `shared/ui` | Page templates, `DataTable`, basic input fields (`DateField`, `MoneyField`, `SelectField`…), loading, empty and error states, `FieldList` (read-only label–value pairs, label on the left), `EditablePanel` (a group of a record's values in a card, edited in place), `SensitiveValue` (a masked value shown on request, as text) |
-| Shared document features | `shared/document` | `DocumentStatus`, `DocumentActions`, `ApprovalPanel`, `ActivityFeed` (every record's and document's comments and history in one timeline), `AttachmentPanel` |
+| Shared document features | `shared/document` | `DocumentScreen` (a document's page), `DocumentPreview`, `CreatePage`, `DocumentStatus`, `DocumentActions`, `ApprovalPanel`, `ActivityFeed` (every record's and document's comments and history in one timeline), `AttachmentPanel` |
 | Carries a product's concept | That product's area | Employee picker, contract detail section, payroll breakdown table, leave request preview |
 
 What `shared/ui` already has (see also `/dev/ui`), to use before building your own:
