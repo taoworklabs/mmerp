@@ -15,10 +15,10 @@ import (
 
 // QuoteActions and OrderActions list what the actor may do before picking a document: create.
 func (s *Service) QuoteActions(ctx context.Context) (Actions, error) {
-	return s.createActions(ctx, PermQuoteEdit)
+	return s.typeActions(ctx, quoteType)
 }
 func (s *Service) OrderActions(ctx context.Context) (Actions, error) {
-	return s.createActions(ctx, PermOrderEdit)
+	return s.typeActions(ctx, orderType)
 }
 
 func (s *Service) Quotes(ctx context.Context, f DocFilter) (DocList, error) {
@@ -81,27 +81,18 @@ func expired(validUntil, today pgtype.Date) bool {
 
 // doc returns one document; one the actor may not view does not exist.
 func (s *Service) doc(ctx context.Context, k kind, id int64) (Doc, error) {
-	h, err := s.visible(ctx, k, id)
+	d, err := s.d.Record.Read(ctx, record.Ref{Type: k.docType, ID: id})
 	if err != nil {
 		return Doc{}, err
 	}
 	q := store.New(platform.DBFrom(ctx))
+	h, err := q.GetHeader(ctx, id)
+	if err != nil {
+		return Doc{}, err
+	}
 	lines, err := q.GetLines(ctx, id)
 	if err != nil {
 		return Doc{}, err
-	}
-	d, err := s.d.Record.Get(ctx, record.Ref{Type: k.docType, ID: id})
-	if err != nil {
-		return Doc{}, err
-	}
-	actions, err := s.d.Record.DocumentActions(ctx, d)
-	if err != nil {
-		return Doc{}, err
-	}
-	if ok, err := s.d.Record.Can(ctx, k.docType, id, record.Print); err != nil {
-		return Doc{}, err
-	} else if ok {
-		actions = append(actions, "print")
 	}
 	out := Doc{
 		ID: id, Kind: k.name, Number: h.Number, Status: h.Status, Version: h.Version, Date: *platform.DatePtr(h.Date),
@@ -131,6 +122,7 @@ func (s *Service) doc(ctx context.Context, k kind, id int64) (Doc, error) {
 			out.Quote = &DocRef{ID: qd.ID, Number: qd.Number, Status: string(qd.Status)}
 		}
 	}
+	var extra []string
 	if k == quoteKind {
 		today, err := s.d.Setting.Today(ctx)
 		if err != nil {
@@ -153,28 +145,19 @@ func (s *Service) doc(ctx context.Context, k kind, id int64) (Doc, error) {
 			if ok, err := s.canMakeOrder(ctx, h.OrgUnitID); err != nil {
 				return Doc{}, err
 			} else if ok {
-				out.AllowedActions = append(actions, "create_order")
+				extra = append(extra, "create_order")
 			}
 		}
 	}
-	if out.AllowedActions == nil {
-		out.AllowedActions = actions
-	}
-	return out, nil
+	out.AllowedActions, err = s.d.Record.Actions(ctx, d, extra...)
+	return out, err
 }
 
 func (s *Service) canMakeOrder(ctx context.Context, unit int64) (bool, error) {
 	if platform.ProductGate(ctx, "sales", platform.ClassWrite) != nil {
 		return false, nil
 	}
-	return s.allowed(ctx, PermOrderEdit, unit)
-}
-
-func (s *Service) visible(ctx context.Context, k kind, id int64) (store.GetHeaderRow, error) {
-	if ok, err := s.d.Record.Can(ctx, k.docType, id, record.View); err != nil || !ok {
-		return store.GetHeaderRow{}, platform.OrErr(err, platform.ErrNotFound)
-	}
-	return store.New(platform.DBFrom(ctx)).GetHeader(ctx, id)
+	return s.d.IAM.Allowed(ctx, "sales", PermOrderEdit, unit)
 }
 
 func (s *Service) createOnce(ctx context.Context, k kind, in NewDoc) (int64, error) {
@@ -214,7 +197,7 @@ func (s *Service) create(ctx context.Context, k kind, requestID string, f DocFie
 
 func (s *Service) update(ctx context.Context, k kind, id int64, in DocUpdate) error {
 	return platform.InTx(ctx, func(ctx context.Context) error {
-		if _, err := s.visible(ctx, k, id); err != nil {
+		if _, err := s.d.Record.Read(ctx, record.Ref{Type: k.docType, ID: id}); err != nil {
 			return err
 		}
 		p, err := s.prepare(ctx, k, in.DocFields)
@@ -274,7 +257,10 @@ func (s *Service) prepare(ctx context.Context, k kind, f DocFields) (prepared, e
 	} else {
 		f.ValidUntil = nil
 	}
-	c, err := s.visibleCustomer(ctx, f.CustomerID)
+	if err := s.d.Record.Visible(ctx, record.Ref{Type: customerType, ID: f.CustomerID}, record.View); err != nil {
+		return p, err
+	}
+	c, err := store.New(platform.DBFrom(ctx)).GetCustomer(ctx, f.CustomerID)
 	if err != nil {
 		return p, err
 	}
@@ -342,7 +328,7 @@ func (s *Service) writeLines(ctx context.Context, k kind, id int64, p prepared) 
 func (s *Service) CreateOrderFromQuote(ctx context.Context, quoteID int64) (int64, error) {
 	var id int64
 	err := platform.InTx(ctx, func(ctx context.Context) error {
-		qh, err := s.visible(ctx, quoteKind, quoteID)
+		qd, err := s.d.Record.Read(ctx, record.Ref{Type: quoteType, ID: quoteID})
 		if err != nil {
 			return err
 		}
@@ -350,7 +336,7 @@ func (s *Service) CreateOrderFromQuote(ctx context.Context, quoteID int64) (int6
 		if err := s.d.Record.WriteGate(ctx, record.Ref{Type: quoteType, ID: quoteID}); err != nil {
 			return err
 		}
-		if err := s.require(ctx, PermOrderEdit, qh.OrgUnitID); err != nil {
+		if err := s.require(ctx, PermOrderEdit, qd.OrgUnitID); err != nil {
 			return err
 		}
 		d, err := s.d.Record.Lock(ctx, record.Ref{Type: quoteType, ID: quoteID})

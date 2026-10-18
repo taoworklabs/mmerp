@@ -14,39 +14,23 @@ import (
 	"github.com/taoworklabs/mmerp/internal/platform"
 )
 
-// canCustomer goes by the customer's owning org unit; its files are as open as the customer.
-func (s *Service) canCustomer(ctx context.Context, id int64, action record.Action) (bool, error) {
+// locateCustomer: a customer is owned by its org unit.
+func locateCustomer(ctx context.Context, id int64) (int64, error) {
 	c, err := store.New(platform.DBFrom(ctx)).GetCustomer(ctx, id)
 	if errors.Is(err, pgx.ErrNoRows) {
-		return false, nil
+		return 0, platform.ErrNotFound
 	}
-	if err != nil {
-		return false, err
-	}
-	switch action {
-	case record.View, record.ViewFiles:
-		return s.allowed(ctx, PermCustomerView, c.OrgUnitID)
-	case record.Edit, record.Attach:
-		return s.allowed(ctx, PermCustomerEdit, c.OrgUnitID)
-	}
-	return false, nil
+	return c.OrgUnitID, err
 }
 
 // CustomerActions: create when the actor may edit customers somewhere and Sales is on.
 func (s *Service) CustomerActions(ctx context.Context) (Actions, error) {
-	return s.createActions(ctx, PermCustomerEdit)
+	return s.typeActions(ctx, customerType)
 }
 
-func (s *Service) createActions(ctx context.Context, perm string) (Actions, error) {
-	out := Actions{AllowedActions: []string{}}
-	sc, err := s.d.IAM.Scope(ctx, "sales", perm)
-	if err != nil {
-		return out, err
-	}
-	if sc.Any() && platform.ProductGate(ctx, "sales", platform.ClassWrite) == nil {
-		out.AllowedActions = append(out.AllowedActions, "create")
-	}
-	return out, nil
+func (s *Service) typeActions(ctx context.Context, code string) (Actions, error) {
+	acts, err := s.d.Record.TypeActions(ctx, code)
+	return Actions{AllowedActions: acts}, err
 }
 
 // Customers lists the customers under the org units where the actor may view them.
@@ -70,7 +54,10 @@ func (s *Service) Customers(ctx context.Context, f CustomerFilter) (CustomerList
 
 // Customer returns one customer; one the actor may not view does not exist.
 func (s *Service) Customer(ctx context.Context, id int64) (Customer, error) {
-	c, err := s.visibleCustomer(ctx, id)
+	if err := s.d.Record.Visible(ctx, record.Ref{Type: customerType, ID: id}, record.View); err != nil {
+		return Customer{}, err
+	}
+	c, err := store.New(platform.DBFrom(ctx)).GetCustomer(ctx, id)
 	if err != nil {
 		return Customer{}, err
 	}
@@ -119,11 +106,15 @@ func (s *Service) UpdateCustomer(ctx context.Context, id int64, in CustomerField
 		if err := store.New(platform.DBFrom(ctx)).LockCustomer(ctx, id); err != nil {
 			return err
 		}
-		old, err := s.visibleCustomer(ctx, id)
+		ref := record.Ref{Type: customerType, ID: id}
+		if err := s.d.Record.Visible(ctx, ref, record.View); err != nil {
+			return err
+		}
+		old, err := store.New(platform.DBFrom(ctx)).GetCustomer(ctx, id)
 		if err != nil {
 			return err
 		}
-		if err := s.d.Record.WriteGate(ctx, record.Ref{Type: customerType, ID: id}); err != nil {
+		if err := s.d.Record.WriteGate(ctx, ref); err != nil {
 			return err
 		}
 		if err := s.require(ctx, PermCustomerEdit, old.OrgUnitID, in.OrgUnitID); err != nil {
@@ -142,13 +133,6 @@ func (s *Service) UpdateCustomer(ctx context.Context, id int64, in CustomerField
 		}
 		return s.d.Audit.RecordChanges(ctx, "sales.customer_updated", audit.Ref{Type: customerType, ID: id}, customerChanges(customerFields(old), in))
 	})
-}
-
-func (s *Service) visibleCustomer(ctx context.Context, id int64) (store.GetCustomerRow, error) {
-	if ok, err := s.d.Record.Can(ctx, customerType, id, record.View); err != nil || !ok {
-		return store.GetCustomerRow{}, platform.OrErr(err, platform.ErrNotFound)
-	}
-	return store.New(platform.DBFrom(ctx)).GetCustomer(ctx, id)
 }
 
 func customerFields(c store.GetCustomerRow) CustomerFields {
