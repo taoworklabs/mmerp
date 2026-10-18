@@ -31,16 +31,6 @@ export function CustomersPage() {
   const columns: Column<CustomerListItem>[] = [ /* identifier first, status last: tables.md */ ]
   const view = useListView('sales.customers', columns)              // saved views and columns
 
-  let body
-  if (list.isPending) body = <ContentSkeleton />
-  else if (list.isError) body = <ErrorState message={errorText(t, list.error)} onRetry={() => void list.refetch()} />
-  else if (list.data.items.length === 0) body = /* EmptyState: feedback.md */
-  else body = (
-    <DataTable label={t('sales.customers.title')} columns={view.columns} onResize={view.onResize}
-      rows={list.data.items} rowKey={(c) => c.id} href={(c) => `/sales/customers/${c.id}`}
-      sort={params.sort} onSort={(sort) => set({ sort })} />
-  )
-
   return (
     <ListPage
       title={t('sales.customers.title')}
@@ -52,19 +42,25 @@ export function CustomersPage() {
         <FilterChip label={t('sales.customer.status')} icon={IconCircleDot} data={…} {...filterBar.bind('active')} />
       </>}
       tools={view.tools}
-      paging={list.data && { page: params.page, pageSize: params.pageSize, total: list.data.total, onPage: (page) => set({ page }), onPageSize: (pageSize) => set({ pageSize }) }}
-    >
-      {body}
-    </ListPage>
+      list={{
+        query: list,                                                // loading, error, empty and the table come from ListPage
+        table: { label: t('sales.customers.title'), columns: view.columns, onResize: view.onResize, rowKey: (c) => c.id,
+          href: (c) => `/sales/customers/${c.id}`, sort: params.sort, onSort: (sort) => set({ sort }) },
+        empty: { title: t('sales.customers.empty'), description: t('sales.customers.empty_description') },
+        noResults: t('sales.common.no_results'),
+        paging: { page: params.page, pageSize: params.pageSize, onPage: (page) => set({ page }), onPageSize: (pageSize) => set({ pageSize }) },
+      }}
+    />
   )
 }
 ```
 
 Adding to it, when the list needs them (`tables.md`):
 
-- **Bulk actions**: offered when the list's `/actions` include the bulk action (e.g. `bulk_submit`); `selection` on `DataTable`, `bulk={selected.size > 0 && <BulkBar …>}` on `ListPage`, and `useEffect(() => setSelected(new Set()), [params])` so a new filter, sort or page starts empty. Send every selected id: the job re-checks each document and reports the ones it skipped.
-- **Side panel**: `usePeek()` (from `@/shared/ui/SidePanel`), `onRowClick={(r) => peek.open(r.id)}`, and `<SidePanel>` as a child of `ListPage` after the table, holding the area's own preview component (`import LeavePreview from '../components/LeavePreview'`, the one its manifest gives the inbox).
-- **Errors of list actions** (bulk start, undo failure): an `Alert` as the first child of `ListPage`, above the table.
+- **Bulk actions**: offered when the list's `/actions` include the bulk action (e.g. `bulk_submit`); `selection` in `list.table`, `bulk={selected.size > 0 && <BulkBar …>}` on `ListPage`, and `useEffect(() => setSelected(new Set()), [params])` so a new filter, sort or page starts empty. Send every selected id: the job re-checks each document and reports the ones it skipped.
+- **Document status filter**: `<DocumentStatusFilter docType={…} {...filterBar.bind('status')} />` (`@/shared/document`) offers the four statuses, labelled as the document type names them.
+- **Side panel**: `usePeek()` (from `@/shared/ui/SidePanel`), `onRowClick: (r) => peek.open(r.id)` in `list.table`, and `<SidePanel>` as a child of `ListPage`, holding the area's own preview component (`import LeavePreview from '../components/LeavePreview'`, the one its manifest gives the inbox).
+- **Errors of list actions** (bulk start, undo failure): an `Alert` as a child of `ListPage` (children come before the table).
 
 ## Create page
 

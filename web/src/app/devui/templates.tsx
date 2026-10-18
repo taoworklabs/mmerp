@@ -89,32 +89,24 @@ export function ListTemplate() {
         </>
       }
       onClearFilters={filterBar.active ? filterBar.clear : undefined}
-      paging={{ page: params.page, pageSize: params.pageSize, total: found.length, onPage: (page) => set({ page }), onPageSize: (pageSize) => set({ pageSize }) }}
-    >
-      {found.length > 0 ? (
-        <DataTable
-          label={t('shared.devui.table')}
-          rows={found.slice(start, start + params.pageSize)}
-          rowKey={(r) => r.id}
-          columns={[
+      list={{
+        query: { isPending: false, isError: false, error: null, refetch: () => undefined, data: { items: found.slice(start, start + params.pageSize), total: found.length } },
+        table: {
+          label: t('shared.devui.table'),
+          rowKey: (r) => r.id,
+          columns: [
             { key: 'code', header: t('shared.devui.code'), role: 'title', kind: 'code', render: (r) => r.code },
             { key: 'name', header: t('shared.devui.name'), role: 'meta', render: (r) => r.name },
             { key: 'unit', header: t('shared.devui.org_unit'), role: 'meta', render: (r) => unitName.get(r.orgUnit) },
             { key: 'month', header: t('shared.devui.month'), role: 'meta', render: (r) => formatMonth(r.month) },
             { key: 'amount', header: t('shared.devui.amount'), role: 'meta', kind: 'number', render: (r) => formatNumber(r.amount) },
-          ]}
-        />
-      ) : (
-        <EmptyState
-          title={t('shared.devui.no_results')}
-          action={
-            <Button variant="default" onClick={filterBar.clear}>
-              {t('shared.devui.clear_filters')}
-            </Button>
-          }
-        />
-      )}
-    </ListPage>
+          ],
+        },
+        empty: { title: t('shared.devui.no_results') },
+        noResults: t('shared.devui.no_results'),
+        paging: { page: params.page, pageSize: params.pageSize, onPage: (page) => set({ page }), onPageSize: (pageSize) => set({ pageSize }) },
+      }}
+    />
   )
 }
 

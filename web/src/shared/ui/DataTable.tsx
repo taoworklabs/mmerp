@@ -34,7 +34,7 @@ export type Column<T> = {
 // Selection of rows for a bulk action: the keys of the selected rows on this page.
 export type Selection = { selected: ReadonlySet<string | number>; onChange: (next: Set<string | number>) => void }
 
-type Props<T> = {
+export type DataTableProps<T> = {
   columns: Column<T>[]
   rows: T[]
   rowKey: (row: T) => string | number
@@ -76,7 +76,7 @@ function grouped<T>(rows: T[], of?: (row: T) => string): { name: string; rows: T
 }
 
 // DataTable is the only table areas use: compact, sortable on the server, a card list below 1024px.
-export function DataTable<T>({ columns, rows, rowKey, href, onRowClick, selection, onResize, menu, sort, onSort, label, group, footer, maxHeight, cards }: Props<T>) {
+export function DataTable<T>({ columns, rows, rowKey, href, onRowClick, selection, onResize, menu, sort, onSort, label, group, footer, maxHeight, cards }: DataTableProps<T>) {
   const { t } = useTranslation()
   const wide = useMediaQuery('(min-width: 64em)', true)
   const navigate = useNavigate()
@@ -372,7 +372,7 @@ function RowMenu({ children }: { children: ReactNode }) {
   return <MoreActions>{children}</MoreActions>
 }
 
-function Cards<T>({ columns, rows, rowKey, href, menu, label, group, footer }: Omit<Props<T>, 'sort' | 'onSort'>) {
+function Cards<T>({ columns, rows, rowKey, href, menu, label, group, footer }: Omit<DataTableProps<T>, 'sort' | 'onSort'>) {
   return (
     <Stack gap="xs" role="list" aria-label={label}>
       {grouped(rows, group?.of).map((g) => (
