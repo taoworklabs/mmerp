@@ -10,7 +10,6 @@ import (
 	"strings"
 	"sync"
 	"testing"
-	"time"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/riverqueue/river"
@@ -31,6 +30,7 @@ import (
 
 type fixture struct {
 	t    *testing.T
+	core *coretest.Core
 	pool platform.Conn
 	iam  *iam.Service
 	rec  *record.Service
@@ -73,7 +73,7 @@ func newFixture(t *testing.T) *fixture {
 	ctx = platform.WithJobs(ctx, jobs)
 	admin := platform.WithJobs(core.Admin, jobs)
 	c := must(t)(ids.CreateOrgUnit(admin, iam.OrgUnitInput{Kind: "company", Name: "C"}))
-	f := &fixture{t: t, pool: pool, iam: ids, rec: rec, appr: core.Approval, hrm: h, num: num, jobs: jobs, admin: admin, c: c}
+	f := &fixture{t: t, core: core, pool: pool, iam: ids, rec: rec, appr: core.Approval, hrm: h, num: num, jobs: jobs, admin: admin, c: c}
 	f.a = must(t)(ids.CreateOrgUnit(admin, iam.OrgUnitInput{ParentID: &c, Kind: "department", Name: "A"}))
 	f.b = must(t)(ids.CreateOrgUnit(admin, iam.OrgUnitInput{ParentID: &c, Kind: "department", Name: "B"}))
 	f.ctxFor = func(login string, grants ...string) context.Context {
@@ -480,7 +480,7 @@ func TestManagerCycleFormedAtOnce(t *testing.T) {
 			return err
 		}
 		wg.Go(func() { second = f.hrm.UpdateEmployee(hr, c, managed("C", &d).EmployeeInput) })
-		time.Sleep(100 * time.Millisecond)
+		pgtest.AwaitLockWait(t, f.pool)
 		return nil
 	}); err != nil {
 		t.Fatal(err)

@@ -25,6 +25,7 @@ import (
 // customer of A and two items.
 type fixture struct {
 	t        *testing.T
+	core     *coretest.Core
 	ctx      context.Context
 	admin    context.Context
 	staff    context.Context // staff@A
@@ -45,7 +46,7 @@ func newFixture(t *testing.T) *fixture {
 	core := coretest.New(t, "sales")
 	ctx, admin, ids, set, rec, num := core.Ctx, core.Admin, core.IAM, core.Setting, core.Record, core.Numbering
 	s := sales.NewService(sales.Deps{IAM: ids, Record: rec, Audit: core.Audit, Setting: set, Printing: core.Printing, Numbering: num})
-	f := &fixture{t: t, ctx: ctx, admin: admin, set: set, rec: rec, appr: core.Approval, sales: s, num: num}
+	f := &fixture{t: t, core: core, ctx: ctx, admin: admin, set: set, rec: rec, appr: core.Approval, sales: s, num: num}
 	f.c = must(t)(ids.CreateOrgUnit(admin, iam.OrgUnitInput{Kind: "company", Name: "C"}))
 	f.a = must(t)(ids.CreateOrgUnit(admin, iam.OrgUnitInput{ParentID: &f.c, Kind: "department", Name: "A"}))
 	f.b = must(t)(ids.CreateOrgUnit(admin, iam.OrgUnitInput{ParentID: &f.c, Kind: "department", Name: "B"}))
@@ -146,9 +147,23 @@ func (f *fixture) posted(docType string) int {
 func contract(t *testing.T, docType string) {
 	recordtest.Run(t, func(t *testing.T) recordtest.Harness {
 		f := newFixture(t)
-		create, update := f.sales.CreateQuote, f.sales.UpdateQuote
+		create, update, read, del := f.sales.CreateQuote, f.sales.UpdateQuote, f.sales.Quote, f.sales.DeleteQuote
+		routes := map[string]func(context.Context, record.Ref) error{
+			"create order": func(ctx context.Context, r record.Ref) error {
+				_, err := f.sales.CreateOrderFromQuote(ctx, r.ID)
+				return err
+			},
+		}
+		gaps := map[string]string{
+			"write actions leave allowed_actions when the product is off or the period locked": "a posted quotation in a locked period still offers create_order",
+		}
 		if docType == "sales.order" {
-			create, update = f.sales.CreateOrder, f.sales.UpdateOrder
+			create, update, read, del, routes, gaps = f.sales.CreateOrder, f.sales.UpdateOrder, f.sales.Order, f.sales.DeleteOrder, nil, nil
+		}
+		deactivate := func(*testing.T, record.Ref) {
+			c := customer("KH1", f.a)
+			c.Active = false
+			f.check(f.sales.UpdateCustomer(f.staff, f.customer, c.CustomerFields))
 		}
 		fields := func(date string) sales.DocFields {
 			fl := f.fields(date)
@@ -159,7 +174,14 @@ func contract(t *testing.T, docType string) {
 			return fl
 		}
 		return recordtest.Harness{
-			Record: f.rec, Actor: f.staff, Admin: f.admin, LegalEntity: f.c,
+			Core: f.core, Actor: f.staff, Admin: f.admin, LegalEntity: f.c,
+			Get:    func(ctx context.Context, r record.Ref) (any, error) { return read(ctx, r.ID) },
+			Delete: func(ctx context.Context, r record.Ref, version int32) error { return del(ctx, r.ID, version) },
+			Routes: routes,
+			Gaps:   gaps,
+			Reject: func(instance int64) error { return f.appr.Reject(f.manager, instance, 1, "không") },
+			// Sending refuses a customer deactivated since the draft was saved.
+			BreakSubmit: deactivate,
 			Create: func(ctx context.Context, date string) (record.Ref, error) {
 				id, err := create(ctx, sales.NewDoc{RequestID: newRequest(), DocFields: fields(date)})
 				return record.Ref{Type: docType, ID: id}, err
@@ -170,12 +192,8 @@ func contract(t *testing.T, docType string) {
 			RequireApproval: func(*testing.T) { f.managerApproves(docType) },
 			Approve:         func(instance int64) error { return f.appr.Approve(f.manager, instance, 1) },
 			// Posting refuses a customer deactivated since the draft was saved.
-			BreakPosting: func(*testing.T, record.Ref) {
-				c := customer("KH1", f.a)
-				c.Active = false
-				f.check(f.sales.UpdateCustomer(f.staff, f.customer, c.CustomerFields))
-			},
-			Effects: func(*testing.T, record.Ref) int { return f.posted(docType) },
+			BreakPosting: deactivate,
+			Effects:      func(*testing.T, record.Ref) int { return f.posted(docType) },
 		}
 	})
 }

@@ -7,7 +7,6 @@ import (
 	"strings"
 	"sync"
 	"testing"
-	"time"
 
 	"github.com/shopspring/decimal"
 
@@ -16,6 +15,7 @@ import (
 	"github.com/taoworklabs/mmerp/internal/core/record/recordtest"
 	"github.com/taoworklabs/mmerp/internal/modules/hrm"
 	"github.com/taoworklabs/mmerp/internal/platform"
+	"github.com/taoworklabs/mmerp/internal/platform/pgtest"
 )
 
 // leaveFixture adds to company C, department A: HR (hr and leave_admin tenant-wide),
@@ -181,7 +181,7 @@ func TestLeaveSampleFlow(t *testing.T) {
 	f.check(platform.InTx(f.admin, func(ctx context.Context) error {
 		f.check(f.rec.SetPeriodLock(ctx, f.c, str("2026-03-31")))
 		wg.Go(func() { cancelled = f.rec.Transition(f.hr, ref, 5, record.Cancelled) })
-		time.Sleep(100 * time.Millisecond)
+		pgtest.AwaitLockWait(t, f.pool)
 		return nil
 	}))
 	wg.Wait()
@@ -192,7 +192,7 @@ func TestLeaveSampleFlow(t *testing.T) {
 	f.check(platform.InTx(f.hr, func(ctx context.Context) error {
 		f.check(f.rec.Transition(ctx, ref, 5, record.Cancelled))
 		wg.Go(func() { locked = f.rec.SetPeriodLock(f.admin, f.c, str("2026-03-31")) })
-		time.Sleep(100 * time.Millisecond)
+		pgtest.AwaitLockWait(t, f.pool)
 		return nil
 	}))
 	wg.Wait()
@@ -336,15 +336,24 @@ func TestLeaveRecordContract(t *testing.T) {
 			return record.Ref{Type: "hrm.leave_request", ID: id}, err
 		}
 		return recordtest.Harness{
-			Record: f.rec, Actor: f.hr, Admin: f.admin, LegalEntity: f.c,
+			Core: f.core, Actor: f.hr, Admin: f.admin, LegalEntity: f.c,
 			Create: func(ctx context.Context, date string) (record.Ref, error) {
 				return ref(f.hrm.CreateLeave(ctx, hrm.NewLeave{EmployeeID: &f.emp, LeaveFields: f.fields(date, date, "1")}))
 			},
 			Edit: func(ctx context.Context, r record.Ref, version int32, date string) error {
 				return f.hrm.UpdateLeave(ctx, r.ID, hrm.LeaveUpdate{Version: version, LeaveFields: f.fields(date, date, "1")})
 			},
+			Get: func(ctx context.Context, r record.Ref) (any, error) { return f.hrm.Leave(ctx, r.ID) },
+			Delete: func(ctx context.Context, r record.Ref, version int32) error {
+				return f.hrm.DeleteLeave(ctx, r.ID, version)
+			},
 			RequireApproval: func(*testing.T) { f.ruleManager() },
 			Approve:         func(instance int64) error { return f.appr.Approve(f.m, instance, 1) },
+			Reject:          func(instance int64) error { return f.appr.Reject(f.m, instance, 1, "không") },
+			// The leave type comes to need a supporting file.
+			BreakSubmit: func(*testing.T, record.Ref) {
+				must(t)(f.hrm.SaveLeaveType(f.hr, f.annual, hrm.LeaveTypeInput{Name: "Phép năm", DeductsBalance: true, Active: true, RequiresAttachment: true}))
+			},
 			BreakPosting: func(*testing.T, record.Ref) {
 				f.check(f.hrm.AdjustLeaveBalance(f.hr, f.emp, 2026, hrm.BalanceAdjustment{Delta: "-" + f.balance(), Reason: "hết"}))
 				granted = 0

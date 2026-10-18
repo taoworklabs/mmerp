@@ -12,6 +12,7 @@ import (
 	"github.com/taoworklabs/mmerp/internal/core/record/recordtest"
 	"github.com/taoworklabs/mmerp/internal/modules/hrm"
 	"github.com/taoworklabs/mmerp/internal/platform"
+	"github.com/taoworklabs/mmerp/internal/platform/pgtest"
 )
 
 // contractFixture adds to the leave fixture HR with the payroll role, a second approver,
@@ -77,7 +78,12 @@ func TestContractRecordContract(t *testing.T) {
 		f := newContractFixture(t)
 		ref := func(id int64, err error) (record.Ref, error) { return record.Ref{Type: "hrm.contract", ID: id}, err }
 		return recordtest.Harness{
-			Record: f.rec, Actor: f.pay, Admin: f.admin, LegalEntity: f.c,
+			Core: f.core, Actor: f.pay, Admin: f.admin, LegalEntity: f.c,
+			Get: func(ctx context.Context, r record.Ref) (any, error) { return f.hrm.Contract(ctx, r.ID) },
+			Delete: func(ctx context.Context, r record.Ref, version int32) error {
+				return f.hrm.DeleteContract(ctx, r.ID, version)
+			},
+			Reject: func(instance int64) error { return f.appr.Reject(f.head, instance, 1, "không") },
 			Create: func(ctx context.Context, date string) (record.Ref, error) {
 				return ref(f.hrm.CreateContract(ctx, hrm.NewContract{EmployeeID: f.emp, ContractFields: hrm.ContractFields{ContractTypeID: f.kind, StartDate: date, Terms: terms(10_000_000)}}))
 			},
@@ -375,7 +381,7 @@ func TestOverlappingContractsPostedAtOnce(t *testing.T) {
 	f.check(platform.InTx(f.pay, func(ctx context.Context) error {
 		f.check(f.rec.Transition(ctx, record.Ref{Type: "hrm.contract", ID: a}, 1, record.Posted))
 		wg.Go(func() { second = f.post(b) })
-		time.Sleep(100 * time.Millisecond)
+		pgtest.AwaitLockWait(t, f.pool)
 		return nil
 	}))
 	wg.Wait()

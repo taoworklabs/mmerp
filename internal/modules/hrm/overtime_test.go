@@ -38,13 +38,18 @@ func TestOvertimeRecordContract(t *testing.T) {
 			return record.Ref{Type: "hrm.overtime_request", ID: id}, err
 		}
 		return recordtest.Harness{
-			Record: f.rec, Actor: f.hr, Admin: f.admin, LegalEntity: f.c,
+			Core: f.core, Actor: f.hr, Admin: f.admin, LegalEntity: f.c,
 			Create: func(ctx context.Context, date string) (record.Ref, error) {
 				return ref(f.hrm.CreateOvertime(ctx, hrm.NewOvertime{EmployeeID: &f.emp, OvertimeFields: overtime(date, "2", "0")}))
 			},
 			Edit: func(ctx context.Context, r record.Ref, version int32, date string) error {
 				return f.hrm.UpdateOvertime(ctx, r.ID, hrm.OvertimeUpdate{Version: version, OvertimeFields: overtime(date, "2", "0")})
 			},
+			Get: func(ctx context.Context, r record.Ref) (any, error) { return f.hrm.Overtime(ctx, r.ID) },
+			Delete: func(ctx context.Context, r record.Ref, version int32) error {
+				return f.hrm.DeleteOvertime(ctx, r.ID, version)
+			},
+			Reject: func(instance int64) error { return f.appr.Reject(f.m, instance, 1, "không") },
 			RequireApproval: func(*testing.T) {
 				f.check(f.appr.SaveRule(f.admin, "hrm.overtime_request", approval.RuleInput{
 					Steps: []approval.Step{{Approver: approval.Approver{Kind: "module"}}}, MaxLevels: 3, FallbackProduct: "hrm", FallbackRole: "hr",

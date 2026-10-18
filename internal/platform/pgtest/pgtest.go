@@ -11,6 +11,7 @@ import (
 	"net/url"
 	"os"
 	"testing"
+	"time"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -28,6 +29,23 @@ const templateLockKey = 7_346_201_002
 func New(t testing.TB) *pgxpool.Pool {
 	t.Helper()
 	return create(t, template(t))
+}
+
+// AwaitLockWait returns once a session on db's database waits for a lock, so a race
+// test knows the racing write has reached the lock the test holds.
+func AwaitLockWait(t testing.TB, db platform.Conn) {
+	t.Helper()
+	for deadline := time.Now().Add(10 * time.Second); time.Now().Before(deadline); time.Sleep(5 * time.Millisecond) {
+		var waiting bool
+		if err := db.QueryRow(t.Context(), `SELECT EXISTS (SELECT 1 FROM pg_stat_activity
+			WHERE datname = current_database() AND wait_event_type = 'Lock')`).Scan(&waiting); err != nil {
+			t.Fatal(err)
+		}
+		if waiting {
+			return
+		}
+	}
+	t.Fatal("pgtest: no session waits for a lock")
 }
 
 // Empty returns a pool on a fresh database with no migrations applied.

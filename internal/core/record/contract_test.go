@@ -5,7 +5,6 @@ import (
 	"errors"
 	"sync"
 	"testing"
-	"time"
 
 	"github.com/taoworklabs/mmerp/internal/core/approval"
 	"github.com/taoworklabs/mmerp/internal/core/coretest"
@@ -13,6 +12,7 @@ import (
 	"github.com/taoworklabs/mmerp/internal/core/record"
 	"github.com/taoworklabs/mmerp/internal/core/record/recordtest"
 	"github.com/taoworklabs/mmerp/internal/platform"
+	"github.com/taoworklabs/mmerp/internal/platform/pgtest"
 )
 
 // TestContract runs recordtest on a bare document type, proving the suite itself.
@@ -20,37 +20,63 @@ func TestContract(t *testing.T) {
 	recordtest.Run(t, func(t *testing.T) recordtest.Harness {
 		core := coretest.New(t, "test")
 		ids, rec, appr, ctx, admin := core.IAM, core.Record, core.Approval, core.Ctx, core.Admin
-		ids.RegisterRoles("test", map[string][]string{"approver": {"test.doc.approve"}})
+		ids.RegisterRoles("test", map[string][]string{"member": {"test.doc.edit"}, "approver": {"test.doc.approve", "test.doc.edit"}})
 
 		var mu sync.Mutex
-		effects, broken := map[int64]int{}, map[int64]bool{}
+		effects, broken, unready := map[int64]int{}, map[int64]bool{}, map[int64]bool{}
 		rec.Register(record.Type{
 			Code: "test.doc", Product: "test", Kind: record.Document, NumberPrefix: "T",
-			Can: func(context.Context, int64, record.Action) (bool, error) { return true, nil },
+			// Members of the document's unit may do anything with it.
+			Can: func(ctx context.Context, id int64, _ record.Action) (bool, error) {
+				d, err := rec.Get(ctx, record.Ref{Type: "test.doc", ID: id})
+				if errors.Is(err, platform.ErrNotFound) {
+					return false, nil
+				}
+				if err != nil {
+					return false, err
+				}
+				return ids.Allowed(ctx, "test", "test.doc.edit", d.OrgUnitID)
+			},
+			BeforeSubmit: func(_ context.Context, d record.Doc) error {
+				mu.Lock()
+				defer mu.Unlock()
+				if unready[d.ID] {
+					return &platform.Error{Status: 422, Code: "not_ready"}
+				}
+				return nil
+			},
 			OnTransition: func(_ context.Context, d record.Doc, _ record.Status) error {
 				mu.Lock()
 				defer mu.Unlock()
-				if d.Status != record.Posted {
-					return nil
-				}
-				if broken[d.ID] {
+				switch {
+				case d.Status == record.Cancelled:
+					effects[d.ID]--
+				case d.Status != record.Posted:
+				case broken[d.ID]:
 					return errors.New("posting broken")
+				default:
+					effects[d.ID]++
 				}
-				effects[d.ID]++
 				return nil
 			},
 		})
 
 		c := must(t)(ids.CreateOrgUnit(admin, iam.OrgUnitInput{Kind: "company", Name: "C"}))
 		a := must(t)(ids.CreateOrgUnit(admin, iam.OrgUnitInput{ParentID: &c, Kind: "department", Name: "A"}))
-		actor := platform.WithActor(ctx, must(t)(ids.CreateUser(admin, "actor", "Actor", "long enough")))
+		actorID := must(t)(ids.CreateUser(admin, "actor", "Actor", "long enough"))
+		must(t)(ids.GrantRole(admin, actorID, "test", "member", nil))
+		actor := platform.WithActor(ctx, actorID)
 		approverID := must(t)(ids.CreateUser(admin, "approver", "Approver", "long enough"))
 		must(t)(ids.GrantRole(admin, approverID, "test", "approver", nil))
 		approver := platform.WithActor(ctx, approverID)
 
 		header := func(date string) record.Header { return record.Header{Date: date, OrgUnitID: a} }
+		type detail struct {
+			Doc            record.Doc
+			AllowedActions []string
+		}
 		return recordtest.Harness{
-			Record: rec, Actor: actor, Admin: admin, LegalEntity: c,
+			Core: core, Actor: actor, Admin: admin, LegalEntity: c,
 			Create: func(ctx context.Context, date string) (record.Ref, error) {
 				d, err := rec.Create(ctx, "test.doc", header(date))
 				return d.Ref, err
@@ -58,6 +84,24 @@ func TestContract(t *testing.T) {
 			Edit: func(ctx context.Context, ref record.Ref, version int32, date string) error {
 				_, err := rec.Edit(ctx, ref, version, header(date))
 				return err
+			},
+			Get: func(ctx context.Context, ref record.Ref) (any, error) {
+				if err := rec.Visible(ctx, ref, record.View); err != nil {
+					return nil, err
+				}
+				d, err := rec.Get(ctx, ref)
+				if err != nil {
+					return nil, err
+				}
+				actions, err := rec.DocumentActions(ctx, d)
+				return detail{d, actions}, err
+			},
+			Delete: rec.Delete,
+			Reject: func(instance int64) error { return appr.Reject(approver, instance, 1, "no") },
+			BreakSubmit: func(_ *testing.T, ref record.Ref) {
+				mu.Lock()
+				defer mu.Unlock()
+				unready[ref.ID] = true
 			},
 			RequireApproval: func(t *testing.T) {
 				role := approval.Approver{Kind: "role", Product: "test", Role: "approver"}
@@ -131,7 +175,7 @@ func TestCreateWaitsForATreeMove(t *testing.T) {
 			return err
 		}
 		wg.Go(func() { d, created = rec.Create(admin, "test.doc", record.Header{Date: "2026-03-10", OrgUnitID: a}) })
-		time.Sleep(100 * time.Millisecond)
+		pgtest.AwaitLockWait(t, core.Pool)
 		return nil
 	}); err != nil {
 		t.Fatal(err)
