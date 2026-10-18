@@ -72,7 +72,10 @@ func NewService(d Deps) *Service {
 			{Key: "days", Kind: record.Number, Label: "hrm.leave.days"},
 			{Key: "leave_type", Kind: record.Choice, Label: "hrm.leave.type", Options: s.leaveTypeOptions},
 		},
-		Can: s.canLeave, OnTransition: s.leaveTransition, BeforeSubmit: s.leaveBeforeSubmit, Approvers: s.leaveApprovers, Subjects: s.leaveSubjects,
+		// Attachments (a medical certificate) go with the request, asking nothing more.
+		Perms: record.Perms{View: PermLeaveView, Edit: PermLeaveEdit, ViewFiles: PermLeaveView, Attach: PermLeaveEdit},
+		Grant: s.leaveGrant, SubjectCreates: true,
+		OnTransition: s.leaveTransition, BeforeSubmit: s.leaveBeforeSubmit, Approvers: s.leaveApprovers, Subjects: s.leaveSubjects,
 	})
 	d.Record.Register(record.Type{
 		Code: overtimeType, Product: "hrm", Kind: record.Document, NumberPrefix: "TC",

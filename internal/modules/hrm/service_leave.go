@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"net/http"
+	"slices"
 	"strconv"
 	"strings"
 
@@ -73,7 +74,7 @@ func (s *Service) SaveLeaveType(ctx context.Context, id int64, in LeaveTypeInput
 	return id, err
 }
 
-func (s *Service) canLeave(ctx context.Context, id int64, action record.Action) (bool, error) {
+func (s *Service) leaveGrant(ctx context.Context, id int64, action record.Action) (bool, error) {
 	r, err := store.New(platform.DBFrom(ctx)).GetLeaveRequest(ctx, id)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return false, nil
@@ -81,9 +82,7 @@ func (s *Service) canLeave(ctx context.Context, id int64, action record.Action) 
 	if err != nil {
 		return false, err
 	}
-	// Attachments (a medical certificate) go with the request, asking nothing more.
-	action, _ = filesAction(action)
-	return s.canSelfService(ctx, selfService{r.EmployeeID, r.EmployeeUserID, r.OrgUnitID}, action, PermLeaveView, PermLeaveEdit)
+	return selfGrant(ctx, r.EmployeeID, r.EmployeeUserID, action)
 }
 
 func (s *Service) leaveApprovers(ctx context.Context, ref record.Ref, level int) ([]int64, error) {
@@ -188,7 +187,20 @@ func (s *Service) leaveTransition(ctx context.Context, d record.Doc, from record
 
 // LeaveActions lists what the actor may do before picking a leave request.
 func (s *Service) LeaveActions(ctx context.Context) (SelfServiceActions, error) {
-	return s.selfServiceActions(ctx, PermLeaveEdit)
+	out, err := selfEmployee(ctx)
+	if err != nil {
+		return out, err
+	}
+	acts, err := s.d.Record.TypeActions(ctx, leaveType)
+	switch {
+	case err != nil:
+		return out, err
+	case slices.Contains(acts, "create"):
+		out.AllowedActions = append(out.AllowedActions, "create", "create_for_others")
+	case out.SelfEmployeeID != nil && platform.ProductGate(ctx, "hrm", platform.ClassWrite) == nil:
+		out.AllowedActions = append(out.AllowedActions, "create")
+	}
+	return out, nil
 }
 
 // Leaves lists the leave requests the actor may see: their own, their reports', and those in scope.
@@ -224,20 +236,16 @@ func (s *Service) Leaves(ctx context.Context, f LeaveFilter) (LeaveList, error) 
 
 // Leave returns one leave request; one the actor may not view does not exist.
 func (s *Service) Leave(ctx context.Context, id int64) (Leave, error) {
-	ref := record.Ref{Type: leaveType, ID: id}
-	if ok, err := s.d.Record.Can(ctx, leaveType, id, record.View); err != nil || !ok {
-		return Leave{}, platform.OrErr(err, platform.ErrNotFound)
+	d, err := s.d.Record.Read(ctx, record.Ref{Type: leaveType, ID: id})
+	if err != nil {
+		return Leave{}, err
 	}
 	q := store.New(platform.DBFrom(ctx))
 	r, err := q.GetLeaveRequest(ctx, id)
 	if err != nil {
 		return Leave{}, err
 	}
-	d, err := s.d.Record.Get(ctx, ref)
-	if err != nil {
-		return Leave{}, err
-	}
-	actions, err := s.d.Record.DocumentActions(ctx, d)
+	actions, err := s.d.Record.Actions(ctx, d)
 	if err != nil {
 		return Leave{}, err
 	}
@@ -270,7 +278,7 @@ func (s *Service) CreateLeave(ctx context.Context, in NewLeave) (int64, error) {
 	var id int64
 	err := platform.InTx(ctx, func(ctx context.Context) error {
 		q := store.New(platform.DBFrom(ctx))
-		employee, unit, err := s.filer(ctx, in.EmployeeID, PermLeaveEdit)
+		employee, unit, user, err := subject(ctx, in.EmployeeID)
 		if err != nil {
 			return err
 		}
@@ -278,6 +286,7 @@ func (s *Service) CreateLeave(ctx context.Context, in NewLeave) (int64, error) {
 		if err != nil {
 			return err
 		}
+		h.Subject = user.Int64
 		d, err := s.d.Record.Create(ctx, leaveType, h)
 		if err != nil {
 			return err
@@ -296,7 +305,10 @@ func (s *Service) CreateLeave(ctx context.Context, in NewLeave) (int64, error) {
 func (s *Service) UpdateLeave(ctx context.Context, id int64, in LeaveUpdate) error {
 	return platform.InTx(ctx, func(ctx context.Context) error {
 		q := store.New(platform.DBFrom(ctx))
-		old, err := s.visibleLeave(ctx, id)
+		if _, err := s.d.Record.Read(ctx, record.Ref{Type: leaveType, ID: id}); err != nil {
+			return err
+		}
+		old, err := q.GetLeaveRequest(ctx, id)
 		if err != nil {
 			return err
 		}
@@ -321,21 +333,12 @@ func (s *Service) UpdateLeave(ctx context.Context, id int64, in LeaveUpdate) err
 // DeleteLeave removes a draft at the version the actor saw.
 func (s *Service) DeleteLeave(ctx context.Context, id int64, version int32) error {
 	return platform.InTx(ctx, func(ctx context.Context) error {
-		if _, err := s.visibleLeave(ctx, id); err != nil {
-			return err
-		}
+		// Delete refuses a request the actor may not see before the row goes.
 		if err := s.d.Record.Delete(ctx, record.Ref{Type: leaveType, ID: id}, version); err != nil {
 			return err
 		}
 		return store.New(platform.DBFrom(ctx)).DeleteLeaveRequest(ctx, id)
 	})
-}
-
-func (s *Service) visibleLeave(ctx context.Context, id int64) (store.GetLeaveRequestRow, error) {
-	if ok, err := s.d.Record.Can(ctx, leaveType, id, record.View); err != nil || !ok {
-		return store.GetLeaveRequestRow{}, platform.OrErr(err, platform.ErrNotFound)
-	}
-	return store.New(platform.DBFrom(ctx)).GetLeaveRequest(ctx, id)
 }
 
 // checkLeaveDates re-checks on approval what the entry already checked, and refuses dates

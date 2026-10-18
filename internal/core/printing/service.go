@@ -72,6 +72,7 @@ func (s *Service) Register(t Template) {
 		panic("printing: " + t.DocType + " has two templates")
 	}
 	s.templates[t.DocType], s.byCode[t.Code] = t, t
+	s.d.Record.Offer(t.DocType, record.Print)
 	s.d.DataIO.RegisterExport(dataio.Export{
 		Kind: "printing." + t.Code, Product: t.product,
 		Render: func(ctx context.Context, raw json.RawMessage) (dataio.File, error) { return s.render(ctx, t, raw) },
