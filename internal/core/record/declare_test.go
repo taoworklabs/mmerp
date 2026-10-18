@@ -87,11 +87,12 @@ func errorCode(err error) string {
 
 func TestDeclaredCreateChecksThePermission(t *testing.T) {
 	f := newDeclared(t)
+	// A type with subjects hides whether the subject exists or has an account: every
+	// refusal is not_found, named subject or not.
 	h := record.Header{Date: "2026-03-10", OrgUnitID: f.a}
-	if _, err := f.rec.Create(f.stranger, "test.decl", h); errorCode(err) != "forbidden" {
+	if _, err := f.rec.Create(f.stranger, "test.decl", h); errorCode(err) != "not_found" {
 		t.Fatalf("stranger creates: %v", err)
 	}
-	// Naming a subject one may not file for hides whether it exists.
 	h.Subject = f.subjectID
 	if _, err := f.rec.Create(f.stranger, "test.decl", h); errorCode(err) != "not_found" {
 		t.Fatalf("stranger creates for the subject: %v", err)

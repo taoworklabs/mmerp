@@ -172,3 +172,36 @@ func TestDayKindFollowsTheCalendar(t *testing.T) {
 	f.check(f.hrm.SaveHoliday(pay, f.c, hrm.Holiday{Date: "2026-04-29", Name: "Nghỉ bù"}))
 	wantErr(t, f.rec.Transition(f.e, record.Ref{Type: "hrm.overtime_request", ID: late}, 1, record.Posted), "overtime_day_kind_mismatch")
 }
+
+// Someone who may not create for an employee learns nothing about them: whether the id
+// exists, has an account, or the fields would pass, every refusal is not_found.
+func TestCreateForOthersRefusedAsNotFound(t *testing.T) {
+	f := newLeaveFixture(t)
+	noAccount := must(t)(f.hrm.CreateEmployee(f.hr, employee("N", f.a)))
+	missing := int64(1 << 40)
+	ok := overtime("2026-03-31", "2", "0")
+	badKind := ok
+	badKind.DayKind = "holiday"
+	for name, c := range map[string]struct {
+		emp    *int64
+		fields hrm.OvertimeFields
+	}{
+		"missing": {&missing, ok}, "no account": {&noAccount, ok},
+		"bad hours": {&f.emp, overtime("2026-03-31", "0", "0")}, "bad day kind": {&f.emp, badKind},
+	} {
+		if _, err := f.hrm.CreateOvertime(f.m, hrm.NewOvertime{EmployeeID: c.emp, OvertimeFields: c.fields}); errCode(err) != "not_found" {
+			t.Errorf("overtime, %s: %v", name, err)
+		}
+	}
+	day := f.fields("2026-03-10", "2026-03-10", "1")
+	for name, c := range map[string]struct {
+		emp    *int64
+		fields hrm.LeaveFields
+	}{
+		"missing": {&missing, day}, "no account": {&noAccount, day}, "bad days": {&f.emp, f.fields("2026-03-10", "2026-03-09", "x")},
+	} {
+		if _, err := f.hrm.CreateLeave(f.m, hrm.NewLeave{EmployeeID: c.emp, LeaveFields: c.fields}); errCode(err) != "not_found" {
+			t.Errorf("leave, %s: %v", name, err)
+		}
+	}
+}

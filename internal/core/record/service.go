@@ -269,10 +269,18 @@ func (s *Service) TypeActions(ctx context.Context, code string) ([]string, error
 	return out, nil
 }
 
-// mayCreate checks a type's create permission at the header's org unit; the
-// subject the header names may create without it if the type says so. Refused for a
-// named subject, the subject stays hidden as if it did not exist.
-func (s *Service) mayCreate(ctx context.Context, t Type, h Header) error {
+// MayCreate checks the product gate and a type's create permission at the header's org
+// unit; the subject the header names may create without it if the type says so. Create
+// checks it too; a module calls it first when its own validation would tell an outsider
+// something. Refused for a type with subjects, the subject stays hidden as if it did not exist.
+func (s *Service) MayCreate(ctx context.Context, code string, h Header) error {
+	t, ok := s.types[code]
+	if !ok || t.Kind != Document {
+		return fmt.Errorf("record: %q is not a document type", code)
+	}
+	if err := platform.ProductGate(ctx, t.Product, platform.ClassWrite); err != nil {
+		return err
+	}
 	actor, _ := platform.ActorFrom(ctx)
 	if t.SubjectCreates && h.Subject != 0 && h.Subject == actor {
 		return nil
@@ -283,7 +291,7 @@ func (s *Service) mayCreate(ctx context.Context, t Type, h Header) error {
 		return err
 	case ok:
 		return nil
-	case h.Subject != 0:
+	case t.SubjectCreates:
 		return platform.ErrNotFound
 	}
 	return platform.ErrForbidden
@@ -358,16 +366,10 @@ func (s *Service) Get(ctx context.Context, ref Ref) (Doc, error) {
 // Create adds a draft and gives it a number; the caller then inserts its own row with
 // the returned id. The type's create permission is checked here.
 func (s *Service) Create(ctx context.Context, code string, h Header) (Doc, error) {
-	t, ok := s.types[code]
-	if !ok || t.Kind != Document {
-		return Doc{}, fmt.Errorf("record: %q is not a document type", code)
-	}
-	if err := platform.ProductGate(ctx, t.Product, platform.ClassWrite); err != nil {
+	if err := s.MayCreate(ctx, code, h); err != nil {
 		return Doc{}, err
 	}
-	if err := s.mayCreate(ctx, t, h); err != nil {
-		return Doc{}, err
-	}
+	t := s.types[code]
 	date, fields, err := s.check(ctx, t, h)
 	if err != nil {
 		return Doc{}, err

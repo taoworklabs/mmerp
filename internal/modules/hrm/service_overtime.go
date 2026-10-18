@@ -164,6 +164,9 @@ func (s *Service) CreateOvertime(ctx context.Context, in NewOvertime) (int64, er
 		if err != nil {
 			return err
 		}
+		if err := s.d.Record.MayCreate(ctx, overtimeType, record.Header{OrgUnitID: unit, Subject: user.Int64}); err != nil {
+			return err
+		}
 		h, err := overtimeHeader(unit, in.OvertimeFields)
 		if err != nil {
 			return err

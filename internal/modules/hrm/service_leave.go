@@ -268,6 +268,9 @@ func (s *Service) CreateLeave(ctx context.Context, in NewLeave) (int64, error) {
 		if err != nil {
 			return err
 		}
+		if err := s.d.Record.MayCreate(ctx, leaveType, record.Header{OrgUnitID: unit, Subject: user.Int64}); err != nil {
+			return err
+		}
 		h, row, typeName, err := s.leaveHeader(ctx, unit, in.LeaveFields)
 		if err != nil {
 			return err
