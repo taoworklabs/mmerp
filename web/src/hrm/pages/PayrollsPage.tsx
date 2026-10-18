@@ -9,7 +9,7 @@ import { api, unwrap, type PayrollListItem } from '@/shared/api/hrm'
 import { DocumentStatus, DocumentStatusFilter, type DocStatus } from '@/shared/document'
 import { formatMonthShort } from '@/shared/i18n'
 import { type Column } from '@/shared/ui/DataTable'
-import { FilterChip, Form, FormActions, MonthField, MonthFilter, SelectField, useOrgUnits } from '@/shared/ui/form'
+import { FilterChip, Form, FormActions, LegalEntityField, MonthField, MonthFilter, useLegalEntities } from '@/shared/ui/form'
 import { useListView } from '@/shared/ui/ListView'
 import { notifySuccess } from '@/shared/ui/notify'
 import { FormModal, ListPage } from '@/shared/ui/page'
@@ -20,16 +20,10 @@ import { hrmKeys, payrollDocType } from '../keys'
 
 const defaults = { filters: { month: '', legal_entity_id: '', status: '' }, sort: '', sorts: [], pageSize: 50 }
 
-// useLegalEntities lists the legal entities where the user holds a payroll permission.
-function useLegalEntities(permission: string) {
-  const units = useOrgUnits({ product: 'hrm', permission })
-  return (units.data ?? []).filter((u) => u.kind === 'company').map((u) => ({ value: String(u.id), label: u.name }))
-}
-
 export function PayrollsPage() {
   const { t } = useTranslation()
   const canCreate = usePayrollActions().data?.includes('create') ?? false
-  const entities = useLegalEntities('hrm.payroll.view')
+  const entities = useLegalEntities({ product: 'hrm', permission: 'hrm.payroll.view' }).options
   const [creating, setCreating] = useState(false)
   const [params, set, filterBar] = useListParams(defaults)
   const { month, legal_entity_id, status } = params.filters as typeof defaults.filters
@@ -110,10 +104,9 @@ function NewPayroll({ onClose }: { onClose: () => void }) {
   const { t } = useTranslation()
   const navigate = useNavigate()
   const qc = useQueryClient()
-  const entities = useLegalEntities('hrm.payroll.edit')
   const form = useForm<{ legal_entity_id: string | null; month: string | null }>({
     mode: 'onBlur',
-    defaultValues: { legal_entity_id: entities.length === 1 ? entities[0]!.value : null, month: null },
+    defaultValues: { legal_entity_id: null, month: null },
   })
 
   async function create(v: { legal_entity_id: string | null; month: string | null }) {
@@ -126,7 +119,7 @@ function NewPayroll({ onClose }: { onClose: () => void }) {
   return (
     <FormModal opened title={t('hrm.payrolls.create')} onClose={onClose}>
       <Form form={form} onSubmit={create} fieldOf={(err) => (err.code === 'payroll_timesheets_missing' ? 'month' : undefined)}>
-        <SelectField name="legal_entity_id" label={t('hrm.payroll.legal_entity')} data={entities} required />
+        <LegalEntityField name="legal_entity_id" label={t('hrm.payroll.legal_entity')} product="hrm" permission="hrm.payroll.edit" required />
         <MonthField name="month" label={t('hrm.payroll.month')} description={t('hrm.payroll.month_hint')} required />
         <FormActions submitLabel={t('hrm.payrolls.create_compute')} onCancel={onClose} cancelLabel={t('hrm.common.cancel')} />
       </Form>

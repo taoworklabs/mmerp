@@ -148,7 +148,7 @@ func (s *Service) sendEmail(ctx context.Context, a emailArgs) error {
 		if err != nil {
 			return err
 		}
-		user, key, link = n.UserID, "notification.email."+n.Kind, srv.BaseUrl+"/notifications"
+		user, key, link = n.UserID, emailKey(n.Kind), srv.BaseUrl+"/notifications"
 	}
 	r, err := q.Recipient(ctx, user)
 	if errors.Is(err, pgx.ErrNoRows) || (err == nil && !r.Email.Valid) {

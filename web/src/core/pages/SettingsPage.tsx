@@ -1,4 +1,3 @@
-import { IconBuildingSkyscraper } from '@tabler/icons-react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
@@ -6,7 +5,7 @@ import { useTranslation } from 'react-i18next'
 import { api, unwrap, type LegalEntitySetting } from '@/shared/api/core'
 import { errorText } from '@/shared/i18n'
 import { DataTable, type Column } from '@/shared/ui/DataTable'
-import { FilterChip, Form, FormActions, SelectField, useOrgUnits } from '@/shared/ui/form'
+import { Form, FormActions, LegalEntityFilter, SelectField, useLegalEntities } from '@/shared/ui/form'
 import { notifySuccess } from '@/shared/ui/notify'
 import { FormModal, ListPage } from '@/shared/ui/page'
 import { ContentSkeleton, EmptyState, ErrorState } from '@/shared/ui/states'
@@ -20,9 +19,8 @@ export function SettingsPage() {
   const { t } = useTranslation()
   const [params, set] = useListParams(defaults)
   const [editing, setEditing] = useState<LegalEntitySetting | null>(null)
-  const units = useOrgUnits({ product: 'core', permission: 'core.setting.manage' })
-  const entities = (units.data ?? []).filter((u) => u.kind === 'company')
-  const chosen = Number(params.filters.legal_entity) || entities[0]?.id
+  const units = useLegalEntities({ product: 'core', permission: 'core.setting.manage' }, params.filters.legal_entity)
+  const chosen = units.chosen
   const settings = useQuery({
     queryKey: coreKeys.settings(chosen ?? 0),
     queryFn: async () => (await unwrap(api.GET('/legal-entities/{id}/settings', { params: { path: { id: chosen! } } }))) ?? [],
@@ -52,14 +50,7 @@ export function SettingsPage() {
       title={t('core.settings.title')}
       description={t('core.settings.description')}
       filters={
-        <FilterChip
-          label={t('core.period.legal_entity')}
-          icon={IconBuildingSkyscraper}
-          data={entities.map((u) => ({ value: String(u.id), label: u.name }))}
-          value={chosen ? String(chosen) : null}
-          onChange={(v) => set({ filters: { legal_entity: v ?? '' } })}
-          clearable={false}
-        />
+        <LegalEntityFilter label={t('core.period.legal_entity')} options={units.options} value={chosen} onChange={(v) => set({ filters: { legal_entity: v } })} />
       }
     >
       {body}

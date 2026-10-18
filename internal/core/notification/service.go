@@ -5,8 +5,10 @@ package notification
 import (
 	"context"
 	"embed"
+	"fmt"
 	"io/fs"
 	"slices"
+	"strings"
 	"sync"
 	"time"
 
@@ -17,7 +19,11 @@ import (
 	"github.com/taoworklabs/mmerp/internal/platform"
 )
 
-type Service struct{ d Deps }
+type Service struct {
+	d Deps
+	// kinds says which kinds may be sent, and whether each is emailed too.
+	kinds map[Kind]bool
+}
 
 //go:embed i18n/*.json
 var i18nFiles embed.FS
@@ -36,12 +42,30 @@ func NewService(d Deps) *Service {
 		// The files are embedded: failing here is a build defect.
 		panic(err)
 	}
-	return &Service{d: d}
+	// A job's requester is waiting in the app: job kinds are not emailed.
+	return &Service{d: d, kinds: map[Kind]bool{ApprovalRequested: true, ApprovalApproved: true, ApprovalRejected: true,
+		Mentioned: true, JobCompleted: false, JobFailed: false}}
+}
+
+// RegisterKind lets a product send kind, named <product>.<name>, while wiring modules.
+// An emailed kind needs <kind>.email.subject and <kind>.email.body in the product's translations.
+func (s *Service) RegisterKind(kind Kind, emailed bool) {
+	if product, name, _ := strings.Cut(string(kind), "."); product == "" || name == "" {
+		panic("notification: kind " + string(kind) + " is not named <product>.<name>")
+	}
+	if _, dup := s.kinds[kind]; dup {
+		panic("notification: kind " + string(kind) + " registered twice")
+	}
+	s.kinds[kind] = emailed
 }
 
 // Send tells users of an event on a record, in the event's transaction. The actor is
 // never told of their own action.
 func (s *Service) Send(ctx context.Context, kind Kind, ref record.Ref, users []int64) error {
+	emailed, ok := s.kinds[kind]
+	if !ok {
+		return fmt.Errorf("notification: kind %q is not registered", kind)
+	}
 	actor, _ := platform.ActorFrom(ctx)
 	users = slices.DeleteFunc(slices.Clone(users), func(u int64) bool { return u == actor })
 	if len(users) == 0 {
@@ -53,7 +77,7 @@ func (s *Service) Send(ctx context.Context, kind Kind, ref record.Ref, users []i
 		DocType: pgtype.Text{String: ref.Type, Valid: true}, DocID: pgtype.Int8{Int64: ref.ID, Valid: true},
 		ActorID: pgtype.Int8{Int64: actor, Valid: actor != 0},
 	})
-	if err != nil || !kind.emailed() {
+	if err != nil || !emailed {
 		return err
 	}
 	// Queued in the event's transaction; sending happens later, so a dead server stops nothing.

@@ -13,7 +13,7 @@ Constraints: no business operation depends on the Internet; no broker, no sideca
 ### Module `notification` in `core`
 
 - Table `notification.notifications (id, user_id, kind, doc_type, doc_id, job_id, actor_id, created_at, read_at)`:
-  - `kind` has a `CHECK` on exactly this set: `approval_requested`, `approval_approved`, `approval_rejected`, `mentioned`, `job_completed`, `job_failed`;
+  - `kind` has a `CHECK` on exactly this set: `approval_requested`, `approval_approved`, `approval_rejected`, `mentioned`, `job_completed`, `job_failed` (amended 2026-10-18: the `CHECK` is gone; products register their own kinds `<product>.<name>` and the send function refuses any kind not registered);
   - `doc_type`, `doc_id` are set when the notification is about a record; `job_id` when it is about a job; a `CHECK` enforces exactly one of the two;
   - `actor_id` is the person who caused the event, empty for job notifications; an empty `read_at` means unread;
   - an index on `(user_id, id DESC)` and a partial index on `user_id` for unread rows.

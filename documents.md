@@ -11,7 +11,8 @@ A module registers its record types with `record` at initialisation (see [backen
 - **Number prefix** (`NumberPrefix`), for documents: document numbers have the form `<PREFIX>-YYYY-NNNNN`, for example `NP-2026-00001`.
 - **Approval fields**, for documents: a short list (at most about 5) of fields used in approval conditions. Each field has a key, a kind (number, choice list, org unit) and a translation key for its label. For example, the leave request declares `days` and `leave_type`.
 - **Callbacks**:
-  - `Can(ctx, id, action)`: whether the user in `ctx` may perform `action` on record `id` of this type (the type is known at registration); other modules ask through `record.Can(ctx, type, id, action)`. `action` is one of `view`, `edit`, `post`, `cancel`, `export`, `view_files`, `attach`. An action the type does not answer is not allowed;
+  - the **permission declaration**: the permission that grants each action (`view`, `edit`, `post`, `cancel`, `export`, `print`, `view_files`, `attach`, and `create`, `import` before a record exists). `export` and `print` default to `view`'s permission, `post`, `cancel` and `create` to `edit`'s; an undeclared `view_files`, `attach` or `import` means the type has none. `record.Can(ctx, type, id, action)` answers from it: the record's type must match, the permission must hold at the record's org unit (from `record.documents`; a catalog's **locate hook** returns it), then the product gate. Two optional hooks: a **relation grant** that grants a declared action to users related to the record (the employee's own account, their managers), and a **refine hook** that may only narrow an answer (a contract's files also need `hrm.salary.view`). Decision: [ADR-0034](./docs/adr/0034-record-types-declare-permissions.md);
+  - a delete hook, for documents: deletes the module's own rows when a draft is deleted through the core route;
   - fetch the data for printing and export;
   - `OnTransition`, for documents: the module's work when the document changes status (see below);
   - `BeforeSubmit(ctx, doc)`, optional: runs when a `draft` document is submitted, before the approval gate is asked; if it returns an error the document stays `draft` (for example, a payroll whose source data has changed);
@@ -27,7 +28,7 @@ Each record type belongs to the product of the module that registers it. Every c
 Decision: [ADR-0024](./docs/adr/0024-attachments-and-discussion.md).
 
 - `attachment` and `discussion` apply to every record type, both documents and master data. If a record cannot be viewed, every route returns not found, even when the id is guessed correctly.
-- **Attachments** need two separate actions in `Can`: `view_files` (read class: list, download) and `attach` (write class: add, delete other people's files). A record type uses `view_files` to require an extra permission, for example the contract requires `hrm.salary.view`. The uploader can delete their own files. Each listing and download re-checks the current permissions.
+- **Attachments** need two separate declared actions: `view_files` (read class: list, download) and `attach` (write class: add, delete other people's files). A record type uses `view_files` to require an extra permission, for example the contract requires `hrm.salary.view`. The uploader can delete their own files. Each listing and download re-checks the current permissions.
 - **Discussion** uses `view` to read, and `view` plus the write-class product gate to comment. Comments cannot be edited or deleted.
 - `cancelled` documents: read-only. A locked period does not block attachments and comments, because they do not change figures; they also do not increase `version`.
 - Deleting a draft: `record`'s `Deleted` hook deletes the attachments and discussion in the same transaction; files on disk are deleted later by `attachment`'s cleanup pass.
@@ -35,8 +36,8 @@ Decision: [ADR-0024](./docs/adr/0024-attachments-and-discussion.md).
 
 ### Permissions
 
-- `record`'s `Edit`, `Delete` and `Transition` call `Can` themselves (below), so the module does not re-check the `edit`, `post`, `cancel` permissions in the service. **`Create` does not**: at that point there is no record yet to ask `Can` about, so `record.Create` only applies the product gate. The module must check the create permission itself before calling `Create` (for example, `hrm` checks `PermLeaveEdit` on the employee before creating a leave request).
-- **Every API that returns a document includes `allowed_actions`**, computed by `record` from `Can`, the status, the period lock, the submitter and the product gate. The list only contains write actions: `edit`, `delete`, `submit` when `draft`; `withdraw` when `pending_approval` (submitter only); `cancel` when `posted`. A document dated in a locked period, or belonging to a disabled product, has an empty list. Export is not in this list. The frontend only renders buttons from this list and never derives it itself ([frontend.md](./frontend.md#permissions-the-frontend-computes-nothing)).
+- `record`'s `Create`, `Edit`, `Delete` and `Transition` check permission themselves (below), so the module does not re-check them in the service. `Create` checks the declared `create` permission at the header's org unit, or the relation grant when the module names the new document's subject and the actor is that subject (an employee creating their own leave request).
+- **Every API that returns a document includes `allowed_actions`**, computed by one `record` call from the permission declaration, the status, the period lock, the submitter and the product gate: `edit`, `delete`, `submit` when `draft`; `withdraw` when `pending_approval` (submitter only); `cancel` when `posted`; `print` when the type has a print template, `export` when it has an export; plus the extras the module passes in for actions only it knows (the quotation's `create_order`). A document dated in a locked period, or belonging to a disabled product, has no write actions. The frontend only renders buttons from this list and never derives it itself ([frontend.md](./frontend.md#permissions-the-frontend-computes-nothing)).
 - Approval permission is decided by `approval`'s rules; the approver must still have `view`.
 - **Sensitive fields** have their own view permission ([platform.md](./platform.md#personal-data)). Permission to view a document does not mean being able to see the values of its sensitive fields, including old values: the audit log stores sensitive field values encrypted, and the timeline always masks sensitive field values, for every user.
 - **Reads using cross-schema joins**: the reading module is responsible for filtering by the user's permission scope, and must not select another module's sensitive columns. Sensitive columns are read only through the owning module's service.
@@ -96,7 +97,7 @@ The lock date is always read from the row just locked in step 1, never earlier. 
 
 A document's legal entity cannot change after `Create`, so each operation locks exactly one row in step 1.
 
-A core module that needs to lock its own rows after a document calls `record.Lock(ctx, ref)`: this function takes the step 1 and step 2 locks and returns the document, with no further checks. For example, `approval` calls it before locking its row in `approval.instances`.
+A module (core or product) whose write depends on a document's state, without changing that document, calls `record.Lock(ctx, ref)`: this function takes the step 1 and step 2 locks and returns the document, with no further checks, so the caller first checks the actor may view it. For example, `approval` calls it before locking its row in `approval.instances`, and Sales locks a quotation before returning its live order or making one. A change to a document's header goes through `Edit`; a change to a draft's child rows only goes through `Touch`, which takes the same locks, checks as `Edit` and increases `version` ([ADR-0034](./docs/adr/0034-record-types-declare-permissions.md)).
 
 **Each transaction writes exactly one document.** Bulk operations (approving many requests, importing many documents) are jobs that process one document at a time, one transaction per document. As a result, a transaction never locks two rows at the same step, and no lock-ordering convention between documents is needed.
 
@@ -104,7 +105,7 @@ A core module that needs to lock its own rows after a document calls `record.Loc
 
 | Function | Checks | Effect |
 | --- | --- | --- |
-| `Create(ctx, type, header)` | Product gate, period lock on the date; does **not** call `Can` (the module checks the create permission first) | Assigns the number, inserts a `draft` row, `version = 1`, returns the id |
+| `Create(ctx, type, header)` | Declared `create` permission, product gate, period lock on the date | Assigns the number, inserts a `draft` row, `version = 1`, returns the id. With a `request_id` already used by the same user, returns that document instead |
 | `Edit(ctx, ref, version, header)` | `Can(edit)`; status `draft`; `version` matches; period lock on **both the old and the new date**; legal entity unchanged (if changed: error `legal_entity_changed`) | Updates the header, increases `version` |
 | `Delete(ctx, ref, version)` | as `Edit` | Deletes the row |
 | `Transition(ctx, ref, version, to)` | `Can(post/cancel)`; valid transition; `version` matches; period lock | See below |

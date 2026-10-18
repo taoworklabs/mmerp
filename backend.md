@@ -107,7 +107,7 @@ func Module(s *Service) platform.Module {
 
 Every job's args implement `Spec() platform.JobSpec{Product, Class, System, Notify}`, and jobs are created only through `platform.Enqueue` (applies the product gate by class, records the job's requester for jobs run on behalf of a user, then inserts in the transaction of `ctx`). A job run on behalf of a user that declares `Notify` notifies the requester when the job finishes or fails; such a job must complete with `platform.CompleteJob`, so the "done" notification commits together with the job. System jobs never send notifications.
 
-A module tells a user about an event with `notification.Send(ctx, kind, ref, users)`, called in the event's transaction. Notifications do not carry the record's content; email (if the tenant has a mail server) goes through the system job `notification.email` enqueued in the same transaction ([ADR-0025](./docs/adr/0025-notifications.md)).
+A module tells a user about an event with `notification.Send(ctx, kind, ref, users)`, called in the event's transaction. Core kinds are built in; a product sends its own after registering it while wiring with `notification.RegisterKind("<product>.<name>", emailed)`, and `Send` refuses a kind nobody registered. An emailed product kind has `<kind>.email.subject` and `<kind>.email.body` in the product's server translations, and its inbox label is `<kind>.notification` in the product's area i18n. Notifications do not carry the record's content; email (if the tenant has a mail server) goes through the system job `notification.email` enqueued in the same transaction ([ADR-0025](./docs/adr/0025-notifications.md)).
 
 `internal/app` calls each module's `NewService`, then `Module(svc)`; other modules receive that same `*Service` through `Deps`, so there is only one copy of each registry (roles, record types).
 
@@ -178,8 +178,8 @@ A product module reaches the core only through these entry points. A need none o
 | Need | Entry point |
 | --- | --- |
 | Permission at org units | `iam.Allowed` / `iam.Require(ctx, product, perm, unit, more...)` (every unit must be in scope); lists filter with `iam.Scope`; tenant-wide catalogues use `iam.RequireTenantWide` |
-| Who may do what with a record | The record type's `Can`; other modules ask `record.Can`, or `record.Visible` to answer not found |
-| Document lifecycle | `record.Create` / `Edit` / `Delete` before the module's own rows, in the same transaction; status changes through `record`'s routes, reacting in `OnTransition` and `BeforeSubmit`; `record.Lock` before writing rows that depend on a document without changing it |
+| Who may do what with a record | The record type's permission declaration, with an optional relation grant and refine hook; modules ask `record.Can`, or `record.Visible` to answer not found ([ADR-0034](./docs/adr/0034-record-types-declare-permissions.md)) |
+| Document lifecycle | `record.Create` / `Edit` before the module's own rows, in the same transaction; drafts are deleted through the core route, which calls the type's delete hook; status changes through `record`'s routes, reacting in `OnTransition` and `BeforeSubmit`; `record.Touch` before changing only a draft's child rows; `record.Lock` (module-facing, checks nothing) before a write that depends on a document without changing it |
 | `allowed_actions` | `record.DocumentActions` for lifecycle actions, `record.AllowedActions` for the rest |
 | Writes while a product is disabled | `platform.ProductGate`; `record`, the route middleware, settings, jobs, prints, imports and exports apply it by the registered product |
 | Audit | `audit.Record` / `RecordFor` / `RecordChanges` in the change's transaction; `record.RestrictHistory` keeps an entry off a record's timeline for who may not see it |

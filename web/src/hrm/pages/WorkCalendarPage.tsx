@@ -1,5 +1,5 @@
 import { Alert, Button, Menu, Stack, Text } from '@mantine/core'
-import { IconAlertCircle, IconBuildingSkyscraper, IconPencil, IconPlus, IconTrash } from '@tabler/icons-react'
+import { IconAlertCircle, IconPencil, IconPlus, IconTrash } from '@tabler/icons-react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
@@ -9,7 +9,7 @@ import { useMe } from '@/shared/auth/me'
 import { currentYear, errorText, formatDate } from '@/shared/i18n'
 import { useConfirm } from '@/shared/ui/confirm'
 import { DataTable, type Column } from '@/shared/ui/DataTable'
-import { CheckboxField, DateField, FilterChip, Form, FormActions, TextField, useOrgUnits, YearFilter } from '@/shared/ui/form'
+import { CheckboxField, DateField, Form, FormActions, LegalEntityFilter, TextField, useLegalEntities, YearFilter } from '@/shared/ui/form'
 import { notifySuccess } from '@/shared/ui/notify'
 import { FormModal, ListPage } from '@/shared/ui/page'
 import { ContentSkeleton, EmptyState, ErrorState } from '@/shared/ui/states'
@@ -33,9 +33,8 @@ export function WorkCalendarPage() {
   const [editingHoliday, setEditingHoliday] = useState<Holiday | 'new' | null>(null)
   // A failed delete, shown above the tables until the next attempt.
   const [error, setError] = useState<string | null>(null)
-  const units = useOrgUnits({ product: 'hrm', permission: 'hrm.calendar.manage' })
-  const entities = (units.data ?? []).filter((u) => u.kind === 'company')
-  const entity = Number(params.filters.legal_entity) || entities[0]?.id
+  const units = useLegalEntities({ product: 'hrm', permission: 'hrm.calendar.manage' }, params.filters.legal_entity)
+  const entity = units.chosen
   const thisYear = currentYear(me.timezone)
   const year = Number(params.filters.year) || thisYear
   const cal = useQuery({
@@ -166,14 +165,7 @@ export function WorkCalendarPage() {
       }
       filters={
         <>
-          <FilterChip
-            label={t('hrm.calendar.legal_entity')}
-            icon={IconBuildingSkyscraper}
-            data={entities.map((u) => ({ value: String(u.id), label: u.name }))}
-            value={entity ? String(entity) : null}
-            onChange={(v) => set({ filters: { legal_entity: v ?? '' } })}
-            clearable={false}
-          />
+          <LegalEntityFilter label={t('hrm.calendar.legal_entity')} options={units.options} value={entity} onChange={(v) => set({ filters: { legal_entity: v } })} />
           <YearFilter label={t('hrm.calendar.year')} value={year} years={[thisYear - 1, thisYear, thisYear + 1]} onChange={(y) => set({ filters: { year: String(y) } })} />
         </>
       }

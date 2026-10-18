@@ -110,6 +110,8 @@ Every field is wired to React Hook Form and renders: label above (12px, 600, `di
 | `SensitiveValue` | The read-only face of a sensitive value in a `FieldList`: masked, "Hiện" shows it as text with "Ẩn" beside it; each reveal is audited |
 | `EditablePanel` | A group of a record's or document's values in a `Panel` card: title, optional `icon`, its read view (`children`: a `FieldList` showing every value the form edits); with `editable`, "Sửa" on the title line turns the card into `edit(close)` (the group's `Form` → `FormFields` → `FormActions onCancel={close}`) in place, focus into the first field, back once saved or cancelled. Never a `FormModal` for a group |
 | `OrgUnitField` | An org unit within the user's scope; the chosen unit shows its kind icon, as in the list |
+| `LegalEntityField` | A legal entity where the user holds a permission; the only one is picked already |
+| `RemoteSelectField` | A record searched on the server (debounced, a page of 20), labelled `code · name`; keeps the label of its value when a search does not return it. Areas wrap it in their picker (`EmployeeField`, `CustomerField`, `ItemField`) |
 
 Every field takes `bare` for a table cell: no visible label (kept as `aria-label`), no description, numbers right-aligned without spin buttons.
 
@@ -125,7 +127,7 @@ Every field takes `bare` for a table cell: no visible label (kept as `aria-label
 | `LinesTotals` | Totals under the lines, right-aligned, the last row bold, with a `note` on where the figures come from |
 | `InlineEditField` | One value of a record page that saves on its own (a user's email), apart from the record's groups; turns into an input on click/Enter; Enter or ✓ saves, Esc or ✕ cancels, blur keeps it open; `readOnly` without permission |
 
-A list's filter bar holds `SearchInput` and filter chips: `FilterChip` (options from `data`; `icon` is the icon component, the chip sizes it; `searchable`; `clearable={false}` for a filter that always holds a value), `OrgUnitFilter`, `MonthFilter`, `YearFilter`. A chip is named after its filter and reads "Name: value", tinted with its own ✕ (with a tooltip), once set; `{...filterBar.bind(key)}` from `useListParams` wires one to the URL; areas set no width (`tables.md`).
+A list's filter bar holds `SearchInput` and filter chips: `FilterChip` (options from `data`; `icon` is the icon component, the chip sizes it; `searchable`; `clearable={false}` for a filter that always holds a value), `OrgUnitFilter`, `LegalEntityFilter` (always holds one: `useLegalEntities(scope, picked)` gives the options and the chosen one, the first by default), `MonthFilter`, `YearFilter`. A chip is named after its filter and reads "Name: value", tinted with its own ✕ (with a tooltip), once set; `{...filterBar.bind(key)}` from `useListParams` wires one to the URL; areas set no width (`tables.md`).
 
 To switch between views of one feed (an activity feed's All · Comments · Changes · Views), use Mantine's `SegmentedControl`: the theme draws it as a thin frame of plain labels with the chosen one tinted and edged in primary (`SegmentedControl.module.css`); set nothing on it but `w="fit-content"`.
 
