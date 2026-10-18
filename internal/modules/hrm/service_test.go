@@ -29,21 +29,19 @@ import (
 )
 
 type fixture struct {
-	t    *testing.T
-	core *coretest.Core
-	pool platform.Conn
-	iam  *iam.Service
-	rec  *record.Service
-	appr *approval.Service
-	hrm  *hrm.Service
-	num  *numbering.Service
-	jobs *river.Client[pgx.Tx]
-	// started once work runs the jobs.
-	started bool
-	admin   context.Context
-	c       int64 // company
-	a, b    int64 // departments
-	ctxFor  func(login string, grants ...string) context.Context
+	t      *testing.T
+	core   *coretest.Core
+	pool   platform.Conn
+	iam    *iam.Service
+	rec    *record.Service
+	appr   *approval.Service
+	hrm    *hrm.Service
+	num    *numbering.Service
+	jobs   *river.Client[pgx.Tx]
+	admin  context.Context
+	c      int64 // company
+	a, b   int64 // departments
+	ctxFor func(login string, grants ...string) context.Context
 }
 
 // newFixture builds company C with departments A and B. ctxFor creates a user
