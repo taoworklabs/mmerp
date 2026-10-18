@@ -66,13 +66,17 @@ func NewService(d Deps) *Service {
 	}, "catalog_admin", "approval_admin")
 	d.Numbering.RegisterSeries(customerType, "sales", "KH")
 	d.Numbering.RegisterSeries(itemCodeSeries, "sales", "HH")
-	d.Record.Register(record.Type{Code: customerType, Product: "sales", Kind: record.Catalog, Can: s.canCustomer,
+	// A customer's files are as open as the customer.
+	d.Record.Register(record.Type{Code: customerType, Product: "sales", Kind: record.Catalog,
+		Perms:   record.Perms{View: PermCustomerView, Edit: PermCustomerEdit, ViewFiles: PermCustomerView, Attach: PermCustomerEdit},
+		Locate:  locateCustomer,
 		HasData: func(ctx context.Context) (bool, error) { return store.New(platform.DBFrom(ctx)).AnyCatalog(ctx) }})
 	for _, k := range []kind{quoteKind, orderKind} {
 		d.Record.Register(record.Type{
 			Code: k.docType, Product: "sales", Kind: record.Document, NumberPrefix: k.prefix,
-			Fields:       []record.Field{{Key: "max_discount", Kind: record.Number, Label: "sales.doc.max_discount"}},
-			Can:          s.canDoc(k),
+			Fields: []record.Field{{Key: "max_discount", Kind: record.Number, Label: "sales.doc.max_discount"}},
+			// Reading, printing and seeing files need view; every write, attaching included, needs edit.
+			Perms:        record.Perms{View: k.view, Edit: k.edit, ViewFiles: k.view, Attach: k.edit},
 			OnTransition: s.transition,
 			BeforeSubmit: s.beforeSubmit,
 		})
@@ -81,33 +85,8 @@ func NewService(d Deps) *Service {
 	return s
 }
 
-func (s *Service) allowed(ctx context.Context, perm string, unit int64, more ...int64) (bool, error) {
-	return s.d.IAM.Allowed(ctx, "sales", perm, unit, more...)
-}
-
 func (s *Service) require(ctx context.Context, perm string, unit int64, more ...int64) error {
 	return s.d.IAM.Require(ctx, "sales", perm, unit, more...)
-}
-
-// canDoc answers for quotations or orders by the document's org unit: reading, printing
-// and seeing files need view; every write, attaching included, needs edit.
-func (s *Service) canDoc(k kind) func(ctx context.Context, id int64, action record.Action) (bool, error) {
-	return func(ctx context.Context, id int64, action record.Action) (bool, error) {
-		h, err := store.New(platform.DBFrom(ctx)).GetHeader(ctx, id)
-		if errors.Is(err, pgx.ErrNoRows) || err == nil && h.Kind != k.name {
-			return false, nil
-		}
-		if err != nil {
-			return false, err
-		}
-		switch action {
-		case record.View, record.Export, record.Print, record.ViewFiles:
-			return s.allowed(ctx, k.view, h.OrgUnitID)
-		case record.Edit, record.Post, record.Cancel, record.Attach:
-			return s.allowed(ctx, k.edit, h.OrgUnitID)
-		}
-		return false, nil
-	}
 }
 
 // transition keeps posted documents to active customers, and a quotation with a live

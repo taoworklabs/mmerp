@@ -201,6 +201,16 @@ func contract(t *testing.T, docType string) {
 func TestQuoteRecordContract(t *testing.T) { contract(t, "sales.quote") }
 func TestOrderRecordContract(t *testing.T) { contract(t, "sales.order") }
 
+// Every Sales record type declares its permissions; the core answers Can for it.
+func TestSalesTypesDeclare(t *testing.T) {
+	f := newFixture(t)
+	for _, code := range []string{"sales.customer", "sales.quote", "sales.order"} {
+		if ty, _ := f.rec.TypeOf(code); ty.Can != nil || ty.Perms.View == "" {
+			t.Errorf("%s keeps a hand-written Can", code)
+		}
+	}
+}
+
 // A customer belongs to a team: other teams neither list nor open it, even by id.
 func TestCustomerScope(t *testing.T) {
 	f := newFixture(t)
