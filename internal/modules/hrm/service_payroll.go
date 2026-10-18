@@ -496,10 +496,6 @@ func (s *Service) Payroll(ctx context.Context, id int64) (Payroll, error) {
 		if err != nil {
 			return err
 		}
-		// Nothing to print or export before the first computation.
-		if !p.ComputedAt.Valid {
-			actions = slices.DeleteFunc(actions, func(a string) bool { return a == "print" || a == "export" })
-		}
 		salary, err := s.allowed(ctx, PermSalaryView, p.LegalEntityID)
 		if err != nil {
 			return err

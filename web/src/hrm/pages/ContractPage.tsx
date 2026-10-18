@@ -1,10 +1,8 @@
 import { Group } from '@mantine/core'
-import { IconPrinter } from '@tabler/icons-react'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useParams } from 'react-router'
 import { ActivityFeed, ApprovalDecision, ApprovalPanel, DocumentActions, DocumentStatus, useAttachmentSection } from '@/shared/document'
-import { ExportButton } from '@/shared/jobs'
 import { DocumentPage } from '@/shared/ui/page'
 import { ContractDetails } from '../components/ContractDetails'
 import { EmployeeLink } from '../components/EmployeeLink'
@@ -39,20 +37,16 @@ export function ContractPage() {
         <Group gap="xs" justify="flex-end">
           <ApprovalDecision docType={contractDocType} id={c.id} onError={setError} />
           {c.allowed_actions.length > 0 && (
-            <>
-              {c.allowed_actions.includes('print') && (
-                <ExportButton kind={`printing.${contractDocType}`} params={{ id: c.id }} label={t('hrm.contract.print')} icon={IconPrinter} />
-              )}
-              <DocumentActions
-                docType={contractDocType}
-                id={c.id}
-                version={c.version}
-                number={c.number}
-                actions={c.allowed_actions}
-                onError={setError}
-                listPath="/hrm/contracts"
-              />
-            </>
+            <DocumentActions
+              docType={contractDocType}
+              id={c.id}
+              version={c.version}
+              number={c.number}
+              actions={c.allowed_actions}
+              onError={setError}
+              listPath="/hrm/contracts"
+              printLabel={t('hrm.contract.print')}
+            />
           )}
         </Group>
       }

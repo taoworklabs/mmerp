@@ -82,6 +82,20 @@ func allowedActions(f *jobsFixture, c *client, path string) []string {
 	return out.AllowedActions
 }
 
+// The core offers print only on a type with a print template, and export only on one
+// with an export: a timesheet has an export but no template.
+func TestAllowedActionsFollowTemplates(t *testing.T) {
+	f := newJobsFixture(t)
+	pay := f.payrollSetup()
+	id, _ := f.draftContract(pay)
+	if a := allowedActions(f, pay, fmt.Sprintf("/api/hrm/contracts/%d", id)); !slices.Contains(a, "print") || slices.Contains(a, "export") {
+		t.Fatalf("contract: %v", a)
+	}
+	if a := allowedActions(f, f.hr, fmt.Sprintf("/api/hrm/timesheets/%d", f.timesheet)); slices.Contains(a, "print") || !slices.Contains(a, "export") {
+		t.Fatalf("timesheet: %v", a)
+	}
+}
+
 // A draft contract prints from its current data with a draft watermark, for whoever may
 // see its salary; others may neither print it nor fetch the file.
 func TestPrintDraftContract(t *testing.T) {

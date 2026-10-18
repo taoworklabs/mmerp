@@ -175,6 +175,7 @@
   "shared.document.status.posted": "Đã ghi sổ",
   "shared.document.status.cancelled": "Đã hủy",
   "shared.document.status_filter": "Trạng thái",
+  "shared.document.action.print": "In",
   "shared.document.action.submit": "Gửi duyệt",
   "shared.document.action.withdraw": "Rút lại",
   "shared.document.action.cancel": "Hủy chứng từ",

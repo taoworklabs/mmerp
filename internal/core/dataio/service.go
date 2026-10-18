@@ -19,6 +19,7 @@ import (
 
 	"github.com/taoworklabs/mmerp/internal/core/dataio/internal/store"
 	"github.com/taoworklabs/mmerp/internal/core/iam"
+	"github.com/taoworklabs/mmerp/internal/core/record"
 	"github.com/taoworklabs/mmerp/internal/platform"
 )
 
@@ -61,6 +62,8 @@ func (s *Service) RegisterExport(e Export) {
 		panic("dataio: export " + e.Kind + " needs exactly one of Run and Render")
 	}
 	s.exports[e.Kind] = e
+	// An export named after a record type exports its documents; other kinds offer nothing.
+	s.d.Record.Offer(e.Kind, record.Export)
 }
 
 // StartImport keeps the uploaded file and queues its import. Rights are checked

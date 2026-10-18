@@ -1,10 +1,11 @@
 import { Button, Group } from '@mantine/core'
-import { IconArrowBackUp, IconSend, IconTrash, IconX } from '@tabler/icons-react'
+import { IconArrowBackUp, IconPrinter, IconSend, IconTrash, IconX } from '@tabler/icons-react'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router'
 import { api, unwrap } from '@/shared/api/core'
 import { errorText } from '@/shared/i18n'
+import { ExportButton } from '@/shared/jobs'
 import { useConfirm } from '@/shared/ui/confirm'
 import { useUnsaved } from '@/shared/ui/form'
 import { notifySuccess } from '@/shared/ui/notify'
@@ -22,11 +23,16 @@ type Props = {
   listPath: string
   // Where the page shows a failed action: a banner at its top.
   onError: (message: string | null) => void
+  // The print button, shown when print is allowed: its label, and the template's export
+  // kind when it is not printing.<docType>.
+  printLabel?: string
+  printKind?: string
 }
 
 // DocumentActions draws the lifecycle buttons from allowed_actions and runs them: Submit is the
-// primary button, Delete and Cancel quiet red text that asks before acting.
-export function DocumentActions({ docType, id, version, number, actions, listPath, onError }: Props) {
+// primary button, Delete and Cancel quiet red text that asks before acting. Print starts the
+// print of the document's template.
+export function DocumentActions({ docType, id, version, number, actions, listPath, onError, printLabel, printKind }: Props) {
   const { t } = useTranslation()
   const { run, dialog } = useDocumentMutation(docType, id, version)
   const [ask, confirm] = useConfirm()
@@ -72,6 +78,9 @@ export function DocumentActions({ docType, id, version, number, actions, listPat
   const has = (a: string) => actions.includes(a)
   return (
     <Group gap="xs" justify="flex-end">
+      {has('print') && (
+        <ExportButton kind={printKind ?? `printing.${docType}`} params={{ id }} label={printLabel ?? t('shared.document.action.print')} icon={IconPrinter} />
+      )}
       {has('delete') && (
         <Button variant="subtle" color="danger" leftSection={<IconTrash {...icon.button} />} disabled={busy} onClick={() => void destructive('delete', remove)}>
           {t('shared.document.action.delete')}

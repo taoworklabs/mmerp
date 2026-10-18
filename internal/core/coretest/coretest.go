@@ -58,7 +58,7 @@ func New(t *testing.T, products ...string) *Core {
 	ntf := notification.NewService(notification.Deps{Record: rec, IAM: ids, Audit: aud, Setting: set})
 	appr := approval.NewService(approval.Deps{IAM: ids, Record: rec, Audit: aud, Notification: ntf})
 	rec.SetApprovalGate(appr)
-	dio := dataio.NewService(dataio.Deps{IAM: ids, Audit: aud})
+	dio := dataio.NewService(dataio.Deps{IAM: ids, Audit: aud, Record: rec})
 	c := &Core{
 		Pool: pool, Ctx: ctx, Audit: aud, Setting: set, IAM: ids, Numbering: num, Record: rec,
 		Notification: ntf, Approval: appr, DataIO: dio,

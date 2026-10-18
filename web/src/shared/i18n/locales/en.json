@@ -175,6 +175,7 @@
   "shared.document.status.posted": "Posted",
   "shared.document.status.cancelled": "Cancelled",
   "shared.document.status_filter": "Status",
+  "shared.document.action.print": "Print",
   "shared.document.action.submit": "Send for approval",
   "shared.document.action.withdraw": "Withdraw",
   "shared.document.action.cancel": "Cancel document",

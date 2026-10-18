@@ -86,11 +86,8 @@ return (
     actions={
       <Group gap="xs">
         <ApprovalDecision docType={docType} id={d.id} onError={setError} />        // Từ chối · Duyệt, for the actor at the current step
-        {d.allowed_actions.includes('print') && (
-          <ExportButton kind={`printing.${docType}`} params={{ id: d.id }} label={t('sales.quote.print')} icon={IconPrinter} />   // printing is a job
-        )}
         <DocumentActions docType={docType} id={d.id} version={d.version} number={d.number} actions={d.allowed_actions} onError={setError}
-          listPath={list} />                                                       // delete goes through the core route, then back to this list
+          listPath={list} printLabel={t('sales.quote.print')} />                  // print (a job, template printing.<docType> unless printKind) when allowed; delete through the core route, then back to this list
       </Group>
     }
     error={error}

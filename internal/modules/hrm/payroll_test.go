@@ -288,6 +288,12 @@ func TestPayrollAdjustments(t *testing.T) {
 	if p := f.payrollDoc(id); p.ComputedAt != nil || p.Version != 3 {
 		t.Fatalf("before the job: %+v", p)
 	}
+	// Nothing to print or export until it is computed again.
+	for _, a := range []record.Action{record.Print, record.Export} {
+		if ok, err := f.rec.Can(f.pay, "hrm.payroll", id, a); err != nil || ok || slices.Contains(f.payrollDoc(id).AllowedActions, string(a)) {
+			t.Fatalf("%s before the job: %v %v", a, ok, err)
+		}
+	}
 	wantErr(t, f.send(id), "payroll_not_computed")
 	f.wantJob(job, "completed")
 	p := f.payrollDoc(id)

@@ -53,7 +53,7 @@ func setup(t *testing.T, data func(context.Context, int64) ([]Part, error), layo
 		Grant:    func(context.Context, int64, record.Action) (bool, error) { return true, nil },
 		OnDelete: func(context.Context, int64) error { return nil }})
 	prn := NewService(Deps{Record: rec, Audit: audit.NewService(), IAM: ids,
-		DataIO: dataio.NewService(dataio.Deps{IAM: ids, Audit: audit.NewService()})})
+		DataIO: dataio.NewService(dataio.Deps{IAM: ids, Audit: audit.NewService(), Record: rec})})
 	prn.Register(Template{Code: "test.doc", DocType: "test.doc", Data: data, Layouts: []Layout{layout}})
 	admin := platform.WithActor(ctx, must[int64](t)(ids.CreateAdmin(ctx, "admin", "Admin", "long enough")))
 	c := must[int64](t)(ids.CreateOrgUnit(admin, iam.OrgUnitInput{Kind: "company", Name: "C"}))

@@ -114,7 +114,7 @@ func NewService(d Deps) *Service {
 	d.Record.Register(record.Type{
 		Code: payrollType, Product: "hrm", Kind: record.Document, NumberPrefix: "BL",
 		Perms:  record.Perms{View: PermPayrollView, Edit: PermPayrollEdit},
-		Refine: s.needsSalary(payrollType, record.Print, record.Export), OnTransition: s.payrollTransition, BeforeSubmit: s.payrollBeforeSubmit,
+		Refine: s.payrollRefine, OnTransition: s.payrollTransition, BeforeSubmit: s.payrollBeforeSubmit,
 		OnDelete: deletePayroll,
 	})
 	s.registerDataIO()
@@ -135,6 +135,19 @@ func (s *Service) needsSalary(code string, actions ...record.Action) func(contex
 		}
 		return s.allowed(ctx, PermSalaryView, d.OrgUnitID)
 	}
+}
+
+// payrollRefine makes payslips and the export, which show each person's pay, need
+// hrm.salary.view and a computed payroll: before the first computation there is nothing to show.
+func (s *Service) payrollRefine(ctx context.Context, id int64, a record.Action) (bool, error) {
+	if a != record.Print && a != record.Export {
+		return true, nil
+	}
+	p, err := store.New(platform.DBFrom(ctx)).GetPayroll(ctx, id)
+	if err != nil || !p.ComputedAt.Valid {
+		return false, err
+	}
+	return s.allowed(ctx, PermSalaryView, p.LegalEntityID)
 }
 
 func (s *Service) allowed(ctx context.Context, perm string, unit int64, more ...int64) (bool, error) {

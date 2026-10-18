@@ -56,7 +56,6 @@ export function PayrollPage() {
             <ApprovalDecision docType={payrollDocType} id={p.id} onError={setError} />
             {can('compute') && <ComputeButton payroll={p} busy={computing} onQueued={follow} onError={setError} />}
             {can('export') && <ExportButton kind={payrollDocType} params={{ payroll_id: p.id }} label={t('hrm.payroll.export')} />}
-            {can('print') && <ExportButton kind={payslipTemplate} params={{ id: p.id }} label={t('hrm.payroll.print_payslips')} icon={IconPrinter} />}
             <DocumentActions
               docType={payrollDocType}
               id={p.id}
@@ -65,6 +64,8 @@ export function PayrollPage() {
               actions={computing ? [] : p.allowed_actions}
               onError={setError}
               listPath="/hrm/payrolls"
+              printLabel={t('hrm.payroll.print_payslips')}
+              printKind={payslipTemplate}
             />
           </Group>
         )

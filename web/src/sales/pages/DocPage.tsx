@@ -1,5 +1,5 @@
 import { Anchor, Button, Group } from '@mantine/core'
-import { IconPrinter, IconShoppingCartPlus } from '@tabler/icons-react'
+import { IconShoppingCartPlus } from '@tabler/icons-react'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link, useNavigate, useParams } from 'react-router'
@@ -7,7 +7,6 @@ import { api, unwrap } from '@/shared/api/sales'
 import { useInvalidateRecord } from '@/shared/area'
 import { ActivityFeed, ApprovalDecision, ApprovalPanel, DocumentActions, DocumentStatus, useAttachmentSection } from '@/shared/document'
 import { errorText } from '@/shared/i18n'
-import { ExportButton } from '@/shared/jobs'
 import { loaded } from '@/shared/ui/loaded'
 import { notifySuccess } from '@/shared/ui/notify'
 import { DocumentPage } from '@/shared/ui/page'
@@ -73,9 +72,6 @@ export function DocPage({ kind }: { kind: Kind }) {
         (
           <Group gap="xs">
             <ApprovalDecision docType={docType} id={d.id} onError={setError} />
-            {d.allowed_actions.includes('print') && (
-              <ExportButton kind={`printing.${docType}`} params={{ id: d.id }} label={t(`sales.${kind}.print`)} icon={IconPrinter} />
-            )}
             {d.allowed_actions.includes('create_order') && (
               <Button variant="default" leftSection={<IconShoppingCartPlus {...icon.button} />} loading={ordering} onClick={() => void makeOrder()}>
                 {t('sales.quote.create_order')}
@@ -89,6 +85,7 @@ export function DocPage({ kind }: { kind: Kind }) {
               actions={d.allowed_actions}
               onError={setError}
               listPath={list}
+              printLabel={t(`sales.${kind}.print`)}
             />
           </Group>
         )
