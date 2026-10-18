@@ -7,14 +7,10 @@ import (
 	"testing"
 
 	"github.com/taoworklabs/mmerp/internal/core/approval"
-	"github.com/taoworklabs/mmerp/internal/core/audit"
+	"github.com/taoworklabs/mmerp/internal/core/coretest"
 	"github.com/taoworklabs/mmerp/internal/core/iam"
-	"github.com/taoworklabs/mmerp/internal/core/notification"
-	"github.com/taoworklabs/mmerp/internal/core/numbering"
 	"github.com/taoworklabs/mmerp/internal/core/record"
-	"github.com/taoworklabs/mmerp/internal/core/setting"
 	"github.com/taoworklabs/mmerp/internal/platform"
-	"github.com/taoworklabs/mmerp/internal/platform/pgtest"
 )
 
 type fixture struct {
@@ -33,14 +29,10 @@ type fixture struct {
 // a type other.doc of product other, and users submitter, boss, big_boss, hr (role test.hr
 // at the unit), rules (test.approval_admin) and outsider.
 func newFixture(t *testing.T) *fixture {
-	pool := pgtest.New(t)
-	ctx := platform.WithKeyring(platform.WithProducts(platform.WithDB(t.Context(), pool), []string{"test", "other"}), pgtest.Keyring())
-	f := &fixture{t: t, users: map[string]int64{}, managers: map[int][]int64{}}
-	f.ids = iam.NewService(iam.Deps{Setting: setting.NewService(), Audit: audit.NewService()})
+	core := coretest.New(t, "test", "other")
+	ctx := core.Ctx
+	f := &fixture{t: t, ids: core.IAM, rec: core.Record, appr: core.Approval, admin: core.Admin, users: map[string]int64{}, managers: map[int][]int64{}}
 	f.ids.RegisterRoles("test", map[string][]string{"hr": {"test.doc.view"}, "approval_admin": {"test.approval.manage"}}, "approval_admin")
-	f.rec = record.NewService(record.Deps{IAM: f.ids, Numbering: numbering.NewService(numbering.Deps{}), Audit: audit.NewService()})
-	f.appr = approval.NewService(approval.Deps{IAM: f.ids, Record: f.rec, Audit: audit.NewService(), Notification: notification.NewService(notification.Deps{Record: f.rec, IAM: f.ids, Audit: audit.NewService(), Setting: setting.NewService()})})
-	f.rec.SetApprovalGate(f.appr)
 	f.rec.Register(record.Type{
 		Code: "test.doc", Product: "test", Kind: record.Document, NumberPrefix: "T",
 		Can: func(ctx context.Context, _ int64, _ record.Action) (bool, error) {
@@ -56,10 +48,6 @@ func newFixture(t *testing.T) *fixture {
 	// A type of another product, for rules a product's administrator may not touch.
 	f.rec.Register(record.Type{Code: "other.doc", Product: "other", Kind: record.Document, NumberPrefix: "O",
 		Can: func(context.Context, int64, record.Action) (bool, error) { return true, nil }})
-	var err error
-	adminID, err := f.ids.CreateAdmin(ctx, "admin", "Admin", "long enough")
-	f.check(err)
-	f.admin = platform.WithActor(ctx, adminID)
 	c, err := f.ids.CreateOrgUnit(f.admin, iam.OrgUnitInput{Kind: "company", Name: "C"})
 	f.check(err)
 	f.unit, err = f.ids.CreateOrgUnit(f.admin, iam.OrgUnitInput{ParentID: &c, Kind: "department", Name: "A"})
