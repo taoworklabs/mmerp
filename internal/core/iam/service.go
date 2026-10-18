@@ -396,7 +396,9 @@ func (s *Service) registered(product, permission string) bool {
 
 // Registered reports whether some role of product grants permission; record checks
 // declarations against it at startup.
-func (s *Service) Registered(product, permission string) bool { return s.registered(product, permission) }
+func (s *Service) Registered(product, permission string) bool {
+	return s.registered(product, permission)
+}
 
 // Allowed reports whether the actor holds product's permission at unit and at each of more.
 func (s *Service) Allowed(ctx context.Context, product, permission string, unit int64, more ...int64) (bool, error) {
