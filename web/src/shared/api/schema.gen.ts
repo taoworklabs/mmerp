@@ -2701,6 +2701,11 @@ export interface components {
             /** Format: int64 */
             parent_id?: number;
             /**
+             * Format: uuid
+             * @description Generated once per form: sending it again returns the first document
+             */
+            request_id?: string;
+            /**
              * Format: date
              * @description Effective date
              */
@@ -2823,6 +2828,11 @@ export interface components {
             /** Format: int64 */
             leave_type_id: number;
             reason: string | null;
+            /**
+             * Format: uuid
+             * @description Generated once per form: sending it again returns the first document
+             */
+            request_id?: string;
             /** Format: date */
             start_date: string;
         };
@@ -2847,6 +2857,11 @@ export interface components {
             /** @description Night shift hours; day and night together are more than 0 and at most 24 */
             night_hours: string;
             reason: string | null;
+            /**
+             * Format: uuid
+             * @description Generated once per form: sending it again returns the first document
+             */
+            request_id?: string;
         };
         NewPayroll: {
             /**
@@ -2859,6 +2874,11 @@ export interface components {
             legal_entity_id: number;
             /** @description The payroll period, YYYY-MM */
             month: string;
+            /**
+             * Format: uuid
+             * @description Generated once per form: sending it again returns the first document
+             */
+            request_id?: string;
         };
         NewTimesheet: {
             /**
@@ -2871,6 +2891,11 @@ export interface components {
             month: string;
             /** Format: int64 */
             org_unit_id: number;
+            /**
+             * Format: uuid
+             * @description Generated once per form: sending it again returns the first document
+             */
+            request_id?: string;
         };
         Notification: {
             actor_name: string | null;
@@ -3090,7 +3115,10 @@ export interface components {
             readonly $schema?: string;
             /** Format: int64 */
             id: number;
-            /** Format: int64 */
+            /**
+             * Format: int64
+             * @description 0 when a retried request returns the payroll created the first time
+             */
             job_id: number;
         };
         PayrollLine: {

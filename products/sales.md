@@ -24,7 +24,7 @@ A single module `internal/modules/sales`, schema `sales`, product `sales`. Depen
 | --- | --- |
 | `sales.customers` | Customers; `org_unit_id` is the owning org unit that decides who sees them |
 | `sales.items` | Item catalogue, tenant-wide |
-| `sales.headers` | Quotations and orders (`kind`), one row per document, keyed by the `record.documents` id: customer details as copied, terms, totals, `request_id` |
+| `sales.headers` | Quotations and orders (`kind`), one row per document, keyed by the `record.documents` id: customer details as copied, terms, totals |
 | `sales.lines` | Lines of a quotation or order, in order: item, copied code and unit, description, quantity, unit price, discount, VAT rate, and the computed amounts |
 
 ## Record types

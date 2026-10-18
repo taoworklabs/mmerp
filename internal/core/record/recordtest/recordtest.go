@@ -27,8 +27,9 @@ type Harness struct {
 	Admin       context.Context
 	LegalEntity int64
 	// Create adds a draft dated date (YYYY-MM-DD); the module may already have edited it,
-	// so the suite reads its version rather than assuming 1.
-	Create func(ctx context.Context, date string) (record.Ref, error)
+	// so the suite reads its version rather than assuming 1. requestID is the create-once
+	// key the API takes, empty for none.
+	Create func(ctx context.Context, date, requestID string) (record.Ref, error)
 	// Edit moves a draft to date.
 	Edit func(ctx context.Context, ref record.Ref, version int32, date string) error
 	// Get reads the document through the module's detail route; the result's
@@ -351,11 +352,36 @@ var cases = []testCase{
 		mv, av := get(t, h, march).Version, get(t, h, april).Version
 		wantCode(t, h.Edit(h.Actor, march, mv, "2026-04-15"), "period_locked")
 		wantCode(t, h.Edit(h.Actor, april, av, "2026-03-20"), "period_locked")
-		_, err := h.Create(h.Actor, "2026-03-15")
+		_, err := h.Create(h.Actor, "2026-03-15", "")
 		wantCode(t, err, "period_locked")
 		wantCode(t, h.Core.Record.Transition(h.Actor, march, mv, record.Posted), "period_locked")
 		if err := h.Edit(h.Actor, april, av, "2026-04-11"); err != nil {
 			t.Fatal(err)
+		}
+	}},
+
+	{"a retried create returns the same document, also when the twins race", func(t *testing.T, h Harness) {
+		const requestID = "6f1c0b8e-3d2a-4c5b-9e7f-0a1b2c3d4e5f"
+		refs, errs := make([]record.Ref, 3), make([]error, 3)
+		var wg sync.WaitGroup
+		for i := range 2 {
+			wg.Go(func() { refs[i], errs[i] = h.Create(h.Actor, "2026-03-10", requestID) })
+		}
+		wg.Wait()
+		refs[2], errs[2] = h.Create(h.Actor, "2026-03-10", requestID)
+		if err := errors.Join(errs...); err != nil {
+			t.Fatal(err)
+		}
+		if refs[0] != refs[1] || refs[0] != refs[2] {
+			t.Fatalf("one request made %v", refs)
+		}
+		if _, err := h.Get(h.Actor, refs[0]); err != nil {
+			t.Fatal(err)
+		}
+		var n int
+		if err := platform.DBFrom(h.Admin).QueryRow(h.Admin, `SELECT count(*) FROM record.documents WHERE doc_type = $1`,
+			refs[0].Type).Scan(&n); err != nil || n != 1 {
+			t.Fatalf("%d documents, %v", n, err)
 		}
 	}},
 
@@ -437,7 +463,7 @@ var cases = []testCase{
 		var wg sync.WaitGroup
 		if err := platform.InTx(h.Admin, func(ctx context.Context) error {
 			lock(t, h, ctx, "2026-03-31")
-			wg.Go(func() { _, created = h.Create(h.Actor, "2026-03-15") })
+			wg.Go(func() { _, created = h.Create(h.Actor, "2026-03-15", "") })
 			pgtest.AwaitLockWait(t, platform.DBFrom(h.Admin))
 			return nil
 		}); err != nil {
@@ -469,7 +495,7 @@ var cases = []testCase{
 
 func create(t *testing.T, h Harness, date string) record.Ref {
 	t.Helper()
-	ref, err := h.Create(h.Actor, date)
+	ref, err := h.Create(h.Actor, date, "")
 	if err != nil {
 		t.Fatal(err)
 	}

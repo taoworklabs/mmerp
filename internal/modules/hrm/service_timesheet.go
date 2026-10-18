@@ -152,11 +152,11 @@ func (s *Service) CreateTimesheet(ctx context.Context, in NewTimesheet) (int64, 
 	}
 	var id int64
 	err = platform.InTx(ctx, func(ctx context.Context) error {
-		d, err := s.d.Record.Create(ctx, timesheetType, record.Header{Date: *platform.DatePtr(end), OrgUnitID: in.OrgUnitID})
-		if err != nil {
+		d, err := s.d.Record.Create(ctx, timesheetType, record.Header{Date: *platform.DatePtr(end), OrgUnitID: in.OrgUnitID, RequestID: in.RequestID})
+		id = d.ID
+		if err != nil || d.Reused {
 			return err
 		}
-		id = d.ID
 		err = store.New(platform.DBFrom(ctx)).CreateTimesheet(ctx, store.CreateTimesheetParams{ID: id, OrgUnitID: in.OrgUnitID, PeriodStart: start, PeriodEnd: end})
 		if platform.Violates(err, "timesheets_org_unit_period_key") {
 			return ErrTimesheetExists

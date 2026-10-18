@@ -69,10 +69,10 @@ ORDER BY
 LIMIT @lim OFFSET @off;
 
 -- name: InsertHeader :exec
-INSERT INTO sales.headers (id, kind, request_id, customer_id, customer_code, customer_name, customer_tax_code,
+INSERT INTO sales.headers (id, kind, customer_id, customer_code, customer_name, customer_tax_code,
     customer_address, customer_phone, customer_email, contact_name, valid_until, delivery_date, quote_id,
     payment_terms, delivery_terms, note, subtotal, discount_total, vat_total, total)
-VALUES (@id, @kind, CAST(@request_id::text AS uuid), @customer_id, @customer_code, @customer_name, @customer_tax_code,
+VALUES (@id, @kind, @customer_id, @customer_code, @customer_name, @customer_tax_code,
     @customer_address, @customer_phone, @customer_email, @contact_name, @valid_until, @delivery_date, @quote_id,
     @payment_terms, @delivery_terms, @note, @subtotal, @discount_total, @vat_total, @total);
 
@@ -86,9 +86,6 @@ WHERE id = $1;
 
 -- name: DeleteHeader :exec
 DELETE FROM sales.headers WHERE id = $1;
-
--- name: HeaderByRequest :one
-SELECT id, kind FROM sales.headers WHERE request_id = CAST(@request_id::text AS uuid);
 
 -- name: GetHeader :one
 SELECT h.*, d.number, d.status, d.version, d.date, d.org_unit_id, d.legal_entity_id, u.name AS org_unit_name,

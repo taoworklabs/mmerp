@@ -1,6 +1,8 @@
 -- name: InsertDocument :one
-INSERT INTO record.documents (doc_type, number, status, version, date, legal_entity_id, org_unit_id, amount, fields)
-VALUES (@doc_type, @number, 'draft', 1, @date, @legal_entity_id, @org_unit_id, @amount, @fields)
+INSERT INTO record.documents (doc_type, number, status, version, date, legal_entity_id, org_unit_id, amount, fields,
+    request_id, requested_by)
+VALUES (@doc_type, @number, 'draft', 1, @date, @legal_entity_id, @org_unit_id, @amount, @fields,
+    CAST(sqlc.narg(request_id)::text AS uuid), sqlc.narg(requested_by)::bigint)
 RETURNING id;
 
 -- name: GetDocument :one
@@ -71,3 +73,10 @@ ORDER BY l.at, l.id;
 -- name: DocTypesInUse :many
 SELECT t::text FROM unnest(@types::text[]) AS t
 WHERE EXISTS (SELECT 1 FROM record.documents d WHERE d.doc_type = t);
+
+-- name: LockRequest :exec
+SELECT pg_advisory_xact_lock(hashtextextended(@request_id::text, 0));
+
+-- name: DocumentByRequest :one
+SELECT * FROM record.documents
+WHERE request_id = CAST(@request_id::text AS uuid) AND requested_by IS NOT DISTINCT FROM sqlc.narg(requested_by)::bigint;

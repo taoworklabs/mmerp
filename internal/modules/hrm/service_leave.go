@@ -272,12 +272,13 @@ func (s *Service) CreateLeave(ctx context.Context, in NewLeave) (int64, error) {
 		if err != nil {
 			return err
 		}
+		h.RequestID = in.RequestID
 		h.Subject = user.Int64
 		d, err := s.d.Record.Create(ctx, leaveType, h)
-		if err != nil {
+		id = d.ID
+		if err != nil || d.Reused {
 			return err
 		}
-		id = d.ID
 		row.ID, row.EmployeeID = id, employee
 		if err := q.CreateLeaveRequest(ctx, row); err != nil {
 			return err

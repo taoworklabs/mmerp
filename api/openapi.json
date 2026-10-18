@@ -3649,6 +3649,11 @@
             "format": "int64",
             "type": "integer"
           },
+          "request_id": {
+            "description": "Generated once per form: sending it again returns the first document",
+            "format": "uuid",
+            "type": "string"
+          },
           "start_date": {
             "description": "Effective date",
             "format": "date",
@@ -4043,6 +4048,11 @@
               "null"
             ]
           },
+          "request_id": {
+            "description": "Generated once per form: sending it again returns the first document",
+            "format": "uuid",
+            "type": "string"
+          },
           "start_date": {
             "format": "date",
             "type": "string"
@@ -4102,6 +4112,11 @@
               "string",
               "null"
             ]
+          },
+          "request_id": {
+            "description": "Generated once per form: sending it again returns the first document",
+            "format": "uuid",
+            "type": "string"
           }
         },
         "required": [
@@ -4133,6 +4148,11 @@
             "description": "The payroll period, YYYY-MM",
             "pattern": "^[0-9]{4}-(0[1-9]|1[0-2])$",
             "type": "string"
+          },
+          "request_id": {
+            "description": "Generated once per form: sending it again returns the first document",
+            "format": "uuid",
+            "type": "string"
           }
         },
         "required": [
@@ -4161,6 +4181,11 @@
           "org_unit_id": {
             "format": "int64",
             "type": "integer"
+          },
+          "request_id": {
+            "description": "Generated once per form: sending it again returns the first document",
+            "format": "uuid",
+            "type": "string"
           }
         },
         "required": [
@@ -4852,6 +4877,7 @@
             "type": "integer"
           },
           "job_id": {
+            "description": "0 when a retried request returns the payroll created the first time",
             "format": "int64",
             "type": "integer"
           }

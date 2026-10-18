@@ -181,8 +181,8 @@ func contract(t *testing.T, docType string) {
 			Reject: func(instance int64) error { return f.appr.Reject(f.manager, instance, 1, "không") },
 			// Sending refuses a customer deactivated since the draft was saved.
 			BreakSubmit: deactivate,
-			Create: func(ctx context.Context, date string) (record.Ref, error) {
-				id, err := create(ctx, sales.NewDoc{RequestID: newRequest(), DocFields: fields(date)})
+			Create: func(ctx context.Context, date, requestID string) (record.Ref, error) {
+				id, err := create(ctx, sales.NewDoc{RequestID: requestID, DocFields: fields(date)})
 				return record.Ref{Type: docType, ID: id}, err
 			},
 			Edit: func(ctx context.Context, r record.Ref, version int32, date string) error {
@@ -199,6 +199,16 @@ func contract(t *testing.T, docType string) {
 
 func TestQuoteRecordContract(t *testing.T) { contract(t, "sales.quote") }
 func TestOrderRecordContract(t *testing.T) { contract(t, "sales.order") }
+
+// Every Sales record type declares its permissions; the core answers Can for it.
+func TestSalesTypesDeclare(t *testing.T) {
+	f := newFixture(t)
+	for _, code := range []string{"sales.customer", "sales.quote", "sales.order"} {
+		if ty, _ := f.rec.TypeOf(code); ty.Can != nil || ty.Perms.View == "" {
+			t.Errorf("%s keeps a hand-written Can", code)
+		}
+	}
+}
 
 // A customer belongs to a team: other teams neither list nor open it, even by id.
 func TestCustomerScope(t *testing.T) {

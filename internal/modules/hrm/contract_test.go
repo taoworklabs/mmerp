@@ -82,8 +82,8 @@ func TestContractRecordContract(t *testing.T) {
 			Core: f.core, Actor: f.pay, Admin: f.admin, LegalEntity: f.c,
 			Get:    func(ctx context.Context, r record.Ref) (any, error) { return f.hrm.Contract(ctx, r.ID) },
 			Reject: func(instance int64) error { return f.appr.Reject(f.head, instance, 1, "không") },
-			Create: func(ctx context.Context, date string) (record.Ref, error) {
-				return ref(f.hrm.CreateContract(ctx, hrm.NewContract{EmployeeID: f.emp, ContractFields: hrm.ContractFields{ContractTypeID: f.kind, StartDate: date, Terms: terms(10_000_000)}}))
+			Create: func(ctx context.Context, date, requestID string) (record.Ref, error) {
+				return ref(f.hrm.CreateContract(ctx, hrm.NewContract{RequestID: requestID, EmployeeID: f.emp, ContractFields: hrm.ContractFields{ContractTypeID: f.kind, StartDate: date, Terms: terms(10_000_000)}}))
 			},
 			Edit: func(ctx context.Context, r record.Ref, version int32, date string) error {
 				return f.hrm.UpdateContract(ctx, r.ID, hrm.ContractUpdate{Version: version, ContractFields: hrm.ContractFields{ContractTypeID: f.kind, StartDate: date, Terms: terms(10_000_000)}})

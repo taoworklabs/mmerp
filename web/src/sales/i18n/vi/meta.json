@@ -38,6 +38,5 @@
   "sales.error.order_delivery_before_date": "Ngày giao không được trước ngày đơn hàng.",
   "sales.error.quote_expired": "Báo giá đã hết hiệu lực nên không tạo được đơn hàng. Lập báo giá mới hoặc tạo đơn trực tiếp.",
   "sales.error.quote_not_posted": "Chỉ báo giá đã duyệt mới tạo được đơn hàng.",
-  "sales.error.quote_has_order": "Báo giá đã có đơn hàng. Hủy đơn hàng trước khi hủy báo giá.",
-  "sales.error.request_id_reused": "Yêu cầu này đã được dùng. Tải lại trang rồi thử lại."
+  "sales.error.quote_has_order": "Báo giá đã có đơn hàng. Hủy đơn hàng trước khi hủy báo giá."
 }

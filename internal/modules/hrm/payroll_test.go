@@ -37,9 +37,9 @@ func TestPayrollRecordContract(t *testing.T) {
 		for _, m := range []string{"02", "03", "04"} {
 			f.timesheet(f.a, "2026-"+m, map[int64][]string{f.emp: workdays("2026-"+m+"-01", "2026-"+m+"-07")})
 		}
-		create := func(ctx context.Context, month string) (record.Ref, error) {
-			p, err := f.hrm.CreatePayroll(ctx, hrm.NewPayroll{LegalEntityID: f.c, Month: month})
-			if err == nil {
+		create := func(ctx context.Context, month, requestID string) (record.Ref, error) {
+			p, err := f.hrm.CreatePayroll(ctx, hrm.NewPayroll{RequestID: requestID, LegalEntityID: f.c, Month: month})
+			if err == nil && p.JobID != 0 {
 				f.wantJob(p.JobID, "completed")
 			}
 			return payrollRef(p.ID), err
@@ -69,7 +69,9 @@ func TestPayrollRecordContract(t *testing.T) {
 					r.Type, r.ID).Scan(&n))
 				return n
 			},
-			Create: func(ctx context.Context, date string) (record.Ref, error) { return create(ctx, date[:7]) },
+			Create: func(ctx context.Context, date, requestID string) (record.Ref, error) {
+				return create(ctx, date[:7], requestID)
+			},
 			// A payroll never moves to another period: within its month an edit is saving its
 			// adjustments, and moving it is left to record, which refuses a locked date first.
 			Edit: func(ctx context.Context, r record.Ref, version int32, date string) error {
@@ -94,7 +96,7 @@ func TestPayrollRecordContract(t *testing.T) {
 			BreakPosting: func(_ *testing.T, r record.Ref) {
 				d, err := f.rec.Get(f.admin, r)
 				f.check(err)
-				other, err := create(f.pay, d.Date[:7])
+				other, err := create(f.pay, d.Date[:7], "")
 				f.check(err)
 				f.closePeriod(d.Date[:8]+"01", d.Date, other.ID)
 			},
