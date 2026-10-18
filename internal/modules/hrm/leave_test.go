@@ -288,6 +288,17 @@ func TestLeavePermissions(t *testing.T) {
 			t.Fatalf("%s lists %d: %v", login, l.Total, err)
 		}
 	}
+	for name, c := range map[string]struct {
+		ctx  context.Context
+		want []string
+	}{
+		"e": {f.e, []string{"create"}}, "m": {f.m, []string{"create"}}, "hr": {f.hr, []string{"create", "create_for_others"}},
+		"other": {other, nil}, "hr, product off": {platform.WithProducts(f.hr, nil), nil},
+	} {
+		if a, err := f.hrm.LeaveActions(c.ctx); err != nil || !equal(a.AllowedActions, c.want...) {
+			t.Fatalf("%s before a request: %v %v", name, a.AllowedActions, err)
+		}
+	}
 	if acts := f.leave(id).AllowedActions; !equal(acts, "edit", "delete", "submit") {
 		t.Fatalf("draft actions %v", acts)
 	}

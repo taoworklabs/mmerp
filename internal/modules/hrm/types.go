@@ -280,8 +280,8 @@ type ContractFields struct {
 }
 
 type NewContract struct {
-	RequestID string `json:"request_id,omitempty" format:"uuid" doc:"Generated once per form: sending it again returns the first document"`
-	EmployeeID int64 `json:"employee_id"`
+	RequestID  string `json:"request_id,omitempty" format:"uuid" doc:"Generated once per form: sending it again returns the first document"`
+	EmployeeID int64  `json:"employee_id"`
 	// The original contract, for an appendix.
 	ParentID *int64 `json:"parent_id,omitempty"`
 	ContractFields
@@ -524,7 +524,7 @@ type LegalParams struct {
 }
 
 type NewPayroll struct {
-	RequestID string `json:"request_id,omitempty" format:"uuid" doc:"Generated once per form: sending it again returns the first document"`
+	RequestID     string `json:"request_id,omitempty" format:"uuid" doc:"Generated once per form: sending it again returns the first document"`
 	LegalEntityID int64  `json:"legal_entity_id"`
 	Month         string `json:"month" pattern:"^[0-9]{4}-(0[1-9]|1[0-2])$" doc:"The payroll period, YYYY-MM"`
 }

@@ -72,7 +72,9 @@ func TestPayrollRecordContract(t *testing.T) {
 					r.Type, r.ID).Scan(&n))
 				return n
 			},
-			Create: func(ctx context.Context, date, requestID string) (record.Ref, error) { return create(ctx, date[:7], requestID) },
+			Create: func(ctx context.Context, date, requestID string) (record.Ref, error) {
+				return create(ctx, date[:7], requestID)
+			},
 			// A payroll never moves to another period: within its month an edit is saving its
 			// adjustments, and moving it is left to record, which refuses a locked date first.
 			Edit: func(ctx context.Context, r record.Ref, version int32, date string) error {

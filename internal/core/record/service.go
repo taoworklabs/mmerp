@@ -56,10 +56,12 @@ type Service struct {
 	freezers []Freezer
 	// history says what another module's audit action needs to show on a timeline.
 	history map[string]Action
+	// offers holds the print and export actions a type has something registered for.
+	offers map[string][]Action
 }
 
 func NewService(d Deps) *Service {
-	return &Service{d: d, types: map[string]Type{}, history: map[string]Action{}}
+	return &Service{d: d, types: map[string]Type{}, history: map[string]Action{}, offers: map[string][]Action{}}
 }
 
 // SetApprovalGate wires approval while composing the app. Without a gate nothing needs approval.
@@ -88,7 +90,37 @@ func (s *Service) Register(t Type) {
 	if t.Kind == Document && t.NumberPrefix == "" {
 		panic("record: document type " + t.Code + " has no number prefix")
 	}
+	if t.Can == nil {
+		s.checkDeclaration(t)
+	}
 	s.types[t.Code] = t
+}
+
+func (s *Service) checkDeclaration(t Type) {
+	fail := func(why string) { panic("record: type " + t.Code + " " + why) }
+	if t.Perms.View == "" {
+		fail("declares no view permission")
+	}
+	p := t.Perms
+	for _, perm := range []string{p.View, p.Edit, p.Post, p.Cancel, p.Export, p.Print, p.ViewFiles, p.Attach, p.Create, p.Import} {
+		if perm != "" && !s.d.IAM.Registered(t.Product, perm) {
+			fail("declares " + perm + ", which no role of " + t.Product + " grants")
+		}
+	}
+	if t.Kind == Catalog {
+		if t.NumberPrefix != "" || t.Fields != nil || t.OnTransition != nil || t.BeforeSubmit != nil || t.Approvers != nil || t.SubjectCreates {
+			fail("is a catalog with document-only fields")
+		}
+		if t.Locate == nil {
+			fail("is a catalog without Locate")
+		}
+	}
+}
+
+// Offer says a print template or an export (action Print or Export) exists for a type;
+// without one a declared type never answers that action. Called while wiring modules.
+func (s *Service) Offer(code string, action Action) {
+	s.offers[code] = append(s.offers[code], action)
 }
 
 // TypeOf returns a registered type.
@@ -144,11 +176,122 @@ func (s *Service) Can(ctx context.Context, code string, id int64, action Action)
 	if !ok {
 		return false, fmt.Errorf("record: unknown type %q", code)
 	}
-	ok, err := t.Can(ctx, id, action)
+	if t.Can != nil {
+		ok, err := t.Can(ctx, id, action)
+		if err != nil || !ok {
+			return false, err
+		}
+		return platform.ProductGate(ctx, t.Product, action.class()) == nil, nil
+	}
+	var unit int64
+	var err error
+	if t.Kind == Document {
+		var d Doc
+		d, err = s.Get(ctx, Ref{code, id})
+		unit = d.OrgUnitID
+	} else {
+		unit, err = t.Locate(ctx, id)
+	}
+	if errors.Is(err, platform.ErrNotFound) {
+		return false, nil
+	}
+	if err != nil {
+		return false, err
+	}
+	return s.answer(ctx, t, id, unit, action)
+}
+
+// answer evaluates a declared type's action on record id at org unit unit.
+func (s *Service) answer(ctx context.Context, t Type, id, unit int64, action Action) (bool, error) {
+	perm := t.Perms.of(action)
+	if perm == "" || (action == Print || action == Export) && !slices.Contains(s.offers[t.Code], action) {
+		return false, nil
+	}
+	ok, err := s.d.IAM.Allowed(ctx, t.Product, perm, unit)
+	if err == nil && !ok && t.Grant != nil {
+		ok, err = t.Grant(ctx, id, action)
+	}
+	if err == nil && ok && t.Refine != nil {
+		ok, err = t.Refine(ctx, id, action)
+	}
 	if err != nil || !ok {
 		return false, err
 	}
 	return platform.ProductGate(ctx, t.Product, action.class()) == nil, nil
+}
+
+// Read returns a document the actor may view; one they may not does not exist.
+func (s *Service) Read(ctx context.Context, ref Ref) (Doc, error) {
+	if err := s.Visible(ctx, ref, View); err != nil {
+		return Doc{}, err
+	}
+	return s.Get(ctx, ref)
+}
+
+// Actions is the whole allowed_actions of d: its lifecycle actions, print and export
+// when available, then extra, the module's own actions it has already decided on.
+func (s *Service) Actions(ctx context.Context, d Doc, extra ...string) ([]string, error) {
+	out, err := s.DocumentActions(ctx, d)
+	if err != nil {
+		return nil, err
+	}
+	for _, a := range []Action{Print, Export} {
+		ok, err := s.Can(ctx, d.Type, d.ID, a)
+		if err != nil {
+			return nil, err
+		}
+		if ok {
+			out = append(out, string(a))
+		}
+	}
+	return append(out, extra...), nil
+}
+
+// TypeActions lists what the actor may do with a type before picking a record: create
+// and import, where its declared permission holds anywhere in their scope.
+func (s *Service) TypeActions(ctx context.Context, code string) ([]string, error) {
+	t, ok := s.types[code]
+	if !ok {
+		return nil, fmt.Errorf("record: unknown type %q", code)
+	}
+	out := []string{}
+	if platform.ProductGate(ctx, t.Product, platform.ClassWrite) != nil {
+		return out, nil
+	}
+	for _, a := range []Action{Create, Import} {
+		perm := t.Perms.of(a)
+		if perm == "" {
+			continue
+		}
+		sc, err := s.d.IAM.Scope(ctx, t.Product, perm)
+		if err != nil {
+			return nil, err
+		}
+		if sc.Any() {
+			out = append(out, string(a))
+		}
+	}
+	return out, nil
+}
+
+// mayCreate checks a declared type's create permission at the header's org unit; the
+// subject the header names may create without it if the type says so. Refused for a
+// named subject, the subject stays hidden as if it did not exist.
+func (s *Service) mayCreate(ctx context.Context, t Type, h Header) error {
+	actor, _ := platform.ActorFrom(ctx)
+	if t.SubjectCreates && h.Subject != 0 && h.Subject == actor {
+		return nil
+	}
+	ok, err := s.d.IAM.Allowed(ctx, t.Product, t.Perms.of(Create), h.OrgUnitID)
+	switch {
+	case err != nil:
+		return err
+	case ok:
+		return nil
+	case h.Subject != 0:
+		return platform.ErrNotFound
+	}
+	return platform.ErrForbidden
 }
 
 // require fails with the product gate's own error first, so a disabled product says so.
@@ -225,8 +368,9 @@ func (s *Service) Get(ctx context.Context, ref Ref) (Doc, error) {
 	return doc(row)
 }
 
-// Create adds a draft and gives it a number. The caller checks it may create
-// the document, then inserts its own row with the returned id.
+// Create adds a draft and gives it a number; the caller then inserts its own row with
+// the returned id. A declared type's create permission is checked here; for a type with
+// a hand-written Can, the caller checks it.
 func (s *Service) Create(ctx context.Context, code string, h Header) (Doc, error) {
 	t, ok := s.types[code]
 	if !ok || t.Kind != Document {
@@ -234,6 +378,11 @@ func (s *Service) Create(ctx context.Context, code string, h Header) (Doc, error
 	}
 	if err := platform.ProductGate(ctx, t.Product, platform.ClassWrite); err != nil {
 		return Doc{}, err
+	}
+	if t.Can == nil {
+		if err := s.mayCreate(ctx, t, h); err != nil {
+			return Doc{}, err
+		}
 	}
 	date, fields, err := s.check(ctx, t, h)
 	if err != nil {
