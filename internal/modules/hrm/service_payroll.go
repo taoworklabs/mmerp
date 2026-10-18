@@ -421,12 +421,7 @@ func (s *Service) SavePayrollAdjustments(ctx context.Context, id int64, in Payro
 			return err
 		}
 		ref := record.Ref{Type: payrollType, ID: id}
-		old, err := s.d.Record.Get(ctx, ref)
-		if err != nil {
-			return err
-		}
-		d, err := s.d.Record.Edit(ctx, ref, in.Version, record.Header{Date: old.Date, OrgUnitID: old.OrgUnitID, Amount: old.Amount})
-		if err != nil {
+		if err := s.d.Record.Touch(ctx, ref, in.Version); err != nil {
 			return err
 		}
 		if err := s.require(ctx, PermSalaryView, p.LegalEntityID); err != nil {
@@ -477,7 +472,7 @@ func (s *Service) SavePayrollAdjustments(ctx context.Context, id int64, in Payro
 		}); err != nil {
 			return err
 		}
-		job, err = platform.Enqueue(ctx, payrollComputeArgs{ID: id, Version: d.Version})
+		job, err = platform.Enqueue(ctx, payrollComputeArgs{ID: id, Version: in.Version + 1})
 		return err
 	})
 	return job, err

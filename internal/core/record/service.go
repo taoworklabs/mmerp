@@ -311,6 +311,17 @@ func (s *Service) Edit(ctx context.Context, ref Ref, version int32, h Header) (D
 	return out, err
 }
 
+// Touch locks a draft like Edit and bumps its version without changing the header,
+// for module writes that change only child rows.
+func (s *Service) Touch(ctx context.Context, ref Ref, version int32) error {
+	return platform.InTx(ctx, func(ctx context.Context) error {
+		if _, _, err := s.lockDraft(ctx, ref, version); err != nil {
+			return err
+		}
+		return store.New(platform.DBFrom(ctx)).BumpVersion(ctx, ref.ID)
+	})
+}
+
 // Delete removes a draft; the caller deletes its own row in the same transaction.
 func (s *Service) Delete(ctx context.Context, ref Ref, version int32) error {
 	return platform.InTx(ctx, func(ctx context.Context) error {
