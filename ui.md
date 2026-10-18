@@ -197,6 +197,8 @@ Use the fields of `shared/ui/form`, already wired to React Hook Form.
 | Fractional quantity | `DecimalField` | Number of decimals declared by the field (e.g. workdays: 1) |
 | Pick one from a list | `SelectField` | Has a search box when there are more than 7 options. Lists only valid options: what cannot be chosen is not shown. The selected option only gets a background, no check mark. The dropdown opens below the field's error message, never covering it |
 | Org unit | `OrgUnitField` | Tree; shows only the units within the user's permission scope |
+| Legal entity | `LegalEntityField` | Only the legal entities within the user's permission scope; the only one is picked already |
+| A business record (employee, customer, item) | The area's picker on `RemoteSelectField` | Searched on the server, a page of 20; label `code · name`; keeps its value's label when a search does not return it |
 | Sensitive field | `SensitiveField` | Masked by default (`••••••`), with a "Hiện" (Show) link that underlines on hover (every reveal is audited on the backend). Once revealed and not edited, an eye-off button inside the input ("Ẩn", Hide) masks it again. Without permission it reads "Không có quyền xem" (No permission to view) |
 | Sensitive value, read only (a record's card) | `SensitiveValue` | The same in a `FieldList`: masked with a "Hiện" link; once shown, the value as text with an "Ẩn" link beside it; showing it again is another audited read |
 
@@ -215,7 +217,7 @@ What `shared/ui` already has (see also `/dev/ui`), to use before building your o
 - Actions and feedback: `useConfirm` (confirmation dialog), `notifySuccess`/`notifyError` (`notify.ts`).
 - States (`states.tsx`): `EmptyState`, `ErrorState`, `PageSkeleton`, `ContentSkeleton`, `ForbiddenPage`, `NotFoundPage`, `ReadOnlyBanner`.
 - Display: `DataTable`, `FieldList`, `StatusBadge`, `CellGrid` (grid of inputs along two axes, like a timesheet), `TileGrid`/`StatTile`/`LinkTile`, `OrgUnitName`, `PersonName`/`PersonAvatar`.
-- Forms (`shared/ui/form`): `Form`, `FormSection`, `InputRow`, `FormActions`, `FormFields`, `EditablePanel`; fields `TextField`, `PasswordField`, `CheckboxField`, `DateField`, `MonthField`, `FileField`, `SelectField`, `DecimalField`, `MoneyField`, `SensitiveField`, `SensitiveValue`, `OrgUnitField`; filters `SearchInput`, `FilterChip`, `OrgUnitFilter`, `MonthFilter`, `YearFilter`.
+- Forms (`shared/ui/form`): `Form`, `FormSection`, `InputRow`, `FormActions`, `FormFields`, `EditablePanel`; fields `TextField`, `PasswordField`, `CheckboxField`, `DateField`, `MonthField`, `FileField`, `SelectField`, `DecimalField`, `MoneyField`, `SensitiveField`, `SensitiveValue`, `OrgUnitField`, `LegalEntityField`, `RemoteSelectField`; filters `SearchInput`, `FilterChip`, `OrgUnitFilter`, `LegalEntityFilter`, `MonthFilter`, `YearFilter`.
 - Outside `shared/ui`: `useListParams` (`shared/url`: filters, sort, page in the URL, and the `filterBar` a filter bar binds its chips to), `ExportButton`/`ImportDialog` (`shared/jobs`), `OrgTree` (`shared/org`).
 
 - Area components are **assembled from `shared/ui` primitives** and follow exactly the rules of this document: no custom colours, no inline `style`, no page-level layout of their own.

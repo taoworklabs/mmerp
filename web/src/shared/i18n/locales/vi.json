@@ -163,6 +163,8 @@
   "shared.error.request_too_large": "Dữ liệu gửi đi quá lớn. Giảm bớt rồi thử lại.",
   "shared.error.unsupported_media_type": "Định dạng dữ liệu gửi đi không được hỗ trợ. Tải lại trang rồi thử lại.",
   "shared.devui.org_unit": "Đơn vị",
+  "shared.devui.legal_entity": "Pháp nhân",
+  "shared.devui.remote": "Nhân viên",
   "shared.devui.status_info": "Thông tin",
   "shared.devui.hint": "Chú thích nằm dưới ô nhập.",
   "shared.devui.password": "Mật khẩu",

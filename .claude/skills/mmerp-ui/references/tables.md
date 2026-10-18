@@ -26,7 +26,7 @@ Every table is `DataTable` (`@/shared/ui/DataTable`); a list screen is `ListPage
 | Search | `SearchInput` (applies on Enter or blur; `/` focuses it) |
 | Status, type, any choice | `FilterChip` with `data`; `searchable` for long lists |
 | Org unit | `OrgUnitFilter product="hrm" permission="hrm.leave.view"` (only units where the user has that permission, as a tree, with a search) |
-| Legal entity | `FilterChip` with the entities |
+| Legal entity | `LegalEntityFilter` when the page always shows one (settings, work calendar); otherwise `FilterChip` with `useLegalEntities(scope).options` |
 | Month | `MonthFilter` (value `YYYY-MM`, shown 08/2026) |
 | Year | `YearFilter` (always holds a year) |
 
