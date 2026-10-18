@@ -395,7 +395,8 @@ func (s *Service) SavePayrollAdjustments(ctx context.Context, id int64, in Payro
 		if err != nil {
 			return err
 		}
-		if err := s.d.Record.Touch(ctx, ref, in.Version); err != nil {
+		version, err := s.d.Record.Touch(ctx, ref, in.Version)
+		if err != nil {
 			return err
 		}
 		if err := s.require(ctx, PermSalaryView, p.LegalEntityID); err != nil {
@@ -446,7 +447,7 @@ func (s *Service) SavePayrollAdjustments(ctx context.Context, id int64, in Payro
 		}); err != nil {
 			return err
 		}
-		job, err = platform.Enqueue(ctx, payrollComputeArgs{ID: id, Version: in.Version + 1})
+		job, err = platform.Enqueue(ctx, payrollComputeArgs{ID: id, Version: version})
 		return err
 	})
 	return job, err

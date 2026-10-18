@@ -489,14 +489,18 @@ func (s *Service) Edit(ctx context.Context, ref Ref, version int32, h Header) (D
 }
 
 // Touch locks a draft like Edit and bumps its version without changing the header,
-// for module writes that change only child rows.
-func (s *Service) Touch(ctx context.Context, ref Ref, version int32) error {
-	return platform.InTx(ctx, func(ctx context.Context) error {
-		if _, _, err := s.lockDraft(ctx, ref, version); err != nil {
+// for module writes that change only child rows. It returns the new version.
+func (s *Service) Touch(ctx context.Context, ref Ref, version int32) (int32, error) {
+	var out int32
+	err := platform.InTx(ctx, func(ctx context.Context) error {
+		d, _, err := s.lockDraft(ctx, ref, version)
+		if err != nil {
 			return err
 		}
+		out = d.Version + 1
 		return store.New(platform.DBFrom(ctx)).BumpVersion(ctx, ref.ID)
 	})
+	return out, err
 }
 
 // Delete removes a draft, its type's own rows (OnDelete) and what keepers hold about it.

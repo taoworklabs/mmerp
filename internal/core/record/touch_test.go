@@ -7,7 +7,6 @@ import (
 	"github.com/taoworklabs/mmerp/internal/core/coretest"
 	"github.com/taoworklabs/mmerp/internal/core/iam"
 	"github.com/taoworklabs/mmerp/internal/core/record"
-	"github.com/taoworklabs/mmerp/internal/platform"
 )
 
 // Touch bumps a draft's version and keeps its header and approval fields.
@@ -23,8 +22,8 @@ func TestTouchKeepsTheHeader(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if err := rec.Touch(admin, d.Ref, 1); err != nil {
-		t.Fatal(err)
+	if v, err := rec.Touch(admin, d.Ref, 1); err != nil || v != 2 {
+		t.Fatalf("touch: %d %v", v, err)
 	}
 	got, err := rec.Get(admin, d.Ref)
 	if err != nil || got.Version != 2 || got.Date != "2026-03-10" || got.OrgUnitID != c ||
@@ -32,15 +31,15 @@ func TestTouchKeepsTheHeader(t *testing.T) {
 		t.Fatalf("after touch: %+v %v", got, err)
 	}
 
-	if err := rec.Touch(admin, d.Ref, 1); !errors.Is(err, record.ErrVersionConflict) {
+	if _, err := rec.Touch(admin, d.Ref, 1); !errors.Is(err, record.ErrVersionConflict) {
 		t.Fatalf("stale version: %v", err)
 	}
 	until := "2026-03-31"
 	if err := rec.SetPeriodLock(admin, c, &until); err != nil {
 		t.Fatal(err)
 	}
-	if e, ok := errors.AsType[*platform.Error](rec.Touch(admin, d.Ref, 2)); !ok || e.Code != "period_locked" {
-		t.Fatalf("locked period: %v", e)
+	if _, err := rec.Touch(admin, d.Ref, 2); errorCode(err) != "period_locked" {
+		t.Fatalf("locked period: %v", err)
 	}
 	if err := rec.SetPeriodLock(admin, c, nil); err != nil {
 		t.Fatal(err)
@@ -48,7 +47,7 @@ func TestTouchKeepsTheHeader(t *testing.T) {
 	if err := rec.Transition(admin, d.Ref, 2, record.Posted); err != nil {
 		t.Fatal(err)
 	}
-	if err := rec.Touch(admin, d.Ref, 3); !errors.Is(err, record.ErrNotEditable) {
+	if _, err := rec.Touch(admin, d.Ref, 3); !errors.Is(err, record.ErrNotEditable) {
 		t.Fatalf("posted: %v", err)
 	}
 }
