@@ -331,7 +331,7 @@ func (s *Service) payrollTransition(ctx context.Context, d record.Doc, from reco
 	if err != nil {
 		return err
 	}
-	if err := s.d.Posting.Record(ctx, ref, le, d.Date, postingLines(le, lines)); err != nil {
+	if err := s.d.Posting.Record(ctx, ref, postingLines(le, lines)); err != nil {
 		return err
 	}
 	return set(pgtype.Int8{Int64: d.ID, Valid: true})
