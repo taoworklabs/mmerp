@@ -24,6 +24,7 @@ Every table is `DataTable` (`@/shared/ui/DataTable`); a list screen is `ListPage
 | Filter | Component |
 | --- | --- |
 | Search | `SearchInput` (applies on Enter or blur; `/` focuses it) |
+| Document status | `DocumentStatusFilter docType={…}` (`@/shared/document`) |
 | Status, type, any choice | `FilterChip` with `data`; `searchable` for long lists |
 | Org unit | `OrgUnitFilter product="hrm" permission="hrm.leave.view"` (only units where the user has that permission, as a tree, with a search) |
 | Legal entity | `LegalEntityFilter` when the page always shows one (settings, work calendar); otherwise `FilterChip` with `useLegalEntities(scope).options` |
@@ -63,9 +64,7 @@ Every table is `DataTable` (`@/shared/ui/DataTable`); a list screen is `ListPage
 ```tsx
 const view = useListView('sales.customers', columns)
 …
-<ListPage … filters={…} tools={view.tools}>
-  <DataTable columns={view.columns} onResize={view.onResize} … />
-</ListPage>
+<ListPage … filters={…} tools={view.tools} list={{ …, table: { columns: view.columns, onResize: view.onResize, … } }} />
 ```
 
 Every list with more than four columns or with filters people reuse gets `useListView`; small settings lists do not.
@@ -136,9 +135,8 @@ const [selected, setSelected] = useState<Set<string | number>>(new Set())
       <Button variant="default" onClick={…}>{t('hrm.leaves.bulk_submit')}</Button> {/* a new key per bulk action */}
     </BulkBar>
   )}
->
-  <DataTable … selection={{ selected, onChange: setSelected }} />
-</ListPage>
+  list={{ …, table: { …, selection: { selected, onChange: setSelected } } }}
+/>
 ```
 
 - Offered only when the list's `/actions` include the bulk action. A checkbox column comes first; the header box selects or clears every row of the page (indeterminate when some are). Selection covers the visible page only: the page owns `selected` and clears it whenever filters, sort or page change (`useEffect(() => setSelected(new Set()), [params])`).

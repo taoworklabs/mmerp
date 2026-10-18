@@ -4,11 +4,9 @@ import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router'
 import { api, unwrap, type CustomerListItem, type CustomerSort } from '@/shared/api/sales'
-import { errorText } from '@/shared/i18n'
-import { DataTable, type Column } from '@/shared/ui/DataTable'
+import { type Column } from '@/shared/ui/DataTable'
 import { FilterChip, SearchInput } from '@/shared/ui/form'
 import { ListPage } from '@/shared/ui/page'
-import { ContentSkeleton, EmptyState, ErrorState } from '@/shared/ui/states'
 import { useListView } from '@/shared/ui/ListView'
 import { icon } from '@/shared/ui/theme'
 import { useListParams } from '@/shared/url/listParams'
@@ -55,37 +53,6 @@ export function CustomersPage() {
   ]
   const view = useListView('sales.customers', columns)
 
-  let body
-  if (list.isPending) body = <ContentSkeleton />
-  else if (list.isError) body = <ErrorState message={errorText(t, list.error)} onRetry={() => void list.refetch()} />
-  else if (list.data.items.length === 0)
-    body =
-      filterBar.active ? (
-        <EmptyState
-          title={t('sales.common.no_results')}
-          action={
-            <Button variant="default" onClick={filterBar.clear}>
-              {t('sales.common.clear_filters')}
-            </Button>
-          }
-        />
-      ) : (
-        <EmptyState title={t('sales.customers.empty')} description={t('sales.customers.empty_description')} />
-      )
-  else
-    body = (
-      <DataTable
-        label={t('sales.customers.title')}
-        columns={view.columns}
-        onResize={view.onResize}
-        rows={list.data.items}
-        rowKey={(c) => c.id}
-        href={(c) => `/sales/customers/${c.id}`}
-        sort={params.sort}
-        onSort={(sort) => set({ sort })}
-      />
-    )
-
   return (
     <ListPage
       title={t('sales.customers.title')}
@@ -118,17 +85,22 @@ export function CustomersPage() {
         </>
       }
       tools={view.tools}
-      paging={
-        list.data && {
-          page: params.page,
-          pageSize: params.pageSize,
-          total: list.data.total,
-          onPage: (page) => set({ page }),
-          onPageSize: (pageSize) => set({ pageSize }),
-        }
-      }
+      list={{
+        query: list,
+        table: {
+          label: t('sales.customers.title'),
+          columns: view.columns,
+          onResize: view.onResize,
+          rowKey: (c) => c.id,
+          href: (c) => `/sales/customers/${c.id}`,
+          sort: params.sort,
+          onSort: (sort) => set({ sort }),
+        },
+        empty: { title: t('sales.customers.empty'), description: t('sales.customers.empty_description') },
+        noResults: t('sales.common.no_results'),
+        paging: { page: params.page, pageSize: params.pageSize, onPage: (page) => set({ page }), onPageSize: (pageSize) => set({ pageSize }) },
+      }}
     >
-      {body}
     </ListPage>
   )
 }

@@ -3,7 +3,6 @@
   "sales.common.cancel": "Cancel",
   "sales.common.create_draft": "Create draft",
   "sales.common.no_results": "No results",
-  "sales.common.clear_filters": "Clear filters",
   "sales.customers.title": "Customers",
   "sales.customers.description": "Customers of the org units assigned to you",
   "sales.customers.create": "Add customer",

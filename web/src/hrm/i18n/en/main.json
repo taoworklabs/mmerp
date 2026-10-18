@@ -6,7 +6,6 @@
   "hrm.employees.empty_description": "Employee records of the org units in scope show here.",
   "hrm.employees.create": "Create employee",
   "hrm.employees.no_results": "No results.",
-  "hrm.common.clear_filters": "Clear filters",
   "hrm.employees.search": "Search",
   "hrm.employees.search_hint": "Code or name, then Enter",
   "hrm.employees.all": "All",
