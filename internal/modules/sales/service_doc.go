@@ -47,14 +47,6 @@ func (s *Service) UpdateOrder(ctx context.Context, id int64, in DocUpdate) error
 	return s.update(ctx, orderKind, id, in)
 }
 
-func (s *Service) DeleteQuote(ctx context.Context, id int64, version int32) error {
-	return s.delete(ctx, quoteKind, id, version)
-}
-
-func (s *Service) DeleteOrder(ctx context.Context, id int64, version int32) error {
-	return s.delete(ctx, orderKind, id, version)
-}
-
 func (s *Service) docs(ctx context.Context, k kind, f DocFilter) (DocList, error) {
 	out := DocList{Items: []DocListItem{}}
 	sc, err := s.d.IAM.Scope(ctx, "sales", k.view)
@@ -251,16 +243,9 @@ func (s *Service) update(ctx context.Context, k kind, id int64, in DocUpdate) er
 	})
 }
 
-func (s *Service) delete(ctx context.Context, k kind, id int64, version int32) error {
-	return platform.InTx(ctx, func(ctx context.Context) error {
-		if _, err := s.visible(ctx, k, id); err != nil {
-			return err
-		}
-		if err := s.d.Record.Delete(ctx, record.Ref{Type: k.docType, ID: id}, version); err != nil {
-			return err
-		}
-		return store.New(platform.DBFrom(ctx)).DeleteHeader(ctx, id)
-	})
+// deleteDoc deletes a draft's header; its lines go with it.
+func deleteDoc(ctx context.Context, id int64) error {
+	return store.New(platform.DBFrom(ctx)).DeleteHeader(ctx, id)
 }
 
 // prepared is a draft's content, checked against the current catalogues and computed.

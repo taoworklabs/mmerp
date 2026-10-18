@@ -595,17 +595,8 @@ func payrollTotals(ctx context.Context, lines []PayrollLine) ([]PayrollTotal, er
 	return out, err
 }
 
-// DeletePayroll removes a draft at the version the actor saw; its lines go with it.
-func (s *Service) DeletePayroll(ctx context.Context, id int64, version int32) error {
-	return platform.InTx(ctx, func(ctx context.Context) error {
-		if _, err := s.visiblePayroll(ctx, id); err != nil {
-			return err
-		}
-		if err := s.d.Record.Delete(ctx, record.Ref{Type: payrollType, ID: id}, version); err != nil {
-			return err
-		}
-		return store.New(platform.DBFrom(ctx)).DeletePayroll(ctx, id)
-	})
+func deletePayroll(ctx context.Context, id int64) error {
+	return store.New(platform.DBFrom(ctx)).DeletePayroll(ctx, id)
 }
 
 func (s *Service) visiblePayroll(ctx context.Context, id int64) (store.GetPayrollRow, error) {

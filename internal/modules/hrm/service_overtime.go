@@ -218,17 +218,8 @@ func (s *Service) UpdateOvertime(ctx context.Context, id int64, in OvertimeUpdat
 	})
 }
 
-// DeleteOvertime removes a draft at the version the actor saw.
-func (s *Service) DeleteOvertime(ctx context.Context, id int64, version int32) error {
-	return platform.InTx(ctx, func(ctx context.Context) error {
-		if _, err := s.visibleOvertime(ctx, id); err != nil {
-			return err
-		}
-		if err := s.d.Record.Delete(ctx, record.Ref{Type: overtimeType, ID: id}, version); err != nil {
-			return err
-		}
-		return store.New(platform.DBFrom(ctx)).DeleteOvertimeRequest(ctx, id)
-	})
+func deleteOvertime(ctx context.Context, id int64) error {
+	return store.New(platform.DBFrom(ctx)).DeleteOvertimeRequest(ctx, id)
 }
 
 func (s *Service) visibleOvertime(ctx context.Context, id int64) (store.GetOvertimeRequestRow, error) {

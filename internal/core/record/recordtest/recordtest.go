@@ -35,8 +35,6 @@ type Harness struct {
 	// Get reads the document through the module's detail route; the result's
 	// AllowedActions field is what the API returns as allowed_actions.
 	Get func(ctx context.Context, ref record.Ref) (any, error)
-	// Delete deletes a draft through the module's route.
-	Delete func(ctx context.Context, ref record.Ref, version int32) error
 	// Routes are the type's other module routes on one document, by name.
 	Routes map[string]func(ctx context.Context, ref record.Ref) error
 	// RequireApproval makes sending need one step that Approve or Reject can decide.
@@ -138,8 +136,8 @@ var cases = []testCase{
 			t.Fatalf("%d comments", n)
 		}
 		v := get(t, h, ref).Version
-		wantCode(t, h.Delete(h.Actor, ref, v+1), "version_conflict")
-		if err := h.Delete(h.Actor, ref, v); err != nil {
+		wantCode(t, h.Core.Record.Delete(h.Actor, ref, v+1), "version_conflict")
+		if err := h.Core.Record.Delete(h.Actor, ref, v); err != nil {
 			t.Fatal(err)
 		}
 		if _, err := h.Get(h.Admin, ref); code(err) != "not_found" {
@@ -158,10 +156,10 @@ var cases = []testCase{
 	{"only a draft outside a locked period is deleted", func(t *testing.T, h Harness) {
 		posted := create(t, h, "2026-04-10")
 		send(t, h, posted)
-		wantCode(t, h.Delete(h.Actor, posted, get(t, h, posted).Version), "document_not_editable")
+		wantCode(t, h.Core.Record.Delete(h.Actor, posted, get(t, h, posted).Version), "document_not_editable")
 		march := create(t, h, "2026-03-10")
 		lock(t, h, h.Admin, "2026-03-31")
-		wantCode(t, h.Delete(h.Actor, march, get(t, h, march).Version), "period_locked")
+		wantCode(t, h.Core.Record.Delete(h.Actor, march, get(t, h, march).Version), "period_locked")
 		for _, ref := range []record.Ref{posted, march} {
 			if _, err := h.Get(h.Admin, ref); err != nil {
 				t.Fatalf("refused delete removed %v: %v", ref, err)
@@ -269,7 +267,7 @@ var cases = []testCase{
 		}
 		routes = append(routes,
 			route{"send", func() error { return h.Core.Record.Transition(stranger, ref, v, record.Posted) }},
-			route{"delete", func() error { return h.Delete(stranger, ref, v) }})
+			route{"delete", func() error { return h.Core.Record.Delete(stranger, ref, v) }})
 		for _, r := range routes {
 			if err := r.call(); code(err) != "not_found" {
 				t.Errorf("%s: %v, want not_found", r.name, err)
