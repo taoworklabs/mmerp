@@ -88,7 +88,7 @@ function CreateUserModal({ onClose }: { onClose: () => void }) {
       <Form
         form={form}
         onSubmit={save}
-        fieldOf={(err) => (err.code === 'login_taken' ? 'login' : err.code === 'password_too_short' ? 'password' : undefined)}
+        errorFields={{ login_taken: 'login', password_too_short: 'password' }}
       >
         <TextField name="login" label={t('core.user.login')} required maxLength={200} autoComplete="off" />
         <TextField name="name" label={t('core.user.name')} required maxLength={200} />

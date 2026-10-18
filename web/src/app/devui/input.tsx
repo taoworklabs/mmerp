@@ -3,7 +3,7 @@ import { IconCircleDot } from '@tabler/icons-react'
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { useTranslation } from 'react-i18next'
-import { formatNumber } from '@/shared/i18n'
+import { formatDecimal, formatNumber } from '@/shared/i18n'
 import {
   CheckboxField,
   CodeField,
@@ -168,6 +168,23 @@ export function Lines() {
               removeLabel={(n) => `${t('shared.devui.remove')} ${n}`}
               minLines={1}
               footer={<LinesTotals note={t('shared.devui.totals_note')} rows={[[t('shared.devui.subtotal'), formatNumber(3000000)], [t('shared.devui.grand_total'), formatNumber(3240000)]]} />}
+            />
+          </FormRow>
+          <FormRow>
+            <LinesTable
+              readOnly
+              label={t('shared.devui.lines')}
+              lines={[
+                { description: t('shared.devui.name'), quantity: '2', unit_price: 1000000 },
+                { description: t('shared.devui.name'), quantity: '1.5', unit_price: 666667 },
+              ]}
+              columns={[
+                { key: 'description', header: t('shared.devui.name'), value: (l) => l.description },
+                { key: 'quantity', header: t('shared.devui.quantity'), numeric: true, value: (l) => formatDecimal(l.quantity, 3) },
+                { key: 'unit_price', header: t('shared.devui.amount'), numeric: true, value: (l) => formatNumber(l.unit_price) },
+              ]}
+              lineLabel={(n) => `# ${n}`}
+              footer={<LinesTotals rows={[[t('shared.devui.subtotal'), formatNumber(3000000)], [t('shared.devui.grand_total'), formatNumber(3240000)]]} />}
             />
           </FormRow>
         </FormSection>

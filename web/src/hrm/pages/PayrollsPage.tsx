@@ -1,11 +1,12 @@
 import { Button } from '@mantine/core'
 import { IconBuildingSkyscraper, IconPlus } from '@tabler/icons-react'
-import { keepPreviousData, useQuery, useQueryClient } from '@tanstack/react-query'
+import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router'
 import { api, unwrap, type PayrollListItem } from '@/shared/api/hrm'
+import { useInvalidateRecord } from '@/shared/area'
 import { DocumentStatus, DocumentStatusFilter, type DocStatus } from '@/shared/document'
 import { formatMonthShort } from '@/shared/i18n'
 import { type Column } from '@/shared/ui/DataTable'
@@ -103,7 +104,7 @@ export function PayrollsPage() {
 function NewPayroll({ onClose }: { onClose: () => void }) {
   const { t } = useTranslation()
   const navigate = useNavigate()
-  const qc = useQueryClient()
+  const invalidate = useInvalidateRecord()
   const form = useForm<{ legal_entity_id: string | null; month: string | null }>({
     mode: 'onBlur',
     defaultValues: { legal_entity_id: null, month: null },
@@ -111,14 +112,14 @@ function NewPayroll({ onClose }: { onClose: () => void }) {
 
   async function create(v: { legal_entity_id: string | null; month: string | null }) {
     const { id, job_id } = await unwrap(api.POST('/hrm/payrolls', { body: { legal_entity_id: Number(v.legal_entity_id), month: v.month ?? '' } }))
-    await qc.invalidateQueries({ queryKey: hrmKeys.payrolls.lists() })
+    await invalidate(payrollDocType, id)
     notifySuccess(t('hrm.payrolls.created'))
     navigate(`/hrm/payrolls/${id}?job=${job_id}`)
   }
 
   return (
     <FormModal opened title={t('hrm.payrolls.create')} onClose={onClose}>
-      <Form form={form} onSubmit={create} fieldOf={(err) => (err.code === 'payroll_timesheets_missing' ? 'month' : undefined)}>
+      <Form form={form} onSubmit={create} errorFields={{ payroll_timesheets_missing: 'month' }}>
         <LegalEntityField name="legal_entity_id" label={t('hrm.payroll.legal_entity')} product="hrm" permission="hrm.payroll.edit" required />
         <MonthField name="month" label={t('hrm.payroll.month')} description={t('hrm.payroll.month_hint')} required />
         <FormActions submitLabel={t('hrm.payrolls.create_compute')} onCancel={onClose} cancelLabel={t('hrm.common.cancel')} />

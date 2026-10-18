@@ -82,7 +82,7 @@ function ContractTypeModal({ type, onClose }: { type: ContractType | null; onClo
   }
   return (
     <FormModal opened title={t(type ? 'hrm.contract_type.edit' : 'hrm.contract_type.create')} onClose={onClose}>
-      <Form form={form} onSubmit={save} fieldOf={(err) => (err.code === 'contract_type_taken' ? 'name' : undefined)}>
+      <Form form={form} onSubmit={save} errorFields={{ contract_type_taken: 'name' }}>
         <TextField name="name" label={t('hrm.contract_type.name')} required maxLength={100} />
         <CheckboxField name="fixed_term" label={t('hrm.contract_type.fixed_term')} description={t('hrm.contract_type.fixed_term_hint')} />
         <CheckboxField name="active" label={t('hrm.contract_type.active')} description={t('hrm.contract_type.active_hint')} />

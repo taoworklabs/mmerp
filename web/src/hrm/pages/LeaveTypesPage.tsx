@@ -101,7 +101,7 @@ function LeaveTypeModal({ type, onClose }: { type: LeaveType | null; onClose: ()
   }
   return (
     <FormModal opened title={t(type ? 'hrm.leave_type.edit' : 'hrm.leave_type.create')} onClose={onClose}>
-      <Form form={form} onSubmit={save} fieldOf={(err) => ({ leave_type_taken: 'name', invalid_leave_days: 'max_days' } as const)[err.code]}>
+      <Form form={form} onSubmit={save} errorFields={{ leave_type_taken: 'name', invalid_leave_days: 'max_days' }}>
         <TextField name="name" label={t('hrm.leave_type.name')} required maxLength={100} />
         <CheckboxField name="deducts_balance" label={t('hrm.leave_type.deducts_balance')} description={t('hrm.leave_type.deducts_hint')} />
         <CheckboxField name="paid" label={t('hrm.leave_type.paid')} description={t('hrm.leave_type.paid_hint')} />

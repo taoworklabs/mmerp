@@ -58,7 +58,7 @@ export function useCustomerForm(customer: Customer | undefined, onSaved: (id: nu
     }
   }
 
-  return { form, save, fieldOf: (err: { code: string }) => (err.code === 'customer_code_taken' ? ('code' as const) : undefined) }
+  return { form, save, errorFields: { customer_code_taken: 'code' } as const }
 }
 
 export function GeneralFields({ existing }: { existing?: boolean }) {
@@ -97,9 +97,9 @@ export function SalesFields() {
 // CustomerForm creates a customer; an existing one is edited a part at a time on its page.
 export function CustomerForm({ onSaved }: { onSaved: (id: number) => Promise<void> | void }) {
   const { t } = useTranslation()
-  const { form, save, fieldOf } = useCustomerForm(undefined, onSaved)
+  const { form, save, errorFields } = useCustomerForm(undefined, onSaved)
   return (
-    <Form form={form} onSubmit={save} fieldOf={fieldOf}>
+    <Form form={form} onSubmit={save} errorFields={errorFields}>
       <FormSection title={t('sales.customer.section.general')} description={t('sales.customer.section.general_hint')} icon={IconAddressBook}>
         <GeneralFields />
       </FormSection>

@@ -1,8 +1,8 @@
 import { Group } from '@mantine/core'
-import { useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { useParams } from 'react-router'
-import { ActivityFeed, documentKeys, useAttachmentSection } from '@/shared/document'
+import { useInvalidateRecord } from '@/shared/area'
+import { ActivityFeed, useAttachmentSection } from '@/shared/document'
 import { PersonAvatar } from '@/shared/ui/avatar'
 import { loaded } from '@/shared/ui/loaded'
 import { notifySuccess } from '@/shared/ui/notify'
@@ -10,11 +10,11 @@ import { DetailPage, Panel } from '@/shared/ui/page'
 import { CustomerProfile } from '../components/CustomerProfile'
 import { CustomerStatus } from '../components/CustomerStatus'
 import { useCustomer } from '../hooks/useSales'
-import { customerDocType, salesKeys } from '../keys'
+import { customerDocType } from '../keys'
 
 export function CustomerPage() {
   const { t } = useTranslation()
-  const qc = useQueryClient()
+  const invalidate = useInvalidateRecord()
   const id = Number(useParams().id)
   const customer = useCustomer(id)
   const attachments = useAttachmentSection(customerDocType, id)
@@ -48,10 +48,7 @@ export function CustomerPage() {
         key={c.id}
         customer={c}
         onSaved={async () => {
-          await Promise.all([
-            qc.invalidateQueries({ queryKey: salesKeys.customers.all() }),
-            qc.invalidateQueries({ queryKey: documentKeys.history(customerDocType, c.id) }),
-          ])
+          await invalidate(customerDocType, c.id)
           notifySuccess(t('sales.customer.saved'))
         }}
       />

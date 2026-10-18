@@ -775,23 +775,6 @@ func (q *Queries) LockCustomer(ctx context.Context, id int64) error {
 	return err
 }
 
-const printLegalEntity = `-- name: PrintLegalEntity :one
-SELECT coalesce(legal_name, name)::text AS name, tax_code, address FROM iam.org_units WHERE id = $1
-`
-
-type PrintLegalEntityRow struct {
-	Name    string
-	TaxCode pgtype.Text
-	Address pgtype.Text
-}
-
-func (q *Queries) PrintLegalEntity(ctx context.Context, id int64) (PrintLegalEntityRow, error) {
-	row := q.db.QueryRow(ctx, printLegalEntity, id)
-	var i PrintLegalEntityRow
-	err := row.Scan(&i.Name, &i.TaxCode, &i.Address)
-	return i, err
-}
-
 const updateCustomer = `-- name: UpdateCustomer :exec
 UPDATE sales.customers
 SET name = $2, tax_code = $3, address = $4, phone = $5, email = $6, contact_name = $7,

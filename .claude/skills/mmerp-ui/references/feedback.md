@@ -76,7 +76,7 @@ list={{ query: list, table: {…}, empty: { title: t('sales.customers.empty'), d
 
 | Level | Component | Example |
 | --- | --- | --- |
-| Field | The field's error (`fieldOf` for server codes) | "Mã đã tồn tại." under Code |
+| Field | The field's error (`errorFields` for server codes) | "Mã đã tồn tại." under Code |
 | Line of a table | The cell's field error (`lines.<i>.<field>`) | A quantity of 0 on line 3 |
 | Section or form | `Alert` at the top of the form; the section's error count | "Kỳ tháng 3 đã khóa sổ…" |
 | Region | `ErrorState` with Retry | A table that failed to load |

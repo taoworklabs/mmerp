@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate, useParams } from 'react-router'
 import { api, unwrap } from '@/shared/api/hrm'
-import { ActivityFeed, ApprovalDecision, ApprovalPanel, DocumentActions, DocumentStatus, documentKeys } from '@/shared/document'
+import { ActivityFeed, ApprovalDecision, ApprovalPanel, DocumentActions, DocumentStatus } from '@/shared/document'
 import { formatMonth } from '@/shared/i18n'
 import { ExportButton, ImportDialog } from '@/shared/jobs'
 import { DocumentPage } from '@/shared/ui/page'
@@ -12,7 +12,7 @@ import { icon } from '@/shared/ui/theme'
 import { loaded } from '@/shared/ui/loaded'
 import { TimesheetGrid } from '../components/TimesheetGrid'
 import { useTimesheet } from '../hooks/useTimesheet'
-import { hrmKeys, timesheetDocType } from '../keys'
+import { timesheetDocType } from '../keys'
 
 export function TimesheetPage() {
   const { t } = useTranslation()
@@ -77,7 +77,7 @@ export function TimesheetPage() {
           params={params}
           title={t('hrm.timesheet.import_title', { number: ts.number })}
           description={t('hrm.timesheet.import_hint')}
-          invalidate={[hrmKeys.timesheets.detail(ts.id), hrmKeys.timesheets.lists(), documentKeys.history(timesheetDocType, ts.id)]}
+          writes={{ docType: timesheetDocType, id: ts.id }}
           onClose={() => setImporting(false)}
         />
       )}

@@ -14,6 +14,11 @@
   white-space: nowrap;
 }
 
+/* Read-only lines are text at a table's 40px row height, not compact inputs. */
+.table[data-readonly] td {
+  height: 40px;
+}
+
 /* "Add line" sits under the table, outside its frame, yet keeps the table's compact height. */
 .add {
   --mmerp-control-height: 30px;

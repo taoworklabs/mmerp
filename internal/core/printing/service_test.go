@@ -129,3 +129,34 @@ func TestPrintManyParts(t *testing.T) {
 		t.Fatalf("pages: %v %v", r.NumPage(), err)
 	}
 }
+
+// A legal entity prints its legal name, or its name when it has none.
+func TestLegalEntity(t *testing.T) {
+	var shown LegalEntity
+	h := setup(t, func(context.Context, int64) ([]Part, error) {
+		b, err := json.Marshal(shown)
+		return []Part{{Data: b}}, err
+	}, func(p *Page, raw json.RawMessage) error {
+		var le LegalEntity
+		if err := json.Unmarshal(raw, &le); err != nil {
+			return err
+		}
+		p.LegalEntity("Seller", "Name", le)
+		return nil
+	})
+	ids := iam.NewService(iam.Deps{Setting: setting.NewService(), Audit: audit.NewService()})
+	tax, legal, addr := "0101234567", "Công ty TNHH Một", "1 Tràng Tiền"
+	one := must[int64](t)(ids.CreateOrgUnit(h.admin, iam.OrgUnitInput{Kind: "company", Name: "Một", TaxCode: &tax, LegalName: &legal, Address: &addr}))
+	two := must[int64](t)(ids.CreateOrgUnit(h.admin, iam.OrgUnitInput{Kind: "company", Name: "Hai"}))
+
+	if le := must[LegalEntity](t)(h.prn.LegalEntity(h.admin, one)); le.Name != legal || *le.TaxCode != tax || *le.Address != addr {
+		t.Fatalf("with legal fields: %+v", le)
+	}
+	shown = must[LegalEntity](t)(h.prn.LegalEntity(h.admin, two))
+	if shown.Name != "Hai" || shown.TaxCode != nil || shown.Address != nil {
+		t.Fatalf("name only: %+v", shown)
+	}
+	if _, err := h.prn.render(h.admin, h.prn.templates["test.doc"], json.RawMessage(fmt.Sprintf(`{"id":%d}`, h.doc.ID))); err != nil {
+		t.Fatal(err)
+	}
+}

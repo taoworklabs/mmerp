@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"net/http"
 	"strconv"
 	"strings"
 
@@ -439,9 +440,14 @@ func (s *Service) contractHeader(ctx context.Context, unit int64, parent *store.
 	if in.Terms.Lines == nil {
 		in.Terms.Lines = []ContractLine{}
 	}
-	for _, l := range in.Terms.Lines {
+	for i, l := range in.Terms.Lines {
+		switch {
+		case strings.TrimSpace(l.Name) == "":
+			return h, row, "", contractLineErr("contract_line_name_required", i+1)
+		case l.Amount < 0:
+			return h, row, "", contractLineErr("invalid_contract_line_amount", i+1)
 		// A salary allowance is always taxable; only a support may be tax-free.
-		if l.Amount < 0 || strings.TrimSpace(l.Name) == "" || l.Kind != "allowance" && l.Kind != "support" || l.Kind == "allowance" && !l.Taxable {
+		case l.Kind != "allowance" && l.Kind != "support" || l.Kind == "allowance" && !l.Taxable:
 			return h, row, "", ErrContractTerms
 		}
 	}
@@ -493,4 +499,9 @@ func openTerms(ctx context.Context, sealed []byte) (ContractTerms, error) {
 		return t, err
 	}
 	return t, json.Unmarshal(raw, &t)
+}
+
+// contractLineErr names the line (1-based) of the terms a value is wrong on.
+func contractLineErr(code string, line int) error {
+	return &platform.Error{Status: http.StatusUnprocessableEntity, Code: code, Params: map[string]any{"line": line}}
 }

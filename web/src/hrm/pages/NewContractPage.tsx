@@ -1,20 +1,21 @@
-import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { useNavigate, useSearchParams } from 'react-router'
 import { api, unwrap } from '@/shared/api/hrm'
+import { useInvalidateRecord } from '@/shared/area'
 import { errorText } from '@/shared/i18n'
 import { notifySuccess } from '@/shared/ui/notify'
 import { Page } from '@/shared/ui/page'
 import { ErrorState, ForbiddenPage, NotFoundPage, PageSkeleton } from '@/shared/ui/states'
 import { ContractForm } from '../components/ContractForm'
 import { useContract } from '../hooks/useContract'
-import { hrmKeys } from '../keys'
+import { contractDocType, hrmKeys } from '../keys'
 
 // NewContractPage adds a contract for ?employee=, or an appendix to ?parent=, starting from its terms.
 export function NewContractPage() {
   const { t } = useTranslation()
   const navigate = useNavigate()
-  const qc = useQueryClient()
+  const invalidate = useInvalidateRecord()
   const [params] = useSearchParams()
   const employeeId = Number(params.get('employee'))
   const parentId = Number(params.get('parent'))
@@ -49,7 +50,7 @@ export function NewContractPage() {
         employeeId={e.id}
         parent={p}
         onCreated={async (id) => {
-          await qc.invalidateQueries({ queryKey: hrmKeys.contracts.employee(e.id) })
+          await invalidate(contractDocType, id)
           notifySuccess(t('hrm.contract.created'))
           // The form is clean after a successful save, so leaving is not blocked.
           setTimeout(() => navigate(`/hrm/contracts/${id}`, { replace: true }))

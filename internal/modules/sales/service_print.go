@@ -21,27 +21,21 @@ func (s *Service) registerPrints() {
 	}
 }
 
-type sellerPrint struct {
-	Name    string  `json:"name"`
-	TaxCode *string `json:"tax_code"`
-	Address *string `json:"address"`
-}
-
 // docPrint is what a quotation or order prints; frozen as is once it is posted.
 type docPrint struct {
-	Kind          string       `json:"kind"`
-	Number        string       `json:"number"`
-	Date          string       `json:"date"`
-	QuoteNumber   *string      `json:"quote_number"`
-	Seller        sellerPrint  `json:"seller"`
-	Customer      CustomerCopy `json:"customer"`
-	ValidUntil    *string      `json:"valid_until"`
-	DeliveryDate  *string      `json:"delivery_date"`
-	PaymentTerms  *string      `json:"payment_terms"`
-	DeliveryTerms *string      `json:"delivery_terms"`
-	Note          *string      `json:"note"`
-	Lines         []Line       `json:"lines"`
-	Totals        Totals       `json:"totals"`
+	Kind          string               `json:"kind"`
+	Number        string               `json:"number"`
+	Date          string               `json:"date"`
+	QuoteNumber   *string              `json:"quote_number"`
+	Seller        printing.LegalEntity `json:"seller"`
+	Customer      CustomerCopy         `json:"customer"`
+	ValidUntil    *string              `json:"valid_until"`
+	DeliveryDate  *string              `json:"delivery_date"`
+	PaymentTerms  *string              `json:"payment_terms"`
+	DeliveryTerms *string              `json:"delivery_terms"`
+	Note          *string              `json:"note"`
+	Lines         []Line               `json:"lines"`
+	Totals        Totals               `json:"totals"`
 }
 
 // printData reads a quotation or order as printed; printing checked the actor may print it.
@@ -55,12 +49,12 @@ func (s *Service) printData(ctx context.Context, id int64) ([]printing.Part, err
 	if err != nil {
 		return nil, err
 	}
-	le, err := q.PrintLegalEntity(ctx, h.LegalEntityID)
+	seller, err := s.d.Printing.LegalEntity(ctx, h.LegalEntityID)
 	if err != nil {
 		return nil, err
 	}
 	p := docPrint{Kind: h.Kind, Number: h.Number, Date: *platform.DatePtr(h.Date), QuoteNumber: platform.TextPtr(h.QuoteNumber),
-		Seller:   sellerPrint{Name: le.Name, TaxCode: platform.TextPtr(le.TaxCode), Address: platform.TextPtr(le.Address)},
+		Seller:   seller,
 		Customer: customerCopy(h), ValidUntil: platform.DatePtr(h.ValidUntil), DeliveryDate: platform.DatePtr(h.DeliveryDate),
 		PaymentTerms: platform.TextPtr(h.PaymentTerms), DeliveryTerms: platform.TextPtr(h.DeliveryTerms), Note: platform.TextPtr(h.Note),
 		Lines:  make([]Line, len(lines)),
@@ -91,10 +85,7 @@ func docLayout1(p *printing.Page, raw json.RawMessage) error {
 	if d.QuoteNumber != nil {
 		p.Center(p.T("sales.print.order.from_quote", map[string]any{"number": *d.QuoteNumber}))
 	}
-	p.Heading(t("seller"))
-	p.Field(t("name"), d.Seller.Name)
-	p.Field(t("tax_code"), or(d.Seller.TaxCode))
-	p.Field(t("address"), or(d.Seller.Address))
+	p.LegalEntity(t("seller"), t("name"), d.Seller)
 	p.Heading(t("customer"))
 	p.Field(t("name"), d.Customer.Name)
 	p.Field(t("tax_code"), or(d.Customer.TaxCode))

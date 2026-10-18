@@ -95,7 +95,7 @@ function SaveView({ onSave, onCancel }: { onSave: (name: string) => Promise<unkn
   const { t } = useTranslation()
   const form = useForm<{ name: string }>({ defaultValues: { name: '' }, mode: 'onBlur' })
   return (
-    <Form form={form} onSubmit={(v) => onSave(v.name.trim())} fieldOf={(err) => (err.code === 'list_view_name_taken' ? 'name' : undefined)}>
+    <Form form={form} onSubmit={(v) => onSave(v.name.trim())} errorFields={{ list_view_name_taken: 'name' }}>
       <TextField name="name" label={t('shared.views.name')} required maxLength={100} />
       <FormActions submitLabel={t('shared.views.save_submit')} onCancel={onCancel} />
     </Form>

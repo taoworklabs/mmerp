@@ -135,7 +135,7 @@ function GrantModal({ userId, onClose }: { userId: number; onClose: () => void }
 
   return (
     <FormModal opened title={t('core.user.grant')} onClose={onClose}>
-      <Form form={form} onSubmit={save} fieldOf={(err) => (err.code === 'role_already_granted' ? 'role' : undefined)}>
+      <Form form={form} onSubmit={save} errorFields={{ role_already_granted: 'role' }}>
         <SelectField
           name="role"
           label={t('core.user.role')}

@@ -66,7 +66,7 @@ Adding to it, when the list needs them (`tables.md`):
 
 Working example: `web/src/sales/pages/NewCustomerPage.tsx` with `sales/components/CustomerForm.tsx`.
 
-`Page centered` with a breadcrumb to the list → `Form` (`mode: 'onBlur'`, `fieldOf` for field error codes) → `FormSection`s → `FormActions` with `cancelTo` (the list), without `onCancel`. On success: invalidate the list's queries, `notifySuccess`, navigate to the new record (`replace: true`). The route checks the create permission and shows `ForbiddenPage` without it. Details in `forms.md`.
+`Page centered` with a breadcrumb to the list → `Form` (`mode: 'onBlur'`, `errorFields` for field error codes) → `FormSection`s → `FormActions` with `cancelTo` (the list), without `onCancel`. On success: `useInvalidateRecord()` for the new record, `notifySuccess`, navigate to the new record (`replace: true`). The route checks the create permission and shows `ForbiddenPage` without it. Details in `forms.md`.
 
 ## Document page
 

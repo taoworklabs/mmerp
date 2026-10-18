@@ -120,7 +120,7 @@ export function EmployeesPage() {
           kind="hrm.leave_balance"
           title={t('hrm.employees.import_balances')}
           description={t('hrm.employees.import_balances_hint')}
-          invalidate={[hrmKeys.balances.all()]}
+          writes={[hrmKeys.balances.all()]}
           onClose={() => setImporting(false)}
         />
       )}

@@ -1,11 +1,12 @@
 import { Button } from '@mantine/core'
 import { IconPlus } from '@tabler/icons-react'
-import { keepPreviousData, useQuery, useQueryClient } from '@tanstack/react-query'
+import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router'
 import { api, unwrap, type TimesheetListItem, type TimesheetSort } from '@/shared/api/hrm'
+import { useInvalidateRecord } from '@/shared/area'
 import { DocumentStatus, DocumentStatusFilter, type DocStatus } from '@/shared/document'
 import { formatMonthShort } from '@/shared/i18n'
 import { type Column } from '@/shared/ui/DataTable'
@@ -106,19 +107,19 @@ export function TimesheetsPage() {
 function NewTimesheet({ onClose }: { onClose: () => void }) {
   const { t } = useTranslation()
   const navigate = useNavigate()
-  const qc = useQueryClient()
+  const invalidate = useInvalidateRecord()
   const form = useForm<{ org_unit_id: string | null; month: string | null }>({ mode: 'onBlur', defaultValues: { org_unit_id: null, month: null } })
 
   async function create(v: { org_unit_id: string | null; month: string | null }) {
     const { id } = await unwrap(api.POST('/hrm/timesheets', { body: { org_unit_id: Number(v.org_unit_id), month: v.month ?? '' } }))
-    await qc.invalidateQueries({ queryKey: hrmKeys.timesheets.lists() })
+    await invalidate(timesheetDocType, id)
     notifySuccess(t('hrm.timesheets.created'))
     navigate(`/hrm/timesheets/${id}`)
   }
 
   return (
     <FormModal opened title={t('hrm.timesheets.create')} onClose={onClose}>
-      <Form form={form} onSubmit={create} fieldOf={(err) => (err.code === 'timesheet_exists' ? 'month' : undefined)}>
+      <Form form={form} onSubmit={create} errorFields={{ timesheet_exists: 'month' }}>
         <OrgUnitField name="org_unit_id" label={t('hrm.timesheet.org_unit')} product="hrm" permission="hrm.timesheet.edit" required />
         <MonthField name="month" label={t('hrm.timesheet.month')} description={t('hrm.timesheet.month_hint')} required />
         <FormActions submitLabel={t('hrm.common.create_draft')} onCancel={onClose} cancelLabel={t('hrm.common.cancel')} />

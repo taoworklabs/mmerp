@@ -25,7 +25,7 @@ const defaults = { filters: { q: '', status: '', org_unit: '', month: '' }, sort
 // OvertimesPage lists the overtime requests the user may see; a row opens its preview beside the list.
 export function OvertimesPage() {
   const { t } = useTranslation()
-  const canCreate = useOvertimeActions().data?.allowed_actions.includes('create') ?? false
+  const canCreate = useOvertimeActions().data?.includes('create') ?? false
   const [params, set, filterBar] = useListParams(defaults)
   const peek = usePeek()
   const { q, status, org_unit, month } = params.filters as typeof defaults.filters

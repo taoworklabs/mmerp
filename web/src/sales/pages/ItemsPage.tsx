@@ -185,7 +185,7 @@ function ItemModal({ item, onClose }: { item: Item | null; onClose: () => void }
   }
   return (
     <FormModal opened title={t(item ? 'sales.items.edit' : 'sales.items.create')} onClose={onClose}>
-      <Form form={form} onSubmit={save} fieldOf={(err) => (err.code === 'item_code_taken' ? 'code' : undefined)}>
+      <Form form={form} onSubmit={save} errorFields={{ item_code_taken: 'code' }}>
         <CodeField name="code" label={t('sales.item.code')} existing={!!item} />
         <TextField name="name" label={t('sales.item.name')} required maxLength={300} />
         <TextField name="unit" label={t('sales.item.unit')} description={t('sales.item.unit_hint')} required maxLength={30} />

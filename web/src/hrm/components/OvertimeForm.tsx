@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next'
 import { api, unwrap, type Overtime } from '@/shared/api/hrm'
 import { useDocumentMutation } from '@/shared/document'
 import { notifySuccess } from '@/shared/ui/notify'
-import { DateField, DecimalField, Form, FormActions, FormFields, FormSection, SelectField, TextField } from '@/shared/ui/form'
+import { DateField, DecimalField, Form, FormActions, FormFields, FormSection, SelectField, TextField, type ErrorFields } from '@/shared/ui/form'
 import { overtimeDocType } from '../keys'
 import { EmployeeField } from './EmployeeField'
 
@@ -22,7 +22,7 @@ type DayKind = Overtime['day_kind']
 const dayKindSet: Record<DayKind, true> = { weekday: true, weekly_off: true, holiday: true }
 const dayKinds = Object.keys(dayKindSet) as DayKind[]
 
-const fieldOfCode: Record<string, keyof Values> = {
+const errorFields: ErrorFields<Values> = {
   invalid_overtime_hours: 'day_hours',
   overtime_day_kind_mismatch: 'day_kind',
   not_an_employee: 'employee_id',
@@ -98,14 +98,14 @@ export function OvertimeForm({ overtime, self, chooseEmployee, onCreated, onClos
 
   if (onClose)
     return (
-      <Form form={form} onSubmit={save} fieldOf={(err) => fieldOfCode[err.code]}>
+      <Form form={form} onSubmit={save} errorFields={errorFields}>
         <FormFields>{inputs}</FormFields>
         <FormActions submitLabel={t('hrm.common.save')} onCancel={onClose} cancelLabel={t('hrm.common.cancel')} />
         {mutation.dialog}
       </Form>
     )
   return (
-    <Form form={form} onSubmit={save} fieldOf={(err) => fieldOfCode[err.code]}>
+    <Form form={form} onSubmit={save} errorFields={errorFields}>
       <FormSection title={t('hrm.overtime.section')} description={t('hrm.overtime.section_hint')} icon={IconClockHour4} compact>
         {inputs}
       </FormSection>
