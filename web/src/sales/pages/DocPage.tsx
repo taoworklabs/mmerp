@@ -88,14 +88,7 @@ export function DocPage({ kind }: { kind: Kind }) {
               number={d.number}
               actions={d.allowed_actions}
               onError={setError}
-              onDelete={async (version) => {
-                await unwrap(
-                  kind === 'quote'
-                    ? api.DELETE('/sales/quotes/{id}', { params: { path: { id: d.id }, query: { version } } })
-                    : api.DELETE('/sales/orders/{id}', { params: { path: { id: d.id }, query: { version } } }),
-                )
-                navigate(list, { replace: true })
-              }}
+              listPath={list}
             />
           </Group>
         )

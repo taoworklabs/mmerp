@@ -88,10 +88,9 @@ func registerHandlers(api huma.API, s *Service) {
 		get             func(context.Context, int64) (Doc, error)
 		create          func(context.Context, NewDoc) (int64, error)
 		update          func(context.Context, int64, DocUpdate) error
-		del             func(context.Context, int64, int32) error
 	}{
-		{"/sales/quotes", "quote", "quotes", s.QuoteActions, s.Quotes, s.Quote, s.CreateQuote, s.UpdateQuote, s.DeleteQuote},
-		{"/sales/orders", "order", "orders", s.OrderActions, s.Orders, s.Order, s.CreateOrder, s.UpdateOrder, s.DeleteOrder},
+		{"/sales/quotes", "quote", "quotes", s.QuoteActions, s.Quotes, s.Quote, s.CreateQuote, s.UpdateQuote},
+		{"/sales/orders", "order", "orders", s.OrderActions, s.Orders, s.Order, s.CreateOrder, s.UpdateOrder},
 	}
 	for _, d := range docs {
 		huma.Register(api, huma.Operation{OperationID: "list-" + d.many, Method: http.MethodGet, Path: d.path},
@@ -117,10 +116,6 @@ func registerHandlers(api huma.API, s *Service) {
 		huma.Register(api, huma.Operation{OperationID: "update-" + d.one, Method: http.MethodPut, Path: d.path + "/{id}", DefaultStatus: http.StatusNoContent},
 			func(ctx context.Context, in *updateDocInput) (*struct{}, error) {
 				return nil, d.update(ctx, in.ID, in.Body)
-			})
-		huma.Register(api, huma.Operation{OperationID: "delete-" + d.one, Method: http.MethodDelete, Path: d.path + "/{id}", DefaultStatus: http.StatusNoContent},
-			func(ctx context.Context, in *platform.VersionInput) (*struct{}, error) {
-				return nil, d.del(ctx, in.ID, in.Version)
 			})
 	}
 	huma.Register(api, huma.Operation{OperationID: "create-order-from-quote", Method: http.MethodPost, Path: "/sales/quotes/{id}/order",

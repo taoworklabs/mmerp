@@ -114,7 +114,7 @@ func TestLeaveDiscussion(t *testing.T) {
 	wantCode(t, bossC.do("POST", comments, `{"body":"?"}`), 409, "document_not_editable")
 }
 
-// Deleting a draft takes its attachments and comments with it.
+// Deleting a draft through the core route takes its own rows, attachments and comments with it.
 func TestDeletedDraftTakesAttachmentsAndComments(t *testing.T) {
 	pool := pgtest.New(t)
 	if err := app.CreateAdmin(t.Context(), pool, "admin", "Admin", "correct horse"); err != nil {
@@ -152,7 +152,12 @@ func TestDeletedDraftTakesAttachmentsAndComments(t *testing.T) {
 	download := fmt.Sprintf("/api/attachments/%d", listAttachments(c, files).Items[0].ID)
 	ok("POST", comments, `{"body":"nháp"}`, 204)
 
-	ok("DELETE", fmt.Sprintf("/api/hrm/leaves/%d?version=1", lv), "", 204)
+	doc := fmt.Sprintf("/api/documents/hrm.leave_request/%d", lv)
+	wantCode(t, c.do("DELETE", fmt.Sprintf("/api/documents/hrm.overtime_request/%d?version=1", lv), ""), 404, "not_found")
+	wantCode(t, c.do("DELETE", fmt.Sprintf("/api/documents/hrm.employee/%d?version=1", lv), ""), 404, "not_found")
+	wantCode(t, c.do("DELETE", doc+"?version=2", ""), 409, "version_conflict")
+	ok("DELETE", doc+"?version=1", "", 204)
+	wantCode(t, c.do("GET", fmt.Sprintf("/api/hrm/leaves/%d", lv), ""), 404, "not_found")
 	wantCode(t, c.do("GET", files, ""), 404, "not_found")
 	wantCode(t, c.do("GET", download, ""), 404, "not_found")
 	wantCode(t, c.do("GET", comments, ""), 404, "not_found")

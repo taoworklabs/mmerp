@@ -333,10 +333,6 @@ func registerLeaveHandlers(api huma.API, s *Service) {
 		func(ctx context.Context, in *updateLeaveInput) (*struct{}, error) {
 			return nil, s.UpdateLeave(ctx, in.ID, in.Body)
 		})
-	huma.Register(api, huma.Operation{OperationID: "delete-leave", Method: http.MethodDelete, Path: "/hrm/leaves/{id}", DefaultStatus: http.StatusNoContent},
-		func(ctx context.Context, in *platform.VersionInput) (*struct{}, error) {
-			return nil, s.DeleteLeave(ctx, in.ID, in.Version)
-		})
 	huma.Register(api, huma.Operation{OperationID: "list-leave-balances", Method: http.MethodGet, Path: "/hrm/employees/{id}/leave-balances"},
 		func(ctx context.Context, in *platform.IDInput) (*balancesOutput, error) {
 			b, err := s.LeaveBalances(ctx, in.ID)
@@ -389,10 +385,6 @@ func registerContractHandlers(api huma.API, s *Service) {
 		func(ctx context.Context, in *updateContractInput) (*struct{}, error) {
 			return nil, s.UpdateContract(ctx, in.ID, in.Body)
 		})
-	huma.Register(api, huma.Operation{OperationID: "delete-contract", Method: http.MethodDelete, Path: "/hrm/contracts/{id}", DefaultStatus: http.StatusNoContent},
-		func(ctx context.Context, in *platform.VersionInput) (*struct{}, error) {
-			return nil, s.DeleteContract(ctx, in.ID, in.Version)
-		})
 }
 
 func registerOvertimeHandlers(api huma.API, s *Service) {
@@ -419,10 +411,6 @@ func registerOvertimeHandlers(api huma.API, s *Service) {
 	huma.Register(api, huma.Operation{OperationID: "update-overtime", Method: http.MethodPut, Path: "/hrm/overtimes/{id}", DefaultStatus: http.StatusNoContent},
 		func(ctx context.Context, in *updateOvertimeInput) (*struct{}, error) {
 			return nil, s.UpdateOvertime(ctx, in.ID, in.Body)
-		})
-	huma.Register(api, huma.Operation{OperationID: "delete-overtime", Method: http.MethodDelete, Path: "/hrm/overtimes/{id}", DefaultStatus: http.StatusNoContent},
-		func(ctx context.Context, in *platform.VersionInput) (*struct{}, error) {
-			return nil, s.DeleteOvertime(ctx, in.ID, in.Version)
 		})
 }
 
@@ -453,10 +441,6 @@ func registerTimesheetHandlers(api huma.API, s *Service) {
 		Description: "Replaces the period and every line of a draft.", DefaultStatus: http.StatusNoContent},
 		func(ctx context.Context, in *updateTimesheetInput) (*struct{}, error) {
 			return nil, s.SaveTimesheet(ctx, in.ID, in.Body)
-		})
-	huma.Register(api, huma.Operation{OperationID: "delete-timesheet", Method: http.MethodDelete, Path: "/hrm/timesheets/{id}", DefaultStatus: http.StatusNoContent},
-		func(ctx context.Context, in *platform.VersionInput) (*struct{}, error) {
-			return nil, s.DeleteTimesheet(ctx, in.ID, in.Version)
 		})
 }
 
@@ -520,10 +504,6 @@ func registerPayrollHandlers(api huma.API, s *Service) {
 		func(ctx context.Context, in *platform.IDInput) (*payrollOutput, error) {
 			p, err := s.Payroll(ctx, in.ID)
 			return &payrollOutput{CacheControl: "no-store", Body: p}, err
-		})
-	huma.Register(api, huma.Operation{OperationID: "delete-payroll", Method: http.MethodDelete, Path: "/hrm/payrolls/{id}", DefaultStatus: http.StatusNoContent},
-		func(ctx context.Context, in *platform.VersionInput) (*struct{}, error) {
-			return nil, s.DeletePayroll(ctx, in.ID, in.Version)
 		})
 	huma.Register(api, huma.Operation{OperationID: "compute-payroll", Method: http.MethodPost, Path: "/hrm/payrolls/{id}/compute", DefaultStatus: http.StatusAccepted,
 		Description: "Queues a computation of a draft from the current sources."},

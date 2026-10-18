@@ -96,7 +96,6 @@ func TestContract(t *testing.T) {
 				actions, err := rec.DocumentActions(ctx, d)
 				return detail{d, actions}, err
 			},
-			Delete: rec.Delete,
 			Reject: func(instance int64) error { return appr.Reject(approver, instance, 1, "no") },
 			BreakSubmit: func(_ *testing.T, ref record.Ref) {
 				mu.Lock()

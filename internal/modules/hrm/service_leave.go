@@ -330,15 +330,8 @@ func (s *Service) UpdateLeave(ctx context.Context, id int64, in LeaveUpdate) err
 	})
 }
 
-// DeleteLeave removes a draft at the version the actor saw.
-func (s *Service) DeleteLeave(ctx context.Context, id int64, version int32) error {
-	return platform.InTx(ctx, func(ctx context.Context) error {
-		// Delete refuses a request the actor may not see before the row goes.
-		if err := s.d.Record.Delete(ctx, record.Ref{Type: leaveType, ID: id}, version); err != nil {
-			return err
-		}
-		return store.New(platform.DBFrom(ctx)).DeleteLeaveRequest(ctx, id)
-	})
+func deleteLeave(ctx context.Context, id int64) error {
+	return store.New(platform.DBFrom(ctx)).DeleteLeaveRequest(ctx, id)
 }
 
 // checkLeaveDates re-checks on approval what the entry already checked, and refuses dates

@@ -147,7 +147,7 @@ func (f *fixture) posted(docType string) int {
 func contract(t *testing.T, docType string) {
 	recordtest.Run(t, func(t *testing.T) recordtest.Harness {
 		f := newFixture(t)
-		create, update, read, del := f.sales.CreateQuote, f.sales.UpdateQuote, f.sales.Quote, f.sales.DeleteQuote
+		create, update, read := f.sales.CreateQuote, f.sales.UpdateQuote, f.sales.Quote
 		routes := map[string]func(context.Context, record.Ref) error{
 			"create order": func(ctx context.Context, r record.Ref) error {
 				_, err := f.sales.CreateOrderFromQuote(ctx, r.ID)
@@ -158,7 +158,7 @@ func contract(t *testing.T, docType string) {
 			"write actions leave allowed_actions when the product is off or the period locked": "a posted quotation in a locked period still offers create_order",
 		}
 		if docType == "sales.order" {
-			create, update, read, del, routes, gaps = f.sales.CreateOrder, f.sales.UpdateOrder, f.sales.Order, f.sales.DeleteOrder, nil, nil
+			create, update, read, routes, gaps = f.sales.CreateOrder, f.sales.UpdateOrder, f.sales.Order, nil, nil
 		}
 		deactivate := func(*testing.T, record.Ref) {
 			c := customer("KH1", f.a)
@@ -176,7 +176,6 @@ func contract(t *testing.T, docType string) {
 		return recordtest.Harness{
 			Core: f.core, Actor: f.staff, Admin: f.admin, LegalEntity: f.c,
 			Get:    func(ctx context.Context, r record.Ref) (any, error) { return read(ctx, r.ID) },
-			Delete: func(ctx context.Context, r record.Ref, version int32) error { return del(ctx, r.ID, version) },
 			Routes: routes,
 			Gaps:   gaps,
 			Reject: func(instance int64) error { return f.appr.Reject(f.manager, instance, 1, "không") },
@@ -489,7 +488,7 @@ func TestOrderFromQuote(t *testing.T) {
 	}
 	// Deleting the draft frees it too; then cancelling the quotation goes through.
 	o2, _ := f.sales.Order(f.staff, second)
-	f.check(f.sales.DeleteOrder(f.staff, second, o2.Version))
+	f.check(f.core.Record.Delete(f.staff, record.Ref{Type: "sales.order", ID: second}, o2.Version))
 	f.check(f.move(f.staff, "sales.quote", quote, record.Cancelled))
 
 	// An expired quotation stays readable but becomes no order.

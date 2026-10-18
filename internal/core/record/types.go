@@ -120,6 +120,9 @@ type Type struct {
 	// BeforeSubmit runs when a draft is sent, before approval is asked; an error
 	// keeps it a draft (e.g. a payroll whose sources changed).
 	BeforeSubmit func(ctx context.Context, d Doc) error
+	// OnDelete deletes the module's own rows of a draft being deleted, in the deletion's
+	// transaction after the document's row is gone; an error keeps the draft.
+	OnDelete func(ctx context.Context, id int64) error
 	// Approvers returns the users for an approval step chosen by the module;
 	// level 1 is the nearest (e.g. the direct manager), 2 the one above, and so on.
 	Approvers func(ctx context.Context, ref Ref, level int) ([]int64, error)

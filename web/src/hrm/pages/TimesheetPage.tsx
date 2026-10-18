@@ -2,8 +2,7 @@ import { Button, Group } from '@mantine/core'
 import { IconFileImport } from '@tabler/icons-react'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { useNavigate, useParams } from 'react-router'
-import { api, unwrap } from '@/shared/api/hrm'
+import { useParams } from 'react-router'
 import { ActivityFeed, ApprovalDecision, ApprovalPanel, DocumentActions, DocumentStatus } from '@/shared/document'
 import { formatMonth } from '@/shared/i18n'
 import { ExportButton, ImportDialog } from '@/shared/jobs'
@@ -16,7 +15,6 @@ import { timesheetDocType } from '../keys'
 
 export function TimesheetPage() {
   const { t } = useTranslation()
-  const navigate = useNavigate()
   const id = Number(useParams().id)
   const timesheet = useTimesheet(id)
   const [error, setError] = useState<string | null>(null)
@@ -58,10 +56,7 @@ export function TimesheetPage() {
               number={ts.number}
               actions={ts.allowed_actions}
               onError={setError}
-              onDelete={async (version) => {
-                await unwrap(api.DELETE('/hrm/timesheets/{id}', { params: { path: { id: ts.id }, query: { version } } }))
-                navigate('/hrm/timesheets', { replace: true })
-              }}
+              listPath="/hrm/timesheets"
             />
           </Group>
         )

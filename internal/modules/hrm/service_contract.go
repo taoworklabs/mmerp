@@ -398,21 +398,13 @@ func (s *Service) UpdateContract(ctx context.Context, id int64, in ContractUpdat
 	})
 }
 
-// DeleteContract removes a draft at the version the actor saw; an original with appendices stays.
-func (s *Service) DeleteContract(ctx context.Context, id int64, version int32) error {
-	return platform.InTx(ctx, func(ctx context.Context) error {
-		if _, err := s.visibleContract(ctx, id); err != nil {
-			return err
-		}
-		if err := s.d.Record.Delete(ctx, record.Ref{Type: contractType, ID: id}, version); err != nil {
-			return err
-		}
-		err := store.New(platform.DBFrom(ctx)).DeleteContract(ctx, id)
-		if platform.Violates(err, "contracts_parent_id_fkey") {
-			return ErrContractHasAppendices
-		}
-		return err
-	})
+// deleteContract keeps an original with appendices.
+func deleteContract(ctx context.Context, id int64) error {
+	err := store.New(platform.DBFrom(ctx)).DeleteContract(ctx, id)
+	if platform.Violates(err, "contracts_parent_id_fkey") {
+		return ErrContractHasAppendices
+	}
+	return err
 }
 
 func (s *Service) visibleContract(ctx context.Context, id int64) (store.GetContractRow, error) {

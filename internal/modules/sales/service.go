@@ -79,6 +79,7 @@ func NewService(d Deps) *Service {
 			Perms:        record.Perms{View: k.view, Edit: k.edit, ViewFiles: k.view, Attach: k.edit},
 			OnTransition: s.transition,
 			BeforeSubmit: s.beforeSubmit,
+			OnDelete:     deleteDoc,
 		})
 	}
 	s.registerPrints()
