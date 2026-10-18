@@ -18,14 +18,11 @@ import (
 	"github.com/riverqueue/river/rivertype"
 
 	"github.com/taoworklabs/mmerp/internal/core/approval"
-	"github.com/taoworklabs/mmerp/internal/core/audit"
-	"github.com/taoworklabs/mmerp/internal/core/dataio"
+	"github.com/taoworklabs/mmerp/internal/core/coretest"
 	"github.com/taoworklabs/mmerp/internal/core/iam"
 	"github.com/taoworklabs/mmerp/internal/core/notification"
 	"github.com/taoworklabs/mmerp/internal/core/numbering"
-	"github.com/taoworklabs/mmerp/internal/core/printing"
 	"github.com/taoworklabs/mmerp/internal/core/record"
-	"github.com/taoworklabs/mmerp/internal/core/setting"
 	"github.com/taoworklabs/mmerp/internal/modules/hrm"
 	"github.com/taoworklabs/mmerp/internal/platform"
 	"github.com/taoworklabs/mmerp/internal/platform/pgtest"
@@ -53,16 +50,10 @@ type fixture struct {
 // with grants like "hr@A" or "viewer@*" and returns a ctx acting as them.
 func newFixture(t *testing.T) *fixture {
 	t.Helper()
-	pool := pgtest.New(t)
-	ctx := platform.WithKeyring(platform.WithProducts(platform.WithDB(t.Context(), pool), []string{"hrm"}), pgtest.Keyring())
-	ids := iam.NewService(iam.Deps{Setting: setting.NewService(), Audit: audit.NewService()})
-	num := numbering.NewService(numbering.Deps{IAM: ids, Audit: audit.NewService()})
-	rec := record.NewService(record.Deps{IAM: ids, Numbering: num, Audit: audit.NewService()})
-	appr := approval.NewService(approval.Deps{IAM: ids, Record: rec, Audit: audit.NewService(), Notification: notification.NewService(notification.Deps{Record: rec, IAM: ids, Audit: audit.NewService(), Setting: setting.NewService()})})
-	rec.SetApprovalGate(appr)
-	dio := dataio.NewService(dataio.Deps{IAM: ids, Audit: audit.NewService()})
-	h := hrm.NewService(hrm.Deps{IAM: ids, Record: rec, Audit: audit.NewService(), Setting: setting.NewService(), DataIO: dio,
-		Printing: printing.NewService(printing.Deps{Record: rec, Audit: audit.NewService(), DataIO: dio, IAM: ids}), Posting: posting.NewService(posting.Hooks{}), Numbering: num})
+	core := coretest.New(t, "hrm")
+	pool, ctx, ids, rec, num := core.Pool, core.Ctx, core.IAM, core.Record, core.Numbering
+	h := hrm.NewService(hrm.Deps{IAM: ids, Record: rec, Audit: core.Audit, Setting: core.Setting, DataIO: core.DataIO,
+		Printing: core.Printing, Posting: posting.NewService(posting.Hooks{}), Numbering: num})
 	// Jobs are queued in ctx's transaction and worked only once work is called.
 	workers := river.NewWorkers()
 	hrm.Module(h).Workers(workers)
@@ -80,10 +71,9 @@ func newFixture(t *testing.T) *fixture {
 		t.Fatal(err)
 	}
 	ctx = platform.WithJobs(ctx, jobs)
-	adminID := must(t)(ids.CreateAdmin(ctx, "admin", "Admin", "long enough"))
-	admin := platform.WithActor(ctx, adminID)
+	admin := platform.WithJobs(core.Admin, jobs)
 	c := must(t)(ids.CreateOrgUnit(admin, iam.OrgUnitInput{Kind: "company", Name: "C"}))
-	f := &fixture{t: t, pool: pool, iam: ids, rec: rec, appr: appr, hrm: h, num: num, jobs: jobs, admin: admin, c: c}
+	f := &fixture{t: t, pool: pool, iam: ids, rec: rec, appr: core.Approval, hrm: h, num: num, jobs: jobs, admin: admin, c: c}
 	f.a = must(t)(ids.CreateOrgUnit(admin, iam.OrgUnitInput{ParentID: &c, Kind: "department", Name: "A"}))
 	f.b = must(t)(ids.CreateOrgUnit(admin, iam.OrgUnitInput{ParentID: &c, Kind: "department", Name: "B"}))
 	f.ctxFor = func(login string, grants ...string) context.Context {

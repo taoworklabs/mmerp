@@ -11,18 +11,14 @@ import (
 	"testing"
 
 	"github.com/taoworklabs/mmerp/internal/core/approval"
-	"github.com/taoworklabs/mmerp/internal/core/audit"
-	"github.com/taoworklabs/mmerp/internal/core/dataio"
+	"github.com/taoworklabs/mmerp/internal/core/coretest"
 	"github.com/taoworklabs/mmerp/internal/core/iam"
-	"github.com/taoworklabs/mmerp/internal/core/notification"
 	"github.com/taoworklabs/mmerp/internal/core/numbering"
-	"github.com/taoworklabs/mmerp/internal/core/printing"
 	"github.com/taoworklabs/mmerp/internal/core/record"
 	"github.com/taoworklabs/mmerp/internal/core/record/recordtest"
 	"github.com/taoworklabs/mmerp/internal/core/setting"
 	"github.com/taoworklabs/mmerp/internal/modules/sales"
 	"github.com/taoworklabs/mmerp/internal/platform"
-	"github.com/taoworklabs/mmerp/internal/platform/pgtest"
 )
 
 // fixture: company C with sales teams A and B, a staff user and a manager in A, one
@@ -46,22 +42,10 @@ type fixture struct {
 
 func newFixture(t *testing.T) *fixture {
 	t.Helper()
-	pool := pgtest.New(t)
-	ctx := platform.WithKeyring(platform.WithProducts(platform.WithDB(t.Context(), pool), []string{"sales"}), pgtest.Keyring())
-	set := setting.NewService()
-	ids := iam.NewService(iam.Deps{Setting: set, Audit: audit.NewService()})
-	set.SetAuthz(ids)
-	num := numbering.NewService(numbering.Deps{IAM: ids, Audit: audit.NewService()})
-	rec := record.NewService(record.Deps{IAM: ids, Numbering: num, Audit: audit.NewService()})
-	ids.SetTreeHook(rec)
-	appr := approval.NewService(approval.Deps{IAM: ids, Record: rec, Audit: audit.NewService(),
-		Notification: notification.NewService(notification.Deps{Record: rec, IAM: ids, Audit: audit.NewService(), Setting: set})})
-	rec.SetApprovalGate(appr)
-	dio := dataio.NewService(dataio.Deps{IAM: ids, Audit: audit.NewService()})
-	prn := printing.NewService(printing.Deps{Record: rec, Audit: audit.NewService(), DataIO: dio, IAM: ids})
-	s := sales.NewService(sales.Deps{IAM: ids, Record: rec, Audit: audit.NewService(), Setting: set, Printing: prn, Numbering: num})
-	admin := platform.WithActor(ctx, must(t)(ids.CreateAdmin(ctx, "admin", "Admin", "long enough")))
-	f := &fixture{t: t, ctx: ctx, admin: admin, set: set, rec: rec, appr: appr, sales: s, num: num}
+	core := coretest.New(t, "sales")
+	ctx, admin, ids, set, rec, num := core.Ctx, core.Admin, core.IAM, core.Setting, core.Record, core.Numbering
+	s := sales.NewService(sales.Deps{IAM: ids, Record: rec, Audit: core.Audit, Setting: set, Printing: core.Printing, Numbering: num})
+	f := &fixture{t: t, ctx: ctx, admin: admin, set: set, rec: rec, appr: core.Approval, sales: s, num: num}
 	f.c = must(t)(ids.CreateOrgUnit(admin, iam.OrgUnitInput{Kind: "company", Name: "C"}))
 	f.a = must(t)(ids.CreateOrgUnit(admin, iam.OrgUnitInput{ParentID: &f.c, Kind: "department", Name: "A"}))
 	f.b = must(t)(ids.CreateOrgUnit(admin, iam.OrgUnitInput{ParentID: &f.c, Kind: "department", Name: "B"}))

@@ -8,28 +8,19 @@ import (
 	"time"
 
 	"github.com/taoworklabs/mmerp/internal/core/approval"
-	"github.com/taoworklabs/mmerp/internal/core/audit"
+	"github.com/taoworklabs/mmerp/internal/core/coretest"
 	"github.com/taoworklabs/mmerp/internal/core/iam"
-	"github.com/taoworklabs/mmerp/internal/core/notification"
-	"github.com/taoworklabs/mmerp/internal/core/numbering"
 	"github.com/taoworklabs/mmerp/internal/core/record"
 	"github.com/taoworklabs/mmerp/internal/core/record/recordtest"
-	"github.com/taoworklabs/mmerp/internal/core/setting"
 	"github.com/taoworklabs/mmerp/internal/platform"
-	"github.com/taoworklabs/mmerp/internal/platform/pgtest"
 )
 
 // TestContract runs recordtest on a bare document type, proving the suite itself.
 func TestContract(t *testing.T) {
 	recordtest.Run(t, func(t *testing.T) recordtest.Harness {
-		pool := pgtest.New(t)
-		ctx := platform.WithKeyring(platform.WithProducts(platform.WithDB(t.Context(), pool), []string{"test"}), pgtest.Keyring())
-		ids := iam.NewService(iam.Deps{Setting: setting.NewService(), Audit: audit.NewService()})
+		core := coretest.New(t, "test")
+		ids, rec, appr, ctx, admin := core.IAM, core.Record, core.Approval, core.Ctx, core.Admin
 		ids.RegisterRoles("test", map[string][]string{"approver": {"test.doc.approve"}})
-		rec := record.NewService(record.Deps{IAM: ids, Numbering: numbering.NewService(numbering.Deps{}), Audit: audit.NewService()})
-		ids.SetTreeHook(rec)
-		appr := approval.NewService(approval.Deps{IAM: ids, Record: rec, Audit: audit.NewService(), Notification: notification.NewService(notification.Deps{Record: rec, IAM: ids, Audit: audit.NewService(), Setting: setting.NewService()})})
-		rec.SetApprovalGate(appr)
 
 		var mu sync.Mutex
 		effects, broken := map[int64]int{}, map[int64]bool{}
@@ -50,7 +41,6 @@ func TestContract(t *testing.T) {
 			},
 		})
 
-		admin := platform.WithActor(ctx, must(t)(ids.CreateAdmin(ctx, "admin", "Admin", "long enough")))
 		c := must(t)(ids.CreateOrgUnit(admin, iam.OrgUnitInput{Kind: "company", Name: "C"}))
 		a := must(t)(ids.CreateOrgUnit(admin, iam.OrgUnitInput{ParentID: &c, Kind: "department", Name: "A"}))
 		actor := platform.WithActor(ctx, must(t)(ids.CreateUser(admin, "actor", "Actor", "long enough")))
@@ -103,14 +93,10 @@ func must(t *testing.T) func(int64, error) int64 {
 }
 
 func TestUnitWithDocumentsCannotChangeLegalEntity(t *testing.T) {
-	pool := pgtest.New(t)
-	ctx := platform.WithKeyring(platform.WithProducts(platform.WithDB(t.Context(), pool), []string{"test"}), pgtest.Keyring())
-	ids := iam.NewService(iam.Deps{Setting: setting.NewService(), Audit: audit.NewService()})
-	rec := record.NewService(record.Deps{IAM: ids, Numbering: numbering.NewService(numbering.Deps{}), Audit: audit.NewService()})
-	ids.SetTreeHook(rec)
+	core := coretest.New(t, "test")
+	ids, rec, admin := core.IAM, core.Record, core.Admin
 	rec.Register(record.Type{Code: "test.doc", Product: "test", Kind: record.Document, NumberPrefix: "T",
 		Can: func(context.Context, int64, record.Action) (bool, error) { return true, nil }})
-	admin := platform.WithActor(ctx, must(t)(ids.CreateAdmin(ctx, "admin", "Admin", "long enough")))
 	c1 := must(t)(ids.CreateOrgUnit(admin, iam.OrgUnitInput{Kind: "company", Name: "C1"}))
 	c2 := must(t)(ids.CreateOrgUnit(admin, iam.OrgUnitInput{Kind: "company", Name: "C2"}))
 	a := must(t)(ids.CreateOrgUnit(admin, iam.OrgUnitInput{ParentID: &c1, Kind: "department", Name: "A"}))
@@ -130,14 +116,10 @@ func TestUnitWithDocumentsCannotChangeLegalEntity(t *testing.T) {
 // A document created while its unit moves to another legal entity waits for the move,
 // then belongs to the legal entity the unit is under.
 func TestCreateWaitsForATreeMove(t *testing.T) {
-	pool := pgtest.New(t)
-	ctx := platform.WithKeyring(platform.WithProducts(platform.WithDB(t.Context(), pool), []string{"test"}), pgtest.Keyring())
-	ids := iam.NewService(iam.Deps{Setting: setting.NewService(), Audit: audit.NewService()})
-	rec := record.NewService(record.Deps{IAM: ids, Numbering: numbering.NewService(numbering.Deps{}), Audit: audit.NewService()})
-	ids.SetTreeHook(rec)
+	core := coretest.New(t, "test")
+	ids, rec, admin := core.IAM, core.Record, core.Admin
 	rec.Register(record.Type{Code: "test.doc", Product: "test", Kind: record.Document, NumberPrefix: "T",
 		Can: func(context.Context, int64, record.Action) (bool, error) { return true, nil }})
-	admin := platform.WithActor(ctx, must(t)(ids.CreateAdmin(ctx, "admin", "Admin", "long enough")))
 	c1 := must(t)(ids.CreateOrgUnit(admin, iam.OrgUnitInput{Kind: "company", Name: "C1"}))
 	c2 := must(t)(ids.CreateOrgUnit(admin, iam.OrgUnitInput{Kind: "company", Name: "C2"}))
 	a := must(t)(ids.CreateOrgUnit(admin, iam.OrgUnitInput{ParentID: &c1, Kind: "department", Name: "A"}))
@@ -162,10 +144,8 @@ func TestCreateWaitsForATreeMove(t *testing.T) {
 
 // BeforeSubmit runs when a draft is sent, approval or not, and its error keeps the draft.
 func TestBeforeSubmitKeepsADraft(t *testing.T) {
-	pool := pgtest.New(t)
-	ctx := platform.WithKeyring(platform.WithProducts(platform.WithDB(t.Context(), pool), []string{"test"}), pgtest.Keyring())
-	ids := iam.NewService(iam.Deps{Setting: setting.NewService(), Audit: audit.NewService()})
-	rec := record.NewService(record.Deps{IAM: ids, Numbering: numbering.NewService(numbering.Deps{}), Audit: audit.NewService()})
+	core := coretest.New(t, "test")
+	ids, rec, admin := core.IAM, core.Record, core.Admin
 	refuse := errors.New("not ready")
 	var calls int
 	rec.Register(record.Type{Code: "test.doc", Product: "test", Kind: record.Document, NumberPrefix: "T",
@@ -177,7 +157,6 @@ func TestBeforeSubmitKeepsADraft(t *testing.T) {
 			}
 			return nil
 		}})
-	admin := platform.WithActor(ctx, must(t)(ids.CreateAdmin(ctx, "admin", "Admin", "long enough")))
 	c := must(t)(ids.CreateOrgUnit(admin, iam.OrgUnitInput{Kind: "company", Name: "C"}))
 	d, err := rec.Create(admin, "test.doc", record.Header{Date: "2026-03-10", OrgUnitID: c})
 	if err != nil {
