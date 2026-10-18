@@ -134,10 +134,3 @@ func payrollEffect(d record.Doc, from record.Status) (posted, ok bool) {
 	}
 	return false, false
 }
-
-func optional(s string) *string {
-	if s == "" {
-		return nil
-	}
-	return &s
-}

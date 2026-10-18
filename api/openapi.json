@@ -4194,14 +4194,7 @@
             ]
           },
           "kind": {
-            "enum": [
-              "approval_requested",
-              "approval_approved",
-              "approval_rejected",
-              "mentioned",
-              "job_completed",
-              "job_failed"
-            ],
+            "description": "A core kind (approval_requested, approval_approved, approval_rejected, mentioned, job_completed, job_failed) or a product's own, \u003cproduct\u003e.\u003cname\u003e",
             "type": "string"
           },
           "label": {

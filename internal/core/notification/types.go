@@ -1,5 +1,7 @@
 package notification
 
+import "strings"
+
 // Kind is what happened; readers build the text from it, so a notification copies nothing of its record.
 type Kind string
 
@@ -12,8 +14,14 @@ const (
 	JobFailed         Kind = "job_failed"
 )
 
-// emailed says which kinds are emailed too: a job's requester is waiting in the app.
-func (k Kind) emailed() bool { return k != JobCompleted && k != JobFailed }
+// emailKey prefixes a kind's email texts: a core kind's are the core's, a product's
+// kind <product>.<name> has them in the product's translations.
+func emailKey(kind string) string {
+	if strings.Contains(kind, ".") {
+		return kind + ".email"
+	}
+	return "notification.email." + kind
+}
 
 const pageSize = 50
 
@@ -21,7 +29,7 @@ const pageSize = 50
 // only there while the caller may view the record.
 type Notification struct {
 	ID         int64   `json:"id"`
-	Kind       string  `json:"kind" enum:"approval_requested,approval_approved,approval_rejected,mentioned,job_completed,job_failed"`
+	Kind       string  `json:"kind" doc:"A core kind (approval_requested, approval_approved, approval_rejected, mentioned, job_completed, job_failed) or a product's own, <product>.<name>"`
 	RecordType *string `json:"record_type" doc:"e.g. hrm.leave_request; null for a job"`
 	RecordID   *int64  `json:"record_id"`
 	Label      *string `json:"label" doc:"The document number; null for a catalogue"`

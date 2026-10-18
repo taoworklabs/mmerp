@@ -25,6 +25,8 @@ A term used by two products must have the same meaning, or the two must use diff
 - **Module**: a package in `core/`, `shared/` or `modules/`, with its own schema and tables.
 - **Area** (frontend, vi: "Khu vực"): a product's part of the UI, the directory `web/src/<product>`, entered through its `index.ts` manifest.
 - **Record type** (vi: "Loại bản ghi"): `<module>.<type>`, either a document or a catalog, registered with `record` to use the shared features.
+- **Permission declaration** (vi: "Khai báo quyền"): what a record type states, for each action on its records (view, edit, post, cancel, export, print, view files, attach, and create and import before a record exists), about the permission that grants it, checked at the record's org unit. An action the type does not declare is not available on it (e.g. a payroll has no attachments). See [ADR-0034](./docs/adr/0034-record-types-declare-permissions.md).
+- **Relation grant** (vi: "Quyền theo quan hệ"): a record type's rule that grants a declared action to a user related to the record without the permission, e.g. an employee on their own leave request, or their manager viewing it.
 - **Document** (vi: "Chứng từ"): a record with a number, a date, a legal entity and a lifecycle held by `record`.
 - **Catalog** (`record.Catalog`, vi: "Danh mục"): a record type that is master data, with no lifecycle (e.g. the employee profile).
 - **Document status** (vi: "Trạng thái chứng từ"): `draft`, `pending_approval`, `posted`, `cancelled`, held by `record`. Says only whether the document is in effect and whether it can be edited.
@@ -50,7 +52,7 @@ A term used by two products must have the same meaning, or the two must use diff
 - **Business line** (vi: "Dòng nghiệp vụ"): a line describing the economic meaning of a document (line type, amount, party, org unit), without an accounting account. Written to `posting.lines` exactly once when the document is posted.
 - **Legal-entity setting** (vi: "Setting theo pháp nhân"): a setting with a separate value per legal entity (`setting.legal_entity_values`), e.g. the rounding mode or the minimum wage region. A missing value falls back to the default in code.
 - **Rounding mode** (`setting.rounding`, vi: "Chế độ làm tròn"): `line` (each person × each item rounds on its own) or `total` (round the total of an item in the document, then distribute the difference down to the lines by largest remainder).
-- **Attachment** (`attachment`, vi: "Đính kèm"): a file attached to a record (document or catalog). Viewing needs `view_files`, adding needs `attach`; the record type answers both in `Can`. Not available on record types that do not answer. See [ADR-0024](./docs/adr/0024-attachments-and-discussion.md).
+- **Attachment** (`attachment`, vi: "Đính kèm"): a file attached to a record (document or catalog). Viewing needs `view_files`, adding needs `attach`; the record type declares both in its permission declaration. Not available on record types that do not declare them. See [ADR-0024](./docs/adr/0024-attachments-and-discussion.md).
 - **Discussion** (`discussion`, vi: "Trao đổi"): a record's comment thread, in time order. Anyone who can view the record can read and comment.
 - **Comment** (vi: "Bình luận"): one message in a discussion; plain text, never edited or deleted.
 - **Mention** (vi: "Nhắc tên"): `@login` in a comment. The mentioned user gets a notification if they can view the record; otherwise the mention is ignored, without telling the author.

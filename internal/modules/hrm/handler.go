@@ -5,33 +5,19 @@ import (
 	"net/http"
 
 	"github.com/danielgtaylor/huma/v2"
+
+	"github.com/taoworklabs/mmerp/internal/platform"
 )
 
 type employeesOutput struct{ Body EmployeeList }
 
-type idInput struct {
-	ID int64 `path:"id"`
-}
-
 type employeeOutput struct{ Body Employee }
-
-type actionsOutput struct {
-	Body struct {
-		AllowedActions []string `json:"allowed_actions" nullable:"false"`
-	}
-}
 
 type employeeInput struct{ Body NewEmployee }
 
 type updateEmployeeInput struct {
 	ID   int64 `path:"id"`
 	Body EmployeeInput
-}
-
-type createdOutput struct {
-	Body struct {
-		ID int64 `json:"id"`
-	}
 }
 
 type sensitiveInput struct {
@@ -67,15 +53,6 @@ type dependentRefInput struct {
 	DependentID int64 `path:"dependent"`
 }
 
-func created(id int64, err error) (*createdOutput, error) {
-	if err != nil {
-		return nil, err
-	}
-	out := &createdOutput{}
-	out.Body.ID = id
-	return out, nil
-}
-
 type leaveTypesOutput struct{ Body []LeaveType }
 
 type leaveTypeInput struct{ Body LeaveTypeInput }
@@ -108,11 +85,6 @@ type leaveWorkingDaysOutput struct {
 type updateLeaveInput struct {
 	ID   int64 `path:"id"`
 	Body LeaveUpdate
-}
-
-type deleteDocInput struct {
-	ID      int64 `path:"id"`
-	Version int32 `query:"version" required:"true"`
 }
 
 type balancesOutput struct{ Body []LeaveBalance }
@@ -262,18 +234,18 @@ func registerHandlers(api huma.API, s *Service) {
 		})
 	huma.Register(api, huma.Operation{OperationID: "get-employee-actions", Method: http.MethodGet, Path: "/hrm/employees/actions",
 		Description: "What the actor may do before picking an employee: create, view_sensitive, import_leave_balances."},
-		func(ctx context.Context, _ *struct{}) (*actionsOutput, error) {
+		func(ctx context.Context, _ *struct{}) (*platform.ActionsOutput, error) {
 			actions, err := s.EmployeeActions(ctx)
-			out := &actionsOutput{}
+			out := &platform.ActionsOutput{}
 			out.Body.AllowedActions = actions
 			return out, err
 		})
 	huma.Register(api, huma.Operation{OperationID: "create-employee", Method: http.MethodPost, Path: "/hrm/employees", DefaultStatus: http.StatusCreated},
-		func(ctx context.Context, in *employeeInput) (*createdOutput, error) {
-			return created(s.CreateEmployee(ctx, in.Body))
+		func(ctx context.Context, in *employeeInput) (*platform.CreatedOutput, error) {
+			return platform.Created(s.CreateEmployee(ctx, in.Body))
 		})
 	huma.Register(api, huma.Operation{OperationID: "get-employee", Method: http.MethodGet, Path: "/hrm/employees/{id}"},
-		func(ctx context.Context, in *idInput) (*employeeOutput, error) {
+		func(ctx context.Context, in *platform.IDInput) (*employeeOutput, error) {
 			e, err := s.Employee(ctx, in.ID)
 			return &employeeOutput{Body: e}, err
 		})
@@ -291,13 +263,13 @@ func registerHandlers(api huma.API, s *Service) {
 		})
 	huma.Register(api, huma.Operation{OperationID: "list-dependents", Method: http.MethodGet, Path: "/hrm/employees/{id}/dependents",
 		Description: "Each call is audited."},
-		func(ctx context.Context, in *idInput) (*dependentsOutput, error) {
+		func(ctx context.Context, in *platform.IDInput) (*dependentsOutput, error) {
 			ds, err := s.Dependents(ctx, in.ID)
 			return &dependentsOutput{CacheControl: "no-store", Body: ds}, err
 		})
 	huma.Register(api, huma.Operation{OperationID: "create-dependent", Method: http.MethodPost, Path: "/hrm/employees/{id}/dependents", DefaultStatus: http.StatusCreated},
-		func(ctx context.Context, in *createDependentInput) (*createdOutput, error) {
-			return created(s.SaveDependent(ctx, in.ID, 0, in.Body))
+		func(ctx context.Context, in *createDependentInput) (*platform.CreatedOutput, error) {
+			return platform.Created(s.SaveDependent(ctx, in.ID, 0, in.Body))
 		})
 	huma.Register(api, huma.Operation{OperationID: "update-dependent", Method: http.MethodPut, Path: "/hrm/employees/{id}/dependents/{dependent}", DefaultStatus: http.StatusNoContent},
 		func(ctx context.Context, in *dependentInput) (*struct{}, error) {
@@ -317,8 +289,8 @@ func registerLeaveHandlers(api huma.API, s *Service) {
 			return &leaveTypesOutput{Body: ts}, err
 		})
 	huma.Register(api, huma.Operation{OperationID: "create-leave-type", Method: http.MethodPost, Path: "/hrm/leave-types", DefaultStatus: http.StatusCreated},
-		func(ctx context.Context, in *leaveTypeInput) (*createdOutput, error) {
-			return created(s.SaveLeaveType(ctx, 0, in.Body))
+		func(ctx context.Context, in *leaveTypeInput) (*platform.CreatedOutput, error) {
+			return platform.Created(s.SaveLeaveType(ctx, 0, in.Body))
 		})
 	huma.Register(api, huma.Operation{OperationID: "update-leave-type", Method: http.MethodPut, Path: "/hrm/leave-types/{id}", DefaultStatus: http.StatusNoContent},
 		func(ctx context.Context, in *updateLeaveTypeInput) (*struct{}, error) {
@@ -349,11 +321,11 @@ func registerLeaveHandlers(api huma.API, s *Service) {
 			return out, err
 		})
 	huma.Register(api, huma.Operation{OperationID: "create-leave", Method: http.MethodPost, Path: "/hrm/leaves", DefaultStatus: http.StatusCreated},
-		func(ctx context.Context, in *newLeaveInput) (*createdOutput, error) {
-			return created(s.CreateLeave(ctx, in.Body))
+		func(ctx context.Context, in *newLeaveInput) (*platform.CreatedOutput, error) {
+			return platform.Created(s.CreateLeave(ctx, in.Body))
 		})
 	huma.Register(api, huma.Operation{OperationID: "get-leave", Method: http.MethodGet, Path: "/hrm/leaves/{id}"},
-		func(ctx context.Context, in *idInput) (*leaveOutput, error) {
+		func(ctx context.Context, in *platform.IDInput) (*leaveOutput, error) {
 			l, err := s.Leave(ctx, in.ID)
 			return &leaveOutput{Body: l}, err
 		})
@@ -362,11 +334,11 @@ func registerLeaveHandlers(api huma.API, s *Service) {
 			return nil, s.UpdateLeave(ctx, in.ID, in.Body)
 		})
 	huma.Register(api, huma.Operation{OperationID: "delete-leave", Method: http.MethodDelete, Path: "/hrm/leaves/{id}", DefaultStatus: http.StatusNoContent},
-		func(ctx context.Context, in *deleteDocInput) (*struct{}, error) {
+		func(ctx context.Context, in *platform.VersionInput) (*struct{}, error) {
 			return nil, s.DeleteLeave(ctx, in.ID, in.Version)
 		})
 	huma.Register(api, huma.Operation{OperationID: "list-leave-balances", Method: http.MethodGet, Path: "/hrm/employees/{id}/leave-balances"},
-		func(ctx context.Context, in *idInput) (*balancesOutput, error) {
+		func(ctx context.Context, in *platform.IDInput) (*balancesOutput, error) {
 			b, err := s.LeaveBalances(ctx, in.ID)
 			return &balancesOutput{Body: b}, err
 		})
@@ -383,8 +355,8 @@ func registerContractHandlers(api huma.API, s *Service) {
 			return &contractTypesOutput{Body: ts}, err
 		})
 	huma.Register(api, huma.Operation{OperationID: "create-contract-type", Method: http.MethodPost, Path: "/hrm/contract-types", DefaultStatus: http.StatusCreated},
-		func(ctx context.Context, in *contractTypeInput) (*createdOutput, error) {
-			return created(s.SaveContractType(ctx, 0, in.Body))
+		func(ctx context.Context, in *contractTypeInput) (*platform.CreatedOutput, error) {
+			return platform.Created(s.SaveContractType(ctx, 0, in.Body))
 		})
 	huma.Register(api, huma.Operation{OperationID: "update-contract-type", Method: http.MethodPut, Path: "/hrm/contract-types/{id}", DefaultStatus: http.StatusNoContent},
 		func(ctx context.Context, in *updateContractTypeInput) (*struct{}, error) {
@@ -399,17 +371,17 @@ func registerContractHandlers(api huma.API, s *Service) {
 		})
 	huma.Register(api, huma.Operation{OperationID: "list-employee-contracts", Method: http.MethodGet, Path: "/hrm/employees/{id}/contracts",
 		Description: "Originals, each followed by its appendices; without terms."},
-		func(ctx context.Context, in *idInput) (*contractsOutput, error) {
+		func(ctx context.Context, in *platform.IDInput) (*contractsOutput, error) {
 			cs, err := s.EmployeeContracts(ctx, in.ID)
 			return &contractsOutput{Body: cs}, err
 		})
 	huma.Register(api, huma.Operation{OperationID: "create-contract", Method: http.MethodPost, Path: "/hrm/contracts", DefaultStatus: http.StatusCreated},
-		func(ctx context.Context, in *newContractInput) (*createdOutput, error) {
-			return created(s.CreateContract(ctx, in.Body))
+		func(ctx context.Context, in *newContractInput) (*platform.CreatedOutput, error) {
+			return platform.Created(s.CreateContract(ctx, in.Body))
 		})
 	huma.Register(api, huma.Operation{OperationID: "get-contract", Method: http.MethodGet, Path: "/hrm/contracts/{id}",
 		Description: "Terms come with hrm.salary.view; each such read is audited."},
-		func(ctx context.Context, in *idInput) (*contractOutput, error) {
+		func(ctx context.Context, in *platform.IDInput) (*contractOutput, error) {
 			c, err := s.Contract(ctx, in.ID)
 			return &contractOutput{CacheControl: "no-store", Body: c}, err
 		})
@@ -418,7 +390,7 @@ func registerContractHandlers(api huma.API, s *Service) {
 			return nil, s.UpdateContract(ctx, in.ID, in.Body)
 		})
 	huma.Register(api, huma.Operation{OperationID: "delete-contract", Method: http.MethodDelete, Path: "/hrm/contracts/{id}", DefaultStatus: http.StatusNoContent},
-		func(ctx context.Context, in *deleteDocInput) (*struct{}, error) {
+		func(ctx context.Context, in *platform.VersionInput) (*struct{}, error) {
 			return nil, s.DeleteContract(ctx, in.ID, in.Version)
 		})
 }
@@ -436,11 +408,11 @@ func registerOvertimeHandlers(api huma.API, s *Service) {
 			return &selfServiceActionsOutput{Body: a}, err
 		})
 	huma.Register(api, huma.Operation{OperationID: "create-overtime", Method: http.MethodPost, Path: "/hrm/overtimes", DefaultStatus: http.StatusCreated},
-		func(ctx context.Context, in *newOvertimeInput) (*createdOutput, error) {
-			return created(s.CreateOvertime(ctx, in.Body))
+		func(ctx context.Context, in *newOvertimeInput) (*platform.CreatedOutput, error) {
+			return platform.Created(s.CreateOvertime(ctx, in.Body))
 		})
 	huma.Register(api, huma.Operation{OperationID: "get-overtime", Method: http.MethodGet, Path: "/hrm/overtimes/{id}"},
-		func(ctx context.Context, in *idInput) (*overtimeOutput, error) {
+		func(ctx context.Context, in *platform.IDInput) (*overtimeOutput, error) {
 			o, err := s.Overtime(ctx, in.ID)
 			return &overtimeOutput{Body: o}, err
 		})
@@ -449,7 +421,7 @@ func registerOvertimeHandlers(api huma.API, s *Service) {
 			return nil, s.UpdateOvertime(ctx, in.ID, in.Body)
 		})
 	huma.Register(api, huma.Operation{OperationID: "delete-overtime", Method: http.MethodDelete, Path: "/hrm/overtimes/{id}", DefaultStatus: http.StatusNoContent},
-		func(ctx context.Context, in *deleteDocInput) (*struct{}, error) {
+		func(ctx context.Context, in *platform.VersionInput) (*struct{}, error) {
 			return nil, s.DeleteOvertime(ctx, in.ID, in.Version)
 		})
 }
@@ -462,18 +434,18 @@ func registerTimesheetHandlers(api huma.API, s *Service) {
 		})
 	huma.Register(api, huma.Operation{OperationID: "get-timesheet-actions", Method: http.MethodGet, Path: "/hrm/timesheets/actions",
 		Description: "What the actor may do before picking a timesheet: create."},
-		func(ctx context.Context, _ *struct{}) (*actionsOutput, error) {
+		func(ctx context.Context, _ *struct{}) (*platform.ActionsOutput, error) {
 			actions, err := s.TimesheetActions(ctx)
-			out := &actionsOutput{}
+			out := &platform.ActionsOutput{}
 			out.Body.AllowedActions = actions
 			return out, err
 		})
 	huma.Register(api, huma.Operation{OperationID: "create-timesheet", Method: http.MethodPost, Path: "/hrm/timesheets", DefaultStatus: http.StatusCreated},
-		func(ctx context.Context, in *newTimesheetInput) (*createdOutput, error) {
-			return created(s.CreateTimesheet(ctx, in.Body))
+		func(ctx context.Context, in *newTimesheetInput) (*platform.CreatedOutput, error) {
+			return platform.Created(s.CreateTimesheet(ctx, in.Body))
 		})
 	huma.Register(api, huma.Operation{OperationID: "get-timesheet", Method: http.MethodGet, Path: "/hrm/timesheets/{id}"},
-		func(ctx context.Context, in *idInput) (*timesheetOutput, error) {
+		func(ctx context.Context, in *platform.IDInput) (*timesheetOutput, error) {
 			t, err := s.Timesheet(ctx, in.ID)
 			return &timesheetOutput{Body: t}, err
 		})
@@ -483,7 +455,7 @@ func registerTimesheetHandlers(api huma.API, s *Service) {
 			return nil, s.SaveTimesheet(ctx, in.ID, in.Body)
 		})
 	huma.Register(api, huma.Operation{OperationID: "delete-timesheet", Method: http.MethodDelete, Path: "/hrm/timesheets/{id}", DefaultStatus: http.StatusNoContent},
-		func(ctx context.Context, in *deleteDocInput) (*struct{}, error) {
+		func(ctx context.Context, in *platform.VersionInput) (*struct{}, error) {
 			return nil, s.DeleteTimesheet(ctx, in.ID, in.Version)
 		})
 }
@@ -531,9 +503,9 @@ func registerPayrollHandlers(api huma.API, s *Service) {
 		})
 	huma.Register(api, huma.Operation{OperationID: "get-payroll-actions", Method: http.MethodGet, Path: "/hrm/payrolls/actions",
 		Description: "What the actor may do before picking a payroll: create."},
-		func(ctx context.Context, _ *struct{}) (*actionsOutput, error) {
+		func(ctx context.Context, _ *struct{}) (*platform.ActionsOutput, error) {
 			actions, err := s.PayrollActions(ctx)
-			out := &actionsOutput{}
+			out := &platform.ActionsOutput{}
 			out.Body.AllowedActions = actions
 			return out, err
 		})
@@ -545,12 +517,12 @@ func registerPayrollHandlers(api huma.API, s *Service) {
 		})
 	huma.Register(api, huma.Operation{OperationID: "get-payroll", Method: http.MethodGet, Path: "/hrm/payrolls/{id}",
 		Description: "Each employee's pay comes with hrm.salary.view; each such read is audited."},
-		func(ctx context.Context, in *idInput) (*payrollOutput, error) {
+		func(ctx context.Context, in *platform.IDInput) (*payrollOutput, error) {
 			p, err := s.Payroll(ctx, in.ID)
 			return &payrollOutput{CacheControl: "no-store", Body: p}, err
 		})
 	huma.Register(api, huma.Operation{OperationID: "delete-payroll", Method: http.MethodDelete, Path: "/hrm/payrolls/{id}", DefaultStatus: http.StatusNoContent},
-		func(ctx context.Context, in *deleteDocInput) (*struct{}, error) {
+		func(ctx context.Context, in *platform.VersionInput) (*struct{}, error) {
 			return nil, s.DeletePayroll(ctx, in.ID, in.Version)
 		})
 	huma.Register(api, huma.Operation{OperationID: "compute-payroll", Method: http.MethodPost, Path: "/hrm/payrolls/{id}/compute", DefaultStatus: http.StatusAccepted,

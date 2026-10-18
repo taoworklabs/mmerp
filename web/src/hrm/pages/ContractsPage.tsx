@@ -1,16 +1,15 @@
 import { Button } from '@mantine/core'
-import { IconCalendarDue, IconCircleDot, IconFileCertificate } from '@tabler/icons-react'
+import { IconCalendarDue, IconFileCertificate } from '@tabler/icons-react'
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { api, unwrap, type ContractListItem, type ContractSort } from '@/shared/api/hrm'
-import { DocumentStatus, useStatusLabel } from '@/shared/document'
-import { errorText, formatDate } from '@/shared/i18n'
-import { DataTable, type Column } from '@/shared/ui/DataTable'
+import { DocumentStatus, DocumentStatusFilter, type DocStatus } from '@/shared/document'
+import { formatDate } from '@/shared/i18n'
+import { type Column } from '@/shared/ui/DataTable'
 import { FilterChip, OrgUnitFilter, SearchInput } from '@/shared/ui/form'
 import { useListView } from '@/shared/ui/ListView'
 import { ListPage } from '@/shared/ui/page'
 import { SidePanel, usePeek } from '@/shared/ui/SidePanel'
-import { ContentSkeleton, EmptyState, ErrorState } from '@/shared/ui/states'
 import { icon } from '@/shared/ui/theme'
 import { useListParams } from '@/shared/url/listParams'
 import ContractPreview from '../components/ContractPreview'
@@ -19,13 +18,11 @@ import { contractDocType, hrmKeys } from '../keys'
 
 // Every sort the API offers; `satisfies` fails tsc if the API drops one.
 const sorts = ['-start_date', 'start_date', 'end_date', '-end_date', '-number', 'number'] as const satisfies readonly ContractSort[]
-const statuses = ['draft', 'pending_approval', 'posted', 'cancelled'] as const
 const defaults = { filters: { q: '', status: '', contract_type_id: '', org_unit_id: '', expiring: '' }, sort: '-start_date', sorts: [...sorts], pageSize: 50 }
 
 // ContractsPage: every contract in the user's scope, without amounts. New contracts start from the employee.
 export function ContractsPage() {
   const { t } = useTranslation()
-  const statusLabel = useStatusLabel()
   const types = useContractTypes()
   const [params, set, filterBar] = useListParams(defaults)
   const peek = usePeek()
@@ -40,7 +37,7 @@ export function ContractsPage() {
           params: {
             query: {
               q: q || undefined,
-              status: (status || undefined) as (typeof statuses)[number] | undefined,
+              status: (status || undefined) as DocStatus | undefined,
               contract_type_id: contract_type_id ? Number(contract_type_id) : undefined,
               org_unit_id: org_unit_id ? Number(org_unit_id) : undefined,
               expiring: expiring === '1' || undefined,
@@ -77,37 +74,6 @@ export function ContractsPage() {
   const view = useListView('hrm.contracts', columns)
   const open = list.data?.items.find((c) => String(c.id) === peek.id)
 
-  let body
-  if (list.isPending) body = <ContentSkeleton />
-  else if (list.isError) body = <ErrorState message={errorText(t, list.error)} onRetry={() => void list.refetch()} />
-  else if (list.data.items.length === 0)
-    body = filterBar.active ? (
-      <EmptyState
-        title={t('hrm.contracts.no_results')}
-        action={
-          <Button variant="default" onClick={filterBar.clear}>
-            {t('hrm.common.clear_filters')}
-          </Button>
-        }
-      />
-    ) : (
-      <EmptyState title={t('hrm.contract.empty')} description={t('hrm.contracts.empty_description')} />
-    )
-  else
-    body = (
-      <DataTable
-        label={t('hrm.contracts.title')}
-        columns={view.columns}
-        onResize={view.onResize}
-        rows={list.data.items}
-        rowKey={(c) => c.id}
-        href={(c) => `/hrm/contracts/${c.id}`}
-        onRowClick={(c) => peek.open(c.id)}
-        sort={params.sort}
-        onSort={(sort) => set({ sort })}
-      />
-    )
-
   return (
     <ListPage
       title={t('hrm.contracts.title')}
@@ -116,12 +82,7 @@ export function ContractsPage() {
       filters={
         <>
           <SearchInput label={t('hrm.contracts.search')} placeholder={t('hrm.common.search_request_hint')} value={q} onSearch={(v) => set({ filters: { q: v } })} />
-          <FilterChip
-            label={t('hrm.contract.status')}
-            icon={IconCircleDot}
-            data={statuses.map((s) => ({ value: s, label: statusLabel(contractDocType, s) }))}
-            {...filterBar.bind('status')}
-          />
+          <DocumentStatusFilter docType={contractDocType} {...filterBar.bind('status')} />
           <FilterChip
             label={t('hrm.contract.kind')}
             icon={IconFileCertificate}
@@ -145,17 +106,23 @@ export function ContractsPage() {
         </>
       }
       tools={view.tools}
-      paging={
-        list.data && {
-          page: params.page,
-          pageSize: params.pageSize,
-          total: list.data.total,
-          onPage: (page) => set({ page }),
-          onPageSize: (pageSize) => set({ pageSize }),
-        }
-      }
+      list={{
+        query: list,
+        table: {
+          label: t('hrm.contracts.title'),
+          columns: view.columns,
+          onResize: view.onResize,
+          rowKey: (c) => c.id,
+          href: (c) => `/hrm/contracts/${c.id}`,
+          onRowClick: (c) => peek.open(c.id),
+          sort: params.sort,
+          onSort: (sort) => set({ sort }),
+        },
+        empty: { title: t('hrm.contract.empty'), description: t('hrm.contracts.empty_description') },
+        noResults: t('hrm.contracts.no_results'),
+        paging: { page: params.page, pageSize: params.pageSize, onPage: (page) => set({ page }), onPageSize: (pageSize) => set({ pageSize }) },
+      }}
     >
-      {body}
       <SidePanel title={open?.number ?? ''} href={`/hrm/contracts/${open?.id ?? ''}`} opened={!!open} onClose={peek.close}>
         {open && <ContractPreview id={open.id} />}
       </SidePanel>

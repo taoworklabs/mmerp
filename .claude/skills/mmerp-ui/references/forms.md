@@ -111,8 +111,9 @@ The page keys the form on the version (`<DocForm key={d.version} … />`), so a 
 | Fractional quantity, percent | `DecimalField` with its `scale` |
 | Money | `MoneyField` (minor units, grouped, right-aligned) |
 | One of a list | `SelectField` (search past 7 options; server search with `onSearch`) |
-| A business record (customer, item, employee) | The owning area's picker (`CustomerField`, `ItemField`), built on `SelectField`, label `code · name` |
+| A business record (customer, item, employee) | The owning area's picker (`EmployeeField`, `CustomerField`, `ItemField`), built on `RemoteSelectField`, label `code · name` |
 | Org unit | `OrgUnitField` |
+| Legal entity | `LegalEntityField` |
 | File | `FileField` |
 | Sensitive value | `SensitiveField` |
 

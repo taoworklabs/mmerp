@@ -8,11 +8,9 @@ import (
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
-	"github.com/shopspring/decimal"
 
 	"github.com/taoworklabs/mmerp/internal/core/audit"
 	"github.com/taoworklabs/mmerp/internal/core/record"
-	"github.com/taoworklabs/mmerp/internal/core/setting"
 	"github.com/taoworklabs/mmerp/internal/modules/sales/internal/store"
 	"github.com/taoworklabs/mmerp/internal/platform"
 )
@@ -126,8 +124,8 @@ func (s *Service) doc(ctx context.Context, k kind, id int64) (Doc, error) {
 	}
 	for i, l := range lines {
 		out.Lines[i] = Line{
-			LineInput: LineInput{ItemID: l.ItemID, Description: l.Description, Quantity: plain(l.Quantity), UnitPrice: l.UnitPrice,
-				DiscountPercent: plain(l.DiscountPercent), VatRate: l.VatRate},
+			LineInput: LineInput{ItemID: l.ItemID, Description: l.Description, Quantity: platform.PlainDecimal(l.Quantity), UnitPrice: l.UnitPrice,
+				DiscountPercent: platform.PlainDecimal(l.DiscountPercent), VatRate: l.VatRate},
 			ItemCode: l.ItemCode, Unit: l.Unit, Amount: l.Amount, Discount: l.Discount, Vat: l.Vat,
 		}
 	}
@@ -338,11 +336,7 @@ func (s *Service) prepare(ctx context.Context, k kind, f DocFields) (prepared, e
 	for _, r := range rows {
 		items[r.ID] = r
 	}
-	le, err := s.d.IAM.LegalEntityOf(ctx, f.OrgUnitID)
-	if err != nil {
-		return p, err
-	}
-	mode, err := s.d.Setting.GetFor(ctx, le, setting.Rounding)
+	mode, err := s.d.Setting.RoundingOf(ctx, f.OrgUnitID)
 	if err != nil {
 		return p, err
 	}
@@ -354,7 +348,7 @@ func (s *Service) prepare(ctx context.Context, k kind, f DocFields) (prepared, e
 		}
 		list[i] = it.Price
 	}
-	amts, totals, maxDiscount, err := compute(f.Lines, list, platform.Rounding(mode))
+	amts, totals, maxDiscount, err := compute(f.Lines, list, mode)
 	if err != nil {
 		return p, err
 	}
@@ -446,9 +440,6 @@ func (s *Service) CreateOrderFromQuote(ctx context.Context, quoteID int64) (int6
 	})
 	return id, err
 }
-
-// plain writes a stored numeric without trailing zeros: "2.000" is "2".
-func plain(s string) string { return decimal.RequireFromString(s).String() }
 
 func customerCopy(h store.GetHeaderRow) CustomerCopy {
 	return CustomerCopy{ID: h.CustomerID, Code: h.CustomerCode, Name: h.CustomerName, TaxCode: platform.TextPtr(h.CustomerTaxCode),

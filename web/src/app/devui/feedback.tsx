@@ -14,7 +14,7 @@ export function States() {
       <ContentSkeleton />
       <ReadOnlyBanner />
       <EmptyState title={t('shared.devui.empty')} description={t('shared.devui.empty_description')} />
-      <EmptyState title={t('shared.devui.no_results')} action={<Button variant="default">{t('shared.devui.clear_filters')}</Button>} />
+      <EmptyState title={t('shared.devui.no_results')} action={<Button variant="default">{t('shared.list.clear_filters')}</Button>} />
       <ErrorState message={t('shared.error.network_error')} onRetry={() => {}} />
       <NotFoundPage back={{ to: '/dev/ui', label: t('shared.devui.back') }} />
     </Demo>

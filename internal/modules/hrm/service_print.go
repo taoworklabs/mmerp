@@ -22,26 +22,19 @@ func (s *Service) registerPrints() {
 		Data: s.payslips, Layouts: []printing.Layout{payslipLayout1}})
 }
 
-// legalEntityPrint is the employer as a print shows it.
-type legalEntityPrint struct {
-	Name    string  `json:"name"`
-	TaxCode *string `json:"tax_code"`
-	Address *string `json:"address"`
-}
-
 // contractPrint is what a contract's print shows; frozen as is once the contract is posted.
 type contractPrint struct {
-	Number       string           `json:"number"`
-	ParentNumber *string          `json:"parent_number"`
-	Employer     legalEntityPrint `json:"employer"`
-	EmployeeCode string           `json:"employee_code"`
-	EmployeeName string           `json:"employee_name"`
-	DateOfBirth  *string          `json:"date_of_birth"`
-	Address      *string          `json:"address"`
-	Kind         string           `json:"kind"`
-	StartDate    string           `json:"start_date"`
-	EndDate      *string          `json:"end_date"`
-	Terms        ContractTerms    `json:"terms"`
+	Number       string               `json:"number"`
+	ParentNumber *string              `json:"parent_number"`
+	Employer     printing.LegalEntity `json:"employer"`
+	EmployeeCode string               `json:"employee_code"`
+	EmployeeName string               `json:"employee_name"`
+	DateOfBirth  *string              `json:"date_of_birth"`
+	Address      *string              `json:"address"`
+	Kind         string               `json:"kind"`
+	StartDate    string               `json:"start_date"`
+	EndDate      *string              `json:"end_date"`
+	Terms        ContractTerms        `json:"terms"`
 }
 
 // contractPrint reads a contract as printed, salary included: printing checked the
@@ -60,7 +53,7 @@ func (s *Service) contractPrint(ctx context.Context, id int64) ([]printing.Part,
 	if err != nil {
 		return nil, err
 	}
-	le, err := q.PrintLegalEntity(ctx, d.LegalEntityID)
+	employer, err := s.d.Printing.LegalEntity(ctx, d.LegalEntityID)
 	if err != nil {
 		return nil, err
 	}
@@ -70,7 +63,7 @@ func (s *Service) contractPrint(ctx context.Context, id int64) ([]printing.Part,
 	}
 	b, err := json.Marshal(contractPrint{
 		Number: d.Number, ParentNumber: platform.TextPtr(r.ParentNumber),
-		Employer:     legalEntityPrint{Name: le.Name, TaxCode: platform.TextPtr(le.TaxCode), Address: platform.TextPtr(le.Address)},
+		Employer:     employer,
 		EmployeeCode: e.Code, EmployeeName: e.FullName, DateOfBirth: platform.DatePtr(e.DateOfBirth), Address: platform.TextPtr(e.Address),
 		Kind: r.ContractTypeName, StartDate: *platform.DatePtr(r.StartDate), EndDate: platform.DatePtr(r.EndDate), Terms: terms,
 	})
@@ -100,10 +93,7 @@ func contractLayout1(p *printing.Page, raw json.RawMessage) error {
 	if c.ParentNumber != nil {
 		p.Center(p.T("hrm.print.contract.parent", map[string]any{"number": *c.ParentNumber}))
 	}
-	p.Heading(t("employer"))
-	p.Field(t("employer_name"), c.Employer.Name)
-	p.Field(t("tax_code"), or(c.Employer.TaxCode, same))
-	p.Field(t("address"), or(c.Employer.Address, same))
+	p.LegalEntity(t("employer"), t("employer_name"), c.Employer)
 	p.Heading(t("employee"))
 	p.Field(t("employee_name"), c.EmployeeName)
 	p.Field(t("employee_code"), c.EmployeeCode)
@@ -139,7 +129,7 @@ func contractLayout1(p *printing.Page, raw json.RawMessage) error {
 type payslipPrint struct {
 	Number        string                   `json:"number"`
 	PeriodStart   string                   `json:"period_start"`
-	Employer      legalEntityPrint         `json:"employer"`
+	Employer      printing.LegalEntity     `json:"employer"`
 	EmployeeCode  string                   `json:"employee_code"`
 	EmployeeName  string                   `json:"employee_name"`
 	OrgUnit       string                   `json:"org_unit"`
@@ -165,7 +155,7 @@ func (s *Service) payslips(ctx context.Context, id int64) ([]printing.Part, erro
 	if err != nil {
 		return nil, err
 	}
-	le, err := q.PrintLegalEntity(ctx, p.LegalEntityID)
+	employer, err := s.d.Printing.LegalEntity(ctx, p.LegalEntityID)
 	if err != nil {
 		return nil, err
 	}
@@ -185,7 +175,6 @@ func (s *Service) payslips(ctx context.Context, id int64) ([]printing.Part, erro
 	for _, t := range totals {
 		units[t.OrgUnitID] = t.OrgUnitName
 	}
-	employer := legalEntityPrint{Name: le.Name, TaxCode: platform.TextPtr(le.TaxCode), Address: platform.TextPtr(le.Address)}
 	parts := make([]printing.Part, 0, len(lines))
 	for _, t := range totals {
 		for _, l := range lines {

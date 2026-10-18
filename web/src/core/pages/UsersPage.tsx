@@ -43,7 +43,7 @@ export function UsersPage() {
         title={t('core.common.no_results')}
         action={
           <Button variant="default" onClick={() => set({ filters: defaults.filters })}>
-            {t('core.common.clear_filters')}
+            {t('shared.list.clear_filters')}
           </Button>
         }
       />

@@ -7,7 +7,6 @@ import (
 	"errors"
 	"maps"
 	"slices"
-	"time"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
@@ -105,7 +104,7 @@ func (s *Service) PayrollActions(ctx context.Context) ([]string, error) {
 // CreatePayroll adds a draft payroll of a legal entity and month and queues its computation.
 func (s *Service) CreatePayroll(ctx context.Context, in NewPayroll) (PayrollJob, error) {
 	var out PayrollJob
-	start, end, err := period(in.Month)
+	start, end, err := platform.MonthPeriod(in.Month)
 	if err != nil {
 		return out, err
 	}
@@ -203,7 +202,7 @@ func (s *Service) computePayroll(ctx context.Context, j *river.Job[payrollComput
 		if err != nil {
 			return err
 		}
-		res := calcPayroll(prm, platform.Rounding(b.Rounding), in)
+		res := calcPayroll(prm, b.Rounding, in)
 		var cost int64
 		for i := range b.Employees {
 			cost += res[i].Cost
@@ -442,7 +441,7 @@ func (s *Service) SavePayrollAdjustments(ctx context.Context, id int64, in Payro
 			return err
 		}
 		for _, a := range in.Items {
-			start, _, err := period(a.SourcePeriod)
+			start, _, err := platform.MonthPeriod(a.SourcePeriod)
 			if err != nil || a.Amount == 0 || !start.Time.Before(p.PeriodStart.Time) {
 				return ErrAdjustment
 			}
@@ -493,7 +492,7 @@ func (s *Service) Payrolls(ctx context.Context, f PayrollFilter) (PayrollList, e
 	}
 	var start pgtype.Date
 	if f.Month != "" {
-		if start, _, err = period(f.Month); err != nil {
+		if start, _, err = platform.MonthPeriod(f.Month); err != nil {
 			return out, err
 		}
 	}
@@ -505,7 +504,7 @@ func (s *Service) Payrolls(ctx context.Context, f PayrollFilter) (PayrollList, e
 		out.Total = r.Total
 		out.Items = append(out.Items, PayrollListItem{ID: r.ID, Number: r.Number, Status: r.Status, LegalEntityID: r.LegalEntityID,
 			LegalEntityName: r.LegalEntityName, PeriodStart: *platform.DatePtr(r.PeriodStart), PeriodEnd: *platform.DatePtr(r.PeriodEnd),
-			ComputedAt: instant(r.ComputedAt)})
+			ComputedAt: platform.Instant(r.ComputedAt)})
 	}
 	return out, err
 }
@@ -547,7 +546,7 @@ func (s *Service) Payroll(ctx context.Context, id int64) (Payroll, error) {
 		}
 		out = Payroll{ID: id, Number: d.Number, Status: string(d.Status), Version: d.Version, LegalEntityID: p.LegalEntityID,
 			LegalEntityName: p.LegalEntityName, PeriodStart: *platform.DatePtr(p.PeriodStart), PeriodEnd: *platform.DatePtr(p.PeriodEnd),
-			ComputedAt: instant(p.ComputedAt), AllowedActions: actions}
+			ComputedAt: platform.Instant(p.ComputedAt), AllowedActions: actions}
 		if p.ComputedAt.Valid && (d.Status == record.Draft || d.Status == record.PendingApproval) {
 			if out.SourcesChanged, err = s.sourcesChanged(ctx, p); err != nil {
 				return err
@@ -619,13 +618,6 @@ func (s *Service) visiblePayroll(ctx context.Context, id int64) (store.GetPayrol
 		return store.GetPayrollRow{}, platform.OrErr(err, platform.ErrNotFound)
 	}
 	return store.New(platform.DBFrom(ctx)).GetPayroll(ctx, id)
-}
-
-func instant(t pgtype.Timestamptz) *string {
-	if !t.Valid {
-		return nil
-	}
-	return new(t.Time.UTC().Format(time.RFC3339))
 }
 
 // payrollColumns are the money columns of the export, in order.

@@ -81,7 +81,7 @@ Where each one goes, and how many per place: `actions.md`.
 
 Both render a tinted badge: 20px tall, 12px text, weight 500, radius 4, sentence case, no dot, no icon. The label always names the state. Module progress (delivery, payment, ordered) uses `neutral` or `info`, so the four document colours keep their meaning; the area wraps it in its own small component (e.g. `sales/components/DocProgress.tsx`).
 
-A status label outside the badge (a status filter's options) comes from `useStatusLabel()` (`shared/document`): `label(docType, status)`, with the same `docType` the area passes to `DocumentStatus` (its record type, e.g. `docTypeOf(kind)` in sales).
+A document list filters by status with `DocumentStatusFilter` (`shared/document`). Any other status label outside the badge comes from `useStatusLabel()` (`shared/document`): `label(docType, status)`, with the same `docType` the area passes to `DocumentStatus` (its record type, e.g. `docTypeOf(kind)` in sales).
 
 ```tsx
 <StatusBadge tone={active ? 'positive' : 'neutral'}>{t(active ? 'sales.customer.status.active' : 'sales.customer.status.inactive')}</StatusBadge>
@@ -110,6 +110,8 @@ Every field is wired to React Hook Form and renders: label above (12px, 600, `di
 | `SensitiveValue` | The read-only face of a sensitive value in a `FieldList`: masked, "Hiện" shows it as text with "Ẩn" beside it; each reveal is audited |
 | `EditablePanel` | A group of a record's or document's values in a `Panel` card: title, optional `icon`, its read view (`children`: a `FieldList` showing every value the form edits); with `editable`, "Sửa" on the title line turns the card into `edit(close)` (the group's `Form` → `FormFields` → `FormActions onCancel={close}`) in place, focus into the first field, back once saved or cancelled. Never a `FormModal` for a group |
 | `OrgUnitField` | An org unit within the user's scope; the chosen unit shows its kind icon, as in the list |
+| `LegalEntityField` | A legal entity where the user holds a permission; the only one is picked already |
+| `RemoteSelectField` | A record searched on the server (debounced, a page of 20), labelled `code · name`; keeps the label of its value when a search does not return it. Areas wrap it in their picker (`EmployeeField`, `CustomerField`, `ItemField`) |
 
 Every field takes `bare` for a table cell: no visible label (kept as `aria-label`), no description, numbers right-aligned without spin buttons.
 
@@ -125,7 +127,7 @@ Every field takes `bare` for a table cell: no visible label (kept as `aria-label
 | `LinesTotals` | Totals under the lines, right-aligned, the last row bold, with a `note` on where the figures come from |
 | `InlineEditField` | One value of a record page that saves on its own (a user's email), apart from the record's groups; turns into an input on click/Enter; Enter or ✓ saves, Esc or ✕ cancels, blur keeps it open; `readOnly` without permission |
 
-A list's filter bar holds `SearchInput` and filter chips: `FilterChip` (options from `data`; `icon` is the icon component, the chip sizes it; `searchable`; `clearable={false}` for a filter that always holds a value), `OrgUnitFilter`, `MonthFilter`, `YearFilter`. A chip is named after its filter and reads "Name: value", tinted with its own ✕ (with a tooltip), once set; `{...filterBar.bind(key)}` from `useListParams` wires one to the URL; areas set no width (`tables.md`).
+A list's filter bar holds `SearchInput` and filter chips: `FilterChip` (options from `data`; `icon` is the icon component, the chip sizes it; `searchable`; `clearable={false}` for a filter that always holds a value), `OrgUnitFilter`, `LegalEntityFilter` (always holds one: `useLegalEntities(scope, picked)` gives the options and the chosen one, the first by default), `MonthFilter`, `YearFilter`. A chip is named after its filter and reads "Name: value", tinted with its own ✕ (with a tooltip), once set; `{...filterBar.bind(key)}` from `useListParams` wires one to the URL; areas set no width (`tables.md`).
 
 To switch between views of one feed (an activity feed's All · Comments · Changes · Views), use Mantine's `SegmentedControl`: the theme draws it as a thin frame of plain labels with the chosen one tinted and edged in primary (`SegmentedControl.module.css`); set nothing on it but `w="fit-content"`.
 
@@ -135,7 +137,7 @@ To switch between views of one feed (an activity feed's All · Comments · Chang
 | --- | --- |
 | `DataTable` | Every table. Columns declare `role` (`title`, `status`, `meta`, `hidden`), `kind` (`text`, the default, `person`, `code`, `date`, `number`, `status`: look and width), `sortable`, `band`, `strong`, `width`; a zero figure or an empty cell shows "–". Framed (1px `border`, radius 6) wherever it is part of a page; as a list page's whole content it fills the page unframed (`ListPage` drops the frame); rows 40px, header 36px on the table header tone (12px, 600) over a rule, row hover tint, cards below 1024px or with `cards` (a `DetailTabs` tab). Props: `href` (first column links the row), `onRowClick` (side panel, settings modal), `menu` (row "…"), `selection` (checkbox column), `onResize` (drag or ←/→ on a column edge), `group`, `footer`, `maxHeight` (without it the table takes the height its parent gives, e.g. a list page's frame). Rules in `tables.md` |
 | `TreeList` | A hierarchy (the org tree): rows 36px joined to their parent by guide lines, each branch folds (all open at first; from 1024px a folded one says how many units sit directly under it). Props: `nodes` (nested), `render` (the name), `meta` (quiet facts after it), `menu` (row "…"), `toggleLabel`. Unframed; below 1024px rows and toggles are 44px and `meta` is left out |
-| `ListPage` | `tabs` (ways to view the same list, e.g. tree and table: a `Tabs` element under the header, its line replacing the header rule; the choice is on the URL), `filters` (left), `onClearFilters` (given while a filter is set: "Clear filters" ends the chips), `tools` (right: `useListView().tools`), `bulk` (replaces the bar while rows are selected), `paging`. From 1024px it fills the window and only its content scrolls |
+| `ListPage` | `tabs` (ways to view the same list, e.g. tree and table: a `Tabs` element under the header, its line replacing the header rule; the choice is on the URL), `filters` (left), `onClearFilters` (given while a filter is set: "Clear filters" ends the chips), `tools` (right: `useListView().tools`), `bulk` (replaces the bar while rows are selected), `list` (the list query, the `DataTable` props but `rows`, the `empty` and `noResults` texts and `paging`: it shows loading, error, empty, no results with "Clear filters", or the table, then the paging bar; children come before it). From 1024px it fills the window and only its content scrolls |
 | `useListView(listKey, columns)` | The user's saved views and column choices for a list, stored on the server; returns `columns`, `onResize`, `tools` |
 | `BulkBar` | "N selected", the bulk actions (children), Clear selection |
 | `SidePanel` + `usePeek` | Read-only preview of a list row on the right, 480px, not modal, with "Open full page"; the open id on the URL (`?peek=`) |

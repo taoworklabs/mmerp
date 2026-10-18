@@ -6,7 +6,6 @@
   "hrm.employees.empty_description": "Hồ sơ nhân viên của các đơn vị được phân quyền hiện ở đây.",
   "hrm.employees.create": "Tạo nhân viên",
   "hrm.employees.no_results": "Không có kết quả.",
-  "hrm.common.clear_filters": "Xóa bộ lọc",
   "hrm.employees.search": "Tìm kiếm",
   "hrm.employees.search_hint": "Mã hoặc họ tên, nhấn Enter",
   "hrm.employees.all": "Tất cả",

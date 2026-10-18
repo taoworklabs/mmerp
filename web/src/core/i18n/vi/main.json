@@ -106,7 +106,6 @@
   "core.user.search": "Tìm người dùng",
   "core.user.search_hint": "Họ tên hoặc tên đăng nhập, nhấn Enter",
   "core.common.no_results": "Không có kết quả",
-  "core.common.clear_filters": "Xóa bộ lọc",
   "core.mail.section.server": "Kết nối",
   "core.mail.section.server_hint": "Địa chỉ và cách kết nối tới máy chủ SMTP.",
   "core.mail.section.login": "Đăng nhập",

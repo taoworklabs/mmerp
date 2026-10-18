@@ -3,7 +3,6 @@ package hrm
 import (
 	"context"
 	"errors"
-	"net/http"
 	"slices"
 	"time"
 
@@ -77,7 +76,7 @@ func (s *Service) Timesheets(ctx context.Context, f TimesheetFilter) (TimesheetL
 	}
 	var start pgtype.Date
 	if f.Month != "" {
-		if start, _, err = period(f.Month); err != nil {
+		if start, _, err = platform.MonthPeriod(f.Month); err != nil {
 			return out, err
 		}
 	}
@@ -181,7 +180,7 @@ func timesheetWarnings(ctx context.Context, cal calendar, t store.GetTimesheetRo
 
 // CreateTimesheet adds an empty draft for an org unit and month.
 func (s *Service) CreateTimesheet(ctx context.Context, in NewTimesheet) (int64, error) {
-	start, end, err := period(in.Month)
+	start, end, err := platform.MonthPeriod(in.Month)
 	if err != nil {
 		return 0, err
 	}
@@ -206,7 +205,7 @@ func (s *Service) CreateTimesheet(ctx context.Context, in NewTimesheet) (int64, 
 
 // SaveTimesheet replaces a draft's period and all its lines, at the version the actor saw.
 func (s *Service) SaveTimesheet(ctx context.Context, id int64, in TimesheetUpdate) error {
-	start, end, err := period(in.Month)
+	start, end, err := platform.MonthPeriod(in.Month)
 	if err != nil {
 		return err
 	}
@@ -282,7 +281,7 @@ func timesheetLines(ctx context.Context, id int64) ([]TimesheetLine, error) {
 	rows, err := store.New(platform.DBFrom(ctx)).TimesheetLines(ctx, id)
 	out := make([]TimesheetLine, len(rows))
 	for i, r := range rows {
-		out[i] = TimesheetLine{EmployeeID: r.EmployeeID, Date: *platform.DatePtr(r.Date), Days: plain(r.Days)}
+		out[i] = TimesheetLine{EmployeeID: r.EmployeeID, Date: *platform.DatePtr(r.Date), Days: platform.PlainDecimal(r.Days)}
 	}
 	return out, err
 }
@@ -332,13 +331,4 @@ func checkLines(t store.GetTimesheetRow, emps []TimesheetEmployee, lines []Times
 		ids[i], dates[i], days[i] = l.EmployeeID, pgtype.Date{Time: date, Valid: true}, d.String()
 	}
 	return ids, dates, days, nil
-}
-
-// period turns YYYY-MM into its first and last day: payroll periods are calendar months.
-func period(month string) (start, end pgtype.Date, err error) {
-	t, err := time.Parse("2006-01", month)
-	if err != nil {
-		return start, end, &platform.Error{Status: http.StatusUnprocessableEntity, Code: "invalid_request", Params: map[string]any{"fields": []string{"month"}}}
-	}
-	return pgtype.Date{Time: t, Valid: true}, pgtype.Date{Time: t.AddDate(0, 1, -1), Valid: true}, nil
 }

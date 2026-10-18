@@ -5,31 +5,9 @@ import (
 	"net/http"
 
 	"github.com/danielgtaylor/huma/v2"
+
+	"github.com/taoworklabs/mmerp/internal/platform"
 )
-
-type idInput struct {
-	ID int64 `path:"id"`
-}
-
-type versionInput struct {
-	ID      int64 `path:"id"`
-	Version int32 `query:"version" required:"true"`
-}
-
-type createdOutput struct {
-	Body struct {
-		ID int64 `json:"id"`
-	}
-}
-
-func created(id int64, err error) (*createdOutput, error) {
-	if err != nil {
-		return nil, err
-	}
-	out := &createdOutput{}
-	out.Body.ID = id
-	return out, nil
-}
 
 type actionsOutput struct{ Body Actions }
 
@@ -76,11 +54,11 @@ func registerHandlers(api huma.API, s *Service) {
 			return &actionsOutput{Body: a}, err
 		})
 	huma.Register(api, huma.Operation{OperationID: "create-customer", Method: http.MethodPost, Path: "/sales/customers", DefaultStatus: http.StatusCreated},
-		func(ctx context.Context, in *customerInput) (*createdOutput, error) {
-			return created(s.CreateCustomer(ctx, in.Body))
+		func(ctx context.Context, in *customerInput) (*platform.CreatedOutput, error) {
+			return platform.Created(s.CreateCustomer(ctx, in.Body))
 		})
 	huma.Register(api, huma.Operation{OperationID: "get-customer", Method: http.MethodGet, Path: "/sales/customers/{id}"},
-		func(ctx context.Context, in *idInput) (*customerOutput, error) {
+		func(ctx context.Context, in *platform.IDInput) (*customerOutput, error) {
 			c, err := s.Customer(ctx, in.ID)
 			return &customerOutput{Body: c}, err
 		})
@@ -95,8 +73,8 @@ func registerHandlers(api huma.API, s *Service) {
 			return &itemsOutput{Body: l}, err
 		})
 	huma.Register(api, huma.Operation{OperationID: "create-item", Method: http.MethodPost, Path: "/sales/items", DefaultStatus: http.StatusCreated},
-		func(ctx context.Context, in *itemInput) (*createdOutput, error) {
-			return created(s.CreateItem(ctx, in.Body))
+		func(ctx context.Context, in *itemInput) (*platform.CreatedOutput, error) {
+			return platform.Created(s.CreateItem(ctx, in.Body))
 		})
 	huma.Register(api, huma.Operation{OperationID: "update-item", Method: http.MethodPut, Path: "/sales/items/{id}", DefaultStatus: http.StatusNoContent},
 		func(ctx context.Context, in *updateItemInput) (*struct{}, error) {
@@ -128,11 +106,11 @@ func registerHandlers(api huma.API, s *Service) {
 			})
 		huma.Register(api, huma.Operation{OperationID: "create-" + d.one, Method: http.MethodPost, Path: d.path, DefaultStatus: http.StatusCreated,
 			Description: "Sending the same request_id again returns the document created the first time."},
-			func(ctx context.Context, in *newDocInput) (*createdOutput, error) {
-				return created(d.create(ctx, in.Body))
+			func(ctx context.Context, in *newDocInput) (*platform.CreatedOutput, error) {
+				return platform.Created(d.create(ctx, in.Body))
 			})
 		huma.Register(api, huma.Operation{OperationID: "get-" + d.one, Method: http.MethodGet, Path: d.path + "/{id}"},
-			func(ctx context.Context, in *idInput) (*docOutput, error) {
+			func(ctx context.Context, in *platform.IDInput) (*docOutput, error) {
 				doc, err := d.get(ctx, in.ID)
 				return &docOutput{Body: doc}, err
 			})
@@ -141,13 +119,13 @@ func registerHandlers(api huma.API, s *Service) {
 				return nil, d.update(ctx, in.ID, in.Body)
 			})
 		huma.Register(api, huma.Operation{OperationID: "delete-" + d.one, Method: http.MethodDelete, Path: d.path + "/{id}", DefaultStatus: http.StatusNoContent},
-			func(ctx context.Context, in *versionInput) (*struct{}, error) {
+			func(ctx context.Context, in *platform.VersionInput) (*struct{}, error) {
 				return nil, d.del(ctx, in.ID, in.Version)
 			})
 	}
 	huma.Register(api, huma.Operation{OperationID: "create-order-from-quote", Method: http.MethodPost, Path: "/sales/quotes/{id}/order",
 		DefaultStatus: http.StatusCreated, Description: "While an order from the quotation is not cancelled, returns that order instead of making another."},
-		func(ctx context.Context, in *idInput) (*createdOutput, error) {
-			return created(s.CreateOrderFromQuote(ctx, in.ID))
+		func(ctx context.Context, in *platform.IDInput) (*platform.CreatedOutput, error) {
+			return platform.Created(s.CreateOrderFromQuote(ctx, in.ID))
 		})
 }
