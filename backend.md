@@ -178,8 +178,8 @@ A product module reaches the core only through these entry points. A need none o
 | Need | Entry point |
 | --- | --- |
 | Permission at org units | `iam.Allowed` / `iam.Require(ctx, product, perm, unit, more...)` (every unit must be in scope); lists filter with `iam.Scope`; tenant-wide catalogues use `iam.RequireTenantWide` |
-| Who may do what with a record | The record type's `Can`; other modules ask `record.Can`, or `record.Visible` to answer not found |
-| Document lifecycle | `record.Create` / `Edit` / `Delete` before the module's own rows, in the same transaction; status changes through `record`'s routes, reacting in `OnTransition` and `BeforeSubmit`; `record.Lock` before writing rows that depend on a document without changing it |
+| Who may do what with a record | The record type's permission declaration, with an optional relation grant and refine hook; modules ask `record.Can`, or `record.Visible` to answer not found ([ADR-0034](./docs/adr/0034-record-types-declare-permissions.md)) |
+| Document lifecycle | `record.Create` / `Edit` before the module's own rows, in the same transaction; drafts are deleted through the core route, which calls the type's delete hook; status changes through `record`'s routes, reacting in `OnTransition` and `BeforeSubmit`; `record.Touch` before changing only a draft's child rows; `record.Lock` (module-facing, checks nothing) before a write that depends on a document without changing it |
 | `allowed_actions` | `record.DocumentActions` for lifecycle actions, `record.AllowedActions` for the rest |
 | Writes while a product is disabled | `platform.ProductGate`; `record`, the route middleware, settings, jobs, prints, imports and exports apply it by the registered product |
 | Audit | `audit.Record` / `RecordFor` / `RecordChanges` in the change's transaction; `record.RestrictHistory` keeps an entry off a record's timeline for who may not see it |

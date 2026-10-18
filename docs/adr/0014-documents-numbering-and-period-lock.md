@@ -1,6 +1,6 @@
 # 0014. Documents table, document numbers and period lock
 
-Status: accepted · 2026-10-05 · the withdraw permission is amended by [ADR-0029](./0029-withdraw-right-and-tree-lock.md): withdraw needs `Can(post)`
+Status: accepted · 2026-10-05 · the withdraw permission is amended by [ADR-0029](./0029-withdraw-right-and-tree-lock.md): withdraw needs `Can(post)`; amended by [ADR-0034](./0034-record-types-declare-permissions.md): `Create` checks the declared create permission, drafts are deleted through a core route, and `record.Lock` is open to modules
 
 ## Context
 
