@@ -31,12 +31,18 @@ func (s *Service) Quote(ctx context.Context, id int64) (Doc, error) { return s.d
 func (s *Service) Order(ctx context.Context, id int64) (Doc, error) { return s.doc(ctx, orderKind, id) }
 
 // CreateQuote and CreateOrder add a draft; the same request id returns the first one.
-func (s *Service) CreateQuote(ctx context.Context, in NewDoc) (int64, error) {
-	return s.createOnce(ctx, quoteKind, in)
+func (s *Service) CreateQuote(ctx context.Context, in NewDoc) (id int64, err error) {
+	return id, platform.InTx(ctx, func(ctx context.Context) error {
+		id, err = s.create(ctx, quoteKind, in.RequestID, in.DocFields, nil)
+		return err
+	})
 }
 
-func (s *Service) CreateOrder(ctx context.Context, in NewDoc) (int64, error) {
-	return s.createOnce(ctx, orderKind, in)
+func (s *Service) CreateOrder(ctx context.Context, in NewDoc) (id int64, err error) {
+	return id, platform.InTx(ctx, func(ctx context.Context) error {
+		id, err = s.create(ctx, orderKind, in.RequestID, in.DocFields, nil)
+		return err
+	})
 }
 
 func (s *Service) UpdateQuote(ctx context.Context, id int64, in DocUpdate) error {
@@ -160,18 +166,11 @@ func (s *Service) canMakeOrder(ctx context.Context, unit int64) (bool, error) {
 	return s.d.IAM.Allowed(ctx, "sales", PermOrderEdit, unit)
 }
 
-func (s *Service) createOnce(ctx context.Context, k kind, in NewDoc) (int64, error) {
-	var id int64
-	err := platform.InTx(ctx, func(ctx context.Context) error {
-		var err error
-		id, err = s.create(ctx, k, in.RequestID, in.DocFields, nil)
-		return err
-	})
-	return id, err
-}
-
 // create checks the actor may create at the org unit and see the customer, then adds the draft.
 func (s *Service) create(ctx context.Context, k kind, requestID string, f DocFields, quoteID *int64) (int64, error) {
+	if err := s.d.Record.MayCreate(ctx, k.docType, record.Header{OrgUnitID: f.OrgUnitID}); err != nil {
+		return 0, err
+	}
 	p, err := s.prepare(ctx, k, f)
 	if err != nil {
 		return 0, err
@@ -243,9 +242,6 @@ type prepared struct {
 // every amount with the rounding mode of the org unit's legal entity.
 func (s *Service) prepare(ctx context.Context, k kind, f DocFields) (prepared, error) {
 	var p prepared
-	if err := s.require(ctx, k.edit, f.OrgUnitID); err != nil {
-		return p, err
-	}
 	switch {
 	case k == quoteKind && (f.ValidUntil == nil || *f.ValidUntil < f.Date):
 		return p, ErrValidUntil

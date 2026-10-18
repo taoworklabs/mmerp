@@ -470,6 +470,12 @@ func (s *Service) Edit(ctx context.Context, ref Ref, version int32, h Header) (D
 		} else if le != d.LegalEntityID {
 			return ErrLegalEntityChanged
 		}
+		if h.OrgUnitID != d.OrgUnitID {
+			t := s.types[ref.Type]
+			if err := s.d.IAM.Require(ctx, t.Product, t.Perms.of(Edit), h.OrgUnitID); err != nil {
+				return err
+			}
+		}
 		if err := store.New(platform.DBFrom(ctx)).UpdateHeader(ctx, store.UpdateHeaderParams{
 			ID: ref.ID, Date: date, OrgUnitID: h.OrgUnitID, Amount: platform.NullInt8(h.Amount), Fields: fields,
 		}); err != nil {

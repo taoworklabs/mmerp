@@ -13,6 +13,7 @@ import (
 	"testing"
 
 	"github.com/taoworklabs/mmerp/internal/core/coretest"
+	"github.com/taoworklabs/mmerp/internal/core/iam"
 	"github.com/taoworklabs/mmerp/internal/core/record"
 	"github.com/taoworklabs/mmerp/internal/platform"
 	"github.com/taoworklabs/mmerp/internal/platform/pgtest"
@@ -95,6 +96,36 @@ var cases = []testCase{
 			t.Fatalf("status %s, want posted", d.Status)
 		}
 		wantCode(t, h.Edit(h.Actor, ref, d.Version, "2026-03-11"), "document_not_editable")
+	}},
+
+	{"moving a draft to another org unit needs the edit permission there", func(t *testing.T, h Harness) {
+		ref := create(t, h, "2026-03-10")
+		d := get(t, h, ref)
+		if d.OrgUnitID == h.LegalEntity {
+			t.Skip("the document sits at its legal entity: no move stays in it and leaves the grant")
+		}
+		typ, _ := h.Core.Record.TypeOf(ref.Type)
+		editor := newUser(t, h, "move_editor")
+		actor, _ := platform.ActorFrom(editor)
+		for _, r := range h.Core.IAM.Roles() {
+			if r.Product == typ.Product && !r.TenantWide {
+				if _, err := h.Core.IAM.GrantRole(h.Admin, actor, r.Product, r.Role, &d.OrgUnitID); err != nil {
+					t.Fatal(err)
+				}
+			}
+		}
+		elsewhere, err := h.Core.IAM.CreateOrgUnit(h.Admin, iam.OrgUnitInput{ParentID: &h.LegalEntity, Kind: "department", Name: "Elsewhere"})
+		if err != nil {
+			t.Fatal(err)
+		}
+		hd := record.Header{Date: d.Date, OrgUnitID: d.OrgUnitID, Amount: d.Amount, Fields: d.Fields}
+		moved, err := h.Core.Record.Edit(editor, ref, d.Version, hd)
+		if err != nil {
+			t.Fatalf("editing in place: %v", err)
+		}
+		hd.OrgUnitID = elsewhere
+		_, err = h.Core.Record.Edit(editor, ref, moved.Version, hd)
+		wantCode(t, err, "forbidden")
 	}},
 
 	{"whoever may print a document may view it, in every status", func(t *testing.T, h Harness) {
