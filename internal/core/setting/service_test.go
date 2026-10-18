@@ -52,8 +52,15 @@ func TestLegalEntitySettings(t *testing.T) {
 	if err := set.SetFor(nobody, c, setting.Rounding, "total"); errCode(err) != "forbidden" {
 		t.Fatalf("without core.setting.manage: %v", err)
 	}
+	if m, err := set.RoundingOf(ctx, dept); err != nil || m != platform.RoundLine {
+		t.Fatalf("department rounding before = %q, %v", m, err)
+	}
 	if err := set.SetFor(admin, c, setting.Rounding, "total"); err != nil {
 		t.Fatal(err)
+	}
+	// An org unit rounds as its legal entity does.
+	if m, err := set.RoundingOf(ctx, dept); err != nil || m != platform.RoundTotal {
+		t.Fatalf("department rounding = %q, %v", m, err)
 	}
 	// A product's setting is written only while the product is enabled.
 	if err := set.SetFor(admin, c, "hrm.wage_region", "2"); errCode(err) != "product_not_enabled" {

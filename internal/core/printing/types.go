@@ -32,6 +32,13 @@ type Part struct {
 	Data json.RawMessage
 }
 
+// LegalEntity is a legal entity as a print shows it: its legal name, or its name.
+type LegalEntity struct {
+	Name    string  `json:"name"`
+	TaxCode *string `json:"tax_code"`
+	Address *string `json:"address"`
+}
+
 // Layout draws a part's data on p.
 type Layout func(p *Page, data json.RawMessage) error
 

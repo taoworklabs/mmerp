@@ -12,7 +12,6 @@ import (
 
 	"github.com/taoworklabs/mmerp/internal/core/audit"
 	"github.com/taoworklabs/mmerp/internal/core/record"
-	"github.com/taoworklabs/mmerp/internal/core/setting"
 	"github.com/taoworklabs/mmerp/internal/modules/sales/internal/store"
 	"github.com/taoworklabs/mmerp/internal/platform"
 )
@@ -338,11 +337,7 @@ func (s *Service) prepare(ctx context.Context, k kind, f DocFields) (prepared, e
 	for _, r := range rows {
 		items[r.ID] = r
 	}
-	le, err := s.d.IAM.LegalEntityOf(ctx, f.OrgUnitID)
-	if err != nil {
-		return p, err
-	}
-	mode, err := s.d.Setting.GetFor(ctx, le, setting.Rounding)
+	mode, err := s.d.Setting.RoundingOf(ctx, f.OrgUnitID)
 	if err != nil {
 		return p, err
 	}
@@ -354,7 +349,7 @@ func (s *Service) prepare(ctx context.Context, k kind, f DocFields) (prepared, e
 		}
 		list[i] = it.Price
 	}
-	amts, totals, maxDiscount, err := compute(f.Lines, list, platform.Rounding(mode))
+	amts, totals, maxDiscount, err := compute(f.Lines, list, mode)
 	if err != nil {
 		return p, err
 	}

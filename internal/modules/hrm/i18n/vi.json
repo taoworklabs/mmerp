@@ -51,7 +51,6 @@
   "hrm.print.contract.parent": "Kèm theo hợp đồng số {number}",
   "hrm.print.contract.employer": "Người sử dụng lao động",
   "hrm.print.contract.employer_name": "Tên đơn vị",
-  "hrm.print.contract.tax_code": "Mã số thuế",
   "hrm.print.contract.address": "Địa chỉ",
   "hrm.print.contract.employee": "Người lao động",
   "hrm.print.contract.employee_name": "Họ và tên",

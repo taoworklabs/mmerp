@@ -1,4 +1,6 @@
 {
   "printing.watermark.draft": "DRAFT",
-  "printing.watermark.cancelled": "CANCELLED"
+  "printing.watermark.cancelled": "CANCELLED",
+  "printing.legal_entity.tax_code": "Tax code",
+  "printing.legal_entity.address": "Address"
 }
