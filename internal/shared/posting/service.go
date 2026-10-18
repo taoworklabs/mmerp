@@ -7,7 +7,6 @@ import (
 	"errors"
 
 	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgconn"
 
 	"github.com/taoworklabs/mmerp/internal/core/record"
 	"github.com/taoworklabs/mmerp/internal/platform"
@@ -30,7 +29,7 @@ func (s *Service) Record(ctx context.Context, ref record.Ref, lines []Line) erro
 		return err
 	}
 	err = q.InsertRecording(ctx, store.InsertRecordingParams{DocType: ref.Type, DocID: ref.ID})
-	if pgErr, ok := errors.AsType[*pgconn.PgError](err); ok && pgErr.Code == "23505" {
+	if platform.Violates(err, "recordings_doc_once") {
 		return ErrAlreadyRecorded
 	}
 	if err != nil {
