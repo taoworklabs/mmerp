@@ -139,18 +139,18 @@ function useDecide(docType: string, id: number, inst: ApprovalInstance, onDone?:
   return { error, busy, approve, setModal, dialogs }
 }
 
-function DecisionButtons({ d, step, size }: { d: Decide; step: ApprovalStep; size?: 'xs' }) {
+function DecisionButtons({ d, step }: { d: Decide; step: ApprovalStep }) {
   const { t } = useTranslation()
   const can = (a: string) => step.allowed_actions.includes(a)
   return (
     <>
       {can('reject') && (
-        <Button size={size} variant="outline" color="danger" leftSection={<IconX {...icon.button} />} disabled={d.busy} onClick={() => d.setModal({ kind: 'reject', step: step.position })}>
+        <Button variant="outline" color="danger" leftSection={<IconX {...icon.button} />} disabled={d.busy} onClick={() => d.setModal({ kind: 'reject', step: step.position })}>
           {t('shared.approval.reject')}
         </Button>
       )}
       {can('approve') && (
-        <Button size={size} leftSection={<IconCheck {...icon.button} />} disabled={d.busy} onClick={() => d.approve(step.position)}>
+        <Button leftSection={<IconCheck {...icon.button} />} disabled={d.busy} onClick={() => d.approve(step.position)}>
           {t('shared.approval.approve')}
         </Button>
       )}
@@ -165,7 +165,9 @@ function Instance({ docType, id, inst, onDone, sticky, subject, decideElsewhere 
   const at = formatDateTime(inst.submitted_at, me.timezone)
   const only = soleVoting(inst)
   const byPos = new Map(inst.steps.map((s) => [s.position, s]))
-  const top = inst.plan.seq ?? [inst.plan]
+  // A step the plan does not name still shows, after the plan, so none is ever hidden.
+  const planned = new Set(leaves(inst.plan))
+  const top = [...(inst.plan.seq ?? [inst.plan]).filter((n) => leaves(n).length > 0), ...inst.steps.filter((s) => !planned.has(s.position)).map((s) => ({ step: s.position }))]
   const renderNode = (node: ApprovalPlan): ReactNode => {
     if (node.par)
       return (
@@ -197,7 +199,7 @@ function Instance({ docType, id, inst, onDone, sticky, subject, decideElsewhere 
         step={s}
         onReassign={s.allowed_actions.includes('reassign') ? () => d.setModal({ kind: 'reassign', step: s }) : undefined}
         busy={d.busy}
-        decision={own ? <DecisionButtons d={d} step={s} size="xs" /> : undefined}
+        decision={own ? <DecisionButtons d={d} step={s} /> : undefined}
       />
     )
   }
@@ -208,6 +210,11 @@ function Instance({ docType, id, inst, onDone, sticky, subject, decideElsewhere 
           ? t('shared.approval.submitted_for', { name: inst.submitted_by_name, subject, at })
           : t('shared.approval.submitted', { name: inst.submitted_by_name, at })}
       </Text>
+      {top.length === 0 && (
+        <Text size="sm" c="dimmed">
+          {t('shared.approval.no_steps')}
+        </Text>
+      )}
       <Timeline active={top.length - 1} bulletSize={20} lineWidth={2} role="list" aria-label={t('shared.approval.steps')}>
         {top.map((node, i) => {
           const status = nodeStatus(node, byPos)
@@ -250,6 +257,12 @@ const stepLook: Record<ApprovalStep['status'], { color: string; icon?: TablerIco
   open: { color: 'warning' },
   waiting: { color: 'gray' },
   cancelled: { color: 'gray' },
+}
+
+// leaves lists the step positions a plan node names, in order.
+function leaves(node: ApprovalPlan): number[] {
+  if (node.step !== undefined && !node.seq && !node.par) return [node.step]
+  return [...(node.seq ?? []), ...(node.par ?? [])].flatMap(leaves)
 }
 
 // nodeStatus is a step's status, or for a group the status its members add up to.

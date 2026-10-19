@@ -181,7 +181,9 @@ test('a rejected flow keeps its error on the card and the form unsaved', async (
   await page.getByRole('button', { name: 'Lưu' }).click()
   const split = page.getByRole('region', { name: 'Rẽ nhánh chọn một' })
   await expect(split.getByRole('alert').first()).toHaveText('Vai trò này không còn tồn tại. Chọn vai trò khác.')
-  await expect(page.getByRole('button', { name: 'Lưu' })).toBeVisible()
+  // Still unsaved: the edit is kept and Discard is offered.
+  await expect(page.getByRole('textbox', { name: /Số cấp quản lý tối đa/ })).toHaveValue('4')
+  await expect(page.getByRole('button', { name: 'Bỏ thay đổi' })).toBeVisible()
 })
 
 test('a disabled product shows the flow read-only', async ({ browser }) => {
