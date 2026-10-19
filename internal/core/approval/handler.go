@@ -63,10 +63,12 @@ type usersOutput struct{ Body []ApproverUser }
 
 type docTypeInput struct {
 	DocType string `path:"doc_type"`
+	Action  string `query:"action" default:"post" doc:"post, cancel, or a module action of the type"`
 }
 
 type saveRuleInput struct {
 	DocType string `path:"doc_type"`
+	Action  string `query:"action" default:"post" doc:"post, cancel, or a module action of the type"`
 	Body    RuleInput
 }
 
@@ -112,10 +114,10 @@ func registerHandlers(api huma.API, s *Service) {
 		})
 	huma.Register(api, huma.Operation{OperationID: "save-approval-rule", Method: http.MethodPut, Path: "/approval-rules/{doc_type}", DefaultStatus: http.StatusNoContent},
 		func(ctx context.Context, in *saveRuleInput) (*struct{}, error) {
-			return nil, s.SaveRule(ctx, in.DocType, in.Body)
+			return nil, s.SaveRule(ctx, in.DocType, record.Action(in.Action), in.Body)
 		})
 	huma.Register(api, huma.Operation{OperationID: "delete-approval-rule", Method: http.MethodDelete, Path: "/approval-rules/{doc_type}", DefaultStatus: http.StatusNoContent},
 		func(ctx context.Context, in *docTypeInput) (*struct{}, error) {
-			return nil, s.DeleteRule(ctx, in.DocType)
+			return nil, s.DeleteRule(ctx, in.DocType, record.Action(in.Action))
 		})
 }

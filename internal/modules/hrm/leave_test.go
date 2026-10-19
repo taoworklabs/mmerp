@@ -88,7 +88,7 @@ func (f *leaveFixture) send(ctx context.Context, id int64) error {
 // ruleManager makes every leave request need the direct manager's approval.
 func (f *leaveFixture) ruleManager() {
 	f.t.Helper()
-	f.check(f.appr.SaveRule(f.admin, "hrm.leave_request", approval.RuleInput{
+	f.check(f.appr.SaveRule(f.admin, "hrm.leave_request", record.Post, approval.RuleInput{
 		Flow: approval.Flow{{Step: &approval.StepDef{Approver: approval.Approver{Kind: "module"}}}}, MaxLevels: 3, FallbackProduct: "hrm", FallbackRole: "hr",
 	}))
 }
@@ -113,7 +113,7 @@ func TestLeaveSampleFlow(t *testing.T) {
 	// Two approvers for the department: the head and the deputy.
 	f.ctxFor("head", "hr@A")
 	f.ctxFor("deputy", "hr@A")
-	f.check(f.appr.SaveRule(f.admin, "hrm.leave_request", approval.RuleInput{
+	f.check(f.appr.SaveRule(f.admin, "hrm.leave_request", record.Post, approval.RuleInput{
 		Flow: approval.Flow{{Step: &approval.StepDef{Approver: approval.Approver{Kind: "role", Product: "hrm", Role: "hr"}}}}, MaxLevels: 3, FallbackProduct: "hrm", FallbackRole: "hr",
 	}))
 	head, deputy := f.loginCtx("head"), f.loginCtx("deputy")
@@ -393,7 +393,7 @@ func TestTheEmployeeNeverApprovesTheirOwnLeave(t *testing.T) {
 	f.check(err)
 	must(t)(f.iam.GrantRole(f.admin, eID, "hrm", "hr", &f.a))
 	f.ctxFor("head", "hr@A")
-	f.check(f.appr.SaveRule(f.admin, "hrm.leave_request", approval.RuleInput{
+	f.check(f.appr.SaveRule(f.admin, "hrm.leave_request", record.Post, approval.RuleInput{
 		Flow: approval.Flow{{Step: &approval.StepDef{Approver: approval.Approver{Kind: "role", Product: "hrm", Role: "hr"}}}}, MaxLevels: 3, FallbackProduct: "hrm", FallbackRole: "hr",
 	}))
 	id := must(t)(f.hrm.CreateLeave(f.hr, hrm.NewLeave{EmployeeID: &f.emp, LeaveFields: f.fields("2026-03-10", "2026-03-10", "1")}))

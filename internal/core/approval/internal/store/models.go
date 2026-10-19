@@ -20,6 +20,8 @@ type ApprovalInstance struct {
 	FallbackProduct string
 	FallbackRole    string
 	Plan            []byte
+	Action          string
+	Params          []byte
 }
 
 type ApprovalInstanceStep struct {
@@ -39,4 +41,5 @@ type ApprovalRule struct {
 	FallbackProduct string
 	FallbackRole    string
 	Flow            []byte
+	Action          string
 }

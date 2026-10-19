@@ -35,16 +35,21 @@ func (q *Queries) CloseInstance(ctx context.Context, arg CloseInstanceParams) er
 }
 
 const deleteRule = `-- name: DeleteRule :exec
-DELETE FROM approval.rules WHERE doc_type = $1
+DELETE FROM approval.rules WHERE doc_type = $1 AND action = $2
 `
 
-func (q *Queries) DeleteRule(ctx context.Context, docType string) error {
-	_, err := q.db.Exec(ctx, deleteRule, docType)
+type DeleteRuleParams struct {
+	DocType string
+	Action  string
+}
+
+func (q *Queries) DeleteRule(ctx context.Context, arg DeleteRuleParams) error {
+	_, err := q.db.Exec(ctx, deleteRule, arg.DocType, arg.Action)
 	return err
 }
 
 const getInstance = `-- name: GetInstance :one
-SELECT id, doc_type, doc_id, version, submitted_by, submitted_at, status, max_levels, fallback_product, fallback_role, plan FROM approval.instances WHERE id = $1
+SELECT id, doc_type, doc_id, version, submitted_by, submitted_at, status, max_levels, fallback_product, fallback_role, plan, action, params FROM approval.instances WHERE id = $1
 `
 
 func (q *Queries) GetInstance(ctx context.Context, id int64) (ApprovalInstance, error) {
@@ -62,16 +67,23 @@ func (q *Queries) GetInstance(ctx context.Context, id int64) (ApprovalInstance, 
 		&i.FallbackProduct,
 		&i.FallbackRole,
 		&i.Plan,
+		&i.Action,
+		&i.Params,
 	)
 	return i, err
 }
 
 const getRule = `-- name: GetRule :one
-SELECT doc_type, max_levels, fallback_product, fallback_role, flow FROM approval.rules WHERE doc_type = $1
+SELECT doc_type, max_levels, fallback_product, fallback_role, flow, action FROM approval.rules WHERE doc_type = $1 AND action = $2
 `
 
-func (q *Queries) GetRule(ctx context.Context, docType string) (ApprovalRule, error) {
-	row := q.db.QueryRow(ctx, getRule, docType)
+type GetRuleParams struct {
+	DocType string
+	Action  string
+}
+
+func (q *Queries) GetRule(ctx context.Context, arg GetRuleParams) (ApprovalRule, error) {
+	row := q.db.QueryRow(ctx, getRule, arg.DocType, arg.Action)
 	var i ApprovalRule
 	err := row.Scan(
 		&i.DocType,
@@ -79,6 +91,7 @@ func (q *Queries) GetRule(ctx context.Context, docType string) (ApprovalRule, er
 		&i.FallbackProduct,
 		&i.FallbackRole,
 		&i.Flow,
+		&i.Action,
 	)
 	return i, err
 }
@@ -262,7 +275,7 @@ func (q *Queries) InsertVote(ctx context.Context, arg InsertVoteParams) error {
 }
 
 const latestInstance = `-- name: LatestInstance :one
-SELECT i.id, i.doc_type, i.doc_id, i.version, i.submitted_by, i.submitted_at, i.status, i.max_levels, i.fallback_product, i.fallback_role, i.plan, u.name AS submitted_by_name FROM approval.instances i JOIN iam.users u ON u.id = i.submitted_by
+SELECT i.id, i.doc_type, i.doc_id, i.version, i.submitted_by, i.submitted_at, i.status, i.max_levels, i.fallback_product, i.fallback_role, i.plan, i.action, i.params, u.name AS submitted_by_name FROM approval.instances i JOIN iam.users u ON u.id = i.submitted_by
 WHERE i.doc_type = $1 AND i.doc_id = $2 ORDER BY i.id DESC LIMIT 1
 `
 
@@ -283,6 +296,8 @@ type LatestInstanceRow struct {
 	FallbackProduct string
 	FallbackRole    string
 	Plan            []byte
+	Action          string
+	Params          []byte
 	SubmittedByName string
 }
 
@@ -301,13 +316,15 @@ func (q *Queries) LatestInstance(ctx context.Context, arg LatestInstanceParams) 
 		&i.FallbackProduct,
 		&i.FallbackRole,
 		&i.Plan,
+		&i.Action,
+		&i.Params,
 		&i.SubmittedByName,
 	)
 	return i, err
 }
 
 const listRules = `-- name: ListRules :many
-SELECT doc_type, max_levels, fallback_product, fallback_role, flow FROM approval.rules ORDER BY doc_type
+SELECT doc_type, max_levels, fallback_product, fallback_role, flow, action FROM approval.rules ORDER BY doc_type, action
 `
 
 func (q *Queries) ListRules(ctx context.Context) ([]ApprovalRule, error) {
@@ -325,6 +342,7 @@ func (q *Queries) ListRules(ctx context.Context) ([]ApprovalRule, error) {
 			&i.FallbackProduct,
 			&i.FallbackRole,
 			&i.Flow,
+			&i.Action,
 		); err != nil {
 			return nil, err
 		}
@@ -368,7 +386,7 @@ func (q *Queries) ListUsers(ctx context.Context) ([]ListUsersRow, error) {
 }
 
 const lockInstance = `-- name: LockInstance :one
-SELECT id, doc_type, doc_id, version, submitted_by, submitted_at, status, max_levels, fallback_product, fallback_role, plan FROM approval.instances WHERE id = $1 FOR UPDATE
+SELECT id, doc_type, doc_id, version, submitted_by, submitted_at, status, max_levels, fallback_product, fallback_role, plan, action, params FROM approval.instances WHERE id = $1 FOR UPDATE
 `
 
 func (q *Queries) LockInstance(ctx context.Context, id int64) (ApprovalInstance, error) {
@@ -386,17 +404,20 @@ func (q *Queries) LockInstance(ctx context.Context, id int64) (ApprovalInstance,
 		&i.FallbackProduct,
 		&i.FallbackRole,
 		&i.Plan,
+		&i.Action,
+		&i.Params,
 	)
 	return i, err
 }
 
 const saveRule = `-- name: SaveRule :exec
-INSERT INTO approval.rules (doc_type, flow, max_levels, fallback_product, fallback_role) VALUES ($1, $2, $3, $4, $5)
-ON CONFLICT (doc_type) DO UPDATE SET flow = $2, max_levels = $3, fallback_product = $4, fallback_role = $5
+INSERT INTO approval.rules (doc_type, action, flow, max_levels, fallback_product, fallback_role) VALUES ($1, $2, $3, $4, $5, $6)
+ON CONFLICT (doc_type, action) DO UPDATE SET flow = $3, max_levels = $4, fallback_product = $5, fallback_role = $6
 `
 
 type SaveRuleParams struct {
 	DocType         string
+	Action          string
 	Flow            []byte
 	MaxLevels       int32
 	FallbackProduct string
@@ -406,6 +427,7 @@ type SaveRuleParams struct {
 func (q *Queries) SaveRule(ctx context.Context, arg SaveRuleParams) error {
 	_, err := q.db.Exec(ctx, saveRule,
 		arg.DocType,
+		arg.Action,
 		arg.Flow,
 		arg.MaxLevels,
 		arg.FallbackProduct,

@@ -27,7 +27,7 @@ func NewService(d Deps) *Service { return &Service{d: d} }
 // a plan, opens an instance with one step per resolved step, and starts the first ones.
 func (s *Service) Submit(ctx context.Context, d record.Doc) (int64, bool, error) {
 	q := store.New(platform.DBFrom(ctx))
-	rule, err := q.GetRule(ctx, d.Type)
+	rule, err := q.GetRule(ctx, store.GetRuleParams{DocType: d.Type, Action: string(record.Post)})
 	if errors.Is(err, pgx.ErrNoRows) {
 		return 0, false, nil
 	}
@@ -576,6 +576,24 @@ func (s *Service) requireType(ctx context.Context, docType string) (record.Type,
 	return t, platform.ProductGate(ctx, t.Product, platform.ClassWrite)
 }
 
+// actionsOf lists the actions a type offers a rule for: post and cancel, then its
+// module actions sorted, once a type can declare any.
+func actionsOf(t record.Type) []record.Action {
+	return []record.Action{record.Post, record.Cancel}
+}
+
+// requireRuleAction resolves docType for a write, same as requireType, and checks it offers action.
+func (s *Service) requireRuleAction(ctx context.Context, docType string, action record.Action) (record.Type, error) {
+	t, err := s.requireType(ctx, docType)
+	if err != nil {
+		return t, err
+	}
+	if !slices.Contains(actionsOf(t), action) {
+		return t, errInvalidRule("", "unknown_action")
+	}
+	return t, nil
+}
+
 // Rules lists the document types the actor may configure, of one product when product is set,
 // with their approval fields and rule.
 func (s *Service) Rules(ctx context.Context, product string) ([]TypeRule, error) {
@@ -592,12 +610,9 @@ func (s *Service) Rules(ctx context.Context, product string) ([]TypeRule, error)
 		if product != "" && t.Product != product {
 			continue
 		}
-		tr := TypeRule{DocType: t.Code, Product: t.Product, Fields: []Field{}, ModuleApprovers: t.Approvers != nil, AllowedActions: []string{}}
-		if platform.ProductGate(ctx, t.Product, platform.ClassWrite) == nil {
-			tr.AllowedActions = []string{"save", "delete"}
-		}
-		// Every document has an org unit, before its type's own approval fields.
-		tr.Fields = append(tr.Fields, Field{Key: FieldOrgUnit, Kind: string(record.OrgUnit), Label: "shared.rule.field.org_unit", Ops: []Op{OpWithin}})
+		// Every document has an org unit, before its type's own approval fields; shared
+		// across every action of the type, since they don't change what the document is about.
+		fields := []Field{{Key: FieldOrgUnit, Kind: string(record.OrgUnit), Label: "shared.rule.field.org_unit", Ops: []Op{OpWithin}}}
 		for _, f := range t.Fields {
 			field := Field{Key: f.Key, Kind: string(f.Kind), Label: f.Label, Ops: opsByKind[f.Kind]}
 			if f.Options != nil {
@@ -605,16 +620,24 @@ func (s *Service) Rules(ctx context.Context, product string) ([]TypeRule, error)
 					return nil, err
 				}
 			}
-			tr.Fields = append(tr.Fields, field)
+			fields = append(fields, field)
 		}
-		if i := slices.IndexFunc(rows, func(r store.ApprovalRule) bool { return r.DocType == t.Code }); i >= 0 {
-			r := rows[i]
-			tr.Rule = &RuleInput{MaxLevels: r.MaxLevels, FallbackProduct: r.FallbackProduct, FallbackRole: r.FallbackRole}
-			if err := json.Unmarshal(r.Flow, &tr.Rule.Flow); err != nil {
-				return nil, err
+		allowed := []string{}
+		if platform.ProductGate(ctx, t.Product, platform.ClassWrite) == nil {
+			allowed = []string{"save", "delete"}
+		}
+		for _, a := range actionsOf(t) {
+			tr := TypeRule{DocType: t.Code, Action: string(a), Product: t.Product, Fields: fields,
+				ModuleApprovers: t.Approvers != nil, AllowedActions: allowed}
+			if i := slices.IndexFunc(rows, func(r store.ApprovalRule) bool { return r.DocType == t.Code && r.Action == string(a) }); i >= 0 {
+				r := rows[i]
+				tr.Rule = &RuleInput{MaxLevels: r.MaxLevels, FallbackProduct: r.FallbackProduct, FallbackRole: r.FallbackRole}
+				if err := json.Unmarshal(r.Flow, &tr.Rule.Flow); err != nil {
+					return nil, err
+				}
 			}
+			out = append(out, tr)
 		}
-		out = append(out, tr)
 	}
 	return out, nil
 }
@@ -632,9 +655,9 @@ func (s *Service) Users(ctx context.Context) ([]ApproverUser, error) {
 	return out, err
 }
 
-// SaveRule replaces the rule of a document type; open instances keep the plan they started with.
-func (s *Service) SaveRule(ctx context.Context, docType string, in RuleInput) error {
-	t, err := s.requireType(ctx, docType)
+// SaveRule replaces the rule of a document type's action; open instances keep the plan they started with.
+func (s *Service) SaveRule(ctx context.Context, docType string, action record.Action, in RuleInput) error {
+	t, err := s.requireRuleAction(ctx, docType, action)
 	if err != nil {
 		return err
 	}
@@ -652,24 +675,25 @@ func (s *Service) SaveRule(ctx context.Context, docType string, in RuleInput) er
 	}
 	return platform.InTx(ctx, func(ctx context.Context) error {
 		if err := store.New(platform.DBFrom(ctx)).SaveRule(ctx, store.SaveRuleParams{
-			DocType: docType, Flow: flow, MaxLevels: in.MaxLevels, FallbackProduct: in.FallbackProduct, FallbackRole: in.FallbackRole,
+			DocType: docType, Action: string(action), Flow: flow, MaxLevels: in.MaxLevels,
+			FallbackProduct: in.FallbackProduct, FallbackRole: in.FallbackRole,
 		}); err != nil {
 			return err
 		}
-		return s.d.Audit.Record(ctx, "approval.rule_saved", map[string]any{"doc_type": docType, "rule": in})
+		return s.d.Audit.Record(ctx, "approval.rule_saved", map[string]any{"doc_type": docType, "action": action, "rule": in})
 	})
 }
 
-// DeleteRule removes a rule, so sending posts at once.
-func (s *Service) DeleteRule(ctx context.Context, docType string) error {
-	if _, err := s.requireType(ctx, docType); err != nil {
+// DeleteRule removes a document type's rule for action, so sending posts at once.
+func (s *Service) DeleteRule(ctx context.Context, docType string, action record.Action) error {
+	if _, err := s.requireRuleAction(ctx, docType, action); err != nil {
 		return err
 	}
 	return platform.InTx(ctx, func(ctx context.Context) error {
-		if err := store.New(platform.DBFrom(ctx)).DeleteRule(ctx, docType); err != nil {
+		if err := store.New(platform.DBFrom(ctx)).DeleteRule(ctx, store.DeleteRuleParams{DocType: docType, Action: string(action)}); err != nil {
 			return err
 		}
-		return s.d.Audit.Record(ctx, "approval.rule_deleted", map[string]any{"doc_type": docType})
+		return s.d.Audit.Record(ctx, "approval.rule_deleted", map[string]any{"doc_type": docType, "action": action})
 	})
 }
 

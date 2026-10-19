@@ -95,7 +95,7 @@ func TestContract(t *testing.T) {
 			},
 			RequireApproval: func(t *testing.T) {
 				role := approval.Approver{Kind: "role", Product: "test", Role: "approver"}
-				if err := appr.SaveRule(admin, "test.doc", approval.RuleInput{
+				if err := appr.SaveRule(admin, "test.doc", record.Post, approval.RuleInput{
 					Flow: approval.Flow{{Step: &approval.StepDef{Approver: role}}}, MaxLevels: 3, FallbackProduct: "test", FallbackRole: "approver",
 				}); err != nil {
 					t.Fatal(err)

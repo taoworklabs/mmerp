@@ -68,9 +68,12 @@ type Field struct {
 	Ops []Op `json:"ops" nullable:"false"`
 }
 
-// TypeRule is a document type with its approval fields and its rule, if any.
+// TypeRule is one action of a document type, with its approval fields and its rule, if any.
+// The frontend labels Action through i18n (shared.rule.action.<name>, or <product>.action.<name>
+// for module actions).
 type TypeRule struct {
 	DocType string  `json:"doc_type"`
+	Action  string  `json:"action"`
 	Product string  `json:"product"`
 	Fields  []Field `json:"fields" nullable:"false"`
 	// Whether the type chooses approvers itself (approver kind module).

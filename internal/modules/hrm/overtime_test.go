@@ -48,7 +48,7 @@ func TestOvertimeRecordContract(t *testing.T) {
 			Get:    func(ctx context.Context, r record.Ref) (any, error) { return f.hrm.Overtime(ctx, r.ID) },
 			Reject: func(instance int64) error { return f.appr.Reject(f.m, instance, 1, "không") },
 			RequireApproval: func(*testing.T) {
-				f.check(f.appr.SaveRule(f.admin, "hrm.overtime_request", approval.RuleInput{
+				f.check(f.appr.SaveRule(f.admin, "hrm.overtime_request", record.Post, approval.RuleInput{
 					Flow: approval.Flow{{Step: &approval.StepDef{Approver: approval.Approver{Kind: "module"}}}}, MaxLevels: 3, FallbackProduct: "hrm", FallbackRole: "hr",
 				}))
 			},

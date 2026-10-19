@@ -89,7 +89,7 @@ func TestContractRecordContract(t *testing.T) {
 				return f.hrm.UpdateContract(ctx, r.ID, hrm.ContractUpdate{Version: version, ContractFields: hrm.ContractFields{ContractTypeID: f.kind, StartDate: date, Terms: terms(10_000_000)}})
 			},
 			RequireApproval: func(*testing.T) {
-				f.check(f.appr.SaveRule(f.admin, "hrm.contract", approval.RuleInput{
+				f.check(f.appr.SaveRule(f.admin, "hrm.contract", record.Post, approval.RuleInput{
 					Flow: approval.Flow{{Step: &approval.StepDef{Approver: approval.Approver{Kind: "role", Product: "hrm", Role: "hr"}}}}, MaxLevels: 1, FallbackProduct: "hrm", FallbackRole: "hr",
 				}))
 			},
@@ -211,7 +211,7 @@ func TestContractPermissions(t *testing.T) {
 	_, err = f.hrm.CreateContract(f.m, hrm.NewContract{EmployeeID: f.emp, ContractFields: hrm.ContractFields{ContractTypeID: f.kind, StartDate: "2027-01-01", Terms: terms(1)}})
 	wantErr(t, err, "not_found")
 	// HR sends a contract without seeing its terms, and takes it back the same way.
-	f.check(f.appr.SaveRule(f.admin, "hrm.contract", approval.RuleInput{
+	f.check(f.appr.SaveRule(f.admin, "hrm.contract", record.Post, approval.RuleInput{
 		Flow: approval.Flow{{Step: &approval.StepDef{Approver: approval.Approver{Kind: "role", Product: "hrm", Role: "hr"}}}}, MaxLevels: 1, FallbackProduct: "hrm", FallbackRole: "hr",
 	}))
 	ref := record.Ref{Type: "hrm.contract", ID: id}

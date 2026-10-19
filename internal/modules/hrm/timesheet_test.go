@@ -42,7 +42,7 @@ func TestTimesheetRecordContract(t *testing.T) {
 				return f.hrm.SaveTimesheet(ctx, r.ID, hrm.TimesheetUpdate{Version: version, Month: date[:7], Lines: []hrm.TimesheetLine{}})
 			},
 			RequireApproval: func(*testing.T) {
-				f.check(f.appr.SaveRule(f.admin, "hrm.timesheet", approval.RuleInput{
+				f.check(f.appr.SaveRule(f.admin, "hrm.timesheet", record.Post, approval.RuleInput{
 					Flow: approval.Flow{{Step: &approval.StepDef{Approver: approval.Approver{Kind: "role", Product: "hrm", Role: "hr"}}}}, MaxLevels: 3, FallbackProduct: "hrm", FallbackRole: "hr",
 				}))
 			},

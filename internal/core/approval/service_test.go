@@ -82,7 +82,7 @@ func (f *fixture) check(err error) {
 
 func (f *fixture) rule(flow ...approval.Element) {
 	f.t.Helper()
-	f.check(f.appr.SaveRule(f.admin, "test.doc", ruleOf(flow...)))
+	f.check(f.appr.SaveRule(f.admin, "test.doc", record.Post, ruleOf(flow...)))
 }
 
 func ruleOf(flow ...approval.Element) approval.RuleInput {
@@ -314,21 +314,71 @@ func TestApproversWhoCannotViewAreSkipped(t *testing.T) {
 func TestRuleChecksConditionsAgainstFields(t *testing.T) {
 	f := newFixture(t)
 	bad := split(approval.ChooseOne, nil, when(leaf("kind", "gt", "1"), module))
-	err := f.appr.SaveRule(f.admin, "test.doc", ruleOf(module, bad))
+	err := f.appr.SaveRule(f.admin, "test.doc", record.Post, ruleOf(module, bad))
 	if e, ok := errors.AsType[*platform.Error](err); !ok || e.Code != "invalid_rule" || e.Params["path"] != "2.branches.1" || e.Params["reason"] != "invalid_condition" {
 		t.Fatalf("got %v", err)
 	}
-	if code(f.appr.SaveRule(f.as("hr"), "test.doc", approval.RuleInput{})) != "forbidden" {
+	if code(f.appr.SaveRule(f.as("hr"), "test.doc", record.Post, approval.RuleInput{})) != "forbidden" {
 		t.Fatal("hr saved a rule")
 	}
 }
 
+func TestUnknownActionRefused(t *testing.T) {
+	f := newFixture(t)
+	err := f.appr.SaveRule(f.admin, "test.doc", "create_order", approval.RuleInput{})
+	if e, ok := errors.AsType[*platform.Error](err); !ok || e.Code != "invalid_rule" || e.Params["reason"] != "unknown_action" {
+		t.Fatalf("got %v", err)
+	}
+	if code(f.appr.DeleteRule(f.admin, "test.doc", "create_order")) != "invalid_rule" {
+		t.Fatal("delete didn't refuse unknown action")
+	}
+}
+
+// docTypes lists the distinct document types in rules, in the order they first appear.
 func docTypes(rules []approval.TypeRule) []string {
+	seen := map[string]bool{}
 	var out []string
 	for _, r := range rules {
-		out = append(out, r.DocType)
+		if !seen[r.DocType] {
+			seen[r.DocType] = true
+			out = append(out, r.DocType)
+		}
 	}
 	return out
+}
+
+// ruleOfAction finds the rule entry for docType and action, or nil.
+func ruleOfAction(rules []approval.TypeRule, docType string, action record.Action) *approval.TypeRule {
+	for i := range rules {
+		if rules[i].DocType == docType && rules[i].Action == string(action) {
+			return &rules[i]
+		}
+	}
+	return nil
+}
+
+func TestRulesPerAction(t *testing.T) {
+	f := newFixture(t)
+	f.rule(f.user("boss")) // the post rule
+	f.check(f.appr.SaveRule(f.admin, "test.doc", record.Cancel, ruleOf(f.user("big_boss"))))
+
+	rules, err := f.appr.Rules(f.admin, "test")
+	f.check(err)
+	post, cancel := ruleOfAction(rules, "test.doc", record.Post), ruleOfAction(rules, "test.doc", record.Cancel)
+	if post == nil || post.Rule == nil || cancel == nil || cancel.Rule == nil {
+		t.Fatalf("want both post and cancel rules: %+v", rules)
+	}
+
+	f.check(f.appr.DeleteRule(f.admin, "test.doc", record.Cancel))
+	rules, err = f.appr.Rules(f.admin, "test")
+	f.check(err)
+	post, cancel = ruleOfAction(rules, "test.doc", record.Post), ruleOfAction(rules, "test.doc", record.Cancel)
+	if post == nil || post.Rule == nil {
+		t.Fatalf("post rule should stay: %+v", rules)
+	}
+	if cancel == nil || cancel.Rule != nil {
+		t.Fatalf("cancel rule should be gone: %+v", cancel)
+	}
 }
 
 func TestRulesOfferTheOrgUnit(t *testing.T) {
@@ -361,15 +411,15 @@ func TestRulesByProduct(t *testing.T) {
 	if !slices.Equal(rules[0].AllowedActions, []string{"save", "delete"}) {
 		t.Fatalf("product admin actions %v", rules[0].AllowedActions)
 	}
-	f.check(f.appr.SaveRule(f.as("rules"), "test.doc", in))
-	f.check(f.appr.DeleteRule(f.as("rules"), "test.doc"))
+	f.check(f.appr.SaveRule(f.as("rules"), "test.doc", record.Post, in))
+	f.check(f.appr.DeleteRule(f.as("rules"), "test.doc", record.Post))
 	if _, err := f.appr.Users(f.as("rules")); err != nil {
 		t.Fatalf("product admin lists users: %v", err)
 	}
-	if code(f.appr.SaveRule(f.as("rules"), "other.doc", in)) != "forbidden" {
+	if code(f.appr.SaveRule(f.as("rules"), "other.doc", record.Post, in)) != "forbidden" {
 		t.Fatal("product admin saved another product's rule")
 	}
-	if code(f.appr.DeleteRule(f.as("rules"), "other.doc")) != "forbidden" {
+	if code(f.appr.DeleteRule(f.as("rules"), "other.doc", record.Post)) != "forbidden" {
 		t.Fatal("product admin deleted another product's rule")
 	}
 
@@ -384,7 +434,7 @@ func TestRulesByProduct(t *testing.T) {
 	if got := docTypes(other); !slices.Equal(got, []string{"other.doc"}) {
 		t.Fatalf("admin filtered by product lists %v", got)
 	}
-	f.check(f.appr.SaveRule(f.admin, "other.doc", ruleOf(f.user("boss"))))
+	f.check(f.appr.SaveRule(f.admin, "other.doc", record.Post, ruleOf(f.user("boss"))))
 
 	// Without any rule permission, everything is refused.
 	if _, err := f.appr.Rules(f.as("outsider"), ""); code(err) != "forbidden" {
@@ -393,7 +443,8 @@ func TestRulesByProduct(t *testing.T) {
 	if _, err := f.appr.Users(f.as("outsider")); code(err) != "forbidden" {
 		t.Fatalf("outsider lists users: %v", err)
 	}
-	if code(f.appr.SaveRule(f.as("outsider"), "test.doc", in)) != "forbidden" || code(f.appr.DeleteRule(f.as("outsider"), "test.doc")) != "forbidden" {
+	if code(f.appr.SaveRule(f.as("outsider"), "test.doc", record.Post, in)) != "forbidden" ||
+		code(f.appr.DeleteRule(f.as("outsider"), "test.doc", record.Post)) != "forbidden" {
 		t.Fatal("outsider changed a rule")
 	}
 
@@ -401,10 +452,11 @@ func TestRulesByProduct(t *testing.T) {
 	off := platform.WithProducts(f.as("rules"), []string{"other"})
 	rules, err = f.appr.Rules(off, "")
 	f.check(err)
-	if len(rules) != 1 || len(rules[0].AllowedActions) != 0 {
+	if got := docTypes(rules); !slices.Equal(got, []string{"test.doc"}) || len(rules[0].AllowedActions) != 0 {
 		t.Fatalf("disabled product rules %+v", rules)
 	}
-	if code(f.appr.SaveRule(off, "test.doc", in)) != "product_not_enabled" || code(f.appr.DeleteRule(off, "test.doc")) != "product_not_enabled" {
+	if code(f.appr.SaveRule(off, "test.doc", record.Post, in)) != "product_not_enabled" ||
+		code(f.appr.DeleteRule(off, "test.doc", record.Post)) != "product_not_enabled" {
 		t.Fatal("rule changed on a disabled product")
 	}
 }
@@ -417,11 +469,11 @@ func TestRuleChangesKeepOpenInstances(t *testing.T) {
 	f.check(err)
 	steps := f.panel("boss", d).Steps
 
-	f.check(f.appr.SaveRule(f.as("rules"), "test.doc", ruleOf(f.user("big_boss"))))
+	f.check(f.appr.SaveRule(f.as("rules"), "test.doc", record.Post, ruleOf(f.user("big_boss"))))
 	if got := f.panel("boss", d).Steps; len(got) != len(steps) || !slices.Equal(names(got[0]), names(steps[0])) {
 		t.Fatalf("after save: %+v, want %+v", got, steps)
 	}
-	f.check(f.appr.DeleteRule(f.as("rules"), "test.doc"))
+	f.check(f.appr.DeleteRule(f.as("rules"), "test.doc", record.Post))
 	if got := f.panel("boss", d).Steps; len(got) != len(steps) || !slices.Equal(names(got[0]), names(steps[0])) {
 		t.Fatalf("after delete: %+v, want %+v", got, steps)
 	}

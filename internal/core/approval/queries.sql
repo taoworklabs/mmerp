@@ -1,15 +1,15 @@
 -- name: GetRule :one
-SELECT * FROM approval.rules WHERE doc_type = $1;
+SELECT * FROM approval.rules WHERE doc_type = $1 AND action = $2;
 
 -- name: ListRules :many
-SELECT * FROM approval.rules ORDER BY doc_type;
+SELECT * FROM approval.rules ORDER BY doc_type, action;
 
 -- name: SaveRule :exec
-INSERT INTO approval.rules (doc_type, flow, max_levels, fallback_product, fallback_role) VALUES ($1, $2, $3, $4, $5)
-ON CONFLICT (doc_type) DO UPDATE SET flow = $2, max_levels = $3, fallback_product = $4, fallback_role = $5;
+INSERT INTO approval.rules (doc_type, action, flow, max_levels, fallback_product, fallback_role) VALUES ($1, $2, $3, $4, $5, $6)
+ON CONFLICT (doc_type, action) DO UPDATE SET flow = $3, max_levels = $4, fallback_product = $5, fallback_role = $6;
 
 -- name: DeleteRule :exec
-DELETE FROM approval.rules WHERE doc_type = $1;
+DELETE FROM approval.rules WHERE doc_type = $1 AND action = $2;
 
 -- name: InsertInstance :one
 INSERT INTO approval.instances (doc_type, doc_id, version, submitted_by, status, plan, max_levels, fallback_product, fallback_role)
