@@ -1,8 +1,12 @@
+/* A sunken well, set apart from the title above and the tabs below. */
 .facts {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: var(--mantine-spacing-sm) var(--mantine-spacing-lg);
-  margin: var(--mantine-spacing-xs) 0 0;
+  margin: var(--mantine-spacing-md) 0;
+  padding: var(--mantine-spacing-sm) var(--mantine-spacing-md);
+  background: var(--mmerp-elevation-surface-sunken);
+  border-radius: var(--mantine-radius-md);
 }
 
 @media (min-width: 48em) {
