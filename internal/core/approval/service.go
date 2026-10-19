@@ -596,6 +596,8 @@ func (s *Service) Rules(ctx context.Context, product string) ([]TypeRule, error)
 		if platform.ProductGate(ctx, t.Product, platform.ClassWrite) == nil {
 			tr.AllowedActions = []string{"save", "delete"}
 		}
+		// Every document has an org unit, before its type's own approval fields.
+		tr.Fields = append(tr.Fields, Field{Key: FieldOrgUnit, Kind: string(record.OrgUnit), Label: "shared.rule.field.org_unit", Ops: []Op{OpWithin}})
 		for _, f := range t.Fields {
 			field := Field{Key: f.Key, Kind: string(f.Kind), Label: f.Label, Ops: opsByKind[f.Kind]}
 			if f.Options != nil {

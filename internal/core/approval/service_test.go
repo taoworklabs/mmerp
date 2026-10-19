@@ -3,6 +3,7 @@ package approval_test
 import (
 	"context"
 	"errors"
+	"reflect"
 	"slices"
 	"strconv"
 	"strings"
@@ -328,6 +329,23 @@ func docTypes(rules []approval.TypeRule) []string {
 		out = append(out, r.DocType)
 	}
 	return out
+}
+
+func TestRulesOfferTheOrgUnit(t *testing.T) {
+	f := newFixture(t)
+	rules, err := f.appr.Rules(f.admin, "test")
+	f.check(err)
+	want := approval.Field{Key: "org_unit", Kind: "org_unit", Label: "shared.rule.field.org_unit", Ops: []approval.Op{approval.OpWithin}}
+	if !reflect.DeepEqual(rules[0].Fields[0], want) {
+		t.Fatalf("org unit field %+v", rules[0].Fields[0])
+	}
+	var keys []string
+	for _, f := range rules[0].Fields[1:] {
+		keys = append(keys, f.Key)
+	}
+	if !slices.Equal(keys, []string{"days", "kind"}) {
+		t.Fatalf("fields after org unit: %v", keys)
+	}
 }
 
 func TestRulesByProduct(t *testing.T) {
