@@ -226,6 +226,7 @@
   "shared.approval.reject_title": "Từ chối duyệt",
   "shared.approval.reason": "Lý do",
   "shared.approval.reassign_title": "Thay người duyệt bước này",
+  "shared.approval.parallel": "Song song",
   "shared.approval.login": "Tên đăng nhập của người duyệt mới",
   "shared.approval.done.approve": "Đã duyệt.",
   "shared.approval.done.reject": "Đã từ chối.",

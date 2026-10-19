@@ -7,3 +7,9 @@
   background: var(--mantine-color-body);
   border-top: 1px solid var(--mantine-color-default-border);
 }
+
+/* Parallel steps sit indented under their label, joined by a thin rule. */
+.parallel {
+  padding-inline-start: var(--mantine-spacing-sm);
+  border-inline-start: 1px solid var(--mantine-color-default-border);
+}

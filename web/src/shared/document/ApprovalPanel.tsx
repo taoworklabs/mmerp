@@ -1,10 +1,10 @@
 import { Alert, Badge, Button, Group, Stack, Text, Timeline } from '@mantine/core'
 import { IconAlertCircle, IconCheck, IconUserShare, IconX, type Icon as TablerIcon } from '@tabler/icons-react'
 import { useQuery } from '@tanstack/react-query'
-import { useState } from 'react'
+import { useState, type ReactNode } from 'react'
 import { useForm } from 'react-hook-form'
 import { useTranslation } from 'react-i18next'
-import { api, ApiError, unwrap, type ApprovalInstance, type ApprovalStep } from '@/shared/api/core'
+import { api, ApiError, unwrap, type ApprovalInstance, type ApprovalPlan, type ApprovalStep } from '@/shared/api/core'
 import { useInvalidateRecord } from '@/shared/area'
 import { useMe } from '@/shared/auth/me'
 import { errorText, formatDateTime } from '@/shared/i18n'
@@ -53,38 +53,45 @@ export function ApprovalPanel({ docType, id, onDone, sticky, subject, decideElse
   return <Instance docType={docType} id={id} inst={inst} onDone={onDone} sticky={sticky} subject={subject} decideElsewhere={decideElsewhere} />
 }
 
-// ApprovalDecision is approve and reject for the actor at an open step, for a page header;
-// nothing for anyone else. Errors go to the page's banner.
+// ApprovalDecision is approve and reject for a page header, when the actor may vote on exactly
+// one open step; with several, each step in the panel has its own. Errors go to the page's banner.
 export function ApprovalDecision({ docType, id, onError }: { docType: string; id: number; onError: (message: string | null) => void }) {
   const inst = useApproval(docType, id).data?.instance
-  if (!inst) return null
-  return <Decision docType={docType} id={id} inst={inst} onError={onError} />
+  const only = inst && soleVoting(inst)
+  if (!inst || !only) return null
+  return <Decision docType={docType} id={id} inst={inst} step={only} onError={onError} />
 }
 
-function Decision({ docType, id, inst, onError }: { docType: string; id: number; inst: ApprovalInstance; onError: (message: string | null) => void }) {
+function Decision({ docType, id, inst, step, onError }: { docType: string; id: number; inst: ApprovalInstance; step: ApprovalStep; onError: (message: string | null) => void }) {
   const d = useDecide(docType, id, inst, undefined, onError)
   return (
     <>
-      <DecisionButtons d={d} />
+      <DecisionButtons d={d} step={step} />
       {d.dialogs}
     </>
   )
 }
 
+function votingSteps(inst: ApprovalInstance) {
+  return inst.steps.filter((s) => s.status === 'open' && s.allowed_actions.includes('approve'))
+}
+
+function soleVoting(inst: ApprovalInstance) {
+  const v = votingSteps(inst)
+  return v.length === 1 ? v[0] : undefined
+}
+
 type Decide = ReturnType<typeof useDecide>
 
-// useDecide runs approve and reject on the open step the actor may vote on, and reassign on
-// the step it is asked for, with the modals they ask through.
+// useDecide runs approve, reject and reassign on the step it is asked for, with the modals they
+// ask through.
 function useDecide(docType: string, id: number, inst: ApprovalInstance, onDone?: () => void, onError?: (message: string | null) => void) {
   const { t } = useTranslation()
   const invalidate = useInvalidateRecord()
   const [error, setOwnError] = useState<string | null>(null)
   const setError = onError ?? setOwnError
   const [busy, setBusy] = useState(false)
-  const [modal, setModal] = useState<{ kind: 'reject' } | { kind: 'reassign'; step: ApprovalStep } | null>(null)
-  // Parallel steps may be open at once; the actor votes on the first one they may vote on.
-  const voting = inst.steps.find((s) => s.status === 'open' && s.allowed_actions.includes('approve'))
-  const step = voting?.position ?? 0
+  const [modal, setModal] = useState<{ kind: 'reject'; step: number } | { kind: 'reassign'; step: ApprovalStep } | null>(null)
   const path = { path: { id: inst.id } }
 
   async function decide(action: 'approve' | 'reject' | 'reassign', call: () => Promise<unknown>) {
@@ -105,7 +112,7 @@ function useDecide(docType: string, id: number, inst: ApprovalInstance, onDone?:
     }
   }
 
-  const approve = () => void decide('approve', () => unwrap(api.POST('/approvals/{id}/approve', { params: path, body: { step } }))).catch(() => {})
+  const approve = (step: number) => void decide('approve', () => unwrap(api.POST('/approvals/{id}/approve', { params: path, body: { step } }))).catch(() => {})
   const dialogs = (
     <>
       {modal?.kind === 'reject' && (
@@ -115,7 +122,7 @@ function useDecide(docType: string, id: number, inst: ApprovalInstance, onDone?:
           submitLabel={t('shared.approval.reject')}
           multiline
           onClose={() => setModal(null)}
-          onSubmit={(reason) => decide('reject', () => unwrap(api.POST('/approvals/{id}/reject', { params: path, body: { step, reason } })))}
+          onSubmit={(reason) => decide('reject', () => unwrap(api.POST('/approvals/{id}/reject', { params: path, body: { step: modal.step, reason } })))}
         />
       )}
       {modal?.kind === 'reassign' && (
@@ -129,21 +136,21 @@ function useDecide(docType: string, id: number, inst: ApprovalInstance, onDone?:
       )}
     </>
   )
-  const can = (a: string) => !!voting?.allowed_actions.includes(a)
-  return { error, busy, approve, can, setModal, dialogs }
+  return { error, busy, approve, setModal, dialogs }
 }
 
-function DecisionButtons({ d }: { d: Decide }) {
+function DecisionButtons({ d, step, size }: { d: Decide; step: ApprovalStep; size?: 'xs' }) {
   const { t } = useTranslation()
+  const can = (a: string) => step.allowed_actions.includes(a)
   return (
     <>
-      {d.can('reject') && (
-        <Button variant="outline" color="danger" leftSection={<IconX {...icon.button} />} disabled={d.busy} onClick={() => d.setModal({ kind: 'reject' })}>
+      {can('reject') && (
+        <Button size={size} variant="outline" color="danger" leftSection={<IconX {...icon.button} />} disabled={d.busy} onClick={() => d.setModal({ kind: 'reject', step: step.position })}>
           {t('shared.approval.reject')}
         </Button>
       )}
-      {d.can('approve') && (
-        <Button leftSection={<IconCheck {...icon.button} />} disabled={d.busy} onClick={d.approve}>
+      {can('approve') && (
+        <Button size={size} leftSection={<IconCheck {...icon.button} />} disabled={d.busy} onClick={() => d.approve(step.position)}>
           {t('shared.approval.approve')}
         </Button>
       )}
@@ -156,6 +163,44 @@ function Instance({ docType, id, inst, onDone, sticky, subject, decideElsewhere 
   const me = useMe()
   const d = useDecide(docType, id, inst, onDone)
   const at = formatDateTime(inst.submitted_at, me.timezone)
+  const only = soleVoting(inst)
+  const byPos = new Map(inst.steps.map((s) => [s.position, s]))
+  const top = inst.plan.seq ?? [inst.plan]
+  const renderNode = (node: ApprovalPlan): ReactNode => {
+    if (node.par)
+      return (
+        <Stack gap="xs">
+          <Text size="xs" c="dimmed" fw={600}>
+            {t('shared.approval.parallel')}
+          </Text>
+          <Stack gap="sm" className={classes.parallel}>
+            {node.par.map((c, i) => (
+              <div key={i}>{renderNode(c)}</div>
+            ))}
+          </Stack>
+        </Stack>
+      )
+    if (node.seq)
+      return (
+        <Stack gap="sm">
+          {node.seq.map((c, i) => (
+            <div key={i}>{renderNode(c)}</div>
+          ))}
+        </Stack>
+      )
+    const s = node.step === undefined ? undefined : byPos.get(node.step)
+    if (!s) return null
+    // With several votable steps, each one carries its own decision instead of the shared bar.
+    const own = !only && s.status === 'open' && s.allowed_actions.includes('approve')
+    return (
+      <StepBody
+        step={s}
+        onReassign={s.allowed_actions.includes('reassign') ? () => d.setModal({ kind: 'reassign', step: s }) : undefined}
+        busy={d.busy}
+        decision={own ? <DecisionButtons d={d} step={s} size="xs" /> : undefined}
+      />
+    )
+  }
   return (
     <Stack gap="md">
       <Text size="sm" c="dimmed">
@@ -163,19 +208,20 @@ function Instance({ docType, id, inst, onDone, sticky, subject, decideElsewhere 
           ? t('shared.approval.submitted_for', { name: inst.submitted_by_name, subject, at })
           : t('shared.approval.submitted', { name: inst.submitted_by_name, at })}
       </Text>
-      <Timeline active={inst.steps.length - 1} bulletSize={20} lineWidth={2} role="list" aria-label={t('shared.approval.steps')}>
-        {inst.steps.map((s) => {
-          const look = stepLook[s.status]
+      <Timeline active={top.length - 1} bulletSize={20} lineWidth={2} role="list" aria-label={t('shared.approval.steps')}>
+        {top.map((node, i) => {
+          const status = nodeStatus(node, byPos)
+          const look = stepLook[status]
           return (
             <Timeline.Item
-              key={s.position}
+              key={i}
               role="listitem"
-              aria-current={s.status === 'open' ? 'step' : undefined}
+              aria-current={status === 'open' ? 'step' : undefined}
               color={look.color}
               bullet={look.icon && <look.icon size={12} stroke={2.5} aria-hidden />}
-              lineVariant={s.status === 'approved' || s.status === 'rejected' ? 'solid' : 'dashed'}
+              lineVariant={status === 'approved' || status === 'rejected' ? 'solid' : 'dashed'}
             >
-              <StepBody step={s} onReassign={s.allowed_actions.includes('reassign') ? () => d.setModal({ kind: 'reassign', step: s }) : undefined} busy={d.busy} />
+              {renderNode(node)}
             </Timeline.Item>
           )
         })}
@@ -186,10 +232,10 @@ function Instance({ docType, id, inst, onDone, sticky, subject, decideElsewhere 
           {d.error}
         </Alert>
       )}
-      {!decideElsewhere && (d.can('reject') || d.can('approve')) && (
+      {!decideElsewhere && only && (
         // In the narrow side column the pair splits the width; as a sticky bar it sits on the right.
         <Group gap="xs" grow={!sticky} justify="flex-end" className={sticky ? classes.bar : undefined}>
-          <DecisionButtons d={d} />
+          <DecisionButtons d={d} step={only} />
         </Group>
       )}
       {d.dialogs}
@@ -206,8 +252,20 @@ const stepLook: Record<ApprovalStep['status'], { color: string; icon?: TablerIco
   cancelled: { color: 'gray' },
 }
 
-// onReassign is set when the actor may hand one of the step's voters' seats to someone else.
-function StepBody({ step, onReassign, busy }: { step: ApprovalStep; onReassign?: () => void; busy: boolean }) {
+// nodeStatus is a step's status, or for a group the status its members add up to.
+function nodeStatus(node: ApprovalPlan, byPos: Map<number, ApprovalStep>): ApprovalStep['status'] {
+  if (node.step !== undefined && !node.seq && !node.par) return byPos.get(node.step)?.status ?? 'waiting'
+  const all = [...(node.seq ?? []), ...(node.par ?? [])].map((c) => nodeStatus(c, byPos))
+  if (all.includes('rejected')) return 'rejected'
+  if (all.includes('open')) return 'open'
+  if (all.length > 0 && all.every((x) => x === 'approved')) return 'approved'
+  if (all.length > 0 && all.every((x) => x === 'cancelled')) return 'cancelled'
+  return 'waiting'
+}
+
+// onReassign is set when the actor may hand one of the step's voters' seats to someone else;
+// decision holds the step's own approve and reject.
+function StepBody({ step, onReassign, busy, decision }: { step: ApprovalStep; onReassign?: () => void; busy: boolean; decision?: ReactNode }) {
   const { t } = useTranslation()
   const me = useMe()
   const approved = step.voters.filter((v) => v.decision === 'approved').length
@@ -256,6 +314,7 @@ function StepBody({ step, onReassign, busy }: { step: ApprovalStep; onReassign?:
           )}
         </Group>
       )}
+      {decision && <Group gap="xs">{decision}</Group>}
     </Stack>
   )
 }

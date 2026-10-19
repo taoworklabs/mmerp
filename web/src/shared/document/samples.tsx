@@ -30,13 +30,13 @@ const discussion: Discussion = {
   ],
 }
 
-// Two steps: the first decided, the second open with one of its two approvals, with no action for the viewer.
+// A decided first step, then two parallel steps the viewer may vote on, so each carries its own decision.
 const approval: ApprovalInstance = {
   id: 1,
   status: 'open',
   submitted_by_name: 'Nguyễn Văn An',
   submitted_at: '2026-03-09T08:20:00Z',
-  plan: { seq: [{ step: 1 }, { step: 2 }] },
+  plan: { seq: [{ step: 1 }, { par: [{ step: 2 }, { step: 3 }] }] },
   steps: [
     {
       position: 1,
@@ -57,7 +57,16 @@ const approval: ApprovalInstance = {
         { id: 3, name: 'Nguyễn Thị Lan', decision: 'approved', reason: null, decided_at: '2026-03-09T10:40:00Z' },
         { id: 4, name: 'Lê Văn Cường', decision: null, reason: null, decided_at: null },
       ],
-      allowed_actions: [],
+      allowed_actions: ['approve', 'reject'],
+    },
+    {
+      position: 3,
+      status: 'open',
+      approvals: 1,
+      rejections: 1,
+      fallback: false,
+      voters: [{ id: 4, name: 'Lê Văn Cường', decision: null, reason: null, decided_at: null }],
+      allowed_actions: ['approve', 'reject'],
     },
   ],
 }

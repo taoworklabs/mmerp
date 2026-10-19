@@ -226,6 +226,7 @@
   "shared.approval.reject_title": "Reject",
   "shared.approval.reason": "Reason",
   "shared.approval.reassign_title": "Reassign this step",
+  "shared.approval.parallel": "Parallel",
   "shared.approval.login": "Login of the new approver",
   "shared.approval.done.approve": "Approved.",
   "shared.approval.done.reject": "Rejected.",
