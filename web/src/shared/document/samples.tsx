@@ -30,17 +30,35 @@ const discussion: Discussion = {
   ],
 }
 
-// Two steps: the first decided, the second waiting, with no action for the viewer.
+// Two steps: the first decided, the second open with one of its two approvals, with no action for the viewer.
 const approval: ApprovalInstance = {
   id: 1,
   status: 'open',
-  current_step: 2,
   submitted_by_name: 'Nguyễn Văn An',
   submitted_at: '2026-03-09T08:20:00Z',
-  allowed_actions: [],
+  plan: { seq: [{ step: 1 }, { step: 2 }] },
   steps: [
-    { position: 1, approver_names: ['Trần Thị Bình'], fallback: false, decision: 'approved', decided_by_name: 'Trần Thị Bình', reason: null, decided_at: '2026-03-09T09:05:00Z' },
-    { position: 2, approver_names: ['Nguyễn Thị Lan'], fallback: false, decision: null, decided_by_name: null, reason: null, decided_at: null },
+    {
+      position: 1,
+      status: 'approved',
+      approvals: 1,
+      rejections: 1,
+      fallback: false,
+      voters: [{ id: 2, name: 'Trần Thị Bình', decision: 'approved', reason: null, decided_at: '2026-03-09T09:05:00Z' }],
+      allowed_actions: [],
+    },
+    {
+      position: 2,
+      status: 'open',
+      approvals: 2,
+      rejections: 1,
+      fallback: false,
+      voters: [
+        { id: 3, name: 'Nguyễn Thị Lan', decision: 'approved', reason: null, decided_at: '2026-03-09T10:40:00Z' },
+        { id: 4, name: 'Lê Văn Cường', decision: null, reason: null, decided_at: null },
+      ],
+      allowed_actions: [],
+    },
   ],
 }
 

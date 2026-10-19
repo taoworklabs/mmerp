@@ -110,9 +110,16 @@
           "role": {
             "type": "string"
           },
-          "user_id": {
-            "format": "int64",
-            "type": "integer"
+          "user_ids": {
+            "items": {
+              "format": "int64",
+              "type": "integer"
+            },
+            "maxItems": 20,
+            "type": [
+              "array",
+              "null"
+            ]
           }
         },
         "required": [
@@ -307,6 +314,24 @@
         ],
         "type": "object"
       },
+      "Branch": {
+        "additionalProperties": false,
+        "properties": {
+          "body": {
+            "items": {
+              "$ref": "#/components/schemas/Element"
+            },
+            "type": "array"
+          },
+          "condition": {
+            "$ref": "#/components/schemas/Expr"
+          }
+        },
+        "required": [
+          "body"
+        ],
+        "type": "object"
+      },
       "CodeSeries": {
         "additionalProperties": false,
         "properties": {
@@ -381,35 +406,6 @@
         },
         "required": [
           "version"
-        ],
-        "type": "object"
-      },
-      "Condition": {
-        "additionalProperties": false,
-        "properties": {
-          "field": {
-            "minLength": 1,
-            "type": "string"
-          },
-          "op": {
-            "enum": [
-              "gt",
-              "gte",
-              "eq",
-              "within"
-            ],
-            "type": "string"
-          },
-          "value": {
-            "maxLength": 30,
-            "minLength": 1,
-            "type": "string"
-          }
-        },
-        "required": [
-          "field",
-          "op",
-          "value"
         ],
         "type": "object"
       },
@@ -1700,6 +1696,18 @@
         ],
         "type": "object"
       },
+      "Element": {
+        "additionalProperties": false,
+        "properties": {
+          "split": {
+            "$ref": "#/components/schemas/Split"
+          },
+          "step": {
+            "$ref": "#/components/schemas/StepDef"
+          }
+        },
+        "type": "object"
+      },
       "EmailInputBody": {
         "additionalProperties": false,
         "properties": {
@@ -2124,6 +2132,46 @@
         ],
         "type": "object"
       },
+      "Expr": {
+        "additionalProperties": false,
+        "properties": {
+          "all": {
+            "items": {
+              "$ref": "#/components/schemas/Expr"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "any": {
+            "items": {
+              "$ref": "#/components/schemas/Expr"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "field": {
+            "type": "string"
+          },
+          "op": {
+            "enum": [
+              "gt",
+              "gte",
+              "eq",
+              "within"
+            ],
+            "type": "string"
+          },
+          "value": {
+            "maxLength": 30,
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
       "Field": {
         "additionalProperties": false,
         "properties": {
@@ -2383,19 +2431,12 @@
       "Instance": {
         "additionalProperties": false,
         "properties": {
-          "allowed_actions": {
-            "items": {
-              "type": "string"
-            },
-            "type": "array"
-          },
-          "current_step": {
-            "format": "int32",
-            "type": "integer"
-          },
           "id": {
             "format": "int64",
             "type": "integer"
+          },
+          "plan": {
+            "$ref": "#/components/schemas/Plan"
           },
           "status": {
             "enum": [
@@ -2424,11 +2465,10 @@
         "required": [
           "id",
           "status",
-          "current_step",
           "submitted_by_name",
           "submitted_at",
-          "steps",
-          "allowed_actions"
+          "plan",
+          "steps"
         ],
         "type": "object"
       },
@@ -5280,6 +5320,34 @@
         ],
         "type": "object"
       },
+      "Plan": {
+        "additionalProperties": false,
+        "properties": {
+          "par": {
+            "items": {
+              "$ref": "#/components/schemas/Plan"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "seq": {
+            "items": {
+              "$ref": "#/components/schemas/Plan"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "step": {
+            "format": "int32",
+            "type": "integer"
+          }
+        },
+        "type": "object"
+      },
       "PrintBlock": {
         "additionalProperties": false,
         "properties": {
@@ -5424,6 +5492,10 @@
             "readOnly": true,
             "type": "string"
           },
+          "from": {
+            "format": "int64",
+            "type": "integer"
+          },
           "login": {
             "maxLength": 200,
             "minLength": 1,
@@ -5436,6 +5508,7 @@
         },
         "required": [
           "step",
+          "from",
           "login"
         ],
         "type": "object"
@@ -5535,24 +5608,23 @@
             "minLength": 1,
             "type": "string"
           },
+          "flow": {
+            "items": {
+              "$ref": "#/components/schemas/Element"
+            },
+            "minItems": 1,
+            "type": "array"
+          },
           "max_levels": {
             "default": 3,
             "format": "int32",
             "maximum": 10,
             "minimum": 1,
             "type": "integer"
-          },
-          "steps": {
-            "items": {
-              "$ref": "#/components/schemas/Step"
-            },
-            "maxItems": 10,
-            "minItems": 1,
-            "type": "array"
           }
         },
         "required": [
-          "steps",
+          "flow",
           "max_levels",
           "fallback_product",
           "fallback_role"
@@ -5772,14 +5844,59 @@
         ],
         "type": "object"
       },
-      "Step": {
+      "Split": {
         "additionalProperties": false,
         "properties": {
+          "branches": {
+            "items": {
+              "$ref": "#/components/schemas/Branch"
+            },
+            "maxItems": 10,
+            "minItems": 1,
+            "type": "array"
+          },
+          "mode": {
+            "enum": [
+              "one",
+              "all"
+            ],
+            "type": "string"
+          },
+          "otherwise": {
+            "items": {
+              "$ref": "#/components/schemas/Element"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "mode",
+          "branches"
+        ],
+        "type": "object"
+      },
+      "StepDef": {
+        "additionalProperties": false,
+        "properties": {
+          "approvals": {
+            "default": 1,
+            "format": "int32",
+            "maximum": 20,
+            "minimum": 1,
+            "type": "integer"
+          },
           "approver": {
             "$ref": "#/components/schemas/Approver"
           },
-          "condition": {
-            "$ref": "#/components/schemas/Condition"
+          "rejections": {
+            "default": 1,
+            "format": "int32",
+            "maximum": 20,
+            "minimum": 1,
+            "type": "integer"
           }
         },
         "required": [
@@ -5790,20 +5907,60 @@
       "StepView": {
         "additionalProperties": false,
         "properties": {
-          "approver_names": {
+          "allowed_actions": {
             "items": {
               "type": "string"
             },
             "type": "array"
           },
+          "approvals": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "fallback": {
+            "type": "boolean"
+          },
+          "position": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "rejections": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "status": {
+            "enum": [
+              "waiting",
+              "open",
+              "approved",
+              "rejected",
+              "cancelled"
+            ],
+            "type": "string"
+          },
+          "voters": {
+            "items": {
+              "$ref": "#/components/schemas/StepVoter"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "position",
+          "status",
+          "approvals",
+          "rejections",
+          "fallback",
+          "voters",
+          "allowed_actions"
+        ],
+        "type": "object"
+      },
+      "StepVoter": {
+        "additionalProperties": false,
+        "properties": {
           "decided_at": {
             "format": "date-time",
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "decided_by_name": {
             "type": [
               "string",
               "null"
@@ -5819,12 +5976,12 @@
               "null"
             ]
           },
-          "fallback": {
-            "type": "boolean"
-          },
-          "position": {
-            "format": "int32",
+          "id": {
+            "format": "int64",
             "type": "integer"
+          },
+          "name": {
+            "type": "string"
           },
           "reason": {
             "type": [
@@ -5834,11 +5991,9 @@
           }
         },
         "required": [
-          "position",
-          "approver_names",
-          "fallback",
+          "id",
+          "name",
           "decision",
-          "decided_by_name",
           "reason",
           "decided_at"
         ],

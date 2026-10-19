@@ -1609,8 +1609,7 @@ export interface components {
             kind: "role" | "user" | "module";
             product?: string;
             role?: string;
-            /** Format: int64 */
-            user_id?: number;
+            user_ids?: number[] | null;
         };
         ApproverUser: {
             /** Format: int64 */
@@ -1671,6 +1670,10 @@ export interface components {
             /** @description Every block of the template */
             blocks: components["schemas"]["BlockText"][];
         };
+        Branch: {
+            body: components["schemas"]["Element"][];
+            condition?: components["schemas"]["Expr"];
+        };
         CodeSeries: {
             allowed_actions: string[];
             /** @description Translated as <code>.code_series */
@@ -1696,12 +1699,6 @@ export interface components {
             readonly $schema?: string;
             /** Format: int32 */
             version: number;
-        };
-        Condition: {
-            field: string;
-            /** @enum {string} */
-            op: "gt" | "gte" | "eq" | "within";
-            value: string;
         };
         Contract: {
             /**
@@ -2079,6 +2076,10 @@ export interface components {
             /** Format: int32 */
             version: number;
         };
+        Element: {
+            split?: components["schemas"]["Split"];
+            step?: components["schemas"]["StepDef"];
+        };
         EmailInputBody: {
             /**
              * Format: uri
@@ -2204,6 +2205,14 @@ export interface components {
                 [key: string]: unknown;
             };
         };
+        Expr: {
+            all?: components["schemas"]["Expr"][] | null;
+            any?: components["schemas"]["Expr"][] | null;
+            field?: string;
+            /** @enum {string} */
+            op?: "gt" | "gte" | "eq" | "within";
+            value?: string;
+        };
         Field: {
             key: string;
             /** @enum {string} */
@@ -2284,11 +2293,9 @@ export interface components {
             items: components["schemas"]["InboxItem"][];
         };
         Instance: {
-            allowed_actions: string[];
-            /** Format: int32 */
-            current_step: number;
             /** Format: int64 */
             id: number;
+            plan: components["schemas"]["Plan"];
             /** @enum {string} */
             status: "open" | "approved" | "rejected" | "withdrawn" | "stale";
             steps: components["schemas"]["StepView"][];
@@ -3292,6 +3299,12 @@ export interface components {
             /** Format: date */
             locked_until: string | null;
         };
+        Plan: {
+            par?: components["schemas"]["Plan"][] | null;
+            seq?: components["schemas"]["Plan"][] | null;
+            /** Format: int32 */
+            step?: number;
+        };
         PrintBlock: {
             en: string;
             key: string;
@@ -3338,6 +3351,8 @@ export interface components {
              * @example /api/schemas/ReassignInputBody.json
              */
             readonly $schema?: string;
+            /** Format: int64 */
+            from: number;
             login: string;
             /** Format: int32 */
             step: number;
@@ -3373,12 +3388,12 @@ export interface components {
             readonly $schema?: string;
             fallback_product: string;
             fallback_role: string;
+            flow: components["schemas"]["Element"][];
             /**
              * Format: int32
              * @default 3
              */
             max_levels: number;
-            steps: components["schemas"]["Step"][];
         };
         SelfServiceActions: {
             /**
@@ -3448,20 +3463,46 @@ export interface components {
             /** @description 0 to 10 characters, no whitespace */
             prefix: string;
         };
-        Step: {
+        Split: {
+            branches: components["schemas"]["Branch"][];
+            /** @enum {string} */
+            mode: "one" | "all";
+            otherwise?: components["schemas"]["Element"][] | null;
+        };
+        StepDef: {
+            /**
+             * Format: int32
+             * @default 1
+             */
+            approvals: number;
             approver: components["schemas"]["Approver"];
-            condition?: components["schemas"]["Condition"];
+            /**
+             * Format: int32
+             * @default 1
+             */
+            rejections: number;
         };
         StepView: {
-            approver_names: string[];
-            /** Format: date-time */
-            decided_at: string | null;
-            decided_by_name: string | null;
-            /** @enum {string|null} */
-            decision: "approved" | "rejected" | null;
+            allowed_actions: string[];
+            /** Format: int32 */
+            approvals: number;
             fallback: boolean;
             /** Format: int32 */
             position: number;
+            /** Format: int32 */
+            rejections: number;
+            /** @enum {string} */
+            status: "waiting" | "open" | "approved" | "rejected" | "cancelled";
+            voters: components["schemas"]["StepVoter"][];
+        };
+        StepVoter: {
+            /** Format: date-time */
+            decided_at: string | null;
+            /** @enum {string|null} */
+            decision: "approved" | "rejected" | null;
+            /** Format: int64 */
+            id: number;
+            name: string;
             reason: string | null;
         };
         Timesheet: {

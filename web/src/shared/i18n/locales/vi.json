@@ -212,9 +212,7 @@
   "shared.approval.submitted": "{{name}} gửi lúc {{at}}",
   "shared.approval.steps": "Các bước duyệt",
   "shared.approval.step": "Bước {{n}}",
-  "shared.approval.waiting": "Đang chờ",
   "shared.approval.fallback": "vai trò dự phòng",
-  "shared.approval.decided": "{{name}} · {{at}}",
   "shared.approval.reason_value": "Lý do: {{reason}}",
   "shared.approval.decision.approved": "Đã duyệt",
   "shared.approval.decision.rejected": "Từ chối",
@@ -533,7 +531,6 @@
   "shared.devui.alert_discovery": "Mới: mẫu in có thể chỉnh theo từng pháp nhân.",
   "shared.document.save_first": "Lưu thay đổi trước khi gửi duyệt hoặc rút lại.",
   "shared.approval.submitted_for": "{{name}} gửi thay cho {{subject}} lúc {{at}}",
-  "shared.approval.later": "Chưa tới",
   "shared.document.confirm.withdraw": "Rút {{number}} về nháp? Lượt duyệt đang chạy dừng lại; gửi lại thì duyệt từ bước 1.",
   "shared.attachments.drop_hint": "Kéo thả file vào đây hoặc bấm để chọn",
   "shared.field.add": "+ Bổ sung",
@@ -546,5 +543,13 @@
   "shared.sensitive.hide_all": "Ẩn tất cả",
   "shared.activity.day_count_one": "{{count}} mục",
   "shared.activity.day_count_other": "{{count}} mục",
-  "shared.record.recent_activity": "Hoạt động gần đây"
+  "shared.record.recent_activity": "Hoạt động gần đây",
+  "shared.approval.step_status.waiting": "Chưa tới",
+  "shared.approval.step_status.open": "Đang chờ",
+  "shared.approval.step_status.approved": "Đã duyệt",
+  "shared.approval.step_status.rejected": "Từ chối",
+  "shared.approval.step_status.cancelled": "Không cần nữa",
+  "shared.approval.count": "{{n}}/{{m}} lượt duyệt",
+  "shared.approval.reassign_from": "Thay cho",
+  "shared.rule.not_a_chain": "Quy tắc này có bước song song, nhiều nhánh hoặc bước cần nhiều lượt duyệt; màn hình này chưa sửa được."
 }

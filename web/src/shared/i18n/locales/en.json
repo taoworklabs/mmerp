@@ -212,9 +212,7 @@
   "shared.approval.submitted": "Sent by {{name}} at {{at}}",
   "shared.approval.steps": "Approval steps",
   "shared.approval.step": "Step {{n}}",
-  "shared.approval.waiting": "Waiting",
   "shared.approval.fallback": "fallback role",
-  "shared.approval.decided": "{{name}} · {{at}}",
   "shared.approval.reason_value": "Reason: {{reason}}",
   "shared.approval.decision.approved": "Approved",
   "shared.approval.decision.rejected": "Rejected",
@@ -533,7 +531,6 @@
   "shared.devui.alert_discovery": "New: print templates can be edited per legal entity.",
   "shared.document.save_first": "Save changes before submitting or withdrawing.",
   "shared.approval.submitted_for": "Sent by {{name}} for {{subject}} at {{at}}",
-  "shared.approval.later": "Not yet",
   "shared.document.confirm.withdraw": "Withdraw {{number}} to draft? The running approval stops; sending it again starts from step 1.",
   "shared.attachments.drop_hint": "Drop files here or click to choose",
   "shared.field.add": "+ Add",
@@ -546,5 +543,13 @@
   "shared.sensitive.hide_all": "Hide all",
   "shared.activity.day_count_one": "{{count}} event",
   "shared.activity.day_count_other": "{{count}} events",
-  "shared.record.recent_activity": "Recent activity"
+  "shared.record.recent_activity": "Recent activity",
+  "shared.approval.step_status.waiting": "Not yet",
+  "shared.approval.step_status.open": "Waiting",
+  "shared.approval.step_status.approved": "Approved",
+  "shared.approval.step_status.rejected": "Rejected",
+  "shared.approval.step_status.cancelled": "No longer needed",
+  "shared.approval.count": "{{n}} of {{m}} approvals",
+  "shared.approval.reassign_from": "Replace",
+  "shared.rule.not_a_chain": "This rule has parallel steps, several branches or steps needing more than one approval; this screen cannot edit it yet."
 }

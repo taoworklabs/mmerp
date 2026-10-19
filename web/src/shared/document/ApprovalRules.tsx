@@ -1,11 +1,11 @@
 import { ActionIcon, Alert, Button, Group, Paper, Stack, Text, Tooltip } from '@mantine/core'
-import { IconAlertCircle, IconPlus, IconTrash } from '@tabler/icons-react'
+import { IconAlertCircle, IconAlertTriangle, IconPlus, IconTrash } from '@tabler/icons-react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
 import { useFieldArray, useForm, useWatch, type Control } from 'react-hook-form'
 import { useTranslation } from 'react-i18next'
 import { Route, Routes, useNavigate, useParams } from 'react-router'
-import { api, unwrap, type Role, type RuleCondition, type RuleInput, type TypeRule } from '@/shared/api/core'
+import { api, unwrap, type Role, type RuleInput, type TypeRule } from '@/shared/api/core'
 import { errorText } from '@/shared/i18n'
 import { DataTable, type Column } from '@/shared/ui/DataTable'
 import { useConfirm } from '@/shared/ui/confirm'
@@ -15,6 +15,7 @@ import { ListPage, Page } from '@/shared/ui/page'
 import { ContentSkeleton, EmptyState, ErrorState, NotFoundPage, PageSkeleton } from '@/shared/ui/states'
 import { icon } from '@/shared/ui/theme'
 import { documentKeys } from './keys'
+import { fromFlow, splitRole, toFlow, type StepValues } from './ruleFlow'
 
 type Props = { product: string; basePath: string } // basePath: where the area mounts this, e.g. /hrm/approval-rules
 
@@ -45,7 +46,7 @@ function RuleList({ product, basePath }: Props) {
       key: 'rule',
       header: t('shared.rule.steps'),
       role: 'meta',
-      render: (r) => (r.rule ? t('shared.rule.step_count', { count: r.rule.steps.length }) : t('shared.rule.none')),
+      render: (r) => (r.rule ? t('shared.rule.step_count', { count: r.rule.flow.length }) : t('shared.rule.none')),
     },
   ]
   let body
@@ -69,41 +70,24 @@ function RuleList({ product, basePath }: Props) {
   )
 }
 
-type StepValues = { kind: string | null; role: string | null; user: string | null; field: string | null; op: string | null; value: string }
 type Values = { steps: StepValues[]; max_levels: string; fallback: string | null }
 
 const roleValue = (r: Role) => `${r.product}.${r.role}`
-const splitRole = (v: string) => {
-  const [product = '', ...rest] = v.split('.')
-  return { product, role: rest.join('.') }
-}
 
 const newStep = (r: TypeRule): StepValues => ({ kind: r.module_approvers ? 'module' : 'role', role: null, user: null, field: null, op: null, value: '' })
 
-function toValues(r: TypeRule): Values {
+// null when the saved flow is not a chain the editor can show.
+function toValues(r: TypeRule): Values | null {
   if (!r.rule) return { steps: [newStep(r)], max_levels: '3', fallback: null }
-  return {
-    steps: r.rule.steps.map((s) => ({
-      kind: s.approver.kind,
-      role: s.approver.kind === 'role' ? `${s.approver.product}.${s.approver.role}` : null,
-      user: s.approver.kind === 'user' && s.approver.user_id ? String(s.approver.user_id) : null,
-      field: s.condition?.field ?? null,
-      op: s.condition?.op ?? null,
-      value: s.condition?.value ?? '',
-    })),
-    max_levels: String(r.rule.max_levels),
-    fallback: `${r.rule.fallback_product}.${r.rule.fallback_role}`,
-  }
+  const steps = fromFlow(r.rule.flow)
+  if (!steps) return null
+  return { steps, max_levels: String(r.rule.max_levels), fallback: `${r.rule.fallback_product}.${r.rule.fallback_role}` }
 }
 
 function toInput(v: Values): RuleInput {
   const fallback = splitRole(v.fallback ?? '')
   return {
-    steps: v.steps.map((s) => ({
-      approver:
-        s.kind === 'role' ? { kind: 'role', ...splitRole(s.role ?? '') } : s.kind === 'user' ? { kind: 'user', user_id: Number(s.user) } : { kind: 'module' },
-      condition: s.field && s.op ? { field: s.field, op: s.op as RuleCondition['op'], value: s.value } : undefined,
-    })),
+    flow: toFlow(v.steps),
     max_levels: Number(v.max_levels),
     fallback_product: fallback.product,
     fallback_role: fallback.role,
@@ -124,19 +108,28 @@ function RuleEditor({ product, basePath }: Props) {
   if (users.isError) return <ErrorState message={errorText(t, users.error)} onRetry={() => void users.refetch()} />
   const rule = rules.data.find((r) => r.doc_type === docType)
   if (!rule) return <NotFoundPage back={{ to: basePath, label: t('shared.rule.back') }} />
+  const values = toValues(rule)
+  if (!values)
+    return (
+      <Page centered title={t(`${rule.doc_type}.name`, { defaultValue: rule.doc_type })} breadcrumbs={[{ label: t('shared.rule.title'), to: basePath }]}>
+        <Alert color="warning" icon={<IconAlertTriangle {...icon.button} />}>
+          {t('shared.rule.not_a_chain')}
+        </Alert>
+      </Page>
+    )
   const userOptions = users.data.map((u) => ({ value: String(u.id), label: `${u.name} (${u.login})` }))
   // Tenant-wide roles administer the system; they do not approve documents.
-  return <RuleForm key={docType} rule={rule} basePath={basePath} roles={roles.data.filter((r) => !r.tenant_wide)} userOptions={userOptions} />
+  return <RuleForm key={docType} rule={rule} values={values} basePath={basePath} roles={roles.data.filter((r) => !r.tenant_wide)} userOptions={userOptions} />
 }
 
-function RuleForm({ rule, basePath, roles, userOptions }: { rule: TypeRule; basePath: string; roles: Role[]; userOptions: Option[] }) {
+function RuleForm({ rule, values, basePath, roles, userOptions }: { rule: TypeRule; values: Values; basePath: string; roles: Role[]; userOptions: Option[] }) {
   const { t } = useTranslation()
   const qc = useQueryClient()
   const navigate = useNavigate()
   const [ask, confirm] = useConfirm()
   // A failed delete, shown at the top of the page until the next attempt.
   const [error, setError] = useState<string | null>(null)
-  const form = useForm<Values>({ mode: 'onBlur', defaultValues: toValues(rule) })
+  const form = useForm<Values>({ mode: 'onBlur', defaultValues: values })
   const steps = useFieldArray({ control: form.control, name: 'steps' })
   const name = t(`${rule.doc_type}.name`, { defaultValue: rule.doc_type })
   const allowed = rule.allowed_actions

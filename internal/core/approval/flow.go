@@ -20,8 +20,8 @@ type Element struct {
 // rejections it takes to move on.
 type StepDef struct {
 	Approver   Approver `json:"approver"`
-	Approvals  int32    `json:"approvals" minimum:"1" maximum:"20" default:"1"`
-	Rejections int32    `json:"rejections" minimum:"1" maximum:"20" default:"1"`
+	Approvals  int32    `json:"approvals" required:"false" minimum:"1" maximum:"20" default:"1"`
+	Rejections int32    `json:"rejections" required:"false" minimum:"1" maximum:"20" default:"1"`
 }
 
 // SplitMode says whether a split picks one branch or runs every holding branch.
