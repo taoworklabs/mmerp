@@ -7,7 +7,7 @@ import { Link, useLocation, useNavigate, useSearchParams } from 'react-router'
 import { api, unwrap, type InboxItem } from '@/shared/api/core'
 import { RecordPreview, useRecordLink } from '@/shared/area'
 import { useMe } from '@/shared/auth/me'
-import { ApprovalPanel, documentKeys } from '@/shared/document'
+import { actionLabel, ApprovalPanel, documentKeys } from '@/shared/document'
 import { errorText, formatAgo, formatDateTime } from '@/shared/i18n'
 import { InboxList, InboxRow, InboxPage as Template } from '@/shared/ui/page'
 import { ContentSkeleton, EmptyState, ErrorState } from '@/shared/ui/states'
@@ -65,7 +65,7 @@ export default function InboxPage() {
                 </Tooltip>
               </Group>
             }
-            description={`${t(`${i.doc_type}.name`, { defaultValue: i.doc_type })} · ${i.submitted_by_name}`}
+            description={[t(`${i.doc_type}.name`, { defaultValue: i.doc_type }), ...(i.action === 'post' ? [] : [actionLabel(t, i.doc_type, i.action)]), i.submitted_by_name].join(' · ')}
           />
         ))}
       </InboxList>

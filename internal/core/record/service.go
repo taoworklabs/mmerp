@@ -695,7 +695,7 @@ func (s *Service) CompleteAction(ctx context.Context, ref Ref, ticket int64) err
 		as := s.d.IAM.AsUser(ctx, h.SubmittedBy)
 		if h.Action == Cancel {
 			if err := s.require(as, ref, Cancel); err != nil {
-				return err
+				return submitterForbidden(err)
 			}
 			if d.Status != Posted {
 				return ErrInvalidTransition
@@ -706,8 +706,17 @@ func (s *Service) CompleteAction(ctx context.Context, ref Ref, ticket int64) err
 		if !ok {
 			return fmt.Errorf("record: %s has no action %q", ref.Type, h.Action)
 		}
-		return run(as, d, h.Params)
+		return submitterForbidden(run(as, d, h.Params))
 	})
+}
+
+// submitterForbidden turns a forbidden from the submitter's re-check into a distinct
+// code, so the approver reads it as "reject this" rather than their own permission.
+func submitterForbidden(err error) error {
+	if errors.Is(err, platform.ErrForbidden) {
+		return ErrSubmitterForbidden
+	}
+	return err
 }
 
 // refuseHeld fails while an approval request holds ref.

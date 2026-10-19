@@ -236,6 +236,8 @@ var (
 	ErrApprovalStale = &platform.Error{Status: http.StatusConflict, Code: "approval_stale"}
 	// An open approval request holds the document; nothing else may change it meanwhile.
 	ErrAwaitingApproval = &platform.Error{Status: http.StatusConflict, Code: "awaiting_approval"}
+	// The submitter's own re-check failed on completion; distinct from the approver's own forbidden.
+	ErrSubmitterForbidden = &platform.Error{Status: http.StatusConflict, Code: "submitter_forbidden"}
 )
 
 func errPeriodLocked(lockedUntil string) error {

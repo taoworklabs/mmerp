@@ -860,7 +860,7 @@ func TestCompletionRechecksAsSubmitter(t *testing.T) {
 	f.check(err)
 	id := f.panel("boss", d).ID
 	f.denied[f.users["submitter"]] = record.Cancel
-	if code(f.appr.Approve(f.as("boss"), id, 1)) != "forbidden" {
+	if code(f.appr.Approve(f.as("boss"), id, 1)) != "submitter_forbidden" {
 		t.Fatal("approved without the submitter's permission")
 	}
 	f.unchanged(d)

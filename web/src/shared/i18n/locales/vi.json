@@ -357,7 +357,7 @@
   "shared.rule.max_levels_hint": "Khi quản lý trực tiếp chính là người gửi, lên cấp trên, tối đa số cấp này.",
   "shared.rule.saved": "Đã lưu quy tắc duyệt.",
   "shared.rule.delete": "Xóa quy tắc",
-  "shared.rule.delete_confirm": "Xóa quy tắc duyệt của {{name}}? Chứng từ gửi sau đó có hiệu lực ngay.",
+  "shared.rule.delete_confirm": "Xóa quy tắc duyệt {{name}}? Sau đó thao tác này có hiệu lực ngay, không cần duyệt.",
   "shared.rule.deleted": "Đã xóa quy tắc duyệt.",
   "shared.rule.user": "Người dùng",
   "shared.rule.kind.user": "Người dùng cụ thể",
@@ -603,5 +603,6 @@
   "shared.approval.withdraw_confirm": "Rút yêu cầu duyệt này? Chứng từ giữ nguyên; các lượt duyệt đã có bị bỏ.",
   "shared.approval.done.withdraw": "Đã rút yêu cầu.",
   "shared.document.sent_for_approval": "Đã gửi yêu cầu duyệt cho {{number}}.",
-  "shared.error.awaiting_approval": "Chứng từ đang chờ duyệt một yêu cầu."
+  "shared.error.awaiting_approval": "Chứng từ đang chờ duyệt một yêu cầu.",
+  "shared.error.submitter_forbidden": "Người gửi không còn quyền thực hiện thao tác này; hãy từ chối yêu cầu."
 }

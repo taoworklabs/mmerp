@@ -537,7 +537,7 @@ func (s *Service) Inbox(ctx context.Context) ([]InboxItem, error) {
 			continue
 		}
 		out = append(out, InboxItem{
-			InstanceID: r.ID, DocType: r.DocType, DocID: r.DocID, Number: r.Number, Date: r.Date.Time.Format(time.DateOnly),
+			InstanceID: r.ID, DocType: r.DocType, DocID: r.DocID, Action: r.Action, Number: r.Number, Date: r.Date.Time.Format(time.DateOnly),
 			Step: r.Step, SubmittedByName: r.SubmittedByName, SubmittedAt: r.SubmittedAt.Time.Format(time.RFC3339),
 		})
 	}

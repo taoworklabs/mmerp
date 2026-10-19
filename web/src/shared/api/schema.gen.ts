@@ -2285,6 +2285,7 @@ export interface components {
             name: string;
         };
         InboxItem: {
+            action: string;
             /** Format: date */
             date: string;
             /** Format: int64 */

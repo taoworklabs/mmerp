@@ -357,7 +357,7 @@
   "shared.rule.max_levels_hint": "When the direct manager is the submitter, go up, at most this many levels.",
   "shared.rule.saved": "Approval rule saved.",
   "shared.rule.delete": "Delete rule",
-  "shared.rule.delete_confirm": "Delete the approval rule of {{name}}? Documents sent afterwards take effect at once.",
+  "shared.rule.delete_confirm": "Delete the approval rule {{name}}? The action then takes effect at once, without approval.",
   "shared.rule.deleted": "Approval rule deleted.",
   "shared.rule.user": "Users",
   "shared.rule.kind.user": "A specific user",
@@ -603,5 +603,6 @@
   "shared.approval.withdraw_confirm": "Withdraw this approval request? The document stays as it is; the approvals given so far are dropped.",
   "shared.approval.done.withdraw": "Request withdrawn.",
   "shared.document.sent_for_approval": "Approval request sent for {{number}}.",
-  "shared.error.awaiting_approval": "The document awaits approval of a request."
+  "shared.error.awaiting_approval": "The document awaits approval of a request.",
+  "shared.error.submitter_forbidden": "The submitter no longer has permission for this action; reject the request."
 }

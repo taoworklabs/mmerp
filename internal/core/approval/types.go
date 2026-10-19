@@ -94,6 +94,7 @@ type InboxItem struct {
 	InstanceID      int64  `json:"instance_id"`
 	DocType         string `json:"doc_type"`
 	DocID           int64  `json:"doc_id"`
+	Action          string `json:"action"`
 	Number          string `json:"number"`
 	Date            string `json:"date" format:"date"`
 	Step            int32  `json:"step"`

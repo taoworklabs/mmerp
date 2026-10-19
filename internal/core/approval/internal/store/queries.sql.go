@@ -214,7 +214,7 @@ func (q *Queries) HeldInPeriod(ctx context.Context, arg HeldInPeriodParams) ([]H
 }
 
 const inbox = `-- name: Inbox :many
-SELECT i.id, i.doc_type, i.doc_id, s.step, i.submitted_at, u.name AS submitted_by_name, d.number, d.date
+SELECT i.id, i.doc_type, i.doc_id, i.action, s.step, i.submitted_at, u.name AS submitted_by_name, d.number, d.date
 FROM (
     SELECT DISTINCT ON (s.instance_id) s.instance_id, s.position AS step
     FROM approval.instance_steps s
@@ -232,6 +232,7 @@ type InboxRow struct {
 	ID              int64
 	DocType         string
 	DocID           int64
+	Action          string
 	Step            int32
 	SubmittedAt     pgtype.Timestamptz
 	SubmittedByName string
@@ -254,6 +255,7 @@ func (q *Queries) Inbox(ctx context.Context, actor int64) ([]InboxRow, error) {
 			&i.ID,
 			&i.DocType,
 			&i.DocID,
+			&i.Action,
 			&i.Step,
 			&i.SubmittedAt,
 			&i.SubmittedByName,

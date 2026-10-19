@@ -2364,6 +2364,9 @@
       "InboxItem": {
         "additionalProperties": false,
         "properties": {
+          "action": {
+            "type": "string"
+          },
           "date": {
             "format": "date",
             "type": "string"
@@ -2398,6 +2401,7 @@
           "instance_id",
           "doc_type",
           "doc_id",
+          "action",
           "number",
           "date",
           "step",

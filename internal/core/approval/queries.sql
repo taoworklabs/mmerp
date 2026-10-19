@@ -71,7 +71,7 @@ UPDATE approval.instances SET status = $2 WHERE id = $1 AND status = 'open';
 -- name: Inbox :many
 -- One row per instance: the lowest open step waiting for @actor's vote. An actor
 -- in two open parallel steps of the same instance sees it once, not twice.
-SELECT i.id, i.doc_type, i.doc_id, s.step, i.submitted_at, u.name AS submitted_by_name, d.number, d.date
+SELECT i.id, i.doc_type, i.doc_id, i.action, s.step, i.submitted_at, u.name AS submitted_by_name, d.number, d.date
 FROM (
     SELECT DISTINCT ON (s.instance_id) s.instance_id, s.position AS step
     FROM approval.instance_steps s

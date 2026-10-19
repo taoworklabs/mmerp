@@ -158,7 +158,7 @@ Moving the lock date: `record` takes `FOR UPDATE` on the legal entity's row, che
 
 There is no `BeforeLock(legal_entity, date)` hook yet for other modules to refuse a period lock; this hook is added together with `accounting` (see Posting).
 
-**No period lock while documents are pending approval, or held by a request.** `record` itself refuses to move the lock date if the part of the period about to be locked still contains `pending_approval` documents, or documents held by an open request for any other action (the gate's `HeldInPeriod`), and lists them. If the lock were allowed, these documents would be stuck: they could not finish approval or complete a held action because the period is locked, and could not be withdrawn either, because withdrawing is itself a write in a locked period. This check runs while holding `FOR UPDATE` on the legal entity's row, so no document can move to `pending_approval`, or become held, in that period between the check and the commit.
+**No period lock while documents are pending approval, or held by a request.** `record` itself refuses to move the lock date if the part of the period about to be locked still contains `pending_approval` documents, or documents held by an open request for any other action (the gate's `HeldInPeriod`), and lists them. If the lock were allowed, these documents would be stuck: the request could never complete, since completion itself checks the period. This check runs while holding `FOR UPDATE` on the legal entity's row, so no document can move to `pending_approval`, or become held, in that period between the check and the commit.
 
 **Approvers by module** (`Approvers`):
 
