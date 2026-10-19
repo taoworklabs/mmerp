@@ -125,9 +125,9 @@ func wantCode(t *testing.T, err error, code string) {
 	}
 }
 
-// managerApproves routes quotations with a discount above 10 % to team managers.
-func (f *fixture) managerApproves(docType string) {
-	f.check(f.appr.SaveRule(f.admin, docType, record.Post, approval.RuleInput{
+// managerApproves routes action on documents with a discount above 10 % to team managers.
+func (f *fixture) managerApproves(docType string, action record.Action) {
+	f.check(f.appr.SaveRule(f.admin, docType, action, approval.RuleInput{
 		Flow: approval.Flow{{Split: &approval.Split{Mode: approval.ChooseOne, Branches: []approval.Branch{{
 			Condition: &approval.Expr{Field: "max_discount", Op: "gt", Value: "10"},
 			Body:      approval.Flow{{Step: &approval.StepDef{Approver: approval.Approver{Kind: "role", Product: "sales", Role: "manager"}}}},
@@ -153,7 +153,7 @@ func contract(t *testing.T, docType string) {
 		create, update, read := f.sales.CreateQuote, f.sales.UpdateQuote, f.sales.Quote
 		routes := map[string]func(context.Context, record.Ref) error{
 			"create order": func(ctx context.Context, r record.Ref) error {
-				_, err := f.sales.CreateOrderFromQuote(ctx, r.ID)
+				_, err := f.order(ctx, r.ID)
 				return err
 			},
 		}
@@ -191,7 +191,7 @@ func contract(t *testing.T, docType string) {
 			Edit: func(ctx context.Context, r record.Ref, version int32, date string) error {
 				return update(ctx, r.ID, sales.DocUpdate{Version: version, DocFields: fields(date)})
 			},
-			RequireApproval: func(*testing.T) { f.managerApproves(docType) },
+			RequireApproval: func(_ *testing.T, a record.Action) { f.managerApproves(docType, a) },
 			Approve:         func(instance int64) error { return f.appr.Approve(f.manager, instance, 1) },
 			// Posting refuses a customer deactivated since the draft was saved.
 			BreakPosting: deactivate,
@@ -374,7 +374,7 @@ func TestQuote(t *testing.T) {
 	wantCode(t, f.sales.UpdateQuote(f.staff, id, sales.DocUpdate{Version: q.Version, DocFields: bad}), "quote_valid_until_before_date")
 
 	// A 10 % discount needs no approval under "above 10 %": posted at once.
-	f.managerApproves("sales.quote")
+	f.managerApproves("sales.quote", record.Post)
 	f.check(f.move(f.staff, "sales.quote", id, record.Posted))
 	// Editing the customer after posting changes nothing on the quotation.
 	c := customer("KH1", f.a)
@@ -407,7 +407,7 @@ func TestQuote(t *testing.T) {
 	if _, err := f.sales.Quote(staffB, id); !errors.Is(err, platform.ErrNotFound) {
 		t.Fatalf("B opens: %v", err)
 	}
-	if _, err := f.sales.CreateOrderFromQuote(staffB, id); !errors.Is(err, platform.ErrNotFound) {
+	if _, err := f.order(staffB, id); !errors.Is(err, platform.ErrNotFound) {
 		t.Fatalf("B orders: %v", err)
 	}
 	if l, _ := f.sales.Quotes(staffB, sales.DocFilter{Sort: "-date", Paging: platform.Paging{Page: 1, PageSize: 50}}); l.Total != 0 {
@@ -452,15 +452,15 @@ func TestOrderFromQuote(t *testing.T) {
 	today := todayOf(t, f)
 	qf := f.fields(today)
 	quote := must(t)(f.sales.CreateQuote(f.staff, sales.NewDoc{RequestID: newRequest(), DocFields: qf}))
-	wantCode(t, must2(f.sales.CreateOrderFromQuote(f.staff, quote)), "quote_not_posted")
+	wantCode(t, must2(f.order(f.staff, quote)), "quote_not_posted")
 	f.check(f.move(f.staff, "sales.quote", quote, record.Posted))
 
 	// A viewer may read but not order.
-	if _, err := f.sales.CreateOrderFromQuote(f.ctxFor("viewer", "viewer@A"), quote); !errors.Is(err, platform.ErrForbidden) {
+	if _, err := f.order(f.ctxFor("viewer", "viewer@A"), quote); !errors.Is(err, platform.ErrForbidden) {
 		t.Fatalf("viewer orders: %v", err)
 	}
-	order := must(t)(f.sales.CreateOrderFromQuote(f.staff, quote))
-	if again := must(t)(f.sales.CreateOrderFromQuote(f.staff, quote)); again != order {
+	order := must(t)(f.order(f.staff, quote))
+	if again := must(t)(f.order(f.staff, quote)); again != order {
 		t.Fatalf("second order %d, first %d", again, order)
 	}
 	o, err := f.sales.Order(f.staff, order)
@@ -475,7 +475,7 @@ func TestOrderFromQuote(t *testing.T) {
 	// Posted, then cancelled: the quotation may become an order again.
 	f.check(f.move(f.staff, "sales.order", order, record.Posted))
 	f.check(f.move(f.staff, "sales.order", order, record.Cancelled))
-	second := must(t)(f.sales.CreateOrderFromQuote(f.staff, quote))
+	second := must(t)(f.order(f.staff, quote))
 	if second == order {
 		t.Fatal("cancelled order returned")
 	}
@@ -492,7 +492,7 @@ func TestOrderFromQuote(t *testing.T) {
 	if q, _ := f.sales.Quote(f.staff, expired); !q.Expired || slices.Contains(q.AllowedActions, "create_order") {
 		t.Fatalf("expired quote %+v", q)
 	}
-	wantCode(t, must2(f.sales.CreateOrderFromQuote(f.staff, expired)), "quote_expired")
+	wantCode(t, must2(f.order(f.staff, expired)), "quote_expired")
 
 	// An order entered directly has no quotation.
 	of := f.fields(today)
@@ -512,7 +512,7 @@ func TestOrderFromQuoteRace(t *testing.T) {
 	var wg sync.WaitGroup
 	for i := range ids {
 		wg.Go(func() {
-			id, err := f.sales.CreateOrderFromQuote(f.staff, quote)
+			id, err := f.order(f.staff, quote)
 			if err != nil {
 				t.Error(err)
 			}
@@ -522,6 +522,93 @@ func TestOrderFromQuoteRace(t *testing.T) {
 	wg.Wait()
 	if ids[0] == 0 || slices.ContainsFunc(ids, func(v int64) bool { return v != ids[0] }) {
 		t.Fatalf("ids %v", ids)
+	}
+}
+
+// order makes or returns the order of a quote, refusing a held one.
+func (f *fixture) order(ctx context.Context, quote int64) (int64, error) {
+	id, held, err := f.sales.CreateOrderFromQuote(ctx, quote)
+	if held {
+		return 0, errors.New("held for approval")
+	}
+	return id, err
+}
+
+// postedQuote is a posted quotation of today with a 15 % discount, so the managers' rules apply.
+func (f *fixture) postedQuote() record.Ref {
+	f.t.Helper()
+	fl := f.fields(todayOf(f.t, f))
+	fl.Lines[2].DiscountPercent = "15"
+	id := must(f.t)(f.sales.CreateQuote(f.staff, sales.NewDoc{RequestID: newRequest(), DocFields: fl}))
+	f.check(f.move(f.staff, "sales.quote", id, record.Posted))
+	return record.Ref{Type: "sales.quote", ID: id}
+}
+
+func (f *fixture) orders() int64 {
+	f.t.Helper()
+	l, err := f.sales.Orders(f.admin, sales.DocFilter{Sort: "-date", Paging: platform.Paging{Page: 1, PageSize: 100}})
+	f.check(err)
+	return l.Total
+}
+
+// Making an order may wait for a manager; once approved, it is made as the staff user who asked.
+func TestCreateOrderWaitsForApproval(t *testing.T) {
+	f := newFixture(t)
+	quote := f.postedQuote()
+	f.managerApproves("sales.quote", "create_order")
+	id, held, err := f.sales.CreateOrderFromQuote(f.staff, quote.ID)
+	if err != nil || !held || id != 0 {
+		t.Fatalf("create order: %d %v %v", id, held, err)
+	}
+	if n := f.orders(); n != 0 {
+		t.Fatalf("%d orders while held", n)
+	}
+	inst, err := f.appr.DocumentInstance(f.manager, quote)
+	f.check(err)
+	f.check(f.appr.Approve(f.manager, inst.ID, 1))
+	if n := f.orders(); n != 1 {
+		t.Fatalf("%d orders after approval", n)
+	}
+	q, err := f.sales.Quote(f.staff, quote.ID)
+	f.check(err)
+	if q.Order == nil {
+		t.Fatalf("approved quote links no order: %+v", q)
+	}
+	o, err := f.sales.Order(f.staff, q.Order.ID)
+	f.check(err)
+	if len(o.Lines) != 3 || o.Totals != q.Totals || o.Quote == nil || o.Quote.ID != quote.ID {
+		t.Fatalf("order %+v from quote %+v", o, q)
+	}
+	h, err := f.rec.History(f.admin, record.Ref{Type: "sales.order", ID: o.ID})
+	f.check(err)
+	i := slices.IndexFunc(h, func(e record.HistoryEntry) bool { return e.Action == "record.created" })
+	if i < 0 || h[i].ActorName == nil || *h[i].ActorName != "staff" {
+		t.Fatalf("history %+v", h)
+	}
+}
+
+// A quote held for one action refuses the other.
+func TestHeldQuoteRefusesDependentActions(t *testing.T) {
+	f := newFixture(t)
+	f.managerApproves("sales.quote", record.Cancel)
+	cancelled := f.postedQuote()
+	f.check(f.move(f.staff, "sales.quote", cancelled.ID, record.Cancelled))
+	if q, _ := f.sales.Quote(f.staff, cancelled.ID); q.Status != "posted" {
+		t.Fatalf("cancel not held: %s", q.Status)
+	}
+	_, _, err := f.sales.CreateOrderFromQuote(f.staff, cancelled.ID)
+	wantCode(t, err, "awaiting_approval")
+
+	f.managerApproves("sales.quote", "create_order")
+	ordered := f.postedQuote()
+	if _, held, err := f.sales.CreateOrderFromQuote(f.staff, ordered.ID); err != nil || !held {
+		t.Fatalf("create order: %v %v", held, err)
+	}
+	wantCode(t, f.move(f.staff, "sales.quote", ordered.ID, record.Cancelled), "awaiting_approval")
+	q, err := f.sales.Quote(f.staff, ordered.ID)
+	f.check(err)
+	if slices.Contains(q.AllowedActions, "create_order") || slices.Contains(q.AllowedActions, "cancel") {
+		t.Fatalf("held quote offers %v", q.AllowedActions)
 	}
 }
 
@@ -538,7 +625,7 @@ func todayOf(t *testing.T, f *fixture) string {
 // once posted, never reach it. An inactive customer keeps it a draft.
 func TestCustomerCopiedAtSending(t *testing.T) {
 	f := newFixture(t)
-	f.managerApproves("sales.quote")
+	f.managerApproves("sales.quote", record.Post)
 	rename := func(name string, active bool) {
 		c := customer("KH1", f.a)
 		c.Name, c.Active = name, active

@@ -88,8 +88,8 @@ func TestContractRecordContract(t *testing.T) {
 			Edit: func(ctx context.Context, r record.Ref, version int32, date string) error {
 				return f.hrm.UpdateContract(ctx, r.ID, hrm.ContractUpdate{Version: version, ContractFields: hrm.ContractFields{ContractTypeID: f.kind, StartDate: date, Terms: terms(10_000_000)}})
 			},
-			RequireApproval: func(*testing.T) {
-				f.check(f.appr.SaveRule(f.admin, "hrm.contract", record.Post, approval.RuleInput{
+			RequireApproval: func(_ *testing.T, action record.Action) {
+				f.check(f.appr.SaveRule(f.admin, "hrm.contract", action, approval.RuleInput{
 					Flow: approval.Flow{{Step: &approval.StepDef{Approver: approval.Approver{Kind: "role", Product: "hrm", Role: "hr"}}}}, MaxLevels: 1, FallbackProduct: "hrm", FallbackRole: "hr",
 				}))
 			},
@@ -292,6 +292,27 @@ func TestAddAppendixAction(t *testing.T) {
 }
 
 // A fixed-term kind needs an end date and a kind without a term refuses one; appendices have none.
+// While an original waits for its cancel to be approved, no appendix is added to it or posted.
+func TestAppendixOnHeldContract(t *testing.T) {
+	f := newContractFixture(t)
+	orig := must(t)(f.original("2026-01-01", "", 10_000_000))
+	f.check(f.post(orig))
+	draft := must(t)(f.appendix(orig, "2026-03-01", 11_000_000))
+	f.check(f.appr.SaveRule(f.admin, "hrm.contract", record.Cancel, approval.RuleInput{
+		Flow: approval.Flow{{Step: &approval.StepDef{Approver: approval.Approver{Kind: "role", Product: "hrm", Role: "hr"}}}}, MaxLevels: 1, FallbackProduct: "hrm", FallbackRole: "hr",
+	}))
+	f.check(f.cancel(orig))
+	if c := f.contract(orig); c.Status != "posted" {
+		t.Fatalf("cancel not held: %s", c.Status)
+	}
+	if _, err := f.appendix(orig, "2026-04-01", 12_000_000); errCode(err) != "awaiting_approval" {
+		t.Fatalf("appendix on a held contract: %v", err)
+	}
+	if code := errCode(f.post(draft)); code != "awaiting_approval" {
+		t.Fatalf("posting an appendix of a held contract: %q", code)
+	}
+}
+
 func TestEndDateFollowsTheKind(t *testing.T) {
 	f := newContractFixture(t)
 	_, err := f.hrm.CreateContract(f.pay, hrm.NewContract{EmployeeID: f.emp, ContractFields: hrm.ContractFields{ContractTypeID: f.fixed, StartDate: "2026-01-01", Terms: terms(1)}})

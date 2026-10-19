@@ -102,6 +102,12 @@ func (s *Service) contractTransition(ctx context.Context, d record.Doc, from rec
 	if appendix {
 		end = platform.DatePtr(r.ParentEnd)
 	}
+	// Before the payroll and employee locks, which cancelling the original takes after its own.
+	if posted && appendix {
+		if _, err := s.d.Record.LockToDepend(ctx, record.Ref{Type: contractType, ID: r.ParentID.Int64}); err != nil {
+			return err
+		}
+	}
 	if err := checkPayrollPeriods(ctx, d.LegalEntityID, *platform.DatePtr(r.StartDate), end); err != nil {
 		return err
 	}
@@ -314,6 +320,13 @@ func (s *Service) CreateContract(ctx context.Context, in NewContract) (int64, er
 		id = d.ID
 		if err != nil || d.Reused {
 			return err
+		}
+		// After Create, so a create-once key's lock comes first; an original held by a
+		// request takes no appendix.
+		if parent != nil {
+			if _, err := s.d.Record.LockToDepend(ctx, record.Ref{Type: contractType, ID: *in.ParentID}); err != nil {
+				return err
+			}
 		}
 		row.ID, row.EmployeeID, row.ParentID = id, e.ID, platform.NullInt8(in.ParentID)
 		if err := q.CreateContract(ctx, row); err != nil {

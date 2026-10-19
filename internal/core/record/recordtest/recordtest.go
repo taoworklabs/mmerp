@@ -41,8 +41,8 @@ type Harness struct {
 	Get func(ctx context.Context, ref record.Ref) (any, error)
 	// Routes are the type's other module routes on one document, by name.
 	Routes map[string]func(ctx context.Context, ref record.Ref) error
-	// RequireApproval makes sending need one step that Approve or Reject can decide.
-	RequireApproval func(t *testing.T)
+	// RequireApproval makes action (post or cancel) need one step that Approve or Reject can decide.
+	RequireApproval func(t *testing.T, action record.Action)
 	// Approve approves the current step of an approval instance as its approver.
 	Approve func(instance int64) error
 	// Reject rejects the current step of an approval instance as its approver.
@@ -83,7 +83,7 @@ func Run(t *testing.T, setup func(t *testing.T) Harness) {
 
 var cases = []testCase{
 	{"pending and posted documents cannot be edited", func(t *testing.T, h Harness) {
-		h.RequireApproval(t)
+		h.RequireApproval(t, record.Post)
 		ref := create(t, h, "2026-03-10")
 		send(t, h, ref)
 		d := get(t, h, ref)
@@ -99,6 +99,38 @@ var cases = []testCase{
 			t.Fatalf("status %s, want posted", d.Status)
 		}
 		wantCode(t, h.Edit(h.Actor, ref, d.Version, "2026-03-11"), "document_not_editable")
+	}},
+
+	{"a document held by a request refuses writes", func(t *testing.T, h Harness) {
+		if h.RequireApproval == nil {
+			t.Skip("the type has no approval")
+		}
+		ref := create(t, h, "2026-03-10")
+		send(t, h, ref)
+		if !can(t, h, h.Actor, ref.Type, ref.ID, record.Cancel) {
+			t.Skip("the type cannot be cancelled")
+		}
+		h.RequireApproval(t, record.Cancel)
+		d := get(t, h, ref)
+		if held, err := h.Core.Record.Transition(h.Actor, ref, d.Version, record.Cancelled); err != nil || !held {
+			t.Fatalf("cancel: held %v, %v", held, err)
+		}
+		if after := get(t, h, ref); after.Status != record.Posted || after.Version != d.Version {
+			t.Fatalf("held: %+v", after)
+		}
+		wantCode(t, h.Edit(h.Actor, ref, d.Version, "2026-03-11"), "awaiting_approval")
+		wantCode(t, errOf(h.Core.Record.Transition(h.Actor, ref, d.Version, record.Draft)), "awaiting_approval")
+		wantCode(t, errOf(h.Core.Record.Transition(h.Actor, ref, d.Version, record.Cancelled)), "awaiting_approval")
+		hold, err := h.Core.Approval.HeldBy(h.Admin, ref)
+		if err != nil || hold == nil {
+			t.Fatalf("no hold: %v", err)
+		}
+		if err := h.Approve(hold.Ticket); err != nil {
+			t.Fatal(err)
+		}
+		if d := get(t, h, ref); d.Status != record.Cancelled {
+			t.Fatalf("approved cancel: %s", d.Status)
+		}
 	}},
 
 	{"the module table refers to record.documents through a deferred foreign key", func(t *testing.T, h Harness) {
@@ -153,7 +185,7 @@ var cases = []testCase{
 	}},
 
 	{"whoever may print a document may view it, in every status", func(t *testing.T, h Harness) {
-		h.RequireApproval(t)
+		h.RequireApproval(t, record.Post)
 		stranger := newUser(t, h, "print_stranger")
 		ref := create(t, h, "2026-03-10")
 		steps := []func(){
@@ -251,7 +283,7 @@ var cases = []testCase{
 	}},
 
 	{"a rejected submission returns the document to draft", func(t *testing.T, h Harness) {
-		h.RequireApproval(t)
+		h.RequireApproval(t, record.Post)
 		ref := create(t, h, "2026-03-10")
 		send(t, h, ref)
 		if err := h.Reject(*get(t, h, ref).ApprovalTicket); err != nil {
@@ -292,7 +324,7 @@ var cases = []testCase{
 			return code(err)
 		}
 		first := refused(direct)
-		h.RequireApproval(t)
+		h.RequireApproval(t, record.Post)
 		if second := refused(approved); first == "" || second != first {
 			t.Fatalf("refused with %q without approval and %q with it", first, second)
 		}
@@ -470,7 +502,7 @@ var cases = []testCase{
 	}},
 
 	{"approving a withdrawn submission is refused", func(t *testing.T, h Harness) {
-		h.RequireApproval(t)
+		h.RequireApproval(t, record.Post)
 		ref := create(t, h, "2026-03-10")
 		send(t, h, ref)
 		first := *get(t, h, ref).ApprovalTicket
@@ -487,7 +519,7 @@ var cases = []testCase{
 	}},
 
 	{"a failed completion leaves the document pending and the instance open", func(t *testing.T, h Harness) {
-		h.RequireApproval(t)
+		h.RequireApproval(t, record.Post)
 		ref := create(t, h, "2026-03-10")
 		send(t, h, ref)
 		ticket := *get(t, h, ref).ApprovalTicket
@@ -507,7 +539,7 @@ var cases = []testCase{
 	}},
 
 	{"a period with pending documents cannot be locked", func(t *testing.T, h Harness) {
-		h.RequireApproval(t)
+		h.RequireApproval(t, record.Post)
 		ref := create(t, h, "2026-03-10")
 		send(t, h, ref)
 		wantCode(t, h.Core.Record.SetPeriodLock(h.Admin, h.LegalEntity, new("2026-03-31")), "period_has_pending_documents")
@@ -531,7 +563,7 @@ var cases = []testCase{
 	}},
 
 	{"a period lock racing a send waits and sees the pending document", func(t *testing.T, h Harness) {
-		h.RequireApproval(t)
+		h.RequireApproval(t, record.Post)
 		ref := create(t, h, "2026-03-10")
 		var locked error
 		var wg sync.WaitGroup

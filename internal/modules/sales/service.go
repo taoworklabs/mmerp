@@ -22,6 +22,8 @@ const (
 	itemCodeSeries = "sales.item"
 	quoteType      = "sales.quote"
 	orderType      = "sales.order"
+
+	actionCreateOrder record.Action = "create_order"
 )
 
 // kind is what differs between quotations and orders; everything else is shared.
@@ -72,14 +74,19 @@ func NewService(d Deps) *Service {
 		Locate:  locateCustomer,
 		HasData: func(ctx context.Context) (bool, error) { return store.New(platform.DBFrom(ctx)).AnyCatalog(ctx) }})
 	for _, k := range []kind{quoteKind, orderKind} {
+		var actions map[record.Action]record.ModuleAction
+		if k == quoteKind {
+			actions = map[record.Action]record.ModuleAction{actionCreateOrder: s.runCreateOrder}
+		}
 		d.Record.Register(record.Type{
 			Code: k.docType, Product: "sales", Kind: record.Document, NumberPrefix: k.prefix,
 			Fields: []record.Field{{Key: "max_discount", Kind: record.Number, Label: "sales.doc.max_discount"}},
 			// Reading, printing and seeing files need view; every write, attaching included, needs edit.
-			Perms:        record.Perms{View: k.view, Edit: k.edit, ViewFiles: k.view, Attach: k.edit},
-			OnTransition: s.transition,
-			BeforeSubmit: s.beforeSubmit,
-			OnDelete:     deleteDoc,
+			Perms:         record.Perms{View: k.view, Edit: k.edit, ViewFiles: k.view, Attach: k.edit},
+			OnTransition:  s.transition,
+			BeforeSubmit:  s.beforeSubmit,
+			OnDelete:      deleteDoc,
+			ModuleActions: actions,
 		})
 	}
 	s.registerPrints()

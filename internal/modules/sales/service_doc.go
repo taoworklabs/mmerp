@@ -2,6 +2,7 @@ package sales
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 
 	"github.com/jackc/pgx/v5"
@@ -320,66 +321,109 @@ func (s *Service) writeLines(ctx context.Context, k kind, id int64, p prepared) 
 
 // CreateOrderFromQuote makes a draft order of a posted, unexpired quotation: its customer,
 // terms and lines as quoted, dated today. While an order from it is not cancelled, it
-// returns that order instead, so a retried click never makes a second one.
-func (s *Service) CreateOrderFromQuote(ctx context.Context, quoteID int64) (int64, error) {
-	var id int64
-	err := platform.InTx(ctx, func(ctx context.Context) error {
-		qd, err := s.d.Record.Read(ctx, record.Ref{Type: quoteType, ID: quoteID})
+// returns that order instead, so a retried click never makes a second one. When an
+// approval rule holds the quotation for it, it returns held and makes nothing yet.
+func (s *Service) CreateOrderFromQuote(ctx context.Context, quoteID int64) (id int64, held bool, err error) {
+	ref := record.Ref{Type: quoteType, ID: quoteID}
+	err = platform.InTx(ctx, func(ctx context.Context) error {
+		if err := s.mayOrder(ctx, ref); err != nil {
+			return err
+		}
+		d, err := s.d.Record.LockToDepend(ctx, ref)
 		if err != nil {
 			return err
 		}
-		// Checked before an existing order is returned, so only who may make one learns of it.
-		if err := s.d.Record.WriteGate(ctx, record.Ref{Type: quoteType, ID: quoteID}); err != nil {
+		if id, err = s.liveOrder(ctx, quoteID); err != nil || id != 0 {
 			return err
 		}
-		if err := s.require(ctx, PermOrderEdit, qd.OrgUnitID); err != nil {
-			return err
-		}
-		d, err := s.d.Record.Lock(ctx, record.Ref{Type: quoteType, ID: quoteID})
+		f, err := s.orderFields(ctx, d)
 		if err != nil {
 			return err
 		}
-		q := store.New(platform.DBFrom(ctx))
-		live, err := q.LiveOrder(ctx, pgtype.Int8{Int64: quoteID, Valid: true})
-		if err == nil {
-			if ok, err := s.d.Record.Can(ctx, orderType, live.ID, record.View); err != nil || !ok {
-				return platform.OrErr(err, ErrQuoteHasOrder)
-			}
-			id = live.ID
-			return nil
-		}
-		if !errors.Is(err, pgx.ErrNoRows) {
+		if held, err = s.d.Record.Request(ctx, ref, actionCreateOrder, nil); err != nil || held {
 			return err
-		}
-		if d.Status != record.Posted {
-			return ErrQuoteNotPosted
-		}
-		h, err := q.GetHeader(ctx, quoteID)
-		if err != nil {
-			return err
-		}
-		today, err := s.d.Setting.Today(ctx)
-		if err != nil {
-			return err
-		}
-		if expired(h.ValidUntil, today) {
-			return ErrQuoteExpired
-		}
-		lines, err := q.GetLines(ctx, quoteID)
-		if err != nil {
-			return err
-		}
-		f := DocFields{Date: *platform.DatePtr(today), OrgUnitID: h.OrgUnitID, CustomerID: h.CustomerID,
-			PaymentTerms: platform.TextPtr(h.PaymentTerms), DeliveryTerms: platform.TextPtr(h.DeliveryTerms), Note: platform.TextPtr(h.Note),
-			Lines: make([]LineInput, len(lines))}
-		for i, l := range lines {
-			f.Lines[i] = LineInput{ItemID: l.ItemID, Description: l.Description, Quantity: l.Quantity, UnitPrice: l.UnitPrice,
-				DiscountPercent: l.DiscountPercent, VatRate: l.VatRate}
 		}
 		id, err = s.create(ctx, orderKind, "", f, &quoteID)
 		return err
 	})
-	return id, err
+	return id, held, err
+}
+
+// runCreateOrder makes the order of an approved create_order request, as its submitter,
+// in the approver's transaction; the quotation is already locked.
+func (s *Service) runCreateOrder(ctx context.Context, d record.Doc, _ json.RawMessage) error {
+	if err := s.mayOrder(ctx, d.Ref); err != nil {
+		return err
+	}
+	if id, err := s.liveOrder(ctx, d.ID); err != nil || id != 0 {
+		return platform.OrErr(err, ErrQuoteHasOrder)
+	}
+	f, err := s.orderFields(ctx, d)
+	if err != nil {
+		return err
+	}
+	_, err = s.create(ctx, orderKind, "", f, &d.ID)
+	return err
+}
+
+// mayOrder checks the actor may see the quotation and make orders where it is; checked
+// before an existing order is returned, so only who may make one learns of it.
+func (s *Service) mayOrder(ctx context.Context, ref record.Ref) error {
+	qd, err := s.d.Record.Read(ctx, ref)
+	if err != nil {
+		return err
+	}
+	if err := s.d.Record.WriteGate(ctx, ref); err != nil {
+		return err
+	}
+	return s.require(ctx, PermOrderEdit, qd.OrgUnitID)
+}
+
+// liveOrder is the order from the quotation not cancelled, 0 for none; one the actor may
+// not view is refused.
+func (s *Service) liveOrder(ctx context.Context, quoteID int64) (int64, error) {
+	live, err := store.New(platform.DBFrom(ctx)).LiveOrder(ctx, pgtype.Int8{Int64: quoteID, Valid: true})
+	if errors.Is(err, pgx.ErrNoRows) {
+		return 0, nil
+	}
+	if err != nil {
+		return 0, err
+	}
+	if ok, err := s.d.Record.Can(ctx, orderType, live.ID, record.View); err != nil || !ok {
+		return 0, platform.OrErr(err, ErrQuoteHasOrder)
+	}
+	return live.ID, nil
+}
+
+// orderFields is the order a posted, unexpired quotation makes.
+func (s *Service) orderFields(ctx context.Context, d record.Doc) (DocFields, error) {
+	if d.Status != record.Posted {
+		return DocFields{}, ErrQuoteNotPosted
+	}
+	q := store.New(platform.DBFrom(ctx))
+	h, err := q.GetHeader(ctx, d.ID)
+	if err != nil {
+		return DocFields{}, err
+	}
+	today, err := s.d.Setting.Today(ctx)
+	if err != nil {
+		return DocFields{}, err
+	}
+	if expired(h.ValidUntil, today) {
+		return DocFields{}, ErrQuoteExpired
+	}
+	lines, err := q.GetLines(ctx, d.ID)
+	if err != nil {
+		return DocFields{}, err
+	}
+	f := DocFields{Date: *platform.DatePtr(today), OrgUnitID: h.OrgUnitID, CustomerID: h.CustomerID,
+		PaymentTerms: platform.TextPtr(h.PaymentTerms), DeliveryTerms: platform.TextPtr(h.DeliveryTerms), Note: platform.TextPtr(h.Note),
+		Lines: make([]LineInput, len(lines))}
+	for i, l := range lines {
+		f.Lines[i] = LineInput{ItemID: l.ItemID, Description: l.Description, Quantity: l.Quantity, UnitPrice: l.UnitPrice,
+			DiscountPercent: l.DiscountPercent, VatRate: l.VatRate}
+	}
+	return f, nil
 }
 
 func customerCopy(h store.GetHeaderRow) CustomerCopy {

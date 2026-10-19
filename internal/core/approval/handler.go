@@ -31,14 +31,14 @@ type instanceOutput struct {
 type approveInput struct {
 	ID   int64 `path:"id"`
 	Body struct {
-		Step int32 `json:"step"`
+		Step int32 `json:"step" minimum:"1"`
 	}
 }
 
 type rejectInput struct {
 	ID   int64 `path:"id"`
 	Body struct {
-		Step   int32  `json:"step"`
+		Step   int32  `json:"step" minimum:"1"`
 		Reason string `json:"reason" minLength:"1" maxLength:"1000"`
 	}
 }
@@ -50,7 +50,7 @@ type instanceInput struct {
 type reassignInput struct {
 	ID   int64 `path:"id"`
 	Body struct {
-		Step int32 `json:"step"`
+		Step int32 `json:"step" minimum:"1"`
 		// The voter replaced; one who already voted cannot be.
 		From  int64  `json:"from"`
 		Login string `json:"login" minLength:"1" maxLength:"200"`

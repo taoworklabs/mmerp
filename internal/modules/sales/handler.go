@@ -37,6 +37,14 @@ type docOutput struct{ Body Doc }
 
 type newDocInput struct{ Body NewDoc }
 
+// orderFromQuoteOutput: id is null while an approval request holds the quotation.
+type orderFromQuoteOutput struct {
+	Body struct {
+		ID   *int64 `json:"id"`
+		Held bool   `json:"held"`
+	}
+}
+
 type updateDocInput struct {
 	ID   int64 `path:"id"`
 	Body DocUpdate
@@ -119,8 +127,17 @@ func registerHandlers(api huma.API, s *Service) {
 			})
 	}
 	huma.Register(api, huma.Operation{OperationID: "create-order-from-quote", Method: http.MethodPost, Path: "/sales/quotes/{id}/order",
-		DefaultStatus: http.StatusCreated, Description: "While an order from the quotation is not cancelled, returns that order instead of making another."},
-		func(ctx context.Context, in *platform.IDInput) (*platform.CreatedOutput, error) {
-			return platform.Created(s.CreateOrderFromQuote(ctx, in.ID))
+		Description: "While an order from the quotation is not cancelled, returns that order instead of making another. " +
+			"When an approval rule holds the quotation, answers held with no id."},
+		func(ctx context.Context, in *platform.IDInput) (*orderFromQuoteOutput, error) {
+			id, held, err := s.CreateOrderFromQuote(ctx, in.ID)
+			if err != nil {
+				return nil, err
+			}
+			out := &orderFromQuoteOutput{}
+			if out.Body.Held = held; !held {
+				out.Body.ID = &id
+			}
+			return out, nil
 		})
 }

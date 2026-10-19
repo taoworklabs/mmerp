@@ -396,7 +396,9 @@ test('seed Sales on the Demo demo company', async ({ baseURL }) => {
     )
     await play(as, 'quotes', id, q.outcome, q.why)
     if (q.order) {
-      const order = await created(as.post(`/api/sales/quotes/${id}/order`))
+      const res = await as.post(`/api/sales/quotes/${id}/order`)
+      expect(res.status(), await res.text()).toBe(200)
+      const order = ((await res.json()) as { id: number }).id
       await play(as, 'orders', order, q.order)
     }
   }

@@ -88,7 +88,13 @@ func (f *leaveFixture) send(ctx context.Context, id int64) error {
 // ruleManager makes every leave request need the direct manager's approval.
 func (f *leaveFixture) ruleManager() {
 	f.t.Helper()
-	f.check(f.appr.SaveRule(f.admin, "hrm.leave_request", record.Post, approval.RuleInput{
+	f.ruleFor(record.Post)
+}
+
+// ruleFor routes action on leave requests to the employee's manager.
+func (f *leaveFixture) ruleFor(action record.Action) {
+	f.t.Helper()
+	f.check(f.appr.SaveRule(f.admin, "hrm.leave_request", action, approval.RuleInput{
 		Flow: approval.Flow{{Step: &approval.StepDef{Approver: approval.Approver{Kind: "module"}}}}, MaxLevels: 3, FallbackProduct: "hrm", FallbackRole: "hr",
 	}))
 }
@@ -358,7 +364,7 @@ func TestLeaveRecordContract(t *testing.T) {
 				return f.hrm.UpdateLeave(ctx, r.ID, hrm.LeaveUpdate{Version: version, LeaveFields: f.fields(date, date, "1")})
 			},
 			Get:             func(ctx context.Context, r record.Ref) (any, error) { return f.hrm.Leave(ctx, r.ID) },
-			RequireApproval: func(*testing.T) { f.ruleManager() },
+			RequireApproval: func(_ *testing.T, action record.Action) { f.ruleFor(action) },
 			Approve:         func(instance int64) error { return f.appr.Approve(f.m, instance, 1) },
 			Reject:          func(instance int64) error { return f.appr.Reject(f.m, instance, 1, "không") },
 			// The leave type comes to need a supporting file.

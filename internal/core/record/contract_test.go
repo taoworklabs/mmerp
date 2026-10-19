@@ -93,9 +93,9 @@ func TestContract(t *testing.T) {
 				defer mu.Unlock()
 				unready[ref.ID] = true
 			},
-			RequireApproval: func(t *testing.T) {
+			RequireApproval: func(t *testing.T, action record.Action) {
 				role := approval.Approver{Kind: "role", Product: "test", Role: "approver"}
-				if err := appr.SaveRule(admin, "test.doc", record.Post, approval.RuleInput{
+				if err := appr.SaveRule(admin, "test.doc", action, approval.RuleInput{
 					Flow: approval.Flow{{Step: &approval.StepDef{Approver: role}}}, MaxLevels: 3, FallbackProduct: "test", FallbackRole: "approver",
 				}); err != nil {
 					t.Fatal(err)

@@ -86,8 +86,8 @@ func TestPayrollRecordContract(t *testing.T) {
 				_, err = f.hrm.SavePayrollAdjustments(ctx, r.ID, hrm.PayrollAdjustments{Version: version, Items: []hrm.PayrollAdjustmentInput{}})
 				return err
 			},
-			RequireApproval: func(*testing.T) {
-				f.check(f.appr.SaveRule(f.admin, "hrm.payroll", record.Post, approval.RuleInput{
+			RequireApproval: func(_ *testing.T, action record.Action) {
+				f.check(f.appr.SaveRule(f.admin, "hrm.payroll", action, approval.RuleInput{
 					Flow: approval.Flow{{Step: &approval.StepDef{Approver: approval.Approver{Kind: "role", Product: "hrm", Role: "payroll"}}}}, MaxLevels: 1, FallbackProduct: "hrm", FallbackRole: "payroll",
 				}))
 			},
