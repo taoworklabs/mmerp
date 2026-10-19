@@ -9,3 +9,16 @@
 .tabs.tabs > * {
   flex-shrink: 0;
 }
+
+.columns {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--mantine-spacing-xl);
+  align-items: start;
+}
+
+@media (min-width: 64em) {
+  .columns {
+    grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr);
+  }
+}

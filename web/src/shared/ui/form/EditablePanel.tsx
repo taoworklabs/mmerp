@@ -12,8 +12,8 @@ type Props = {
   editable?: boolean
   // The group's form, given how to close it (Cancel, or after saving): fields and FormActions with onCancel.
   edit: (close: () => void) => ReactNode
-  // The read view: label–value pairs.
-  children: ReactNode
+  // The read view: label–value pairs; as a function, given how to open the form (an empty value's "+ Add").
+  children: ReactNode | ((open: () => void) => ReactNode)
 }
 
 // EditablePanel is one group of a record's values in a card: read as label–value pairs, and on
@@ -45,7 +45,7 @@ export function EditablePanel({ title, icon: Icon, editable, edit, children }: P
         )
       }
     >
-      <div ref={body}>{editing ? edit(close) : children}</div>
+      <div ref={body}>{editing ? edit(close) : typeof children === 'function' ? children(open) : children}</div>
     </Panel>
   )
 }

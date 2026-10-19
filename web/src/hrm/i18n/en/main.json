@@ -436,8 +436,6 @@
   "hrm.contract.saved": "Contract saved.",
   "hrm.timesheet.saved": "Timesheet saved.",
   "hrm.contracts.back": "Back to contracts",
-  "hrm.employee.job_title": "Job title",
-  "hrm.employee.work_location": "Work location",
   "hrm.employee.contract_type": "Current contract type",
   "hrm.employee.tenure_years_one": "{{count}} year",
   "hrm.employee.tenure_years_other": "{{count}} years",
@@ -461,5 +459,13 @@
   "hrm.employee.leave_left": "Leave left {{year}}",
   "hrm.employee.terminate_confirm": "Terminate {{name}} with {{date}} as the last working day? From the next day the employee shows as terminated.",
   "hrm.employee.tab.contracts_count": "Contracts ({{count}})",
-  "hrm.employee.tab.leave": "Leave"
+  "hrm.employee.tab.leave": "Leave",
+  "hrm.employee.section.work": "Work",
+  "hrm.employee.age_one": "{{count}} year old",
+  "hrm.employee.age_other": "{{count}} years old",
+  "hrm.employee.current_contract": "Current contract",
+  "hrm.employee.contract_since": "{{type}} · from {{date}}",
+  "hrm.employee.no_current_contract": "No contract in force.",
+  "hrm.employee.leave_year": "Leave {{year}}",
+  "hrm.employee.recent_activity": "Recent activity"
 }

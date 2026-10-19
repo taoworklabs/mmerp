@@ -1,4 +1,4 @@
-import { Group, Tabs } from '@mantine/core'
+import { Group, Stack, Tabs } from '@mantine/core'
 import type { ReactNode } from 'react'
 import { useSearchParams } from 'react-router'
 import { MoreActions } from '../MoreActions'
@@ -67,5 +67,20 @@ export function RecordPage({ more, actions, tabs, aliases, children, ...header }
         {children}
       </Page>
     </Tabs>
+  )
+}
+
+// RecordColumns lays out a record's overview: its values on the left, digests of its parts on the
+// right, about 1.6 to 1; one column below 1024px, the right one under the left.
+export function RecordColumns({ main, side }: { main: ReactNode; side: ReactNode }) {
+  return (
+    <div className={classes.columns}>
+      <Stack gap="md" miw={0}>
+        {main}
+      </Stack>
+      <Stack gap="md" miw={0}>
+        {side}
+      </Stack>
+    </div>
   )
 }

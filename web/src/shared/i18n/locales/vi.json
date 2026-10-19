@@ -540,5 +540,6 @@
   "shared.field.add_label": "Bổ sung {{label}}",
   "shared.field.missing": "Chưa cập nhật",
   "shared.record.overview": "Tổng quan",
-  "shared.record.history": "Lịch sử"
+  "shared.record.history": "Lịch sử",
+  "shared.record.see_all": "Xem tất cả"
 }

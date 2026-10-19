@@ -1,4 +1,4 @@
-import { Button, Menu, Stack } from '@mantine/core'
+import { Button, Menu } from '@mantine/core'
 import { IconArrowsExchange, IconUserOff } from '@tabler/icons-react'
 import { useQuery } from '@tanstack/react-query'
 import { useState } from 'react'
@@ -9,11 +9,12 @@ import { useInvalidateRecord } from '@/shared/area'
 import { ActivityFeed, useAttachmentSection } from '@/shared/document'
 import { PersonAvatar } from '@/shared/ui/avatar'
 import { notifySuccess } from '@/shared/ui/notify'
-import { RecordPage } from '@/shared/ui/page'
+import { RecordColumns, RecordPage } from '@/shared/ui/page'
 import { icon } from '@/shared/ui/theme'
 import { BalancesTab } from '../components/BalancesTab'
 import { ContractsTab } from '../components/ContractsTab'
 import { DependentsTab } from '../components/DependentsTab'
+import { EmployeeDigest } from '../components/EmployeeDigest'
 import { EmployeeProfile, MoveModal, type Move } from '../components/EmployeeProfile'
 import { EmployeeStatus } from '../components/EmployeeStatus'
 import { EmployeeSummary } from '../components/EmployeeSummary'
@@ -43,7 +44,11 @@ export function EmployeePage() {
   }
   const contractCount = contracts.data?.length
   const tabs = [
-    { value: 'overview', label: t('shared.record.overview'), content: <Stack gap="md"><EmployeeProfile key={e.id} employee={e} onSaved={saved} /></Stack> },
+    {
+      value: 'overview',
+      label: t('shared.record.overview'),
+      content: <RecordColumns main={<EmployeeProfile key={e.id} employee={e} onSaved={saved} />} side={<EmployeeDigest employee={e} />} />,
+    },
     ...(e.allowed_actions.includes('view_contracts')
       ? [{ value: 'contracts', label: contractCount ? t('hrm.employee.tab.contracts_count', { count: contractCount }) : t('hrm.employee.tab.contracts'), content: <ContractsTab employee={e} /> }]
       : []),

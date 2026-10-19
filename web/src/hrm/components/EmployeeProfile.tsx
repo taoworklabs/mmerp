@@ -1,19 +1,18 @@
 import { Anchor } from '@mantine/core'
-import { IconAddressBook, IconLock, IconUser } from '@tabler/icons-react'
-import { useState } from 'react'
-import { useQuery } from '@tanstack/react-query'
+import { IconAddressBook, IconBriefcase, IconLock } from '@tabler/icons-react'
+import { useState, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
-import { api, unwrap, type Employee } from '@/shared/api/hrm'
+import { type Employee } from '@/shared/api/hrm'
 import { useInvalidateRecord } from '@/shared/area'
 import { useMe } from '@/shared/auth/me'
 import { formatDate, today } from '@/shared/i18n'
-import { FieldList } from '@/shared/ui/FieldList'
+import { FieldList, MissingValue, type FieldRow } from '@/shared/ui/FieldList'
 import { DateField, EditablePanel, Form, FormActions, FormFields, OrgUnitField, SensitiveValue } from '@/shared/ui/form'
 import { FormModal } from '@/shared/ui/page'
-import { employeeDocType, hrmKeys } from '../keys'
+import { currentContract, useEmployeeContracts } from '../hooks/useEmployeeRecords'
+import { employeeDocType } from '../keys'
 import { tenure } from '../tenure'
 import { EmployeeField } from './EmployeeField'
-import { EmployeeLink } from './EmployeeLink'
 import { useConfirm } from '@/shared/ui/confirm'
 import { MainFields, PersonalFields, revealSensitive, SensitiveFields, sensitiveFields, useEmployeeForm, type EmployeeValues } from './EmployeeForm'
 
@@ -21,11 +20,9 @@ type Part = 'main' | 'personal' | 'sensitive'
 // A move is saved like any edit, through a form that holds only what it changes.
 export type Move = 'transfer' | 'terminate'
 
-const orDash = (s: string | null | undefined) => s || '—'
-
 // EmployeeProfile is an employee's values in three cards, each read as label–value pairs and
-// edited in place. A card shows every value its form edits, those in the page header included,
-// so what can be changed is where it is read.
+// edited in place. What the page header already shows (name, code, manager, login) is not repeated;
+// the work card's form still edits it, as it is one form. An empty value offers to fill it in.
 export function EmployeeProfile({ employee: e, onSaved }: { employee: Employee; onSaved: () => Promise<void> }) {
   const { t } = useTranslation()
   const me = useMe()
@@ -33,62 +30,67 @@ export function EmployeeProfile({ employee: e, onSaved }: { employee: Employee; 
   // Bumped by each save, so a sensitive value shown before it is masked again rather than left stale.
   const [saves, setSaves] = useState(0)
   const canEdit = e.allowed_actions.includes('edit')
-  const canContracts = e.allowed_actions.includes('view_contracts')
-  const contracts = useQuery({
-    queryKey: hrmKeys.contracts.employee(e.id),
-    queryFn: async () => (await unwrap(api.GET('/hrm/employees/{id}/contracts', { params: { path: { id: e.id } } }))) ?? [],
-    enabled: canContracts,
-  })
+  const contracts = useEmployeeContracts(e)
   const now = today(me.timezone)
-  // The original contract in force today; appendices only amend it.
-  const current = contracts.data?.find((c) => !c.parent_id && c.status === 'posted' && c.start_date <= now && (!c.end_date || c.end_date >= now))
-  const served = tenure(e.hire_date, e.termination_date && e.termination_date < now ? e.termination_date : now)
-  const servedText =
-    served.years + served.months === 0
-      ? t('hrm.employee.tenure_new')
-      : [served.years && t('hrm.employee.tenure_years', { count: served.years }), served.months && t('hrm.employee.tenure_months', { count: served.months })].filter(Boolean).join(' ')
+  const current = currentContract(contracts.data, now)
   const saved = async () => {
     await onSaved()
     setSaves((n) => n + 1)
   }
   const edit = (part: Part) => (close: () => void) => <PartForm employee={e} part={part} onClose={close} onSaved={saved} />
+  // An empty value: "+ Bổ sung" opening the card's form for who may edit.
+  const or = (open: () => void, label: string, value: ReactNode) => value || <MissingValue label={label} onAdd={canEdit ? open : undefined} />
 
   return (
     <>
-      <EditablePanel title={t('hrm.employee.section.main')} icon={IconUser} editable={canEdit} edit={edit('main')}>
+      <EditablePanel title={t('hrm.employee.section.work')} icon={IconBriefcase} editable={canEdit} edit={edit('main')}>
         <FieldList
+          stacked
           rows={[
-            [t('hrm.employee.full_name'), e.full_name],
-            [t('hrm.employee.code'), e.code],
             [t('hrm.employee.org_unit'), e.org_unit_name],
-            [t('hrm.employee.job_title'), '—'],
-            [t('hrm.employee.work_location'), '—'],
-            ...(canContracts ? [[t('hrm.employee.contract_type'), current ? current.contract_type_name : '—'] as [string, string]] : []),
-            [t('hrm.employee.hire_date'), `${formatDate(e.hire_date)} · ${servedText}`],
-            [
-              t('hrm.employee.manager'),
-              e.manager_id && e.manager_code && e.manager_name ? <EmployeeLink id={e.manager_id}>{`${e.manager_code} · ${e.manager_name}`}</EmployeeLink> : '—',
-            ],
-            [t('hrm.employee.user_login'), orDash(e.user_login)],
-            ...(e.termination_date ? [[t('hrm.employee.termination_date'), formatDate(e.termination_date)] as [string, string]] : []),
+            [t('hrm.employee.hire_date'), formatDate(e.hire_date)],
+            ...(e.allowed_actions.includes('view_contracts')
+              ? [
+                  [
+                    t('hrm.employee.contract_type'),
+                    contracts.isPending ? '' : (current?.contract_type_name ?? (
+                      <MissingValue
+                        label={t('hrm.employee.contract_type')}
+                        to={e.allowed_actions.includes('create_contract') ? `/hrm/contracts/new?employee=${e.id}` : undefined}
+                      />
+                    )),
+                  ] as FieldRow,
+                ]
+              : []),
+            ...(e.termination_date ? [[t('hrm.employee.termination_date'), formatDate(e.termination_date)] as FieldRow] : []),
           ]}
         />
       </EditablePanel>
       <EditablePanel title={t('hrm.employee.section.personal')} icon={IconAddressBook} editable={canEdit} edit={edit('personal')}>
-        <FieldList
-          rows={[
-            [t('hrm.employee.date_of_birth'), orDash(formatDate(e.date_of_birth))],
-            [t('hrm.employee.gender'), e.gender ? t(`hrm.employee.gender.${e.gender}`) : '—'],
-            [t('hrm.employee.phone'), e.phone ? <Anchor href={`tel:${e.phone.replace(/\s/g, '')}`} size="sm" inherit>{e.phone}</Anchor> : '—'],
-            [t('hrm.employee.email'), e.email ? <Anchor href={`mailto:${e.email}`} size="sm" inherit>{e.email}</Anchor> : '—'],
-            [t('hrm.employee.address'), orDash(e.address)],
-          ]}
-        />
+        {(open) => (
+          <FieldList
+            stacked
+            rows={[
+              [
+                t('hrm.employee.date_of_birth'),
+                or(open, t('hrm.employee.date_of_birth'), e.date_of_birth && `${formatDate(e.date_of_birth)} (${t('hrm.employee.age', { count: tenure(e.date_of_birth, now).years })})`),
+              ],
+              [t('hrm.employee.gender'), or(open, t('hrm.employee.gender'), e.gender && t(`hrm.employee.gender.${e.gender}`))],
+              [
+                t('hrm.employee.phone'),
+                or(open, t('hrm.employee.phone'), e.phone && <Anchor href={`tel:${e.phone.replace(/\s/g, '')}`} size="sm" inherit>{e.phone}</Anchor>),
+              ],
+              [t('hrm.employee.email'), or(open, t('hrm.employee.email'), e.email && <Anchor href={`mailto:${e.email}`} size="sm" inherit>{e.email}</Anchor>)],
+              [t('hrm.employee.address'), or(open, t('hrm.employee.address'), e.address), 'wide'],
+            ]}
+          />
+        )}
       </EditablePanel>
       {/* Masked in both views: showing a value is its own audited read, editing or not. */}
       <EditablePanel title={t('hrm.employee.section.sensitive')} icon={IconLock} editable={canEdit} edit={edit('sensitive')}>
         <FieldList
           key={saves}
+          stacked
           rows={sensitiveFields.map((f) => [
             t(`hrm.employee.${f}`),
             <SensitiveValue

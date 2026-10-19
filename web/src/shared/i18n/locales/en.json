@@ -540,5 +540,6 @@
   "shared.field.add_label": "Add {{label}}",
   "shared.field.missing": "Not filled in",
   "shared.record.overview": "Overview",
-  "shared.record.history": "History"
+  "shared.record.history": "History",
+  "shared.record.see_all": "See all"
 }

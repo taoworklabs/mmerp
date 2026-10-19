@@ -18,11 +18,18 @@ type Item = { key: string; at: string; kind: Exclude<Filter, 'all'>; quiet?: boo
 // page is how many events show before "Show more".
 const page = 30
 
+// feedItems is what the feed lists: those of the filter, or with recent the latest that many
+// comments and changes, reads left out (they are the history's to show).
+export function feedItems<T extends { kind: Exclude<Filter, 'all'> }>(items: T[], filter: Filter, recent?: number): T[] {
+  if (recent) return items.filter((i) => i.kind !== 'views').slice(0, recent)
+  return items.filter((i) => filter === 'all' || i.kind === filter)
+}
+
 // ActivityFeed is everything that happened to a record in one timeline, newest first: comments
 // in their wells among the changes and reads of the audit log, so each reads in its context.
 // The box to comment heads it; a filter narrows it to comments, changes or reads; days head
-// their events.
-export function ActivityFeed({ docType, id }: { docType: string; id: number }) {
+// their events. With recent it is a digest instead: no filter, the latest comments and changes only.
+export function ActivityFeed({ docType, id, recent }: { docType: string; id: number; recent?: number }) {
   const { t } = useTranslation()
   const me = useMe()
   const log = useHistory(docType, id)
@@ -55,7 +62,7 @@ export function ActivityFeed({ docType, id }: { docType: string; id: number }) {
       ),
     })),
   ].sort((a, b) => b.at.localeCompare(a.at))
-  const visible = items.filter((i) => filter === 'all' || i.kind === filter)
+  const visible = feedItems(items, filter, recent)
 
   // The day an event happened in the tenant's time zone, today and yesterday by name.
   const dayOf = (iso: string) => formatDateTime(iso, me.timezone).slice(0, 10)
@@ -79,16 +86,18 @@ export function ActivityFeed({ docType, id }: { docType: string; id: number }) {
   return (
     <Stack gap="lg" className={classes.feed}>
       {talk.data.allowed_actions.includes('comment') && <CommentBox docType={docType} id={id} maxLength={talk.data.max_length} />}
-      <SegmentedControl
-        value={filter}
-        onChange={(v) => {
-          setFilter(v as Filter)
-          setShown(page)
-        }}
-        aria-label={t('shared.activity.filter')}
-        data={(['all', 'comments', 'changes', 'views'] as const).map((f) => ({ value: f, label: t(`shared.activity.${f}`) }))}
-        w="fit-content"
-      />
+      {!recent && (
+        <SegmentedControl
+          value={filter}
+          onChange={(v) => {
+            setFilter(v as Filter)
+            setShown(page)
+          }}
+          aria-label={t('shared.activity.filter')}
+          data={(['all', 'comments', 'changes', 'views'] as const).map((f) => ({ value: f, label: t(`shared.activity.${f}`) }))}
+          w="fit-content"
+        />
+      )}
       {days.length === 0 ? (
         <Text size="sm" c="dimmed">
           {t('shared.activity.empty')}

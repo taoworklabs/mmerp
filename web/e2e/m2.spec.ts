@@ -180,17 +180,17 @@ test('HR creates an employee with a sensitive field, edits it and adds a depende
   await expect(page.getByText('Đã tạo nhân viên.')).toBeVisible()
   await page.mouse.move(0, 0)
   await expect(page.getByText('Đã tạo nhân viên.')).toBeHidden()
-  const main = page.getByRole('region', { name: 'Thông tin chính' })
+  const main = page.getByRole('region', { name: 'Công việc' })
   await expect(main.getByText('05/01/2026')).toBeVisible()
   await expect(page.getByText('••••••').first()).toBeVisible()
 
   // Each part of the profile is edited on its own, in place in its card.
-  await main.getByRole('button', { name: 'Sửa Thông tin chính' }).click()
+  await main.getByRole('button', { name: 'Sửa Công việc' }).click()
   await main.getByRole('textbox', { name: 'Họ tên' }).fill('Lê Văn Đổi')
   await main.getByRole('button', { name: 'Lưu' }).click()
   await expect(page.getByRole('heading', { name: 'Lê Văn Đổi' })).toBeVisible()
   await expect(main.getByRole('textbox', { name: 'Họ tên' })).toHaveCount(0)
-  await expect(main.getByText('Lê Văn Đổi')).toBeVisible()
+  await expect(main.getByText(`Phòng A ${run}`)).toBeVisible()
 
   await page.getByRole('tab', { name: 'Người phụ thuộc' }).click()
   await expect(page).toHaveURL(/tab=dependents/)
@@ -223,6 +223,45 @@ test('the employee page tabs live on the URL and survive a reload', async ({ pag
   await expect(page.getByRole('radiogroup', { name: 'Lọc hoạt động' })).toBeVisible()
 })
 
+test('recent activity on the overview leaves reads out; the history keeps them', async ({ page }) => {
+  await signInAs(page, hrA, `/hrm/employees/${ids.ea}`)
+  await page.getByRole('button', { name: 'Hiện Số CCCD hoặc hộ chiếu' }).click()
+  await expect(page.getByText(nationalId)).toBeVisible()
+  await page.reload()
+  const recent = page.getByRole('region', { name: 'Hoạt động gần đây' })
+  await expect(recent.getByLabel('Bình luận', { exact: true })).toBeVisible()
+  await expect(recent.getByRole('radiogroup', { name: 'Lọc hoạt động' })).toHaveCount(0)
+  await expect(recent.getByText('xem thông tin nhạy cảm')).toHaveCount(0)
+  await recent.getByRole('link', { name: 'Lịch sử' }).click()
+  await expect(page).toHaveURL(/tab=activity/)
+  await expect(page.getByText('xem thông tin nhạy cảm').first()).toBeVisible()
+})
+
+test('terminating asks for the last day, then confirms before saving', async ({ page, baseURL }) => {
+  const api = await signedInApi(baseURL!)
+  const id = await created(api.post('/api/hrm/employees', { data: employee(`T${run}`, ids.a) }))
+  const terminationDate = async () => (await (await api.get(`/api/hrm/employees/${id}`)).json()).termination_date
+  await signInAs(page, hrA, `/hrm/employees/${id}`)
+  // Not a button beside Transfer: it sits in the "…" menu.
+  await expect(page.getByRole('button', { name: 'Điều chuyển' })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Cho nghỉ việc' })).toHaveCount(0)
+  await page.getByRole('button', { name: 'Thao tác khác' }).click()
+  await page.getByRole('menuitem', { name: 'Cho nghỉ việc' }).click()
+  const form = page.getByRole('dialog', { name: `Cho Nhân viên T${run} nghỉ việc` })
+  await form.getByRole('textbox', { name: 'Ngày nghỉ việc' }).fill('31/12/2026')
+  await form.getByRole('button', { name: 'Cho nghỉ việc' }).click()
+  const confirm = page.getByRole('dialog', { name: 'Cho nghỉ việc', exact: true })
+  await expect(confirm).toContainText('31/12/2026')
+  // Backing out saves nothing.
+  await confirm.getByRole('button', { name: 'Quay lại' }).click()
+  await expect(confirm).toHaveCount(0)
+  expect(await terminationDate()).toBeNull()
+  await form.getByRole('button', { name: 'Cho nghỉ việc' }).click()
+  await confirm.getByRole('button', { name: 'Cho nghỉ việc' }).click()
+  await expect(page.getByText('Đã lưu hồ sơ nhân viên.')).toBeVisible()
+  expect(await terminationDate()).toBe('2026-12-31')
+})
+
 test('leaving a record asks only when something was edited', async ({ page }) => {
   await signInAs(page, hrA, `/hrm/employees/${ids.ea}`)
   const nav = page.getByRole('navigation').getByRole('link', { name: 'Nhân viên' })
@@ -238,7 +277,7 @@ test('leaving a record asks only when something was edited', async ({ page }) =>
     await expect(page).toHaveURL(new RegExp(`/hrm/employees/${ids.ea}$`))
   }
   await openFromList()
-  await page.getByRole('button', { name: 'Sửa Thông tin chính' }).click()
+  await page.getByRole('button', { name: 'Sửa Công việc' }).click()
   await page.getByRole('textbox', { name: 'Họ tên' }).fill('Tên đang sửa')
   await page.evaluate(() => history.back())
   await expect(page.getByRole('dialog', { name: 'Rời trang?' })).toBeVisible()
@@ -269,7 +308,7 @@ test('status comes from the API, and the manager picker keeps one stable label',
   page.on('request', (r) => r.url().includes('/api/hrm/employees?') && searches++)
   await page.goto(`/hrm/employees/${left}`)
   await expect(page.getByText('Đã nghỉ việc')).toBeVisible()
-  await page.getByRole('button', { name: 'Sửa Thông tin chính' }).click()
+  await page.getByRole('button', { name: 'Sửa Công việc' }).click()
   const manager = page.getByRole('combobox', { name: 'Quản lý trực tiếp' })
   await expect(manager).toHaveValue(`M${run} · Nhân viên M${run}`)
   searches = 0
