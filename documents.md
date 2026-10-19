@@ -153,7 +153,7 @@ There is no `BeforeLock(legal_entity, date)` hook yet for other modules to refus
 **Approvers by module** (`Approvers`):
 
 - `approval` defines the interface; record types that need it implement it. `approval` knows nothing about "direct manager" or any other business relationship.
-- Signature: `Approvers(ctx, ref, level) ([]int64, error)`. `level = 1` is the nearest level (for example, the direct manager), `level = 2` is the level above that, and so on. The result depends only on the parameters, not on how many times it is called. A step is approved by anyone in the list.
+- Signature: `Approvers(ctx, ref, level) ([]int64, error)`. `level = 1` is the nearest level (for example, the direct manager), `level = 2` is the level above that, and so on. The result depends only on the parameters, not on how many times it is called. A step passes when its approval count is reached.
 - **Approvers are fixed when the step starts** and stored in the approval instance. A manager changing midway does not change the approvers of the open step.
 - **No self-approval:** `approval` removes the submitter, the people in `Subjects` and people without `view` permission on the document from the result. If the list is still empty it calls again with `level + 1`, up to the number of levels declared in the rule (default 3).
 - **No approver found:** the step goes to the fallback role declared in the rule (filtered the same way). If still nobody is left, the step cannot start and the operation (submitting, or approving the previous step) fails with the error `no_approver` (`ErrNoApprover`). Never auto-approve.
@@ -176,7 +176,7 @@ No tool can statically check whether a module calls `record` before writing its 
 
 | Feature | Scope | Deliberate limits |
 | --- | --- | --- |
-| **Approval** | A rule is a chain of steps. Each step has a simple condition on the header or on a declared approval field (amount > X, org unit = Y, `days` > 3, `leave_type` = unpaid leave) and an approver. Approvers are by role at an org unit, by a specific user, or **by module** (returned by the module through `Approvers`, for example the direct manager). Customers configure it themselves. | No parallel branches, loops, scripts or BPMN |
+| **Approval** | A rule is an approval flow: approval steps in sequence, choose-one splits (amount tiers) and parallel splits (independent reasons), nested, each step with approvers and an approval and rejection count. Approvers are by role at an org unit, by a specific user, or **by module** (returned by the module through `Approvers`, for example the direct manager). Customers configure it themselves. | No loops, scripts or free-form BPMN |
 | **Attachments** | Files attached to a record. Metadata is stored in the DB; file contents are stored on disk, in `attachment`'s own directory | The file directory must be within backup scope. Write the file before writing the metadata. Files are deleted only by the cleanup job, when no longer referenced and older than the backup cycle, so a DB backup never points to a lost file |
 | **Discussion and history** | Comments, mentions, a timeline of status changes and field changes (taken from the audit log, filtered by field view permission) | No real-time chat |
 | **Notifications** | In-app notifications (approval needed, mentioned). Email and Zalo are sent through integration jobs | — |
