@@ -7,6 +7,7 @@ import (
 
 	"github.com/jackc/pgx/v5"
 
+	"github.com/taoworklabs/mmerp/internal/core/record"
 	"github.com/taoworklabs/mmerp/internal/modules/sales/internal/store"
 	"github.com/taoworklabs/mmerp/internal/platform"
 )
@@ -90,4 +91,32 @@ func (s *Service) auditItem(ctx context.Context, id int64, code string, in ItemF
 // itemCodeTaken reports whether a code is used, for numbering to skip it.
 func itemCodeTaken(ctx context.Context, code string) (bool, error) {
 	return store.New(platform.DBFrom(ctx)).ItemCodeTaken(ctx, code)
+}
+
+// itemOptions is the "items" approval field's Search: the catalogue search the item
+// picker uses, at most 20 matches.
+func (s *Service) itemOptions(ctx context.Context, q string) ([]record.FieldOption, error) {
+	rows, err := store.New(platform.DBFrom(ctx)).ListItems(ctx, store.ListItemsParams{Q: strings.TrimSpace(q), Lim: 20})
+	if err != nil {
+		return nil, err
+	}
+	out := make([]record.FieldOption, len(rows))
+	for i, r := range rows {
+		out[i] = record.FieldOption{ID: r.ID, Code: r.Code, Name: r.Name}
+	}
+	return out, nil
+}
+
+// itemLabels is the "items" approval field's Labels: items by id, for showing a saved
+// condition before any search.
+func (s *Service) itemLabels(ctx context.Context, ids []int64) ([]record.FieldOption, error) {
+	rows, err := store.New(platform.DBFrom(ctx)).ItemsByID(ctx, ids)
+	if err != nil {
+		return nil, err
+	}
+	out := make([]record.FieldOption, len(rows))
+	for i, r := range rows {
+		out[i] = record.FieldOption{ID: r.ID, Code: r.Code, Name: r.Name}
+	}
+	return out, nil
 }

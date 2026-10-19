@@ -654,3 +654,55 @@ func TestCustomerCopiedAtSending(t *testing.T) {
 		t.Fatalf("posted: %+v", q)
 	}
 }
+
+// The "items" approval field tracks the lines: editing them to drop an item drops it
+// from the set too.
+func TestItemsFieldFollowsLines(t *testing.T) {
+	f := newFixture(t)
+	fl := f.fields("2026-03-10")
+	id := must(t)(f.sales.CreateQuote(f.staff, sales.NewDoc{RequestID: newRequest(), DocFields: fl}))
+	d, err := f.rec.Get(f.admin, record.Ref{Type: "sales.quote", ID: id})
+	f.check(err)
+	if want := record.SetValue([]int64{f.pen, f.fix}); d.Fields["items"] != want {
+		t.Fatalf("items %v, want %s", d.Fields, want)
+	}
+
+	// Drop the repair line, the only one with the "fix" item.
+	fl.Lines = fl.Lines[:2]
+	q, err := f.sales.Quote(f.staff, id)
+	f.check(err)
+	f.check(f.sales.UpdateQuote(f.staff, id, sales.DocUpdate{Version: q.Version, DocFields: fl}))
+	d, err = f.rec.Get(f.admin, record.Ref{Type: "sales.quote", ID: id})
+	f.check(err)
+	if want := record.SetValue([]int64{f.pen}); d.Fields["items"] != want {
+		t.Fatalf("items after edit %v, want %s", d.Fields, want)
+	}
+}
+
+// A rule testing "items" routes a quote holding the item to the manager, and posts a
+// quote without it at once.
+func TestItemRuleRoutesTheQuote(t *testing.T) {
+	f := newFixture(t)
+	f.check(f.appr.SaveRule(f.admin, "sales.quote", record.Post, approval.RuleInput{
+		Flow: approval.Flow{{Split: &approval.Split{Mode: approval.ChooseOne, Branches: []approval.Branch{{
+			Condition: &approval.Expr{Field: "items", Op: approval.OpHas, Value: fmt.Sprintf("%d", f.fix)},
+			Body:      approval.Flow{{Step: &approval.StepDef{Approver: approval.Approver{Kind: "role", Product: "sales", Role: "manager"}}}},
+		}}}}},
+		MaxLevels: 3, FallbackProduct: "sales", FallbackRole: "manager",
+	}))
+
+	withFix := f.fields("2026-03-10")
+	id := must(t)(f.sales.CreateQuote(f.staff, sales.NewDoc{RequestID: newRequest(), DocFields: withFix}))
+	f.check(f.move(f.staff, "sales.quote", id, record.Posted))
+	if q, _ := f.sales.Quote(f.staff, id); q.Status != "pending_approval" {
+		t.Fatalf("quote with the item: %s", q.Status)
+	}
+
+	withoutFix := f.fields("2026-03-11")
+	withoutFix.Lines = withoutFix.Lines[:2]
+	id2 := must(t)(f.sales.CreateQuote(f.staff, sales.NewDoc{RequestID: newRequest(), DocFields: withoutFix}))
+	f.check(f.move(f.staff, "sales.quote", id2, record.Posted))
+	if q, _ := f.sales.Quote(f.staff, id2); q.Status != "posted" {
+		t.Fatalf("quote without the item: %s", q.Status)
+	}
+}

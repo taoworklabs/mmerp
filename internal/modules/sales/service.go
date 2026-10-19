@@ -80,7 +80,10 @@ func NewService(d Deps) *Service {
 		}
 		d.Record.Register(record.Type{
 			Code: k.docType, Product: "sales", Kind: record.Document, NumberPrefix: k.prefix,
-			Fields: []record.Field{{Key: "max_discount", Kind: record.Number, Label: "sales.doc.max_discount"}},
+			Fields: []record.Field{
+				{Key: "max_discount", Kind: record.Number, Label: "sales.doc.max_discount"},
+				{Key: "items", Kind: record.Set, Label: "sales.doc.items", Search: s.itemOptions, Labels: s.itemLabels},
+			},
 			// Reading, printing and seeing files need view; every write, attaching included, needs edit.
 			Perms:         record.Perms{View: k.view, Edit: k.edit, ViewFiles: k.view, Attach: k.edit},
 			OnTransition:  s.transition,

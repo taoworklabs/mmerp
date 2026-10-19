@@ -17,6 +17,7 @@
   "sales.quote.status.posted": "Đã duyệt",
   "sales.order.status.posted": "Đã xác nhận",
   "sales.doc.max_discount": "Chiết khấu cao nhất (%)",
+  "sales.doc.items": "Mặt hàng",
   "sales.preview.customer": "Khách hàng",
   "sales.preview.date": "Ngày",
   "sales.preview.valid_until": "Hiệu lực đến",

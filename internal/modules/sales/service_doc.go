@@ -300,7 +300,8 @@ func (s *Service) prepare(ctx context.Context, k kind, f DocFields) (prepared, e
 		p.lines[i] = Line{LineInput: l, ItemCode: it.Code, Unit: it.Unit, Amount: amts[i].amount, Discount: amts[i].discount, Vat: amts[i].vat}
 	}
 	p.totals = totals
-	p.header = record.Header{Date: f.Date, OrgUnitID: f.OrgUnitID, Amount: &totals.Total, Fields: map[string]string{"max_discount": maxDiscount.String()}}
+	p.header = record.Header{Date: f.Date, OrgUnitID: f.OrgUnitID, Amount: &totals.Total,
+		Fields: map[string]string{"max_discount": maxDiscount.String(), "items": record.SetValue(ids)}}
 	return p, nil
 }
 

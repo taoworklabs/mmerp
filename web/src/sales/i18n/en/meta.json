@@ -17,6 +17,7 @@
   "sales.quote.status.posted": "Approved",
   "sales.order.status.posted": "Confirmed",
   "sales.doc.max_discount": "Highest discount (%)",
+  "sales.doc.items": "Items",
   "sales.preview.customer": "Customer",
   "sales.preview.date": "Date",
   "sales.preview.valid_until": "Valid until",
