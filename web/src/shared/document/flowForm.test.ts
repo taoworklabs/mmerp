@@ -65,6 +65,41 @@ describe('toFlowValues / fromFlowValues', () => {
     expect(fromFlowValues([v])).toEqual([{ split: { mode: 'one', branches: [{ body: [{ step: { approver: { kind: 'module' }, approvals: 1, rejections: 1 } }] }] } }])
   })
 
+  it('drops a nested group left with no rows', () => {
+    const v: ElementValues = {
+      type: 'one',
+      kind: null,
+      role: null,
+      users: [],
+      approvals: '1',
+      rejections: '1',
+      branches: [
+        {
+          cond: { mode: 'all', rows: [{ group: null, field: 'days', op: 'gt', value: '3' }, { group: { mode: 'all', rows: [] }, field: null, op: null, value: '' }] },
+          body: [newStep(true)],
+        },
+      ],
+      otherwise: [],
+    }
+    const out = fromFlowValues([v])[0]
+    expect(out?.split?.branches[0]?.condition).toEqual({ field: 'days', op: 'gt', value: '3' })
+  })
+
+  it('a branch with only an empty nested group has no condition', () => {
+    const v: ElementValues = {
+      type: 'one',
+      kind: null,
+      role: null,
+      users: [],
+      approvals: '1',
+      rejections: '1',
+      branches: [{ cond: { mode: 'all', rows: [{ group: { mode: 'all', rows: [] }, field: null, op: null, value: '' }] }, body: [newStep(true)] }],
+      otherwise: [],
+    }
+    const out = fromFlowValues([v])[0]
+    expect(out?.split?.branches[0]?.condition).toBeUndefined()
+  })
+
   it('one leaf is written bare', () => {
     const v: ElementValues = {
       type: 'one',

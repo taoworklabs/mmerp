@@ -1,5 +1,5 @@
 import { expect, test, type APIRequestContext, type Browser, type Locator, type Page } from '@playwright/test'
-import { created, createUser, employee, password, signedInApi, runId, toFlow } from './api'
+import { created, createUser, employee, password, signedInApi, runId } from './api'
 import { admin, signedIn } from './helpers'
 
 // One run: approvers A and B, and employee E who files leave. The leave rule is tenant-wide, so
@@ -9,9 +9,12 @@ const login = { a: `afa_${run}`, b: `afb_${run}`, e: `afe_${run}` }
 const url = '/hrm/approval-rules/hrm.leave_request'
 let api: APIRequestContext
 let ids: { a: number; b: number; type: number }
+let originalRule: unknown
 
 test.beforeAll(async ({ baseURL }) => {
   api = await signedInApi(baseURL!)
+  const rules = (await (await api.get('/api/approval-rules?product=hrm')).json()) as { doc_type: string; rule: unknown }[]
+  originalRule = rules.find((r) => r.doc_type === 'hrm.leave_request')?.rule ?? null
   const company = await created(api.post('/api/org-units', { data: { parent_id: null, kind: 'company', name: `Công ty AF ${run}` } }))
   const unit = await created(api.post('/api/org-units', { data: { parent_id: company, kind: 'department', name: `Phòng AF ${run}` } }))
   // Approvers must be able to view the request.
@@ -24,10 +27,10 @@ test.beforeAll(async ({ baseURL }) => {
 })
 
 test.afterAll(async () => {
-  const rule = await api.put('/api/approval-rules/hrm.leave_request', {
-    data: { flow: toFlow([{ approver: { kind: 'module' } }]), max_levels: 3, fallback_product: 'hrm', fallback_role: 'hr' },
-  })
-  expect(rule.status(), await rule.text()).toBe(204)
+  // beforeAll may have failed before `api` was signed in; nothing to restore then.
+  if (!api) return
+  const res = originalRule ? await api.put('/api/approval-rules/hrm.leave_request', { data: originalRule }) : await api.delete('/api/approval-rules/hrm.leave_request')
+  expect(res.status(), await res.text()).toBe(204)
 })
 
 async function as(browser: Browser, user: string, path: string) {
@@ -167,6 +170,18 @@ test('a condition row without a value is refused before saving', async ({ browse
   await expect(branch.getByText('Chưa nhập.')).toHaveCount(1)
   await expect(branch.getByRole('textbox', { name: /^Giá trị/ }).last()).toHaveAttribute('aria-invalid', 'true')
   expect(puts).toBe(0)
+})
+
+test('removing a nested group down to no rows drops the group itself', async ({ browser }) => {
+  await putBuilt()
+  const page = await as(browser, admin.login, url)
+  const branch = page.getByRole('region', { name: 'Rẽ nhánh chọn một' }).getByRole('region', { name: 'Nhánh 1' })
+  await branch.getByRole('button', { name: 'Thêm nhóm điều kiện' }).first().click()
+  // The nested group's own, only row; removing it must drop the group, not leave it empty (the
+  // server refuses an empty "all"/"any"). This restores the form to its original values, so the
+  // form goes back to clean and offers no Save; the drop itself is the thing under test.
+  await branch.getByRole('button', { name: 'Bỏ điều kiện' }).last().click()
+  await expect(branch.getByRole('button', { name: 'Bỏ nhóm điều kiện' })).toHaveCount(0)
 })
 
 test('a rejected flow keeps its error on the card and the form unsaved', async ({ browser }) => {

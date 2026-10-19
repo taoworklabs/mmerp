@@ -139,18 +139,32 @@ function useDecide(docType: string, id: number, inst: ApprovalInstance, onDone?:
   return { error, busy, approve, setModal, dialogs }
 }
 
-function DecisionButtons({ d, step }: { d: Decide; step: ApprovalStep }) {
+// namedAria is set only when several steps show their own buttons, so each pair names its step
+// for screen readers; the visible label stays the plain "Approve"/"Reject".
+function DecisionButtons({ d, step, namedAria }: { d: Decide; step: ApprovalStep; namedAria?: boolean }) {
   const { t } = useTranslation()
   const can = (a: string) => step.allowed_actions.includes(a)
   return (
     <>
       {can('reject') && (
-        <Button variant="outline" color="danger" leftSection={<IconX {...icon.button} />} disabled={d.busy} onClick={() => d.setModal({ kind: 'reject', step: step.position })}>
+        <Button
+          variant="outline"
+          color="danger"
+          leftSection={<IconX {...icon.button} />}
+          disabled={d.busy}
+          aria-label={namedAria ? t('shared.approval.reject_step', { n: step.position }) : undefined}
+          onClick={() => d.setModal({ kind: 'reject', step: step.position })}
+        >
           {t('shared.approval.reject')}
         </Button>
       )}
       {can('approve') && (
-        <Button leftSection={<IconCheck {...icon.button} />} disabled={d.busy} onClick={() => d.approve(step.position)}>
+        <Button
+          leftSection={<IconCheck {...icon.button} />}
+          disabled={d.busy}
+          aria-label={namedAria ? t('shared.approval.approve_step', { n: step.position }) : undefined}
+          onClick={() => d.approve(step.position)}
+        >
           {t('shared.approval.approve')}
         </Button>
       )}
@@ -199,7 +213,7 @@ function Instance({ docType, id, inst, onDone, sticky, subject, decideElsewhere 
         step={s}
         onReassign={s.allowed_actions.includes('reassign') ? () => d.setModal({ kind: 'reassign', step: s }) : undefined}
         busy={d.busy}
-        decision={own ? <DecisionButtons d={d} step={s} /> : undefined}
+        decision={own ? <DecisionButtons d={d} step={s} namedAria /> : undefined}
       />
     )
   }

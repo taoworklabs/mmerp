@@ -68,6 +68,7 @@ Error text says what is wrong without repeating the label: "Chưa nhập." (Not 
 - **In a modal or an `EditablePanel` card**: `FormActions` with `onCancel` (the card's `close`): Cancel and the submit button, right-aligned, not sticky; the two keep together and the error line wraps above them.
 - The submit button names the outcome: "Lưu", "Tạo khách hàng", "Tạo bản nháp"; "Thêm" when a modal adds an entry to a record's list (a dependent), "Lưu" when it edits one.
 - While saving the button is busy (spinner only after 300ms); after a successful save: `notifySuccess`, then a create navigates to the new record's page.
+- `onSubmit` may return `false` when it has set field errors itself; the form then keeps its values and stays unsaved.
 
 ```tsx
 <Page centered title={t('sales.customers.create')} breadcrumbs={[{ label: t('sales.customers.title'), to: '/sales/customers' }]}>

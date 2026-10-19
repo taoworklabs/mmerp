@@ -14,7 +14,7 @@ const newLeaf = (): CondRow => ({ group: null, field: null, op: null, value: '' 
 
 // ConditionEditor edits a condition group: whether all or any of its rows must hold, and the rows,
 // each a leaf (field, comparison, value) or a nested group. A group without rows always holds.
-export function ConditionEditor({ path, ctx, depth }: { path: string; ctx: EditorCtx; depth: number }) {
+export function ConditionEditor({ path, ctx, depth, onEmpty }: { path: string; ctx: EditorCtx; depth: number; onEmpty?: () => void }) {
   const { t } = useTranslation()
   const { control } = useFormContext()
   const rows = useFieldArray({ control, name: `${path}.rows` as never })
@@ -48,9 +48,14 @@ export function ConditionEditor({ path, ctx, depth }: { path: string; ctx: Edito
       )}
       {fields.map((r, i) => {
         const rp = `${path}.rows.${i}`
+        const removeRow = () => {
+          rows.remove(i)
+          // Depth 0 (a branch's own condition) has no parent row to drop; an empty group there just always runs.
+          if (depth > 0 && fields.length === 1) onEmpty?.()
+        }
         const remove = !readOnly && (
           <Tooltip label={t(r.group ? 'shared.rule.remove_group' : 'shared.rule.remove_cond')}>
-            <ActionIcon variant="subtle" color="gray" size="input-sm" aria-label={t(r.group ? 'shared.rule.remove_group' : 'shared.rule.remove_cond')} onClick={() => rows.remove(i)}>
+            <ActionIcon variant="subtle" color="gray" size="input-sm" aria-label={t(r.group ? 'shared.rule.remove_group' : 'shared.rule.remove_cond')} onClick={removeRow}>
               <IconX {...icon.button} />
             </ActionIcon>
           </Tooltip>
@@ -60,7 +65,8 @@ export function ConditionEditor({ path, ctx, depth }: { path: string; ctx: Edito
             <Paper key={r.id} withBorder p="sm">
               <Group align="flex-start" wrap="nowrap" gap="xs">
                 <Stack flex={1} miw={0}>
-                  <ConditionEditor path={`${rp}.group`} ctx={ctx} depth={depth + 1} />
+                  {/* An empty nested group has no valid server form; dropping its last row drops the group itself. */}
+                  <ConditionEditor path={`${rp}.group`} ctx={ctx} depth={depth + 1} onEmpty={() => rows.remove(i)} />
                 </Stack>
                 {remove}
               </Group>

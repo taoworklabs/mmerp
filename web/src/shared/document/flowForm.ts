@@ -58,15 +58,21 @@ function exprToCond(e: FlowCondition): CondValues {
   return { mode: 'all', rows: [exprToRow(e)] }
 }
 
-function rowToExpr(row: CondRow): FlowCondition {
+// rowToExpr reads one row; undefined means the row holds no constraint (an empty nested group),
+// so the caller must drop it rather than send the server an empty "all"/"any".
+function rowToExpr(row: CondRow): FlowCondition | undefined {
   if (row.group) return condToExpr(row.group)
   return { field: row.field ?? undefined, op: (row.op as FlowCondition['op']) ?? undefined, value: row.value }
 }
 
-// condToExpr writes a group back: a single row (leaf or nested group) is written bare, several rows get the mode wrapper.
-function condToExpr(c: CondValues): FlowCondition {
-  if (c.rows.length === 1) return rowToExpr(c.rows[0]!)
-  return { [c.mode]: c.rows.map(rowToExpr) }
+// condToExpr writes a group back: a single row (leaf or nested group) is written bare, several rows
+// get the mode wrapper; a group left with no constraints (defence: the UI never leaves one nested) is
+// undefined, for the caller to drop.
+function condToExpr(c: CondValues): FlowCondition | undefined {
+  const rows = c.rows.map(rowToExpr).filter((r): r is FlowCondition => r !== undefined)
+  if (rows.length === 0) return undefined
+  if (rows.length === 1) return rows[0]
+  return { [c.mode]: rows }
 }
 
 function approverOf(v: ElementValues): StepDef['approver'] {
@@ -115,7 +121,8 @@ function valuesToElement(v: ElementValues): FlowElement {
 
 function branchToElement(b: BranchValues): BranchDef {
   const body = b.body.map(valuesToElement)
-  return b.cond.rows.length ? { condition: condToExpr(b.cond), body } : { body }
+  const cond = condToExpr(b.cond)
+  return cond ? { condition: cond, body } : { body }
 }
 
 export function toFlowValues(flow: Flow): FlowValues {
