@@ -131,5 +131,10 @@
   "sales.items.retire": "Retire",
   "sales.items.reactivate": "Put back on sale",
   "sales.items.retired_done": "{{name}} retired.",
-  "sales.items.reactivated_done": "{{name}} back on sale."
+  "sales.items.reactivated_done": "{{name}} back on sale.",
+  "sales.customer.latest_quote": "Latest quotations",
+  "sales.customer.latest_order": "Latest orders",
+  "sales.customer.doc_line": "{{date}} · {{total}} VND",
+  "sales.quotes.title_count": "Quotations ({{count}})",
+  "sales.orders.title_count": "Sales orders ({{count}})"
 }

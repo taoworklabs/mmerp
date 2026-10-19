@@ -1,6 +1,7 @@
-import { Group, Stack, Tabs } from '@mantine/core'
+import { Anchor, Group, Stack, Tabs } from '@mantine/core'
 import type { ReactNode } from 'react'
-import { useSearchParams } from 'react-router'
+import { useTranslation } from 'react-i18next'
+import { Link, useSearchParams } from 'react-router'
 import { MoreActions } from '../MoreActions'
 import type { DetailTab } from './DetailPage'
 import { Page, type PageHeaderProps } from './Page'
@@ -83,5 +84,15 @@ export function RecordColumns({ main, side }: { main: ReactNode; side: ReactNode
         {side}
       </Stack>
     </div>
+  )
+}
+
+// SeeAll, on a digest's title line, opens the tab holding the whole of it.
+export function SeeAll({ tab }: { tab: string }) {
+  const { t } = useTranslation()
+  return (
+    <Anchor component={Link} to={`?tab=${tab}`} replace size="sm">
+      {t('shared.record.see_all')}
+    </Anchor>
   )
 }

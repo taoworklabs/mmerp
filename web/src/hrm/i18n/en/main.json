@@ -465,6 +465,5 @@
   "hrm.employee.current_contract": "Current contract",
   "hrm.employee.contract_since": "{{type}} · from {{date}}",
   "hrm.employee.no_current_contract": "No contract in force.",
-  "hrm.employee.leave_year": "Leave {{year}}",
-  "hrm.employee.recent_activity": "Recent activity"
+  "hrm.employee.leave_year": "Leave {{year}}"
 }

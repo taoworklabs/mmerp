@@ -465,6 +465,5 @@
   "hrm.employee.current_contract": "Hợp đồng hiện tại",
   "hrm.employee.contract_since": "{{type}} · từ {{date}}",
   "hrm.employee.no_current_contract": "Không có hợp đồng đang hiệu lực.",
-  "hrm.employee.leave_year": "Quỹ phép {{year}}",
-  "hrm.employee.recent_activity": "Hoạt động gần đây"
+  "hrm.employee.leave_year": "Quỹ phép {{year}}"
 }

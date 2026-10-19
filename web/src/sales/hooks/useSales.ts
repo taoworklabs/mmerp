@@ -32,3 +32,15 @@ export function useDoc(kind: Kind, id: number) {
       unwrap(kind === 'quote' ? api.GET('/sales/quotes/{id}', { params: { path: { id } } }) : api.GET('/sales/orders/{id}', { params: { path: { id } } })),
   })
 }
+
+// useCustomerDocs: a customer's latest quotations or orders, newest first, and how many there are.
+export function useCustomerDocs(kind: Kind, customer: number) {
+  return useQuery({
+    queryKey: salesKeys.docs.customer(kind, customer),
+    queryFn: () => {
+      // ponytail: the latest 100 only; page the tab if a customer ever has more
+      const p = { params: { query: { customer_id: customer, sort: '-date' as const, page_size: 100 as const } } }
+      return unwrap(kind === 'quote' ? api.GET('/sales/quotes', p) : api.GET('/sales/orders', p))
+    },
+  })
+}

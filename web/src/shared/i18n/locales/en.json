@@ -547,5 +547,6 @@
   "shared.devui.use_record-tabs": "one record with much to read: an employee with contracts, leave, dependants, files; each part a full-width tab, the Overview tab summing them up.",
   "shared.devui.avoid_record-tabs": "the record has only a few groups of values and a list or two: use DetailPage.",
   "shared.activity.day_count_one": "{{count}} event",
-  "shared.activity.day_count_other": "{{count}} events"
+  "shared.activity.day_count_other": "{{count}} events",
+  "shared.record.recent_activity": "Recent activity"
 }
