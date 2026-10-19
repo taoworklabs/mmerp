@@ -154,7 +154,7 @@ A card on the page is `Paper withBorder`, never a shadow.
 | Scrollbar (`ScrollArea`) | 8px; in a table it runs between the sticky header and footer | `theme.ts`, `DataTable.module.css` |
 | Inbox list | 360px | `--mmerp-side-width` |
 | Content width (form sections, a form page, a `fullWidth` document's tab) | 1200px | `--mmerp-content-width`, applied by `FormSection` and `Page centered` |
-| Record or document page (`DetailPage`, `DocumentPage`) | 1440px, header included; main and side column about 62/38, one column below 1024px; card labels 11rem (`--field-list-label`) | `--mmerp-detail-width`, `DetailPage.module.css` |
+| Record or document page (`RecordPage`, `DocumentPage`) | 1440px, header included; a document's main and side column about 62/38, a record overview's about 1.6/1, one column below 1024px | `--mmerp-detail-width`, `DetailPage.module.css`, `RecordPage.module.css` |
 | Side panel, side-column tab | 480px | `--mmerp-aside-width`, `readingWidth` (`page/Page.tsx`) |
 | Breakpoints | `sm` 768, `md` 1024 (navigation becomes a drawer, tables become cards), `lg` 1280 (design size) | `theme.ts` |
 

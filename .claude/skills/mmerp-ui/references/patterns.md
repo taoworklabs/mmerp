@@ -6,8 +6,7 @@ Code recipes, one per screen type: which template, which components, in which or
 | --- | --- | --- |
 | A list of documents or master data | `ListPage` | List page |
 | One document | `DocumentPage` | Document page |
-| One master-data record | `DetailPage` | Record page |
-| One record with much to read (an employee: profile, contracts, leave, dependants, files, history) | `RecordPage` | Record page with tabs |
+| One master-data record (an employee, a customer, a user) | `RecordPage` | Record page |
 | A form that creates a record | `Page` + `Form` | Create page |
 | A small configuration list | `ListPage` + `FormModal` | Settings list |
 | Counts and entry points | `Page` + `TileGrid` | Dashboard |
@@ -106,29 +105,7 @@ The page resolves its query with `loaded()` (skeleton, not found with a link bac
 
 ## Record page
 
-Working example: `web/src/sales/pages/CustomerPage.tsx`, `web/src/core/pages/UserPage.tsx`. A record with many lists of its own uses the record page with tabs instead.
-
-```tsx
-<DetailPage
-  title={c.name}
-  breadcrumbs={[{ label: t('hrm.employees.title'), to: '/hrm/employees' }]}
-  description={/* key facts joined by "·", then the status badge */}
-  actions={/* at most three buttons */}
-  more={/* Menu.Item children for the rest, optional */}
-  side={<>
-    <DetailTabs tabs={[{ value: 'orders', label: …, content: <OrdersTab … /> }, …, attachments]} />   // first tab default, on the URL
-    <Panel title={t('shared.document.tab.activity')}><ActivityFeed docType={customerDocType} id={c.id} /></Panel>
-  </>}
->
-  <CustomerProfile key={c.id} customer={c} onSaved={saved} />                       // EditablePanel cards
-</DetailPage>
-```
-
-The main column is an area component (`EmployeeProfile`, `CustomerProfile`): one `EditablePanel` per group, its read view a `FieldList` showing every value its form edits (name, code, unit included). Its `edit` renders the group's form in the card: `Form` → `FormFields` (two fields to a row) with the same field groups as the create form (`MainFields`, `GeneralFields`…) → `FormActions onCancel={close}`, from a form hook holding the whole record (`useEmployeeForm`, `useCustomerForm`), since the API saves the record as a whole. No `FormModal` for a group; a modal stays for a separate action (`MoveModal`: transfer, terminate). A tab holds a `DataTable` with `cards` and its own `TabActions`. A record with no lists of its own puts its attachments straight in a `Panel` (`CustomerPage`).
-
-## Record page with tabs
-
-Working example: `web/src/hrm/pages/EmployeePage.tsx` with `hrm/components/EmployeeSummary.tsx` (key facts), `EmployeeProfile.tsx` (cards) and `EmployeeDigest.tsx` (right column).
+Working examples: `web/src/hrm/pages/EmployeePage.tsx` with `hrm/components/EmployeeSummary.tsx` (key facts), `EmployeeProfile.tsx` (cards) and `EmployeeDigest.tsx` (right column); `web/src/sales/pages/CustomerPage.tsx` (a customer's quotations and orders as tabs); `web/src/core/pages/UserPage.tsx` (no activity; the main action, "Cấp vai trò", in the header).
 
 ```tsx
 <RecordPage
