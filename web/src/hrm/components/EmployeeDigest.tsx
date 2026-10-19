@@ -11,11 +11,11 @@ import { currentContract, useEmployeeContracts, useLeaveBalances } from '../hook
 import { contractDocType, employeeDocType } from '../keys'
 
 // SeeAll opens the tab holding the whole of a digest.
-function SeeAll({ tab, label }: { tab: string; label?: string }) {
+function SeeAll({ tab }: { tab: string }) {
   const { t } = useTranslation()
   return (
     <Anchor component={Link} to={`?tab=${tab}`} replace size="sm">
-      {label ?? t('shared.record.see_all')}
+      {t('shared.record.see_all')}
     </Anchor>
   )
 }
@@ -66,7 +66,7 @@ export function EmployeeDigest({ employee: e }: { employee: Employee }) {
           )}
         </Panel>
       )}
-      <Panel title={t('hrm.employee.recent_activity')} actions={<SeeAll tab="activity" label={t('shared.record.history')} />}>
+      <Panel title={t('hrm.employee.recent_activity')} actions={<SeeAll tab="activity" />}>
         <ActivityFeed docType={employeeDocType} id={e.id} recent={5} />
       </Panel>
     </>

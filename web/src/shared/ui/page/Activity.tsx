@@ -14,7 +14,8 @@ export function Panel({ title, icon: Icon, actions, plain, children }: { title: 
   return (
     <Paper component="section" aria-label={title} withBorder={!plain} p="md" px={plain ? 0 : undefined}>
       <Stack gap="sm">
-        <Group justify="space-between" wrap="nowrap" gap="xs" mih="var(--mmerp-control-height)">
+        {/* On a narrow card the actions drop under the title rather than squeezing it. */}
+        <Group justify="space-between" gap="xs" mih="var(--mmerp-control-height)">
           <Group gap="xs" wrap="nowrap">
             {Icon && <Icon {...icon.text} aria-hidden />}
             <Text fw={600}>{title}</Text>

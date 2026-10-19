@@ -44,7 +44,7 @@ One-line description: what the list holds, or the record's key facts
 | --- | --- |
 | Lists, wide documents (`fullWidth`), reports | Full width of the content area |
 | Form pages (`FormSection`, `Page centered`) | At most 1200px (`--mmerp-content-width`), the header centred with the content so both share a left edge |
-| A record's or document's page (`DetailPage`, `DocumentPage`) | At most 1440px (`--mmerp-detail-width`), header included; main and side column about 62/38, one column below 1024px |
+| A record's or document's page (`DetailPage`, `DocumentPage`, `RecordPage`) | At most 1440px (`--mmerp-detail-width`), header included; main and side column about 62/38, one column below 1024px |
 | Inbox list | 360px (`--mmerp-side-width`) |
 | Side panel (`SidePanel`), side-column content shown as a tab | 480px (`--mmerp-aside-width`, `readingWidth`) |
 | Modal (`FormModal`) | 440px (`md`), 620px with `wide` (`lg`), fullscreen below 1024px |
@@ -108,6 +108,31 @@ Employees › Nguyễn Văn An
 - The side column: the record's own lists in one card (`DetailTabs`: the first tab open by default, the tab on the URL, replacing the history entry; a tab's buttons in `TabActions`; tables as `DataTable` `cards`), then "Hoạt động" (`ActivityFeed`) in a `Panel` of its own, never a tab.
 - Below 1024px: one column, the side column under the main one, the actions in a bar fixed to the bottom (`narrowActions`).
 - People link to their profile (`EmployeeLink` in HRM); a phone is a `tel:` link, an email a `mailto:` link.
+
+### Record detail with tabs
+
+A record with several lists of its own and a long history (an employee) uses `RecordPage` instead: the side column was too narrow for its tables.
+
+```
+Employees › Nguyễn Văn An
+(NA) Nguyễn Văn An [Active]                                   [Secondary] [⋯]
+     NV0001 · Kế toán · an.nguyen
+Manager        Tenure        Contract type        Leave left 2026
++ Add          4 years       Open-ended           12 days
+Overview | Contracts (2) | Leave | Dependants | Files (1) | Activity
+┌ ~1.6 ───────────────────────────────────┐ ┌ ~1 ──────────────────────────┐
+│ ▣ Work                          ✎ Sửa │ │ Current contract    See all  │
+│ Label            Label                 │ ├──────────────────────────────┤
+│ value            value                 │ │ Leave 2026          See all  │
+└────────────────────────────────────────┘ ├──────────────────────────────┤
+                                            │ Recent activity     See all  │
+                                            └──────────────────────────────┘
+```
+
+- Header: breadcrumb ending with the page, no back button; status beside the title (`status`); key facts as a line under it; `KeyFacts` (`summary`) under that. A destructive action sits in `more`, in red, and confirms.
+- Tabs on the header's rule, the whole width, the open tab on `?tab=` (replaced; the first tab is the bare URL); counts in labels once known. Tables in tabs are full `DataTable`s, not cards. "Hoạt động" (Activity) is the `ActivityFeed` with its filter; this is the one place the activity is a tab.
+- Overview: `RecordColumns`, about 1.6/1, one column below 1024px with the right one under. Cards' pairs are `FieldList stacked`, one to a row below 768px.
+- Below 1024px the actions stay in the header (wrapping under the title below 768px); `KeyFacts` go two to a row below 768px; the tab line scrolls sideways.
 
 ### Document detail
 

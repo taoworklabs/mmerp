@@ -85,7 +85,8 @@ function PageHeader({ title, breadcrumbs, description, leading, status, actions,
           {withBack && parent && <BackButton to={parent.to} />}
           {leading}
           <Stack gap={0} miw={0}>
-            <Group gap="sm" wrap="nowrap" miw={0}>
+            {/* The status drops under a long title rather than squeezing it. */}
+            <Group gap="xs" miw={0}>
               <Title order={1} lineClamp={1}>
                 {title}
               </Title>

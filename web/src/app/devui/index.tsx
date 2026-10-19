@@ -16,7 +16,7 @@ import { Bulk, Grid, GroupedTable, Table } from './data'
 import { Dialogs, States } from './feedback'
 import { Colour, Icons, Principles, Spacing, Surfaces, Typography } from './foundations'
 import { Fields, Filters, Inline, Lines } from './input'
-import { DetailTemplate, DocumentTemplate, InboxTemplate, ListTemplate, PageTemplate } from './templates'
+import { DetailTemplate, DocumentTemplate, RecordTemplate, InboxTemplate, ListTemplate, PageTemplate } from './templates'
 
 // An entry is labelled by an i18n key, or by its component name for the templates.
 type Entry = { path: string; label?: string; name?: string; Component: ComponentType }
@@ -97,6 +97,7 @@ const groups: { label: string; entries: Entry[] }[] = [
       { path: 'page', name: 'Page', Component: PageTemplate },
       { path: 'list', name: 'ListPage', Component: ListTemplate },
       { path: 'record', name: 'DetailPage', Component: DetailTemplate },
+      { path: 'record-tabs', name: 'RecordPage', Component: RecordTemplate },
       { path: 'document', name: 'DocumentPage', Component: DocumentTemplate },
       { path: 'inbox', name: 'InboxPage', Component: InboxTemplate },
     ],

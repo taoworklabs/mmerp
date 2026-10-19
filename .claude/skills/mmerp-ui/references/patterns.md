@@ -7,6 +7,7 @@ Code recipes, one per screen type: which template, which components, in which or
 | A list of documents or master data | `ListPage` | List page |
 | One document | `DocumentPage` | Document page |
 | One master-data record | `DetailPage` | Record page |
+| One record with much to read (an employee: profile, contracts, leave, dependants, files, history) | `RecordPage` | Record page with tabs |
 | A form that creates a record | `Page` + `Form` | Create page |
 | A small configuration list | `ListPage` + `FormModal` | Settings list |
 | Counts and entry points | `Page` + `TileGrid` | Dashboard |
@@ -105,26 +106,53 @@ The page resolves its query with `loaded()` (skeleton, not found with a link bac
 
 ## Record page
 
-Working example: `web/src/hrm/pages/EmployeePage.tsx`, `web/src/sales/pages/CustomerPage.tsx`, `web/src/core/pages/UserPage.tsx`.
+Working example: `web/src/sales/pages/CustomerPage.tsx`, `web/src/core/pages/UserPage.tsx`. A record with many lists of its own uses the record page with tabs instead.
 
 ```tsx
 <DetailPage
-  title={e.full_name}
+  title={c.name}
   breadcrumbs={[{ label: t('hrm.employees.title'), to: '/hrm/employees' }]}
-  leading={<PersonAvatar name={e.full_name} size="lg" />}
   description={/* key facts joined by "·", then the status badge */}
   actions={/* at most three buttons */}
   more={/* Menu.Item children for the rest, optional */}
   side={<>
-    <DetailTabs tabs={[{ value: 'contracts', label: …, content: <ContractsTab … /> }, …, attachments]} />   // first tab default, on the URL
-    <Panel title={t('shared.document.tab.activity')}><ActivityFeed docType={employeeDocType} id={e.id} /></Panel>
+    <DetailTabs tabs={[{ value: 'orders', label: …, content: <OrdersTab … /> }, …, attachments]} />   // first tab default, on the URL
+    <Panel title={t('shared.document.tab.activity')}><ActivityFeed docType={customerDocType} id={c.id} /></Panel>
   </>}
 >
-  <EmployeeProfile key={e.id} employee={e} onSaved={saved} />                       // EditablePanel cards
+  <CustomerProfile key={c.id} customer={c} onSaved={saved} />                       // EditablePanel cards
 </DetailPage>
 ```
 
 The main column is an area component (`EmployeeProfile`, `CustomerProfile`): one `EditablePanel` per group, its read view a `FieldList` showing every value its form edits (name, code, unit included). Its `edit` renders the group's form in the card: `Form` → `FormFields` (two fields to a row) with the same field groups as the create form (`MainFields`, `GeneralFields`…) → `FormActions onCancel={close}`, from a form hook holding the whole record (`useEmployeeForm`, `useCustomerForm`), since the API saves the record as a whole. No `FormModal` for a group; a modal stays for a separate action (`MoveModal`: transfer, terminate). A tab holds a `DataTable` with `cards` and its own `TabActions`. A record with no lists of its own puts its attachments straight in a `Panel` (`CustomerPage`).
+
+## Record page with tabs
+
+Working example: `web/src/hrm/pages/EmployeePage.tsx` with `hrm/components/EmployeeSummary.tsx` (key facts), `EmployeeProfile.tsx` (cards) and `EmployeeDigest.tsx` (right column).
+
+```tsx
+<RecordPage
+  title={e.full_name}
+  breadcrumbs={[{ label: t('hrm.employees.title'), to: '/hrm/employees' }]}        // ends with the page; no back button
+  leading={<PersonAvatar name={e.full_name} size="lg" />}
+  status={<EmployeeStatus status={e.status} />}                                    // beside the title
+  description={[e.code, e.org_unit_name, e.user_login].filter(Boolean).join(' · ')}
+  summary={<EmployeeSummary … />}                                                  // KeyFacts, 4–5 facts
+  actions={/* secondary buttons */}
+  more={/* Menu.Item children; the destructive one color="danger", confirmed */}
+  tabs={[
+    { value: 'overview', label: t('shared.record.overview'), content: <RecordColumns main={<EmployeeProfile … />} side={<EmployeeDigest … />} /> },
+    { value: 'contracts', label: t('…_count', { count }), content: <ContractsTab … /> }, // full-width DataTable
+    …, attachments,
+    { value: 'activity', label: t('shared.document.tab.activity'), content: <ActivityFeed … /> },
+  ]}
+  aliases={{ history: 'activity', discussion: 'activity' }}                         // old ?tab= links
+>
+  {move && <MoveModal … />}
+</RecordPage>
+```
+
+The overview's left column holds the `EditablePanel` cards, pairs `FieldList stacked` (label over value, two to a row, an address `'wide'`); values the header already shows are not repeated, though the card's form still edits them. An empty value is a `MissingValue` (`children` of `EditablePanel` as a function receives `open`). The right column holds digests, each a `Panel` with a "Xem tất cả" link to its tab: the current item, a figure, and `ActivityFeed recent={5}` (comments and changes only, no filter) under "Hoạt động gần đây". A part the user may not read is left out, not shown empty.
 
 ## Settings list
 

@@ -12,7 +12,7 @@ export function KeyFacts({ facts }: { facts: [string, ReactNode][] }) {
           <Text component="dt" size="xs" c="dimmed">
             {label}
           </Text>
-          <Text component="dd" fw={500} truncate>
+          <Text component="dd" fw={500}>
             {value}
           </Text>
         </div>

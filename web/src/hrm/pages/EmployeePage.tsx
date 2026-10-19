@@ -55,7 +55,7 @@ export function EmployeePage() {
     { value: 'balances', label: t('hrm.employee.tab.leave'), content: <BalancesTab employee={e} /> },
     { value: 'dependents', label: t('hrm.employee.tab.dependents'), content: <DependentsTab employee={e} /> },
     { value: attachments.key, label: attachments.title, content: attachments.content },
-    { value: 'activity', label: t('shared.record.history'), content: <ActivityFeed docType={employeeDocType} id={e.id} /> },
+    { value: 'activity', label: t('shared.document.tab.activity'), content: <ActivityFeed docType={employeeDocType} id={e.id} /> },
   ]
   return (
     <RecordPage

@@ -139,8 +139,8 @@
   "shared.devui.avoid_page": "đã có khuôn hợp hơn; mọi khuôn khác đều dựng trên Page.",
   "shared.devui.use_list": "liệt kê chứng từ hoặc dữ liệu gốc để tìm, lọc và mở; danh mục cấu hình nhỏ thì sửa từng mục trong FormModal.",
   "shared.devui.avoid_list": "xem hoặc sửa một bản ghi: bản ghi có trang riêng, bảng bên chỉ để xem nhanh.",
-  "shared.devui.use_record": "một bản ghi không có vòng đời: nhân viên, khách hàng, người dùng; xem và sửa trên cùng một trang.",
-  "shared.devui.avoid_record": "bản ghi có số, ngày và trạng thái nháp, chờ duyệt, đã ghi sổ: dùng DocumentPage.",
+  "shared.devui.use_record": "một bản ghi không có vòng đời, ít danh sách con: khách hàng, người dùng; xem và sửa trên cùng một trang.",
+  "shared.devui.avoid_record": "bản ghi có số, ngày và trạng thái nháp, chờ duyệt, đã ghi sổ: dùng DocumentPage; bản ghi có nhiều danh sách con và lịch sử dài: dùng RecordPage.",
   "shared.devui.use_document": "xem và sửa một chứng từ, từ nháp đến đã ghi sổ hoặc đã hủy, cùng luồng duyệt.",
   "shared.devui.avoid_document": "bản ghi không có vòng đời: dùng DetailPage; không tách một trang sửa riêng.",
   "shared.devui.use_inbox": "xử lý lần lượt các mục đang chờ: danh sách bên cạnh chi tiết của mục đang chọn.",
@@ -540,9 +540,10 @@
   "shared.field.add_label": "Bổ sung {{label}}",
   "shared.field.missing": "Chưa cập nhật",
   "shared.record.overview": "Tổng quan",
-  "shared.record.history": "Lịch sử",
   "shared.record.see_all": "Xem tất cả",
   "shared.sensitive.masked_tail": "Đã ẩn, kết thúc bằng {{tail}}",
   "shared.sensitive.show_all": "Hiện tất cả",
-  "shared.sensitive.hide_all": "Ẩn tất cả"
+  "shared.sensitive.hide_all": "Ẩn tất cả",
+  "shared.devui.use_record-tabs": "một bản ghi nhiều thông tin: nhân viên với hợp đồng, nghỉ phép, người phụ thuộc, đính kèm; mỗi phần một tab toàn chiều rộng, tab Tổng quan tóm tắt tất cả.",
+  "shared.devui.avoid_record-tabs": "bản ghi chỉ có vài nhóm giá trị và một hai danh sách: dùng DetailPage."
 }
