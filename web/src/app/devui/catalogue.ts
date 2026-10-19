@@ -74,7 +74,7 @@ export const entries = [
   { layer: 'templates', path: 'templates/document', name: 'DocumentPage', source: '@/shared/ui/page', related: ['mmerp/lines-table', 'mmerp/document-status', 'mmerp/approval-panel', 'mmerp/attachment-panel', 'mmerp/activity-feed'] },
   { layer: 'templates', path: 'templates/inbox', name: 'InboxPage', source: '@/shared/ui/page', related: ['mmerp/document-preview', 'mmerp/states'] },
   { layer: 'templates', path: 'templates/list', name: 'ListPage', source: '@/shared/ui/page', related: ['mmerp/data-table', 'mmerp/filters', 'mmerp/bulk-bar', 'mmerp/side-panel', 'mmerp/query-view'] },
-  { layer: 'templates', path: 'templates/page', name: 'Page', source: '@/shared/ui/page', related: ['mmerp/key-facts', 'mmerp/status-badge', 'mmerp/person-avatar', 'mmerp/more-actions'] },
+  { layer: 'templates', path: 'templates/page', name: 'Page', source: '@/shared/ui/page', related: ['mantine/button', 'mmerp/key-facts', 'mmerp/person-avatar', 'mmerp/status-badge'] },
   { layer: 'templates', path: 'templates/record', name: 'RecordPage', source: '@/shared/ui/page', related: ['mmerp/key-facts', 'mmerp/editable-panel', 'mmerp/field-list', 'mmerp/panel', 'mmerp/activity-feed'] },
 ] as const satisfies readonly Entry[]
 
@@ -84,4 +84,24 @@ export const entryByPath = (path: string): Entry => {
   const e = (entries as readonly Entry[]).find((x) => x.path === path)
   if (!e) throw new Error(`devui: no entry ${path}`)
   return e
+}
+
+// key names an entry in i18n keys: the last path segment, `-` as `_` (mmerp/data-table → data_table).
+export const key = (entry: Entry) => entry.path.slice(entry.path.indexOf('/') + 1).replaceAll('-', '_')
+
+// Entries whose name is one identifier, longest first, so a text can link the components it names.
+const named = (entries as readonly Entry[]).filter((e) => e.name && /^\w+$/.test(e.name)).sort((a, b) => b.name!.length - a.name!.length)
+const nameRe = new RegExp(`\\b(${named.map((e) => e.name).join('|')})\\b`, 'g')
+
+// splitNames cuts a text at every catalogued component name, giving that name's entry in its place.
+export function splitNames(text: string): (string | Entry)[] {
+  const out: (string | Entry)[] = []
+  let at = 0
+  for (const m of text.matchAll(nameRe)) {
+    if (m.index > at) out.push(text.slice(at, m.index))
+    out.push(named.find((e) => e.name === m[0])!)
+    at = m.index + m[0].length
+  }
+  if (at < text.length) out.push(text.slice(at))
+  return out
 }

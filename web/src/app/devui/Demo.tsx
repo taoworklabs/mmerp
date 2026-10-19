@@ -12,6 +12,14 @@ export const rows: Row[] = [
   { id: 3, code: 'NV003', name: 'Lê Văn Cường', amount: 11200000 },
 ]
 
+// A record's headline facts, as a record page's header shows them.
+export const facts: [string, ReactNode][] = [
+  ['Quản lý trực tiếp', 'Trần Thị Bình'],
+  ['Thâm niên', '4 năm 2 tháng'],
+  ['Loại hợp đồng', 'Không xác định thời hạn'],
+  ['Phép còn lại', '8,5 ngày'],
+]
+
 // Demo frames one catalogue entry the way a real screen would: inside a Page, centred, since an
 // entry rarely fills the width.
 export function Demo({ title, description, children }: { title: string; description?: string; children: ReactNode }) {

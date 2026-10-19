@@ -145,16 +145,12 @@
   "shared.devui.case_error": "Không tải được: ErrorState kèm Thử lại",
   "shared.devui.case_not_found": "Đường dẫn không tồn tại (404): NotFoundPage",
   "shared.devui.case_forbidden": "Không có quyền (403): ForbiddenPage",
-  "shared.devui.query_view": "Vùng dữ liệu từ truy vấn",
-  "shared.devui.query_view_hint": "QueryView chọn thứ hiển thị cho một vùng lấy dữ liệu từ một truy vấn. Đổi trạng thái để xem từng trường hợp; màn hình không tự viết các nhánh này.",
   "shared.devui.query_loading": "Đang tải",
   "shared.devui.query_error": "Lỗi",
   "shared.devui.query_empty": "Rỗng",
   "shared.devui.query_no_results": "Bị lọc hết",
   "shared.devui.query_not_found": "404",
   "shared.devui.query_data": "Có dữ liệu",
-  "shared.devui.use_action": "Thao tác của vùng",
-  "shared.devui.use_action_hint": "useAction chạy một thao tác của một vùng: hỏi trước khi không hoàn tác được, giữ lỗi ngay cạnh vùng, báo thành công bằng thông báo nổi.",
   "shared.devui.use_action_region": "Danh sách hoặc nội dung của vùng nằm ở đây.",
   "shared.devui.send_test": "Gửi thử",
   "shared.devui.toast_test_sent": "Đã gửi thư thử.",
@@ -748,5 +744,7 @@
   "shared.devui.case_create_modal": "Tạo một mục nhỏ trong hộp thoại",
   "shared.devui.case_edit_in_place": "Sửa một nhóm giá trị tại chỗ",
   "shared.devui.dont_confirm_undoable": "Hỏi xác nhận cho việc hoàn tác được: làm luôn rồi cho Hoàn tác.",
-  "shared.devui.built_from": "Dựng từ:"
+  "shared.devui.built_from": "Dựng từ:",
+  "shared.devui.yes": "Có",
+  "shared.devui.edit_in_place_see": "Mỗi nhóm giá trị của bản ghi là một EditablePanel, sửa tại chỗ với nút Lưu riêng."
 }

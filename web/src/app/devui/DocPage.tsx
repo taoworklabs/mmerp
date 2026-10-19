@@ -3,11 +3,21 @@ import type { ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router'
 import { Page } from '@/shared/ui/page'
-import { type Entry, entryByPath, type Path } from './catalogue'
+import { type Entry, entryByPath, key, type Path, splitNames } from './catalogue'
 import classes from './DevUi.module.css'
 
-// key names an entry in i18n keys: the last path segment, `-` as `_` (mmerp/data-table → data_table).
-export const key = (entry: Entry) => entry.path.slice(entry.path.indexOf('/') + 1).replaceAll('-', '_')
+// Linked shows a text with every catalogued component it names as a link to that component's page.
+export function Linked({ text }: { text: string }) {
+  return splitNames(text).map((part, i) =>
+    typeof part === 'string' ? (
+      part
+    ) : (
+      <Anchor key={i} component={Link} to={`/dev/ui/${part.path}`} inherit>
+        {part.name}
+      </Anchor>
+    ),
+  )
+}
 
 export function useEntryTitle() {
   const { t } = useTranslation()
@@ -74,7 +84,7 @@ export function DocPage({ path, example, variants, doDont, code }: { path: Path;
               <Text span fw={600}>
                 {t('shared.devui.avoid_when')}
               </Text>{' '}
-              {t(`shared.devui.avoid_${k}`)}
+              <Linked text={t(`shared.devui.avoid_${k}`)} />
             </Text>
           </DocSection>
           {variants && (
