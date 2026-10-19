@@ -1,6 +1,7 @@
-import { Button, Group, Text } from '@mantine/core'
-import { IconUsersGroup } from '@tabler/icons-react'
+import { Button, Group, PasswordInput, Stack, Text, TextInput } from '@mantine/core'
+import { IconAlertTriangle, IconAt, IconCircleCheck, IconHourglassHigh, IconUsersGroup } from '@tabler/icons-react'
 import { useTranslation } from 'react-i18next'
+import { Fragment } from 'react'
 import { useSearchParams } from 'react-router'
 import { WithSampleSections } from '@/shared/document/samples'
 import { formatMonth, formatNumber } from '@/shared/i18n'
@@ -9,7 +10,7 @@ import { DataTable } from '@/shared/ui/DataTable'
 import { FieldList, MissingValue } from '@/shared/ui/FieldList'
 import { KeyFacts } from '@/shared/ui/KeyFacts'
 import { EditablePanel, MonthFilter, OrgUnitFilter, SearchInput, SensitiveValue } from '@/shared/ui/form'
-import { DocumentPage, InboxList, InboxPage, InboxRow, ListPage, Page, Panel, RecordColumns, RecordPage, TabContent } from '@/shared/ui/page'
+import { AuthPage, DocumentPage, InboxGroup, InboxIcon, InboxList, InboxPage, InboxRow, ListPage, Page, Panel, RecordColumns, RecordPage, SeeAll, TabContent } from '@/shared/ui/page'
 import { StatusBadge } from '@/shared/ui/StatusBadge'
 import { useListParams } from '@/shared/url/listParams'
 import { orgUnits } from './api'
@@ -155,7 +156,11 @@ export function RecordTemplate() {
                       )}
                     </EditablePanel>
                   }
-                  side={<Panel plain title={t('shared.document.tab.activity')}>{activity}</Panel>}
+                  side={
+                    <Panel plain title={t('shared.document.tab.activity')} actions={<SeeAll tab="activity" />}>
+                      {activity}
+                    </Panel>
+                  }
                 />
               ),
             },
@@ -196,6 +201,14 @@ export function DocumentTemplate() {
   )
 }
 
+// The kinds a feed mixes, each with its tinted icon, as the notifications page shows them.
+const inboxLooks = [
+  { Icon: IconHourglassHigh, color: 'warning' },
+  { Icon: IconCircleCheck, color: 'success' },
+  { Icon: IconAt, color: 'info' },
+  { Icon: IconAlertTriangle, color: 'danger' },
+]
+
 export function InboxTemplate() {
   const { t } = useTranslation()
   const [search, setSearch] = useSearchParams()
@@ -205,29 +218,50 @@ export function InboxTemplate() {
       title="InboxPage"
       list={
         <InboxList label={t('shared.devui.list')}>
-          {rows.map((r, i) => (
-            <InboxRow
-              key={r.id}
-              active={item === String(r.id)}
-              unread={i === 0}
-              onClick={() => setSearch({ item: String(r.id) })}
-              label={
-                <Group justify="space-between" wrap="nowrap">
-                  <Text size="sm" fw="inherit">
-                    {r.code}
-                  </Text>
-                  <Text size="xs" c="dimmed">
-                    {t('shared.devui.ago')}
-                  </Text>
-                </Group>
-              }
-              description={r.name}
-            />
-          ))}
+          {rows.map((r, i) => {
+            const look = inboxLooks[i % inboxLooks.length]!
+            return (
+              <Fragment key={r.id}>
+                {i === 0 && <InboxGroup label={t('shared.devui.today')} />}
+                {i === 2 && <InboxGroup label={t('shared.devui.yesterday')} />}
+                <InboxRow
+                  active={item === String(r.id)}
+                  unread={i === 0}
+                  onClick={() => setSearch({ item: String(r.id) })}
+                  icon={<InboxIcon icon={look.Icon} color={look.color} />}
+                  label={
+                    <Group justify="space-between" wrap="nowrap">
+                      <Text size="sm" fw="inherit">
+                        {r.code}
+                      </Text>
+                      <Text size="xs" c="dimmed">
+                        {t('shared.devui.ago')}
+                      </Text>
+                    </Group>
+                  }
+                  description={r.name}
+                />
+              </Fragment>
+            )
+          })}
         </InboxList>
       }
       detail={item ? <Sample /> : null}
       onBack={() => setSearch({})}
     />
+  )
+}
+
+// AuthTemplate copies the sign-in form, the one screen outside the app shell.
+export function AuthTemplate() {
+  const { t } = useTranslation()
+  return (
+    <AuthPage title="AuthPage">
+      <Stack gap="md">
+        <TextInput label={t('core.login.login')} autoComplete="off" required />
+        <PasswordInput label={t('core.login.password')} autoComplete="off" required />
+        <Button>{t('core.login.submit')}</Button>
+      </Stack>
+    </AuthPage>
   )
 }

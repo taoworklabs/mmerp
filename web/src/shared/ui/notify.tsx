@@ -18,18 +18,26 @@ export function notifyUndo(message: string, undoLabel: string, onUndo: () => voi
     color: 'success',
     autoClose: 5000,
     message: (
-      <Group justify="space-between" wrap="nowrap" gap="sm">
-        <span>{message}</span>
-        <Button
-          variant="subtle"
-          onClick={() => {
-            notifications.hide(id)
-            onUndo()
-          }}
-        >
-          {undoLabel}
-        </Button>
-      </Group>
+      <UndoMessage
+        message={message}
+        undoLabel={undoLabel}
+        onUndo={() => {
+          notifications.hide(id)
+          onUndo()
+        }}
+      />
     ),
   })
+}
+
+// UndoMessage is the body of an undo toast, exported so the catalogue can show it at rest.
+export function UndoMessage({ message, undoLabel, onUndo }: { message: string; undoLabel: string; onUndo: () => void }) {
+  return (
+    <Group justify="space-between" wrap="nowrap" gap="sm">
+      <span>{message}</span>
+      <Button variant="subtle" onClick={onUndo}>
+        {undoLabel}
+      </Button>
+    </Group>
+  )
 }

@@ -13,10 +13,11 @@ import { offline } from './api'
 import devui from './DevUi.module.css'
 import { Alerts, Avatars, Badges, Buttons, FieldLists, IconButtons, Links, Menus, Overlays, Sections, TabsDemo, Tiles, Tree } from './basics'
 import { Bulk, Grid, GroupedTable, Table } from './data'
-import { Dialogs, States } from './feedback'
+import { ActivityDemo, Cards, DocumentPanels, Headers } from './blocks'
+import { Actions, Dialogs, QueryViews, States, ToastsDemo } from './feedback'
 import { Colour, Icons, Principles, Spacing, Surfaces, Typography } from './foundations'
 import { Fields, Filters, Inline, Lines } from './input'
-import { DocumentTemplate, RecordTemplate, InboxTemplate, ListTemplate, PageTemplate } from './templates'
+import { AuthTemplate, DocumentTemplate, InboxTemplate, ListTemplate, PageTemplate, RecordTemplate } from './templates'
 
 // An entry is labelled by an i18n key, or by its component name for the templates.
 type Entry = { path: string; label?: string; name?: string; Component: ComponentType }
@@ -81,6 +82,9 @@ const groups: { label: string; entries: Entry[] }[] = [
     entries: [
       { path: 'alerts', label: 'shared.devui.alerts', Component: Alerts },
       { path: 'states', label: 'shared.devui.states', Component: States },
+      { path: 'query-view', label: 'shared.devui.query_view', Component: QueryViews },
+      { path: 'toasts', label: 'shared.devui.toasts', Component: ToastsDemo },
+      { path: 'use-action', label: 'shared.devui.use_action', Component: Actions },
     ],
   },
   {
@@ -88,6 +92,15 @@ const groups: { label: string; entries: Entry[] }[] = [
     entries: [
       { path: 'overlays', label: 'shared.devui.overlays', Component: Overlays },
       { path: 'dialogs', label: 'shared.devui.dialogs', Component: Dialogs },
+    ],
+  },
+  {
+    label: 'shared.devui.group_blocks',
+    entries: [
+      { path: 'headers', label: 'shared.devui.headers', Component: Headers },
+      { path: 'cards', label: 'shared.devui.cards', Component: Cards },
+      { path: 'activity', label: 'shared.devui.activity', Component: ActivityDemo },
+      { path: 'document-panels', label: 'shared.devui.doc_panels', Component: DocumentPanels },
     ],
   },
   {
@@ -99,6 +112,7 @@ const groups: { label: string; entries: Entry[] }[] = [
       { path: 'record', name: 'RecordPage', Component: RecordTemplate },
       { path: 'document', name: 'DocumentPage', Component: DocumentTemplate },
       { path: 'inbox', name: 'InboxPage', Component: InboxTemplate },
+      { path: 'auth', name: 'AuthPage', Component: AuthTemplate },
     ],
   },
 ]

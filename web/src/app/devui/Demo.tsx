@@ -2,6 +2,7 @@ import { Stack, Text } from '@mantine/core'
 import type { ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Page } from '@/shared/ui/page'
+import classes from './DevUi.module.css'
 
 export type Row = { id: number; code: string; name: string; amount: number }
 
@@ -17,19 +18,24 @@ export function Demo({ title, description, children }: { title: string; descript
   const { t } = useTranslation()
   return (
     <Page centered title={title} description={description} breadcrumbs={[{ label: t('shared.devui.title'), to: '/dev/ui' }]}>
-      <Stack gap="lg">{children}</Stack>
+      <Stack gap="xl">{children}</Stack>
     </Page>
   )
 }
 
-// Case is one labelled example inside an entry: what it is for, then the thing itself.
-export function Case({ label, children }: { label: string; children: ReactNode }) {
+// Case is one labelled example inside an entry, framed so it reads apart from the next one: what
+// it is for in a strip on top, then the thing itself on its own canvas. Without a label, only the canvas.
+export function Case({ label, children }: { label?: string; children: ReactNode }) {
   return (
-    <Stack gap="xs">
-      <Text size="xs" fw={600} c="dimmed">
-        {label}
-      </Text>
-      {children}
-    </Stack>
+    <section className={classes.case} aria-label={label}>
+      {label && (
+        <Text size="sm" fw={600} className={classes.label}>
+          {label}
+        </Text>
+      )}
+      <Stack gap="md" className={classes.canvas}>
+        {children}
+      </Stack>
+    </section>
   )
 }

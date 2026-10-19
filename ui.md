@@ -215,7 +215,7 @@ A field that picks a business object (e.g. picking an employee) belongs to the a
 
 What `shared/ui` already has (see also `/dev/ui`), to use before building your own:
 
-- Actions and feedback: `useConfirm` (confirmation dialog), `useAction` (a region's action: confirm, error kept for the region, success toast), `notifySuccess`/`notifyError` (`notify.ts`).
+- Actions and feedback: `useConfirm` (confirmation dialog), `useAction` (a region's action: confirm, error kept for the region, success toast), `notifySuccess`/`notifyError`/`notifyUndo` (`notify.tsx`).
 - States (`states.tsx`): `EmptyState`, `ErrorState`, `PageSkeleton`, `ContentSkeleton`, `ForbiddenPage`, `NotFoundPage`, `ReadOnlyBanner`; `QueryView` picks among them for a region fed by one query; `Notice` is a banner whose tone sets colour and icon.
 - Menus: `MoreActions` holds `MenuAction`s (icon at text size, `danger` for an action that loses something).
 - Display: `DataTable`, `FieldList`, `StatusBadge`, `CellGrid` (grid of inputs along two axes, like a timesheet), `TileGrid`/`StatTile`/`LinkTile`, `OrgUnitName`, `PersonName`/`PersonAvatar`.

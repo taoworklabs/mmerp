@@ -1,13 +1,14 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import type { ReactNode } from 'react'
-import type { ApprovalInstance, AttachmentList, Discussion } from '@/shared/api/core'
+import type { ApprovalInstance, AttachmentList, Discussion, HistoryEntry } from '@/shared/api/core'
 import type { DocumentSection } from '@/shared/ui/page'
 import { ApprovalPanel } from './ApprovalPanel'
 import { useAttachmentSection } from './AttachmentPanel'
 import { ActivityFeed } from './ActivityFeed'
 import { documentKeys } from './keys'
 
-const sample = { type: 'dev.sample', id: 1 }
+// The catalogue's sample document; its type is under shared.devui so its labels come from the shared translations.
+export const sample = { type: 'shared.devui.sample', id: 1 }
 
 const attachments: AttachmentList = {
   hidden: false,
@@ -29,6 +30,16 @@ const discussion: Discussion = {
     { id: 3, author_name: 'Trần Thị Bình', body: '@lan.nguyen chị xác nhận giúp em, rồi báo @an.', created_at: '2026-03-09T10:31:00Z' },
   ],
 }
+
+// A record's life: created, edited, read, submitted, a file added, the first step approved.
+const history: HistoryEntry[] = [
+  { id: 1, action: 'record.created', actor_name: 'Nguyễn Văn An', at: '2026-03-09T08:00:00Z', data: { number: 'NP-2026-00001' } },
+  { id: 2, action: 'shared.devui.sample_updated', actor_name: 'Nguyễn Văn An', at: '2026-03-09T08:10:00Z', data: { changes: { days: { old: '2', new: '2,5' }, reason: { old: 'Việc riêng', new: 'Khám bệnh' } } } },
+  { id: 3, action: 'attachment.added', actor_name: 'Nguyễn Văn An', at: '2026-03-09T08:15:00Z', data: { name: 'giay-kham-benh.pdf' } },
+  { id: 4, action: 'record.transitioned', actor_name: 'Nguyễn Văn An', at: '2026-03-09T08:20:00Z', data: { to: 'pending_approval' } },
+  { id: 5, action: 'shared.devui.sample_viewed', actor_name: 'Trần Thị Bình', at: '2026-03-09T08:50:00Z', data: { field: 'bank_account' } },
+  { id: 6, action: 'approval.approved', actor_name: 'Trần Thị Bình', at: '2026-03-09T09:05:00Z', data: { step: 1 } },
+]
 
 // Two steps: the first decided, the second waiting, with no action for the viewer.
 const approval: ApprovalInstance = {
@@ -56,8 +67,13 @@ const client = new QueryClient({ defaultOptions: { queries: { staleTime: Infinit
 client.setQueryData(documentKeys.attachments(sample.type, sample.id), attachments)
 client.setQueryData(documentKeys.discussion(sample.type, sample.id), discussion)
 client.setQueryData(documentKeys.mentionable(sample.type, sample.id), mentionable)
-client.setQueryData(documentKeys.history(sample.type, sample.id), [])
+client.setQueryData(documentKeys.history(sample.type, sample.id), history)
 client.setQueryData(documentKeys.approval(sample.type, sample.id), { instance: approval })
+
+// SampleDocument gives the document panels (activity, approval, attachments) their sample data.
+export function SampleDocument({ children }: { children: ReactNode }) {
+  return <QueryClientProvider client={client}>{children}</QueryClientProvider>
+}
 
 // WithSampleSections renders the approval panel, the attachment panel and the activity feed on sample data, for the component catalogue.
 export function WithSampleSections({ children }: { children: (sections: DocumentSection[], activity: ReactNode, approval: ReactNode) => ReactNode }) {

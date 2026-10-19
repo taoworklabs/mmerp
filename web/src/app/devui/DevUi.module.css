@@ -10,3 +10,25 @@
   background: var(--mmerp-elevation-surface-sunken);
   border-bottom: 1px solid var(--mantine-color-default-border);
 }
+
+/* A toast at rest, as wide as the toast stack (Mantine's default container width). */
+.toast {
+  max-width: 440px;
+}
+
+/* A catalogue example: a bordered block, its label in a sunken strip above the canvas. */
+.case {
+  border: 1px solid var(--mantine-color-default-border);
+  border-radius: var(--mantine-radius-md);
+  overflow: hidden;
+}
+
+.label {
+  padding: var(--mantine-spacing-xs) var(--mantine-spacing-md);
+  background: var(--mmerp-elevation-surface-sunken);
+  border-bottom: 1px solid var(--mantine-color-default-border);
+}
+
+.canvas {
+  padding: var(--mantine-spacing-lg);
+}
