@@ -1,12 +1,13 @@
-import { Anchor, Button, SegmentedControl, Stack, Text } from '@mantine/core'
-import { IconEye } from '@tabler/icons-react'
-import { Fragment, useState, type ReactNode } from 'react'
+import { Anchor, Button, SegmentedControl, Stack, Text, UnstyledButton } from '@mantine/core'
+import { IconChevronDown, IconEye } from '@tabler/icons-react'
+import { Fragment, useId, useState, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { HistoryEntry } from '@/shared/api/core'
 import { useMe } from '@/shared/auth/me'
 import { errorText, formatDateTime } from '@/shared/i18n'
 import { PersonAvatar } from '@/shared/ui/avatar'
 import { ContentSkeleton, ErrorState } from '@/shared/ui/states'
+import { icon } from '@/shared/ui/theme'
 import classes from './ActivityFeed.module.css'
 import { CommentBox, CommentText, useDiscussion } from './DiscussionPanel'
 import { Bullet, Did, FeedRow, HistoryRow, isView, runs, useHistory, Who } from './DocumentHistory'
@@ -28,7 +29,7 @@ export function feedItems<T extends { kind: Exclude<Filter, 'all'> }>(items: T[]
 // ActivityFeed is everything that happened to a record in one timeline, newest first: comments
 // in their wells among the changes and reads of the audit log, so each reads in its context.
 // The box to comment heads it; a filter narrows it to comments, changes or reads; days head
-// their events. With recent it is a digest instead: no filter, the latest comments and changes only.
+// their events, indented under them, and open or close them. With recent it is a digest instead: no filter, the latest comments and changes only.
 export function ActivityFeed({ docType, id, recent }: { docType: string; id: number; recent?: number }) {
   const { t } = useTranslation()
   const me = useMe()
@@ -36,6 +37,9 @@ export function ActivityFeed({ docType, id, recent }: { docType: string; id: num
   const talk = useDiscussion(docType, id)
   const [filter, setFilter] = useState<Filter>('all')
   const [shown, setShown] = useState(page)
+  // Days the reader folded away; each day heading opens and closes its own events.
+  const [closed, setClosed] = useState<ReadonlySet<string>>(new Set())
+  const ids = useId()
   if (log.isPending || talk.isPending) return <ContentSkeleton />
   if (log.isError) return <ErrorState message={errorText(t, log.error)} onRetry={() => void log.refetch()} />
   if (talk.isError) return <ErrorState message={errorText(t, talk.error)} onRetry={() => void talk.refetch()} />
@@ -103,16 +107,34 @@ export function ActivityFeed({ docType, id, recent }: { docType: string; id: num
           {t('shared.activity.empty')}
         </Text>
       ) : (
-        days.map((d) => (
-          <Stack key={d.day} gap="md">
-            <Text size="xs" fw={600} c="dimmed" className={classes.day}>
-              {dayLabel(d.day)}
-            </Text>
-            <ol className={history.list}>
-              {d.rows.map((r) => ('fold' in r && r.fold.length > 1 ? <Fold key={r.key} items={r.fold} /> : <Fragment key={r.key}>{'fold' in r ? r.fold[0]!.node : r.node}</Fragment>))}
-            </ol>
-          </Stack>
-        ))
+        days.map((d) => {
+          const open = !closed.has(d.day)
+          const id = `${ids}-${d.day}`
+          const count = d.rows.reduce((n, r) => n + ('fold' in r ? r.fold.length : 1), 0)
+          const toggle = () =>
+            setClosed((c) => {
+              const next = new Set(c)
+              if (open) next.add(d.day)
+              else next.delete(d.day)
+              return next
+            })
+          return (
+            <Stack key={d.day} gap="md">
+              <UnstyledButton className={classes.day} onClick={toggle} aria-expanded={open} aria-controls={id}>
+                <IconChevronDown {...icon.text} aria-hidden className={classes.chevron} data-closed={!open || undefined} />
+                <Text span size="xs" fw={600} c="dimmed">
+                  {dayLabel(d.day)}
+                  {!open && ` · ${t('shared.activity.day_count', { count })}`}
+                </Text>
+              </UnstyledButton>
+              {open && (
+                <ol id={id} className={`${history.list} ${classes.events}`}>
+                  {d.rows.map((r) => ('fold' in r && r.fold.length > 1 ? <Fold key={r.key} items={r.fold} /> : <Fragment key={r.key}>{'fold' in r ? r.fold[0]!.node : r.node}</Fragment>))}
+                </ol>
+              )}
+            </Stack>
+          )
+        })
       )}
       {visible.length > shown && (
         <Button variant="default" w="fit-content" onClick={() => setShown(shown + page)}>

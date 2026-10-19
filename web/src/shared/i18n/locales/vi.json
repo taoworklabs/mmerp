@@ -545,5 +545,7 @@
   "shared.sensitive.show_all": "Hiện tất cả",
   "shared.sensitive.hide_all": "Ẩn tất cả",
   "shared.devui.use_record-tabs": "một bản ghi nhiều thông tin: nhân viên với hợp đồng, nghỉ phép, người phụ thuộc, đính kèm; mỗi phần một tab toàn chiều rộng, tab Tổng quan tóm tắt tất cả.",
-  "shared.devui.avoid_record-tabs": "bản ghi chỉ có vài nhóm giá trị và một hai danh sách: dùng DetailPage."
+  "shared.devui.avoid_record-tabs": "bản ghi chỉ có vài nhóm giá trị và một hai danh sách: dùng DetailPage.",
+  "shared.activity.day_count_one": "{{count}} mục",
+  "shared.activity.day_count_other": "{{count}} mục"
 }

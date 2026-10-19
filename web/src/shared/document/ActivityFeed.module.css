@@ -5,18 +5,37 @@
   overflow-wrap: anywhere;
 }
 
-/* A day heads its events in small capitals, its rule running on to the right. */
+/* A day heads its events in small capitals, its rule running on to the right; it opens and
+   closes them. */
 .day {
   display: flex;
   align-items: center;
-  gap: var(--mantine-spacing-sm);
+  gap: var(--mantine-spacing-xs);
+  width: 100%;
   text-transform: uppercase;
   letter-spacing: 0.02em;
+  color: var(--mantine-color-dimmed);
+}
+
+.chevron {
+  flex-shrink: 0;
+  transition: transform 120ms ease;
+}
+
+.chevron[data-closed] {
+  transform: rotate(-90deg);
+}
+
+/* A day's events sit in from its heading, under the label rather than the chevron. Doubled to
+   outrank the history list's own padding whatever order the CSS loads in. */
+.events.events {
+  padding-inline-start: var(--mantine-spacing-lg);
 }
 
 .day::after {
   content: '';
   flex: 1;
+  margin-inline-start: var(--mantine-spacing-xs);
   height: 1px;
   background: var(--mantine-color-default-border);
 }
