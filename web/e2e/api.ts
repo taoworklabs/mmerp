@@ -30,6 +30,16 @@ export async function createUser(api: APIRequestContext, login: string, grants: 
   return id
 }
 
+// toFlow turns {approver, condition?} rule steps into a flow: a plain step, or a
+// choose-one split of a single branch with no otherwise when there is a condition.
+export function toFlow(steps: readonly { approver: unknown; condition?: unknown }[]) {
+  return steps.map(({ approver, condition }) =>
+    condition
+      ? { split: { mode: 'one', branches: [{ condition, body: [{ step: { approver, approvals: 1, rejections: 1 } }] }] } }
+      : { step: { approver, approvals: 1, rejections: 1 } },
+  )
+}
+
 export function employee(code: string, unit: number, extra: Record<string, unknown> = {}) {
   return {
     code,

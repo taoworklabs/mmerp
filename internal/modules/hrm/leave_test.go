@@ -89,7 +89,7 @@ func (f *leaveFixture) send(ctx context.Context, id int64) error {
 func (f *leaveFixture) ruleManager() {
 	f.t.Helper()
 	f.check(f.appr.SaveRule(f.admin, "hrm.leave_request", approval.RuleInput{
-		Steps: []approval.Step{{Approver: approval.Approver{Kind: "module"}}}, MaxLevels: 3, FallbackProduct: "hrm", FallbackRole: "hr",
+		Flow: approval.Flow{{Step: &approval.StepDef{Approver: approval.Approver{Kind: "module"}}}}, MaxLevels: 3, FallbackProduct: "hrm", FallbackRole: "hr",
 	}))
 }
 
@@ -114,7 +114,7 @@ func TestLeaveSampleFlow(t *testing.T) {
 	f.ctxFor("head", "hr@A")
 	f.ctxFor("deputy", "hr@A")
 	f.check(f.appr.SaveRule(f.admin, "hrm.leave_request", approval.RuleInput{
-		Steps: []approval.Step{{Approver: approval.Approver{Kind: "role", Product: "hrm", Role: "hr"}}}, MaxLevels: 3, FallbackProduct: "hrm", FallbackRole: "hr",
+		Flow: approval.Flow{{Step: &approval.StepDef{Approver: approval.Approver{Kind: "role", Product: "hrm", Role: "hr"}}}}, MaxLevels: 3, FallbackProduct: "hrm", FallbackRole: "hr",
 	}))
 	head, deputy := f.loginCtx("head"), f.loginCtx("deputy")
 	f.grant("12")
@@ -394,12 +394,14 @@ func TestTheEmployeeNeverApprovesTheirOwnLeave(t *testing.T) {
 	must(t)(f.iam.GrantRole(f.admin, eID, "hrm", "hr", &f.a))
 	f.ctxFor("head", "hr@A")
 	f.check(f.appr.SaveRule(f.admin, "hrm.leave_request", approval.RuleInput{
-		Steps: []approval.Step{{Approver: approval.Approver{Kind: "role", Product: "hrm", Role: "hr"}}}, MaxLevels: 3, FallbackProduct: "hrm", FallbackRole: "hr",
+		Flow: approval.Flow{{Step: &approval.StepDef{Approver: approval.Approver{Kind: "role", Product: "hrm", Role: "hr"}}}}, MaxLevels: 3, FallbackProduct: "hrm", FallbackRole: "hr",
 	}))
 	id := must(t)(f.hrm.CreateLeave(f.hr, hrm.NewLeave{EmployeeID: &f.emp, LeaveFields: f.fields("2026-03-10", "2026-03-10", "1")}))
 	f.check(f.send(f.hr, id))
 	wantErr(t, f.appr.Approve(f.e, f.ticket(id), 1), "forbidden")
-	wantErr(t, f.appr.Reassign(f.hr, f.ticket(id), 1, "e"), "self_approval")
+	hrID, err := f.iam.UserIDByLogin(f.admin, "hr")
+	f.check(err)
+	wantErr(t, f.appr.Reassign(f.hr, f.ticket(id), 1, hrID, "e"), "self_approval")
 	// Linking head's account to E after the step started does not let head approve E's leave.
 	e := employee("E", f.a)
 	e.UserLogin = str("head")

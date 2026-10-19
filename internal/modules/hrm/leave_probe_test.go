@@ -35,7 +35,11 @@ func (f *leaveFixture) steps(id int64) string {
 	}
 	out := ""
 	for _, s := range inst.Steps {
-		out += fmt.Sprintf("[step %d approvers=%v fallback=%v]", s.Position, s.ApproverNames, s.Fallback)
+		var names []string
+		for _, v := range s.Voters {
+			names = append(names, v.Name)
+		}
+		out += fmt.Sprintf("[step %d approvers=%v fallback=%v]", s.Position, names, s.Fallback)
 	}
 	return fmt.Sprintf("%s %s", inst.Status, out)
 }

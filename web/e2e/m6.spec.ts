@@ -1,5 +1,5 @@
 import { expect, test, type APIRequestContext, type Browser } from '@playwright/test'
-import { created, createUser, employee, password, signedInApi, runId } from './api'
+import { created, createUser, employee, password, signedInApi, runId, toFlow } from './api'
 
 // One run: a company of its own with department P and employee M6E01 under contract, March
 // timesheet posted. pay runs payrolls; dir approves them.
@@ -26,7 +26,7 @@ test.beforeAll(async ({ baseURL }) => {
   const dir = await createUser(api, login.dir, [{ role: 'hrm.payroll', unit: null }])
   // Contracts, timesheets and overtime post at once here; payrolls go to dir.
   for (const type of ['hrm.contract', 'hrm.timesheet', 'hrm.overtime_request']) await api.delete(`/api/approval-rules/${type}`)
-  await ok(api.put('/api/approval-rules/hrm.payroll', { data: { steps: [{ approver: { kind: 'user', user_id: dir } }], max_levels: 1, fallback_product: 'hrm', fallback_role: 'payroll' } }))
+  await ok(api.put('/api/approval-rules/hrm.payroll', { data: { flow: toFlow([{ approver: { kind: 'user', user_ids: [dir] } }]), max_levels: 1, fallback_product: 'hrm', fallback_role: 'payroll' } }))
 
   const kind = await created(api.post('/api/hrm/contract-types', { data: { name: `Không thời hạn ${run}`, fixed_term: false, active: true } }))
   const contract = await created(

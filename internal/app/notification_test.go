@@ -125,7 +125,7 @@ func (f *leaveFixture) submit(start string) int64 {
 // Every approver of a step that starts hears of it: the first step on sending, the next
 // one once the first is approved, a reassigned step. Nobody hears of their own action.
 func TestApprovalRequestedNotifications(t *testing.T) {
-	f := newLeaveFixture(t, `{"steps":[{"approver":{"kind":"module"}},{"approver":{"kind":"role","product":"hrm","role":"hr"}}],
+	f := newLeaveFixture(t, `{"flow":[{"step":{"approver":{"kind":"module"},"approvals":1,"rejections":1}},{"step":{"approver":{"kind":"role","product":"hrm","role":"hr"},"approvals":1,"rejections":1}}],
 		"max_levels":3,"fallback_product":"hrm","fallback_role":"hr"}`)
 	lv := f.submit("2026-03-10")
 
@@ -152,10 +152,15 @@ func TestApprovalRequestedNotifications(t *testing.T) {
 	if n := unread(f.staff); n != 0 {
 		t.Fatalf("staff hears of a middle step: %d", n)
 	}
-	// Reassigned by admin, the fallback: hr2 hears again, admin never of their own action.
-	f.ok(f.admin, "POST", "/api/approvals/1/reassign", `{"step":2,"login":"hr2"}`, 204)
-	if n, m := unread(f.hr2), unread(f.admin); n != 2 || m != 1 {
-		t.Fatalf("after reassign hr2 = %d, admin = %d", n, m)
+	// Admin, the fallback, reassigns their own slot on step 2 to hr3, granted the role only
+	// now: hr3 hears of it, hr2 (already on the step) does not hear again, and admin never
+	// of their own action.
+	hr3ID := f.id(f.admin, "/api/users", `{"login":"hr3","name":"hr3","password":"correct horse"}`)
+	f.id(f.admin, fmt.Sprintf("/api/users/%d/roles", hr3ID), `{"product":"hrm","role":"hr","org_unit_id":null}`)
+	hr3 := f.login("hr3")
+	f.ok(f.admin, "POST", "/api/approvals/1/reassign", `{"step":2,"from":1,"login":"hr3"}`, 204)
+	if n, n2, m := unread(hr3), unread(f.hr2), unread(f.admin); n != 1 || n2 != 1 || m != 1 {
+		t.Fatalf("after reassign hr3 = %d, hr2 = %d, admin = %d", n, n2, m)
 	}
 
 	// Read one, then all; nobody else's can be marked.
@@ -191,7 +196,7 @@ func TestApprovalRequestedNotifications(t *testing.T) {
 
 // The list pages by id, newest first.
 func TestNotificationPages(t *testing.T) {
-	f := newLeaveFixture(t, `{"steps":[{"approver":{"kind":"module"}}],"max_levels":3,"fallback_product":"hrm","fallback_role":"hr"}`)
+	f := newLeaveFixture(t, `{"flow":[{"step":{"approver":{"kind":"module"},"approvals":1,"rejections":1}}],"max_levels":3,"fallback_product":"hrm","fallback_role":"hr"}`)
 	f.ok(f.admin, "POST", fmt.Sprintf("/api/hrm/employees/%d/leave-balances/2026/adjustments", f.staffEmp), `{"delta":"100","reason":"thử"}`, 204)
 	for d := 1; d <= 52; d++ {
 		f.submit(fmt.Sprintf("2026-%02d-%02d", 3+d/28, 1+d%28))
@@ -211,7 +216,7 @@ func TestNotificationPages(t *testing.T) {
 // The submitter hears of the outcome only: approved at the last step, or rejected,
 // without the reason, which stays on the document.
 func TestApprovalOutcomeNotifications(t *testing.T) {
-	f := newLeaveFixture(t, `{"steps":[{"approver":{"kind":"module"}},{"approver":{"kind":"role","product":"hrm","role":"hr"}}],
+	f := newLeaveFixture(t, `{"flow":[{"step":{"approver":{"kind":"module"},"approvals":1,"rejections":1}},{"step":{"approver":{"kind":"role","product":"hrm","role":"hr"},"approvals":1,"rejections":1}}],
 		"max_levels":3,"fallback_product":"hrm","fallback_role":"hr"}`)
 	approved := f.submit("2026-03-10")
 	f.ok(f.boss, "POST", "/api/approvals/1/approve", `{"step":1}`, 204)
@@ -242,7 +247,7 @@ func TestApprovalOutcomeNotifications(t *testing.T) {
 // A mention tells the mentioned user when they may view the record; anyone else, or a
 // login nobody has, is skipped without an error, so the writer learns nothing of who sees it.
 func TestMentions(t *testing.T) {
-	f := newLeaveFixture(t, `{"steps":[{"approver":{"kind":"module"}}],"max_levels":3,"fallback_product":"hrm","fallback_role":"hr"}`)
+	f := newLeaveFixture(t, `{"flow":[{"step":{"approver":{"kind":"module"},"approvals":1,"rejections":1}}],"max_levels":3,"fallback_product":"hrm","fallback_role":"hr"}`)
 	f.id(f.admin, "/api/users", `{"login":"stranger","name":"Người ngoài","password":"correct horse"}`)
 	stranger := f.login("stranger")
 	lv := f.id(f.staff, "/api/hrm/leaves", fmt.Sprintf(`{"leave_type_id":%d,"start_date":"2026-03-10","end_date":"2026-03-10","days":"1","reason":null}`, f.annual))

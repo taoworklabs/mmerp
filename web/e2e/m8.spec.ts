@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test'
-import { created, createUser, password, signedInApi, runId } from './api'
+import { created, createUser, password, signedInApi, runId, toFlow } from './api'
 import { signedIn } from './helpers'
 
 // One run: a company with a department, an HR user scoped to that department, and an HRM
@@ -16,7 +16,7 @@ test.beforeAll(async ({ baseURL }) => {
   await createUser(api, hr, [{ role: 'hrm.hr', unit }])
   await createUser(api, rules, [{ role: 'hrm.approval_admin', unit: null }])
   const rule = await api.put('/api/approval-rules/hrm.leave_request', {
-    data: { steps: [{ approver: { kind: 'module' } }], max_levels: 3, fallback_product: 'hrm', fallback_role: 'hr' },
+    data: { flow: toFlow([{ approver: { kind: 'module' } }]), max_levels: 3, fallback_product: 'hrm', fallback_role: 'hr' },
   })
   expect(rule.status(), await rule.text()).toBe(204)
 })

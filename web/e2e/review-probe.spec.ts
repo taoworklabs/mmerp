@@ -1,5 +1,5 @@
 import { expect, test, type Browser, type Page } from '@playwright/test'
-import { created, createUser, employee, password, signedInApi, runId } from './api'
+import { created, createUser, employee, password, signedInApi, runId, toFlow } from './api'
 import { signedIn } from './helpers'
 
 // Covers the parts of notifications and the approval inbox the other specs leave out: the
@@ -26,7 +26,7 @@ test.beforeAll(async ({ baseURL }) => {
   const boss = await created(api.post('/api/hrm/employees', { data: employee(`TBB${run}`, dept, { user_login: login.boss }) }))
   await created(api.post('/api/hrm/employees', { data: employee(`TBS${run}`, dept, { user_login: login.staff, manager_id: boss }) }))
   const rule = await api.put('/api/approval-rules/hrm.leave_request', {
-    data: { steps: [{ approver: { kind: 'module' } }], max_levels: 3, fallback_product: 'hrm', fallback_role: 'hr' },
+    data: { flow: toFlow([{ approver: { kind: 'module' } }]), max_levels: 3, fallback_product: 'hrm', fallback_role: 'hr' },
   })
   expect(rule.status(), await rule.text()).toBe(204)
   const type = await created(api.post('/api/hrm/leave-types', { data: { name: `Nghỉ TB ${run}`, deducts_balance: false, paid: true, active: true } }))

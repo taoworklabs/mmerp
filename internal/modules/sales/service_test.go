@@ -127,8 +127,10 @@ func wantCode(t *testing.T, err error, code string) {
 // managerApproves routes quotations with a discount above 10 % to team managers.
 func (f *fixture) managerApproves(docType string) {
 	f.check(f.appr.SaveRule(f.admin, docType, approval.RuleInput{
-		Steps: []approval.Step{{Condition: &approval.Condition{Field: "max_discount", Op: "gt", Value: "10"},
-			Approver: approval.Approver{Kind: "role", Product: "sales", Role: "manager"}}},
+		Flow: approval.Flow{{Split: &approval.Split{Mode: approval.ChooseOne, Branches: []approval.Branch{{
+			Condition: &approval.Expr{Field: "max_discount", Op: "gt", Value: "10"},
+			Body:      approval.Flow{{Step: &approval.StepDef{Approver: approval.Approver{Kind: "role", Product: "sales", Role: "manager"}}}},
+		}}}}},
 		MaxLevels: 3, FallbackProduct: "sales", FallbackRole: "manager",
 	}))
 }

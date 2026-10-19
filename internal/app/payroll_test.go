@@ -94,7 +94,7 @@ func TestPayrollSampleFlow(t *testing.T) {
 	f.approveAll(204)
 	pay := f.payrollSetup()
 	f.ok(f.admin, "PUT", "/api/approval-rules/hrm.overtime_request",
-		`{"steps":[{"approver":{"kind":"role","product":"hrm","role":"hr"}}],"max_levels":3,"fallback_product":"hrm","fallback_role":"hr"}`, 204)
+		`{"flow":[{"step":{"approver":{"kind":"role","product":"hrm","role":"hr"},"approvals":1,"rejections":1}}],"max_levels":3,"fallback_product":"hrm","fallback_role":"hr"}`, 204)
 	overtime := func(date string) int64 {
 		id := f.id(f.hr, "/api/hrm/overtimes", fmt.Sprintf(`{"employee_id":%d,"date":%q,"day_kind":"weekday","day_hours":"2","night_hours":"0","reason":null}`, f.e1, date))
 		f.ok(f.hr, "POST", fmt.Sprintf("/api/documents/hrm.overtime_request/%d/transitions", id), `{"to":"posted","version":1}`, 204)

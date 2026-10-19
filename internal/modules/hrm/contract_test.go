@@ -90,7 +90,7 @@ func TestContractRecordContract(t *testing.T) {
 			},
 			RequireApproval: func(*testing.T) {
 				f.check(f.appr.SaveRule(f.admin, "hrm.contract", approval.RuleInput{
-					Steps: []approval.Step{{Approver: approval.Approver{Kind: "role", Product: "hrm", Role: "hr"}}}, MaxLevels: 1, FallbackProduct: "hrm", FallbackRole: "hr",
+					Flow: approval.Flow{{Step: &approval.StepDef{Approver: approval.Approver{Kind: "role", Product: "hrm", Role: "hr"}}}}, MaxLevels: 1, FallbackProduct: "hrm", FallbackRole: "hr",
 				}))
 			},
 			Approve:      func(instance int64) error { return f.appr.Approve(f.head, instance, 1) },
@@ -212,7 +212,7 @@ func TestContractPermissions(t *testing.T) {
 	wantErr(t, err, "not_found")
 	// HR sends a contract without seeing its terms, and takes it back the same way.
 	f.check(f.appr.SaveRule(f.admin, "hrm.contract", approval.RuleInput{
-		Steps: []approval.Step{{Approver: approval.Approver{Kind: "role", Product: "hrm", Role: "hr"}}}, MaxLevels: 1, FallbackProduct: "hrm", FallbackRole: "hr",
+		Flow: approval.Flow{{Step: &approval.StepDef{Approver: approval.Approver{Kind: "role", Product: "hrm", Role: "hr"}}}}, MaxLevels: 1, FallbackProduct: "hrm", FallbackRole: "hr",
 	}))
 	ref := record.Ref{Type: "hrm.contract", ID: id}
 	f.check(f.rec.Transition(f.hr, ref, 1, record.Posted))

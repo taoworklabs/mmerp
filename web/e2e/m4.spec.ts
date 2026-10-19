@@ -1,5 +1,5 @@
 import { expect, test, type APIRequestContext, type Browser, type Page } from '@playwright/test'
-import { created, createUser, employee, password, signedInApi, runId } from './api'
+import { created, createUser, employee, password, signedInApi, runId, toFlow } from './api'
 import { admin } from './helpers'
 
 // One run: department Q with manager M; employees E, E2 and E3 report to M. HR users of Q: hr
@@ -40,13 +40,13 @@ test.beforeAll(async ({ baseURL }) => {
   const open = await created(api.post('/api/hrm/contract-types', { data: { name: kinds.open, fixed_term: false, active: true } }))
   const fixed = await created(api.post('/api/hrm/contract-types', { data: { name: kinds.fixed, fixed_term: true, active: true } }))
   for (const [type, steps] of [
-    ['hrm.contract', [{ approver: { kind: 'user', user_id: dirId } }]],
+    ['hrm.contract', [{ approver: { kind: 'user', user_ids: [dirId] } }]],
     [
       'hrm.overtime_request',
-      [{ approver: { kind: 'module' } }, { condition: { field: 'day_kind', op: 'eq', value: 'holiday' }, approver: { kind: 'user', user_id: dirId } }],
+      [{ approver: { kind: 'module' } }, { condition: { field: 'day_kind', op: 'eq', value: 'holiday' }, approver: { kind: 'user', user_ids: [dirId] } }],
     ],
   ] as const) {
-    const rule = await api.put(`/api/approval-rules/${type}`, { data: { steps, max_levels: 3, fallback_product: 'hrm', fallback_role: 'hr' } })
+    const rule = await api.put(`/api/approval-rules/${type}`, { data: { flow: toFlow(steps), max_levels: 3, fallback_product: 'hrm', fallback_role: 'hr' } })
     expect(rule.status(), await rule.text()).toBe(204)
   }
   ids = { q, m, e, e2, e3, open, fixed }

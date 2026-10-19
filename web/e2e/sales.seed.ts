@@ -1,5 +1,5 @@
 import { expect, test, type APIRequestContext, type APIResponse } from '@playwright/test'
-import { created, signedInApi } from './api'
+import { created, signedInApi, toFlow } from './api'
 
 // Sales on top of the Demo demo company (demo.seed.ts runs first): sales roles for the two
 // sales departments, the item catalogue, customers, quotations in every status and orders,
@@ -293,12 +293,12 @@ test('seed Sales on the Demo demo company', async ({ baseURL }) => {
 
   // Approval: discounts above 10 % go to the department head, quotations above 500 million
   // also to the director; orders above 300 million to the head.
-  const rule = (type: string, steps: unknown[]) =>
-    ok(admin.put(`/api/approval-rules/${type}`, { data: { steps, max_levels: 3, fallback_product: 'sales', fallback_role: 'manager' } }), `rule ${type}`)
+  const rule = (type: string, steps: { approver: unknown; condition?: unknown }[]) =>
+    ok(admin.put(`/api/approval-rules/${type}`, { data: { flow: toFlow(steps), max_levels: 3, fallback_product: 'sales', fallback_role: 'manager' } }), `rule ${type}`)
   const manager = { kind: 'role', product: 'sales', role: 'manager' }
   await rule('sales.quote', [
     { condition: { field: 'max_discount', op: 'gt', value: '10' }, approver: manager },
-    { condition: { field: 'amount', op: 'gt', value: '500000000' }, approver: { kind: 'user', user_id: userId('gd.kinhdoanh') } },
+    { condition: { field: 'amount', op: 'gt', value: '500000000' }, approver: { kind: 'user', user_ids: [userId('gd.kinhdoanh')] } },
   ])
   await rule('sales.order', [{ condition: { field: 'amount', op: 'gt', value: '300000000' }, approver: manager }])
 

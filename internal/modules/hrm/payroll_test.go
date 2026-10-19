@@ -88,7 +88,7 @@ func TestPayrollRecordContract(t *testing.T) {
 			},
 			RequireApproval: func(*testing.T) {
 				f.check(f.appr.SaveRule(f.admin, "hrm.payroll", approval.RuleInput{
-					Steps: []approval.Step{{Approver: approval.Approver{Kind: "role", Product: "hrm", Role: "payroll"}}}, MaxLevels: 1, FallbackProduct: "hrm", FallbackRole: "payroll",
+					Flow: approval.Flow{{Step: &approval.StepDef{Approver: approval.Approver{Kind: "role", Product: "hrm", Role: "payroll"}}}}, MaxLevels: 1, FallbackProduct: "hrm", FallbackRole: "payroll",
 				}))
 			},
 			Approve: func(instance int64) error { return f.appr.Approve(approver, instance, 1) },
@@ -249,7 +249,7 @@ func TestPayrollSourcesChangeWhilePending(t *testing.T) {
 	f := payrollAprilFixture(t)
 	approver := f.ctxFor("approver", "payroll@*")
 	f.check(f.appr.SaveRule(f.admin, "hrm.payroll", approval.RuleInput{
-		Steps: []approval.Step{{Approver: approval.Approver{Kind: "role", Product: "hrm", Role: "payroll"}}}, MaxLevels: 1, FallbackProduct: "hrm", FallbackRole: "payroll",
+		Flow: approval.Flow{{Step: &approval.StepDef{Approver: approval.Approver{Kind: "role", Product: "hrm", Role: "payroll"}}}}, MaxLevels: 1, FallbackProduct: "hrm", FallbackRole: "payroll",
 	}))
 	id := f.payroll("2026-04")
 	f.check(f.send(id))

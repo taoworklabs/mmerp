@@ -1,5 +1,5 @@
 import { expect, test, type Browser, type Page } from '@playwright/test'
-import { created, createUser, password, signedInApi, runId } from './api'
+import { created, createUser, password, signedInApi, runId, toFlow } from './api'
 
 // One run: team A (staff and their manager) and team B; a catalogue admin. Quotations with a
 // discount above 10 % wait for a manager.
@@ -20,7 +20,7 @@ test.beforeAll(async ({ baseURL }) => {
   await createUser(api, login.catalog, [{ role: 'sales.catalog_admin', unit: null }])
   const rule = await api.put('/api/approval-rules/sales.quote', {
     data: {
-      steps: [{ condition: { field: 'max_discount', op: 'gt', value: '10' }, approver: { kind: 'role', product: 'sales', role: 'manager' } }],
+      flow: toFlow([{ condition: { field: 'max_discount', op: 'gt', value: '10' }, approver: { kind: 'role', product: 'sales', role: 'manager' } }]),
       max_levels: 3,
       fallback_product: 'sales',
       fallback_role: 'manager',

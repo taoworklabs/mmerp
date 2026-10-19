@@ -69,7 +69,7 @@ func TestLeaveDiscussion(t *testing.T) {
 	staff := employee("E2", "staff", fmt.Sprint(employee("E1", "boss", "null")))
 	annual := id(admin, "/api/hrm/leave-types", `{"name":"Phép năm","deducts_balance":true,"paid":true,"active":true}`)
 	ok(admin, "POST", fmt.Sprintf("/api/hrm/employees/%d/leave-balances/2026/adjustments", staff), `{"delta":"12","reason":"đầu năm"}`, 204)
-	ok(admin, "PUT", "/api/approval-rules/hrm.leave_request", `{"steps":[{"approver":{"kind":"module"}}],"max_levels":3,"fallback_product":"hrm","fallback_role":"hr"}`, 204)
+	ok(admin, "PUT", "/api/approval-rules/hrm.leave_request", `{"flow":[{"step":{"approver":{"kind":"module"},"approvals":1,"rejections":1}}],"max_levels":3,"fallback_product":"hrm","fallback_role":"hr"}`, 204)
 
 	staffC, bossC, stranger := login("staff"), login("boss"), login("stranger")
 	lv := id(staffC, "/api/hrm/leaves", fmt.Sprintf(`{"leave_type_id":%d,"start_date":"2026-03-10","end_date":"2026-03-11","days":"1.5","reason":null}`, annual))
