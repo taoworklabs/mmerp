@@ -1,7 +1,7 @@
-import { AppShell, Burger, Group, NavLink, ScrollArea, Stack, Text, ThemeIcon } from '@mantine/core'
+import { Anchor, AppShell, Burger, Group, NavLink, ScrollArea, Stack, Text, ThemeIcon } from '@mantine/core'
 import { useDisclosure } from '@mantine/hooks'
 import { IconComponents } from '@tabler/icons-react'
-import type { ComponentType } from 'react'
+import type { ComponentType, ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { createBrowserRouter, Link, Navigate, Outlet, useLocation } from 'react-router'
 import { client } from '@/shared/api/client'
@@ -11,7 +11,7 @@ import { icon } from '@/shared/ui/theme'
 import classes from '../AppLayout.module.css'
 import { offline } from './api'
 import devui from './DevUi.module.css'
-import { type Entry, entries, layers, type Path } from './catalogue'
+import { type Entry, entries, entryByPath, layers, type Path } from './catalogue'
 import { key, useEntryTitle } from './DocPage'
 import { Overview } from './start'
 import { ApprovalPanelDoc, ActivityFeedDoc, AttachmentPanelDoc, DocumentPreviewDoc, DocumentStatusDoc } from './documents'
@@ -87,24 +87,36 @@ const all = entries as readonly Entry[]
 // The signed-in user the catalogue pretends to be: components such as the activity feed read it.
 const me: Me = { authz_version: '0', id: 1, locale: 'vi', login: 'an.nguyen', name: 'Nguyễn Văn An', permissions: {}, products: [], products_with_data: [], timezone: 'Asia/Ho_Chi_Minh' }
 
-// Usage sits above a template, outside it: when to reach for it, and when another one fits better.
-function Usage({ entry }: { entry: Entry }) {
+// TemplateNote sits above a template, outside it: the problem it solves, when to reach for it and
+// when another fits better, and the components it is built from.
+function TemplateNote({ entry }: { entry: Entry }) {
   const k = key(entry)
   const { t } = useTranslation()
+  const title = useEntryTitle()
+  const line = (label: string, text: ReactNode) => (
+    <Text size="sm">
+      <Text span fw={600}>
+        {label}
+      </Text>{' '}
+      {text}
+    </Text>
+  )
   return (
     <Stack gap="xxxs" px="md" py="xs" className={devui.usage}>
-      <Text size="sm">
-        <Text span fw={600}>
-          {t('shared.devui.use_when')}
-        </Text>{' '}
-        {t(`shared.devui.use_${k}`)}
-      </Text>
-      <Text size="sm">
-        <Text span fw={600}>
-          {t('shared.devui.avoid_when')}
-        </Text>{' '}
-        {t(`shared.devui.avoid_${k}`)}
-      </Text>
+      <Text size="sm">{t(`shared.devui.about_${k}`)}</Text>
+      {line(t('shared.devui.use_when'), t(`shared.devui.use_${k}`))}
+      {line(t('shared.devui.avoid_when'), t(`shared.devui.avoid_${k}`))}
+      {entry.related &&
+        line(
+          t('shared.devui.built_from'),
+          <Group component="span" gap="xs" display="inline-flex">
+            {entry.related.map((p) => (
+              <Anchor key={p} component={Link} to={`/dev/ui/${p}`} size="sm">
+                {title(entryByPath(p))}
+              </Anchor>
+            ))}
+          </Group>,
+        )}
     </Stack>
   )
 }
@@ -165,7 +177,7 @@ function DevUiLayout() {
           </AppShell.Section>
         </AppShell.Navbar>
         <AppShell.Main>
-          {template && <Usage entry={template} />}
+          {template && <TemplateNote entry={template} />}
           <Outlet />
         </AppShell.Main>
       </AppShell>

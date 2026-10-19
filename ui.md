@@ -6,7 +6,7 @@ Sources of truth in code:
 
 - `web/src/shared/ui/theme.ts`: every colour, font size, spacing and radius. Sizes specific to one component (table row height, 44px touch target) live in its CSS module in `shared/ui`; areas set no size apart from the column widths of a lines table.
 - `web/src/shared/ui/`: page templates and components. New screens are **assembled from what already exists here**.
-- The `/dev/ui` page, dev build only: shows every page template and component in every state. When unsure what to use, open this page first.
+- The `/dev/ui` page, dev build only, in six layers: foundations, the Mantine primitives areas may import directly, the ready-made mmerp components (`shared/ui`, `shared/document`), patterns, and page templates. Each component page shows a live example, when to use it, its variants and states, do and don't, its import, and related entries. When unsure what to use, open this page first; the written rules stay here and in the `mmerp-ui` skill.
 
 ## Principles
 

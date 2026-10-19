@@ -1,7 +1,7 @@
 import { Button, Group, PasswordInput, Stack, Text, TextInput } from '@mantine/core'
 import { IconAlertTriangle, IconAt, IconCircleCheck, IconHourglassHigh, IconUsersGroup } from '@tabler/icons-react'
 import { useTranslation } from 'react-i18next'
-import { Fragment } from 'react'
+import { Fragment, type ReactNode } from 'react'
 import { useSearchParams } from 'react-router'
 import { WithSampleSections } from '@/shared/document/samples'
 import { formatMonth, formatNumber } from '@/shared/i18n'
@@ -14,7 +14,7 @@ import { AuthPage, DocumentPage, InboxGroup, InboxIcon, InboxList, InboxPage, In
 import { StatusBadge } from '@/shared/ui/StatusBadge'
 import { useListParams } from '@/shared/url/listParams'
 import { orgUnits } from './api'
-import { type Row, rows } from './Demo'
+import { Case, type Row, rows } from './Demo'
 
 // The body every template shows, so the templates differ only in their frame.
 function Sample({ rows: data = rows }: { rows?: Row[] }) {
@@ -39,12 +39,60 @@ function useHeader(title: string) {
   return { title, breadcrumbs: [{ label: t('shared.devui.title'), to: '/dev/ui' }], action: <Button>{t('shared.devui.primary')}</Button> }
 }
 
+const crumbs = [
+  { label: 'Nhân sự', to: '/dev/ui/templates/page' },
+  { label: 'Nhân viên', to: '/dev/ui/templates/page' },
+]
+
+const facts: [string, ReactNode][] = [
+  ['Quản lý trực tiếp', 'Trần Thị Bình'],
+  ['Thâm niên', '4 năm 2 tháng'],
+  ['Loại hợp đồng', 'Không xác định thời hạn'],
+  ['Phép còn lại', '8,5 ngày'],
+]
+
+// Every header frames the same stand-in content, so the cases differ only in the header.
+function Body() {
+  const { t } = useTranslation()
+  return (
+    <Text size="sm" c="dimmed">
+      {t('shared.devui.page_content')}
+    </Text>
+  )
+}
+
+// PageTemplate is the frame itself, so its body shows the headers it draws for the other templates.
 export function PageTemplate() {
   const { t } = useTranslation()
   const h = useHeader('Page')
   return (
     <Page title={h.title} description={t('shared.devui.description')} breadcrumbs={h.breadcrumbs} actions={h.action}>
-      <Sample />
+      <Stack gap="xl">
+        <Case label={t('shared.devui.case_header_list')}>
+          <Page title="Nhân viên" breadcrumbs={crumbs.slice(0, 1)} description={t('shared.devui.description')} actions={<Button>{t('shared.devui.primary')}</Button>}>
+            <Body />
+          </Page>
+        </Case>
+        <Case label={t('shared.devui.case_header_record')}>
+          <Page
+            title="Nguyễn Văn An"
+            breadcrumbs={crumbs}
+            current
+            leading={<PersonAvatar name="Nguyễn Văn An" size="lg" />}
+            status={<StatusBadge tone="positive">{t('shared.devui.status_positive')}</StatusBadge>}
+            description="NV0019 · Kế toán"
+            summary={<KeyFacts facts={facts} />}
+            actions={<Button variant="default">{t('shared.devui.secondary')}</Button>}
+          >
+            <Body />
+          </Page>
+        </Case>
+        <Case label={t('shared.devui.case_header_back')}>
+          <Page title="NP-2026-00001" breadcrumbs={crumbs} withBack actions={<Button>{t('shared.devui.primary')}</Button>}>
+            <Body />
+          </Page>
+        </Case>
+      </Stack>
     </Page>
   )
 }

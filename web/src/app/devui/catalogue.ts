@@ -69,12 +69,12 @@ export const entries = [
   { layer: 'patterns', path: 'patterns/loading-empty-error', label: 'shared.devui.pattern_loading_empty_error', related: ['mmerp/query-view', 'mmerp/states'] },
   { layer: 'patterns', path: 'patterns/bulk', label: 'shared.devui.pattern_bulk', related: ['mmerp/data-table', 'mmerp/bulk-bar', 'mmerp/side-panel'] },
   { layer: 'patterns', path: 'patterns/document-approval', label: 'shared.devui.pattern_document_approval', related: ['mmerp/document-status', 'mmerp/approval-panel', 'mmerp/activity-feed', 'templates/document'] },
-  { layer: 'templates', path: 'templates/auth', name: 'AuthPage', source: '@/shared/ui/page' },
-  { layer: 'templates', path: 'templates/document', name: 'DocumentPage', source: '@/shared/ui/page' },
-  { layer: 'templates', path: 'templates/inbox', name: 'InboxPage', source: '@/shared/ui/page' },
-  { layer: 'templates', path: 'templates/list', name: 'ListPage', source: '@/shared/ui/page' },
-  { layer: 'templates', path: 'templates/page', name: 'Page', source: '@/shared/ui/page' },
-  { layer: 'templates', path: 'templates/record', name: 'RecordPage', source: '@/shared/ui/page' },
+  { layer: 'templates', path: 'templates/auth', name: 'AuthPage', source: '@/shared/ui/page', related: ['mantine/button'] },
+  { layer: 'templates', path: 'templates/document', name: 'DocumentPage', source: '@/shared/ui/page', related: ['mmerp/lines-table', 'mmerp/document-status', 'mmerp/approval-panel', 'mmerp/attachment-panel', 'mmerp/activity-feed'] },
+  { layer: 'templates', path: 'templates/inbox', name: 'InboxPage', source: '@/shared/ui/page', related: ['mmerp/document-preview', 'mmerp/states'] },
+  { layer: 'templates', path: 'templates/list', name: 'ListPage', source: '@/shared/ui/page', related: ['mmerp/data-table', 'mmerp/filters', 'mmerp/bulk-bar', 'mmerp/side-panel', 'mmerp/query-view'] },
+  { layer: 'templates', path: 'templates/page', name: 'Page', source: '@/shared/ui/page', related: ['mmerp/key-facts', 'mmerp/status-badge', 'mmerp/person-avatar', 'mmerp/more-actions'] },
+  { layer: 'templates', path: 'templates/record', name: 'RecordPage', source: '@/shared/ui/page', related: ['mmerp/key-facts', 'mmerp/editable-panel', 'mmerp/field-list', 'mmerp/panel', 'mmerp/activity-feed'] },
 ] as const satisfies readonly Entry[]
 
 export type Path = (typeof entries)[number]['path']
