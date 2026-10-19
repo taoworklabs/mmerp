@@ -349,6 +349,7 @@
   "shared.rule.op.gte": "Từ",
   "shared.rule.op.eq": "Bằng",
   "shared.rule.op.within": "Thuộc đơn vị",
+  "shared.rule.op.has": "Có",
   "shared.rule.value": "Giá trị",
   "shared.rule.fallback_section": "Khi không có người duyệt",
   "shared.rule.fallback_hint": "Bước không tìm được người duyệt chuyển cho vai trò dự phòng; người có vai trò này cũng thay được người duyệt.",

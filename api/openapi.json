@@ -2162,7 +2162,8 @@
               "gt",
               "gte",
               "eq",
-              "within"
+              "within",
+              "has"
             ],
             "type": "string"
           },
@@ -2184,7 +2185,8 @@
             "enum": [
               "number",
               "choice",
-              "org_unit"
+              "org_unit",
+              "set"
             ],
             "type": "string"
           },
@@ -2206,13 +2208,38 @@
               "array",
               "null"
             ]
+          },
+          "searchable": {
+            "type": "boolean"
           }
         },
         "required": [
           "key",
           "kind",
           "label",
-          "ops"
+          "ops",
+          "searchable"
+        ],
+        "type": "object"
+      },
+      "FieldOption": {
+        "additionalProperties": false,
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "id": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "name": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "code",
+          "name"
         ],
         "type": "object"
       },
@@ -6778,6 +6805,88 @@
         "responses": {
           "204": {
             "description": "No Content"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "tags": [
+          "core",
+          "core"
+        ]
+      }
+    },
+    "/approval-rules/{doc_type}/fields/{key}/options": {
+      "get": {
+        "operationId": "list-approval-field-options",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "doc_type",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "key",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "explode": false,
+            "in": "query",
+            "name": "q",
+            "schema": {
+              "maxLength": 100,
+              "type": "string"
+            }
+          },
+          {
+            "description": "Name these ids instead of searching",
+            "explode": false,
+            "in": "query",
+            "name": "ids",
+            "schema": {
+              "description": "Name these ids instead of searching",
+              "items": {
+                "format": "int64",
+                "type": "integer"
+              },
+              "maxItems": 100,
+              "type": [
+                "array",
+                "null"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/FieldOption"
+                  },
+                  "type": [
+                    "array",
+                    "null"
+                  ]
+                }
+              }
+            },
+            "description": "OK"
           },
           "default": {
             "content": {

@@ -349,6 +349,7 @@
   "shared.rule.op.gte": "At least",
   "shared.rule.op.eq": "Equals",
   "shared.rule.op.within": "Within unit",
+  "shared.rule.op.has": "Includes",
   "shared.rule.value": "Value",
   "shared.rule.fallback_section": "When nobody can approve",
   "shared.rule.fallback_hint": "A step with no approver goes to the fallback role; holders of this role can also reassign approvers.",

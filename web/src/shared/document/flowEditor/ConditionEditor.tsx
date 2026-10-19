@@ -1,10 +1,14 @@
 import { ActionIcon, Button, Group, Paper, SegmentedControl, SimpleGrid, Stack, Text, Tooltip } from '@mantine/core'
 import { IconPlus, IconX } from '@tabler/icons-react'
+import { useQuery } from '@tanstack/react-query'
+import { useState } from 'react'
 import { useController, useFieldArray, useFormContext, useWatch } from 'react-hook-form'
 import { useTranslation } from 'react-i18next'
-import { DecimalField, OrgUnitField, SelectField } from '@/shared/ui/form'
+import { api, unwrap } from '@/shared/api/core'
+import { DecimalField, OrgUnitField, RemoteSelectField, SelectField } from '@/shared/ui/form'
 import { icon } from '@/shared/ui/theme'
 import type { CondRow } from '../flowForm'
+import { documentKeys } from '../keys'
 import type { EditorCtx } from './FlowBlock'
 
 // Groups nest at most this deep, so a condition stays readable.
@@ -127,8 +131,32 @@ function Leaf({ path, ctx }: { path: string; ctx: EditorCtx }) {
           {field.kind === 'choice' && <SelectField {...value} data={field.options ?? []} />}
           {field.kind === 'number' && <DecimalField {...value} scale={2} />}
           {field.kind === 'org_unit' && <OrgUnitField {...value} />}
+          {field.searchable && <SearchedValue key={field.key} {...value} docType={rule.doc_type} field={field.key} />}
         </>
       )}
     </SimpleGrid>
+  )
+}
+
+// SearchedValue picks one value of a field whose options are searched on the server; the saved
+// value's label is fetched once, so the condition reads in full before any search.
+function SearchedValue({ docType, field, ...props }: { docType: string; field: string; name: string; label: string; readOnly: boolean; required: boolean }) {
+  const { getValues } = useFormContext()
+  const [saved] = useState(() => Number(getValues(props.name)) || 0)
+  const params = { path: { doc_type: docType, key: field } }
+  const options = async (query: { q?: string; ids?: number[] }) =>
+    (await unwrap(api.GET('/approval-rules/{doc_type}/fields/{key}/options', { params: { ...params, query } }))) ?? []
+  const current = useQuery({
+    queryKey: documentKeys.approvalFieldOptions(docType, field, { ids: [saved] }),
+    queryFn: () => options({ ids: [saved] }),
+    enabled: saved > 0,
+  })
+  return (
+    <RemoteSelectField
+      {...props}
+      current={current.data?.[0]}
+      queryKey={(q) => documentKeys.approvalFieldOptions(docType, field, { q })}
+      search={(q) => options({ q: q || undefined })}
+    />
   )
 }

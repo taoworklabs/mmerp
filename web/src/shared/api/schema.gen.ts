@@ -52,6 +52,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/approval-rules/{doc_type}/fields/{key}/options": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["list-approval-field-options"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/approvals/inbox": {
         parameters: {
             query?: never;
@@ -2226,17 +2242,24 @@ export interface components {
             any?: components["schemas"]["Expr"][] | null;
             field?: string;
             /** @enum {string} */
-            op?: "gt" | "gte" | "eq" | "within";
+            op?: "gt" | "gte" | "eq" | "within" | "has";
             value?: string;
         };
         Field: {
             key: string;
             /** @enum {string} */
-            kind: "number" | "choice" | "org_unit";
+            kind: "number" | "choice" | "org_unit" | "set";
             /** @description i18n key */
             label: string;
             ops: string[];
             options?: components["schemas"]["Option"][] | null;
+            searchable: boolean;
+        };
+        FieldOption: {
+            code: string;
+            /** Format: int64 */
+            id: number;
+            name: string;
         };
         Grant: {
             /** Format: int64 */
@@ -3844,6 +3867,42 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "list-approval-field-options": {
+        parameters: {
+            query?: {
+                q?: string;
+                /** @description Name these ids instead of searching */
+                ids?: number[] | null;
+            };
+            header?: never;
+            path: {
+                doc_type: string;
+                key: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FieldOption"][] | null;
+                };
             };
             /** @description Error */
             default: {

@@ -9,6 +9,7 @@ export const documentKeys = {
   discussion: (docType: string, id: number) => ['core', 'documents', docType, id, 'discussion'] as const,
   mentionable: (docType: string, id: number) => ['core', 'documents', docType, id, 'mentionable'] as const,
   approvalRules: (product?: string) => (product ? (['core', 'approval-rules', product] as const) : (['core', 'approval-rules'] as const)),
+  approvalFieldOptions: (docType: string, field: string, query: { q?: string; ids?: number[] }) => ['core', 'approval-field-options', docType, field, query] as const,
   approvalRuleUsers: () => ['core', 'approval-rule-users'] as const,
   roles: () => ['core', 'roles'] as const,
 }
