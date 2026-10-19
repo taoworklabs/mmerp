@@ -11,7 +11,9 @@ import {
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router'
 import { DocumentStatus, type DocStatus } from '@/shared/document'
+import { formatNumber } from '@/shared/i18n'
 import { PersonAvatar, PersonName } from '@/shared/ui/avatar'
+import { DataTable } from '@/shared/ui/DataTable'
 import { FieldList } from '@/shared/ui/FieldList'
 import { MenuAction } from '@/shared/ui/MenuAction'
 import { MoreActions } from '@/shared/ui/MoreActions'
@@ -22,7 +24,7 @@ import { StatusBadge } from '@/shared/ui/StatusBadge'
 import { icon } from '@/shared/ui/theme'
 import { LinkTile, StatTile, TileGrid } from '@/shared/ui/Tile'
 import { TreeList } from '@/shared/ui/TreeList'
-import { Case, Demo } from './Demo'
+import { Case, Demo, rows } from './Demo'
 
 export function Buttons() {
   const { t } = useTranslation()
@@ -220,11 +222,11 @@ export function Alerts() {
   const { t } = useTranslation()
   return (
     <Demo title={t('shared.devui.alerts')} description={t('shared.devui.alerts_hint')}>
-      <Notice tone="info">{t('shared.devui.alert_info')}</Notice>
-      <Notice tone="success">{t('shared.devui.alert_success')}</Notice>
-      <Notice tone="warning">{t('shared.devui.alert_warning')}</Notice>
-      <Notice tone="danger">{t('shared.devui.alert_danger')}</Notice>
-      <Notice tone="discovery">{t('shared.devui.alert_discovery')}</Notice>
+      {(['info', 'success', 'warning', 'danger', 'discovery'] as const).map((tone) => (
+        <Case key={tone} label={t(`shared.devui.case_tone_${tone}`)}>
+          <Notice tone={tone}>{t(`shared.devui.alert_${tone}`)}</Notice>
+        </Case>
+      ))}
     </Demo>
   )
 }
@@ -316,20 +318,22 @@ export function FieldLists() {
   const { t } = useTranslation()
   return (
     <Demo title={t('shared.devui.field_list')} description={t('shared.devui.field_list_hint')}>
-      <FieldList
-        rows={[
-          [
-            'Nhân viên',
-            <Anchor key="p" component={Link} to="/dev/ui/field-list" size="sm" inherit>
-              {sample.person}
-            </Anchor>,
-          ],
-          ['Thời gian nghỉ', '12/10/2026 – 16/10/2026'],
-          ['Trạng thái', <StatusBadge key="s" tone="positive">{t('shared.devui.status_positive')}</StatusBadge>],
-          ['Nơi làm việc', t('shared.devui.long_value')],
-          ['Ghi chú', '—'],
-        ]}
-      />
+      <Case>
+        <FieldList
+          rows={[
+            [
+              'Nhân viên',
+              <Anchor key="p" component={Link} to="/dev/ui/field-list" size="sm" inherit>
+                {sample.person}
+              </Anchor>,
+            ],
+            ['Thời gian nghỉ', '12/10/2026 – 16/10/2026'],
+            ['Trạng thái', <StatusBadge key="s" tone="positive">{t('shared.devui.status_positive')}</StatusBadge>],
+            ['Nơi làm việc', t('shared.devui.long_value')],
+            ['Ghi chú', '—'],
+          ]}
+        />
+      </Case>
     </Demo>
   )
 }
@@ -338,22 +342,24 @@ export function Tree() {
   const { t } = useTranslation()
   return (
     <Demo title={t('shared.devui.tree')} description={t('shared.devui.tree_hint')}>
-      <TreeList
-        label={t('shared.devui.tree')}
-        nodes={[
-          {
-            key: 1,
-            item: { kind: 'company' as const, name: 'Công ty CP Demo' },
-            children: [
-              { key: 2, item: { kind: 'department' as const, name: 'Kế toán' }, children: [] },
-              { key: 3, item: { kind: 'branch' as const, name: 'Chi nhánh Hà Nội' }, children: [{ key: 4, item: { kind: 'department' as const, name: 'Kinh doanh' }, children: [] }] },
-            ],
-          },
-        ]}
-        render={(unit) => <OrgUnitName unit={unit} />}
-        meta={() => 'Meta'}
-        toggleLabel={(unit) => unit.name}
-      />
+      <Case>
+        <TreeList
+          label={t('shared.devui.tree')}
+          nodes={[
+            {
+              key: 1,
+              item: { kind: 'company' as const, name: 'Công ty CP Demo' },
+              children: [
+                { key: 2, item: { kind: 'department' as const, name: 'Kế toán' }, children: [] },
+                { key: 3, item: { kind: 'branch' as const, name: 'Chi nhánh Hà Nội' }, children: [{ key: 4, item: { kind: 'department' as const, name: 'Kinh doanh' }, children: [] }] },
+              ],
+            },
+          ]}
+          render={(unit) => <OrgUnitName unit={unit} />}
+          meta={() => 'Meta'}
+          toggleLabel={(unit) => unit.name}
+        />
+      </Case>
     </Demo>
   )
 }
@@ -362,13 +368,35 @@ export function Tiles() {
   const { t } = useTranslation()
   return (
     <Demo title={t('shared.devui.tiles')} description={t('shared.devui.tiles_hint')}>
-      <TileGrid>
-        <StatTile label={t('shared.devui.name')} value={128} to="/dev/ui/tiles" />
-        <StatTile label={t('shared.devui.name')} value={undefined} to="/dev/ui/tiles" />
-        <StatTile label={t('shared.devui.name')} value={undefined} to="/dev/ui/tiles" error={t('shared.devui.error')} />
-        <LinkTile icon={IconUsersGroup} title={t('shared.devui.name')} to="/dev/ui/tiles" />
-      </TileGrid>
+      <Case label={t('shared.devui.case_stat_tile')}>
+        <TileGrid>
+          <StatTile label={t('shared.devui.name')} value={128} to="/dev/ui/tiles" />
+          <StatTile label={t('shared.devui.name')} value={undefined} to="/dev/ui/tiles" />
+          <StatTile label={t('shared.devui.name')} value={undefined} to="/dev/ui/tiles" error={t('shared.devui.error')} />
+        </TileGrid>
+      </Case>
+      <Case label={t('shared.devui.case_link_tile')}>
+        <TileGrid>
+          <LinkTile icon={IconUsersGroup} title={t('shared.devui.name')} to="/dev/ui/tiles" />
+        </TileGrid>
+      </Case>
     </Demo>
+  )
+}
+
+function StaffTable() {
+  const { t } = useTranslation()
+  return (
+    <DataTable
+      label={t('shared.devui.section_staff')}
+      rows={rows}
+      rowKey={(r) => r.id}
+      columns={[
+        { key: 'code', header: t('shared.devui.code'), role: 'title', kind: 'code', render: (r) => r.code },
+        { key: 'name', header: t('shared.devui.name'), role: 'meta', render: (r) => r.name },
+        { key: 'amount', header: t('shared.devui.amount'), role: 'meta', kind: 'number', render: (r) => formatNumber(r.amount) },
+      ]}
+    />
   )
 }
 
@@ -376,22 +404,37 @@ export function Sections() {
   const { t } = useTranslation()
   return (
     <Demo title={t('shared.devui.section')} description={t('shared.devui.sections_hint')}>
-      <Section
-        title={t('shared.devui.section')}
-        description={t('shared.devui.section_hint')}
-        actions={
-          <>
-            <Button variant="default" leftSection={<IconPlus {...icon.button} />}>
-              {t('shared.devui.add')}
-            </Button>
-            <MoreActions place="page">
-              <Menu.Item leftSection={<IconDownload {...icon.text} />}>{t('shared.devui.export')}</Menu.Item>
-            </MoreActions>
-          </>
-        }
-      >
-        <FieldList rows={[[t('shared.devui.name'), 'Công ty CP Demo']]} />
-      </Section>
+      <Case label={t('shared.devui.case_section_title')}>
+        <Section title={t('shared.devui.section_staff')}>
+          <StaffTable />
+        </Section>
+      </Case>
+      <Case label={t('shared.devui.case_section_full')}>
+        <Section
+          title={t('shared.devui.section_staff')}
+          description={t('shared.devui.section_hint')}
+          actions={
+            <>
+              <Button variant="default" leftSection={<IconPlus {...icon.button} />}>
+                {t('shared.devui.add')}
+              </Button>
+              <MoreActions place="page">
+                <Menu.Item leftSection={<IconDownload {...icon.text} />}>{t('shared.devui.export')}</Menu.Item>
+              </MoreActions>
+            </>
+          }
+        >
+          <StaffTable />
+        </Section>
+      </Case>
+      <Case label={t('shared.devui.case_section_stack')}>
+        <Section title={t('shared.devui.section_company')}>
+          <FieldList rows={[[t('shared.devui.name'), 'Công ty CP Demo']]} />
+        </Section>
+        <Section title={t('shared.devui.section_staff')}>
+          <StaffTable />
+        </Section>
+      </Case>
     </Demo>
   )
 }

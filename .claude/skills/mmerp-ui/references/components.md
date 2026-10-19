@@ -79,7 +79,7 @@ Where each one goes, and how many per place: `actions.md`.
 | `DocumentStatus` (`shared/document`) | A document's `draft` / `pending_approval` / `posted` / `cancelled`. Colours are fixed: neutral, warning, success, danger. A document type may rename the label (`<doc_type>.status.<status>`), never recolour it |
 | `StatusBadge tone=…` (`shared/ui/StatusBadge`) | A catalog record's state or a module's own progress: `positive`, `neutral`, `info`, `warning`, `negative` |
 
-Both render a tinted badge: 20px tall, 12px text, weight 500, radius 4, sentence case, no dot, no icon. The label always names the state. Module progress (delivery, payment, ordered) uses `neutral` or `info`, so the four document colours keep their meaning; the area wraps it in its own small component (e.g. `sales/components/DocProgress.tsx`).
+Both render a tinted badge: 20px tall, 12px text, weight 500, radius 4, sentence case, no dot, no icon. The label always names the state. The badge is a `span`, so it may sit inside a sentence (the activity feed's "moved to Pending"). Module progress (delivery, payment, ordered) uses `neutral` or `info`, so the four document colours keep their meaning; the area wraps it in its own small component (e.g. `sales/components/DocProgress.tsx`).
 
 A document list filters by status with `DocumentStatusFilter` (`shared/document`). Any other status label outside the badge comes from `useStatusLabel()` (`shared/document`): `label(docType, status)`, with the same `docType` the area passes to `DocumentStatus` (its record type, e.g. `docTypeOf(kind)` in sales).
 
@@ -170,7 +170,7 @@ To switch between views of one feed (an activity feed's All · Comments · Chang
 | `useConfirm` | Before deleting, cancelling a posted document, rejecting; the confirm button repeats the verb; `danger: true` for destructive steps |
 | `useAction` | A region's own action: `run(fn, { confirm, success })` asks first (`useConfirm`), keeps the failure as `error` for the region (`TabContent`'s `error`, or an `ErrorState` at the top), toasts `success`; render `dialog` once |
 | `notifySuccess` | After a save: bottom right, closes after 3 seconds |
-| `notifyUndo(message, undoLabel, onUndo)` | A reversible action that already took effect, with Undo, 5 seconds (`actions.md`) |
+| `notifyUndo(message, undoLabel, onUndo)` | A reversible action that already took effect, with Undo, 5 seconds (`actions.md`); its body is `UndoMessage`, which `/dev/ui` also shows at rest |
 | `notifyError` | A background job failed: stays until closed. Errors of the current action go next to their cause, not here |
 | `QueryView` | A region fed by one query: `ContentSkeleton` while loading, `ErrorState` with Retry, `empty` when there is nothing, else `children(data)`. `select` shapes the data first (sort, flatten pages, filter); `noResults` shows when a filter empties a non-empty result; `notFound` answers a 404 |
 | `EmptyState`, `ErrorState`, `PageSkeleton`, `ContentSkeleton`, `ForbiddenPage`, `NotFoundPage`, `ReadOnlyBanner` | The states of a region (see `patterns.md`). `EmptyState`'s icon is a 24px glyph (`icon.empty`) in a 48px neutral circle; pass another Tabler icon with `icon` |
@@ -186,7 +186,7 @@ To switch between views of one feed (an activity feed's All · Comments · Chang
 3. Build it on Mantine primitives and theme tokens. Styling that props cannot express goes in a CSS module next to it, using only `var(--mantine-…)` and `var(--mmerp-…)` variables; a size specific to the component is allowed there with a one-line comment saying why.
 4. Pick the variant, size, radius and colour from the tables above and in `tokens.md`; a new look needs a new row here first, agreed before code.
 5. Cover every state it can be in: loading, empty, error, disabled, selected, focus, read-only; keyboard reachable, `aria-label` on icon-only controls.
-6. Add it to `/dev/ui` (`app/devui`, one sidebar entry per component) in each state, and add a row to this file.
+6. Add it to `/dev/ui` (`app/devui`): a sidebar entry of its own, or a case in the entry of the family it belongs to (`Case` with a label saying when to use it), showing each state; and add a row to this file.
 
 ```tsx
 // shared/ui/Example.tsx
