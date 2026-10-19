@@ -29,7 +29,7 @@ This records the shape of approval flows at decision level for the whole upgrade
 
 - **Later parts, decided now:**
   - *Part 4*: rules are keyed by (document type, action); every write action can be gated, and the document is locked — no write of any kind, including a dependent write from another document — while a gated action waits. Reading (`view`, `view_files`, `print`, `export`) is never gated.
-  - *Part 3*: line fields usable in conditions are declared by the record type, the same way header approval fields are declared today.
+  - *Part 3*: line fields usable in conditions are declared by the record type, the same way header approval fields are declared today. They are aggregate fields over the lines: a set field holds the distinct ids the lines reference and is tested with `has` ("sells item Z"); a numeric aggregate such as a maximum is tested with `gt`/`gte` ("a discount above X"). There are no per-line correlated conditions ("a line where item is Z and discount is above X"): the condition model, the doubt rule and the stored snapshot all stay per document, and the cases customers ask for need nothing more.
   - *Part 5*: delegation is one hop (a delegate's own delegation is not followed); one person casts at most one vote per step, whether as a member or as a delegate.
   - *Part 6*: a step may have a due time in wall-clock hours; passing it without a decision notifies the step's pending approvers and the submitter, once, with no automatic approval, rejection or reassignment.
 

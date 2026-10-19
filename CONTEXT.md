@@ -34,7 +34,8 @@ A term used by two products must have the same meaning, or the two must use diff
 - **Version** (`version`, vi: "Phiên bản"): a number incremented after every write to a document, used to detect conflicts when two people edit at once.
 - **Dependency**: something a module requires from another product (`deps.go`). Never a no-op.
 - **Hook**: an optional reaction of another module (`hooks.go`). May be a no-op.
-- **Approval field** (vi: "Trường duyệt"): a field a document type declares for use in approval conditions (e.g. `days`, `leave_type`).
+- **Approval field** (vi: "Trường duyệt"): a field a document type declares for use in approval conditions (e.g. `days`, `leave_type`). Its kind is number, choice, org unit or set.
+- **Set field** (vi: "Trường tập hợp"): an approval field holding the distinct catalogue ids a document's lines reference, e.g. the items of a quotation; a condition tests whether it has a given id.
 - **Approval instance** (vi: "Lần duyệt"): the whole approval of one submitted request for an action — `post`, `cancel`, or a module's own action — with its own id and submitted `version`. Withdrawal, rejection or completion closes the instance; resubmitting, or requesting the action again, opens a new one.
 - **Approval request** (vi: "Yêu cầu duyệt"): an approval instance for an action other than `post`. It holds the document without changing its row or `version`; completing it runs the action itself, instead of a status transition.
 - **Held document** (vi: "Chứng từ đang chờ duyệt yêu cầu"): a document with an open approval request. No write on it succeeds, including a dependent write from another document; `allowed_actions` keeps only `print` and `export`.
