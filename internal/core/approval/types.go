@@ -54,6 +54,8 @@ type Approver struct {
 	Product string       `json:"product,omitempty"`
 	Role    string       `json:"role,omitempty"`
 	UserID  *int64       `json:"user_id,omitempty"`
+	// UserIDs lets kind user name up to 20 approvers; UserID stays until every caller switches over.
+	UserIDs []int64 `json:"user_ids,omitempty" maxItems:"20"`
 }
 
 type Step struct {
