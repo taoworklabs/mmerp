@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"slices"
+	"strconv"
+	"strings"
 	"testing"
 
 	"github.com/taoworklabs/mmerp/internal/core/approval"
@@ -27,7 +29,8 @@ type fixture struct {
 
 // newFixture registers test.doc with fields days and kind, module approvers from f.managers,
 // a type other.doc of product other, and users submitter, boss, big_boss, hr (role test.hr
-// at the unit), rules (test.approval_admin) and outsider.
+// at the unit), rules (test.approval_admin), outsider and c1, c2, c3 (no role: test.doc's
+// grant lets them view, and they stay out of the fallback role).
 func newFixture(t *testing.T) *fixture {
 	core := coretest.New(t, "test", "other")
 	ctx := core.Ctx
@@ -57,7 +60,7 @@ func newFixture(t *testing.T) *fixture {
 	f.check(err)
 	f.unit, err = f.ids.CreateOrgUnit(f.admin, iam.OrgUnitInput{ParentID: &c, Kind: "department", Name: "A"})
 	f.check(err)
-	for _, login := range []string{"submitter", "boss", "big_boss", "hr", "rules", "outsider"} {
+	for _, login := range []string{"submitter", "boss", "big_boss", "hr", "rules", "outsider", "c1", "c2", "c3"} {
 		f.users[login], err = f.ids.CreateUser(f.admin, login, login, "long enough")
 		f.check(err)
 	}
@@ -76,9 +79,59 @@ func (f *fixture) check(err error) {
 	}
 }
 
-func (f *fixture) rule(steps ...approval.Step) {
+func (f *fixture) rule(flow ...approval.Element) {
 	f.t.Helper()
-	f.check(f.appr.SaveRule(f.admin, "test.doc", approval.RuleInput{Steps: steps, MaxLevels: 3, FallbackProduct: "test", FallbackRole: "hr"}))
+	f.check(f.appr.SaveRule(f.admin, "test.doc", ruleOf(flow...)))
+}
+
+func ruleOf(flow ...approval.Element) approval.RuleInput {
+	return approval.RuleInput{Flow: flow, MaxLevels: 3, FallbackProduct: "test", FallbackRole: "hr"}
+}
+
+// by is a step for the named users needing approvals approvals and rejections rejections.
+func (f *fixture) by(approvals, rejections int32, logins ...string) approval.Element {
+	a := approval.Approver{Kind: "user"}
+	for _, l := range logins {
+		a.UserIDs = append(a.UserIDs, f.users[l])
+	}
+	return approval.Element{Step: &approval.StepDef{Approver: a, Approvals: approvals, Rejections: rejections}}
+}
+
+// user is a one-approval step for the named users.
+func (f *fixture) user(logins ...string) approval.Element { return f.by(1, 1, logins...) }
+
+func split(mode approval.SplitMode, otherwise approval.Flow, branches ...approval.Branch) approval.Element {
+	return approval.Element{Split: &approval.Split{Mode: mode, Branches: branches, Otherwise: otherwise}}
+}
+
+func when(c *approval.Expr, body ...approval.Element) approval.Branch {
+	return approval.Branch{Condition: c, Body: body}
+}
+
+func leaf(field, op, value string) *approval.Expr {
+	return &approval.Expr{Field: field, Op: approval.Op(op), Value: value}
+}
+
+func names(s approval.StepView) []string {
+	out := []string{}
+	for _, v := range s.Voters {
+		out = append(out, v.Name)
+	}
+	return out
+}
+
+func (f *fixture) status(d record.Doc) record.Status {
+	f.t.Helper()
+	d, err := f.rec.Get(f.admin, d.Ref)
+	f.check(err)
+	return d.Status
+}
+
+func (f *fixture) inbox(login string) []approval.InboxItem {
+	f.t.Helper()
+	items, err := f.appr.Inbox(f.as(login))
+	f.check(err)
+	return items
 }
 
 // send creates a draft with days and kind as the submitter and sends it.
@@ -100,7 +153,7 @@ func (f *fixture) panel(login string, d record.Doc) *approval.Instance {
 	return inst
 }
 
-var module = approval.Step{Approver: approval.Approver{Kind: "module"}}
+var module = approval.Element{Step: &approval.StepDef{Approver: approval.Approver{Kind: "module"}}}
 
 func code(err error) string {
 	if e, ok := errors.AsType[*platform.Error](err); ok {
@@ -117,13 +170,13 @@ func TestModuleApproversSkipTheSubmitter(t *testing.T) {
 	d, err := f.send("1", "a")
 	f.check(err)
 	inst := f.panel("boss", d)
-	if !slices.Equal(inst.Steps[0].ApproverNames, []string{"boss"}) || inst.Steps[0].Fallback {
+	if !slices.Equal(names(inst.Steps[0]), []string{"boss"}) || inst.Steps[0].Fallback {
 		t.Fatalf("want boss: %+v", inst.Steps[0])
 	}
-	if !slices.Equal(inst.AllowedActions, []string{"approve", "reject"}) {
-		t.Fatalf("boss actions %v", inst.AllowedActions)
+	if !slices.Equal(inst.Steps[0].AllowedActions, []string{"approve", "reject"}) {
+		t.Fatalf("boss actions %v", inst.Steps[0].AllowedActions)
 	}
-	if acts := f.panel("big_boss", d).AllowedActions; len(acts) != 0 {
+	if acts := f.panel("big_boss", d).Steps[0].AllowedActions; len(acts) != 0 {
 		t.Fatalf("big_boss actions %v", acts)
 	}
 	// A manager change after the step started does not change its approvers.
@@ -143,17 +196,17 @@ func TestNobodyLeftGoesToTheFallbackRole(t *testing.T) {
 	d, err := f.send("1", "a")
 	f.check(err)
 	inst := f.panel("hr", d)
-	if !slices.Equal(inst.Steps[0].ApproverNames, []string{"hr"}) || !inst.Steps[0].Fallback {
+	if !slices.Equal(names(inst.Steps[0]), []string{"hr"}) || !inst.Steps[0].Fallback {
 		t.Fatalf("want hr as fallback: %+v", inst.Steps[0])
 	}
-	if !slices.Equal(inst.AllowedActions, []string{"approve", "reject", "reassign"}) {
-		t.Fatalf("hr actions %v", inst.AllowedActions)
+	if !slices.Equal(inst.Steps[0].AllowedActions, []string{"approve", "reject", "reassign"}) {
+		t.Fatalf("hr actions %v", inst.Steps[0].AllowedActions)
 	}
 }
 
 func TestNoApproverAtAllRefusesToSend(t *testing.T) {
 	f := newFixture(t)
-	f.rule(approval.Step{Approver: approval.Approver{Kind: "user", UserID: new(f.users["submitter"])}})
+	f.rule(f.user("submitter"))
 	f.check(f.ids.RevokeRole(f.admin, f.users["hr"], mustGrant(t, f, "hr")))
 	if _, err := f.send("1", "a"); code(err) != "no_approver" {
 		t.Fatalf("got %v", err)
@@ -168,10 +221,7 @@ func mustGrant(t *testing.T, f *fixture, login string) int64 {
 
 func TestConditionsPickTheSteps(t *testing.T) {
 	f := newFixture(t)
-	boss := approval.Step{Approver: approval.Approver{Kind: "user", UserID: new(f.users["boss"])}}
-	long := approval.Step{Condition: &approval.Condition{Field: "days", Op: "gt", Value: "3"},
-		Approver: approval.Approver{Kind: "user", UserID: new(f.users["big_boss"])}}
-	f.rule(boss, long)
+	f.rule(f.user("boss"), split(approval.ChooseOne, nil, when(leaf("days", "gt", "3"), f.user("big_boss"))))
 
 	short, err := f.send("3", "a")
 	f.check(err)
@@ -185,7 +235,7 @@ func TestConditionsPickTheSteps(t *testing.T) {
 		t.Fatal("step 1 approved twice")
 	}
 	inst := f.panel("big_boss", d)
-	if inst.CurrentStep != 2 || !slices.Equal(inst.AllowedActions, []string{"approve", "reject"}) {
+	if openSteps(inst) != "2" || !slices.Equal(inst.Steps[1].AllowedActions, []string{"approve", "reject"}) {
 		t.Fatalf("want step 2 for big_boss: %+v", inst)
 	}
 	f.check(f.appr.Approve(f.as("big_boss"), *d.ApprovalTicket, 2))
@@ -196,7 +246,7 @@ func TestConditionsPickTheSteps(t *testing.T) {
 
 func TestRejectReturnsToDraft(t *testing.T) {
 	f := newFixture(t)
-	f.rule(approval.Step{Approver: approval.Approver{Kind: "user", UserID: new(f.users["boss"])}})
+	f.rule(f.user("boss"))
 	d, err := f.send("1", "a")
 	f.check(err)
 	f.check(f.appr.Reject(f.as("boss"), *d.ApprovalTicket, 1, "too long"))
@@ -205,27 +255,28 @@ func TestRejectReturnsToDraft(t *testing.T) {
 		t.Fatalf("after reject: %+v", after)
 	}
 	inst := f.panel("submitter", d)
-	if inst.Status != "rejected" || *inst.Steps[0].Reason != "too long" {
+	if inst.Status != "rejected" || inst.Steps[0].Status != "rejected" || *inst.Steps[0].Voters[0].Reason != "too long" {
 		t.Fatalf("instance %+v", inst)
 	}
 }
 
 func TestReassignByTheFallbackRole(t *testing.T) {
 	f := newFixture(t)
-	f.rule(approval.Step{Approver: approval.Approver{Kind: "user", UserID: new(f.users["boss"])}})
+	f.rule(f.user("boss"))
 	d, err := f.send("1", "a")
 	f.check(err)
-	if code(f.appr.Reassign(f.as("boss"), *d.ApprovalTicket, 1, "big_boss")) != "forbidden" {
+	boss := f.users["boss"]
+	if code(f.appr.Reassign(f.as("boss"), *d.ApprovalTicket, 1, boss, "big_boss")) != "forbidden" {
 		t.Fatal("boss reassigned without the fallback role")
 	}
-	if code(f.appr.Reassign(f.as("hr"), *d.ApprovalTicket, 1, "submitter")) != "self_approval" {
+	if code(f.appr.Reassign(f.as("hr"), *d.ApprovalTicket, 1, boss, "submitter")) != "self_approval" {
 		t.Fatal("reassigned to the submitter")
 	}
 	// One who cannot view the document could never act on the step.
-	if code(f.appr.Reassign(f.as("hr"), *d.ApprovalTicket, 1, "outsider")) != "approver_cannot_view" {
+	if code(f.appr.Reassign(f.as("hr"), *d.ApprovalTicket, 1, boss, "outsider")) != "approver_cannot_view" {
 		t.Fatal("reassigned to someone who cannot view it")
 	}
-	f.check(f.appr.Reassign(f.as("hr"), *d.ApprovalTicket, 1, "big_boss"))
+	f.check(f.appr.Reassign(f.as("hr"), *d.ApprovalTicket, 1, boss, "big_boss"))
 	if code(f.appr.Approve(f.as("boss"), *d.ApprovalTicket, 1)) != "forbidden" {
 		t.Fatal("old approver still approves")
 	}
@@ -239,7 +290,7 @@ func TestReassignByTheFallbackRole(t *testing.T) {
 
 func TestInboxHidesDocumentsTheActorCannotView(t *testing.T) {
 	f := newFixture(t)
-	f.rule(approval.Step{Approver: approval.Approver{Kind: "user", UserID: new(f.users["outsider"])}})
+	f.rule(f.user("outsider"))
 	_, err := f.send("1", "a")
 	f.check(err)
 	items, err := f.appr.Inbox(f.as("outsider"))
@@ -251,19 +302,19 @@ func TestInboxHidesDocumentsTheActorCannotView(t *testing.T) {
 
 func TestApproversWhoCannotViewAreSkipped(t *testing.T) {
 	f := newFixture(t)
-	f.rule(approval.Step{Approver: approval.Approver{Kind: "user", UserID: new(f.users["outsider"])}})
+	f.rule(f.user("outsider"))
 	d, err := f.send("1", "a")
 	f.check(err)
-	if s := f.panel("hr", d).Steps[0]; !slices.Equal(s.ApproverNames, []string{"hr"}) || !s.Fallback {
+	if s := f.panel("hr", d).Steps[0]; !slices.Equal(names(s), []string{"hr"}) || !s.Fallback {
 		t.Fatalf("want the fallback role instead of outsider: %+v", s)
 	}
 }
 
 func TestRuleChecksConditionsAgainstFields(t *testing.T) {
 	f := newFixture(t)
-	bad := approval.Step{Condition: &approval.Condition{Field: "kind", Op: "gt", Value: "1"}, Approver: approval.Approver{Kind: "module"}}
-	err := f.appr.SaveRule(f.admin, "test.doc", approval.RuleInput{Steps: []approval.Step{bad}, MaxLevels: 3, FallbackProduct: "test", FallbackRole: "hr"})
-	if code(err) != "invalid_rule" {
+	bad := split(approval.ChooseOne, nil, when(leaf("kind", "gt", "1"), module))
+	err := f.appr.SaveRule(f.admin, "test.doc", ruleOf(module, bad))
+	if e, ok := errors.AsType[*platform.Error](err); !ok || e.Code != "invalid_rule" || e.Params["path"] != "2.branches.1" || e.Params["reason"] != "invalid_condition" {
 		t.Fatalf("got %v", err)
 	}
 	if code(f.appr.SaveRule(f.as("hr"), "test.doc", approval.RuleInput{})) != "forbidden" {
@@ -281,7 +332,7 @@ func docTypes(rules []approval.TypeRule) []string {
 
 func TestRulesByProduct(t *testing.T) {
 	f := newFixture(t)
-	in := approval.RuleInput{Steps: []approval.Step{module}, MaxLevels: 3, FallbackProduct: "test", FallbackRole: "hr"}
+	in := ruleOf(module)
 
 	// A product's administrator manages only that product's types.
 	rules, err := f.appr.Rules(f.as("rules"), "")
@@ -315,8 +366,7 @@ func TestRulesByProduct(t *testing.T) {
 	if got := docTypes(other); !slices.Equal(got, []string{"other.doc"}) {
 		t.Fatalf("admin filtered by product lists %v", got)
 	}
-	byBoss := approval.Step{Approver: approval.Approver{Kind: "user", UserID: new(f.users["boss"])}}
-	f.check(f.appr.SaveRule(f.admin, "other.doc", approval.RuleInput{Steps: []approval.Step{byBoss}, MaxLevels: 3, FallbackProduct: "test", FallbackRole: "hr"}))
+	f.check(f.appr.SaveRule(f.admin, "other.doc", ruleOf(f.user("boss"))))
 
 	// Without any rule permission, everything is refused.
 	if _, err := f.appr.Rules(f.as("outsider"), ""); code(err) != "forbidden" {
@@ -349,15 +399,207 @@ func TestRuleChangesKeepOpenInstances(t *testing.T) {
 	f.check(err)
 	steps := f.panel("boss", d).Steps
 
-	f.check(f.appr.SaveRule(f.as("rules"), "test.doc", approval.RuleInput{
-		Steps: []approval.Step{{Approver: approval.Approver{Kind: "user", UserID: new(f.users["big_boss"])}}}, MaxLevels: 3, FallbackProduct: "test", FallbackRole: "hr",
-	}))
-	if got := f.panel("boss", d).Steps; len(got) != len(steps) || !slices.Equal(got[0].ApproverNames, steps[0].ApproverNames) {
+	f.check(f.appr.SaveRule(f.as("rules"), "test.doc", ruleOf(f.user("big_boss"))))
+	if got := f.panel("boss", d).Steps; len(got) != len(steps) || !slices.Equal(names(got[0]), names(steps[0])) {
 		t.Fatalf("after save: %+v, want %+v", got, steps)
 	}
 	f.check(f.appr.DeleteRule(f.as("rules"), "test.doc"))
-	if got := f.panel("boss", d).Steps; len(got) != len(steps) || !slices.Equal(got[0].ApproverNames, steps[0].ApproverNames) {
+	if got := f.panel("boss", d).Steps; len(got) != len(steps) || !slices.Equal(names(got[0]), names(steps[0])) {
 		t.Fatalf("after delete: %+v, want %+v", got, steps)
 	}
 	f.check(f.appr.Approve(f.as("boss"), *d.ApprovalTicket, 1))
+}
+
+// openSteps lists the positions of the open steps, e.g. "2" or "1,2".
+func openSteps(inst *approval.Instance) string {
+	var out []string
+	for _, s := range inst.Steps {
+		if s.Status == "open" {
+			out = append(out, strconv.Itoa(int(s.Position)))
+		}
+	}
+	return strings.Join(out, ",")
+}
+
+func TestGroupNeedsItsApprovalCount(t *testing.T) {
+	f := newFixture(t)
+	f.rule(f.by(2, 1, "c1", "c2", "c3"))
+	d, err := f.send("1", "a")
+	f.check(err)
+	f.check(f.appr.Approve(f.as("c1"), *d.ApprovalTicket, 1))
+	if st := f.status(d); st != record.PendingApproval || openSteps(f.panel("c1", d)) != "1" {
+		t.Fatalf("after one approval: %s %+v", st, f.panel("c1", d).Steps)
+	}
+	// One who voted has nothing left to do at the step.
+	if acts := f.panel("c1", d).Steps[0].AllowedActions; len(acts) != 0 || len(f.inbox("c1")) != 0 {
+		t.Fatalf("c1 still acts: %v", acts)
+	}
+	f.check(f.appr.Approve(f.as("c2"), *d.ApprovalTicket, 1))
+	if st := f.status(d); st != record.Posted {
+		t.Fatalf("status %s", st)
+	}
+}
+
+func TestRejectionCountRejects(t *testing.T) {
+	f := newFixture(t)
+	f.rule(f.by(1, 2, "c1", "c2", "c3"))
+	d, err := f.send("1", "a")
+	f.check(err)
+	f.check(f.appr.Reject(f.as("c1"), *d.ApprovalTicket, 1, "no"))
+	if st := f.status(d); st != record.PendingApproval {
+		t.Fatalf("after one rejection: %s", st)
+	}
+	f.check(f.appr.Reject(f.as("c2"), *d.ApprovalTicket, 1, "no"))
+	if st, inst := f.status(d), f.panel("c1", d); st != record.Draft || inst.Status != "rejected" {
+		t.Fatalf("after two rejections: %s %s", st, inst.Status)
+	}
+}
+
+func TestStepRejectsWhenItCanNoLongerPass(t *testing.T) {
+	f := newFixture(t)
+	f.rule(f.by(3, 2, "c1", "c2", "c3"))
+	d, err := f.send("1", "a")
+	f.check(err)
+	f.check(f.appr.Reject(f.as("c1"), *d.ApprovalTicket, 1, "no"))
+	if st := f.status(d); st != record.Draft {
+		t.Fatalf("status %s", st)
+	}
+}
+
+func TestOneVotePerStep(t *testing.T) {
+	f := newFixture(t)
+	f.rule(f.by(2, 1, "c1", "c2", "c3"))
+	d, err := f.send("1", "a")
+	f.check(err)
+	f.check(f.appr.Approve(f.as("c1"), *d.ApprovalTicket, 1))
+	if code(f.appr.Approve(f.as("c1"), *d.ApprovalTicket, 1)) != "approval_already_voted" {
+		t.Fatal("c1 voted twice")
+	}
+
+	// The same voter in two parallel steps votes in each.
+	f.rule(f.user("c2"), split(approval.Parallel, nil, when(nil, f.user("c1")), when(nil, f.user("c1"))))
+	d, err = f.send("1", "a")
+	f.check(err)
+	f.check(f.appr.Approve(f.as("c2"), *d.ApprovalTicket, 1))
+	f.check(f.appr.Approve(f.as("c1"), *d.ApprovalTicket, 2))
+	f.check(f.appr.Approve(f.as("c1"), *d.ApprovalTicket, 3))
+	if st := f.status(d); st != record.Posted {
+		t.Fatalf("status %s", st)
+	}
+}
+
+func (f *fixture) parallelRule() {
+	f.rule(split(approval.Parallel, nil, when(nil, f.user("boss")), when(leaf("kind", "eq", "a"), f.user("big_boss"))))
+}
+
+func TestParallelStepsOpenTogether(t *testing.T) {
+	f := newFixture(t)
+	f.parallelRule()
+	d, err := f.send("1", "a")
+	f.check(err)
+	if got := openSteps(f.panel("boss", d)); got != "1,2" {
+		t.Fatalf("open steps %q", got)
+	}
+	if b, bb := f.inbox("boss"), f.inbox("big_boss"); len(b) != 1 || b[0].Step != 1 || len(bb) != 1 || bb[0].Step != 2 {
+		t.Fatalf("inboxes %+v %+v", b, bb)
+	}
+	f.check(f.appr.Approve(f.as("boss"), *d.ApprovalTicket, 1))
+	if st := f.status(d); st != record.PendingApproval {
+		t.Fatalf("after boss: %s", st)
+	}
+	f.check(f.appr.Approve(f.as("big_boss"), *d.ApprovalTicket, 2))
+	if st := f.status(d); st != record.Posted {
+		t.Fatalf("status %s", st)
+	}
+}
+
+func TestRejectCancelsParallelSteps(t *testing.T) {
+	f := newFixture(t)
+	f.parallelRule()
+	d, err := f.send("1", "a")
+	f.check(err)
+	f.check(f.appr.Reject(f.as("boss"), *d.ApprovalTicket, 1, "no"))
+	inst := f.panel("boss", d)
+	if inst.Status != "rejected" || inst.Steps[1].Status != "cancelled" {
+		t.Fatalf("instance %+v", inst)
+	}
+	if items := f.inbox("big_boss"); len(items) != 0 {
+		t.Fatalf("big_boss inbox %+v", items)
+	}
+	if code(f.appr.Approve(f.as("big_boss"), *d.ApprovalTicket, 2)) != "approval_closed" {
+		t.Fatal("cancelled step approved")
+	}
+}
+
+func TestChooseOneByAmountTiers(t *testing.T) {
+	f := newFixture(t)
+	f.rule(split(approval.ChooseOne, approval.Flow{},
+		when(leaf("days", "gt", "5"), f.user("big_boss")), when(leaf("days", "gt", "2"), f.user("boss"))))
+	for days, want := range map[string]string{"6": "big_boss", "3": "boss"} {
+		d, err := f.send(days, "a")
+		f.check(err)
+		if s := f.panel("hr", d).Steps; len(s) != 1 || !slices.Equal(names(s[0]), []string{want}) {
+			t.Fatalf("%s days: %+v", days, s)
+		}
+	}
+	d, err := f.send("1", "a")
+	f.check(err)
+	if d.Status != record.Posted || f.panel("hr", d) != nil {
+		t.Fatalf("1 day: %+v", d)
+	}
+}
+
+func TestAllAnyConditions(t *testing.T) {
+	f := newFixture(t)
+	c := &approval.Expr{Any: []approval.Expr{{All: []approval.Expr{*leaf("days", "gt", "2"), *leaf("kind", "eq", "a")}}, *leaf("days", "gt", "5")}}
+	f.rule(split(approval.ChooseOne, nil, when(c, f.user("boss"))))
+	for _, tc := range []struct {
+		days, kind string
+		steps      int
+	}{{"3", "a", 1}, {"3", "b", 0}, {"6", "b", 1}} {
+		d, err := f.send(tc.days, tc.kind)
+		f.check(err)
+		n := 0
+		if inst := f.panel("hr", d); inst != nil {
+			n = len(inst.Steps)
+		}
+		if n != tc.steps || (n == 0) != (d.Status == record.Posted) {
+			t.Fatalf("%s days kind %s: %d steps, %s", tc.days, tc.kind, n, d.Status)
+		}
+	}
+}
+
+func TestTooFewEligibleRefuses(t *testing.T) {
+	f := newFixture(t)
+	f.rule(f.by(3, 1, "c1", "c2", "submitter"))
+	d, err := f.send("1", "a")
+	if e, ok := errors.AsType[*platform.Error](err); !ok || e.Code != "no_approver" || e.Params["step"] != int32(1) {
+		t.Fatalf("got %v", err)
+	}
+	if st := f.status(d); st != record.Draft {
+		t.Fatalf("status %s", st)
+	}
+}
+
+func TestReassignReplacesOneVoter(t *testing.T) {
+	f := newFixture(t)
+	f.rule(f.by(2, 1, "c1", "c2"))
+	d, err := f.send("1", "a")
+	f.check(err)
+	id := *d.ApprovalTicket
+	if code(f.appr.Reassign(f.as("hr"), id, 1, f.users["c2"], "c1")) != "approval_already_voted" {
+		t.Fatal("reassigned to a voter of the step")
+	}
+	f.check(f.appr.Reassign(f.as("hr"), id, 1, f.users["c2"], "big_boss"))
+	if code(f.appr.Approve(f.as("c2"), id, 1)) != "forbidden" {
+		t.Fatal("replaced voter approved")
+	}
+	f.check(f.appr.Approve(f.as("c1"), id, 1))
+	if code(f.appr.Reassign(f.as("hr"), id, 1, f.users["c1"], "c3")) != "approval_already_voted" {
+		t.Fatal("reassigned a voter who voted")
+	}
+	f.check(f.appr.Approve(f.as("big_boss"), id, 1))
+	if st := f.status(d); st != record.Posted {
+		t.Fatalf("status %s", st)
+	}
 }

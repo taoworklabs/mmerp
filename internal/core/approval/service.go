@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgtype"
 
 	"github.com/taoworklabs/mmerp/internal/core/approval/internal/store"
 	"github.com/taoworklabs/mmerp/internal/core/audit"
@@ -24,8 +23,8 @@ type Service struct{ d Deps }
 
 func NewService(d Deps) *Service { return &Service{d: d} }
 
-// Submit implements record.ApprovalGate: it opens an instance with the rule's
-// steps whose condition holds for d, and starts the first one.
+// Submit implements record.ApprovalGate: it resolves the rule's flow for d into
+// a plan, opens an instance with one step per resolved step, and starts the first ones.
 func (s *Service) Submit(ctx context.Context, d record.Doc) (int64, bool, error) {
 	q := store.New(platform.DBFrom(ctx))
 	rule, err := q.GetRule(ctx, d.Type)
@@ -35,37 +34,33 @@ func (s *Service) Submit(ctx context.Context, d record.Doc) (int64, bool, error)
 	if err != nil {
 		return 0, false, err
 	}
-	var steps []Step
-	if err := json.Unmarshal(rule.Steps, &steps); err != nil {
+	var flow Flow
+	if err := json.Unmarshal(rule.Flow, &flow); err != nil {
 		return 0, false, err
 	}
-	var apply []Step
-	for _, st := range steps {
-		ok, err := s.holds(ctx, d, st.Condition)
-		if err != nil {
-			return 0, false, err
-		}
-		if ok {
-			apply = append(apply, st)
-		}
+	plan, steps, err := resolve(flow.normalize(), func(e Expr) (bool, error) { return s.holds(ctx, d, e) })
+	if err != nil || len(steps) == 0 {
+		return 0, false, err
 	}
-	if len(apply) == 0 {
-		return 0, false, nil
+	rawPlan, err := json.Marshal(plan)
+	if err != nil {
+		return 0, false, err
 	}
 	actor, _ := platform.ActorFrom(ctx)
 	id, err := q.InsertInstance(ctx, store.InsertInstanceParams{
-		DocType: d.Type, DocID: d.ID, Version: d.Version, SubmittedBy: actor,
+		DocType: d.Type, DocID: d.ID, Version: d.Version, SubmittedBy: actor, Plan: rawPlan,
 		MaxLevels: rule.MaxLevels, FallbackProduct: rule.FallbackProduct, FallbackRole: rule.FallbackRole,
 	})
 	if err != nil {
 		return 0, false, err
 	}
-	for i, st := range apply {
+	for i, st := range steps {
 		raw, err := json.Marshal(st.Approver)
 		if err != nil {
 			return 0, false, err
 		}
-		if err := q.InsertStep(ctx, store.InsertStepParams{InstanceID: id, Position: int32(i + 1), Approver: raw}); err != nil {
+		if err := q.InsertStep(ctx, store.InsertStepParams{InstanceID: id, Position: int32(i + 1), Approver: raw,
+			Approvals: st.Approvals, Rejections: st.Rejections}); err != nil {
 			return 0, false, err
 		}
 	}
@@ -73,7 +68,17 @@ func (s *Service) Submit(ctx context.Context, d record.Doc) (int64, bool, error)
 	if err != nil {
 		return 0, false, err
 	}
-	return id, true, s.startStep(ctx, inst, d, 1)
+	start, _ := plan.next(nil, nil)
+	return id, true, s.startSteps(ctx, inst, d, start)
+}
+
+func (s *Service) startSteps(ctx context.Context, inst store.ApprovalInstance, d record.Doc, positions []int32) error {
+	for _, pos := range positions {
+		if err := s.startStep(ctx, inst, d, pos); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // Withdrawn implements record.ApprovalGate.
@@ -83,7 +88,8 @@ func (s *Service) Withdrawn(ctx context.Context, d record.Doc) error {
 
 // startStep fixes who approves a step. The submitter never approves; when nobody
 // is left the step goes to the fallback role, and with nobody there either the
-// submission fails: approval is never automatic.
+// submission fails: approval is never automatic. Fewer approvers than the step's
+// approval count fail it too, since it could never pass.
 func (s *Service) startStep(ctx context.Context, inst store.ApprovalInstance, d record.Doc, pos int32) error {
 	q := store.New(platform.DBFrom(ctx))
 	st, err := q.GetStep(ctx, store.GetStepParams{InstanceID: inst.ID, Position: pos})
@@ -120,7 +126,8 @@ func (s *Service) startStep(ctx context.Context, inst store.ApprovalInstance, d 
 			return err
 		}
 	case ByUser:
-		users = []int64{*a.UserID}
+		// A repeated id must not count as two voters.
+		users = slices.Compact(slices.Sorted(slices.Values(a.UserIDs)))
 	case ByModule:
 		t, _ := s.d.Record.TypeOf(d.Type)
 		for level := 1; level <= int(inst.MaxLevels) && len(users) == 0; level++ {
@@ -142,8 +149,8 @@ func (s *Service) startStep(ctx context.Context, inst store.ApprovalInstance, d 
 	if failed != nil {
 		return failed
 	}
-	if len(users) == 0 {
-		return ErrNoApprover
+	if len(users) < int(st.Approvals) {
+		return errNoApprover(pos)
 	}
 	if err := q.StartStep(ctx, store.StartStepParams{InstanceID: inst.ID, Position: pos, Approvers: users, Fallback: fallback}); err != nil {
 		return err
@@ -151,12 +158,9 @@ func (s *Service) startStep(ctx context.Context, inst store.ApprovalInstance, d 
 	return s.d.Notification.Send(ctx, notification.ApprovalRequested, d.Ref, users)
 }
 
-// holds reports whether a step applies to d. A condition that cannot be evaluated
-// (missing or malformed value) applies the step: a doubt adds approval, never removes it.
-func (s *Service) holds(ctx context.Context, d record.Doc, c *Condition) (bool, error) {
-	if c == nil {
-		return true, nil
-	}
+// holds evaluates one condition leaf for d. A leaf that cannot be evaluated
+// (missing or malformed value) holds: a doubt adds approval, never removes it.
+func (s *Service) holds(ctx context.Context, d record.Doc, c Expr) (bool, error) {
 	v, ok := valueOf(d, c.Field)
 	if !ok {
 		return true, nil
@@ -214,9 +218,9 @@ func kindOf(t record.Type, field string) (record.FieldKind, bool) {
 }
 
 // act locks in the shared order (the document's locks, then the instance) and
-// checks the instance is open at step. A stale instance is closed and the close
+// checks the instance and step are open. A stale instance is closed and the close
 // committed before ErrApprovalStale is returned.
-func (s *Service) act(ctx context.Context, id int64, step int32, fn func(ctx context.Context, inst store.ApprovalInstance, d record.Doc) error) error {
+func (s *Service) act(ctx context.Context, id int64, step int32, fn func(ctx context.Context, inst store.ApprovalInstance, st store.ApprovalInstanceStep, d record.Doc) error) error {
 	stale := false
 	err := platform.InTx(ctx, func(ctx context.Context) error {
 		q := store.New(platform.DBFrom(ctx))
@@ -241,8 +245,15 @@ func (s *Service) act(ctx context.Context, id int64, step int32, fn func(ctx con
 		if ok, err := s.d.Record.Can(ctx, ref.Type, ref.ID, record.View); err != nil || !ok {
 			return platform.OrErr(err, platform.ErrNotFound)
 		}
-		if inst.Status != "open" || inst.CurrentStep != step {
+		if inst.Status != "open" {
 			return ErrClosed
+		}
+		st, err := q.GetStep(ctx, store.GetStepParams{InstanceID: id, Position: step})
+		if errors.Is(err, pgx.ErrNoRows) || err == nil && st.Status != "open" {
+			return ErrClosed
+		}
+		if err != nil {
+			return err
 		}
 		if t, _ := s.d.Record.TypeOf(ref.Type); platform.ProductGate(ctx, t.Product, platform.ClassWrite) != nil {
 			return platform.ProductGate(ctx, t.Product, platform.ClassWrite)
@@ -251,7 +262,7 @@ func (s *Service) act(ctx context.Context, id int64, step int32, fn func(ctx con
 			stale = true
 			return q.CloseInstance(ctx, store.CloseInstanceParams{ID: id, Status: "stale"})
 		}
-		return fn(ctx, inst, d)
+		return fn(ctx, inst, st, d)
 	})
 	if err == nil && stale {
 		return record.ErrApprovalStale
@@ -259,24 +270,30 @@ func (s *Service) act(ctx context.Context, id int64, step int32, fn func(ctx con
 	return err
 }
 
-// Approve approves step of an instance as one of its approvers. Approving the
-// last step posts the document in the same transaction; if posting fails the
-// decision is not kept and the instance stays open.
+// Approve votes for step as one of its voters. Once the step has its approvals the
+// next steps of the plan start; the last one posts the document in the same
+// transaction. If posting fails the vote is not kept and the instance stays open.
 func (s *Service) Approve(ctx context.Context, id int64, step int32) error {
-	return s.act(ctx, id, step, func(ctx context.Context, inst store.ApprovalInstance, d record.Doc) error {
-		if err := s.decide(ctx, inst, step, "approved", nil); err != nil {
+	return s.act(ctx, id, step, func(ctx context.Context, inst store.ApprovalInstance, st store.ApprovalInstanceStep, d record.Doc) error {
+		status, err := s.vote(ctx, inst, st, "approved", nil)
+		if err != nil || status != "approved" {
 			return err
 		}
 		q := store.New(platform.DBFrom(ctx))
-		n, err := q.StepCount(ctx, id)
+		rows, err := q.StepStatuses(ctx, id)
 		if err != nil {
 			return err
 		}
-		if int64(step) < n {
-			if err := q.SetCurrentStep(ctx, store.SetCurrentStepParams{ID: id, CurrentStep: step + 1}); err != nil {
-				return err
-			}
-			return s.startStep(ctx, inst, d, step+1)
+		done, started := map[int32]bool{}, map[int32]bool{}
+		for _, r := range rows {
+			done[r.Position], started[r.Position] = r.Status == "approved", r.Status != "waiting"
+		}
+		var plan Plan
+		if err := json.Unmarshal(inst.Plan, &plan); err != nil {
+			return err
+		}
+		if start, finished := plan.next(done, started); !finished {
+			return s.startSteps(ctx, inst, d, start)
 		}
 		if err := q.CloseInstance(ctx, store.CloseInstanceParams{ID: id, Status: "approved"}); err != nil {
 			return err
@@ -288,13 +305,19 @@ func (s *Service) Approve(ctx context.Context, id int64, step int32) error {
 	})
 }
 
-// Reject sends the document back to draft and closes the instance.
+// Reject votes against step. Once the step rejects, the other steps are cancelled,
+// the instance closes and the document goes back to draft.
 func (s *Service) Reject(ctx context.Context, id int64, step int32, reason string) error {
-	return s.act(ctx, id, step, func(ctx context.Context, inst store.ApprovalInstance, d record.Doc) error {
-		if err := s.decide(ctx, inst, step, "rejected", &reason); err != nil {
+	return s.act(ctx, id, step, func(ctx context.Context, inst store.ApprovalInstance, st store.ApprovalInstanceStep, d record.Doc) error {
+		status, err := s.vote(ctx, inst, st, "rejected", &reason)
+		if err != nil || status != "rejected" {
 			return err
 		}
-		if err := store.New(platform.DBFrom(ctx)).CloseInstance(ctx, store.CloseInstanceParams{ID: id, Status: "rejected"}); err != nil {
+		q := store.New(platform.DBFrom(ctx))
+		if err := q.CancelOpenSteps(ctx, id); err != nil {
+			return err
+		}
+		if err := q.CloseInstance(ctx, store.CloseInstanceParams{ID: id, Status: "rejected"}); err != nil {
 			return err
 		}
 		if err := s.d.Record.Reject(ctx, d.Ref, id, inst.Version); err != nil {
@@ -304,36 +327,54 @@ func (s *Service) Reject(ctx context.Context, id int64, step int32, reason strin
 	})
 }
 
-func (s *Service) decide(ctx context.Context, inst store.ApprovalInstance, step int32, decision string, reason *string) error {
+// vote records the actor's vote on an open step and returns the step's new status:
+// approved, rejected, or "" while it is still open. A step rejects on its rejection
+// count, or as soon as the remaining voters can no longer bring its approvals.
+func (s *Service) vote(ctx context.Context, inst store.ApprovalInstance, st store.ApprovalInstanceStep, decision string, reason *string) (string, error) {
 	q := store.New(platform.DBFrom(ctx))
-	st, err := q.GetStep(ctx, store.GetStepParams{InstanceID: inst.ID, Position: step})
-	if err != nil {
-		return err
-	}
 	actor, _ := platform.ActorFrom(ctx)
 	if !slices.Contains(st.Approvers, actor) {
-		return platform.ErrForbidden
+		return "", platform.ErrForbidden
 	}
 	// Approvers were fixed when the step started; who the document is about may have changed since.
 	if excluded, err := s.excluded(ctx, inst, record.Ref{Type: inst.DocType, ID: inst.DocID}); err != nil {
-		return err
+		return "", err
 	} else if slices.Contains(excluded, actor) {
-		return ErrSelfApproval
+		return "", ErrSelfApproval
 	}
-	if err := q.Decide(ctx, store.DecideParams{
-		InstanceID: inst.ID, Position: step, DecidedBy: pgtype.Int8{Int64: actor, Valid: true},
-		Decision: pgtype.Text{String: decision, Valid: true}, Reason: platform.NullText(reason),
-	}); err != nil {
-		return err
+	err := q.InsertVote(ctx, store.InsertVoteParams{InstanceID: inst.ID, Position: st.Position, UserID: actor,
+		Decision: decision, Reason: platform.NullText(reason)})
+	if platform.Violates(err, "step_votes_pkey") {
+		return "", ErrAlreadyVoted
 	}
-	return s.d.Audit.RecordFor(ctx, "approval."+decision, audit.Ref{Type: inst.DocType, ID: inst.DocID},
-		map[string]any{"instance": inst.ID, "step": step, "reason": reason})
+	if err != nil {
+		return "", err
+	}
+	if err := s.d.Audit.RecordFor(ctx, "approval."+decision, audit.Ref{Type: inst.DocType, ID: inst.DocID},
+		map[string]any{"instance": inst.ID, "step": st.Position, "reason": reason}); err != nil {
+		return "", err
+	}
+	c, err := q.StepVotes(ctx, store.StepVotesParams{InstanceID: inst.ID, Position: st.Position})
+	if err != nil {
+		return "", err
+	}
+	left := int32(len(st.Approvers)) - c.Approved - c.Rejected
+	var status string
+	switch {
+	case c.Approved >= st.Approvals:
+		status = "approved"
+	case c.Rejected >= st.Rejections || c.Approved+left < st.Approvals:
+		status = "rejected"
+	default:
+		return "", nil
+	}
+	return status, q.SetStepStatus(ctx, store.SetStepStatusParams{InstanceID: inst.ID, Position: st.Position, Status: status})
 }
 
-// Reassign replaces the approvers of the current step with one user. Only holders
-// of the rule's fallback role may do it, e.g. when the approver has left.
-func (s *Service) Reassign(ctx context.Context, id int64, step int32, login string) error {
-	return s.act(ctx, id, step, func(ctx context.Context, inst store.ApprovalInstance, d record.Doc) error {
+// Reassign replaces voter from, who has not voted, with the user login; the step's
+// counts stay. Only holders of the rule's fallback role may do it, e.g. when a voter has left.
+func (s *Service) Reassign(ctx context.Context, id int64, step int32, from int64, login string) error {
+	return s.act(ctx, id, step, func(ctx context.Context, inst store.ApprovalInstance, st store.ApprovalInstanceStep, d record.Doc) error {
 		if ok, err := s.isFallback(ctx, inst, d); err != nil || !ok {
 			return platform.OrErr(err, platform.ErrForbidden)
 		}
@@ -350,18 +391,22 @@ func (s *Service) Reassign(ctx context.Context, id int64, step int32, login stri
 			return platform.OrErr(err, ErrApproverCannotView)
 		}
 		q := store.New(platform.DBFrom(ctx))
-		old, err := q.GetStep(ctx, store.GetStepParams{InstanceID: id, Position: step})
-		if err != nil {
-			return err
+		i := slices.Index(st.Approvers, from)
+		if i < 0 || slices.Contains(st.Approvers, user) {
+			return ErrAlreadyVoted
 		}
-		if err := q.StartStep(ctx, store.StartStepParams{InstanceID: id, Position: step, Approvers: []int64{user}}); err != nil {
+		if voted, err := q.HasVoted(ctx, store.HasVotedParams{InstanceID: id, Position: step, UserID: from}); err != nil || voted {
+			return platform.OrErr(err, ErrAlreadyVoted)
+		}
+		st.Approvers[i] = user
+		if err := q.SetApprovers(ctx, store.SetApproversParams{InstanceID: id, Position: step, Approvers: st.Approvers}); err != nil {
 			return err
 		}
 		if err := s.d.Notification.Send(ctx, notification.ApprovalRequested, d.Ref, []int64{user}); err != nil {
 			return err
 		}
 		return s.d.Audit.RecordFor(ctx, "approval.reassigned", audit.Ref{Type: inst.DocType, ID: inst.DocID},
-			map[string]any{"instance": id, "step": step, "from": old.Approvers, "to": user})
+			map[string]any{"instance": id, "step": step, "from": from, "to": user})
 	})
 }
 
@@ -400,7 +445,7 @@ func (s *Service) Inbox(ctx context.Context) ([]InboxItem, error) {
 		}
 		out = append(out, InboxItem{
 			InstanceID: r.ID, DocType: r.DocType, DocID: r.DocID, Number: r.Number, Date: r.Date.Time.Format(time.DateOnly),
-			Step: r.CurrentStep, SubmittedByName: r.SubmittedByName, SubmittedAt: r.SubmittedAt.Time.Format(time.RFC3339),
+			Step: r.Step, SubmittedByName: r.SubmittedByName, SubmittedAt: r.SubmittedAt.Time.Format(time.RFC3339),
 		})
 	}
 	return out, nil
@@ -423,34 +468,56 @@ func (s *Service) DocumentInstance(ctx context.Context, ref record.Ref) (*Instan
 	if err != nil {
 		return nil, err
 	}
-	out := &Instance{ID: inst.ID, Status: inst.Status, CurrentStep: inst.CurrentStep, SubmittedByName: inst.SubmittedByName,
-		SubmittedAt: inst.SubmittedAt.Time.Format(time.RFC3339), Steps: []StepView{}, AllowedActions: []string{}}
-	actor, _ := platform.ActorFrom(ctx)
-	for _, r := range rows {
-		v := StepView{Position: r.Position, ApproverNames: r.ApproverNames, Fallback: r.Fallback,
-			Decision: platform.TextPtr(r.Decision), DecidedByName: platform.TextPtr(r.DecidedByName), Reason: platform.TextPtr(r.Reason)}
-		if r.DecidedAt.Valid {
-			at := r.DecidedAt.Time.Format(time.RFC3339)
-			v.DecidedAt = &at
-		}
-		out.Steps = append(out.Steps, v)
-		if inst.Status == "open" && r.Position == inst.CurrentStep && slices.Contains(r.Approvers, actor) {
-			out.AllowedActions = append(out.AllowedActions, "approve", "reject")
-		}
+	out := &Instance{ID: inst.ID, Status: inst.Status, SubmittedByName: inst.SubmittedByName,
+		SubmittedAt: inst.SubmittedAt.Time.Format(time.RFC3339), Steps: []StepView{}}
+	if err := json.Unmarshal(inst.Plan, &out.Plan); err != nil {
+		return nil, err
 	}
-	if inst.Status == "open" {
+	actor, _ := platform.ActorFrom(ctx)
+	t, _ := s.d.Record.TypeOf(ref.Type)
+	writable := inst.Status == "open" && platform.ProductGate(ctx, t.Product, platform.ClassWrite) == nil
+	fallback := false
+	if writable {
 		d, err := s.d.Record.Get(ctx, ref)
 		if err != nil {
 			return nil, err
 		}
-		if ok, err := s.isFallback(ctx, store.ApprovalInstance{FallbackProduct: inst.FallbackProduct, FallbackRole: inst.FallbackRole}, d); err != nil {
+		if fallback, err = s.isFallback(ctx, store.ApprovalInstance{FallbackProduct: inst.FallbackProduct, FallbackRole: inst.FallbackRole}, d); err != nil {
 			return nil, err
-		} else if ok {
-			out.AllowedActions = append(out.AllowedActions, "reassign")
 		}
 	}
-	if t, _ := s.d.Record.TypeOf(ref.Type); platform.ProductGate(ctx, t.Product, platform.ClassWrite) != nil {
-		out.AllowedActions = []string{}
+	for _, r := range rows {
+		var voters []struct {
+			ID        int64      `json:"id"`
+			Name      string     `json:"name"`
+			Decision  *string    `json:"decision"`
+			Reason    *string    `json:"reason"`
+			DecidedAt *time.Time `json:"decided_at"`
+		}
+		if err := json.Unmarshal(r.Voters, &voters); err != nil {
+			return nil, err
+		}
+		v := StepView{Position: r.Position, Status: r.Status, Approvals: r.Approvals, Rejections: r.Rejections, Fallback: r.Fallback,
+			Voters: []StepVoter{}, AllowedActions: []string{}}
+		canVote := false
+		for _, x := range voters {
+			sv := StepVoter{ID: x.ID, Name: x.Name, Decision: x.Decision, Reason: x.Reason}
+			if x.DecidedAt != nil {
+				at := x.DecidedAt.Format(time.RFC3339)
+				sv.DecidedAt = &at
+			}
+			canVote = canVote || x.ID == actor && x.Decision == nil
+			v.Voters = append(v.Voters, sv)
+		}
+		if writable && r.Status == "open" {
+			if canVote {
+				v.AllowedActions = append(v.AllowedActions, "approve", "reject")
+			}
+			if fallback {
+				v.AllowedActions = append(v.AllowedActions, "reassign")
+			}
+		}
+		out.Steps = append(out.Steps, v)
 	}
 	return out, nil
 }
@@ -531,7 +598,7 @@ func (s *Service) Rules(ctx context.Context, product string) ([]TypeRule, error)
 		if i := slices.IndexFunc(rows, func(r store.ApprovalRule) bool { return r.DocType == t.Code }); i >= 0 {
 			r := rows[i]
 			tr.Rule = &RuleInput{MaxLevels: r.MaxLevels, FallbackProduct: r.FallbackProduct, FallbackRole: r.FallbackRole}
-			if err := json.Unmarshal(r.Steps, &tr.Rule.Steps); err != nil {
+			if err := json.Unmarshal(r.Flow, &tr.Rule.Flow); err != nil {
 				return nil, err
 			}
 		}
@@ -553,27 +620,27 @@ func (s *Service) Users(ctx context.Context) ([]ApproverUser, error) {
 	return out, err
 }
 
-// SaveRule replaces the rule of a document type; open instances keep the steps they started with.
+// SaveRule replaces the rule of a document type; open instances keep the plan they started with.
 func (s *Service) SaveRule(ctx context.Context, docType string, in RuleInput) error {
 	t, err := s.requireType(ctx, docType)
 	if err != nil {
 		return err
 	}
 	if !s.roleExists(in.FallbackProduct, in.FallbackRole) {
-		return errInvalidRule(0, "unknown_role")
+		return errInvalidRule("", "unknown_role")
 	}
-	for i, st := range in.Steps {
-		if reason := s.checkStep(t, st); reason != "" {
-			return errInvalidRule(i+1, reason)
-		}
+	in.Flow = in.Flow.normalize()
+	kind := func(field string) (record.FieldKind, bool) { return kindOf(t, field) }
+	if path, reason := checkFlow(in.Flow, kind, s.roleExists, t.Approvers != nil); reason != "" {
+		return errInvalidRule(path, reason)
 	}
-	steps, err := json.Marshal(in.Steps)
+	flow, err := json.Marshal(in.Flow)
 	if err != nil {
 		return err
 	}
 	return platform.InTx(ctx, func(ctx context.Context) error {
 		if err := store.New(platform.DBFrom(ctx)).SaveRule(ctx, store.SaveRuleParams{
-			DocType: docType, Steps: steps, MaxLevels: in.MaxLevels, FallbackProduct: in.FallbackProduct, FallbackRole: in.FallbackRole,
+			DocType: docType, Flow: flow, MaxLevels: in.MaxLevels, FallbackProduct: in.FallbackProduct, FallbackRole: in.FallbackRole,
 		}); err != nil {
 			return err
 		}
@@ -592,36 +659,6 @@ func (s *Service) DeleteRule(ctx context.Context, docType string) error {
 		}
 		return s.d.Audit.Record(ctx, "approval.rule_deleted", map[string]any{"doc_type": docType})
 	})
-}
-
-// checkStep returns why a step does not fit the type, or "".
-func (s *Service) checkStep(t record.Type, st Step) string {
-	switch a := st.Approver; a.Kind {
-	case ByRole:
-		if !s.roleExists(a.Product, a.Role) {
-			return "unknown_role"
-		}
-	case ByUser:
-		if a.UserID == nil {
-			return "missing_user"
-		}
-	case ByModule:
-		if t.Approvers == nil {
-			return "no_module_approvers"
-		}
-	}
-	c := st.Condition
-	if c == nil {
-		return ""
-	}
-	kind, ok := kindOf(t, c.Field)
-	if !ok || !slices.Contains(opsByKind[kind], c.Op) {
-		return "invalid_condition"
-	}
-	if _, ok := record.ParseNumber(c.Value); kind != record.Choice && !ok {
-		return "invalid_condition"
-	}
-	return ""
 }
 
 func (s *Service) roleExists(product, role string) bool {

@@ -41,31 +41,17 @@ const (
 	ByModule ApproverKind = "module"
 )
 
-// Condition tests one header field (amount, org_unit) or approval field of a document.
-type Condition struct {
-	Field string `json:"field" minLength:"1"`
-	Op    Op     `json:"op" enum:"gt,gte,eq,within"`
-	Value string `json:"value" minLength:"1" maxLength:"30"`
-}
-
 // Approver says who approves a step.
 type Approver struct {
 	Kind    ApproverKind `json:"kind" enum:"role,user,module" doc:"role: holders of a role covering the document's org unit; module: chosen by the document type, e.g. the direct manager"`
 	Product string       `json:"product,omitempty"`
 	Role    string       `json:"role,omitempty"`
-	UserID  *int64       `json:"user_id,omitempty"`
-	// UserIDs lets kind user name up to 20 approvers; UserID stays until every caller switches over.
+	// Kind user names up to 20 approvers.
 	UserIDs []int64 `json:"user_ids,omitempty" maxItems:"20"`
 }
 
-type Step struct {
-	// Without a condition the step always applies.
-	Condition *Condition `json:"condition,omitempty"`
-	Approver  Approver   `json:"approver"`
-}
-
 type RuleInput struct {
-	Steps []Step `json:"steps" minItems:"1" maxItems:"10" nullable:"false"`
+	Flow Flow `json:"flow" minItems:"1" nullable:"false"`
 	// How far up module approvers may go when a level has nobody but the submitter.
 	MaxLevels       int32  `json:"max_levels" minimum:"1" maximum:"10" default:"3"`
 	FallbackProduct string `json:"fallback_product" minLength:"1"`
@@ -112,39 +98,55 @@ type InboxItem struct {
 	SubmittedAt     string `json:"submitted_at" format:"date-time"`
 }
 
+// StepVoter is one who may vote on a step, with their vote once cast.
+type StepVoter struct {
+	ID        int64   `json:"id"`
+	Name      string  `json:"name"`
+	Decision  *string `json:"decision" enum:"approved,rejected"`
+	Reason    *string `json:"reason"`
+	DecidedAt *string `json:"decided_at" format:"date-time"`
+}
+
 type StepView struct {
-	Position      int32    `json:"position"`
-	ApproverNames []string `json:"approver_names" nullable:"false"`
+	Position   int32  `json:"position"`
+	Status     string `json:"status" enum:"waiting,open,approved,rejected,cancelled"`
+	Approvals  int32  `json:"approvals"`
+	Rejections int32  `json:"rejections"`
 	// The step went to the fallback role because nobody else could approve it.
-	Fallback      bool    `json:"fallback"`
-	Decision      *string `json:"decision" enum:"approved,rejected"`
-	DecidedByName *string `json:"decided_by_name"`
-	Reason        *string `json:"reason"`
-	DecidedAt     *string `json:"decided_at" format:"date-time"`
+	Fallback bool        `json:"fallback"`
+	Voters   []StepVoter `json:"voters" nullable:"false"` // empty while waiting
+	// approve, reject (the actor may vote), reassign (fallback role holder).
+	AllowedActions []string `json:"allowed_actions" nullable:"false"`
 }
 
 // Instance is the latest submission of a document, for the approval panel.
 type Instance struct {
 	ID              int64      `json:"id"`
 	Status          string     `json:"status" enum:"open,approved,rejected,withdrawn,stale"`
-	CurrentStep     int32      `json:"current_step"`
 	SubmittedByName string     `json:"submitted_by_name"`
 	SubmittedAt     string     `json:"submitted_at" format:"date-time"`
-	Steps           []StepView `json:"steps" nullable:"false"`
-	// approve, reject, reassign: what the actor may do at the current step.
-	AllowedActions []string `json:"allowed_actions" nullable:"false"`
+	Plan            Plan       `json:"plan"`
+	Steps           []StepView `json:"steps" nullable:"false"` // by position
 }
 
 var (
 	// The instance is no longer open, or its current step is not the one acted on.
 	ErrClosed     = &platform.Error{Status: http.StatusConflict, Code: "approval_closed"}
 	ErrNoApprover = &platform.Error{Status: http.StatusUnprocessableEntity, Code: "no_approver"}
+	// Each voter votes once per step; a voter who voted can no longer be reassigned.
+	ErrAlreadyVoted = &platform.Error{Status: http.StatusConflict, Code: "approval_already_voted"}
 	// Nobody approves their own submission, not even through reassignment.
 	ErrSelfApproval = &platform.Error{Status: http.StatusUnprocessableEntity, Code: "self_approval"}
 	// A reassigned approver must be able to view the document, or the step could never move.
 	ErrApproverCannotView = &platform.Error{Status: http.StatusUnprocessableEntity, Code: "approver_cannot_view"}
 )
 
-func errInvalidRule(step int, reason string) error {
-	return &platform.Error{Status: http.StatusUnprocessableEntity, Code: "invalid_rule", Params: map[string]any{"step": step, "reason": reason}}
+// errNoApprover names the step that found too few approvers.
+func errNoApprover(step int32) error {
+	return &platform.Error{Status: ErrNoApprover.Status, Code: ErrNoApprover.Code, Params: map[string]any{"step": step}}
+}
+
+// errInvalidRule names the offending flow element by path ("" for the rule itself).
+func errInvalidRule(path, reason string) error {
+	return &platform.Error{Status: http.StatusUnprocessableEntity, Code: "invalid_rule", Params: map[string]any{"path": path, "reason": reason}}
 }

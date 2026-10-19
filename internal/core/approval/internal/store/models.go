@@ -16,10 +16,10 @@ type ApprovalInstance struct {
 	SubmittedBy     int64
 	SubmittedAt     pgtype.Timestamptz
 	Status          string
-	CurrentStep     int32
 	MaxLevels       int32
 	FallbackProduct string
 	FallbackRole    string
+	Plan            []byte
 }
 
 type ApprovalInstanceStep struct {
@@ -28,16 +28,15 @@ type ApprovalInstanceStep struct {
 	Approver   []byte
 	Approvers  []int64
 	Fallback   bool
-	DecidedBy  pgtype.Int8
-	Decision   pgtype.Text
-	Reason     pgtype.Text
-	DecidedAt  pgtype.Timestamptz
+	Approvals  int32
+	Rejections int32
+	Status     string
 }
 
 type ApprovalRule struct {
 	DocType         string
-	Steps           []byte
 	MaxLevels       int32
 	FallbackProduct string
 	FallbackRole    string
+	Flow            []byte
 }

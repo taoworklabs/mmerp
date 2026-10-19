@@ -46,7 +46,9 @@ type rejectInput struct {
 type reassignInput struct {
 	ID   int64 `path:"id"`
 	Body struct {
-		Step  int32  `json:"step"`
+		Step int32 `json:"step"`
+		// The voter replaced; one who already voted cannot be.
+		From  int64  `json:"from"`
 		Login string `json:"login" minLength:"1" maxLength:"200"`
 	}
 }
@@ -96,7 +98,7 @@ func registerHandlers(api huma.API, s *Service) {
 		})
 	huma.Register(api, huma.Operation{OperationID: "reassign", Method: http.MethodPost, Path: "/approvals/{id}/reassign", DefaultStatus: http.StatusNoContent},
 		func(ctx context.Context, in *reassignInput) (*struct{}, error) {
-			return nil, s.Reassign(ctx, in.ID, in.Body.Step, in.Body.Login)
+			return nil, s.Reassign(ctx, in.ID, in.Body.Step, in.Body.From, in.Body.Login)
 		})
 	huma.Register(api, huma.Operation{OperationID: "list-approval-rules", Method: http.MethodGet, Path: "/approval-rules"},
 		func(ctx context.Context, in *rulesInput) (*rulesOutput, error) {

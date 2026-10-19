@@ -5,21 +5,32 @@ SELECT * FROM approval.rules WHERE doc_type = $1;
 SELECT * FROM approval.rules ORDER BY doc_type;
 
 -- name: SaveRule :exec
-INSERT INTO approval.rules (doc_type, steps, max_levels, fallback_product, fallback_role) VALUES ($1, $2, $3, $4, $5)
-ON CONFLICT (doc_type) DO UPDATE SET steps = $2, max_levels = $3, fallback_product = $4, fallback_role = $5;
+INSERT INTO approval.rules (doc_type, flow, max_levels, fallback_product, fallback_role) VALUES ($1, $2, $3, $4, $5)
+ON CONFLICT (doc_type) DO UPDATE SET flow = $2, max_levels = $3, fallback_product = $4, fallback_role = $5;
 
 -- name: DeleteRule :exec
 DELETE FROM approval.rules WHERE doc_type = $1;
 
 -- name: InsertInstance :one
-INSERT INTO approval.instances (doc_type, doc_id, version, submitted_by, status, current_step, max_levels, fallback_product, fallback_role)
-VALUES ($1, $2, $3, $4, 'open', 1, $5, $6, $7) RETURNING id;
+INSERT INTO approval.instances (doc_type, doc_id, version, submitted_by, status, plan, max_levels, fallback_product, fallback_role)
+VALUES ($1, $2, $3, $4, 'open', $5, $6, $7, $8) RETURNING id;
 
 -- name: InsertStep :exec
-INSERT INTO approval.instance_steps (instance_id, position, approver) VALUES ($1, $2, $3);
+INSERT INTO approval.instance_steps (instance_id, position, approver, approvals, rejections, status)
+VALUES ($1, $2, $3, $4, $5, 'waiting');
 
 -- name: StartStep :exec
-UPDATE approval.instance_steps SET approvers = @approvers, fallback = @fallback WHERE instance_id = @instance_id AND position = @position;
+UPDATE approval.instance_steps SET approvers = @approvers, fallback = @fallback, status = 'open'
+WHERE instance_id = @instance_id AND position = @position;
+
+-- name: SetApprovers :exec
+UPDATE approval.instance_steps SET approvers = @approvers WHERE instance_id = @instance_id AND position = @position;
+
+-- name: SetStepStatus :exec
+UPDATE approval.instance_steps SET status = $3 WHERE instance_id = $1 AND position = $2;
+
+-- name: CancelOpenSteps :exec
+UPDATE approval.instance_steps SET status = 'cancelled' WHERE instance_id = $1 AND status IN ('open', 'waiting');
 
 -- name: GetInstance :one
 SELECT * FROM approval.instances WHERE id = $1;
@@ -30,37 +41,46 @@ SELECT * FROM approval.instances WHERE id = $1 FOR UPDATE;
 -- name: GetStep :one
 SELECT * FROM approval.instance_steps WHERE instance_id = $1 AND position = $2;
 
--- name: StepCount :one
-SELECT count(*) FROM approval.instance_steps WHERE instance_id = $1;
+-- name: StepStatuses :many
+SELECT position, status FROM approval.instance_steps WHERE instance_id = $1 ORDER BY position;
 
--- name: Decide :exec
-UPDATE approval.instance_steps SET decided_by = @decided_by, decision = @decision, reason = @reason, decided_at = now()
-WHERE instance_id = @instance_id AND position = @position;
+-- name: InsertVote :exec
+INSERT INTO approval.step_votes (instance_id, position, user_id, decision, reason) VALUES ($1, $2, $3, $4, $5);
 
--- name: SetCurrentStep :exec
-UPDATE approval.instances SET current_step = $2 WHERE id = $1;
+-- name: StepVotes :one
+SELECT count(*) FILTER (WHERE decision = 'approved')::int AS approved,
+       count(*) FILTER (WHERE decision = 'rejected')::int AS rejected
+FROM approval.step_votes WHERE instance_id = $1 AND position = $2;
+
+-- name: HasVoted :one
+SELECT EXISTS (SELECT 1 FROM approval.step_votes WHERE instance_id = $1 AND position = $2 AND user_id = $3);
 
 -- name: CloseInstance :exec
 UPDATE approval.instances SET status = $2 WHERE id = $1 AND status = 'open';
 
 -- name: Inbox :many
--- Open instances waiting for @actor at their current step.
-SELECT i.id, i.doc_type, i.doc_id, i.current_step, i.submitted_at, u.name AS submitted_by_name, d.number, d.date
+-- Open steps waiting for @actor's vote.
+SELECT i.id, i.doc_type, i.doc_id, s.position AS step, i.submitted_at, u.name AS submitted_by_name, d.number, d.date
 FROM approval.instances i
-JOIN approval.instance_steps s ON s.instance_id = i.id AND s.position = i.current_step
+JOIN approval.instance_steps s ON s.instance_id = i.id
 JOIN record.documents d ON d.id = i.doc_id
 JOIN iam.users u ON u.id = i.submitted_by
-WHERE i.status = 'open' AND s.decision IS NULL AND s.approvers @> ARRAY[@actor::bigint]
-ORDER BY i.submitted_at, i.id;
+WHERE i.status = 'open' AND s.status = 'open' AND s.approvers @> ARRAY[@actor::bigint]
+  AND NOT EXISTS (SELECT 1 FROM approval.step_votes v WHERE v.instance_id = s.instance_id AND v.position = s.position AND v.user_id = @actor)
+ORDER BY i.submitted_at, i.id, s.position;
 
 -- name: LatestInstance :one
 SELECT i.*, u.name AS submitted_by_name FROM approval.instances i JOIN iam.users u ON u.id = i.submitted_by
 WHERE i.doc_type = $1 AND i.doc_id = $2 ORDER BY i.id DESC LIMIT 1;
 
 -- name: Steps :many
-SELECT s.position, s.approvers, s.fallback, s.decision, s.reason, s.decided_at, d.name AS decided_by_name,
-       (SELECT coalesce(array_agg(a.name ORDER BY a.name), '{}')::text[] FROM iam.users a WHERE a.id = ANY(s.approvers)) AS approver_names
-FROM approval.instance_steps s LEFT JOIN iam.users d ON d.id = s.decided_by
+-- Each step with its voters: who may vote and how each voted, by name.
+SELECT s.position, s.status, s.approvals, s.rejections, s.fallback, s.approvers,
+       (SELECT coalesce(jsonb_agg(jsonb_build_object('id', a.id, 'name', a.name, 'decision', v.decision, 'reason', v.reason, 'decided_at', v.decided_at)
+                                  ORDER BY a.name, a.id), '[]')
+        FROM iam.users a LEFT JOIN approval.step_votes v ON v.instance_id = s.instance_id AND v.position = s.position AND v.user_id = a.id
+        WHERE a.id = ANY(s.approvers))::jsonb AS voters
+FROM approval.instance_steps s
 WHERE s.instance_id = $1 ORDER BY s.position;
 
 -- name: Within :one

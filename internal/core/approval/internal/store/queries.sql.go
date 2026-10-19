@@ -11,6 +11,15 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const cancelOpenSteps = `-- name: CancelOpenSteps :exec
+UPDATE approval.instance_steps SET status = 'cancelled' WHERE instance_id = $1 AND status IN ('open', 'waiting')
+`
+
+func (q *Queries) CancelOpenSteps(ctx context.Context, instanceID int64) error {
+	_, err := q.db.Exec(ctx, cancelOpenSteps, instanceID)
+	return err
+}
+
 const closeInstance = `-- name: CloseInstance :exec
 UPDATE approval.instances SET status = $2 WHERE id = $1 AND status = 'open'
 `
@@ -25,30 +34,6 @@ func (q *Queries) CloseInstance(ctx context.Context, arg CloseInstanceParams) er
 	return err
 }
 
-const decide = `-- name: Decide :exec
-UPDATE approval.instance_steps SET decided_by = $1, decision = $2, reason = $3, decided_at = now()
-WHERE instance_id = $4 AND position = $5
-`
-
-type DecideParams struct {
-	DecidedBy  pgtype.Int8
-	Decision   pgtype.Text
-	Reason     pgtype.Text
-	InstanceID int64
-	Position   int32
-}
-
-func (q *Queries) Decide(ctx context.Context, arg DecideParams) error {
-	_, err := q.db.Exec(ctx, decide,
-		arg.DecidedBy,
-		arg.Decision,
-		arg.Reason,
-		arg.InstanceID,
-		arg.Position,
-	)
-	return err
-}
-
 const deleteRule = `-- name: DeleteRule :exec
 DELETE FROM approval.rules WHERE doc_type = $1
 `
@@ -59,7 +44,7 @@ func (q *Queries) DeleteRule(ctx context.Context, docType string) error {
 }
 
 const getInstance = `-- name: GetInstance :one
-SELECT id, doc_type, doc_id, version, submitted_by, submitted_at, status, current_step, max_levels, fallback_product, fallback_role FROM approval.instances WHERE id = $1
+SELECT id, doc_type, doc_id, version, submitted_by, submitted_at, status, max_levels, fallback_product, fallback_role, plan FROM approval.instances WHERE id = $1
 `
 
 func (q *Queries) GetInstance(ctx context.Context, id int64) (ApprovalInstance, error) {
@@ -73,16 +58,16 @@ func (q *Queries) GetInstance(ctx context.Context, id int64) (ApprovalInstance, 
 		&i.SubmittedBy,
 		&i.SubmittedAt,
 		&i.Status,
-		&i.CurrentStep,
 		&i.MaxLevels,
 		&i.FallbackProduct,
 		&i.FallbackRole,
+		&i.Plan,
 	)
 	return i, err
 }
 
 const getRule = `-- name: GetRule :one
-SELECT doc_type, steps, max_levels, fallback_product, fallback_role FROM approval.rules WHERE doc_type = $1
+SELECT doc_type, max_levels, fallback_product, fallback_role, flow FROM approval.rules WHERE doc_type = $1
 `
 
 func (q *Queries) GetRule(ctx context.Context, docType string) (ApprovalRule, error) {
@@ -90,16 +75,16 @@ func (q *Queries) GetRule(ctx context.Context, docType string) (ApprovalRule, er
 	var i ApprovalRule
 	err := row.Scan(
 		&i.DocType,
-		&i.Steps,
 		&i.MaxLevels,
 		&i.FallbackProduct,
 		&i.FallbackRole,
+		&i.Flow,
 	)
 	return i, err
 }
 
 const getStep = `-- name: GetStep :one
-SELECT instance_id, position, approver, approvers, fallback, decided_by, decision, reason, decided_at FROM approval.instance_steps WHERE instance_id = $1 AND position = $2
+SELECT instance_id, position, approver, approvers, fallback, approvals, rejections, status FROM approval.instance_steps WHERE instance_id = $1 AND position = $2
 `
 
 type GetStepParams struct {
@@ -116,36 +101,53 @@ func (q *Queries) GetStep(ctx context.Context, arg GetStepParams) (ApprovalInsta
 		&i.Approver,
 		&i.Approvers,
 		&i.Fallback,
-		&i.DecidedBy,
-		&i.Decision,
-		&i.Reason,
-		&i.DecidedAt,
+		&i.Approvals,
+		&i.Rejections,
+		&i.Status,
 	)
 	return i, err
 }
 
+const hasVoted = `-- name: HasVoted :one
+SELECT EXISTS (SELECT 1 FROM approval.step_votes WHERE instance_id = $1 AND position = $2 AND user_id = $3)
+`
+
+type HasVotedParams struct {
+	InstanceID int64
+	Position   int32
+	UserID     int64
+}
+
+func (q *Queries) HasVoted(ctx context.Context, arg HasVotedParams) (bool, error) {
+	row := q.db.QueryRow(ctx, hasVoted, arg.InstanceID, arg.Position, arg.UserID)
+	var exists bool
+	err := row.Scan(&exists)
+	return exists, err
+}
+
 const inbox = `-- name: Inbox :many
-SELECT i.id, i.doc_type, i.doc_id, i.current_step, i.submitted_at, u.name AS submitted_by_name, d.number, d.date
+SELECT i.id, i.doc_type, i.doc_id, s.position AS step, i.submitted_at, u.name AS submitted_by_name, d.number, d.date
 FROM approval.instances i
-JOIN approval.instance_steps s ON s.instance_id = i.id AND s.position = i.current_step
+JOIN approval.instance_steps s ON s.instance_id = i.id
 JOIN record.documents d ON d.id = i.doc_id
 JOIN iam.users u ON u.id = i.submitted_by
-WHERE i.status = 'open' AND s.decision IS NULL AND s.approvers @> ARRAY[$1::bigint]
-ORDER BY i.submitted_at, i.id
+WHERE i.status = 'open' AND s.status = 'open' AND s.approvers @> ARRAY[$1::bigint]
+  AND NOT EXISTS (SELECT 1 FROM approval.step_votes v WHERE v.instance_id = s.instance_id AND v.position = s.position AND v.user_id = $1)
+ORDER BY i.submitted_at, i.id, s.position
 `
 
 type InboxRow struct {
 	ID              int64
 	DocType         string
 	DocID           int64
-	CurrentStep     int32
+	Step            int32
 	SubmittedAt     pgtype.Timestamptz
 	SubmittedByName string
 	Number          string
 	Date            pgtype.Date
 }
 
-// Open instances waiting for @actor at their current step.
+// Open steps waiting for @actor's vote.
 func (q *Queries) Inbox(ctx context.Context, actor int64) ([]InboxRow, error) {
 	rows, err := q.db.Query(ctx, inbox, actor)
 	if err != nil {
@@ -159,7 +161,7 @@ func (q *Queries) Inbox(ctx context.Context, actor int64) ([]InboxRow, error) {
 			&i.ID,
 			&i.DocType,
 			&i.DocID,
-			&i.CurrentStep,
+			&i.Step,
 			&i.SubmittedAt,
 			&i.SubmittedByName,
 			&i.Number,
@@ -176,8 +178,8 @@ func (q *Queries) Inbox(ctx context.Context, actor int64) ([]InboxRow, error) {
 }
 
 const insertInstance = `-- name: InsertInstance :one
-INSERT INTO approval.instances (doc_type, doc_id, version, submitted_by, status, current_step, max_levels, fallback_product, fallback_role)
-VALUES ($1, $2, $3, $4, 'open', 1, $5, $6, $7) RETURNING id
+INSERT INTO approval.instances (doc_type, doc_id, version, submitted_by, status, plan, max_levels, fallback_product, fallback_role)
+VALUES ($1, $2, $3, $4, 'open', $5, $6, $7, $8) RETURNING id
 `
 
 type InsertInstanceParams struct {
@@ -185,6 +187,7 @@ type InsertInstanceParams struct {
 	DocID           int64
 	Version         int32
 	SubmittedBy     int64
+	Plan            []byte
 	MaxLevels       int32
 	FallbackProduct string
 	FallbackRole    string
@@ -196,6 +199,7 @@ func (q *Queries) InsertInstance(ctx context.Context, arg InsertInstanceParams) 
 		arg.DocID,
 		arg.Version,
 		arg.SubmittedBy,
+		arg.Plan,
 		arg.MaxLevels,
 		arg.FallbackProduct,
 		arg.FallbackRole,
@@ -206,22 +210,54 @@ func (q *Queries) InsertInstance(ctx context.Context, arg InsertInstanceParams) 
 }
 
 const insertStep = `-- name: InsertStep :exec
-INSERT INTO approval.instance_steps (instance_id, position, approver) VALUES ($1, $2, $3)
+INSERT INTO approval.instance_steps (instance_id, position, approver, approvals, rejections, status)
+VALUES ($1, $2, $3, $4, $5, 'waiting')
 `
 
 type InsertStepParams struct {
 	InstanceID int64
 	Position   int32
 	Approver   []byte
+	Approvals  int32
+	Rejections int32
 }
 
 func (q *Queries) InsertStep(ctx context.Context, arg InsertStepParams) error {
-	_, err := q.db.Exec(ctx, insertStep, arg.InstanceID, arg.Position, arg.Approver)
+	_, err := q.db.Exec(ctx, insertStep,
+		arg.InstanceID,
+		arg.Position,
+		arg.Approver,
+		arg.Approvals,
+		arg.Rejections,
+	)
+	return err
+}
+
+const insertVote = `-- name: InsertVote :exec
+INSERT INTO approval.step_votes (instance_id, position, user_id, decision, reason) VALUES ($1, $2, $3, $4, $5)
+`
+
+type InsertVoteParams struct {
+	InstanceID int64
+	Position   int32
+	UserID     int64
+	Decision   string
+	Reason     pgtype.Text
+}
+
+func (q *Queries) InsertVote(ctx context.Context, arg InsertVoteParams) error {
+	_, err := q.db.Exec(ctx, insertVote,
+		arg.InstanceID,
+		arg.Position,
+		arg.UserID,
+		arg.Decision,
+		arg.Reason,
+	)
 	return err
 }
 
 const latestInstance = `-- name: LatestInstance :one
-SELECT i.id, i.doc_type, i.doc_id, i.version, i.submitted_by, i.submitted_at, i.status, i.current_step, i.max_levels, i.fallback_product, i.fallback_role, u.name AS submitted_by_name FROM approval.instances i JOIN iam.users u ON u.id = i.submitted_by
+SELECT i.id, i.doc_type, i.doc_id, i.version, i.submitted_by, i.submitted_at, i.status, i.max_levels, i.fallback_product, i.fallback_role, i.plan, u.name AS submitted_by_name FROM approval.instances i JOIN iam.users u ON u.id = i.submitted_by
 WHERE i.doc_type = $1 AND i.doc_id = $2 ORDER BY i.id DESC LIMIT 1
 `
 
@@ -238,10 +274,10 @@ type LatestInstanceRow struct {
 	SubmittedBy     int64
 	SubmittedAt     pgtype.Timestamptz
 	Status          string
-	CurrentStep     int32
 	MaxLevels       int32
 	FallbackProduct string
 	FallbackRole    string
+	Plan            []byte
 	SubmittedByName string
 }
 
@@ -256,17 +292,17 @@ func (q *Queries) LatestInstance(ctx context.Context, arg LatestInstanceParams) 
 		&i.SubmittedBy,
 		&i.SubmittedAt,
 		&i.Status,
-		&i.CurrentStep,
 		&i.MaxLevels,
 		&i.FallbackProduct,
 		&i.FallbackRole,
+		&i.Plan,
 		&i.SubmittedByName,
 	)
 	return i, err
 }
 
 const listRules = `-- name: ListRules :many
-SELECT doc_type, steps, max_levels, fallback_product, fallback_role FROM approval.rules ORDER BY doc_type
+SELECT doc_type, max_levels, fallback_product, fallback_role, flow FROM approval.rules ORDER BY doc_type
 `
 
 func (q *Queries) ListRules(ctx context.Context) ([]ApprovalRule, error) {
@@ -280,10 +316,10 @@ func (q *Queries) ListRules(ctx context.Context) ([]ApprovalRule, error) {
 		var i ApprovalRule
 		if err := rows.Scan(
 			&i.DocType,
-			&i.Steps,
 			&i.MaxLevels,
 			&i.FallbackProduct,
 			&i.FallbackRole,
+			&i.Flow,
 		); err != nil {
 			return nil, err
 		}
@@ -327,7 +363,7 @@ func (q *Queries) ListUsers(ctx context.Context) ([]ListUsersRow, error) {
 }
 
 const lockInstance = `-- name: LockInstance :one
-SELECT id, doc_type, doc_id, version, submitted_by, submitted_at, status, current_step, max_levels, fallback_product, fallback_role FROM approval.instances WHERE id = $1 FOR UPDATE
+SELECT id, doc_type, doc_id, version, submitted_by, submitted_at, status, max_levels, fallback_product, fallback_role, plan FROM approval.instances WHERE id = $1 FOR UPDATE
 `
 
 func (q *Queries) LockInstance(ctx context.Context, id int64) (ApprovalInstance, error) {
@@ -341,22 +377,22 @@ func (q *Queries) LockInstance(ctx context.Context, id int64) (ApprovalInstance,
 		&i.SubmittedBy,
 		&i.SubmittedAt,
 		&i.Status,
-		&i.CurrentStep,
 		&i.MaxLevels,
 		&i.FallbackProduct,
 		&i.FallbackRole,
+		&i.Plan,
 	)
 	return i, err
 }
 
 const saveRule = `-- name: SaveRule :exec
-INSERT INTO approval.rules (doc_type, steps, max_levels, fallback_product, fallback_role) VALUES ($1, $2, $3, $4, $5)
-ON CONFLICT (doc_type) DO UPDATE SET steps = $2, max_levels = $3, fallback_product = $4, fallback_role = $5
+INSERT INTO approval.rules (doc_type, flow, max_levels, fallback_product, fallback_role) VALUES ($1, $2, $3, $4, $5)
+ON CONFLICT (doc_type) DO UPDATE SET flow = $2, max_levels = $3, fallback_product = $4, fallback_role = $5
 `
 
 type SaveRuleParams struct {
 	DocType         string
-	Steps           []byte
+	Flow            []byte
 	MaxLevels       int32
 	FallbackProduct string
 	FallbackRole    string
@@ -365,7 +401,7 @@ type SaveRuleParams struct {
 func (q *Queries) SaveRule(ctx context.Context, arg SaveRuleParams) error {
 	_, err := q.db.Exec(ctx, saveRule,
 		arg.DocType,
-		arg.Steps,
+		arg.Flow,
 		arg.MaxLevels,
 		arg.FallbackProduct,
 		arg.FallbackRole,
@@ -373,22 +409,39 @@ func (q *Queries) SaveRule(ctx context.Context, arg SaveRuleParams) error {
 	return err
 }
 
-const setCurrentStep = `-- name: SetCurrentStep :exec
-UPDATE approval.instances SET current_step = $2 WHERE id = $1
+const setApprovers = `-- name: SetApprovers :exec
+UPDATE approval.instance_steps SET approvers = $1 WHERE instance_id = $2 AND position = $3
 `
 
-type SetCurrentStepParams struct {
-	ID          int64
-	CurrentStep int32
+type SetApproversParams struct {
+	Approvers  []int64
+	InstanceID int64
+	Position   int32
 }
 
-func (q *Queries) SetCurrentStep(ctx context.Context, arg SetCurrentStepParams) error {
-	_, err := q.db.Exec(ctx, setCurrentStep, arg.ID, arg.CurrentStep)
+func (q *Queries) SetApprovers(ctx context.Context, arg SetApproversParams) error {
+	_, err := q.db.Exec(ctx, setApprovers, arg.Approvers, arg.InstanceID, arg.Position)
+	return err
+}
+
+const setStepStatus = `-- name: SetStepStatus :exec
+UPDATE approval.instance_steps SET status = $3 WHERE instance_id = $1 AND position = $2
+`
+
+type SetStepStatusParams struct {
+	InstanceID int64
+	Position   int32
+	Status     string
+}
+
+func (q *Queries) SetStepStatus(ctx context.Context, arg SetStepStatusParams) error {
+	_, err := q.db.Exec(ctx, setStepStatus, arg.InstanceID, arg.Position, arg.Status)
 	return err
 }
 
 const startStep = `-- name: StartStep :exec
-UPDATE approval.instance_steps SET approvers = $1, fallback = $2 WHERE instance_id = $3 AND position = $4
+UPDATE approval.instance_steps SET approvers = $1, fallback = $2, status = 'open'
+WHERE instance_id = $3 AND position = $4
 `
 
 type StartStepParams struct {
@@ -408,35 +461,79 @@ func (q *Queries) StartStep(ctx context.Context, arg StartStepParams) error {
 	return err
 }
 
-const stepCount = `-- name: StepCount :one
-SELECT count(*) FROM approval.instance_steps WHERE instance_id = $1
+const stepStatuses = `-- name: StepStatuses :many
+SELECT position, status FROM approval.instance_steps WHERE instance_id = $1 ORDER BY position
 `
 
-func (q *Queries) StepCount(ctx context.Context, instanceID int64) (int64, error) {
-	row := q.db.QueryRow(ctx, stepCount, instanceID)
-	var count int64
-	err := row.Scan(&count)
-	return count, err
+type StepStatusesRow struct {
+	Position int32
+	Status   string
+}
+
+func (q *Queries) StepStatuses(ctx context.Context, instanceID int64) ([]StepStatusesRow, error) {
+	rows, err := q.db.Query(ctx, stepStatuses, instanceID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []StepStatusesRow
+	for rows.Next() {
+		var i StepStatusesRow
+		if err := rows.Scan(&i.Position, &i.Status); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const stepVotes = `-- name: StepVotes :one
+SELECT count(*) FILTER (WHERE decision = 'approved')::int AS approved,
+       count(*) FILTER (WHERE decision = 'rejected')::int AS rejected
+FROM approval.step_votes WHERE instance_id = $1 AND position = $2
+`
+
+type StepVotesParams struct {
+	InstanceID int64
+	Position   int32
+}
+
+type StepVotesRow struct {
+	Approved int32
+	Rejected int32
+}
+
+func (q *Queries) StepVotes(ctx context.Context, arg StepVotesParams) (StepVotesRow, error) {
+	row := q.db.QueryRow(ctx, stepVotes, arg.InstanceID, arg.Position)
+	var i StepVotesRow
+	err := row.Scan(&i.Approved, &i.Rejected)
+	return i, err
 }
 
 const steps = `-- name: Steps :many
-SELECT s.position, s.approvers, s.fallback, s.decision, s.reason, s.decided_at, d.name AS decided_by_name,
-       (SELECT coalesce(array_agg(a.name ORDER BY a.name), '{}')::text[] FROM iam.users a WHERE a.id = ANY(s.approvers)) AS approver_names
-FROM approval.instance_steps s LEFT JOIN iam.users d ON d.id = s.decided_by
+SELECT s.position, s.status, s.approvals, s.rejections, s.fallback, s.approvers,
+       (SELECT coalesce(jsonb_agg(jsonb_build_object('id', a.id, 'name', a.name, 'decision', v.decision, 'reason', v.reason, 'decided_at', v.decided_at)
+                                  ORDER BY a.name, a.id), '[]')
+        FROM iam.users a LEFT JOIN approval.step_votes v ON v.instance_id = s.instance_id AND v.position = s.position AND v.user_id = a.id
+        WHERE a.id = ANY(s.approvers))::jsonb AS voters
+FROM approval.instance_steps s
 WHERE s.instance_id = $1 ORDER BY s.position
 `
 
 type StepsRow struct {
-	Position      int32
-	Approvers     []int64
-	Fallback      bool
-	Decision      pgtype.Text
-	Reason        pgtype.Text
-	DecidedAt     pgtype.Timestamptz
-	DecidedByName pgtype.Text
-	ApproverNames []string
+	Position   int32
+	Status     string
+	Approvals  int32
+	Rejections int32
+	Fallback   bool
+	Approvers  []int64
+	Voters     []byte
 }
 
+// Each step with its voters: who may vote and how each voted, by name.
 func (q *Queries) Steps(ctx context.Context, instanceID int64) ([]StepsRow, error) {
 	rows, err := q.db.Query(ctx, steps, instanceID)
 	if err != nil {
@@ -448,13 +545,12 @@ func (q *Queries) Steps(ctx context.Context, instanceID int64) ([]StepsRow, erro
 		var i StepsRow
 		if err := rows.Scan(
 			&i.Position,
-			&i.Approvers,
+			&i.Status,
+			&i.Approvals,
+			&i.Rejections,
 			&i.Fallback,
-			&i.Decision,
-			&i.Reason,
-			&i.DecidedAt,
-			&i.DecidedByName,
-			&i.ApproverNames,
+			&i.Approvers,
+			&i.Voters,
 		); err != nil {
 			return nil, err
 		}
