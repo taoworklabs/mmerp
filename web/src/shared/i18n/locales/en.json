@@ -553,5 +553,6 @@
   "shared.approval.step_status.cancelled": "No longer needed",
   "shared.approval.count": "{{n}} of {{m}} approvals",
   "shared.approval.reassign_from": "Replace",
-  "shared.rule.not_a_chain": "This rule has parallel steps, several branches or steps needing more than one approval; this screen cannot edit it yet."
+  "shared.rule.not_a_chain": "This rule has parallel steps, several branches or steps needing more than one approval; this screen cannot edit it yet.",
+  "shared.devui.multi_choice": "Several choices"
 }

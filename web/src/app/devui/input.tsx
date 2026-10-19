@@ -1,6 +1,6 @@
 import { Group, Text } from '@mantine/core'
 import { IconCircleDot } from '@tabler/icons-react'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { useTranslation } from 'react-i18next'
 import { formatDecimal, formatNumber } from '@/shared/i18n'
@@ -24,6 +24,7 @@ import {
   MoneyField,
   MonthField,
   MonthFilter,
+  MultiSelectField,
   OrgUnitField,
   OrgUnitFilter,
   PasswordField,
@@ -46,9 +47,38 @@ const people = [
 ]
 const searchPeople = async (q: string) => people.filter((p) => `${p.code} ${p.name}`.toLowerCase().includes(q.toLowerCase()))
 
+const tagOptions = [
+  { value: 'a', label: 'A' },
+  { value: 'b', label: 'B' },
+  { value: 'c', label: 'C' },
+]
+
 export function Fields() {
   const { t } = useTranslation()
-  const form = useForm({ defaultValues: { code: '', password: '', unit: null, entity: null, person: '3', date: null, month: '2026-03', file: null, choice: null, masked: undefined, open: undefined, denied: undefined, days: '2.5', flag: true } })
+  const form = useForm({
+    defaultValues: {
+      code: '',
+      password: '',
+      unit: null,
+      entity: null,
+      person: '3',
+      date: null,
+      month: '2026-03',
+      file: null,
+      choice: null,
+      tags: [],
+      tags_chosen: ['a', 'b'],
+      tags_required: [] as string[],
+      tags_readonly: ['a'],
+      masked: undefined,
+      open: undefined,
+      denied: undefined,
+      days: '2.5',
+      flag: true,
+    },
+  })
+  // Shows the required error without the user touching the field first.
+  useEffect(() => void form.trigger('tags_required'), [form])
   return (
     <Demo title={t('shared.devui.form')}>
       <Form form={form} onSubmit={async () => {}}>
@@ -71,6 +101,10 @@ export function Fields() {
               { value: 'b', label: 'B' },
             ]}
           />
+          <MultiSelectField name="tags" label={t('shared.devui.multi_choice')} short data={tagOptions} />
+          <MultiSelectField name="tags_chosen" label={t('shared.devui.multi_choice')} short data={tagOptions} />
+          <MultiSelectField name="tags_required" label={t('shared.devui.multi_choice')} short required data={tagOptions} />
+          <MultiSelectField name="tags_readonly" label={t('shared.devui.multi_choice')} short readOnly data={tagOptions} />
           <DecimalField name="days" label={t('shared.devui.decimal')} scale={1} step={0.5} />
           <MoneyField name="salary" label={t('shared.devui.money')} />
           <InputRow>

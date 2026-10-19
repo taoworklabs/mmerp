@@ -553,5 +553,6 @@
   "shared.approval.step_status.cancelled": "Không cần nữa",
   "shared.approval.count": "{{n}}/{{m}} lượt duyệt",
   "shared.approval.reassign_from": "Thay cho",
-  "shared.rule.not_a_chain": "Quy tắc này có bước song song, nhiều nhánh hoặc bước cần nhiều lượt duyệt; màn hình này chưa sửa được."
+  "shared.rule.not_a_chain": "Quy tắc này có bước song song, nhiều nhánh hoặc bước cần nhiều lượt duyệt; màn hình này chưa sửa được.",
+  "shared.devui.multi_choice": "Nhiều lựa chọn"
 }

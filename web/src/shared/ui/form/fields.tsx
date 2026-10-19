@@ -1,4 +1,4 @@
-import { Checkbox, FileInput, NumberInput, PasswordInput, Select, Textarea, TextInput } from '@mantine/core'
+import { Checkbox, FileInput, MultiSelect, NumberInput, PasswordInput, Select, Textarea, TextInput } from '@mantine/core'
 import { DateInput, MonthPickerInput } from '@mantine/dates'
 import { IconCalendar, IconFileSpreadsheet } from '@tabler/icons-react'
 import { useController, useFormContext, type RegisterOptions } from 'react-hook-form'
@@ -192,6 +192,27 @@ export function SelectField(props: Base & { data: Option[]; clearable?: boolean;
       clearable={props.clearable}
       // A required value never clears by picking it again: a preselected one would vanish on that click.
       allowDeselect={!props.required}
+      nothingFoundMessage="—"
+      comboboxProps={belowError(common.error)}
+    />
+  )
+}
+
+// MultiSelectField holds several values from a list (e.g. several approvers); like SelectField
+// but wired to a string[], with no check mark and a search box past 7 options.
+export function MultiSelectField(props: Base & { data: Option[]; max?: number; searchable?: boolean }) {
+  const { field, common } = useField(props)
+  return (
+    <MultiSelect
+      {...common}
+      description={props.bare ? undefined : props.description}
+      readOnly={props.readOnly}
+      data={props.data}
+      value={field.value ?? []}
+      onChange={field.onChange}
+      maxValues={props.max}
+      searchable={props.searchable ?? props.data.length > 7}
+      withCheckIcon={false}
       nothingFoundMessage="—"
       comboboxProps={belowError(common.error)}
     />

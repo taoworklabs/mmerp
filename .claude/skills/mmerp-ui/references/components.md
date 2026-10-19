@@ -102,6 +102,7 @@ Every field is wired to React Hook Form and renders: label above (12px, 600, `di
 | `CheckboxField` | Yes/no, inside `InputRow` when next to inputs |
 | `DateField`, `MonthField` | A date (DD/MM/YYYY), a month |
 | `SelectField` | One of a list; search box past 7 options; no check mark, the chosen option is tinted |
+| `MultiSelectField` | Several of a list (e.g. several approvers); like `SelectField` but wired to a `string[]`; `max` caps the selection |
 | `MoneyField` | Integer minor units, thousands separators, right-aligned |
 | `DecimalField` | Fractional quantity with declared decimals |
 | `IntegerField` | A whole number without digit grouping (port, year, levels) |
