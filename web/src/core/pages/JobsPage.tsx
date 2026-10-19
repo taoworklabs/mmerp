@@ -7,11 +7,12 @@ import { useSearchParams } from 'react-router'
 import { api, unwrap } from '@/shared/api/core'
 import { can, useMe } from '@/shared/auth/me'
 import { finished, jobError, jobKeys, JobOutcome, type Job } from '@/shared/jobs'
-import { errorText, formatDateTime, formatNumber } from '@/shared/i18n'
+import { formatDateTime, formatNumber } from '@/shared/i18n'
 import { DataTable, type Column } from '@/shared/ui/DataTable'
 import { FilterChip } from '@/shared/ui/form'
 import { FormModal, ListPage } from '@/shared/ui/page'
-import { ContentSkeleton, EmptyState, ErrorState } from '@/shared/ui/states'
+import { QueryView } from '@/shared/ui/QueryView'
+import { EmptyState } from '@/shared/ui/states'
 import { StatusBadge, type StatusTone } from '@/shared/ui/StatusBadge'
 import { icon } from '@/shared/ui/theme'
 
@@ -83,11 +84,11 @@ export default function JobsPage() {
     { key: 'result', header: t('core.jobs.result'), role: 'meta', render: result },
   ]
 
-  let body
-  if (jobs.isPending) body = <ContentSkeleton />
-  else if (jobs.isError) body = <ErrorState message={errorText(t, jobs.error)} onRetry={() => void jobs.refetch()} />
-  else if (jobs.data.length === 0) body = <EmptyState title={t('core.jobs.empty')} description={t('core.jobs.empty_description')} />
-  else body = <DataTable label={t('core.jobs.title')} columns={columns} rows={jobs.data} rowKey={(j) => j.id} />
+  const body = (
+    <QueryView query={jobs} empty={<EmptyState title={t('core.jobs.empty')} description={t('core.jobs.empty_description')} />}>
+      {(data) => <DataTable label={t('core.jobs.title')} columns={columns} rows={data} rowKey={(j) => j.id} />}
+    </QueryView>
+  )
 
   return (
     <ListPage

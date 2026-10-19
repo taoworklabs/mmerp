@@ -1,17 +1,17 @@
-import { Alert, Button, Group } from '@mantine/core'
-import { IconAlertCircle, IconLogin, IconMailForward, IconSend, IconServer, IconTrash } from '@tabler/icons-react'
+import { Button, Group } from '@mantine/core'
+import { IconLogin, IconMailForward, IconSend, IconServer, IconTrash } from '@tabler/icons-react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { useTranslation } from 'react-i18next'
 import { api, ApiError, unwrap, type MailServer } from '@/shared/api/core'
-import { errorText } from '@/shared/i18n'
-import { useConfirm } from '@/shared/ui/confirm'
 import { Form, FormActions, FormSection, IntegerField, PasswordField, SelectField, TextField } from '@/shared/ui/form'
 import { notifySuccess } from '@/shared/ui/notify'
 import { Page } from '@/shared/ui/page'
-import { ContentSkeleton, EmptyState, ErrorState } from '@/shared/ui/states'
+import { QueryView } from '@/shared/ui/QueryView'
+import { EmptyState, ErrorState } from '@/shared/ui/states'
 import { icon } from '@/shared/ui/theme'
+import { useAction } from '@/shared/ui/useAction'
 import { coreKeys } from '../keys'
 
 // MailServerPage: the company's SMTP server, viewed and edited on the page. Without one,
@@ -21,8 +21,7 @@ export function MailServerPage() {
   const { t } = useTranslation()
   const qc = useQueryClient()
   const [configuring, setConfiguring] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const [ask, dialog] = useConfirm()
+  const action = useAction()
   const server = useQuery({
     queryKey: coreKeys.mailServer(),
     queryFn: async () => {
@@ -35,36 +34,43 @@ export function MailServerPage() {
     },
   })
 
-  async function run(action: () => Promise<unknown>, done: string) {
-    setError(null)
-    try {
-      await action()
-    } catch (err) {
-      setError(errorText(t, err))
-      return
-    }
-    await qc.invalidateQueries({ queryKey: coreKeys.mailServer() })
-    notifySuccess(done)
-  }
-  const test = () => run(() => unwrap(api.POST('/mail-server/test')), t('core.mail.test_sent'))
+  const refresh = () => qc.invalidateQueries({ queryKey: coreKeys.mailServer() })
+  const test = () =>
+    action.run(
+      async () => {
+        await unwrap(api.POST('/mail-server/test'))
+        await refresh()
+      },
+      { success: t('core.mail.test_sent') },
+    )
   async function remove() {
-    if (!(await ask({ title: t('core.mail.delete_title'), message: t('core.mail.delete_confirm'), confirmLabel: t('core.mail.delete'), danger: true }))) return
-    await run(() => unwrap(api.DELETE('/mail-server')), t('core.mail.deleted'))
-    setConfiguring(false)
+    const done = await action.run(
+      async () => {
+        await unwrap(api.DELETE('/mail-server'))
+        await refresh()
+      },
+      { confirm: { title: t('core.mail.delete_title'), message: t('core.mail.delete_confirm'), confirmLabel: t('core.mail.delete'), danger: true }, success: t('core.mail.deleted') },
+    )
+    if (done) setConfiguring(false)
   }
 
-  let body
-  if (server.isPending) body = <ContentSkeleton />
-  else if (server.isError) body = <ErrorState message={errorText(t, server.error)} onRetry={() => void server.refetch()} />
-  else if (!server.data && !configuring)
-    body = (
-      <EmptyState
-        title={t('core.mail.empty')}
-        description={t('core.mail.empty_description')}
-        action={<Button onClick={() => setConfiguring(true)}>{t('core.mail.configure')}</Button>}
-      />
-    )
-  else body = <MailServerForm key={JSON.stringify(server.data)} current={server.data ?? null} />
+  const body = (
+    <QueryView
+      query={server}
+      // While configuring, the empty server shows as an empty form.
+      empty={
+        configuring ? undefined : (
+          <EmptyState
+            title={t('core.mail.empty')}
+            description={t('core.mail.empty_description')}
+            action={<Button onClick={() => setConfiguring(true)}>{t('core.mail.configure')}</Button>}
+          />
+        )
+      }
+    >
+      {(data) => <MailServerForm key={JSON.stringify(data)} current={data ?? null} />}
+    </QueryView>
+  )
 
   return (
     <Page
@@ -84,13 +90,9 @@ export function MailServerPage() {
         )
       }
     >
-      {error && (
-        <Alert color="danger" icon={<IconAlertCircle {...icon.button} />} role="alert">
-          {error}
-        </Alert>
-      )}
+      {action.error && <ErrorState message={action.error} />}
       {body}
-      {dialog}
+      {action.dialog}
     </Page>
   )
 }

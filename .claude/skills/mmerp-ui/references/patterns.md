@@ -60,7 +60,7 @@ Adding to it, when the list needs them (`tables.md`):
 - **Bulk actions**: offered when the list's `/actions` include the bulk action (e.g. `bulk_submit`); `selection` in `list.table`, `bulk={selected.size > 0 && <BulkBar …>}` on `ListPage`, and `useEffect(() => setSelected(new Set()), [params])` so a new filter, sort or page starts empty. Send every selected id: the job re-checks each document and reports the ones it skipped.
 - **Document status filter**: `<DocumentStatusFilter docType={…} {...filterBar.bind('status')} />` (`@/shared/document`) offers the four statuses, labelled as the document type names them.
 - **Side panel**: `usePeek()` (from `@/shared/ui/SidePanel`), `onRowClick: (r) => peek.open(r.id)` in `list.table`, and `<SidePanel>` as a child of `ListPage`, holding the area's own preview component (`import LeavePreview from '../components/LeavePreview'`, the one its manifest gives the inbox).
-- **Errors of list actions** (bulk start, undo failure): an `Alert` as a child of `ListPage` (children come before the table).
+- **Errors of list actions** (bulk start, undo failure): an `ErrorState` as a child of `ListPage` (children come before the table).
 
 ## Create page
 
@@ -116,7 +116,7 @@ Working examples: `web/src/hrm/pages/EmployeePage.tsx` with `hrm/components/Empl
   description={[e.code, e.org_unit_name, e.user_login].filter(Boolean).join(' · ')}
   summary={<EmployeeSummary … />}                                                  // KeyFacts, 4–5 facts
   actions={/* secondary buttons */}
-  more={/* Menu.Item children; the destructive one color="danger", confirmed */}
+  more={/* MenuAction children; the destructive one `danger`, confirmed */}
   tabs={[
     { value: 'overview', label: t('shared.record.overview'), content: <RecordColumns main={<EmployeeProfile … />} side={<EmployeeDigest … />} /> },
     { value: 'contracts', label: t('…_count', { count }), content: <ContractsTab … /> }, // full-width DataTable

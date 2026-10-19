@@ -1,4 +1,4 @@
-import { Button, Menu, Stack } from '@mantine/core'
+import { Button } from '@mantine/core'
 import { IconPencil, IconPlus, IconTrash } from '@tabler/icons-react'
 import { useQuery } from '@tanstack/react-query'
 import { useState } from 'react'
@@ -6,14 +6,16 @@ import { useForm } from 'react-hook-form'
 import { useTranslation } from 'react-i18next'
 import { api, unwrap, type Dependent, type DependentInput, type Employee } from '@/shared/api/hrm'
 import { useInvalidateRecord } from '@/shared/area'
-import { errorText, formatDate, formatMonthShort } from '@/shared/i18n'
+import { formatDate, formatMonthShort } from '@/shared/i18n'
 import { DataTable, type Column } from '@/shared/ui/DataTable'
 import { DateField, Form, FormActions, MonthField, SelectField, TextField } from '@/shared/ui/form'
-import { useConfirm } from '@/shared/ui/confirm'
+import { MenuAction } from '@/shared/ui/MenuAction'
 import { notifySuccess } from '@/shared/ui/notify'
-import { FormModal, TabActions } from '@/shared/ui/page'
-import { ContentSkeleton, EmptyState, ErrorState } from '@/shared/ui/states'
+import { FormModal, TabContent } from '@/shared/ui/page'
+import { QueryView } from '@/shared/ui/QueryView'
+import { EmptyState } from '@/shared/ui/states'
 import { icon } from '@/shared/ui/theme'
+import { useAction } from '@/shared/ui/useAction'
 import { employeeDocType, hrmKeys } from '../keys'
 
 const relationships = ['child', 'spouse', 'parent', 'other'] as const
@@ -30,7 +32,7 @@ function Dependents({ employee }: { employee: Employee }) {
   const invalidate = useInvalidateRecord()
   const canEdit = employee.allowed_actions.includes('edit')
   const [editing, setEditing] = useState<Dependent | 'new' | null>(null)
-  const [error, setError] = useState<string | null>(null)
+  const action = useAction()
   const key = hrmKeys.employees.dependents(employee.id)
   const list = useQuery({
     queryKey: key,
@@ -39,21 +41,17 @@ function Dependents({ employee }: { employee: Employee }) {
     refetchOnWindowFocus: false,
   })
 
-  const [ask, dialog] = useConfirm()
-
-  async function remove(d: Dependent) {
-    if (!(await ask({ title: t('hrm.dependent.delete_title'), message: t('hrm.dependent.delete_confirm', { name: d.full_name }), confirmLabel: t('hrm.dependent.delete'), danger: true })))
-      return
-    setError(null)
-    try {
-      await unwrap(api.DELETE('/hrm/employees/{id}/dependents/{dependent}', { params: { path: { id: employee.id, dependent: d.id } } }))
-    } catch (err) {
-      setError(errorText(t, err))
-      return
-    }
-    await invalidate(employeeDocType, employee.id)
-    notifySuccess(t('hrm.dependent.deleted'))
-  }
+  const remove = (d: Dependent) =>
+    action.run(
+      async () => {
+        await unwrap(api.DELETE('/hrm/employees/{id}/dependents/{dependent}', { params: { path: { id: employee.id, dependent: d.id } } }))
+        await invalidate(employeeDocType, employee.id)
+      },
+      {
+        confirm: { title: t('hrm.dependent.delete_title'), message: t('hrm.dependent.delete_confirm', { name: d.full_name }), confirmLabel: t('hrm.dependent.delete'), danger: true },
+        success: t('hrm.dependent.deleted'),
+      },
+    )
 
   const months = (d: Dependent) => [d.deduction_from, d.deduction_to].map((m) => formatMonthShort(m) || '…').join(' – ')
   const columns: Column<Dependent>[] = [
@@ -64,48 +62,48 @@ function Dependents({ employee }: { employee: Employee }) {
     { key: 'deduction', header: t('hrm.dependent.deduction'), role: 'meta', kind: 'date', render: months },
   ]
 
-  let body
-  if (list.isPending) body = <ContentSkeleton />
-  else if (list.isError) body = <ErrorState message={errorText(t, list.error)} onRetry={() => void list.refetch()} />
-  else if (list.data.length === 0) body = <EmptyState title={t('hrm.dependent.empty')} />
-  else
-    body = (
-      <DataTable
-        label={t('hrm.employee.tab.dependents')}
-        columns={columns}
-        rows={list.data}
-        rowKey={(d) => d.id}
-        menu={
-          canEdit
-            ? (d) => (
-                <>
-                  <Menu.Item leftSection={<IconPencil {...icon.text} />} onClick={() => setEditing(d)}>
-                    {t('hrm.dependent.edit')}
-                  </Menu.Item>
-                  <Menu.Item color="danger" leftSection={<IconTrash {...icon.text} />} onClick={() => void remove(d)}>
-                    {t('hrm.dependent.delete')}
-                  </Menu.Item>
-                </>
-              )
-            : undefined
-        }
-      />
-    )
+  const body = (
+    <QueryView query={list} empty={<EmptyState title={t('hrm.dependent.empty')} />}>
+      {(data) => (
+        <DataTable
+          label={t('hrm.employee.tab.dependents')}
+          columns={columns}
+          rows={data}
+          rowKey={(d) => d.id}
+          menu={
+            canEdit
+              ? (d) => (
+                  <>
+                    <MenuAction icon={IconPencil} onClick={() => setEditing(d)}>
+                      {t('hrm.dependent.edit')}
+                    </MenuAction>
+                    <MenuAction icon={IconTrash} danger onClick={() => void remove(d)}>
+                      {t('hrm.dependent.delete')}
+                    </MenuAction>
+                  </>
+                )
+              : undefined
+          }
+        />
+      )}
+    </QueryView>
+  )
 
   return (
-    <Stack gap="md">
-      {canEdit && (
-        <TabActions>
+    <TabContent
+      actions={
+        canEdit && (
           <Button leftSection={<IconPlus {...icon.button} />} onClick={() => setEditing('new')}>
             {t('hrm.dependent.create')}
           </Button>
-        </TabActions>
-      )}
-      {error && <ErrorState message={error} />}
+        )
+      }
+      error={action.error}
+    >
       {body}
-      {dialog}
+      {action.dialog}
       {editing && <DependentModal employeeId={employee.id} dependent={editing === 'new' ? null : editing} onClose={() => setEditing(null)} />}
-    </Stack>
+    </TabContent>
   )
 }
 

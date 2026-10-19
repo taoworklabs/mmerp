@@ -1,17 +1,18 @@
-import { Button, Stack } from '@mantine/core'
+import { Button } from '@mantine/core'
 import { IconPlusMinus } from '@tabler/icons-react'
 import { useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { useTranslation } from 'react-i18next'
-import { api, ApiError, unwrap, type Employee, type LeaveBalance } from '@/shared/api/hrm'
+import { api, unwrap, type Employee, type LeaveBalance } from '@/shared/api/hrm'
 import { useMe } from '@/shared/auth/me'
-import { currentYear, errorText, formatDecimal } from '@/shared/i18n'
+import { currentYear, formatDecimal } from '@/shared/i18n'
 import { DataTable, type Column } from '@/shared/ui/DataTable'
 import { DecimalField, Form, FormActions, IntegerField, TextField } from '@/shared/ui/form'
 import { notifySuccess } from '@/shared/ui/notify'
-import { FormModal, TabActions } from '@/shared/ui/page'
-import { ContentSkeleton, EmptyState, ErrorState } from '@/shared/ui/states'
+import { FormModal, TabContent } from '@/shared/ui/page'
+import { QueryView } from '@/shared/ui/QueryView'
+import { EmptyState } from '@/shared/ui/states'
 import { icon } from '@/shared/ui/theme'
 import { useLeaveBalances } from '../hooks/useEmployeeRecords'
 import { hrmKeys } from '../keys'
@@ -26,25 +27,26 @@ export function BalancesTab({ employee }: { employee: Employee }) {
     { key: 'year', header: t('hrm.balance.year'), role: 'title', kind: 'date', render: (b) => String(b.year) },
     { key: 'days', header: t('hrm.balance.days'), role: 'meta', kind: 'number', render: (b) => formatDecimal(b.days) },
   ]
-  let body
-  if (list.isPending) body = <ContentSkeleton />
-  // Without the right to see it the API answers 404.
-  else if (list.error instanceof ApiError && list.error.status === 404) body = <EmptyState title={t('hrm.balance.no_permission')} />
-  else if (list.isError) body = <ErrorState message={errorText(t, list.error)} onRetry={() => void list.refetch()} />
-  else if (list.data.length === 0) body = <EmptyState title={t('hrm.balance.empty')} />
-  else body = <DataTable label={t('hrm.employee.tab.balances')} columns={columns} rows={list.data} rowKey={(b) => b.year} />
   return (
-    <Stack gap="md">
-      {canAdjust && (
-        <TabActions>
+    <TabContent
+      actions={
+        canAdjust && (
           <Button leftSection={<IconPlusMinus {...icon.button} />} onClick={() => setAdjusting(true)}>
             {t('hrm.balance.adjust')}
           </Button>
-        </TabActions>
-      )}
-      {body}
+        )
+      }
+    >
+      <QueryView
+        query={list}
+        // Without the right to see it the API answers 404.
+        notFound={<EmptyState title={t('hrm.balance.no_permission')} />}
+        empty={<EmptyState title={t('hrm.balance.empty')} />}
+      >
+        {(data) => <DataTable label={t('hrm.employee.tab.balances')} columns={columns} rows={data} rowKey={(b) => b.year} />}
+      </QueryView>
       {adjusting && <AdjustModal employeeId={employee.id} onClose={() => setAdjusting(false)} />}
-    </Stack>
+    </TabContent>
   )
 }
 

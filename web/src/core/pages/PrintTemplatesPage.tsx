@@ -10,6 +10,7 @@ import { DataTable } from '@/shared/ui/DataTable'
 import { Form, FormActions, TextField } from '@/shared/ui/form'
 import { notifySuccess } from '@/shared/ui/notify'
 import { FormModal, ListPage } from '@/shared/ui/page'
+import { QueryView } from '@/shared/ui/QueryView'
 import { ContentSkeleton, ErrorState } from '@/shared/ui/states'
 import { coreKeys } from '../keys'
 
@@ -21,34 +22,34 @@ export function PrintTemplatesPage() {
   const [editing, setEditing] = useState<string | null>(null)
   const templates = useQuery({ queryKey: coreKeys.printTemplates.all(), queryFn: () => unwrap(api.GET('/print-templates')) })
 
-  let body
-  if (templates.isPending) body = <ContentSkeleton />
-  else if (templates.isError) body = <ErrorState message={errorText(t, templates.error)} onRetry={() => void templates.refetch()} />
-  else
-    body = (
-      <DataTable<PrintTemplate>
-        label={t('core.print.title')}
-        rows={templates.data}
-        rowKey={(p) => p.code}
-        columns={[
-          { key: 'name', header: t('core.print.name'), role: 'title', render: (p) => p.name },
-          {
-            key: 'version',
-            header: t('core.print.version'),
-            role: 'meta',
-            render: (p) => (p.version === 0 ? t('core.print.default') : t('core.print.version_n', { n: p.version })),
-          },
-          {
-            key: 'saved',
-            header: t('core.print.saved'),
-            role: 'meta',
-            render: (p) => (p.saved_at ? t('core.print.saved_by', { at: formatDateTime(p.saved_at, me.timezone), name: p.saved_by_name }) : ''),
-          },
-        ]}
-        // One action per row: the row itself opens it.
-        onRowClick={(p) => setEditing(p.code)}
-      />
-    )
+  const body = (
+    <QueryView query={templates}>
+      {(data) => (
+        <DataTable<PrintTemplate>
+          label={t('core.print.title')}
+          rows={data}
+          rowKey={(p) => p.code}
+          columns={[
+            { key: 'name', header: t('core.print.name'), role: 'title', render: (p) => p.name },
+            {
+              key: 'version',
+              header: t('core.print.version'),
+              role: 'meta',
+              render: (p) => (p.version === 0 ? t('core.print.default') : t('core.print.version_n', { n: p.version })),
+            },
+            {
+              key: 'saved',
+              header: t('core.print.saved'),
+              role: 'meta',
+              render: (p) => (p.saved_at ? t('core.print.saved_by', { at: formatDateTime(p.saved_at, me.timezone), name: p.saved_by_name }) : ''),
+            },
+          ]}
+          // One action per row: the row itself opens it.
+          onRowClick={(p) => setEditing(p.code)}
+        />
+      )}
+    </QueryView>
+  )
 
   return (
     <ListPage title={t('core.print.title')} description={t('core.print.description')}>

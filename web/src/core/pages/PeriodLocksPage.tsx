@@ -6,12 +6,13 @@ import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router'
 import { api, ApiError, unwrap, type PeriodLock } from '@/shared/api/core'
 import { useRecordLink } from '@/shared/area'
-import { errorText, formatDate } from '@/shared/i18n'
+import { formatDate } from '@/shared/i18n'
 import { DataTable, type Column } from '@/shared/ui/DataTable'
 import { DateField, Form, FormActions } from '@/shared/ui/form'
 import { notifySuccess } from '@/shared/ui/notify'
 import { FormModal, ListPage } from '@/shared/ui/page'
-import { ContentSkeleton, EmptyState, ErrorState } from '@/shared/ui/states'
+import { QueryView } from '@/shared/ui/QueryView'
+import { EmptyState } from '@/shared/ui/states'
 import { coreKeys } from '../keys'
 
 // PeriodLocksPage: each legal entity's lock date. Documents dated on or before it are frozen.
@@ -23,21 +24,20 @@ export function PeriodLocksPage() {
     { key: 'name', header: t('core.period.legal_entity'), role: 'title', render: (l) => l.legal_entity_name },
     { key: 'locked_until', header: t('core.period.locked_until'), role: 'meta', kind: 'date', render: (l) => (l.locked_until ? formatDate(l.locked_until) : t('core.period.open')) },
   ]
-  let body
-  if (locks.isPending) body = <ContentSkeleton />
-  else if (locks.isError) body = <ErrorState message={errorText(t, locks.error)} onRetry={() => void locks.refetch()} />
-  else if (locks.data.length === 0) body = <EmptyState title={t('core.period.empty')} />
-  else
-    body = (
-      <DataTable
-        label={t('core.period.title')}
-        columns={columns}
-        rows={locks.data}
-        rowKey={(l) => l.legal_entity_id}
-        // One action per row: the row itself opens it.
-        onRowClick={(l) => setEditing(l)}
-      />
-    )
+  const body = (
+    <QueryView query={locks} empty={<EmptyState title={t('core.period.empty')} />}>
+      {(data) => (
+        <DataTable
+          label={t('core.period.title')}
+          columns={columns}
+          rows={data}
+          rowKey={(l) => l.legal_entity_id}
+          // One action per row: the row itself opens it.
+          onRowClick={(l) => setEditing(l)}
+        />
+      )}
+    </QueryView>
+  )
   return (
     <ListPage title={t('core.period.title')} description={t('core.period.description')}>
       {body}

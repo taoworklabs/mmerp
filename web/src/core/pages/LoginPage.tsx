@@ -1,12 +1,12 @@
-import { Alert, Button, PasswordInput, Stack, TextInput } from '@mantine/core'
-import { IconAlertCircle } from '@tabler/icons-react'
+// eslint-disable-next-line no-restricted-imports -- raw inputs: the login screen renders before the router that Form needs.
+import { Button, PasswordInput, Stack, TextInput } from '@mantine/core'
 import { useState, type FormEvent } from 'react'
 import { useTranslation } from 'react-i18next'
 import { api, ApiError, unwrap } from '@/shared/api/core'
 import { announceSessionStarted } from '@/shared/auth/session'
 import { errorText } from '@/shared/i18n'
 import { AuthPage } from '@/shared/ui/page'
-import { icon } from '@/shared/ui/theme'
+import { ErrorState } from '@/shared/ui/states'
 import { nextFromLocation } from '../login'
 
 // Plain state, not shared/ui/form: the login screen renders before the router exists, and Form needs it.
@@ -38,11 +38,7 @@ export function LoginPage() {
     <AuthPage title={t('core.login.title')}>
       <form onSubmit={submit} noValidate>
         <Stack gap="md">
-          {error && (
-            <Alert color="danger" icon={<IconAlertCircle {...icon.button} />} role="alert">
-              {error}
-            </Alert>
-          )}
+          {error && <ErrorState message={error} />}
           <TextInput
             label={t('core.login.login')}
             autoComplete="username"

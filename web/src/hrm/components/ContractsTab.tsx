@@ -1,13 +1,15 @@
-import { Button, Menu, Stack } from '@mantine/core'
+import { Button } from '@mantine/core'
 import { IconFilePlus, IconPlus } from '@tabler/icons-react'
 import { useTranslation } from 'react-i18next'
 import { Link, useNavigate } from 'react-router'
 import { type ContractListItem, type Employee } from '@/shared/api/hrm'
 import { DocumentStatus } from '@/shared/document'
-import { errorText, formatDate } from '@/shared/i18n'
+import { formatDate } from '@/shared/i18n'
 import { DataTable, type Column } from '@/shared/ui/DataTable'
-import { TabActions } from '@/shared/ui/page'
-import { ContentSkeleton, EmptyState, ErrorState } from '@/shared/ui/states'
+import { MenuAction } from '@/shared/ui/MenuAction'
+import { TabContent } from '@/shared/ui/page'
+import { QueryView } from '@/shared/ui/QueryView'
+import { EmptyState } from '@/shared/ui/states'
 import { icon } from '@/shared/ui/theme'
 import { useEmployeeContracts } from '../hooks/useEmployeeRecords'
 import { contractDocType } from '../keys'
@@ -32,37 +34,37 @@ export function ContractsTab({ employee }: { employee: Employee }) {
     { key: 'end_date', header: t('hrm.contract.end_date'), role: 'hidden', kind: 'date', render: (c) => (c.parent_id ? '' : c.end_date ? formatDate(c.end_date) : t('hrm.contract.no_end')) },
     { key: 'status', header: t('hrm.contract.status'), role: 'status', kind: 'status', render: (c) => <DocumentStatus docType={contractDocType} status={c.status} /> },
   ]
-  let body
-  if (list.isPending) body = <ContentSkeleton />
-  else if (list.isError) body = <ErrorState message={errorText(t, list.error)} onRetry={() => void list.refetch()} />
-  else if (list.data.length === 0) body = <EmptyState title={t('hrm.contract.empty')} description={canCreate ? t('hrm.contract.empty_description') : undefined} />
-  else
-    body = (
-      <DataTable
-        label={t('hrm.employee.tab.contracts')}
-        columns={columns}
-        rows={list.data}
-        rowKey={(c) => c.id}
-        href={(c) => `/hrm/contracts/${c.id}`}
-        menu={(c) =>
-          c.allowed_actions.includes('add_appendix') && (
-            <Menu.Item leftSection={<IconFilePlus {...icon.text} />} onClick={() => navigate(`${newPath}&parent=${c.id}`)}>
-              {t('hrm.contract.add_appendix')}
-            </Menu.Item>
-          )
-        }
-      />
-    )
+  const body = (
+    <QueryView query={list} empty={<EmptyState title={t('hrm.contract.empty')} description={canCreate ? t('hrm.contract.empty_description') : undefined} />}>
+      {(data) => (
+        <DataTable
+          label={t('hrm.employee.tab.contracts')}
+          columns={columns}
+          rows={data}
+          rowKey={(c) => c.id}
+          href={(c) => `/hrm/contracts/${c.id}`}
+          menu={(c) =>
+            c.allowed_actions.includes('add_appendix') && (
+              <MenuAction icon={IconFilePlus} onClick={() => navigate(`${newPath}&parent=${c.id}`)}>
+                {t('hrm.contract.add_appendix')}
+              </MenuAction>
+            )
+          }
+        />
+      )}
+    </QueryView>
+  )
   return (
-    <Stack gap="md">
-      {canCreate && (
-        <TabActions>
+    <TabContent
+      actions={
+        canCreate && (
           <Button component={Link} to={newPath} leftSection={<IconPlus {...icon.button} />}>
             {t('hrm.contract.create')}
           </Button>
-        </TabActions>
-      )}
+        )
+      }
+    >
       {body}
-    </Stack>
+    </TabContent>
   )
 }

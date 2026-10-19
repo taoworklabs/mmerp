@@ -1,4 +1,4 @@
-import { Button, Group, Stack, Text } from '@mantine/core'
+import { Button, Group, Text } from '@mantine/core'
 import { IconUsersGroup } from '@tabler/icons-react'
 import { useTranslation } from 'react-i18next'
 import { useSearchParams } from 'react-router'
@@ -9,7 +9,7 @@ import { DataTable } from '@/shared/ui/DataTable'
 import { FieldList, MissingValue } from '@/shared/ui/FieldList'
 import { KeyFacts } from '@/shared/ui/KeyFacts'
 import { EditablePanel, MonthFilter, OrgUnitFilter, SearchInput, SensitiveValue } from '@/shared/ui/form'
-import { DocumentPage, InboxList, InboxPage, InboxRow, ListPage, Page, Panel, RecordColumns, RecordPage, TabActions } from '@/shared/ui/page'
+import { DocumentPage, InboxList, InboxPage, InboxRow, ListPage, Page, Panel, RecordColumns, RecordPage, TabContent } from '@/shared/ui/page'
 import { StatusBadge } from '@/shared/ui/StatusBadge'
 import { useListParams } from '@/shared/url/listParams'
 import { orgUnits } from './api'
@@ -163,12 +163,9 @@ export function RecordTemplate() {
               value: 'list',
               label: `${t('shared.devui.tab')} (3)`,
               content: (
-                <Stack gap="md">
-                  <TabActions>
-                    <Button>{t('shared.devui.primary')}</Button>
-                  </TabActions>
+                <TabContent actions={<Button>{t('shared.devui.primary')}</Button>}>
                   <Sample />
-                </Stack>
+                </TabContent>
               ),
             },
             { value: 'activity', label: t('shared.document.tab.activity'), content: activity },
