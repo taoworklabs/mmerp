@@ -128,8 +128,7 @@ function RuleForm({ rule, basePath, roles, userOptions }: { rule: TypeRule; base
   const roleOptions: Option[] = roles.map((r) => ({ value: roleValue(r), label: t(`${r.product}.role.${r.role}`, { defaultValue: roleValue(r) }) }))
   const ctx = { rule, roleOptions, userOptions, readOnly }
 
-  // The server's complaint about one element sits on it until the flow is edited again; left
-  // there, it would block the next submit.
+  // The server's complaint about one element goes away once the user edits, not only on the next submit.
   const issue = useRef<string | null>(null)
   useEffect(() => {
     const sub = form.watch(() => {
@@ -140,7 +139,7 @@ function RuleForm({ rule, basePath, roles, userOptions }: { rule: TypeRule; base
     return () => sub.unsubscribe()
   }, [form])
 
-  async function save(v: Values) {
+  async function save(v: Values): Promise<void | false> {
     try {
       await unwrap(api.PUT('/approval-rules/{doc_type}', { params: { path: { doc_type: rule.doc_type } }, body: toInput(v) }))
     } catch (err) {
@@ -152,7 +151,7 @@ function RuleForm({ rule, basePath, roles, userOptions }: { rule: TypeRule; base
       issue.current = path ? at : null
       form.setError(at as never, { message })
       requestAnimationFrame(() => document.getElementById(fieldId(path ? formPathOf(path) : at))?.scrollIntoView({ block: 'center' }))
-      return
+      return false
     }
     await qc.invalidateQueries({ queryKey: documentKeys.approvalRules() })
     notifySuccess(t('shared.rule.saved'))

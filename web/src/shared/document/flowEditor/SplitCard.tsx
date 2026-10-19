@@ -1,6 +1,6 @@
 import { Box, Button, Group, Stack } from '@mantine/core'
 import { IconPlus } from '@tabler/icons-react'
-import { useFieldArray, useFormContext, useWatch } from 'react-hook-form'
+import { get, useFieldArray, useFormContext, useWatch } from 'react-hook-form'
 import { useTranslation } from 'react-i18next'
 import { useConfirm } from '@/shared/ui/confirm'
 import { fieldId, SelectField } from '@/shared/ui/form'
@@ -16,11 +16,18 @@ type Props = { path: string; ctx: EditorCtx; depth: number; onMove: (by: -1 | 1)
 // for choose-one the otherwise flow that runs when no branch holds.
 export function SplitCard({ path, ctx, depth, onMove, onRemove, first, last }: Props) {
   const { t } = useTranslation()
-  const { control, getValues, setValue } = useFormContext()
+  const { control, formState, getValues, resetField, setValue } = useFormContext()
   const [ask, dialog] = useConfirm()
   const type: ElementValues['type'] = useWatch({ name: `${path}.type` })
   const branches = useFieldArray({ control, name: `${path}.branches` as never })
   const { readOnly } = ctx
+
+  // Back to choose-one after a cancelled switch, clean again when that is what was saved.
+  function restoreOne() {
+    const name = `${path}.type`
+    if (get(formState.defaultValues, name) === 'one') resetField(name)
+    else setValue(name, 'one')
+  }
 
   // A parallel split has no otherwise; dropping steps from it asks first.
   async function changeType(v: string | null) {
@@ -28,7 +35,7 @@ export function SplitCard({ path, ctx, depth, onMove, onRemove, first, last }: P
     const otherwise = getValues(`${path}.otherwise`) as ElementValues[]
     if (otherwise.length > 0) {
       const label = t('shared.rule.to_parallel')
-      if (!(await ask({ title: label, message: t('shared.rule.drop_otherwise'), confirmLabel: label, danger: true }))) return setValue(`${path}.type`, 'one')
+      if (!(await ask({ title: label, message: t('shared.rule.drop_otherwise'), confirmLabel: label, danger: true }))) return restoreOne()
     }
     setValue(`${path}.otherwise`, [], { shouldDirty: true })
   }

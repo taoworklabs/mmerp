@@ -58,6 +58,7 @@ function focusInvalid(errors: FieldErrors, after: HTMLElement | null): HTMLEleme
 
 type Props<T extends FieldValues> = {
   form: UseFormReturn<T>
+  // Returning false means onSubmit handled a failure itself (set errors on fields): the form keeps its edits.
   onSubmit: (values: T) => Promise<unknown>
   // API error codes shown at a field; other errors show as a banner.
   errorFields?: ErrorFields<T>
@@ -80,9 +81,7 @@ export function Form<T extends FieldValues>({ form, onSubmit, errorFields, id, c
     async (values) => {
       setBanner(null)
       try {
-        await onSubmit(values)
-        // onSubmit may put a server error on a field itself (a path errorFields cannot name); keep the edits then.
-        if (Object.keys(form.formState.errors).length === 0) form.reset(values)
+        if ((await onSubmit(values)) !== false) form.reset(values)
       } catch (err) {
         const field = err instanceof ApiError ? fieldOfError(errorFields, err) : undefined
         if (field) form.setError(field, { message: errorText(t, err) }, { shouldFocus: true })

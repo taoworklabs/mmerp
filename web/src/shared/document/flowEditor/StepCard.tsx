@@ -1,4 +1,5 @@
 import { Box, SimpleGrid, Stack } from '@mantine/core'
+import { useEffect } from 'react'
 import { get, useFormContext, useWatch } from 'react-hook-form'
 import { useTranslation } from 'react-i18next'
 import { fieldId, IntegerField, MultiSelectField, SelectField } from '@/shared/ui/form'
@@ -13,8 +14,13 @@ type Props = { path: string; ctx: EditorCtx; onMove: (by: -1 | 1) => void; onRem
 // StepCard edits one approval step: who approves, and how many approvals or rejections decide it.
 export function StepCard({ path, ctx, onMove, onRemove, first, last }: Props) {
   const { t } = useTranslation()
-  const { setValue } = useFormContext()
+  const { getFieldState, setValue, trigger } = useFormContext()
   const kind: string | null = useWatch({ name: `${path}.kind` })
+  const users: string[] | undefined = useWatch({ name: `${path}.users` })
+  // The approvals check depends on the users; recheck it once it has failed.
+  useEffect(() => {
+    if (getFieldState(`${path}.approvals`).error) void trigger(`${path}.approvals`)
+  }, [users, path, getFieldState, trigger])
   const { readOnly, rule } = ctx
   const kinds = [...(rule.module_approvers ? ['module'] : []), 'role', 'user']
   const range = { min: { value: 1, message: t('shared.rule.count_range') }, max: { value: maxCount, message: t('shared.rule.count_range') } }
