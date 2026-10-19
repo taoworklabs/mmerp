@@ -1,4 +1,4 @@
-import { Button, Grid, Menu, Stack } from '@mantine/core'
+import { Button, Menu, Stack } from '@mantine/core'
 import { IconArrowsExchange, IconUserOff } from '@tabler/icons-react'
 import { useQuery } from '@tanstack/react-query'
 import { useState } from 'react'
@@ -9,7 +9,7 @@ import { useInvalidateRecord } from '@/shared/area'
 import { ActivityFeed, useAttachmentSection } from '@/shared/document'
 import { PersonAvatar } from '@/shared/ui/avatar'
 import { notifySuccess } from '@/shared/ui/notify'
-import { DetailTabs, Panel, RecordPage } from '@/shared/ui/page'
+import { RecordPage } from '@/shared/ui/page'
 import { icon } from '@/shared/ui/theme'
 import { BalancesTab } from '../components/BalancesTab'
 import { ContractsTab } from '../components/ContractsTab'
@@ -17,6 +17,7 @@ import { DependentsTab } from '../components/DependentsTab'
 import { EmployeeProfile, MoveModal, type Move } from '../components/EmployeeProfile'
 import { EmployeeStatus } from '../components/EmployeeStatus'
 import { EmployeeSummary } from '../components/EmployeeSummary'
+import { useEmployeeContracts } from '../hooks/useEmployeeRecords'
 import { loaded } from '@/shared/ui/loaded'
 import { employeeDocType, hrmKeys } from '../keys'
 
@@ -30,6 +31,7 @@ export function EmployeePage() {
     queryFn: () => unwrap(api.GET('/hrm/employees/{id}', { params: { path: { id } } })),
   })
   const attachments = useAttachmentSection(employeeDocType, id)
+  const contracts = useEmployeeContracts(employee.data)
 
   const state = loaded(employee, t, { to: '/hrm/employees', label: t('hrm.employees.back') })
   if (!state.ok) return state.fallback
@@ -39,11 +41,16 @@ export function EmployeePage() {
     await invalidate(employeeDocType, e.id)
     notifySuccess(t('hrm.employee.saved'))
   }
+  const contractCount = contracts.data?.length
   const tabs = [
-    ...(e.allowed_actions.includes('view_contracts') ? [{ value: 'contracts', label: t('hrm.employee.tab.contracts'), content: <ContractsTab employee={e} /> }] : []),
-    { value: 'balances', label: t('hrm.employee.tab.balances'), content: <BalancesTab employee={e} /> },
+    { value: 'overview', label: t('shared.record.overview'), content: <Stack gap="md"><EmployeeProfile key={e.id} employee={e} onSaved={saved} /></Stack> },
+    ...(e.allowed_actions.includes('view_contracts')
+      ? [{ value: 'contracts', label: contractCount ? t('hrm.employee.tab.contracts_count', { count: contractCount }) : t('hrm.employee.tab.contracts'), content: <ContractsTab employee={e} /> }]
+      : []),
+    { value: 'balances', label: t('hrm.employee.tab.leave'), content: <BalancesTab employee={e} /> },
     { value: 'dependents', label: t('hrm.employee.tab.dependents'), content: <DependentsTab employee={e} /> },
     { value: attachments.key, label: attachments.title, content: attachments.content },
+    { value: 'activity', label: t('shared.record.history'), content: <ActivityFeed docType={employeeDocType} id={e.id} /> },
   ]
   return (
     <RecordPage
@@ -52,7 +59,7 @@ export function EmployeePage() {
       leading={<PersonAvatar name={e.full_name} size="lg" />}
       status={<EmployeeStatus status={e.status} />}
       description={[e.code, e.org_unit_name, e.user_login].filter(Boolean).join(' · ')}
-      summary={<EmployeeSummary employee={e} onTransfer={() => setMove('transfer')} balancesTab="balances" />}
+      summary={<EmployeeSummary employee={e} onTransfer={() => setMove('transfer')} />}
       actions={
         canEdit && (
           <Button variant="default" leftSection={<IconArrowsExchange {...icon.button} />} onClick={() => setMove('transfer')}>
@@ -68,22 +75,10 @@ export function EmployeePage() {
           </Menu.Item>
         )
       }
+      tabs={tabs}
+      // The activity was a card beside the profile; its old links land on the history.
+      aliases={{ history: 'activity', discussion: 'activity' }}
     >
-      <Grid gap="xl">
-        <Grid.Col span={{ base: 12, md: 7 }}>
-          <Stack gap="md">
-            <EmployeeProfile key={e.id} employee={e} onSaved={saved} />
-          </Stack>
-        </Grid.Col>
-        <Grid.Col span={{ base: 12, md: 5 }}>
-          <Stack gap="md">
-            <DetailTabs tabs={tabs} />
-            <Panel title={t('shared.document.tab.activity')}>
-              <ActivityFeed docType={employeeDocType} id={e.id} />
-            </Panel>
-          </Stack>
-        </Grid.Col>
-      </Grid>
       {move && <MoveModal employee={e} move={move} onClose={() => setMove(null)} onSaved={saved} />}
     </RecordPage>
   )

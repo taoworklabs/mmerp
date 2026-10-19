@@ -26,7 +26,7 @@ export function useTenureText(e: Employee): string {
 // EmployeeSummary is the employee's key facts under the page title. An empty fact links to where it
 // is filled in for who may (the manager through Transfer), and says "not filled in" to the rest;
 // a fact the user may not read is left out.
-export function EmployeeSummary({ employee: e, onTransfer, balancesTab }: { employee: Employee; onTransfer: () => void; balancesTab: string }) {
+export function EmployeeSummary({ employee: e, onTransfer }: { employee: Employee; onTransfer: () => void }) {
   const { t } = useTranslation()
   const me = useMe()
   const contracts = useEmployeeContracts(e)
@@ -66,7 +66,7 @@ export function EmployeeSummary({ employee: e, onTransfer, balancesTab }: { empl
         ? loading
         : left
           ? t('hrm.leave.balance_left', { left: formatDecimal(left.days) })
-          : <MissingValue label={label} to={can('adjust_leave_balance') ? `?tab=${balancesTab}` : undefined} />,
+          : <MissingValue label={label} to={can('adjust_leave_balance') ? "?tab=balances" : undefined} />,
     ])
   }
   return <KeyFacts facts={facts} />

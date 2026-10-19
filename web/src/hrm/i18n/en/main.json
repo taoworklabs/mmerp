@@ -459,5 +459,7 @@
   "hrm.leave.handover": "Handover to",
   "hrm.employee.tenure": "Tenure",
   "hrm.employee.leave_left": "Leave left {{year}}",
-  "hrm.employee.terminate_confirm": "Terminate {{name}} with {{date}} as the last working day? From the next day the employee shows as terminated."
+  "hrm.employee.terminate_confirm": "Terminate {{name}} with {{date}} as the last working day? From the next day the employee shows as terminated.",
+  "hrm.employee.tab.contracts_count": "Contracts ({{count}})",
+  "hrm.employee.tab.leave": "Leave"
 }

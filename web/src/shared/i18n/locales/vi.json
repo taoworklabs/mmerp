@@ -538,5 +538,7 @@
   "shared.attachments.drop_hint": "Kéo thả file vào đây hoặc bấm để chọn",
   "shared.field.add": "+ Bổ sung",
   "shared.field.add_label": "Bổ sung {{label}}",
-  "shared.field.missing": "Chưa cập nhật"
+  "shared.field.missing": "Chưa cập nhật",
+  "shared.record.overview": "Tổng quan",
+  "shared.record.history": "Lịch sử"
 }

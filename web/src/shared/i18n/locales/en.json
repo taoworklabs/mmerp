@@ -538,5 +538,7 @@
   "shared.attachments.drop_hint": "Drop files here or click to choose",
   "shared.field.add": "+ Add",
   "shared.field.add_label": "Add {{label}}",
-  "shared.field.missing": "Not filled in"
+  "shared.field.missing": "Not filled in",
+  "shared.record.overview": "Overview",
+  "shared.record.history": "History"
 }

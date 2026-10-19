@@ -203,7 +203,24 @@ test('HR creates an employee with a sensitive field, edits it and adds a depende
   await dialog.getByRole('button', { name: 'Giảm trừ từ tháng' }).click()
   await page.getByRole('button', { name: 'Th01' }).click()
   await dialog.getByRole('button', { name: 'Thêm', exact: true }).click()
-  await expect(page.getByRole('list', { name: 'Người phụ thuộc' }).getByText('Lê Bé')).toBeVisible()
+  await expect(page.getByRole('table', { name: 'Người phụ thuộc' }).getByText('Lê Bé')).toBeVisible()
+})
+
+test('the employee page tabs live on the URL and survive a reload', async ({ page }) => {
+  await signInAs(page, hrA, `/hrm/employees/${ids.ea}`)
+  await expect(page.getByRole('tab', { name: 'Tổng quan' })).toHaveAttribute('aria-selected', 'true')
+  await page.getByRole('tab', { name: 'Người phụ thuộc' }).click()
+  await expect(page).toHaveURL(new RegExp(`/hrm/employees/${ids.ea}\\?tab=dependents$`))
+  await page.reload()
+  await expect(page.getByRole('tab', { name: 'Người phụ thuộc' })).toHaveAttribute('aria-selected', 'true')
+  await expect(page.getByRole('button', { name: 'Thêm người phụ thuộc' })).toBeVisible()
+  // The first tab is the bare URL.
+  await page.getByRole('tab', { name: 'Tổng quan' }).click()
+  await expect(page).toHaveURL(new RegExp(`/hrm/employees/${ids.ea}$`))
+  // Links to the activity card it replaced open the history.
+  await page.goto(`/hrm/employees/${ids.ea}?tab=discussion`)
+  await expect(page.getByRole('tab', { name: 'Lịch sử' })).toHaveAttribute('aria-selected', 'true')
+  await expect(page.getByRole('radiogroup', { name: 'Lọc hoạt động' })).toBeVisible()
 })
 
 test('leaving a record asks only when something was edited', async ({ page }) => {

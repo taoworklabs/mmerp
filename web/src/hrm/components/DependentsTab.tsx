@@ -72,7 +72,6 @@ function Dependents({ employee }: { employee: Employee }) {
     body = (
       <DataTable
         label={t('hrm.employee.tab.dependents')}
-        cards
         columns={columns}
         rows={list.data}
         rowKey={(d) => d.id}

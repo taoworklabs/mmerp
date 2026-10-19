@@ -164,8 +164,8 @@ test.describe('contracts', () => {
   test('an appendix from the row menu starts from the original; the original stays while it has one', async ({ browser }) => {
     const original = await contractViaApi(ids.e2, ids.open, '2025-01-01', null)
     const pay = await as(browser, login.pay, `/hrm/employees/${ids.e2}?tab=contracts`)
-    const table = pay.getByRole('list', { name: 'Hợp đồng' })
-    await table.getByRole('listitem').filter({ hasText: kinds.open }).getByRole('button', { name: 'Thao tác khác' }).click()
+    const table = pay.getByRole('table', { name: 'Hợp đồng' })
+    await table.getByRole('row').filter({ hasText: kinds.open }).getByRole('button', { name: 'Thao tác khác' }).click()
     await pay.getByRole('menuitem', { name: 'Thêm phụ lục' }).click()
     await expect(pay.getByRole('textbox', { name: /^Lương/ })).toHaveValue('9.000.000')
     await expect(pay.getByRole('textbox', { name: /^Ngày hết hạn/ })).toHaveCount(0)
@@ -180,8 +180,8 @@ test.describe('contracts', () => {
 
     // The appendix row has nothing to add.
     await pay.goto(`/hrm/employees/${ids.e2}?tab=contracts`)
-    await expect(table.getByRole('listitem').filter({ hasText: 'Phụ lục của' })).toBeVisible()
-    await expect(table.getByRole('listitem').filter({ hasText: 'Phụ lục của' }).getByRole('button', { name: 'Thao tác khác' })).toHaveCount(0)
+    await expect(table.getByRole('row').filter({ hasText: 'Phụ lục của' })).toBeVisible()
+    await expect(table.getByRole('row').filter({ hasText: 'Phụ lục của' }).getByRole('button', { name: 'Thao tác khác' })).toHaveCount(0)
 
     await pay.goto(`/hrm/contracts/${original}`)
     await pay.getByRole('button', { name: 'Hủy chứng từ' }).click()
@@ -230,7 +230,7 @@ test.describe('contracts', () => {
   test('HR without the payroll role sees contracts but no amounts, and cannot create one', async ({ browser }) => {
     const id = await contractViaApi(ids.e, ids.fixed, '2023-01-01', '2023-12-31')
     const hr = await as(browser, login.hr, `/hrm/employees/${ids.e}?tab=contracts`)
-    await expect(hr.getByRole('list', { name: 'Hợp đồng' })).toBeVisible()
+    await expect(hr.getByRole('table', { name: 'Hợp đồng' })).toBeVisible()
     await expect(hr.getByRole('link', { name: 'Hợp đồng mới' })).toHaveCount(0)
     await hr.goto(`/hrm/contracts/${id}`)
     await expect(hr.getByText('Bạn không có quyền xem lương.')).toBeVisible()
