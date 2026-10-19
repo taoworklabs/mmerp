@@ -93,8 +93,7 @@ func itemCodeTaken(ctx context.Context, code string) (bool, error) {
 	return store.New(platform.DBFrom(ctx)).ItemCodeTaken(ctx, code)
 }
 
-// itemOptions is the "items" approval field's Search: the catalogue search the item
-// picker uses, at most 20 matches.
+// itemOptions finds items for an approval condition; it includes retired items, since a rule may name an item that is later retired.
 func (s *Service) itemOptions(ctx context.Context, q string) ([]record.FieldOption, error) {
 	rows, err := store.New(platform.DBFrom(ctx)).ListItems(ctx, store.ListItemsParams{Q: strings.TrimSpace(q), Lim: 20})
 	if err != nil {
