@@ -189,7 +189,7 @@ func TestLeaveOverlapFreedByCancelling(t *testing.T) {
 	first := must(t)(f.hrm.CreateLeave(f.e, hrm.NewLeave{LeaveFields: f.fields("2026-04-06", "2026-04-07", "2")}))
 	f.check(f.send(f.e, first))
 	f.check(f.appr.Approve(f.m, f.ticket(first), 1))
-	f.check(f.rec.Transition(f.hr, record.Ref{Type: "hrm.leave_request", ID: first}, f.leave(first).Version, record.Cancelled))
+	f.check(errOf(f.rec.Transition(f.hr, record.Ref{Type: "hrm.leave_request", ID: first}, f.leave(first).Version, record.Cancelled)))
 
 	second := must(t)(f.hrm.CreateLeave(f.e, hrm.NewLeave{LeaveFields: f.fields("2026-04-06", "2026-04-07", "2")}))
 	f.check(f.send(f.e, second))

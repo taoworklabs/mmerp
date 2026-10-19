@@ -60,11 +60,11 @@ func (f *contractFixture) contract(id int64) hrm.Contract {
 }
 
 func (f *contractFixture) post(id int64) error {
-	return f.rec.Transition(f.pay, record.Ref{Type: "hrm.contract", ID: id}, f.contract(id).Version, record.Posted)
+	return errOf(f.rec.Transition(f.pay, record.Ref{Type: "hrm.contract", ID: id}, f.contract(id).Version, record.Posted))
 }
 
 func (f *contractFixture) cancel(id int64) error {
-	return f.rec.Transition(f.pay, record.Ref{Type: "hrm.contract", ID: id}, f.contract(id).Version, record.Cancelled)
+	return errOf(f.rec.Transition(f.pay, record.Ref{Type: "hrm.contract", ID: id}, f.contract(id).Version, record.Cancelled))
 }
 
 func optionalStr(s string) *string {
@@ -215,12 +215,12 @@ func TestContractPermissions(t *testing.T) {
 		Flow: approval.Flow{{Step: &approval.StepDef{Approver: approval.Approver{Kind: "role", Product: "hrm", Role: "hr"}}}}, MaxLevels: 1, FallbackProduct: "hrm", FallbackRole: "hr",
 	}))
 	ref := record.Ref{Type: "hrm.contract", ID: id}
-	f.check(f.rec.Transition(f.hr, ref, 1, record.Posted))
+	f.check(errOf(f.rec.Transition(f.hr, ref, 1, record.Posted)))
 	sent, err := f.hrm.Contract(f.hr, id)
 	if err != nil || !equal(sent.AllowedActions, "withdraw") {
 		t.Fatalf("hr after sending: %+v %v", sent.AllowedActions, err)
 	}
-	f.check(f.rec.Transition(f.hr, ref, sent.Version, record.Draft))
+	f.check(errOf(f.rec.Transition(f.hr, ref, sent.Version, record.Draft)))
 	// With payroll every read of the terms is audited, and the contract may be printed.
 	before := f.auditCount("hrm.contract_terms_viewed")
 	if c := f.contract(id); c.Terms == nil || c.Terms.Salary != 10_000_000 || !equal(c.AllowedActions, "edit", "delete", "submit", "print") {
@@ -384,7 +384,7 @@ func TestOverlappingContractsPostedAtOnce(t *testing.T) {
 	var second error
 	var wg sync.WaitGroup
 	f.check(platform.InTx(f.pay, func(ctx context.Context) error {
-		f.check(f.rec.Transition(ctx, record.Ref{Type: "hrm.contract", ID: a}, 1, record.Posted))
+		f.check(errOf(f.rec.Transition(ctx, record.Ref{Type: "hrm.contract", ID: a}, 1, record.Posted)))
 		wg.Go(func() { second = f.post(b) })
 		pgtest.AwaitLockWait(t, f.pool)
 		return nil

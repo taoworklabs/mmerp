@@ -127,7 +127,7 @@ func newPayrollFixture(t *testing.T) *payrollFixture {
 
 func (f *payrollFixture) post(ref record.Ref, version int32) {
 	f.t.Helper()
-	f.check(f.rec.Transition(f.pay, ref, version, record.Posted))
+	f.check(errOf(f.rec.Transition(f.pay, ref, version, record.Posted)))
 }
 
 // contract posts a fixed-term contract from start to end, with an appendix from 16/04 when appendix is set.

@@ -202,17 +202,17 @@ func TestBeforeSubmitKeepsADraft(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := rec.Transition(admin, d.Ref, 1, record.Posted); !errors.Is(err, refuse) {
+	if _, err := rec.Transition(admin, d.Ref, 1, record.Posted); !errors.Is(err, refuse) {
 		t.Fatalf("first send: %v", err)
 	}
 	if got, _ := rec.Get(admin, d.Ref); got.Status != record.Draft || got.Version != 1 {
 		t.Fatalf("after refusal: %+v", got)
 	}
-	if err := rec.Transition(admin, d.Ref, 1, record.Posted); err != nil {
+	if _, err := rec.Transition(admin, d.Ref, 1, record.Posted); err != nil {
 		t.Fatal(err)
 	}
 	// Cancelling is not a submission.
-	if err := rec.Transition(admin, d.Ref, 2, record.Cancelled); err != nil || calls != 2 {
+	if _, err := rec.Transition(admin, d.Ref, 2, record.Cancelled); err != nil || calls != 2 {
 		t.Fatalf("cancel: %v, calls %d", err, calls)
 	}
 }

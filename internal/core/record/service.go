@@ -108,7 +108,7 @@ func (s *Service) checkDeclaration(t Type) {
 		fail("is a document without OnDelete")
 	}
 	if t.Kind == Catalog {
-		if t.NumberPrefix != "" || t.Fields != nil || t.OnTransition != nil || t.BeforeSubmit != nil || t.Approvers != nil || t.SubjectCreates {
+		if t.NumberPrefix != "" || t.Fields != nil || t.OnTransition != nil || t.BeforeSubmit != nil || t.Approvers != nil || t.SubjectCreates || t.ModuleActions != nil {
 			fail("is a catalog with document-only fields")
 		}
 		if t.Locate == nil {
@@ -223,11 +223,18 @@ func (s *Service) Read(ctx context.Context, ref Ref) (Doc, error) {
 
 // Actions is the whole allowed_actions of d: its lifecycle actions, print and export
 // when available, then extra, the module's own actions it has already decided on.
-// For a catalog record, d names only its Ref and the lifecycle is edit alone.
+// For a catalog record, d names only its Ref and the lifecycle is edit alone. A held
+// document offers print and export only.
 func (s *Service) Actions(ctx context.Context, d Doc, extra ...string) ([]string, error) {
-	out, err := s.lifecycleActions(ctx, d)
+	held, err := s.held(ctx, d.Ref)
 	if err != nil {
 		return nil, err
+	}
+	out := []string{}
+	if !held {
+		if out, err = s.lifecycleActions(ctx, d); err != nil {
+			return nil, err
+		}
 	}
 	for _, a := range []Action{Print, Export} {
 		ok, err := s.canOn(ctx, d, a)
@@ -237,6 +244,9 @@ func (s *Service) Actions(ctx context.Context, d Doc, extra ...string) ([]string
 		if ok {
 			out = append(out, string(a))
 		}
+	}
+	if held {
+		return out, nil
 	}
 	return append(out, extra...), nil
 }
@@ -543,6 +553,9 @@ func (s *Service) lockDraft(ctx context.Context, ref Ref, version int32) (Doc, p
 	if err != nil {
 		return d, locked, err
 	}
+	if err := s.refuseHeld(ctx, ref); err != nil {
+		return d, locked, err
+	}
 	if err := s.require(ctx, ref, Edit); err != nil {
 		return d, locked, err
 	}
@@ -556,11 +569,15 @@ func (s *Service) lockDraft(ctx context.Context, ref Ref, version int32) (Doc, p
 }
 
 // Transition moves a document the actor may act on, at the version they saw:
-// to posted (send; may stop at pending_approval), back to draft (withdraw), or to cancelled.
-func (s *Service) Transition(ctx context.Context, ref Ref, version int32, to Status) error {
-	return platform.InTx(ctx, func(ctx context.Context) error {
+// to posted (send; may stop at pending_approval), back to draft (withdraw), or to
+// cancelled. A cancel an approval rule holds returns held and changes nothing yet.
+func (s *Service) Transition(ctx context.Context, ref Ref, version int32, to Status) (held bool, err error) {
+	err = platform.InTx(ctx, func(ctx context.Context) error {
 		d, locked, err := s.lockVisible(ctx, ref)
 		if err != nil {
+			return err
+		}
+		if err := s.refuseHeld(ctx, ref); err != nil {
 			return err
 		}
 		var action Action
@@ -586,6 +603,14 @@ func (s *Service) Transition(ctx context.Context, ref Ref, version int32, to Sta
 		}
 		if err := checkPeriod(d.Date, locked); err != nil {
 			return err
+		}
+		if to == Cancelled && s.gate != nil {
+			if held, err = s.gate.Hold(ctx, d, Cancel, nil); err != nil {
+				return err
+			}
+			if held {
+				return s.d.Audit.RecordFor(ctx, "record.cancel_requested", audit.Ref(ref), nil)
+			}
 		}
 		if t := s.types[ref.Type]; to == Posted && t.BeforeSubmit != nil {
 			if err := t.BeforeSubmit(ctx, d); err != nil {
@@ -616,6 +641,89 @@ func (s *Service) Transition(ctx context.Context, ref Ref, version int32, to Sta
 		}
 		return s.apply(ctx, d, to)
 	})
+	return held, err
+}
+
+// Request asks whether action on ref must wait for approval and, if so, holds ref.
+// Modules call it inside their transaction after their own checks, before running the action.
+func (s *Service) Request(ctx context.Context, ref Ref, action Action, params json.RawMessage) (held bool, err error) {
+	err = platform.InTx(ctx, func(ctx context.Context) error {
+		d, locked, err := s.lock(ctx, ref)
+		if err != nil {
+			return err
+		}
+		if err := s.refuseHeld(ctx, ref); err != nil || s.gate == nil {
+			return err
+		}
+		if held, err = s.gate.Hold(ctx, d, action, params); err != nil || !held {
+			return err
+		}
+		// A hold in a locked period could never complete.
+		return checkPeriod(d.Date, locked)
+	})
+	return held, err
+}
+
+// LockToDepend takes ref's locks for a write that depends on it; refused while ref is held.
+func (s *Service) LockToDepend(ctx context.Context, ref Ref) (Doc, error) {
+	d, _, err := s.lock(ctx, ref)
+	if err != nil {
+		return d, err
+	}
+	return d, s.refuseHeld(ctx, ref)
+}
+
+// CompleteAction runs the held action of ref once its request is approved; approval
+// calls it before closing the request. It runs as the submitter, so a permission they
+// lost meanwhile fails it, and approval keeps the request open.
+func (s *Service) CompleteAction(ctx context.Context, ref Ref, ticket int64) error {
+	return platform.InTx(ctx, func(ctx context.Context) error {
+		d, locked, err := s.lock(ctx, ref)
+		if err != nil {
+			return err
+		}
+		h, err := s.gate.HeldBy(ctx, ref)
+		if err != nil {
+			return err
+		}
+		if h == nil || h.Ticket != ticket || d.Version != h.Version {
+			return ErrApprovalStale
+		}
+		if err := checkPeriod(d.Date, locked); err != nil {
+			return err
+		}
+		as := s.d.IAM.AsUser(ctx, h.SubmittedBy)
+		if h.Action == Cancel {
+			if err := s.require(as, ref, Cancel); err != nil {
+				return err
+			}
+			if d.Status != Posted {
+				return ErrInvalidTransition
+			}
+			return s.apply(as, d, Cancelled)
+		}
+		run, ok := s.types[ref.Type].ModuleActions[h.Action]
+		if !ok {
+			return fmt.Errorf("record: %s has no action %q", ref.Type, h.Action)
+		}
+		return run(as, d, h.Params)
+	})
+}
+
+// refuseHeld fails while an approval request holds ref.
+func (s *Service) refuseHeld(ctx context.Context, ref Ref) error {
+	if held, err := s.held(ctx, ref); err != nil || !held {
+		return err
+	}
+	return ErrAwaitingApproval
+}
+
+func (s *Service) held(ctx context.Context, ref Ref) (bool, error) {
+	if s.gate == nil || s.types[ref.Type].Kind != Document {
+		return false, nil
+	}
+	h, err := s.gate.HeldBy(ctx, ref)
+	return h != nil, err
 }
 
 // CompleteApproval posts a document whose last approval step was just approved.
@@ -832,8 +940,8 @@ func (s *Service) PeriodLocks(ctx context.Context) ([]PeriodLock, error) {
 }
 
 // SetPeriodLock moves a legal entity's lock date; nil unlocks everything. Moving it
-// later is refused while documents in the newly locked days await approval, since
-// they could then neither be approved nor withdrawn.
+// later is refused while documents in the newly locked days await approval or are
+// held by a request, since they could then neither be approved nor withdrawn.
 func (s *Service) SetPeriodLock(ctx context.Context, legalEntity int64, until *string) error {
 	if err := s.d.IAM.RequireCore(ctx, iam.PermManagePeriods); err != nil {
 		return err
@@ -863,11 +971,20 @@ func (s *Service) SetPeriodLock(ctx context.Context, legalEntity int64, until *s
 			if err != nil {
 				return err
 			}
-			if len(pending) > 0 {
-				docs := make([]map[string]any, len(pending))
-				for i, p := range pending {
-					docs[i] = map[string]any{"doc_type": p.DocType, "id": p.ID, "number": p.Number, "date": platform.DatePtr(p.Date)}
+			docs := make([]map[string]any, 0, len(pending))
+			for _, p := range pending {
+				docs = append(docs, map[string]any{"doc_type": p.DocType, "id": p.ID, "number": p.Number, "date": platform.DatePtr(p.Date)})
+			}
+			if s.gate != nil {
+				held, err := s.gate.HeldInPeriod(ctx, legalEntity, date)
+				if err != nil {
+					return err
 				}
+				for _, h := range held {
+					docs = append(docs, map[string]any{"doc_type": h.DocType, "id": h.ID, "number": h.Number, "date": platform.DatePtr(h.Date)})
+				}
+			}
+			if len(docs) > 0 {
 				return &platform.Error{Status: http.StatusConflict, Code: "period_has_pending_documents", Params: map[string]any{"documents": docs}}
 			}
 		}

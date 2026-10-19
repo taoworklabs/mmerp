@@ -118,7 +118,7 @@ func newLeaveFixture(t *testing.T, rule string) *leaveFixture {
 // submit sends a new leave request of staff and returns its id.
 func (f *leaveFixture) submit(start string) int64 {
 	lv := f.id(f.staff, "/api/hrm/leaves", fmt.Sprintf(`{"leave_type_id":%d,"start_date":%q,"end_date":%q,"days":"1","reason":"Việc riêng"}`, f.annual, start, start))
-	f.ok(f.staff, "POST", fmt.Sprintf("/api/documents/hrm.leave_request/%d/transitions", lv), `{"to":"posted","version":1}`, 204)
+	f.ok(f.staff, "POST", fmt.Sprintf("/api/documents/hrm.leave_request/%d/transitions", lv), `{"to":"posted","version":1}`, 200)
 	return lv
 }
 

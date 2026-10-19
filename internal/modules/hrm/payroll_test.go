@@ -61,7 +61,7 @@ func TestPayrollRecordContract(t *testing.T) {
 			BreakSubmit: func(_ *testing.T, r record.Ref) {
 				d, err := f.rec.Get(f.admin, r)
 				f.check(err)
-				f.check(f.rec.Transition(f.hr, record.Ref{Type: "hrm.overtime_request", ID: f.overtime(d.Date)}, 1, record.Posted))
+				f.check(errOf(f.rec.Transition(f.hr, record.Ref{Type: "hrm.overtime_request", ID: f.overtime(d.Date)}, 1, record.Posted)))
 			},
 			PostingLines: func(_ *testing.T, r record.Ref) int {
 				var n int
@@ -120,7 +120,7 @@ func (f *payrollFixture) overtime(date string) int64 {
 }
 
 func (f *payrollFixture) send(id int64) error {
-	return f.rec.Transition(f.pay, payrollRef(id), f.payrollDoc(id).Version, record.Posted)
+	return errOf(f.rec.Transition(f.pay, payrollRef(id), f.payrollDoc(id).Version, record.Posted))
 }
 
 func TestPayrollLifecycle(t *testing.T) {
@@ -215,14 +215,14 @@ func TestPayrollLifecycle(t *testing.T) {
 	wantErr(t, f.send(second), "payroll_already_posted")
 	// 11': the period is closed to its sources.
 	ot2 := f.overtime("2026-04-07")
-	wantErr(t, f.rec.Transition(f.pay, record.Ref{Type: "hrm.overtime_request", ID: ot2}, 1, record.Posted), "payroll_period_closed")
+	wantErr(t, errOf(f.rec.Transition(f.pay, record.Ref{Type: "hrm.overtime_request", ID: ot2}, 1, record.Posted)), "payroll_period_closed")
 	// 13: nor can the timesheet be cancelled.
 	ts, err := f.hrm.Timesheets(f.hr, hrm.TimesheetFilter{Month: "2026-04", Paging: platform.Paging{Page: 1, PageSize: 20}})
 	f.check(err)
-	wantErr(t, f.rec.Transition(f.hr, record.Ref{Type: "hrm.timesheet", ID: ts.Items[0].ID}, 3, record.Cancelled), "payroll_period_closed")
+	wantErr(t, errOf(f.rec.Transition(f.hr, record.Ref{Type: "hrm.timesheet", ID: ts.Items[0].ID}, 3, record.Cancelled)), "payroll_period_closed")
 
 	// Cancelling reopens the period and voids the lines; then the second one posts.
-	f.check(f.rec.Transition(f.pay, payrollRef(first), f.payrollDoc(first).Version, record.Cancelled))
+	f.check(errOf(f.rec.Transition(f.pay, payrollRef(first), f.payrollDoc(first).Version, record.Cancelled)))
 	var voided int
 	f.check(f.pool.QueryRow(f.admin, `SELECT count(*) FROM posting.lines WHERE doc_id = $1 AND voided_at IS NOT NULL`, first).Scan(&voided))
 	if voided != 5 || f.heldBy(first) != 0 {
@@ -232,7 +232,7 @@ func TestPayrollLifecycle(t *testing.T) {
 	// A posted payroll not holding its period (only through bad data) cannot be cancelled.
 	third := f.payroll("2026-04")
 	f.check(f.pool.QueryRow(f.admin, `UPDATE hrm.payroll_periods SET posted_payroll_id = $1 RETURNING id`, third).Scan(new(int64)))
-	wantErr(t, f.rec.Transition(f.pay, payrollRef(second), f.payrollDoc(second).Version, record.Cancelled), "payroll_not_holding_period")
+	wantErr(t, errOf(f.rec.Transition(f.pay, payrollRef(second), f.payrollDoc(second).Version, record.Cancelled)), "payroll_not_holding_period")
 }
 
 // payrollJob computes a draft again and waits.
@@ -261,7 +261,7 @@ func TestPayrollSourcesChangeWhilePending(t *testing.T) {
 		t.Fatalf("after the failed approval: %+v", d)
 	}
 	// Withdraw, compute, send again.
-	f.check(f.rec.Transition(f.pay, payrollRef(id), d.Version, record.Draft))
+	f.check(errOf(f.rec.Transition(f.pay, payrollRef(id), d.Version, record.Draft)))
 	f.check(f.payrollJob(id))
 	f.check(f.send(id))
 	d, _ = f.rec.Get(f.admin, payrollRef(id))
@@ -329,7 +329,7 @@ func (f *payrollFixture) closing(id int64, other func() error) (otherErr error) 
 	f.t.Helper()
 	var wg sync.WaitGroup
 	f.check(platform.InTx(f.pay, func(ctx context.Context) error {
-		f.check(f.rec.Transition(ctx, payrollRef(id), f.payrollDoc(id).Version, record.Posted))
+		f.check(errOf(f.rec.Transition(ctx, payrollRef(id), f.payrollDoc(id).Version, record.Posted)))
 		wg.Go(func() { otherErr = other() })
 		pgtest.AwaitLockWait(f.t, f.pool)
 		return nil
@@ -344,9 +344,9 @@ func TestPayrollsClosedAtOnce(t *testing.T) {
 	f := payrollAprilFixture(t)
 	first, second, third := f.payroll("2026-04"), f.payroll("2026-04"), f.payroll("2026-04")
 	f.check(f.send(first))
-	f.check(f.rec.Transition(f.pay, payrollRef(first), f.payrollDoc(first).Version, record.Cancelled))
+	f.check(errOf(f.rec.Transition(f.pay, payrollRef(first), f.payrollDoc(first).Version, record.Cancelled)))
 	v := f.payrollDoc(third).Version // read first: reading a payroll takes long enough to miss the race
-	wantErr(t, f.closing(second, func() error { return f.rec.Transition(f.pay, payrollRef(third), v, record.Posted) }), "payroll_already_posted")
+	wantErr(t, f.closing(second, func() error { return errOf(f.rec.Transition(f.pay, payrollRef(third), v, record.Posted)) }), "payroll_already_posted")
 	if f.heldBy(second) != 1 || f.heldBy(third) != 0 {
 		t.Fatalf("held by second %d, third %d", f.heldBy(second), f.heldBy(third))
 	}
@@ -358,14 +358,14 @@ func TestSourceApprovedWhilePayrollCloses(t *testing.T) {
 	f := payrollAprilFixture(t)
 	ot := record.Ref{Type: "hrm.overtime_request", ID: f.overtime("2026-04-06")}
 	first := f.payroll("2026-04")
-	wantErr(t, f.closing(first, func() error { return f.rec.Transition(f.pay, ot, 1, record.Posted) }), "payroll_period_closed")
-	f.check(f.rec.Transition(f.pay, payrollRef(first), f.payrollDoc(first).Version, record.Cancelled))
+	wantErr(t, f.closing(first, func() error { return errOf(f.rec.Transition(f.pay, ot, 1, record.Posted)) }), "payroll_period_closed")
+	f.check(errOf(f.rec.Transition(f.pay, payrollRef(first), f.payrollDoc(first).Version, record.Cancelled)))
 
 	second := f.payroll("2026-04")
 	var sent error
 	var wg sync.WaitGroup
 	f.check(platform.InTx(f.pay, func(ctx context.Context) error {
-		f.check(f.rec.Transition(ctx, ot, 1, record.Posted))
+		f.check(errOf(f.rec.Transition(ctx, ot, 1, record.Posted)))
 		wg.Go(func() { sent = f.send(second) })
 		pgtest.AwaitLockWait(t, f.pool)
 		return nil

@@ -138,6 +138,81 @@ func (q *Queries) HasVoted(ctx context.Context, arg HasVotedParams) (bool, error
 	return exists, err
 }
 
+const heldBy = `-- name: HeldBy :one
+SELECT id, doc_type, doc_id, version, submitted_by, submitted_at, status, max_levels, fallback_product, fallback_role, plan, action, params FROM approval.instances WHERE doc_type = $1 AND doc_id = $2 AND status = 'open' AND action <> 'post'
+`
+
+type HeldByParams struct {
+	DocType string
+	DocID   int64
+}
+
+// The open request holding a document for an action other than post.
+func (q *Queries) HeldBy(ctx context.Context, arg HeldByParams) (ApprovalInstance, error) {
+	row := q.db.QueryRow(ctx, heldBy, arg.DocType, arg.DocID)
+	var i ApprovalInstance
+	err := row.Scan(
+		&i.ID,
+		&i.DocType,
+		&i.DocID,
+		&i.Version,
+		&i.SubmittedBy,
+		&i.SubmittedAt,
+		&i.Status,
+		&i.MaxLevels,
+		&i.FallbackProduct,
+		&i.FallbackRole,
+		&i.Plan,
+		&i.Action,
+		&i.Params,
+	)
+	return i, err
+}
+
+const heldInPeriod = `-- name: HeldInPeriod :many
+SELECT d.doc_type, d.id, d.number, d.date
+FROM approval.instances i JOIN record.documents d ON d.id = i.doc_id AND d.doc_type = i.doc_type
+WHERE i.status = 'open' AND i.action <> 'post' AND d.legal_entity_id = $1 AND d.date <= $2
+ORDER BY d.date, d.id
+`
+
+type HeldInPeriodParams struct {
+	LegalEntityID int64
+	Date          pgtype.Date
+}
+
+type HeldInPeriodRow struct {
+	DocType string
+	ID      int64
+	Number  string
+	Date    pgtype.Date
+}
+
+func (q *Queries) HeldInPeriod(ctx context.Context, arg HeldInPeriodParams) ([]HeldInPeriodRow, error) {
+	rows, err := q.db.Query(ctx, heldInPeriod, arg.LegalEntityID, arg.Date)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []HeldInPeriodRow
+	for rows.Next() {
+		var i HeldInPeriodRow
+		if err := rows.Scan(
+			&i.DocType,
+			&i.ID,
+			&i.Number,
+			&i.Date,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const inbox = `-- name: Inbox :many
 SELECT i.id, i.doc_type, i.doc_id, s.step, i.submitted_at, u.name AS submitted_by_name, d.number, d.date
 FROM (
@@ -196,8 +271,8 @@ func (q *Queries) Inbox(ctx context.Context, actor int64) ([]InboxRow, error) {
 }
 
 const insertInstance = `-- name: InsertInstance :one
-INSERT INTO approval.instances (doc_type, doc_id, version, submitted_by, status, plan, max_levels, fallback_product, fallback_role)
-VALUES ($1, $2, $3, $4, 'open', $5, $6, $7, $8) RETURNING id
+INSERT INTO approval.instances (doc_type, doc_id, version, submitted_by, status, plan, max_levels, fallback_product, fallback_role, action, params)
+VALUES ($1, $2, $3, $4, 'open', $5, $6, $7, $8, $9, $10) RETURNING id
 `
 
 type InsertInstanceParams struct {
@@ -209,6 +284,8 @@ type InsertInstanceParams struct {
 	MaxLevels       int32
 	FallbackProduct string
 	FallbackRole    string
+	Action          string
+	Params          []byte
 }
 
 func (q *Queries) InsertInstance(ctx context.Context, arg InsertInstanceParams) (int64, error) {
@@ -221,6 +298,8 @@ func (q *Queries) InsertInstance(ctx context.Context, arg InsertInstanceParams) 
 		arg.MaxLevels,
 		arg.FallbackProduct,
 		arg.FallbackRole,
+		arg.Action,
+		arg.Params,
 	)
 	var id int64
 	err := row.Scan(&id)

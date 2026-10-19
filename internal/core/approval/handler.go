@@ -43,6 +43,10 @@ type rejectInput struct {
 	}
 }
 
+type instanceInput struct {
+	ID int64 `path:"id"`
+}
+
 type reassignInput struct {
 	ID   int64 `path:"id"`
 	Body struct {
@@ -97,6 +101,10 @@ func registerHandlers(api huma.API, s *Service) {
 	huma.Register(api, huma.Operation{OperationID: "reject", Method: http.MethodPost, Path: "/approvals/{id}/reject", DefaultStatus: http.StatusNoContent},
 		func(ctx context.Context, in *rejectInput) (*struct{}, error) {
 			return nil, s.Reject(ctx, in.ID, in.Body.Step, in.Body.Reason)
+		})
+	huma.Register(api, huma.Operation{OperationID: "withdraw-approval", Method: http.MethodPost, Path: "/approvals/{id}/withdraw", DefaultStatus: http.StatusNoContent},
+		func(ctx context.Context, in *instanceInput) (*struct{}, error) {
+			return nil, s.Withdraw(ctx, in.ID)
 		})
 	huma.Register(api, huma.Operation{OperationID: "reassign", Method: http.MethodPost, Path: "/approvals/{id}/reassign", DefaultStatus: http.StatusNoContent},
 		func(ctx context.Context, in *reassignInput) (*struct{}, error) {

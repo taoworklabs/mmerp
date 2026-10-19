@@ -73,9 +73,9 @@ func TestOvertime(t *testing.T) {
 		t.Fatalf("header %+v", d)
 	}
 	f.closePeriod("2026-04-01", "2026-04-30", id)
-	f.check(f.rec.Transition(f.e, record.Ref{Type: "hrm.overtime_request", ID: id}, d.Version, record.Posted))
+	f.check(errOf(f.rec.Transition(f.e, record.Ref{Type: "hrm.overtime_request", ID: id}, d.Version, record.Posted)))
 	april := must(t)(f.hrm.CreateOvertime(f.e, hrm.NewOvertime{OvertimeFields: overtime("2026-04-01", "2", "0")}))
-	wantErr(t, f.rec.Transition(f.e, record.Ref{Type: "hrm.overtime_request", ID: april}, 1, record.Posted), "payroll_period_closed")
+	wantErr(t, errOf(f.rec.Transition(f.e, record.Ref{Type: "hrm.overtime_request", ID: april}, 1, record.Posted)), "payroll_period_closed")
 
 	// The manager sees E's request read-only; someone else does not see it.
 	if o, err := f.hrm.Overtime(f.m, id); err != nil || o.DayHours != "2" || o.NightHours != "1.5" || len(o.AllowedActions) != 0 {
@@ -170,7 +170,7 @@ func TestDayKindFollowsTheCalendar(t *testing.T) {
 	// Right when saved, wrong by the time it is sent: 29/04 became a holiday meanwhile.
 	late := must(t)(create("2026-04-29", "weekday"))
 	f.check(f.hrm.SaveHoliday(pay, f.c, hrm.Holiday{Date: "2026-04-29", Name: "Nghỉ bù"}))
-	wantErr(t, f.rec.Transition(f.e, record.Ref{Type: "hrm.overtime_request", ID: late}, 1, record.Posted), "overtime_day_kind_mismatch")
+	wantErr(t, errOf(f.rec.Transition(f.e, record.Ref{Type: "hrm.overtime_request", ID: late}, 1, record.Posted)), "overtime_day_kind_mismatch")
 }
 
 // Someone who may not create for an employee learns nothing about them: whether the id

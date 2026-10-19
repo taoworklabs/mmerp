@@ -114,7 +114,8 @@ func (f *fixture) move(ctx context.Context, docType string, id int64, to record.
 	if err != nil {
 		return err
 	}
-	return f.rec.Transition(ctx, record.Ref{Type: docType, ID: id}, d.Version, to)
+	_, err = f.rec.Transition(ctx, record.Ref{Type: docType, ID: id}, d.Version, to)
+	return err
 }
 
 func wantCode(t *testing.T, err error, code string) {

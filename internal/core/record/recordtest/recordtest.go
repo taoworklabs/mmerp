@@ -232,7 +232,7 @@ var cases = []testCase{
 			t.Fatal("posted without posting lines")
 		}
 		lock(t, h, h.Admin, "2026-03-31")
-		wantCode(t, h.Core.Record.Transition(h.Actor, ref, get(t, h, ref).Version, record.Cancelled), "period_locked")
+		wantCode(t, errOf(h.Core.Record.Transition(h.Actor, ref, get(t, h, ref).Version, record.Cancelled)), "period_locked")
 		if n := h.Effects(t, ref); n != 1 {
 			t.Fatalf("a refused cancel changed the effect to %d", n)
 		}
@@ -282,7 +282,7 @@ var cases = []testCase{
 		h.BreakSubmit(t, approved)
 		refused := func(ref record.Ref) string {
 			before := get(t, h, ref)
-			err := h.Core.Record.Transition(h.Actor, ref, before.Version, record.Posted)
+			_, err := h.Core.Record.Transition(h.Actor, ref, before.Version, record.Posted)
 			if err == nil {
 				t.Fatal("sent past the submit check")
 			}
@@ -321,7 +321,7 @@ var cases = []testCase{
 			routes = append(routes, route{name, func() error { return h.Routes[name](stranger, ref) }})
 		}
 		routes = append(routes,
-			route{"send", func() error { return h.Core.Record.Transition(stranger, ref, v, record.Posted) }},
+			route{"send", func() error { return errOf(h.Core.Record.Transition(stranger, ref, v, record.Posted)) }},
 			route{"delete", func() error { return h.Core.Record.Delete(stranger, ref, v) }})
 		for _, r := range routes {
 			if err := r.call(); code(err) != "not_found" {
@@ -329,7 +329,7 @@ var cases = []testCase{
 			}
 		}
 		send(t, h, ref)
-		if err := h.Core.Record.Transition(stranger, ref, get(t, h, ref).Version, record.Cancelled); code(err) != "not_found" {
+		if _, err := h.Core.Record.Transition(stranger, ref, get(t, h, ref).Version, record.Cancelled); code(err) != "not_found" {
 			t.Errorf("cancel: %v, want not_found", err)
 		}
 		if _, err := h.Get(stranger, ref); code(err) != "not_found" {
@@ -390,7 +390,7 @@ var cases = []testCase{
 			if err := h.Edit(ctx, ref, v, "2026-03-11"); err != nil {
 				return err
 			}
-			return h.Core.Record.Transition(ctx, ref, v, record.Posted) // v is stale now
+			return errOf(h.Core.Record.Transition(ctx, ref, v, record.Posted)) // v is stale now
 		})
 		wantCode(t, err, "version_conflict")
 		after, err := h.Get(h.Admin, ref)
@@ -411,7 +411,7 @@ var cases = []testCase{
 		wantCode(t, h.Edit(h.Actor, april, av, "2026-03-20"), "period_locked")
 		_, err := h.Create(h.Actor, "2026-03-15", "")
 		wantCode(t, err, "period_locked")
-		wantCode(t, h.Core.Record.Transition(h.Actor, march, mv, record.Posted), "period_locked")
+		wantCode(t, errOf(h.Core.Record.Transition(h.Actor, march, mv, record.Posted)), "period_locked")
 		if err := h.Edit(h.Actor, april, av, "2026-04-11"); err != nil {
 			t.Fatal(err)
 		}
@@ -448,7 +448,7 @@ var cases = []testCase{
 		var wg sync.WaitGroup
 		errs := make([]error, 2)
 		for i := range errs {
-			wg.Go(func() { errs[i] = h.Core.Record.Transition(h.Actor, ref, v, record.Posted) })
+			wg.Go(func() { _, errs[i] = h.Core.Record.Transition(h.Actor, ref, v, record.Posted) })
 		}
 		wg.Wait()
 		if (errs[0] == nil) == (errs[1] == nil) {
@@ -466,7 +466,7 @@ var cases = []testCase{
 			t.Fatal(err)
 		}
 		wantCode(t, h.Edit(h.Actor, ref, v, "2026-03-12"), "version_conflict")
-		wantCode(t, h.Core.Record.Transition(h.Actor, ref, v, record.Posted), "version_conflict")
+		wantCode(t, errOf(h.Core.Record.Transition(h.Actor, ref, v, record.Posted)), "version_conflict")
 	}},
 
 	{"approving a withdrawn submission is refused", func(t *testing.T, h Harness) {
@@ -536,7 +536,7 @@ var cases = []testCase{
 		var locked error
 		var wg sync.WaitGroup
 		if err := platform.InTx(h.Actor, func(ctx context.Context) error {
-			if err := h.Core.Record.Transition(ctx, ref, get(t, h, ref).Version, record.Posted); err != nil {
+			if _, err := h.Core.Record.Transition(ctx, ref, get(t, h, ref).Version, record.Posted); err != nil {
 				return err
 			}
 			wg.Go(func() { locked = h.Core.Record.SetPeriodLock(h.Admin, h.LegalEntity, new("2026-03-31")) })
@@ -570,7 +570,7 @@ func get(t *testing.T, h Harness, ref record.Ref) record.Doc {
 
 func move(t *testing.T, h Harness, ref record.Ref, to record.Status) {
 	t.Helper()
-	if err := h.Core.Record.Transition(h.Actor, ref, get(t, h, ref).Version, to); err != nil {
+	if _, err := h.Core.Record.Transition(h.Actor, ref, get(t, h, ref).Version, to); err != nil {
 		t.Fatal(err)
 	}
 }
@@ -644,6 +644,9 @@ func code(err error) string {
 	}
 	return ""
 }
+
+// errOf drops Transition's held result where only the error matters.
+func errOf(_ bool, err error) error { return err }
 
 func wantCode(t *testing.T, err error, want string) {
 	t.Helper()

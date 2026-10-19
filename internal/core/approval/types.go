@@ -124,12 +124,16 @@ type StepView struct {
 
 // Instance is the latest submission of a document, for the approval panel.
 type Instance struct {
-	ID              int64      `json:"id"`
+	ID int64 `json:"id"`
+	// post, cancel, or a module action of the document's type.
+	Action          string     `json:"action"`
 	Status          string     `json:"status" enum:"open,approved,rejected,withdrawn,stale"`
 	SubmittedByName string     `json:"submitted_by_name"`
 	SubmittedAt     string     `json:"submitted_at" format:"date-time"`
 	Plan            Plan       `json:"plan"`
 	Steps           []StepView `json:"steps" nullable:"false"` // by position
+	// withdraw, for the submitter of an open request other than post.
+	AllowedActions []string `json:"allowed_actions" nullable:"false"`
 }
 
 var (

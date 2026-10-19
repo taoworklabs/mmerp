@@ -247,7 +247,7 @@ func TestTimesheetImportSampleFlow(t *testing.T) {
 	}
 
 	// Draft → pending → approved by head → posted.
-	f.ok(f.hr, "POST", fmt.Sprintf("/api/documents/hrm.timesheet/%d/transitions", f.timesheet), `{"to":"posted","version":3}`, 204)
+	f.ok(f.hr, "POST", fmt.Sprintf("/api/documents/hrm.timesheet/%d/transitions", f.timesheet), `{"to":"posted","version":3}`, 200)
 	var inbox struct {
 		Items []struct {
 			InstanceID int64 `json:"instance_id"`

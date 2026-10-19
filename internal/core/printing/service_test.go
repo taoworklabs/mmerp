@@ -80,7 +80,7 @@ func TestPostingFreezesThePrint(t *testing.T) {
 		return n
 	}
 
-	if err := h.rec.Transition(h.admin, h.doc.Ref, h.doc.Version, record.Posted); !errors.Is(err, broken) {
+	if _, err := h.rec.Transition(h.admin, h.doc.Ref, h.doc.Version, record.Posted); !errors.Is(err, broken) {
 		t.Fatalf("post with broken data: %v", err)
 	}
 	if got := must[record.Doc](t)(h.rec.Get(h.admin, h.doc.Ref)); got.Status != record.Draft || snapshots() != 0 {
@@ -88,7 +88,7 @@ func TestPostingFreezesThePrint(t *testing.T) {
 	}
 
 	fail = false
-	if err := h.rec.Transition(h.admin, h.doc.Ref, h.doc.Version, record.Posted); err != nil {
+	if _, err := h.rec.Transition(h.admin, h.doc.Ref, h.doc.Version, record.Posted); err != nil {
 		t.Fatal(err)
 	}
 	if snapshots() != 1 {

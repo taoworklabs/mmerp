@@ -12,8 +12,18 @@ ON CONFLICT (doc_type, action) DO UPDATE SET flow = $3, max_levels = $4, fallbac
 DELETE FROM approval.rules WHERE doc_type = $1 AND action = $2;
 
 -- name: InsertInstance :one
-INSERT INTO approval.instances (doc_type, doc_id, version, submitted_by, status, plan, max_levels, fallback_product, fallback_role)
-VALUES ($1, $2, $3, $4, 'open', $5, $6, $7, $8) RETURNING id;
+INSERT INTO approval.instances (doc_type, doc_id, version, submitted_by, status, plan, max_levels, fallback_product, fallback_role, action, params)
+VALUES ($1, $2, $3, $4, 'open', $5, $6, $7, $8, $9, $10) RETURNING id;
+
+-- name: HeldBy :one
+-- The open request holding a document for an action other than post.
+SELECT * FROM approval.instances WHERE doc_type = $1 AND doc_id = $2 AND status = 'open' AND action <> 'post';
+
+-- name: HeldInPeriod :many
+SELECT d.doc_type, d.id, d.number, d.date
+FROM approval.instances i JOIN record.documents d ON d.id = i.doc_id AND d.doc_type = i.doc_type
+WHERE i.status = 'open' AND i.action <> 'post' AND d.legal_entity_id = $1 AND d.date <= $2
+ORDER BY d.date, d.id;
 
 -- name: InsertStep :exec
 INSERT INTO approval.instance_steps (instance_id, position, approver, approvals, rejections, status)

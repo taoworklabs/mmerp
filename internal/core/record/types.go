@@ -2,7 +2,10 @@ package record
 
 import (
 	"context"
+	"encoding/json"
 	"net/http"
+
+	"github.com/jackc/pgx/v5/pgtype"
 
 	"github.com/taoworklabs/mmerp/internal/platform"
 )
@@ -125,6 +128,9 @@ type Type struct {
 	// Subjects returns the users a document is about (e.g. the employee on leave);
 	// like its submitter, they never approve it.
 	Subjects func(ctx context.Context, id int64) ([]int64, error)
+	// ModuleActions are the module's own document actions an approval rule may hold,
+	// run by CompleteAction once approved.
+	ModuleActions map[Action]ModuleAction
 
 	// Catalog types only. HasData reports whether the product holds any such record, so a
 	// disabled product with master data but no document stays readable.
@@ -185,6 +191,26 @@ type Doc struct {
 	Reused bool
 }
 
+// ModuleAction runs a module's own document action; it re-checks what it needs.
+type ModuleAction func(ctx context.Context, d Doc, params json.RawMessage) error
+
+// Hold is the open approval request holding a document for an action other than post.
+type Hold struct {
+	Ticket      int64
+	Action      Action
+	Params      json.RawMessage
+	SubmittedBy int64
+	Version     int32 // the document's version when requested
+}
+
+// HeldDoc is a document held by a request, as a period lock lists it.
+type HeldDoc struct {
+	DocType string
+	ID      int64
+	Number  string
+	Date    pgtype.Date
+}
+
 type PeriodLock struct {
 	LegalEntityID   int64   `json:"legal_entity_id"`
 	LegalEntityName string  `json:"legal_entity_name"`
@@ -208,6 +234,8 @@ var (
 	ErrRequestReused       = &platform.Error{Status: http.StatusConflict, Code: "request_id_reused"}
 	// The approval instance no longer matches the document: withdrawn, resubmitted or already decided.
 	ErrApprovalStale = &platform.Error{Status: http.StatusConflict, Code: "approval_stale"}
+	// An open approval request holds the document; nothing else may change it meanwhile.
+	ErrAwaitingApproval = &platform.Error{Status: http.StatusConflict, Code: "awaiting_approval"}
 )
 
 func errPeriodLocked(lockedUntil string) error {

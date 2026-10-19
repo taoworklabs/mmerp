@@ -73,7 +73,7 @@ func TestLeaveAPI(t *testing.T) {
 	wantCode(t, c.do("POST", docPath+"/transitions", `{"to":"posted","version":1}`), 422, "no_approver")
 	ok("DELETE", "/api/approval-rules/hrm.leave_request", "", 204)
 
-	ok("POST", docPath+"/transitions", `{"to":"posted","version":1}`, 204)
+	ok("POST", docPath+"/transitions", `{"to":"posted","version":1}`, 200)
 	if l := get(c, path); l.Status != "posted" || *l.Balance != "10.5" || !slices.Equal(l.AllowedActions, []string{"cancel"}) {
 		t.Fatalf("posted = %+v", l)
 	}

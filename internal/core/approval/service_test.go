@@ -2,11 +2,13 @@ package approval_test
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"reflect"
 	"slices"
 	"strconv"
 	"strings"
+	"sync"
 	"testing"
 
 	"github.com/taoworklabs/mmerp/internal/core/approval"
@@ -14,6 +16,7 @@ import (
 	"github.com/taoworklabs/mmerp/internal/core/iam"
 	"github.com/taoworklabs/mmerp/internal/core/record"
 	"github.com/taoworklabs/mmerp/internal/platform"
+	"github.com/taoworklabs/mmerp/internal/platform/pgtest"
 )
 
 type fixture struct {
@@ -25,7 +28,14 @@ type fixture struct {
 	unit     int64
 	users    map[string]int64
 	as       func(login string) context.Context
-	managers map[int][]int64 // level → what the type's Approvers returns
+	managers map[int][]int64         // level → what the type's Approvers returns
+	denied   map[int64]record.Action // a user the grant refuses one action
+	stamps   []stamp                 // each run of test.doc's stamp action
+}
+
+type stamp struct {
+	actor  int64
+	params string
 }
 
 // newFixture registers test.doc with fields days and kind, module approvers from f.managers,
@@ -35,16 +45,21 @@ type fixture struct {
 func newFixture(t *testing.T) *fixture {
 	core := coretest.New(t, "test", "other")
 	ctx := core.Ctx
-	f := &fixture{t: t, ids: core.IAM, rec: core.Record, appr: core.Approval, admin: core.Admin, users: map[string]int64{}, managers: map[int][]int64{}}
+	f := &fixture{t: t, ids: core.IAM, rec: core.Record, appr: core.Approval, admin: core.Admin, users: map[string]int64{}, managers: map[int][]int64{}, denied: map[int64]record.Action{}}
 	f.ids.RegisterRoles("test", map[string][]string{"hr": {"test.doc.view"}, "approval_admin": {"test.approval.manage"}}, "approval_admin")
 	f.rec.Register(record.Type{
 		Code: "test.doc", Product: "test", Kind: record.Document, NumberPrefix: "T",
 		// Everyone but the outsider may do anything with it.
 		Perms: record.Perms{View: "test.doc.view", Edit: "test.doc.view"},
-		Grant: func(ctx context.Context, _ int64, _ record.Action) (bool, error) {
+		Grant: func(ctx context.Context, _ int64, a record.Action) (bool, error) {
 			id, _ := platform.ActorFrom(ctx)
-			return id != f.users["outsider"], nil
+			return id != f.users["outsider"] && f.denied[id] != a, nil
 		},
+		ModuleActions: map[record.Action]record.ModuleAction{"stamp": func(ctx context.Context, _ record.Doc, params json.RawMessage) error {
+			actor, _ := platform.ActorFrom(ctx)
+			f.stamps = append(f.stamps, stamp{actor, string(params)})
+			return nil
+		}},
 		OnDelete:       func(context.Context, int64) error { return nil },
 		SubjectCreates: true,
 		Fields: []record.Field{{Key: "days", Kind: record.Number}, {Key: "kind", Kind: record.Choice,
@@ -141,7 +156,7 @@ func (f *fixture) send(days, kind string) (record.Doc, error) {
 	d, err := f.rec.Create(f.as("submitter"), "test.doc", record.Header{Date: "2026-03-10", OrgUnitID: f.unit, Subject: f.users["submitter"],
 		Fields: map[string]string{"days": days, "kind": kind}})
 	f.check(err)
-	if err := f.rec.Transition(f.as("submitter"), d.Ref, 1, record.Posted); err != nil {
+	if _, err := f.rec.Transition(f.as("submitter"), d.Ref, 1, record.Posted); err != nil {
 		return d, err
 	}
 	return f.rec.Get(f.admin, d.Ref)
@@ -695,7 +710,8 @@ func TestClosedInstancesCancelTheirSteps(t *testing.T) {
 
 	d, err := f.send("1", "a")
 	f.check(err)
-	f.check(f.rec.Transition(f.as("submitter"), d.Ref, d.Version, record.Draft))
+	_, err = f.rec.Transition(f.as("submitter"), d.Ref, d.Version, record.Draft)
+	f.check(err)
 	if inst := f.panel("boss", d); inst.Status != "withdrawn" || !slices.Equal(statuses(inst), []string{"cancelled", "cancelled"}) {
 		t.Fatalf("after withdrawal: %s %v", inst.Status, statuses(inst))
 	}
@@ -711,5 +727,188 @@ func TestClosedInstancesCancelTheirSteps(t *testing.T) {
 	}
 	if inst := f.panel("boss", d); inst.Status != "stale" || !slices.Equal(statuses(inst), []string{"cancelled", "cancelled"}) {
 		t.Fatalf("after stale: %s %v", inst.Status, statuses(inst))
+	}
+}
+
+// posted is a posted test.doc of the submitter, with a cancel rule for boss.
+func (f *fixture) posted() record.Doc {
+	f.t.Helper()
+	d, err := f.send("1", "a") // no post rule: posts at once
+	f.check(err)
+	f.check(f.appr.SaveRule(f.admin, "test.doc", record.Cancel, ruleOf(f.user("boss"))))
+	return d
+}
+
+func (f *fixture) cancel(login string, d record.Doc) (bool, error) {
+	return f.rec.Transition(f.as(login), d.Ref, d.Version, record.Cancelled)
+}
+
+func (f *fixture) actions(login string, d record.Doc) []string {
+	f.t.Helper()
+	d, err := f.rec.Get(f.admin, d.Ref)
+	f.check(err)
+	acts, err := f.rec.Actions(f.as(login), d, "module_action")
+	f.check(err)
+	return acts
+}
+
+// unchanged fails unless d is still posted at the same version.
+func (f *fixture) unchanged(d record.Doc) {
+	f.t.Helper()
+	got, err := f.rec.Get(f.admin, d.Ref)
+	f.check(err)
+	if got.Status != record.Posted || got.Version != d.Version {
+		f.t.Fatalf("document moved: %s v%d, was v%d", got.Status, got.Version, d.Version)
+	}
+}
+
+func TestCancelWaitsForApproval(t *testing.T) {
+	f := newFixture(t)
+	d := f.posted()
+	held, err := f.cancel("submitter", d)
+	f.check(err)
+	if !held {
+		t.Fatal("cancel did not wait")
+	}
+	f.unchanged(d)
+	if acts := f.actions("submitter", d); len(acts) != 0 {
+		t.Fatalf("held document offers %v", acts)
+	}
+	if _, err := f.rec.Edit(f.as("submitter"), d.Ref, d.Version, record.Header{Date: d.Date, OrgUnitID: f.unit}); code(err) != "awaiting_approval" {
+		t.Fatalf("edit: %v", err)
+	}
+	if _, err := f.cancel("submitter", d); code(err) != "awaiting_approval" {
+		t.Fatalf("second cancel: %v", err)
+	}
+	inst := f.panel("submitter", d)
+	if inst.Action != "cancel" || !slices.Equal(inst.AllowedActions, []string{"withdraw"}) {
+		t.Fatalf("panel %s %v", inst.Action, inst.AllowedActions)
+	}
+	f.check(f.appr.Approve(f.as("boss"), inst.ID, 1))
+	if s := f.status(d); s != record.Cancelled {
+		t.Fatalf("status %s", s)
+	}
+	if inst := f.panel("boss", d); inst.Status != "approved" {
+		t.Fatalf("instance %s", inst.Status)
+	}
+}
+
+func TestRejectedCancelKeepsTheDocument(t *testing.T) {
+	f := newFixture(t)
+	d := f.posted()
+	_, err := f.cancel("submitter", d)
+	f.check(err)
+	f.check(f.appr.Reject(f.as("boss"), f.panel("boss", d).ID, 1, "no"))
+	f.unchanged(d)
+	if acts := f.actions("submitter", d); !slices.Contains(acts, "cancel") {
+		t.Fatalf("after reject: %v", acts)
+	}
+	if inst := f.panel("boss", d); inst.Status != "rejected" || len(inst.AllowedActions) != 0 {
+		t.Fatalf("instance %s %v", inst.Status, inst.AllowedActions)
+	}
+
+	_, err = f.cancel("submitter", d)
+	f.check(err)
+	id := f.panel("boss", d).ID
+	if code(f.appr.Withdraw(f.as("c1"), id)) != "forbidden" {
+		t.Fatal("c1 withdrew")
+	}
+	if len(f.panel("c1", d).AllowedActions) != 0 {
+		t.Fatal("c1 is offered withdraw")
+	}
+	f.check(f.appr.Withdraw(f.as("submitter"), id))
+	f.unchanged(d)
+	if acts := f.actions("submitter", d); !slices.Contains(acts, "cancel") {
+		t.Fatalf("after withdraw: %v", acts)
+	}
+	if inst := f.panel("boss", d); inst.Status != "withdrawn" || !slices.Equal(statuses(inst), []string{"cancelled"}) {
+		t.Fatalf("instance %s %v", inst.Status, statuses(inst))
+	}
+}
+
+func TestOneOpenRequestPerDocument(t *testing.T) {
+	f := newFixture(t)
+	d := f.posted()
+	_, err := f.cancel("submitter", d)
+	f.check(err)
+	if _, err := f.cancel("c1", d); code(err) != "awaiting_approval" {
+		t.Fatalf("second cancel: %v", err)
+	}
+
+	d, err = f.send("1", "a")
+	f.check(err)
+	var second error
+	var wg sync.WaitGroup
+	f.check(platform.InTx(f.as("submitter"), func(ctx context.Context) error {
+		if held, err := f.rec.Transition(ctx, d.Ref, d.Version, record.Cancelled); err != nil || !held {
+			return platform.OrErr(err, errors.New("not held"))
+		}
+		wg.Go(func() { _, second = f.cancel("c1", d) })
+		pgtest.AwaitLockWait(t, platform.DBFrom(f.admin))
+		return nil
+	}))
+	wg.Wait()
+	if code(second) != "awaiting_approval" {
+		t.Fatalf("racing cancel: %v", second)
+	}
+}
+
+func TestCompletionRechecksAsSubmitter(t *testing.T) {
+	f := newFixture(t)
+	d := f.posted()
+	_, err := f.cancel("submitter", d)
+	f.check(err)
+	id := f.panel("boss", d).ID
+	f.denied[f.users["submitter"]] = record.Cancel
+	if code(f.appr.Approve(f.as("boss"), id, 1)) != "forbidden" {
+		t.Fatal("approved without the submitter's permission")
+	}
+	f.unchanged(d)
+	inst := f.panel("boss", d)
+	if inst.Status != "open" || !slices.Equal(inst.Steps[0].AllowedActions, []string{"approve", "reject"}) {
+		t.Fatalf("vote kept: %s %v", inst.Status, inst.Steps[0].AllowedActions)
+	}
+	delete(f.denied, f.users["submitter"])
+	f.check(f.appr.Approve(f.as("boss"), id, 1))
+	if s := f.status(d); s != record.Cancelled {
+		t.Fatalf("status %s", s)
+	}
+}
+
+func TestPeriodLockRefusesHeldDocuments(t *testing.T) {
+	f := newFixture(t)
+	d := f.posted() // dated 2026-03-10
+	_, err := f.cancel("submitter", d)
+	f.check(err)
+	err = f.rec.SetPeriodLock(f.admin, d.LegalEntityID, new("2026-03-31"))
+	e, ok := errors.AsType[*platform.Error](err)
+	if !ok || e.Code != "period_has_pending_documents" {
+		t.Fatalf("lock: %v", err)
+	}
+	docs, _ := e.Params["documents"].([]map[string]any)
+	if len(docs) != 1 || docs[0]["id"] != d.ID || docs[0]["number"] != d.Number {
+		t.Fatalf("listed %v", e.Params["documents"])
+	}
+}
+
+func TestModuleActionRunsOnce(t *testing.T) {
+	f := newFixture(t)
+	d := f.posted()
+	f.check(f.appr.SaveRule(f.admin, "test.doc", "stamp", ruleOf(f.user("boss"))))
+	held, err := f.rec.Request(f.as("submitter"), d.Ref, "stamp", json.RawMessage(`{"n": 1}`))
+	f.check(err)
+	if !held || len(f.stamps) != 0 {
+		t.Fatalf("held %v, stamps %v", held, f.stamps)
+	}
+	if _, err := f.cancel("submitter", d); code(err) != "awaiting_approval" {
+		t.Fatalf("cancel while stamping: %v", err)
+	}
+	f.check(f.appr.Approve(f.as("boss"), f.panel("boss", d).ID, 1))
+	if len(f.stamps) != 1 || f.stamps[0].actor != f.users["submitter"] || f.stamps[0].params != `{"n": 1}` {
+		t.Fatalf("stamps %+v", f.stamps)
+	}
+	f.unchanged(d)
+	if acts := f.actions("submitter", d); !slices.Contains(acts, "cancel") {
+		t.Fatalf("after stamping: %v", acts)
 	}
 }

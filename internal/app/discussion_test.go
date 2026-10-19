@@ -75,7 +75,7 @@ func TestLeaveDiscussion(t *testing.T) {
 	lv := id(staffC, "/api/hrm/leaves", fmt.Sprintf(`{"leave_type_id":%d,"start_date":"2026-03-10","end_date":"2026-03-11","days":"1.5","reason":null}`, annual))
 	docPath := fmt.Sprintf("/api/documents/hrm.leave_request/%d", lv)
 	comments := fmt.Sprintf("/api/records/hrm.leave_request/%d/comments", lv)
-	ok(staffC, "POST", docPath+"/transitions", `{"to":"posted","version":1}`, 204)
+	ok(staffC, "POST", docPath+"/transitions", `{"to":"posted","version":1}`, 200)
 
 	ok(bossC, "POST", comments, `{"body":"Ai làm thay việc của em?"}`, 204)
 	ok(staffC, "POST", comments, `{"body":"Chị Lan nhận.\nEm đã bàn giao."}`, 204)
@@ -104,10 +104,10 @@ func TestLeaveDiscussion(t *testing.T) {
 	wantCode(t, off.do("POST", comments, `{"body":"?"}`), 403, "product_not_enabled")
 
 	// Withdrawn, then cancelled after posting by HR: still read, closed to comments.
-	ok(staffC, "POST", docPath+"/transitions", `{"to":"draft","version":1}`, 204)
+	ok(staffC, "POST", docPath+"/transitions", `{"to":"draft","version":1}`, 200)
 	ok(admin, "DELETE", "/api/approval-rules/hrm.leave_request", "", 204)
-	ok(staffC, "POST", docPath+"/transitions", `{"to":"posted","version":2}`, 204)
-	ok(admin, "POST", docPath+"/transitions", `{"to":"cancelled","version":3}`, 204)
+	ok(staffC, "POST", docPath+"/transitions", `{"to":"posted","version":2}`, 200)
+	ok(admin, "POST", docPath+"/transitions", `{"to":"cancelled","version":3}`, 200)
 	if d := read(bossC, comments); len(d.Items) != 3 || len(d.AllowedActions) != 0 {
 		t.Fatalf("cancelled = %+v", d)
 	}

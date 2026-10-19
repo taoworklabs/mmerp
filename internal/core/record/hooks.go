@@ -1,13 +1,24 @@
 package record
 
-import "context"
+import (
+	"context"
+	"encoding/json"
 
-// ApprovalGate decides whether sending a document needs approval; approval implements it.
+	"github.com/jackc/pgx/v5/pgtype"
+)
+
+// ApprovalGate decides whether an action on a document needs approval; approval implements it.
 type ApprovalGate interface {
 	// Submit opens an approval instance for d when its rules require one.
 	Submit(ctx context.Context, d Doc) (ticket int64, needed bool, err error)
 	// Withdrawn closes the open instance of d after its submitter took it back.
 	Withdrawn(ctx context.Context, d Doc) error
+	// Hold opens a request for action on d when a rule requires one; params travel to the run.
+	Hold(ctx context.Context, d Doc, action Action, params json.RawMessage) (needed bool, err error)
+	// HeldBy returns the open request holding ref, or nil.
+	HeldBy(ctx context.Context, ref Ref) (*Hold, error)
+	// HeldInPeriod lists the held documents of a legal entity dated on or before until.
+	HeldInPeriod(ctx context.Context, legalEntity int64, until pgtype.Date) ([]HeldDoc, error)
 }
 
 // Keeper is a core module that keeps data about records of any type (attachments,

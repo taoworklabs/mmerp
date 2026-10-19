@@ -170,7 +170,7 @@ func (f *jobsFixture) moveContract(c *client, id int64, to string) {
 	f.t.Helper()
 	var d struct{ Version int32 }
 	_ = json.Unmarshal(f.ok(c, "GET", fmt.Sprintf("/api/hrm/contracts/%d", id), "", 200), &d)
-	f.ok(c, "POST", fmt.Sprintf("/api/documents/hrm.contract/%d/transitions", id), fmt.Sprintf(`{"to":%q,"version":%d}`, to, d.Version), 204)
+	f.ok(c, "POST", fmt.Sprintf("/api/documents/hrm.contract/%d/transitions", id), fmt.Sprintf(`{"to":%q,"version":%d}`, to, d.Version), 200)
 }
 
 // rename changes the full name of the employee coded code.
@@ -252,7 +252,7 @@ func TestPrintPayslips(t *testing.T) {
 	f := newJobsFixture(t)
 	f.work([]string{"hrm"})
 	f.wait(f.hr, f.upload(f.hr, "hrm.timesheet", f.params(), march()...))
-	f.ok(f.hr, "POST", fmt.Sprintf("/api/documents/hrm.timesheet/%d/transitions", f.timesheet), `{"to":"posted","version":2}`, 204)
+	f.ok(f.hr, "POST", fmt.Sprintf("/api/documents/hrm.timesheet/%d/transitions", f.timesheet), `{"to":"posted","version":2}`, 200)
 	f.approveAll(204)
 	pay := f.payrollSetup()
 	id := f.createPayroll(pay)
@@ -335,7 +335,7 @@ func TestPrintPayslips(t *testing.T) {
 	if err := f.pool.QueryRow(t.Context(), `SELECT version FROM record.documents WHERE id = $1`, id).Scan(&version); err != nil {
 		t.Fatal(err)
 	}
-	f.ok(pay, "POST", fmt.Sprintf("/api/documents/hrm.payroll/%d/transitions", id), fmt.Sprintf(`{"to":"posted","version":%d}`, version), 204)
+	f.ok(pay, "POST", fmt.Sprintf("/api/documents/hrm.payroll/%d/transitions", id), fmt.Sprintf(`{"to":"posted","version":%d}`, version), 200)
 	var snapshots int
 	if err := f.pool.QueryRow(t.Context(), `SELECT count(*) FROM printing.snapshots WHERE doc_type = 'hrm.payroll' AND doc_id = $1`, id).Scan(&snapshots); err != nil || snapshots != 2 {
 		t.Fatalf("%d snapshots %v", snapshots, err)

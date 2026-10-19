@@ -104,13 +104,13 @@ func TestTimesheet(t *testing.T) {
 
 	// Posted, then a closed March stops the cancel; reopened, the cancel frees the unit's March.
 	ref := record.Ref{Type: "hrm.timesheet", ID: id}
-	f.check(f.rec.Transition(f.hr, ref, 2, record.Posted))
+	f.check(errOf(f.rec.Transition(f.hr, ref, 2, record.Posted)))
 	f.closePeriod("2026-03-01", "2026-03-31", id)
-	wantErr(t, f.rec.Transition(f.hr, ref, 3, record.Cancelled), "payroll_period_closed")
+	wantErr(t, errOf(f.rec.Transition(f.hr, ref, 3, record.Cancelled)), "payroll_period_closed")
 	if _, err := f.pool.Exec(f.admin, `DELETE FROM hrm.payroll_periods`); err != nil {
 		t.Fatal(err)
 	}
-	f.check(f.rec.Transition(f.hr, ref, 3, record.Cancelled))
+	f.check(errOf(f.rec.Transition(f.hr, ref, 3, record.Cancelled)))
 	must(t)(f.hrm.CreateTimesheet(f.hr, hrm.NewTimesheet{OrgUnitID: f.a, Month: "2026-03"}))
 
 	// Nor can a timesheet be posted into a closed period; import follows edit.
@@ -119,5 +119,5 @@ func TestTimesheet(t *testing.T) {
 		t.Fatalf("actions %v", f.timesheet(april).AllowedActions)
 	}
 	f.closePeriod("2026-04-01", "2026-04-30", april)
-	wantErr(t, f.rec.Transition(f.hr, record.Ref{Type: "hrm.timesheet", ID: april}, 1, record.Posted), "payroll_period_closed")
+	wantErr(t, errOf(f.rec.Transition(f.hr, record.Ref{Type: "hrm.timesheet", ID: april}, 1, record.Posted)), "payroll_period_closed")
 }

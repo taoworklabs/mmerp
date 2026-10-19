@@ -5,11 +5,13 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"maps"
 	"slices"
 	"strconv"
 	"time"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgtype"
 
 	"github.com/taoworklabs/mmerp/internal/core/approval/internal/store"
 	"github.com/taoworklabs/mmerp/internal/core/audit"
@@ -23,11 +25,46 @@ type Service struct{ d Deps }
 
 func NewService(d Deps) *Service { return &Service{d: d} }
 
-// Submit implements record.ApprovalGate: it resolves the rule's flow for d into
-// a plan, opens an instance with one step per resolved step, and starts the first ones.
+// Submit implements record.ApprovalGate.
 func (s *Service) Submit(ctx context.Context, d record.Doc) (int64, bool, error) {
+	return s.open(ctx, d, record.Post, nil)
+}
+
+// Hold implements record.ApprovalGate.
+func (s *Service) Hold(ctx context.Context, d record.Doc, action record.Action, params json.RawMessage) (bool, error) {
+	_, needed, err := s.open(ctx, d, action, params)
+	return needed, err
+}
+
+// HeldBy implements record.ApprovalGate.
+func (s *Service) HeldBy(ctx context.Context, ref record.Ref) (*record.Hold, error) {
+	inst, err := store.New(platform.DBFrom(ctx)).HeldBy(ctx, store.HeldByParams{DocType: ref.Type, DocID: ref.ID})
+	if errors.Is(err, pgx.ErrNoRows) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	return &record.Hold{Ticket: inst.ID, Action: record.Action(inst.Action), Params: inst.Params,
+		SubmittedBy: inst.SubmittedBy, Version: inst.Version}, nil
+}
+
+// HeldInPeriod implements record.ApprovalGate.
+func (s *Service) HeldInPeriod(ctx context.Context, legalEntity int64, until pgtype.Date) ([]record.HeldDoc, error) {
+	rows, err := store.New(platform.DBFrom(ctx)).HeldInPeriod(ctx, store.HeldInPeriodParams{LegalEntityID: legalEntity, Date: until})
+	out := make([]record.HeldDoc, len(rows))
+	for i, r := range rows {
+		out[i] = record.HeldDoc(r)
+	}
+	return out, err
+}
+
+// open resolves the flow of the rule for (d's type, action) into a plan, opens an
+// instance with one step per resolved step, and starts the first ones. No rule, or a
+// flow resolving to no step, needs no approval.
+func (s *Service) open(ctx context.Context, d record.Doc, action record.Action, params json.RawMessage) (int64, bool, error) {
 	q := store.New(platform.DBFrom(ctx))
-	rule, err := q.GetRule(ctx, store.GetRuleParams{DocType: d.Type, Action: string(record.Post)})
+	rule, err := q.GetRule(ctx, store.GetRuleParams{DocType: d.Type, Action: string(action)})
 	if errors.Is(err, pgx.ErrNoRows) {
 		return 0, false, nil
 	}
@@ -50,7 +87,11 @@ func (s *Service) Submit(ctx context.Context, d record.Doc) (int64, bool, error)
 	id, err := q.InsertInstance(ctx, store.InsertInstanceParams{
 		DocType: d.Type, DocID: d.ID, Version: d.Version, SubmittedBy: actor, Plan: rawPlan,
 		MaxLevels: rule.MaxLevels, FallbackProduct: rule.FallbackProduct, FallbackRole: rule.FallbackRole,
+		Action: string(action), Params: params,
 	})
+	if platform.Violates(err, "instances_one_open_idx") {
+		return 0, false, record.ErrAwaitingApproval
+	}
 	if err != nil {
 		return 0, false, err
 	}
@@ -222,8 +263,8 @@ func kindOf(t record.Type, field string) (record.FieldKind, bool) {
 }
 
 // act locks in the shared order (the document's locks, then the instance) and
-// checks the instance and step are open. A stale instance is closed and the close
-// committed before ErrApprovalStale is returned.
+// checks the instance and step are open; step 0 acts on the instance alone. A stale
+// instance is closed and the close committed before ErrApprovalStale is returned.
 func (s *Service) act(ctx context.Context, id int64, step int32, fn func(ctx context.Context, inst store.ApprovalInstance, st store.ApprovalInstanceStep, d record.Doc) error) error {
 	stale := false
 	err := platform.InTx(ctx, func(ctx context.Context) error {
@@ -252,17 +293,26 @@ func (s *Service) act(ctx context.Context, id int64, step int32, fn func(ctx con
 		if inst.Status != "open" {
 			return ErrClosed
 		}
-		st, err := q.GetStep(ctx, store.GetStepParams{InstanceID: id, Position: step})
-		if errors.Is(err, pgx.ErrNoRows) || err == nil && st.Status != "open" {
-			return ErrClosed
-		}
-		if err != nil {
-			return err
+		var st store.ApprovalInstanceStep
+		if step != 0 {
+			st, err = q.GetStep(ctx, store.GetStepParams{InstanceID: id, Position: step})
+			if errors.Is(err, pgx.ErrNoRows) || err == nil && st.Status != "open" {
+				return ErrClosed
+			}
+			if err != nil {
+				return err
+			}
 		}
 		if t, _ := s.d.Record.TypeOf(ref.Type); platform.ProductGate(ctx, t.Product, platform.ClassWrite) != nil {
 			return platform.ProductGate(ctx, t.Product, platform.ClassWrite)
 		}
-		if d.Status != record.PendingApproval || d.ApprovalTicket == nil || *d.ApprovalTicket != id || d.Version != inst.Version {
+		// A post moves the document to pending_approval; any other request holds it at
+		// the version it was asked on.
+		current := d.Version == inst.Version
+		if inst.Action == string(record.Post) {
+			current = current && d.Status == record.PendingApproval && d.ApprovalTicket != nil && *d.ApprovalTicket == id
+		}
+		if !current {
 			stale = true
 			if err := q.CancelOpenSteps(ctx, id); err != nil {
 				return err
@@ -278,8 +328,9 @@ func (s *Service) act(ctx context.Context, id int64, step int32, fn func(ctx con
 }
 
 // Approve votes for step as one of its voters. Once the step has its approvals the
-// next steps of the plan start; the last one posts the document in the same
-// transaction. If posting fails the vote is not kept and the instance stays open.
+// next steps of the plan start; the last one posts the document, or runs the held
+// action, in the same transaction. If that fails the vote is not kept and the
+// instance stays open.
 func (s *Service) Approve(ctx context.Context, id int64, step int32) error {
 	return s.act(ctx, id, step, func(ctx context.Context, inst store.ApprovalInstance, st store.ApprovalInstanceStep, d record.Doc) error {
 		status, err := s.vote(ctx, inst, st, "approved", nil)
@@ -302,18 +353,27 @@ func (s *Service) Approve(ctx context.Context, id int64, step int32) error {
 		if start, finished := plan.next(done, started); !finished {
 			return s.startSteps(ctx, inst, d, start)
 		}
+		if inst.Action != string(record.Post) {
+			// While the instance is open it is the hold record checks the run against.
+			if err := s.d.Record.CompleteAction(ctx, d.Ref, id); err != nil {
+				return err
+			}
+		}
 		if err := q.CloseInstance(ctx, store.CloseInstanceParams{ID: id, Status: "approved"}); err != nil {
 			return err
 		}
-		if err := s.d.Record.CompleteApproval(ctx, d.Ref, id, inst.Version); err != nil {
-			return err
+		if inst.Action == string(record.Post) {
+			if err := s.d.Record.CompleteApproval(ctx, d.Ref, id, inst.Version); err != nil {
+				return err
+			}
 		}
 		return s.d.Notification.Send(ctx, notification.ApprovalApproved, d.Ref, []int64{inst.SubmittedBy})
 	})
 }
 
 // Reject votes against step. Once the step rejects, the other steps are cancelled,
-// the instance closes and the document goes back to draft.
+// the instance closes and a submitted document goes back to draft; a held one is
+// left as it was.
 func (s *Service) Reject(ctx context.Context, id int64, step int32, reason string) error {
 	return s.act(ctx, id, step, func(ctx context.Context, inst store.ApprovalInstance, st store.ApprovalInstanceStep, d record.Doc) error {
 		status, err := s.vote(ctx, inst, st, "rejected", &reason)
@@ -327,10 +387,33 @@ func (s *Service) Reject(ctx context.Context, id int64, step int32, reason strin
 		if err := q.CloseInstance(ctx, store.CloseInstanceParams{ID: id, Status: "rejected"}); err != nil {
 			return err
 		}
-		if err := s.d.Record.Reject(ctx, d.Ref, id, inst.Version); err != nil {
-			return err
+		if inst.Action == string(record.Post) {
+			if err := s.d.Record.Reject(ctx, d.Ref, id, inst.Version); err != nil {
+				return err
+			}
 		}
 		return s.d.Notification.Send(ctx, notification.ApprovalRejected, d.Ref, []int64{inst.SubmittedBy})
+	})
+}
+
+// Withdraw takes back an open request for an action other than post; only its
+// submitter may. A submission to post is withdrawn through its document instead.
+func (s *Service) Withdraw(ctx context.Context, id int64) error {
+	return s.act(ctx, id, 0, func(ctx context.Context, inst store.ApprovalInstance, _ store.ApprovalInstanceStep, d record.Doc) error {
+		if actor, _ := platform.ActorFrom(ctx); actor != inst.SubmittedBy {
+			return platform.ErrForbidden
+		}
+		if inst.Action == string(record.Post) {
+			return record.ErrInvalidTransition
+		}
+		q := store.New(platform.DBFrom(ctx))
+		if err := q.CancelOpenSteps(ctx, id); err != nil {
+			return err
+		}
+		if err := q.CloseInstance(ctx, store.CloseInstanceParams{ID: id, Status: "withdrawn"}); err != nil {
+			return err
+		}
+		return s.d.Audit.RecordFor(ctx, "approval.withdrawn", audit.Ref(d.Ref), map[string]any{"instance": id, "action": inst.Action})
 	})
 }
 
@@ -478,14 +561,17 @@ func (s *Service) DocumentInstance(ctx context.Context, ref record.Ref) (*Instan
 	if err != nil {
 		return nil, err
 	}
-	out := &Instance{ID: inst.ID, Status: inst.Status, SubmittedByName: inst.SubmittedByName,
-		SubmittedAt: inst.SubmittedAt.Time.Format(time.RFC3339), Steps: []StepView{}}
+	out := &Instance{ID: inst.ID, Action: inst.Action, Status: inst.Status, SubmittedByName: inst.SubmittedByName,
+		SubmittedAt: inst.SubmittedAt.Time.Format(time.RFC3339), Steps: []StepView{}, AllowedActions: []string{}}
 	if err := json.Unmarshal(inst.Plan, &out.Plan); err != nil {
 		return nil, err
 	}
 	actor, _ := platform.ActorFrom(ctx)
 	t, _ := s.d.Record.TypeOf(ref.Type)
 	writable := inst.Status == "open" && platform.ProductGate(ctx, t.Product, platform.ClassWrite) == nil
+	if writable && actor == inst.SubmittedBy && inst.Action != string(record.Post) {
+		out.AllowedActions = append(out.AllowedActions, "withdraw")
+	}
 	fallback := false
 	if writable {
 		d, err := s.d.Record.Get(ctx, ref)
@@ -577,9 +663,9 @@ func (s *Service) requireType(ctx context.Context, docType string) (record.Type,
 }
 
 // actionsOf lists the actions a type offers a rule for: post and cancel, then its
-// module actions sorted, once a type can declare any.
+// module actions sorted.
 func actionsOf(t record.Type) []record.Action {
-	return []record.Action{record.Post, record.Cancel}
+	return append([]record.Action{record.Post, record.Cancel}, slices.Sorted(maps.Keys(t.ModuleActions))...)
 }
 
 // requireRuleAction resolves docType for a write, same as requireType, and checks it offers action.

@@ -44,7 +44,7 @@ func TestTouchKeepsTheHeader(t *testing.T) {
 	if err := rec.SetPeriodLock(admin, c, nil); err != nil {
 		t.Fatal(err)
 	}
-	if err := rec.Transition(admin, d.Ref, 2, record.Posted); err != nil {
+	if _, err := rec.Transition(admin, d.Ref, 2, record.Posted); err != nil {
 		t.Fatal(err)
 	}
 	if _, err := rec.Touch(admin, d.Ref, 3); !errors.Is(err, record.ErrNotEditable) {
