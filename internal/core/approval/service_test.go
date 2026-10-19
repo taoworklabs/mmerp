@@ -7,14 +7,10 @@ import (
 	"testing"
 
 	"github.com/taoworklabs/mmerp/internal/core/approval"
-	"github.com/taoworklabs/mmerp/internal/core/audit"
+	"github.com/taoworklabs/mmerp/internal/core/coretest"
 	"github.com/taoworklabs/mmerp/internal/core/iam"
-	"github.com/taoworklabs/mmerp/internal/core/notification"
-	"github.com/taoworklabs/mmerp/internal/core/numbering"
 	"github.com/taoworklabs/mmerp/internal/core/record"
-	"github.com/taoworklabs/mmerp/internal/core/setting"
 	"github.com/taoworklabs/mmerp/internal/platform"
-	"github.com/taoworklabs/mmerp/internal/platform/pgtest"
 )
 
 type fixture struct {
@@ -33,20 +29,20 @@ type fixture struct {
 // a type other.doc of product other, and users submitter, boss, big_boss, hr (role test.hr
 // at the unit), rules (test.approval_admin) and outsider.
 func newFixture(t *testing.T) *fixture {
-	pool := pgtest.New(t)
-	ctx := platform.WithKeyring(platform.WithProducts(platform.WithDB(t.Context(), pool), []string{"test", "other"}), pgtest.Keyring())
-	f := &fixture{t: t, users: map[string]int64{}, managers: map[int][]int64{}}
-	f.ids = iam.NewService(iam.Deps{Setting: setting.NewService(), Audit: audit.NewService()})
+	core := coretest.New(t, "test", "other")
+	ctx := core.Ctx
+	f := &fixture{t: t, ids: core.IAM, rec: core.Record, appr: core.Approval, admin: core.Admin, users: map[string]int64{}, managers: map[int][]int64{}}
 	f.ids.RegisterRoles("test", map[string][]string{"hr": {"test.doc.view"}, "approval_admin": {"test.approval.manage"}}, "approval_admin")
-	f.rec = record.NewService(record.Deps{IAM: f.ids, Numbering: numbering.NewService(numbering.Deps{}), Audit: audit.NewService()})
-	f.appr = approval.NewService(approval.Deps{IAM: f.ids, Record: f.rec, Audit: audit.NewService(), Notification: notification.NewService(notification.Deps{Record: f.rec, IAM: f.ids, Audit: audit.NewService(), Setting: setting.NewService()})})
-	f.rec.SetApprovalGate(f.appr)
 	f.rec.Register(record.Type{
 		Code: "test.doc", Product: "test", Kind: record.Document, NumberPrefix: "T",
-		Can: func(ctx context.Context, _ int64, _ record.Action) (bool, error) {
+		// Everyone but the outsider may do anything with it.
+		Perms: record.Perms{View: "test.doc.view", Edit: "test.doc.view"},
+		Grant: func(ctx context.Context, _ int64, _ record.Action) (bool, error) {
 			id, _ := platform.ActorFrom(ctx)
 			return id != f.users["outsider"], nil
 		},
+		OnDelete:       func(context.Context, int64) error { return nil },
+		SubjectCreates: true,
 		Fields: []record.Field{{Key: "days", Kind: record.Number}, {Key: "kind", Kind: record.Choice,
 			Options: func(context.Context) ([]record.Option, error) {
 				return []record.Option{{Value: "a"}, {Value: "b"}}, nil
@@ -54,12 +50,9 @@ func newFixture(t *testing.T) *fixture {
 		Approvers: func(_ context.Context, _ record.Ref, level int) ([]int64, error) { return f.managers[level], nil },
 	})
 	// A type of another product, for rules a product's administrator may not touch.
+	f.ids.RegisterRoles("other", map[string][]string{"member": {"other.doc.edit"}})
 	f.rec.Register(record.Type{Code: "other.doc", Product: "other", Kind: record.Document, NumberPrefix: "O",
-		Can: func(context.Context, int64, record.Action) (bool, error) { return true, nil }})
-	var err error
-	adminID, err := f.ids.CreateAdmin(ctx, "admin", "Admin", "long enough")
-	f.check(err)
-	f.admin = platform.WithActor(ctx, adminID)
+		Perms: record.Perms{View: "other.doc.edit", Edit: "other.doc.edit"}, OnDelete: func(context.Context, int64) error { return nil }})
 	c, err := f.ids.CreateOrgUnit(f.admin, iam.OrgUnitInput{Kind: "company", Name: "C"})
 	f.check(err)
 	f.unit, err = f.ids.CreateOrgUnit(f.admin, iam.OrgUnitInput{ParentID: &c, Kind: "department", Name: "A"})
@@ -91,7 +84,8 @@ func (f *fixture) rule(steps ...approval.Step) {
 // send creates a draft with days and kind as the submitter and sends it.
 func (f *fixture) send(days, kind string) (record.Doc, error) {
 	f.t.Helper()
-	d, err := f.rec.Create(f.as("submitter"), "test.doc", record.Header{Date: "2026-03-10", OrgUnitID: f.unit, Fields: map[string]string{"days": days, "kind": kind}})
+	d, err := f.rec.Create(f.as("submitter"), "test.doc", record.Header{Date: "2026-03-10", OrgUnitID: f.unit, Subject: f.users["submitter"],
+		Fields: map[string]string{"days": days, "kind": kind}})
 	f.check(err)
 	if err := f.rec.Transition(f.as("submitter"), d.Ref, 1, record.Posted); err != nil {
 		return d, err

@@ -253,7 +253,6 @@ var (
 	ErrQuoteNotPosted    = &platform.Error{Status: http.StatusConflict, Code: "quote_not_posted"}
 	ErrQuoteHasOrder     = &platform.Error{Status: http.StatusConflict, Code: "quote_has_order"}
 	// The request id was already used for another kind of document, or one the actor cannot see.
-	ErrRequestReused = &platform.Error{Status: http.StatusConflict, Code: "request_id_reused"}
 )
 
 // errLine names the line (1-based) a value is wrong on.

@@ -1,17 +1,17 @@
-import { useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router'
+import { useInvalidateRecord } from '@/shared/area'
 import { errorText } from '@/shared/i18n'
 import { notifySuccess } from '@/shared/ui/notify'
 import { Page } from '@/shared/ui/page'
 import { ErrorState, ForbiddenPage, PageSkeleton } from '@/shared/ui/states'
 import { CustomerForm } from '../components/CustomerForm'
 import { useCustomerActions } from '../hooks/useSales'
-import { salesKeys } from '../keys'
+import { customerDocType } from '../keys'
 
 export function NewCustomerPage() {
   const { t } = useTranslation()
-  const qc = useQueryClient()
+  const invalidate = useInvalidateRecord()
   const navigate = useNavigate()
   const actions = useCustomerActions()
   if (actions.isPending) return <PageSkeleton />
@@ -21,7 +21,7 @@ export function NewCustomerPage() {
     <Page centered title={t('sales.customers.create')} breadcrumbs={[{ label: t('sales.customers.title'), to: '/sales/customers' }]}>
       <CustomerForm
         onSaved={async (id) => {
-          await qc.invalidateQueries({ queryKey: salesKeys.customers.all() })
+          await invalidate(customerDocType, id)
           notifySuccess(t('sales.customer.created'))
           // The form is clean after a successful save, so leaving is not blocked.
           setTimeout(() => navigate(`/sales/customers/${id}`, { replace: true }))

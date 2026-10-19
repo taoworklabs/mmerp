@@ -46,7 +46,7 @@ The design docs are written in English; keep them in English when you edit them.
 ### Transactions and locking
 
 - Services get a connection only via `platform.DBFrom(ctx)` and open transactions with `platform.InTx(ctx, fn)`. Never pass `pgx.Tx`, or a store bound to one, as a parameter: helpers take the tx `ctx`, so audit rows land in the same transaction.
-- Document writes follow one lock order: legal-entity row in `record.period_locks` (`FOR SHARE`; `FOR UPDATE` only to move the lock date) → document row in `record.documents` (`FOR UPDATE`; in `Create`, the `numbering` counter row, then the insert) → module-owned rows (e.g. `hrm.payroll_locks`, then leave balances).
+- Document writes follow one lock order: in `Create` with a `request_id`, the advisory lock on that key, taken first and only when nothing is locked yet → legal-entity row in `record.period_locks` (`FOR SHARE`; `FOR UPDATE` only to move the lock date) → document row in `record.documents` (`FOR UPDATE`; in `Create`, the `numbering` counter row, then the insert) → module-owned rows (e.g. `hrm.payroll_locks`, then leave balances).
 - One transaction writes exactly one document. Bulk operations are jobs that process each document in its own transaction.
 
 ### Documents (`record`, `approval`, `posting`)
@@ -110,7 +110,7 @@ CI (GitHub Actions, `.github/workflows/ci.yml`) runs `make gen` (fails on diff),
 
 ## Workflow
 
-- **Remote: GitHub** (`https://github.com/taoworklabs/mmerp`). Each spec gets one branch off `main` holding all its tickets (a commit per ticket) and one PR into `main` that closes the spec and its tickets; never commit directly to `main`. Only merge when asked. Push to `github`, using the `gh` CLI for GitHub operations.
+- **Remote: GitHub** (`https://github.com/taoworklabs/mmerp`). Each spec gets one branch off `main` holding all its tickets (a commit per ticket) and one PR into `main` that closes the spec and its tickets; never commit directly to `main`. PRs are squash-merged (the only method the repo allows): the squash commit takes the PR title and body, so the title follows Conventional Commits and the body lists every piece of work the PR delivers (per ticket, with its commits), the deliberate behaviour changes and the migrations, then `Closes #<n>` for the spec and each ticket. Only merge when asked. Push to `github`, using the `gh` CLI for GitHub operations.
 - **Use the relevant skills when applying code**:
   - `mattpocock-skills:tdd` when building a feature or fixing a bug test-first;
   - `mattpocock-skills:diagnosing-bugs` when debugging;

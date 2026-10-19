@@ -198,6 +198,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/documents/{type}/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete: operations["delete-document"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/documents/{type}/{id}/approval": {
         parameters: {
             query?: never;
@@ -389,7 +405,7 @@ export interface paths {
         get: operations["get-contract"];
         put: operations["update-contract"];
         post?: never;
-        delete: operations["delete-contract"];
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -635,7 +651,7 @@ export interface paths {
         get: operations["get-leave"];
         put: operations["update-leave"];
         post?: never;
-        delete: operations["delete-leave"];
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -717,7 +733,7 @@ export interface paths {
         get: operations["get-overtime"];
         put: operations["update-overtime"];
         post?: never;
-        delete: operations["delete-overtime"];
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -768,7 +784,7 @@ export interface paths {
         get: operations["get-payroll"];
         put?: never;
         post?: never;
-        delete: operations["delete-payroll"];
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -852,7 +868,7 @@ export interface paths {
         /** @description Replaces the period and every line of a draft. */
         put: operations["update-timesheet"];
         post?: never;
-        delete: operations["delete-timesheet"];
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -1392,7 +1408,7 @@ export interface paths {
         get: operations["get-order"];
         put: operations["update-order"];
         post?: never;
-        delete: operations["delete-order"];
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -1441,7 +1457,7 @@ export interface paths {
         get: operations["get-quote"];
         put: operations["update-quote"];
         post?: never;
-        delete: operations["delete-quote"];
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -2685,6 +2701,11 @@ export interface components {
             /** Format: int64 */
             parent_id?: number;
             /**
+             * Format: uuid
+             * @description Generated once per form: sending it again returns the first document
+             */
+            request_id?: string;
+            /**
              * Format: date
              * @description Effective date
              */
@@ -2807,6 +2828,11 @@ export interface components {
             /** Format: int64 */
             leave_type_id: number;
             reason: string | null;
+            /**
+             * Format: uuid
+             * @description Generated once per form: sending it again returns the first document
+             */
+            request_id?: string;
             /** Format: date */
             start_date: string;
         };
@@ -2831,6 +2857,11 @@ export interface components {
             /** @description Night shift hours; day and night together are more than 0 and at most 24 */
             night_hours: string;
             reason: string | null;
+            /**
+             * Format: uuid
+             * @description Generated once per form: sending it again returns the first document
+             */
+            request_id?: string;
         };
         NewPayroll: {
             /**
@@ -2843,6 +2874,11 @@ export interface components {
             legal_entity_id: number;
             /** @description The payroll period, YYYY-MM */
             month: string;
+            /**
+             * Format: uuid
+             * @description Generated once per form: sending it again returns the first document
+             */
+            request_id?: string;
         };
         NewTimesheet: {
             /**
@@ -2855,6 +2891,11 @@ export interface components {
             month: string;
             /** Format: int64 */
             org_unit_id: number;
+            /**
+             * Format: uuid
+             * @description Generated once per form: sending it again returns the first document
+             */
+            request_id?: string;
         };
         Notification: {
             actor_name: string | null;
@@ -2864,8 +2905,8 @@ export interface components {
             id: number;
             /** Format: int64 */
             job_id: number | null;
-            /** @enum {string} */
-            kind: "approval_requested" | "approval_approved" | "approval_rejected" | "mentioned" | "job_completed" | "job_failed";
+            /** @description A core kind (approval_requested, approval_approved, approval_rejected, mentioned, job_completed, job_failed) or a product's own, <product>.<name> */
+            kind: string;
             /** @description The document number; null for a catalogue */
             label: string | null;
             read: boolean;
@@ -3074,7 +3115,10 @@ export interface components {
             readonly $schema?: string;
             /** Format: int64 */
             id: number;
-            /** Format: int64 */
+            /**
+             * Format: int64
+             * @description 0 when a retried request returns the payroll created the first time
+             */
             job_id: number;
         };
         PayrollLine: {
@@ -4050,6 +4094,38 @@ export interface operations {
             };
         };
     };
+    "delete-document": {
+        parameters: {
+            query: {
+                version: number;
+            };
+            header?: never;
+            path: {
+                type: string;
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
     "get-document-approval": {
         parameters: {
             query?: never;
@@ -4594,37 +4670,6 @@ export interface operations {
                 "application/json": components["schemas"]["ContractUpdate"];
             };
         };
-        responses: {
-            /** @description No Content */
-            204: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Error */
-            default: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Error"];
-                };
-            };
-        };
-    };
-    "delete-contract": {
-        parameters: {
-            query: {
-                version: number;
-            };
-            header?: never;
-            path: {
-                id: number;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
         responses: {
             /** @description No Content */
             204: {
@@ -5365,37 +5410,6 @@ export interface operations {
             };
         };
     };
-    "delete-leave": {
-        parameters: {
-            query: {
-                version: number;
-            };
-            header?: never;
-            path: {
-                id: number;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description No Content */
-            204: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Error */
-            default: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Error"];
-                };
-            };
-        };
-    };
     "list-legal-params": {
         parameters: {
             query?: never;
@@ -5625,37 +5639,6 @@ export interface operations {
             };
         };
     };
-    "delete-overtime": {
-        parameters: {
-            query: {
-                version: number;
-            };
-            header?: never;
-            path: {
-                id: number;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description No Content */
-            204: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Error */
-            default: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Error"];
-                };
-            };
-        };
-    };
     "list-payrolls": {
         parameters: {
             query?: {
@@ -5773,37 +5756,6 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["Payroll"];
                 };
-            };
-            /** @description Error */
-            default: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Error"];
-                };
-            };
-        };
-    };
-    "delete-payroll": {
-        parameters: {
-            query: {
-                version: number;
-            };
-            header?: never;
-            path: {
-                id: number;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description No Content */
-            204: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
             };
             /** @description Error */
             default: {
@@ -6029,37 +5981,6 @@ export interface operations {
                 "application/json": components["schemas"]["TimesheetUpdate"];
             };
         };
-        responses: {
-            /** @description No Content */
-            204: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Error */
-            default: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Error"];
-                };
-            };
-        };
-    };
-    "delete-timesheet": {
-        parameters: {
-            query: {
-                version: number;
-            };
-            header?: never;
-            path: {
-                id: number;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
         responses: {
             /** @description No Content */
             204: {
@@ -7521,37 +7442,6 @@ export interface operations {
             };
         };
     };
-    "delete-order": {
-        parameters: {
-            query: {
-                version: number;
-            };
-            header?: never;
-            path: {
-                id: number;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description No Content */
-            204: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Error */
-            default: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Error"];
-                };
-            };
-        };
-    };
     "list-quotes": {
         parameters: {
             query?: {
@@ -7696,37 +7586,6 @@ export interface operations {
                 "application/json": components["schemas"]["DocUpdate"];
             };
         };
-        responses: {
-            /** @description No Content */
-            204: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Error */
-            default: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Error"];
-                };
-            };
-        };
-    };
-    "delete-quote": {
-        parameters: {
-            query: {
-                version: number;
-            };
-            header?: never;
-            path: {
-                id: number;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
         responses: {
             /** @description No Content */
             204: {

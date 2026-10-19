@@ -1,6 +1,6 @@
 # 0012. `record`: record type registration and `Can`
 
-Status: accepted · 2026-10-05
+Status: accepted · 2026-10-05 · `Can` is amended by [ADR-0034](./0034-record-types-declare-permissions.md): the type declares a permission per action and the core answers `Can`
 
 ## Context
 

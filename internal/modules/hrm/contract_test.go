@@ -2,6 +2,7 @@ package hrm_test
 
 import (
 	"context"
+	"errors"
 	"strings"
 	"sync"
 	"testing"
@@ -12,6 +13,7 @@ import (
 	"github.com/taoworklabs/mmerp/internal/core/record/recordtest"
 	"github.com/taoworklabs/mmerp/internal/modules/hrm"
 	"github.com/taoworklabs/mmerp/internal/platform"
+	"github.com/taoworklabs/mmerp/internal/platform/pgtest"
 )
 
 // contractFixture adds to the leave fixture HR with the payroll role, a second approver,
@@ -77,9 +79,11 @@ func TestContractRecordContract(t *testing.T) {
 		f := newContractFixture(t)
 		ref := func(id int64, err error) (record.Ref, error) { return record.Ref{Type: "hrm.contract", ID: id}, err }
 		return recordtest.Harness{
-			Record: f.rec, Actor: f.pay, Admin: f.admin, LegalEntity: f.c,
-			Create: func(ctx context.Context, date string) (record.Ref, error) {
-				return ref(f.hrm.CreateContract(ctx, hrm.NewContract{EmployeeID: f.emp, ContractFields: hrm.ContractFields{ContractTypeID: f.kind, StartDate: date, Terms: terms(10_000_000)}}))
+			Core: f.core, Actor: f.pay, Admin: f.admin, LegalEntity: f.c, Table: "hrm.contracts",
+			Get:    func(ctx context.Context, r record.Ref) (any, error) { return f.hrm.Contract(ctx, r.ID) },
+			Reject: func(instance int64) error { return f.appr.Reject(f.head, instance, 1, "không") },
+			Create: func(ctx context.Context, date, requestID string) (record.Ref, error) {
+				return ref(f.hrm.CreateContract(ctx, hrm.NewContract{RequestID: requestID, EmployeeID: f.emp, ContractFields: hrm.ContractFields{ContractTypeID: f.kind, StartDate: date, Terms: terms(10_000_000)}}))
 			},
 			Edit: func(ctx context.Context, r record.Ref, version int32, date string) error {
 				return f.hrm.UpdateContract(ctx, r.ID, hrm.ContractUpdate{Version: version, ContractFields: hrm.ContractFields{ContractTypeID: f.kind, StartDate: date, Terms: terms(10_000_000)}})
@@ -152,7 +156,14 @@ func TestContractRules(t *testing.T) {
 	_, err = f.hrm.CreateContract(f.pay, hrm.NewContract{EmployeeID: f.emp, ContractFields: hrm.ContractFields{
 		ContractTypeID: f.kind, StartDate: "2026-01-01", Terms: hrm.ContractTerms{Lines: []hrm.ContractLine{{Kind: "allowance", Name: " ", Amount: 1}}},
 	}})
-	wantErr(t, err, "invalid_contract_terms")
+	wantErr(t, err, "contract_line_name_required")
+	_, err = f.hrm.CreateContract(f.pay, hrm.NewContract{EmployeeID: f.emp, ContractFields: hrm.ContractFields{
+		ContractTypeID: f.kind, StartDate: "2026-01-01", Terms: hrm.ContractTerms{Lines: []hrm.ContractLine{{Kind: "support", Name: "Ăn trưa", Amount: 1}, {Kind: "support", Name: "Xăng xe", Amount: -1}}},
+	}})
+	wantErr(t, err, "invalid_contract_line_amount")
+	if pe, ok := errors.AsType[*platform.Error](err); !ok || pe.Params["line"] != 2 {
+		t.Fatalf("line of %v, want 2", err)
+	}
 	// A salary allowance is always taxable; only a support may be tax-free.
 	_, err = f.hrm.CreateContract(f.pay, hrm.NewContract{EmployeeID: f.emp, ContractFields: hrm.ContractFields{
 		ContractTypeID: f.kind, StartDate: "2026-01-01", Terms: hrm.ContractTerms{Lines: []hrm.ContractLine{{Kind: "allowance", Name: "Trách nhiệm", Amount: 1}}},
@@ -167,7 +178,7 @@ func TestContractRules(t *testing.T) {
 	wantErr(t, err, "invalid_contract_parent")
 	// The appendix cannot go in force before its original.
 	wantErr(t, f.post(app), "contract_parent_not_posted")
-	wantErr(t, f.hrm.DeleteContract(f.pay, a, 1), "contract_has_appendices")
+	wantErr(t, f.core.Record.Delete(f.pay, record.Ref{Type: "hrm.contract", ID: a}, 1), "contract_has_appendices")
 	f.check(f.post(a))
 	f.check(f.post(app))
 
@@ -375,7 +386,7 @@ func TestOverlappingContractsPostedAtOnce(t *testing.T) {
 	f.check(platform.InTx(f.pay, func(ctx context.Context) error {
 		f.check(f.rec.Transition(ctx, record.Ref{Type: "hrm.contract", ID: a}, 1, record.Posted))
 		wg.Go(func() { second = f.post(b) })
-		time.Sleep(100 * time.Millisecond)
+		pgtest.AwaitLockWait(t, f.pool)
 		return nil
 	}))
 	wg.Wait()

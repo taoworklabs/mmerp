@@ -38,13 +38,15 @@ func TestOvertimeRecordContract(t *testing.T) {
 			return record.Ref{Type: "hrm.overtime_request", ID: id}, err
 		}
 		return recordtest.Harness{
-			Record: f.rec, Actor: f.hr, Admin: f.admin, LegalEntity: f.c,
-			Create: func(ctx context.Context, date string) (record.Ref, error) {
-				return ref(f.hrm.CreateOvertime(ctx, hrm.NewOvertime{EmployeeID: &f.emp, OvertimeFields: overtime(date, "2", "0")}))
+			Core: f.core, Actor: f.hr, Admin: f.admin, LegalEntity: f.c, Table: "hrm.overtime_requests",
+			Create: func(ctx context.Context, date, requestID string) (record.Ref, error) {
+				return ref(f.hrm.CreateOvertime(ctx, hrm.NewOvertime{RequestID: requestID, EmployeeID: &f.emp, OvertimeFields: overtime(date, "2", "0")}))
 			},
 			Edit: func(ctx context.Context, r record.Ref, version int32, date string) error {
 				return f.hrm.UpdateOvertime(ctx, r.ID, hrm.OvertimeUpdate{Version: version, OvertimeFields: overtime(date, "2", "0")})
 			},
+			Get:    func(ctx context.Context, r record.Ref) (any, error) { return f.hrm.Overtime(ctx, r.ID) },
+			Reject: func(instance int64) error { return f.appr.Reject(f.m, instance, 1, "không") },
 			RequireApproval: func(*testing.T) {
 				f.check(f.appr.SaveRule(f.admin, "hrm.overtime_request", approval.RuleInput{
 					Steps: []approval.Step{{Approver: approval.Approver{Kind: "module"}}}, MaxLevels: 3, FallbackProduct: "hrm", FallbackRole: "hr",
@@ -169,4 +171,37 @@ func TestDayKindFollowsTheCalendar(t *testing.T) {
 	late := must(t)(create("2026-04-29", "weekday"))
 	f.check(f.hrm.SaveHoliday(pay, f.c, hrm.Holiday{Date: "2026-04-29", Name: "Nghỉ bù"}))
 	wantErr(t, f.rec.Transition(f.e, record.Ref{Type: "hrm.overtime_request", ID: late}, 1, record.Posted), "overtime_day_kind_mismatch")
+}
+
+// Someone who may not create for an employee learns nothing about them: whether the id
+// exists, has an account, or the fields would pass, every refusal is not_found.
+func TestCreateForOthersRefusedAsNotFound(t *testing.T) {
+	f := newLeaveFixture(t)
+	noAccount := must(t)(f.hrm.CreateEmployee(f.hr, employee("N", f.a)))
+	missing := int64(1 << 40)
+	ok := overtime("2026-03-31", "2", "0")
+	badKind := ok
+	badKind.DayKind = "holiday"
+	for name, c := range map[string]struct {
+		emp    *int64
+		fields hrm.OvertimeFields
+	}{
+		"missing": {&missing, ok}, "no account": {&noAccount, ok},
+		"bad hours": {&f.emp, overtime("2026-03-31", "0", "0")}, "bad day kind": {&f.emp, badKind},
+	} {
+		if _, err := f.hrm.CreateOvertime(f.m, hrm.NewOvertime{EmployeeID: c.emp, OvertimeFields: c.fields}); errCode(err) != "not_found" {
+			t.Errorf("overtime, %s: %v", name, err)
+		}
+	}
+	day := f.fields("2026-03-10", "2026-03-10", "1")
+	for name, c := range map[string]struct {
+		emp    *int64
+		fields hrm.LeaveFields
+	}{
+		"missing": {&missing, day}, "no account": {&noAccount, day}, "bad days": {&f.emp, f.fields("2026-03-10", "2026-03-09", "x")},
+	} {
+		if _, err := f.hrm.CreateLeave(f.m, hrm.NewLeave{EmployeeID: c.emp, LeaveFields: c.fields}); errCode(err) != "not_found" {
+			t.Errorf("leave, %s: %v", name, err)
+		}
+	}
 }

@@ -163,6 +163,7 @@ type LeaveFields struct {
 }
 
 type NewLeave struct {
+	RequestID string `json:"request_id,omitempty" format:"uuid" doc:"Generated once per form: sending it again returns the first document"`
 	// Defaults to the actor's own employee record.
 	EmployeeID *int64 `json:"employee_id,omitempty"`
 	LeaveFields
@@ -279,7 +280,8 @@ type ContractFields struct {
 }
 
 type NewContract struct {
-	EmployeeID int64 `json:"employee_id"`
+	RequestID  string `json:"request_id,omitempty" format:"uuid" doc:"Generated once per form: sending it again returns the first document"`
+	EmployeeID int64  `json:"employee_id"`
 	// The original contract, for an appendix.
 	ParentID *int64 `json:"parent_id,omitempty"`
 	ContractFields
@@ -352,6 +354,7 @@ type OvertimeFields struct {
 }
 
 type NewOvertime struct {
+	RequestID string `json:"request_id,omitempty" format:"uuid" doc:"Generated once per form: sending it again returns the first document"`
 	// Defaults to the actor's own employee record.
 	EmployeeID *int64 `json:"employee_id,omitempty"`
 	OvertimeFields
@@ -405,6 +408,7 @@ type OvertimeFilter struct {
 }
 
 type NewTimesheet struct {
+	RequestID string `json:"request_id,omitempty" format:"uuid" doc:"Generated once per form: sending it again returns the first document"`
 	OrgUnitID int64  `json:"org_unit_id"`
 	Month     string `json:"month" pattern:"^[0-9]{4}-(0[1-9]|1[0-2])$" doc:"The payroll period, YYYY-MM"`
 }
@@ -520,6 +524,7 @@ type LegalParams struct {
 }
 
 type NewPayroll struct {
+	RequestID     string `json:"request_id,omitempty" format:"uuid" doc:"Generated once per form: sending it again returns the first document"`
 	LegalEntityID int64  `json:"legal_entity_id"`
 	Month         string `json:"month" pattern:"^[0-9]{4}-(0[1-9]|1[0-2])$" doc:"The payroll period, YYYY-MM"`
 }
@@ -527,7 +532,7 @@ type NewPayroll struct {
 // PayrollJob is a payroll and the job computing it.
 type PayrollJob struct {
 	ID    int64 `json:"id"`
-	JobID int64 `json:"job_id"`
+	JobID int64 `json:"job_id" doc:"0 when a retried request returns the payroll created the first time"`
 }
 
 // PayrollAmounts are the money columns of a payroll, in đồng, for one employee or summed.

@@ -167,6 +167,21 @@ func (p *Page) Field(label, value string) {
 	}
 }
 
+// LegalEntity is a section of a legal entity under heading: its name labelled name, tax
+// code and address.
+func (p *Page) LegalEntity(heading, name string, le LegalEntity) {
+	or := func(s *string) string {
+		if s == nil {
+			return ""
+		}
+		return *s
+	}
+	p.Heading(heading)
+	p.Field(name, le.Name)
+	p.Field(p.T("printing.legal_entity.tax_code", nil), or(le.TaxCode))
+	p.Field(p.T("printing.legal_entity.address", nil), or(le.Address))
+}
+
 // Column is one column of a table: its share of the page width, and whether its
 // cells (amounts) are right-aligned.
 type Column struct {

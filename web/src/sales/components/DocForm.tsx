@@ -1,13 +1,11 @@
-import { Stack } from '@mantine/core'
 import { IconFileDollar, IconListDetails, IconNotes } from '@tabler/icons-react'
 import { useState } from 'react'
-import { useForm, type Path } from 'react-hook-form'
+import { useForm } from 'react-hook-form'
 import { useTranslation } from 'react-i18next'
 import { api, unwrap, type Doc, type DocFields, type LineInput } from '@/shared/api/sales'
 import { useDocumentMutation } from '@/shared/document'
 import { formatDecimal, formatNumber } from '@/shared/i18n'
-import { DataTable, type Column } from '@/shared/ui/DataTable'
-import { DateField, DecimalField, Form, FormActions, FormRow, FormSection, LinesTable, LinesTotals, MoneyField, OrgUnitField, SelectField, TextField, type LineColumn } from '@/shared/ui/form'
+import { DateField, DecimalField, Form, FormActions, FormRow, FormSection, LinesTable, LinesTotals, MoneyField, OrgUnitField, SelectField, TextField, type ErrorFields, type LineColumn } from '@/shared/ui/form'
 import { docTypeOf, pathOf, type Kind } from '../keys'
 import { CustomerField, ItemField } from './pickers'
 import { useVatOptions } from './vat'
@@ -62,19 +60,18 @@ function defaults(doc?: Doc): Values {
 
 const orNull = (s: string) => (s.trim() === '' ? null : s.trim())
 
-const lineFields: Record<string, keyof LineValues> = {
-  invalid_quantity: 'quantity',
-  line_amount_too_large: 'quantity',
-  invalid_discount: 'discount_percent',
-  invalid_vat_rate: 'vat_rate',
-  item_inactive: 'item_id',
-}
-
-const docFields: Record<string, Path<Values>> = {
+const errorFields: ErrorFields<Values> = {
   customer_inactive: 'customer_id',
   quote_valid_until_before_date: 'valid_until',
   order_delivery_before_date: 'delivery_date',
+  invalid_quantity: 'lines.*.quantity',
+  line_amount_too_large: 'lines.*.quantity',
+  invalid_discount: 'lines.*.discount_percent',
+  invalid_vat_rate: 'lines.*.vat_rate',
+  item_inactive: 'lines.*.item_id',
 }
+
+type Line = Doc['lines'][number]
 
 type Props = {
   kind: Kind
@@ -131,14 +128,9 @@ export function DocForm({ kind, doc, onCreated }: Props) {
     await onCreated?.(id)
   }
 
-  function fieldOf(err: { code: string; params: Record<string, unknown> }): Path<Values> | undefined {
-    const f = lineFields[err.code]
-    if (f && typeof err.params.line === 'number') return `lines.${err.params.line - 1}.${f}` as Path<Values>
-    return docFields[err.code]
-  }
-
   // The item cell fills description, price and VAT from the catalogue; each stays editable.
-  const lineColumns: LineColumn[] = [
+  // Read-only lines show the stored amounts: the discount and the net instead of the percentage.
+  const lineColumns: LineColumn<Line>[] = [
     {
       key: 'item',
       header: t('sales.line.item_col'),
@@ -164,6 +156,7 @@ export function DocForm({ kind, doc, onCreated }: Props) {
       key: 'description',
       header: t('sales.line.description_col'),
       required: true,
+      value: (l) => l.description,
       cell: (i, bare) => <TextField name={`lines.${i}.description`} label={t('sales.line.description', { n: i + 1 })} bare={bare} required maxLength={500} />,
     },
     {
@@ -172,6 +165,7 @@ export function DocForm({ kind, doc, onCreated }: Props) {
       numeric: true,
       required: true,
       width: 96,
+      value: (l) => `${formatDecimal(l.quantity, 3)} ${l.unit}`,
       cell: (i, bare) => <DecimalField name={`lines.${i}.quantity`} label={t('sales.line.quantity', { n: i + 1 })} bare={bare} required scale={3} min={0} />,
     },
     {
@@ -180,13 +174,15 @@ export function DocForm({ kind, doc, onCreated }: Props) {
       numeric: true,
       required: true,
       width: 128,
+      value: (l) => formatNumber(l.unit_price),
       cell: (i, bare) => <MoneyField name={`lines.${i}.unit_price`} label={t('sales.line.unit_price', { n: i + 1 })} bare={bare} required />,
     },
     {
       key: 'discount',
-      header: t('sales.line.discount_percent_col'),
+      header: t(ro ? 'sales.line.discount_col' : 'sales.line.discount_percent_col'),
       numeric: true,
       width: 88,
+      value: (l) => (l.discount ? formatNumber(l.discount) : ''),
       cell: (i, bare) => <DecimalField name={`lines.${i}.discount_percent`} label={t('sales.line.discount', { n: i + 1 })} bare={bare} scale={2} min={0} />,
     },
     {
@@ -194,12 +190,14 @@ export function DocForm({ kind, doc, onCreated }: Props) {
       header: t('sales.line.vat_rate_col'),
       required: true,
       width: 112,
+      value: (l) => vat.label(l.vat_rate),
       cell: (i, bare) => <SelectField name={`lines.${i}.vat_rate`} label={t('sales.line.vat_rate', { n: i + 1 })} bare={bare} required data={vat.options} />,
     },
+    { key: 'net', header: t('sales.line.net_col'), numeric: true, value: (l) => formatNumber(l.amount - l.discount) },
   ]
 
   return (
-    <Form form={form} onSubmit={save} fieldOf={fieldOf}>
+    <Form form={form} onSubmit={save} errorFields={errorFields}>
       <FormSection title={t(`sales.${kind}.section.general`)} description={t(`sales.${kind}.section.general_hint`)} icon={IconFileDollar}>
         <DateField name="date" label={t(`sales.${kind}.date`)} required readOnly={ro} />
         {quote ? (
@@ -233,10 +231,14 @@ export function DocForm({ kind, doc, onCreated }: Props) {
       >
         <FormRow>
           {ro && doc ? (
-            <Stack gap="sm">
-              <SavedLines doc={doc} />
-              <Totals doc={doc} saved={false} />
-            </Stack>
+            <LinesTable
+              readOnly
+              label={t('sales.doc.section.lines')}
+              columns={lineColumns}
+              lines={doc.lines}
+              lineLabel={(n) => t('sales.line.title', { n })}
+              footer={<Totals doc={doc} saved={false} />}
+            />
           ) : (
             <LinesTable
               name="lines"
@@ -261,23 +263,6 @@ export function DocForm({ kind, doc, onCreated }: Props) {
       {mutation.dialog}
     </Form>
   )
-}
-
-type LineRow = Doc['lines'][number] & { n: number }
-
-// SavedLines shows the lines of a document that is not edited, with their amounts.
-function SavedLines({ doc }: { doc: Doc }) {
-  const { t } = useTranslation()
-  const vat = useVatOptions()
-  const columns: Column<LineRow>[] = [
-    { key: 'description', header: t('sales.line.description_col'), role: 'title', render: (l) => l.description },
-    { key: 'quantity', header: t('sales.line.quantity_col'), role: 'meta', kind: 'number', render: (l) => `${formatDecimal(l.quantity, 3)} ${l.unit}` },
-    { key: 'unit_price', header: t('sales.line.unit_price_col'), role: 'meta', kind: 'number', render: (l) => formatNumber(l.unit_price) },
-    { key: 'discount', header: t('sales.line.discount_col'), role: 'hidden', kind: 'number', render: (l) => (l.discount ? formatNumber(l.discount) : '') },
-    { key: 'vat_rate', header: t('sales.line.vat_rate_col'), role: 'hidden', kind: 'number', render: (l) => vat.label(l.vat_rate) },
-    { key: 'net', header: t('sales.line.net_col'), role: 'meta', kind: 'number', strong: true, render: (l) => formatNumber(l.amount - l.discount) },
-  ]
-  return <DataTable label={t('sales.doc.section.lines')} columns={columns} rows={doc.lines.map((l, i) => ({ ...l, n: i + 1 }))} rowKey={(l) => l.n} />
 }
 
 // Totals are the stored amounts; on a draft being edited they are those of the last save.

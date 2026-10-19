@@ -3,13 +3,16 @@ import { useMediaQuery } from '@mantine/hooks'
 import { IconPlus, IconTrash } from '@tabler/icons-react'
 import type { KeyboardEvent, ReactNode } from 'react'
 import { useFieldArray, useFormContext } from 'react-hook-form'
+import { FieldList } from '../FieldList'
 import { icon } from '../theme'
 import classes from './LinesTable.module.css'
 
 // A column of a document's lines. cell renders the field of line `index`; bare is true in the
 // table, where the header names the field, and false on the stacked layout below 1024px.
-// line is the line as the form started it (its id and initial values).
-export type LineColumn = {
+// line is the line as the form started it (its id and initial values). value is the column's
+// text on read-only lines. A column without cell shows only on read-only lines (a stored
+// amount), one without value only while editing.
+export type LineColumn<L extends object = Record<string, unknown>> = {
   key: string
   header: string
   numeric?: boolean
@@ -17,32 +20,47 @@ export type LineColumn = {
   // Smallest width in pixels; the column without one takes what is left (200px at least).
   // Too narrow a frame scrolls sideways rather than squeezing the inputs.
   width?: number
-  cell: (index: number, bare: boolean, line: Record<string, unknown>) => ReactNode
+  cell?: (index: number, bare: boolean, line: Record<string, unknown>) => ReactNode
+  value?: (line: L, index: number) => ReactNode
 }
 
-type Props = {
-  // The form's array field holding the lines, e.g. "lines".
-  name: string
+type Common<L extends object> = {
   // Accessible name of the table.
   label: string
-  columns: LineColumn[]
-  newLine: () => Record<string, unknown>
-  addLabel: string
-  // Title of line n on the stacked layout, and the remove button's name.
+  columns: LineColumn<L>[]
+  // Title of line n on the stacked layout.
   lineLabel: (n: number) => string
-  removeLabel: (n: number) => string
-  // Lines that cannot be removed below this count (a document needs one).
-  minLines?: number
   // Under the table, right-aligned: usually LinesTotals.
   footer?: ReactNode
 }
 
+type EditProps<L extends object> = Common<L> & {
+  readOnly?: false
+  // The form's array field holding the lines, e.g. "lines".
+  name: string
+  newLine: () => Record<string, unknown>
+  addLabel: string
+  // The remove button's name for line n.
+  removeLabel: (n: number) => string
+  // Lines that cannot be removed below this count (a document needs one).
+  minLines?: number
+}
+
+// Read-only: the saved lines as text, with the same columns; no form needed.
+type ReadOnlyProps<L extends object> = Common<L> & { readOnly: true; lines: L[] }
+
 // LinesTable edits a document's lines: one row per line, typed cells, Tab or Enter to the next
 // cell, a line added at the end, a grey remove button per line. Below 1024px each line is a card.
-export function LinesTable({ name, label, columns, newLine, addLabel, lineLabel, removeLabel, minLines = 0, footer }: Props) {
+// readOnly shows saved lines in the same columns, as text.
+export function LinesTable<L extends object = Record<string, unknown>>(props: EditProps<L> | ReadOnlyProps<L>) {
+  return props.readOnly ? <ReadOnlyLines {...props} /> : <EditLines {...props} />
+}
+
+function EditLines<L extends object>({ name, label, columns: all, newLine, addLabel, lineLabel, removeLabel, minLines = 0, footer }: EditProps<L>) {
   const wide = useMediaQuery('(min-width: 64em)', true)
   const { control } = useFormContext()
   const lines = useFieldArray({ control, name })
+  const columns = all.filter((c) => c.cell)
   const removable = lines.fields.length > minLines
   const remove = (i: number) => (
     <Tooltip label={removeLabel(i + 1)}>
@@ -73,7 +91,7 @@ export function LinesTable({ name, label, columns, newLine, addLabel, lineLabel,
               </Group>
               <SimpleGrid cols={1} spacing="sm">
                 {columns.map((c) => (
-                  <div key={c.key}>{c.cell(i, false, line)}</div>
+                  <div key={c.key}>{c.cell?.(i, false, line)}</div>
                 ))}
               </SimpleGrid>
             </Stack>
@@ -89,28 +107,13 @@ export function LinesTable({ name, label, columns, newLine, addLabel, lineLabel,
       <Paper withBorder className={classes.frame}>
         <ScrollArea type="auto">
           <Table aria-label={label} className={classes.table} onKeyDown={nextCellOnEnter} verticalSpacing="xxs">
-            <Table.Thead>
-              <Table.Tr>
-                <Table.Th className={classes.n}>#</Table.Th>
-                {columns.map((c) => (
-                  <Table.Th key={c.key} miw={c.width ?? 200} ta={c.numeric ? 'right' : undefined}>
-                    {c.header}
-                    {c.required && (
-                      <Text component="span" c="var(--mantine-color-error)" aria-hidden>
-                        {' *'}
-                      </Text>
-                    )}
-                  </Table.Th>
-                ))}
-                <Table.Th className={classes.remove} aria-hidden />
-              </Table.Tr>
-            </Table.Thead>
+            <Head columns={columns} />
             <Table.Tbody>
               {lines.fields.map((line, i) => (
                 <Table.Tr key={line.id}>
                   <Table.Td className={classes.n}>{i + 1}</Table.Td>
                   {columns.map((c) => (
-                    <Table.Td key={c.key}>{c.cell(i, true, line)}</Table.Td>
+                    <Table.Td key={c.key}>{c.cell?.(i, true, line)}</Table.Td>
                   ))}
                   <Table.Td className={classes.remove}>{removable && remove(i)}</Table.Td>
                 </Table.Tr>
@@ -122,6 +125,70 @@ export function LinesTable({ name, label, columns, newLine, addLabel, lineLabel,
       {add}
       {footer}
     </Stack>
+  )
+}
+
+function ReadOnlyLines<L extends object>({ label, columns: all, lines, lineLabel, footer }: ReadOnlyProps<L>) {
+  const wide = useMediaQuery('(min-width: 64em)', true)
+  const columns = all.filter((c) => c.value)
+  return (
+    <Stack gap="sm">
+      {wide ? (
+        <Paper withBorder className={classes.frame}>
+          <ScrollArea type="auto">
+            <Table aria-label={label} className={classes.table} data-readonly>
+              <Head columns={columns} readOnly />
+              <Table.Tbody>
+                {lines.map((line, i) => (
+                  <Table.Tr key={i}>
+                    <Table.Td className={classes.n}>{i + 1}</Table.Td>
+                    {columns.map((c) => (
+                      <Table.Td key={c.key} ta={c.numeric ? 'right' : undefined}>
+                        {c.value?.(line, i)}
+                      </Table.Td>
+                    ))}
+                  </Table.Tr>
+                ))}
+              </Table.Tbody>
+            </Table>
+          </ScrollArea>
+        </Paper>
+      ) : (
+        lines.map((line, i) => (
+          <Paper key={i} withBorder p="sm">
+            <Stack gap="xs">
+              <Text fw={600} size="sm">
+                {lineLabel(i + 1)}
+              </Text>
+              <FieldList rows={columns.map((c) => [c.header, c.value?.(line, i)])} />
+            </Stack>
+          </Paper>
+        ))
+      )}
+      {footer}
+    </Stack>
+  )
+}
+
+// Head is the header row; read-only lines take only their text's width and mark nothing required.
+function Head<L extends object>({ columns, readOnly }: { columns: LineColumn<L>[]; readOnly?: boolean }) {
+  return (
+    <Table.Thead>
+      <Table.Tr>
+        <Table.Th className={classes.n}>#</Table.Th>
+        {columns.map((c) => (
+          <Table.Th key={c.key} miw={readOnly ? undefined : (c.width ?? 200)} ta={c.numeric ? 'right' : undefined}>
+            {c.header}
+            {c.required && !readOnly && (
+              <Text component="span" c="var(--mantine-color-error)" aria-hidden>
+                {' *'}
+              </Text>
+            )}
+          </Table.Th>
+        ))}
+        {!readOnly && <Table.Th className={classes.remove} aria-hidden />}
+      </Table.Tr>
+    </Table.Thead>
   )
 }
 

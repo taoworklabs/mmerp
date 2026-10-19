@@ -1,6 +1,6 @@
 # 0026. Printing
 
-Status: accepted · 2026-10-08 · extends [ADR-0019](./0019-background-jobs-dataio-and-file-storage.md): an export may produce a file other than Excel
+Status: accepted · 2026-10-08 · extends [ADR-0019](./0019-background-jobs-dataio-and-file-storage.md): an export may produce a file other than Excel · amended by [ADR-0034](./0034-record-types-declare-permissions.md): `print` follows the declared permission and is available only with a registered template
 
 ## Context
 

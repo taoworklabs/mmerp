@@ -1,6 +1,6 @@
 # 0024. Attachments and discussion
 
-Status: accepted · 2026-10-07 · amends the "File storage" part of [ADR-0019](./0019-background-jobs-dataio-and-file-storage.md)
+Status: accepted · 2026-10-07 · amends the "File storage" part of [ADR-0019](./0019-background-jobs-dataio-and-file-storage.md) · amended by [ADR-0034](./0034-record-types-declare-permissions.md): a type opts into attachments by declaring `view_files` and `attach`, not by answering `Can`
 
 ## Context
 

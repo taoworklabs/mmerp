@@ -27,8 +27,9 @@ func setupWithRecord(t *testing.T) (*iam.Service, *record.Service, context.Conte
 	t.Helper()
 	s := iam.NewService(iam.Deps{Setting: setting.NewService(), Audit: audit.NewService()})
 	rec := record.NewService(record.Deps{IAM: s, Numbering: numbering.NewService(numbering.Deps{}), Audit: audit.NewService()})
+	s.RegisterRoles("test", map[string][]string{"member": {"test.all"}})
 	rec.Register(record.Type{Code: "test.doc", Product: "test", Kind: record.Document, NumberPrefix: "T",
-		Can: func(context.Context, int64, record.Action) (bool, error) { return true, nil }})
+		Perms: record.Perms{View: "test.all", Edit: "test.all"}, OnDelete: func(context.Context, int64) error { return nil }})
 	s.SetDataProducts(rec)
 	s.RegisterRoles("hrm", map[string][]string{"hr": {"hrm.employee.view", "hrm.employee.edit"}, "viewer": {"hrm.employee.view"}, "approval_admin": {"hrm.approval.manage"}}, "approval_admin")
 	ctx := platform.WithDB(t.Context(), pgtest.New(t))
@@ -220,8 +221,10 @@ func TestMeListsProductsWithData(t *testing.T) {
 		t.Fatalf("after a record: %+v", me)
 	}
 	// Master data counts too, without any document.
+	s.RegisterRoles("cat", map[string][]string{"member": {"cat.all"}})
 	rec.Register(record.Type{Code: "cat.customer", Product: "cat", Kind: record.Catalog,
-		Can:     func(context.Context, int64, record.Action) (bool, error) { return true, nil },
+		Perms:   record.Perms{View: "cat.all"},
+		Locate:  func(context.Context, int64) (int64, error) { return 0, platform.ErrNotFound },
 		HasData: func(context.Context) (bool, error) { return true, nil }})
 	if me := must[iam.Me](t)(s.Me(off)); !slices.Equal(me.ProductsWithData, []string{"cat", "test"}) {
 		t.Fatalf("with master data: %+v", me.ProductsWithData)

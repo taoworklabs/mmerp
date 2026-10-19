@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { useTranslation } from 'react-i18next'
 import { api, unwrap, type Employee, type EmployeeInput } from '@/shared/api/hrm'
-import { CodeField, DateField, Form, FormActions, FormRow, FormSection, OrgUnitField, SelectField, SensitiveField, TextField } from '@/shared/ui/form'
+import { CodeField, DateField, Form, FormActions, FormRow, FormSection, OrgUnitField, SelectField, SensitiveField, TextField, type ErrorFields } from '@/shared/ui/form'
 import { icon } from '@/shared/ui/theme'
 import { EmployeeField } from './EmployeeField'
 
@@ -64,7 +64,7 @@ function toInput(v: EmployeeValues, edited: SensitiveName[]): EmployeeInput {
   }
 }
 
-const fieldOfCode: Record<string, keyof EmployeeValues> = {
+const errorFields: ErrorFields<EmployeeValues> = {
   employee_code_taken: 'code',
   user_not_found: 'user_login',
   user_already_linked: 'user_login',
@@ -89,7 +89,7 @@ export function useEmployeeForm(employee: Employee | undefined, onSaved: (id: nu
       await onSaved(id)
     }
   }
-  return { form, save, fieldOf: (err: { code: string }) => fieldOfCode[err.code] }
+  return { form, save, errorFields }
 }
 
 // MainFields: what every employee needs, the four required fields together.
@@ -173,12 +173,12 @@ export function SensitiveFields({ employee, canView, canEdit }: { employee?: Emp
 // actions: the list-level actions from the API (it is shown only with create).
 export function EmployeeForm({ actions, onSaved }: { actions: string[]; onSaved: (id: number) => Promise<void> | void }) {
   const { t } = useTranslation()
-  const { form, save, fieldOf } = useEmployeeForm(undefined, onSaved)
+  const { form, save, errorFields } = useEmployeeForm(undefined, onSaved)
   // The sensitive details stay folded until asked for: they usually come later, with the papers.
   const [sensitiveOpen, setSensitiveOpen] = useState(false)
 
   return (
-    <Form form={form} onSubmit={save} fieldOf={fieldOf}>
+    <Form form={form} onSubmit={save} errorFields={errorFields}>
       <FormSection title={t('hrm.employee.section.main')} description={t('hrm.employee.section.main_hint')} icon={IconUser}>
         <MainFields />
       </FormSection>

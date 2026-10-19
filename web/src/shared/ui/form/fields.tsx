@@ -190,6 +190,8 @@ export function SelectField(props: Base & { data: Option[]; clearable?: boolean;
       searchable={props.data.length > 7 || !!props.onSearch}
       onSearchChange={props.onSearch}
       clearable={props.clearable}
+      // A required value never clears by picking it again: a preselected one would vanish on that click.
+      allowDeselect={!props.required}
       nothingFoundMessage="—"
       comboboxProps={belowError(common.error)}
     />

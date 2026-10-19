@@ -188,7 +188,7 @@ func (q *Queries) GetCustomer(ctx context.Context, id int64) (GetCustomerRow, er
 }
 
 const getHeader = `-- name: GetHeader :one
-SELECT h.id, h.kind, h.request_id, h.customer_id, h.customer_code, h.customer_name, h.customer_tax_code, h.customer_address, h.customer_phone, h.customer_email, h.contact_name, h.valid_until, h.delivery_date, h.quote_id, h.payment_terms, h.delivery_terms, h.note, h.subtotal, h.discount_total, h.vat_total, h.total, d.number, d.status, d.version, d.date, d.org_unit_id, d.legal_entity_id, u.name AS org_unit_name,
+SELECT h.id, h.kind, h.customer_id, h.customer_code, h.customer_name, h.customer_tax_code, h.customer_address, h.customer_phone, h.customer_email, h.contact_name, h.valid_until, h.delivery_date, h.quote_id, h.payment_terms, h.delivery_terms, h.note, h.subtotal, h.discount_total, h.vat_total, h.total, d.number, d.status, d.version, d.date, d.org_unit_id, d.legal_entity_id, u.name AS org_unit_name,
        q.number AS quote_number
 FROM sales.headers h
 JOIN record.documents d ON d.id = h.id
@@ -200,7 +200,6 @@ WHERE h.id = $1
 type GetHeaderRow struct {
 	ID              int64
 	Kind            string
-	RequestID       pgtype.UUID
 	CustomerID      int64
 	CustomerCode    string
 	CustomerName    string
@@ -235,7 +234,6 @@ func (q *Queries) GetHeader(ctx context.Context, id int64) (GetHeaderRow, error)
 	err := row.Scan(
 		&i.ID,
 		&i.Kind,
-		&i.RequestID,
 		&i.CustomerID,
 		&i.CustomerCode,
 		&i.CustomerName,
@@ -337,35 +335,18 @@ func (q *Queries) GetLines(ctx context.Context, docID int64) ([]GetLinesRow, err
 	return items, nil
 }
 
-const headerByRequest = `-- name: HeaderByRequest :one
-SELECT id, kind FROM sales.headers WHERE request_id = CAST($1::text AS uuid)
-`
-
-type HeaderByRequestRow struct {
-	ID   int64
-	Kind string
-}
-
-func (q *Queries) HeaderByRequest(ctx context.Context, requestID string) (HeaderByRequestRow, error) {
-	row := q.db.QueryRow(ctx, headerByRequest, requestID)
-	var i HeaderByRequestRow
-	err := row.Scan(&i.ID, &i.Kind)
-	return i, err
-}
-
 const insertHeader = `-- name: InsertHeader :exec
-INSERT INTO sales.headers (id, kind, request_id, customer_id, customer_code, customer_name, customer_tax_code,
+INSERT INTO sales.headers (id, kind, customer_id, customer_code, customer_name, customer_tax_code,
     customer_address, customer_phone, customer_email, contact_name, valid_until, delivery_date, quote_id,
     payment_terms, delivery_terms, note, subtotal, discount_total, vat_total, total)
-VALUES ($1, $2, CAST($3::text AS uuid), $4, $5, $6, $7,
-    $8, $9, $10, $11, $12, $13, $14,
-    $15, $16, $17, $18, $19, $20, $21)
+VALUES ($1, $2, $3, $4, $5, $6,
+    $7, $8, $9, $10, $11, $12, $13,
+    $14, $15, $16, $17, $18, $19, $20)
 `
 
 type InsertHeaderParams struct {
 	ID              int64
 	Kind            string
-	RequestID       string
 	CustomerID      int64
 	CustomerCode    string
 	CustomerName    string
@@ -390,7 +371,6 @@ func (q *Queries) InsertHeader(ctx context.Context, arg InsertHeaderParams) erro
 	_, err := q.db.Exec(ctx, insertHeader,
 		arg.ID,
 		arg.Kind,
-		arg.RequestID,
 		arg.CustomerID,
 		arg.CustomerCode,
 		arg.CustomerName,
@@ -773,23 +753,6 @@ SELECT 1 FROM sales.customers WHERE id = $1 FOR NO KEY UPDATE
 func (q *Queries) LockCustomer(ctx context.Context, id int64) error {
 	_, err := q.db.Exec(ctx, lockCustomer, id)
 	return err
-}
-
-const printLegalEntity = `-- name: PrintLegalEntity :one
-SELECT coalesce(legal_name, name)::text AS name, tax_code, address FROM iam.org_units WHERE id = $1
-`
-
-type PrintLegalEntityRow struct {
-	Name    string
-	TaxCode pgtype.Text
-	Address pgtype.Text
-}
-
-func (q *Queries) PrintLegalEntity(ctx context.Context, id int64) (PrintLegalEntityRow, error) {
-	row := q.db.QueryRow(ctx, printLegalEntity, id)
-	var i PrintLegalEntityRow
-	err := row.Scan(&i.Name, &i.TaxCode, &i.Address)
-	return i, err
 }
 
 const updateCustomer = `-- name: UpdateCustomer :exec

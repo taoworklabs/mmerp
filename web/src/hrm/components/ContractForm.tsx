@@ -1,5 +1,6 @@
 import { Text } from '@mantine/core'
 import { IconCash, IconFileText, IconListDetails } from '@tabler/icons-react'
+import { useState } from 'react'
 import type { TFunction } from 'i18next'
 import { useForm, useWatch } from 'react-hook-form'
 import { useTranslation } from 'react-i18next'
@@ -7,8 +8,7 @@ import { api, unwrap, type Contract, type ContractFields } from '@/shared/api/hr
 import { useDocumentMutation } from '@/shared/document'
 import { notifySuccess } from '@/shared/ui/notify'
 import { formatNumber } from '@/shared/i18n'
-import { DataTable } from '@/shared/ui/DataTable'
-import { CheckboxField, DateField, Form, FormActions, FormFields, FormRow, FormSection, LinesTable, MoneyField, SelectField, TextField, type LineColumn } from '@/shared/ui/form'
+import { CheckboxField, DateField, Form, FormActions, FormFields, FormRow, FormSection, LinesTable, MoneyField, SelectField, TextField, type LineColumn, type ErrorFields } from '@/shared/ui/form'
 import { useContractTypes } from '../hooks/useContract'
 import { contractDocType } from '../keys'
 
@@ -22,13 +22,15 @@ type Values = {
   lines: Line[]
 }
 
-const fieldOfCode: Record<string, keyof Values> = {
+const errorFields: ErrorFields<Values> = {
   contract_end_before_start: 'end_date',
   contract_end_required: 'end_date',
   contract_end_not_allowed: 'end_date',
   appendix_outside_contract: 'start_date',
   contract_type_inactive: 'contract_type_id',
   invalid_contract_terms: 'salary',
+  contract_line_name_required: 'lines.*.name',
+  invalid_contract_line_amount: 'lines.*.amount',
 }
 
 type Props = {
@@ -49,6 +51,8 @@ export type ContractPart = 'main' | 'terms' | 'lines'
 // has edit; otherwise it is read-only. Terms are null when the user may not see salaries.
 export function ContractForm({ contract, employeeId, parent, onCreated, part, onClose }: Props) {
   const { t } = useTranslation()
+  // One id per opened form: sending it twice returns the document made the first time.
+  const [requestId] = useState(() => crypto.randomUUID())
   const types = useContractTypes()
   const mutation = useDocumentMutation(contractDocType, contract?.id ?? 0, contract?.version ?? 0)
   const appendix = contract ? contract.parent_id !== null && contract.parent_id !== undefined : !!parent
@@ -87,7 +91,7 @@ export function ContractForm({ contract, employeeId, parent, onCreated, part, on
       onClose?.()
       return
     }
-    const { id } = await unwrap(api.POST('/hrm/contracts', { body: { employee_id: employeeId ?? 0, parent_id: parent?.id, ...body } }))
+    const { id } = await unwrap(api.POST('/hrm/contracts', { body: { request_id: requestId, employee_id: employeeId ?? 0, parent_id: parent?.id, ...body } }))
     await onCreated?.(id)
   }
 
@@ -114,7 +118,7 @@ export function ContractForm({ contract, employeeId, parent, onCreated, part, on
 
   if (part && onClose)
     return (
-      <Form form={form} onSubmit={save} fieldOf={(err) => fieldOfCode[err.code]}>
+      <Form form={form} onSubmit={save} errorFields={errorFields}>
         {part === 'lines' ? (
           linesTable
         ) : (
@@ -125,7 +129,7 @@ export function ContractForm({ contract, employeeId, parent, onCreated, part, on
       </Form>
     )
   return (
-    <Form form={form} onSubmit={save} fieldOf={(err) => fieldOfCode[err.code]}>
+    <Form form={form} onSubmit={save} errorFields={errorFields}>
       <FormSection
         title={t(appendix ? 'hrm.contract.section_appendix' : 'hrm.contract.section')}
         description={t(appendix ? 'hrm.contract.section_appendix_hint' : 'hrm.contract.section_hint')}
@@ -156,20 +160,20 @@ export function ContractForm({ contract, employeeId, parent, onCreated, part, on
 }
 
 // lineColumns are the allowances and supports of the terms, one row each; only a support may be tax-free.
-function lineColumns(t: TFunction): LineColumn[] {
+function lineColumns(t: TFunction): LineColumn<Line>[] {
   return [
     {
       key: 'kind',
       header: t('hrm.contract.line_kind_col'),
       required: true,
       width: 168,
+      value: (l) => t(`hrm.contract.line.${l.kind}`),
       cell: (i, bare) => (
         <SelectField
           name={`lines.${i}.kind`}
           label={t('hrm.contract.line_kind', { n: i + 1 })}
           bare={bare}
           required
-         
           data={[
             { value: 'allowance', label: t('hrm.contract.line.allowance') },
             { value: 'support', label: t('hrm.contract.line.support') },
@@ -182,6 +186,7 @@ function lineColumns(t: TFunction): LineColumn[] {
       header: t('hrm.contract.line_name_col'),
       required: true,
       width: 144,
+      value: (l) => l.name,
       cell: (i, bare) => <TextField name={`lines.${i}.name`} label={t('hrm.contract.line_name', { n: i + 1 })} bare={bare} required maxLength={200} />,
     },
     {
@@ -190,9 +195,16 @@ function lineColumns(t: TFunction): LineColumn[] {
       numeric: true,
       required: true,
       width: 128,
+      value: (l) => (l.amount == null ? '' : formatNumber(l.amount)),
       cell: (i, bare) => <MoneyField name={`lines.${i}.amount`} label={t('hrm.contract.line_amount', { n: i + 1 })} bare={bare} required />,
     },
-    { key: 'taxable', header: t('hrm.contract.line_taxable_col'), width: 72, cell: (i, bare) => <TaxableCell index={i} bare={bare} /> },
+    {
+      key: 'taxable',
+      header: t('hrm.contract.line_taxable_col'),
+      width: 72,
+      value: (l) => (l.kind === 'support' ? t(l.taxable ? 'hrm.common.yes' : 'hrm.common.no') : ''),
+      cell: (i, bare) => <TaxableCell index={i} bare={bare} />,
+    },
   ]
 }
 
@@ -213,17 +225,5 @@ export function SavedLines({ lines }: { lines: Line[] }) {
         {t('hrm.contract.no_lines')}
       </Text>
     )
-  return (
-    <DataTable
-      label={t('hrm.contract.section_lines')}
-      rows={lines.map((l, i) => ({ ...l, n: i + 1 }))}
-      rowKey={(l) => l.n}
-      columns={[
-        { key: 'name', header: t('hrm.contract.line_name_col'), role: 'title', render: (l) => l.name },
-        { key: 'kind', header: t('hrm.contract.line_kind_col'), role: 'meta', render: (l) => t(`hrm.contract.line.${l.kind}`) },
-        { key: 'amount', header: t('hrm.contract.line_amount_col'), role: 'meta', kind: 'number', render: (l) => (l.amount == null ? '' : formatNumber(l.amount)) },
-        { key: 'taxable', header: t('hrm.contract.line_taxable_col'), role: 'hidden', render: (l) => (l.kind === 'support' ? t(l.taxable ? 'hrm.common.yes' : 'hrm.common.no') : '') },
-      ]}
-    />
-  )
+  return <LinesTable readOnly label={t('hrm.contract.section_lines')} columns={lineColumns(t)} lines={lines} lineLabel={(n) => t('hrm.contract.line_title', { n })} />
 }

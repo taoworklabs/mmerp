@@ -47,10 +47,13 @@ func setup(t *testing.T, data func(context.Context, int64) ([]Part, error), layo
 	ids := iam.NewService(iam.Deps{Setting: setting.NewService(), Audit: audit.NewService()})
 	rec := record.NewService(record.Deps{IAM: ids, Numbering: numbering.NewService(numbering.Deps{}), Audit: audit.NewService()})
 	ids.SetTreeHook(rec)
+	ids.RegisterRoles("test", map[string][]string{"member": {"test.all"}})
 	rec.Register(record.Type{Code: "test.doc", Product: "test", Kind: record.Document, NumberPrefix: "T",
-		Can: func(context.Context, int64, record.Action) (bool, error) { return true, nil }})
+		Perms:    record.Perms{View: "test.all", Edit: "test.all", ViewFiles: "test.all", Attach: "test.all"},
+		Grant:    func(context.Context, int64, record.Action) (bool, error) { return true, nil },
+		OnDelete: func(context.Context, int64) error { return nil }})
 	prn := NewService(Deps{Record: rec, Audit: audit.NewService(), IAM: ids,
-		DataIO: dataio.NewService(dataio.Deps{IAM: ids, Audit: audit.NewService()})})
+		DataIO: dataio.NewService(dataio.Deps{IAM: ids, Audit: audit.NewService(), Record: rec})})
 	prn.Register(Template{Code: "test.doc", DocType: "test.doc", Data: data, Layouts: []Layout{layout}})
 	admin := platform.WithActor(ctx, must[int64](t)(ids.CreateAdmin(ctx, "admin", "Admin", "long enough")))
 	c := must[int64](t)(ids.CreateOrgUnit(admin, iam.OrgUnitInput{Kind: "company", Name: "C"}))
@@ -127,5 +130,36 @@ func TestPrintManyParts(t *testing.T) {
 	r, err := pdfread.NewReader(bytes.NewReader(f.Body), int64(len(f.Body)))
 	if err != nil || r.NumPage() != n {
 		t.Fatalf("pages: %v %v", r.NumPage(), err)
+	}
+}
+
+// A legal entity prints its legal name, or its name when it has none.
+func TestLegalEntity(t *testing.T) {
+	var shown LegalEntity
+	h := setup(t, func(context.Context, int64) ([]Part, error) {
+		b, err := json.Marshal(shown)
+		return []Part{{Data: b}}, err
+	}, func(p *Page, raw json.RawMessage) error {
+		var le LegalEntity
+		if err := json.Unmarshal(raw, &le); err != nil {
+			return err
+		}
+		p.LegalEntity("Seller", "Name", le)
+		return nil
+	})
+	ids := iam.NewService(iam.Deps{Setting: setting.NewService(), Audit: audit.NewService()})
+	tax, legal, addr := "0101234567", "Công ty TNHH Một", "1 Tràng Tiền"
+	one := must[int64](t)(ids.CreateOrgUnit(h.admin, iam.OrgUnitInput{Kind: "company", Name: "Một", TaxCode: &tax, LegalName: &legal, Address: &addr}))
+	two := must[int64](t)(ids.CreateOrgUnit(h.admin, iam.OrgUnitInput{Kind: "company", Name: "Hai"}))
+
+	if le := must[LegalEntity](t)(h.prn.LegalEntity(h.admin, one)); le.Name != legal || *le.TaxCode != tax || *le.Address != addr {
+		t.Fatalf("with legal fields: %+v", le)
+	}
+	shown = must[LegalEntity](t)(h.prn.LegalEntity(h.admin, two))
+	if shown.Name != "Hai" || shown.TaxCode != nil || shown.Address != nil {
+		t.Fatalf("name only: %+v", shown)
+	}
+	if _, err := h.prn.render(h.admin, h.prn.templates["test.doc"], json.RawMessage(fmt.Sprintf(`{"id":%d}`, h.doc.ID))); err != nil {
+		t.Fatal(err)
 	}
 }

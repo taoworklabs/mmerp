@@ -1,5 +1,14 @@
 package posting
 
+import (
+	"net/http"
+
+	"github.com/taoworklabs/mmerp/internal/platform"
+)
+
+// ErrAlreadyRecorded: the document already has lines that are not voided.
+var ErrAlreadyRecorded = &platform.Error{Status: http.StatusConflict, Code: "posting_already_recorded"}
+
 // Kind is the type of a posting line; accounting maps kinds to accounts. The column has no
 // CHECK: each product adds kinds, and only this service writes them.
 type Kind string

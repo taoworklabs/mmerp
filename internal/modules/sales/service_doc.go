@@ -2,27 +2,23 @@ package sales
 
 import (
 	"context"
-	"crypto/rand"
 	"errors"
-	"fmt"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
-	"github.com/shopspring/decimal"
 
 	"github.com/taoworklabs/mmerp/internal/core/audit"
 	"github.com/taoworklabs/mmerp/internal/core/record"
-	"github.com/taoworklabs/mmerp/internal/core/setting"
 	"github.com/taoworklabs/mmerp/internal/modules/sales/internal/store"
 	"github.com/taoworklabs/mmerp/internal/platform"
 )
 
 // QuoteActions and OrderActions list what the actor may do before picking a document: create.
 func (s *Service) QuoteActions(ctx context.Context) (Actions, error) {
-	return s.createActions(ctx, PermQuoteEdit)
+	return s.typeActions(ctx, quoteType)
 }
 func (s *Service) OrderActions(ctx context.Context) (Actions, error) {
-	return s.createActions(ctx, PermOrderEdit)
+	return s.typeActions(ctx, orderType)
 }
 
 func (s *Service) Quotes(ctx context.Context, f DocFilter) (DocList, error) {
@@ -35,12 +31,18 @@ func (s *Service) Quote(ctx context.Context, id int64) (Doc, error) { return s.d
 func (s *Service) Order(ctx context.Context, id int64) (Doc, error) { return s.doc(ctx, orderKind, id) }
 
 // CreateQuote and CreateOrder add a draft; the same request id returns the first one.
-func (s *Service) CreateQuote(ctx context.Context, in NewDoc) (int64, error) {
-	return s.createOnce(ctx, quoteKind, in)
+func (s *Service) CreateQuote(ctx context.Context, in NewDoc) (id int64, err error) {
+	return id, platform.InTx(ctx, func(ctx context.Context) error {
+		id, err = s.create(ctx, quoteKind, in.RequestID, in.DocFields, nil)
+		return err
+	})
 }
 
-func (s *Service) CreateOrder(ctx context.Context, in NewDoc) (int64, error) {
-	return s.createOnce(ctx, orderKind, in)
+func (s *Service) CreateOrder(ctx context.Context, in NewDoc) (id int64, err error) {
+	return id, platform.InTx(ctx, func(ctx context.Context) error {
+		id, err = s.create(ctx, orderKind, in.RequestID, in.DocFields, nil)
+		return err
+	})
 }
 
 func (s *Service) UpdateQuote(ctx context.Context, id int64, in DocUpdate) error {
@@ -49,14 +51,6 @@ func (s *Service) UpdateQuote(ctx context.Context, id int64, in DocUpdate) error
 
 func (s *Service) UpdateOrder(ctx context.Context, id int64, in DocUpdate) error {
 	return s.update(ctx, orderKind, id, in)
-}
-
-func (s *Service) DeleteQuote(ctx context.Context, id int64, version int32) error {
-	return s.delete(ctx, quoteKind, id, version)
-}
-
-func (s *Service) DeleteOrder(ctx context.Context, id int64, version int32) error {
-	return s.delete(ctx, orderKind, id, version)
 }
 
 func (s *Service) docs(ctx context.Context, k kind, f DocFilter) (DocList, error) {
@@ -93,27 +87,18 @@ func expired(validUntil, today pgtype.Date) bool {
 
 // doc returns one document; one the actor may not view does not exist.
 func (s *Service) doc(ctx context.Context, k kind, id int64) (Doc, error) {
-	h, err := s.visible(ctx, k, id)
+	d, err := s.d.Record.Read(ctx, record.Ref{Type: k.docType, ID: id})
 	if err != nil {
 		return Doc{}, err
 	}
 	q := store.New(platform.DBFrom(ctx))
+	h, err := q.GetHeader(ctx, id)
+	if err != nil {
+		return Doc{}, err
+	}
 	lines, err := q.GetLines(ctx, id)
 	if err != nil {
 		return Doc{}, err
-	}
-	d, err := s.d.Record.Get(ctx, record.Ref{Type: k.docType, ID: id})
-	if err != nil {
-		return Doc{}, err
-	}
-	actions, err := s.d.Record.DocumentActions(ctx, d)
-	if err != nil {
-		return Doc{}, err
-	}
-	if ok, err := s.d.Record.Can(ctx, k.docType, id, record.Print); err != nil {
-		return Doc{}, err
-	} else if ok {
-		actions = append(actions, "print")
 	}
 	out := Doc{
 		ID: id, Kind: k.name, Number: h.Number, Status: h.Status, Version: h.Version, Date: *platform.DatePtr(h.Date),
@@ -126,8 +111,8 @@ func (s *Service) doc(ctx context.Context, k kind, id int64) (Doc, error) {
 	}
 	for i, l := range lines {
 		out.Lines[i] = Line{
-			LineInput: LineInput{ItemID: l.ItemID, Description: l.Description, Quantity: plain(l.Quantity), UnitPrice: l.UnitPrice,
-				DiscountPercent: plain(l.DiscountPercent), VatRate: l.VatRate},
+			LineInput: LineInput{ItemID: l.ItemID, Description: l.Description, Quantity: platform.PlainDecimal(l.Quantity), UnitPrice: l.UnitPrice,
+				DiscountPercent: platform.PlainDecimal(l.DiscountPercent), VatRate: l.VatRate},
 			ItemCode: l.ItemCode, Unit: l.Unit, Amount: l.Amount, Discount: l.Discount, Vat: l.Vat,
 		}
 	}
@@ -143,6 +128,7 @@ func (s *Service) doc(ctx context.Context, k kind, id int64) (Doc, error) {
 			out.Quote = &DocRef{ID: qd.ID, Number: qd.Number, Status: string(qd.Status)}
 		}
 	}
+	var extra []string
 	if k == quoteKind {
 		today, err := s.d.Setting.Today(ctx)
 		if err != nil {
@@ -165,78 +151,38 @@ func (s *Service) doc(ctx context.Context, k kind, id int64) (Doc, error) {
 			if ok, err := s.canMakeOrder(ctx, h.OrgUnitID); err != nil {
 				return Doc{}, err
 			} else if ok {
-				out.AllowedActions = append(actions, "create_order")
+				extra = append(extra, "create_order")
 			}
 		}
 	}
-	if out.AllowedActions == nil {
-		out.AllowedActions = actions
-	}
-	return out, nil
+	out.AllowedActions, err = s.d.Record.Actions(ctx, d, extra...)
+	return out, err
 }
 
 func (s *Service) canMakeOrder(ctx context.Context, unit int64) (bool, error) {
 	if platform.ProductGate(ctx, "sales", platform.ClassWrite) != nil {
 		return false, nil
 	}
-	return s.allowed(ctx, PermOrderEdit, unit)
-}
-
-func (s *Service) visible(ctx context.Context, k kind, id int64) (store.GetHeaderRow, error) {
-	if ok, err := s.d.Record.Can(ctx, k.docType, id, record.View); err != nil || !ok {
-		return store.GetHeaderRow{}, platform.OrErr(err, platform.ErrNotFound)
-	}
-	return store.New(platform.DBFrom(ctx)).GetHeader(ctx, id)
-}
-
-// createOnce creates a draft unless its request id was seen: then it returns that draft,
-// also when a concurrent twin wins the unique index first.
-func (s *Service) createOnce(ctx context.Context, k kind, in NewDoc) (int64, error) {
-	if id, found, err := s.byRequest(ctx, k, in.RequestID); err != nil || found {
-		return id, err
-	}
-	var id int64
-	err := platform.InTx(ctx, func(ctx context.Context) error {
-		var err error
-		id, err = s.create(ctx, k, in.RequestID, in.DocFields, nil)
-		return err
-	})
-	if platform.Violates(err, "headers_request_id_key") {
-		id, _, err = s.byRequest(ctx, k, in.RequestID)
-	}
-	return id, err
-}
-
-func (s *Service) byRequest(ctx context.Context, k kind, requestID string) (int64, bool, error) {
-	r, err := store.New(platform.DBFrom(ctx)).HeaderByRequest(ctx, requestID)
-	if errors.Is(err, pgx.ErrNoRows) {
-		return 0, false, nil
-	}
-	if err != nil {
-		return 0, false, err
-	}
-	if r.Kind != k.name {
-		return 0, false, ErrRequestReused
-	}
-	if ok, err := s.d.Record.Can(ctx, k.docType, r.ID, record.View); err != nil || !ok {
-		return 0, false, platform.OrErr(err, ErrRequestReused)
-	}
-	return r.ID, true, nil
+	return s.d.IAM.Allowed(ctx, "sales", PermOrderEdit, unit)
 }
 
 // create checks the actor may create at the org unit and see the customer, then adds the draft.
 func (s *Service) create(ctx context.Context, k kind, requestID string, f DocFields, quoteID *int64) (int64, error) {
+	if err := s.d.Record.MayCreate(ctx, k.docType, record.Header{OrgUnitID: f.OrgUnitID}); err != nil {
+		return 0, err
+	}
 	p, err := s.prepare(ctx, k, f)
 	if err != nil {
 		return 0, err
 	}
+	p.header.RequestID = requestID
 	d, err := s.d.Record.Create(ctx, k.docType, p.header)
-	if err != nil {
-		return 0, err
+	if err != nil || d.Reused {
+		return d.ID, err
 	}
 	c := p.customer
 	if err := store.New(platform.DBFrom(ctx)).InsertHeader(ctx, store.InsertHeaderParams{
-		ID: d.ID, Kind: k.name, RequestID: requestID, CustomerID: c.ID, CustomerCode: c.Code, CustomerName: c.Name,
+		ID: d.ID, Kind: k.name, CustomerID: c.ID, CustomerCode: c.Code, CustomerName: c.Name,
 		CustomerTaxCode: platform.NullText(c.TaxCode), CustomerAddress: platform.NullText(c.Address), CustomerPhone: platform.NullText(c.Phone),
 		CustomerEmail: platform.NullText(c.Email), ContactName: platform.NullText(c.ContactName),
 		ValidUntil: platform.NullDate(f.ValidUntil), DeliveryDate: platform.NullDate(f.DeliveryDate), QuoteID: platform.NullInt8(quoteID),
@@ -250,7 +196,7 @@ func (s *Service) create(ctx context.Context, k kind, requestID string, f DocFie
 
 func (s *Service) update(ctx context.Context, k kind, id int64, in DocUpdate) error {
 	return platform.InTx(ctx, func(ctx context.Context) error {
-		if _, err := s.visible(ctx, k, id); err != nil {
+		if _, err := s.d.Record.Read(ctx, record.Ref{Type: k.docType, ID: id}); err != nil {
 			return err
 		}
 		p, err := s.prepare(ctx, k, in.DocFields)
@@ -279,16 +225,9 @@ func (s *Service) update(ctx context.Context, k kind, id int64, in DocUpdate) er
 	})
 }
 
-func (s *Service) delete(ctx context.Context, k kind, id int64, version int32) error {
-	return platform.InTx(ctx, func(ctx context.Context) error {
-		if _, err := s.visible(ctx, k, id); err != nil {
-			return err
-		}
-		if err := s.d.Record.Delete(ctx, record.Ref{Type: k.docType, ID: id}, version); err != nil {
-			return err
-		}
-		return store.New(platform.DBFrom(ctx)).DeleteHeader(ctx, id)
-	})
+// deleteDoc deletes a draft's header; its lines go with it.
+func deleteDoc(ctx context.Context, id int64) error {
+	return store.New(platform.DBFrom(ctx)).DeleteHeader(ctx, id)
 }
 
 // prepared is a draft's content, checked against the current catalogues and computed.
@@ -303,9 +242,6 @@ type prepared struct {
 // every amount with the rounding mode of the org unit's legal entity.
 func (s *Service) prepare(ctx context.Context, k kind, f DocFields) (prepared, error) {
 	var p prepared
-	if err := s.require(ctx, k.edit, f.OrgUnitID); err != nil {
-		return p, err
-	}
 	switch {
 	case k == quoteKind && (f.ValidUntil == nil || *f.ValidUntil < f.Date):
 		return p, ErrValidUntil
@@ -317,7 +253,10 @@ func (s *Service) prepare(ctx context.Context, k kind, f DocFields) (prepared, e
 	} else {
 		f.ValidUntil = nil
 	}
-	c, err := s.visibleCustomer(ctx, f.CustomerID)
+	if err := s.d.Record.Visible(ctx, record.Ref{Type: customerType, ID: f.CustomerID}, record.View); err != nil {
+		return p, err
+	}
+	c, err := store.New(platform.DBFrom(ctx)).GetCustomer(ctx, f.CustomerID)
 	if err != nil {
 		return p, err
 	}
@@ -338,11 +277,7 @@ func (s *Service) prepare(ctx context.Context, k kind, f DocFields) (prepared, e
 	for _, r := range rows {
 		items[r.ID] = r
 	}
-	le, err := s.d.IAM.LegalEntityOf(ctx, f.OrgUnitID)
-	if err != nil {
-		return p, err
-	}
-	mode, err := s.d.Setting.GetFor(ctx, le, setting.Rounding)
+	mode, err := s.d.Setting.RoundingOf(ctx, f.OrgUnitID)
 	if err != nil {
 		return p, err
 	}
@@ -354,7 +289,7 @@ func (s *Service) prepare(ctx context.Context, k kind, f DocFields) (prepared, e
 		}
 		list[i] = it.Price
 	}
-	amts, totals, maxDiscount, err := compute(f.Lines, list, platform.Rounding(mode))
+	amts, totals, maxDiscount, err := compute(f.Lines, list, mode)
 	if err != nil {
 		return p, err
 	}
@@ -389,7 +324,7 @@ func (s *Service) writeLines(ctx context.Context, k kind, id int64, p prepared) 
 func (s *Service) CreateOrderFromQuote(ctx context.Context, quoteID int64) (int64, error) {
 	var id int64
 	err := platform.InTx(ctx, func(ctx context.Context) error {
-		qh, err := s.visible(ctx, quoteKind, quoteID)
+		qd, err := s.d.Record.Read(ctx, record.Ref{Type: quoteType, ID: quoteID})
 		if err != nil {
 			return err
 		}
@@ -397,7 +332,7 @@ func (s *Service) CreateOrderFromQuote(ctx context.Context, quoteID int64) (int6
 		if err := s.d.Record.WriteGate(ctx, record.Ref{Type: quoteType, ID: quoteID}); err != nil {
 			return err
 		}
-		if err := s.require(ctx, PermOrderEdit, qh.OrgUnitID); err != nil {
+		if err := s.require(ctx, PermOrderEdit, qd.OrgUnitID); err != nil {
 			return err
 		}
 		d, err := s.d.Record.Lock(ctx, record.Ref{Type: quoteType, ID: quoteID})
@@ -441,25 +376,14 @@ func (s *Service) CreateOrderFromQuote(ctx context.Context, quoteID int64) (int6
 			f.Lines[i] = LineInput{ItemID: l.ItemID, Description: l.Description, Quantity: l.Quantity, UnitPrice: l.UnitPrice,
 				DiscountPercent: l.DiscountPercent, VatRate: l.VatRate}
 		}
-		id, err = s.create(ctx, orderKind, newRequestID(), f, &quoteID)
+		id, err = s.create(ctx, orderKind, "", f, &quoteID)
 		return err
 	})
 	return id, err
 }
 
-// plain writes a stored numeric without trailing zeros: "2.000" is "2".
-func plain(s string) string { return decimal.RequireFromString(s).String() }
-
 func customerCopy(h store.GetHeaderRow) CustomerCopy {
 	return CustomerCopy{ID: h.CustomerID, Code: h.CustomerCode, Name: h.CustomerName, TaxCode: platform.TextPtr(h.CustomerTaxCode),
 		Address: platform.TextPtr(h.CustomerAddress), Phone: platform.TextPtr(h.CustomerPhone), Email: platform.TextPtr(h.CustomerEmail),
 		ContactName: platform.TextPtr(h.ContactName)}
-}
-
-// newRequestID is a random UUID (version 4) for a create the server starts itself.
-func newRequestID() string {
-	var b [16]byte
-	_, _ = rand.Read(b[:]) // never fails (crypto/rand)
-	b[6], b[8] = b[6]&0x0f|0x40, b[8]&0x3f|0x80
-	return fmt.Sprintf("%x-%x-%x-%x-%x", b[0:4], b[4:6], b[6:8], b[8:10], b[10:])
 }

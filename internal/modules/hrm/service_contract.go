@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"net/http"
 	"strconv"
 	"strings"
 
@@ -71,38 +72,6 @@ func (s *Service) canWriteContract(ctx context.Context, unit int64) (bool, error
 		return false, err
 	}
 	return s.allowed(ctx, PermSalaryView, unit)
-}
-
-// canContract goes by the contract's org unit. Sending and cancelling need no salary
-// permission, since neither shows nor changes the terms; its attachments do.
-func (s *Service) canContract(ctx context.Context, id int64, action record.Action) (bool, error) {
-	r, err := store.New(platform.DBFrom(ctx)).GetContract(ctx, id)
-	if errors.Is(err, pgx.ErrNoRows) {
-		return false, nil
-	}
-	if err != nil {
-		return false, err
-	}
-	// The signed scan shows the salary, and so does the print. Attaching also once posted:
-	// contracts are often signed after they are entered.
-	if action == record.Print {
-		action = record.ViewFiles
-	}
-	action, files := filesAction(action)
-	if files {
-		if ok, err := s.allowed(ctx, PermSalaryView, r.OrgUnitID); err != nil || !ok {
-			return false, err
-		}
-	}
-	switch action {
-	case record.View, record.Export:
-		return s.allowed(ctx, PermContractView, r.OrgUnitID)
-	case record.Edit:
-		return s.canWriteContract(ctx, r.OrgUnitID)
-	case record.Post, record.Cancel:
-		return s.allowed(ctx, PermContractEdit, r.OrgUnitID)
-	}
-	return false, nil
 }
 
 // contractSubjects is the account of the employee, who never approves their own contract.
@@ -273,25 +242,19 @@ func (s *Service) Contracts(ctx context.Context, f ContractFilter) (ContractList
 func (s *Service) Contract(ctx context.Context, id int64) (Contract, error) {
 	var out Contract
 	err := platform.InTx(ctx, func(ctx context.Context) error {
-		r, err := s.visibleContract(ctx, id)
-		if err != nil {
-			return err
-		}
 		ref := record.Ref{Type: contractType, ID: id}
-		d, err := s.d.Record.Get(ctx, ref)
+		d, err := s.d.Record.Read(ctx, ref)
 		if err != nil {
 			return err
 		}
-		actions, err := s.d.Record.DocumentActions(ctx, d)
+		r, err := store.New(platform.DBFrom(ctx)).GetContract(ctx, id)
 		if err != nil {
 			return err
 		}
-		// Printing changes nothing, so a locked period does not hold it back.
-		print, err := s.d.Record.AllowedActions(ctx, contractType, id, record.Print)
+		actions, err := s.d.Record.Actions(ctx, d)
 		if err != nil {
 			return err
 		}
-		actions = append(actions, print...)
 		out = Contract{
 			ID: id, Number: d.Number, Status: string(d.Status), Version: d.Version, EmployeeID: r.EmployeeID,
 			EmployeeCode: r.EmployeeCode, EmployeeName: r.EmployeeName, ParentID: platform.Int8Ptr(r.ParentID),
@@ -327,8 +290,9 @@ func (s *Service) CreateContract(ctx context.Context, in NewContract) (int64, er
 		if err != nil {
 			return err
 		}
-		if ok, err := s.canWriteContract(ctx, e.OrgUnitID); err != nil || !ok {
-			return platform.OrErr(err, platform.ErrForbidden)
+		// Create checks the contract permission; writing one also means entering its money terms.
+		if err := s.require(ctx, PermSalaryView, e.OrgUnitID); err != nil {
+			return err
 		}
 		var parent *store.GetContractRow
 		if in.ParentID != nil {
@@ -345,11 +309,12 @@ func (s *Service) CreateContract(ctx context.Context, in NewContract) (int64, er
 		if err != nil {
 			return err
 		}
+		h.RequestID = in.RequestID
 		d, err := s.d.Record.Create(ctx, contractType, h)
-		if err != nil {
+		id = d.ID
+		if err != nil || d.Reused {
 			return err
 		}
-		id = d.ID
 		row.ID, row.EmployeeID, row.ParentID = id, e.ID, platform.NullInt8(in.ParentID)
 		if err := q.CreateContract(ctx, row); err != nil {
 			return err
@@ -363,7 +328,10 @@ func (s *Service) CreateContract(ctx context.Context, in NewContract) (int64, er
 func (s *Service) UpdateContract(ctx context.Context, id int64, in ContractUpdate) error {
 	return platform.InTx(ctx, func(ctx context.Context) error {
 		q := store.New(platform.DBFrom(ctx))
-		old, err := s.visibleContract(ctx, id)
+		if _, err := s.d.Record.Read(ctx, record.Ref{Type: contractType, ID: id}); err != nil {
+			return err
+		}
+		old, err := q.GetContract(ctx, id)
 		if err != nil {
 			return err
 		}
@@ -397,28 +365,13 @@ func (s *Service) UpdateContract(ctx context.Context, id int64, in ContractUpdat
 	})
 }
 
-// DeleteContract removes a draft at the version the actor saw; an original with appendices stays.
-func (s *Service) DeleteContract(ctx context.Context, id int64, version int32) error {
-	return platform.InTx(ctx, func(ctx context.Context) error {
-		if _, err := s.visibleContract(ctx, id); err != nil {
-			return err
-		}
-		if err := s.d.Record.Delete(ctx, record.Ref{Type: contractType, ID: id}, version); err != nil {
-			return err
-		}
-		err := store.New(platform.DBFrom(ctx)).DeleteContract(ctx, id)
-		if platform.Violates(err, "contracts_parent_id_fkey") {
-			return ErrContractHasAppendices
-		}
-		return err
-	})
-}
-
-func (s *Service) visibleContract(ctx context.Context, id int64) (store.GetContractRow, error) {
-	if ok, err := s.d.Record.Can(ctx, contractType, id, record.View); err != nil || !ok {
-		return store.GetContractRow{}, platform.OrErr(err, platform.ErrNotFound)
+// deleteContract keeps an original with appendices.
+func deleteContract(ctx context.Context, id int64) error {
+	err := store.New(platform.DBFrom(ctx)).DeleteContract(ctx, id)
+	if platform.Violates(err, "contracts_parent_id_fkey") {
+		return ErrContractHasAppendices
 	}
-	return store.New(platform.DBFrom(ctx)).GetContract(ctx, id)
+	return err
 }
 
 // contractHeader checks the fields and builds the record header and the row. An appendix
@@ -439,9 +392,14 @@ func (s *Service) contractHeader(ctx context.Context, unit int64, parent *store.
 	if in.Terms.Lines == nil {
 		in.Terms.Lines = []ContractLine{}
 	}
-	for _, l := range in.Terms.Lines {
+	for i, l := range in.Terms.Lines {
+		switch {
+		case strings.TrimSpace(l.Name) == "":
+			return h, row, "", contractLineErr("contract_line_name_required", i+1)
+		case l.Amount < 0:
+			return h, row, "", contractLineErr("invalid_contract_line_amount", i+1)
 		// A salary allowance is always taxable; only a support may be tax-free.
-		if l.Amount < 0 || strings.TrimSpace(l.Name) == "" || l.Kind != "allowance" && l.Kind != "support" || l.Kind == "allowance" && !l.Taxable {
+		case l.Kind != "allowance" && l.Kind != "support" || l.Kind == "allowance" && !l.Taxable:
 			return h, row, "", ErrContractTerms
 		}
 	}
@@ -493,4 +451,9 @@ func openTerms(ctx context.Context, sealed []byte) (ContractTerms, error) {
 		return t, err
 	}
 	return t, json.Unmarshal(raw, &t)
+}
+
+// contractLineErr names the line (1-based) of the terms a value is wrong on.
+func contractLineErr(code string, line int) error {
+	return &platform.Error{Status: http.StatusUnprocessableEntity, Code: code, Params: map[string]any{"line": line}}
 }

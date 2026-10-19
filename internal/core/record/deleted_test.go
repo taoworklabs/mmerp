@@ -5,26 +5,18 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/taoworklabs/mmerp/internal/core/audit"
+	"github.com/taoworklabs/mmerp/internal/core/coretest"
 	"github.com/taoworklabs/mmerp/internal/core/iam"
-	"github.com/taoworklabs/mmerp/internal/core/numbering"
 	"github.com/taoworklabs/mmerp/internal/core/record"
-	"github.com/taoworklabs/mmerp/internal/core/setting"
 	"github.com/taoworklabs/mmerp/internal/platform"
-	"github.com/taoworklabs/mmerp/internal/platform/pgtest"
 )
 
 // A keeper's Deleted runs in the deletion's transaction, once the draft's row is gone,
 // and its failure keeps the draft.
 func TestKeepersGoWithTheDraft(t *testing.T) {
-	pool := pgtest.New(t)
-	ctx := platform.WithKeyring(platform.WithProducts(platform.WithDB(t.Context(), pool), []string{"test"}), pgtest.Keyring())
-	ids := iam.NewService(iam.Deps{Setting: setting.NewService(), Audit: audit.NewService()})
-	rec := record.NewService(record.Deps{IAM: ids, Numbering: numbering.NewService(numbering.Deps{}), Audit: audit.NewService()})
-	ids.SetTreeHook(rec)
-	rec.Register(record.Type{Code: "test.doc", Product: "test", Kind: record.Document, NumberPrefix: "T",
-		Can: func(context.Context, int64, record.Action) (bool, error) { return true, nil }})
-	admin := platform.WithActor(ctx, must(t)(ids.CreateAdmin(ctx, "admin", "Admin", "long enough")))
+	core := coretest.New(t, "test")
+	ids, rec, admin := core.IAM, core.Record, core.Admin
+	adminDoc(core, record.Type{})
 	c := must(t)(ids.CreateOrgUnit(admin, iam.OrgUnitInput{Kind: "company", Name: "C"}))
 	d, err := rec.Create(admin, "test.doc", record.Header{Date: "2026-03-10", OrgUnitID: c})
 	if err != nil {

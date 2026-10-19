@@ -99,6 +99,21 @@ func (s *Service) GetFor(ctx context.Context, legalEntity int64, name string) (s
 	return v, err
 }
 
+// RoundingOf returns the rounding of an org unit's legal entity.
+func (s *Service) RoundingOf(ctx context.Context, unit int64) (platform.Rounding, error) {
+	v, err := store.New(platform.DBFrom(ctx)).UnitLegalEntityValue(ctx, store.UnitLegalEntityValueParams{Unit: unit, Key: Rounding})
+	if errors.Is(err, pgx.ErrNoRows) {
+		return "", platform.ErrNotFound
+	}
+	if err != nil {
+		return "", err
+	}
+	if !v.Valid {
+		return platform.Rounding(s.keys[Rounding].def), nil
+	}
+	return platform.Rounding(v.String), nil
+}
+
 // LegalEntitySettings lists every legal-entity setting of one legal entity, by key.
 func (s *Service) LegalEntitySettings(ctx context.Context, legalEntity int64) ([]LegalEntitySetting, error) {
 	if err := s.checkEntity(ctx, legalEntity); err != nil {

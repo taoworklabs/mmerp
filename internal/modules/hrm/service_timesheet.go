@@ -2,12 +2,9 @@ package hrm
 
 import (
 	"context"
-	"errors"
-	"net/http"
 	"slices"
 	"time"
 
-	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/shopspring/decimal"
 
@@ -16,24 +13,6 @@ import (
 	"github.com/taoworklabs/mmerp/internal/modules/hrm/internal/store"
 	"github.com/taoworklabs/mmerp/internal/platform"
 )
-
-// canTimesheet goes by the timesheet's org unit.
-func (s *Service) canTimesheet(ctx context.Context, id int64, action record.Action) (bool, error) {
-	t, err := store.New(platform.DBFrom(ctx)).GetTimesheet(ctx, id)
-	if errors.Is(err, pgx.ErrNoRows) {
-		return false, nil
-	}
-	if err != nil {
-		return false, err
-	}
-	switch action {
-	case record.View, record.Export:
-		return s.allowed(ctx, PermTimesheetView, t.OrgUnitID)
-	case record.Edit, record.Post, record.Cancel:
-		return s.allowed(ctx, PermTimesheetEdit, t.OrgUnitID)
-	}
-	return false, nil
-}
 
 // timesheetTransition keeps posting and cancelling out of closed payroll periods; a
 // cancelled timesheet frees its unit and period for a new one.
@@ -57,15 +36,7 @@ func (s *Service) timesheetTransition(ctx context.Context, d record.Doc, from re
 
 // TimesheetActions lists what the actor may do before picking a timesheet: create.
 func (s *Service) TimesheetActions(ctx context.Context) ([]string, error) {
-	out := []string{}
-	sc, err := s.d.IAM.Scope(ctx, "hrm", PermTimesheetEdit)
-	if err != nil {
-		return nil, err
-	}
-	if sc.Any() && platform.ProductGate(ctx, "hrm", platform.ClassWrite) == nil {
-		out = append(out, "create")
-	}
-	return out, nil
+	return s.d.Record.TypeActions(ctx, timesheetType)
 }
 
 // Timesheets lists the timesheets of the org units in the actor's scope, latest period first.
@@ -77,7 +48,7 @@ func (s *Service) Timesheets(ctx context.Context, f TimesheetFilter) (TimesheetL
 	}
 	var start pgtype.Date
 	if f.Month != "" {
-		if start, _, err = period(f.Month); err != nil {
+		if start, _, err = platform.MonthPeriod(f.Month); err != nil {
 			return out, err
 		}
 	}
@@ -97,23 +68,17 @@ func (s *Service) Timesheets(ctx context.Context, f TimesheetFilter) (TimesheetL
 
 // Timesheet returns a timesheet with its grid; one the actor may not view does not exist.
 func (s *Service) Timesheet(ctx context.Context, id int64) (Timesheet, error) {
-	t, err := s.visibleTimesheet(ctx, id)
+	d, err := s.d.Record.Read(ctx, record.Ref{Type: timesheetType, ID: id})
 	if err != nil {
 		return Timesheet{}, err
 	}
-	ref := record.Ref{Type: timesheetType, ID: id}
-	d, err := s.d.Record.Get(ctx, ref)
+	t, err := store.New(platform.DBFrom(ctx)).GetTimesheet(ctx, id)
 	if err != nil {
 		return Timesheet{}, err
 	}
-	actions, err := s.d.Record.DocumentActions(ctx, d)
+	actions, err := s.d.Record.Actions(ctx, d)
 	if err != nil {
 		return Timesheet{}, err
-	}
-	if ok, err := s.d.Record.Can(ctx, timesheetType, id, record.Export); err != nil {
-		return Timesheet{}, err
-	} else if ok {
-		actions = append(actions, "export")
 	}
 	// Importing replaces the lines of a draft: whoever may edit it may import into it.
 	if slices.Contains(actions, "edit") {
@@ -181,20 +146,17 @@ func timesheetWarnings(ctx context.Context, cal calendar, t store.GetTimesheetRo
 
 // CreateTimesheet adds an empty draft for an org unit and month.
 func (s *Service) CreateTimesheet(ctx context.Context, in NewTimesheet) (int64, error) {
-	start, end, err := period(in.Month)
+	start, end, err := platform.MonthPeriod(in.Month)
 	if err != nil {
-		return 0, err
-	}
-	if err := s.require(ctx, PermTimesheetEdit, in.OrgUnitID); err != nil {
 		return 0, err
 	}
 	var id int64
 	err = platform.InTx(ctx, func(ctx context.Context) error {
-		d, err := s.d.Record.Create(ctx, timesheetType, record.Header{Date: *platform.DatePtr(end), OrgUnitID: in.OrgUnitID})
-		if err != nil {
+		d, err := s.d.Record.Create(ctx, timesheetType, record.Header{Date: *platform.DatePtr(end), OrgUnitID: in.OrgUnitID, RequestID: in.RequestID})
+		id = d.ID
+		if err != nil || d.Reused {
 			return err
 		}
-		id = d.ID
 		err = store.New(platform.DBFrom(ctx)).CreateTimesheet(ctx, store.CreateTimesheetParams{ID: id, OrgUnitID: in.OrgUnitID, PeriodStart: start, PeriodEnd: end})
 		if platform.Violates(err, "timesheets_org_unit_period_key") {
 			return ErrTimesheetExists
@@ -206,12 +168,15 @@ func (s *Service) CreateTimesheet(ctx context.Context, in NewTimesheet) (int64, 
 
 // SaveTimesheet replaces a draft's period and all its lines, at the version the actor saw.
 func (s *Service) SaveTimesheet(ctx context.Context, id int64, in TimesheetUpdate) error {
-	start, end, err := period(in.Month)
+	start, end, err := platform.MonthPeriod(in.Month)
 	if err != nil {
 		return err
 	}
 	return platform.InTx(ctx, func(ctx context.Context) error {
-		t, err := s.visibleTimesheet(ctx, id)
+		if _, err := s.d.Record.Read(ctx, record.Ref{Type: timesheetType, ID: id}); err != nil {
+			return err
+		}
+		t, err := store.New(platform.DBFrom(ctx)).GetTimesheet(ctx, id)
 		if err != nil {
 			return err
 		}
@@ -247,24 +212,8 @@ func (s *Service) SaveTimesheet(ctx context.Context, id int64, in TimesheetUpdat
 	})
 }
 
-// DeleteTimesheet removes a draft at the version the actor saw; its lines go with it.
-func (s *Service) DeleteTimesheet(ctx context.Context, id int64, version int32) error {
-	return platform.InTx(ctx, func(ctx context.Context) error {
-		if _, err := s.visibleTimesheet(ctx, id); err != nil {
-			return err
-		}
-		if err := s.d.Record.Delete(ctx, record.Ref{Type: timesheetType, ID: id}, version); err != nil {
-			return err
-		}
-		return store.New(platform.DBFrom(ctx)).DeleteTimesheet(ctx, id)
-	})
-}
-
-func (s *Service) visibleTimesheet(ctx context.Context, id int64) (store.GetTimesheetRow, error) {
-	if ok, err := s.d.Record.Can(ctx, timesheetType, id, record.View); err != nil || !ok {
-		return store.GetTimesheetRow{}, platform.OrErr(err, platform.ErrNotFound)
-	}
-	return store.New(platform.DBFrom(ctx)).GetTimesheet(ctx, id)
+func deleteTimesheet(ctx context.Context, id int64) error {
+	return store.New(platform.DBFrom(ctx)).DeleteTimesheet(ctx, id)
 }
 
 func (s *Service) timesheetEmployees(ctx context.Context, t store.GetTimesheetRow) ([]TimesheetEmployee, error) {
@@ -282,7 +231,7 @@ func timesheetLines(ctx context.Context, id int64) ([]TimesheetLine, error) {
 	rows, err := store.New(platform.DBFrom(ctx)).TimesheetLines(ctx, id)
 	out := make([]TimesheetLine, len(rows))
 	for i, r := range rows {
-		out[i] = TimesheetLine{EmployeeID: r.EmployeeID, Date: *platform.DatePtr(r.Date), Days: plain(r.Days)}
+		out[i] = TimesheetLine{EmployeeID: r.EmployeeID, Date: *platform.DatePtr(r.Date), Days: platform.PlainDecimal(r.Days)}
 	}
 	return out, err
 }
@@ -332,13 +281,4 @@ func checkLines(t store.GetTimesheetRow, emps []TimesheetEmployee, lines []Times
 		ids[i], dates[i], days[i] = l.EmployeeID, pgtype.Date{Time: date, Valid: true}, d.String()
 	}
 	return ids, dates, days, nil
-}
-
-// period turns YYYY-MM into its first and last day: payroll periods are calendar months.
-func period(month string) (start, end pgtype.Date, err error) {
-	t, err := time.Parse("2006-01", month)
-	if err != nil {
-		return start, end, &platform.Error{Status: http.StatusUnprocessableEntity, Code: "invalid_request", Params: map[string]any{"fields": []string{"month"}}}
-	}
-	return pgtype.Date{Time: t, Valid: true}, pgtype.Date{Time: t.AddDate(0, 1, -1), Valid: true}, nil
 }

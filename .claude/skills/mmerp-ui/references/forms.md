@@ -56,7 +56,7 @@ There is no "Create another" option; series entry goes through Excel import.
 | --- | --- |
 | Leaving a field (`mode: 'onBlur'`) | That field is checked; its error shows under it, linked by `aria-describedby` |
 | Submit | Every field is checked; focus moves to the first invalid field; each `FormSection` title carries its error count; next to the submit button "N fields to fix · Go to next field" cycles through them |
-| Server answers with a code that names a field | `fieldOf` maps it onto that field (`err.code === 'customer_code_taken' ? 'code' : undefined`); for a line, `lines.<i>.<field>` |
+| Server answers with a code that names a field | `errorFields` maps the code onto that field (`{ customer_code_taken: 'code' }`); for a line, `lines.*.<field>` |
 | Server answers with anything else | A banner at the top of the form (`Form` does it); a document-level error (period locked) at the top of the page |
 | Version conflict | The "Data has changed · Reload" dialog (`useDocumentMutation`) |
 
@@ -71,7 +71,7 @@ Error text says what is wrong without repeating the label: "Chưa nhập." (Not 
 
 ```tsx
 <Page centered title={t('sales.customers.create')} breadcrumbs={[{ label: t('sales.customers.title'), to: '/sales/customers' }]}>
-  <Form form={form} onSubmit={save} fieldOf={(err) => (err.code === 'customer_code_taken' ? 'code' : undefined)}>
+  <Form form={form} onSubmit={save} errorFields={{ customer_code_taken: 'code' }}>
     <FormSection title={t('sales.customer.section.general')} description={t('sales.customer.section.general_hint')} icon={IconAddressBook}>
       <TextField name="code" label={t('sales.customer.code')} required maxLength={50} />
       <TextField name="name" label={t('sales.customer.name')} required maxLength={300} />
@@ -94,7 +94,7 @@ async function save(v: Values) {
   else onCreated((await unwrap(api.POST('/sales/quotes', { body: { request_id: requestId, ...toBody(v) } }))).id)
 }
 …
-<Form form={form} onSubmit={save} fieldOf={fieldOf}>… {mutation.dialog}</Form>  // render the conflict dialog
+<Form form={form} onSubmit={save} errorFields={errorFields}>… {mutation.dialog}</Form>  // render the conflict dialog
 ```
 
 The page keys the form on the version (`<DocForm key={d.version} … />`), so a saved or reloaded document starts clean. Option lists that come from settings (VAT rates, units) come from the area's own hook (`useVatOptions()` in sales), never typed into the screen.
@@ -111,8 +111,9 @@ The page keys the form on the version (`<DocForm key={d.version} … />`), so a 
 | Fractional quantity, percent | `DecimalField` with its `scale` |
 | Money | `MoneyField` (minor units, grouped, right-aligned) |
 | One of a list | `SelectField` (search past 7 options; server search with `onSearch`) |
-| A business record (customer, item, employee) | The owning area's picker (`CustomerField`, `ItemField`), built on `SelectField`, label `code · name` |
+| A business record (customer, item, employee) | The owning area's picker (`EmployeeField`, `CustomerField`, `ItemField`), built on `RemoteSelectField`, label `code · name` |
 | Org unit | `OrgUnitField` |
+| Legal entity | `LegalEntityField` |
 | File | `FileField` |
 | Sensitive value | `SensitiveField` |
 
@@ -159,10 +160,10 @@ const lineColumns: LineColumn[] = [
 - Cells use the normal fields with `bare`; their `aria-label` names the line ("Số lượng (1)"). Numeric cells are right-aligned without spin buttons.
 - Keyboard: Tab moves cell by cell; Enter moves to the next cell instead of submitting (an open dropdown keeps Enter to pick).
 - **Totals are the server's.** Rounding happens only on the server, so the footer shows the stored totals with a note that they are as of the last save; a new document shows none. Never multiply, divide, apply a percentage or round money in the screen. Adding or subtracting stored amounts of one document (net = amount − discount) is exact and allowed only when the API sends no field for it.
-- Line errors from the server map with `fieldOf` to `lines.<i>.<field>` (the server's `line` parameter is 1-based).
+- Line errors from the server map in `errorFields` to `lines.*.<field>`: `Form` puts the error on the line the server's `line` parameter names (1-based); without it the error is the form's banner.
 - Below 1024px each line is a card with labelled fields.
 - Rows saved on their own, apart from the document's form (a payroll's adjustments), sit in a `Section` holding its own `Form`, `LinesTable` and page `FormActions`; see `hrm/components/AdjustmentsSection.tsx`. A table never goes into a `FormModal`.
-- A read-only document (no `edit` in `allowed_actions`) shows its lines as a `DataTable` instead of `LinesTable`: description, quantity with unit, unit price, discount, VAT rate, net amount, all from the stored line; then `LinesTotals` without the note.
+- A read-only document (no `edit` in `allowed_actions`) shows its lines with `LinesTable readOnly lines={…}`: the same columns, each column's `value` as text (a column without `cell`, such as the net amount, shows only there; one without `value` only while editing), all from the stored line; then `LinesTotals` without the note. It needs no form, so a document's card can show it too.
 
 ## Inline edit
 

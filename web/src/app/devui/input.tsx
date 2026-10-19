@@ -3,7 +3,7 @@ import { IconCircleDot } from '@tabler/icons-react'
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { useTranslation } from 'react-i18next'
-import { formatNumber } from '@/shared/i18n'
+import { formatDecimal, formatNumber } from '@/shared/i18n'
 import {
   CheckboxField,
   CodeField,
@@ -17,6 +17,8 @@ import {
   FormSection,
   InputRow,
   IntegerField,
+  LegalEntityField,
+  LegalEntityFilter,
   LinesTable,
   LinesTotals,
   MoneyField,
@@ -25,18 +27,28 @@ import {
   OrgUnitField,
   OrgUnitFilter,
   PasswordField,
+  RemoteSelectField,
   SearchInput,
   SelectField,
   SensitiveField,
   TextField,
+  useLegalEntities,
   YearFilter,
 } from '@/shared/ui/form'
 import { InlineEditField } from '@/shared/ui/InlineEditField'
 import { Demo } from './Demo'
 
+// Searched in the browser: the catalogue has no server.
+const people = [
+  { id: 1, code: 'NV001', name: 'Nguyễn Văn An' },
+  { id: 2, code: 'NV002', name: 'Trần Thị Bình' },
+  { id: 3, code: 'NV003', name: 'Lê Minh Châu' },
+]
+const searchPeople = async (q: string) => people.filter((p) => `${p.code} ${p.name}`.toLowerCase().includes(q.toLowerCase()))
+
 export function Fields() {
   const { t } = useTranslation()
-  const form = useForm({ defaultValues: { code: '', password: '', unit: null, date: null, month: '2026-03', file: null, choice: null, masked: undefined, open: undefined, denied: undefined, days: '2.5', flag: true } })
+  const form = useForm({ defaultValues: { code: '', password: '', unit: null, entity: null, person: '3', date: null, month: '2026-03', file: null, choice: null, masked: undefined, open: undefined, denied: undefined, days: '2.5', flag: true } })
   return (
     <Demo title={t('shared.devui.form')}>
       <Form form={form} onSubmit={async () => {}}>
@@ -45,6 +57,8 @@ export function Fields() {
           <CodeField name="issued_code" label={t('shared.devui.code')} existing={false} />
           <PasswordField name="password" label={t('shared.devui.password')} />
           <OrgUnitField name="unit" label={t('shared.devui.org_unit')} clearable />
+          <LegalEntityField name="entity" label={t('shared.devui.legal_entity')} required />
+          <RemoteSelectField name="person" label={t('shared.devui.remote')} queryKey={(q) => ['devui', 'people', q]} search={searchPeople} current={people[2]} />
           <FileField name="file" label={t('shared.devui.file')} accept=".xlsx" description={t('shared.devui.hint')} />
           <DateField name="date" label={t('shared.devui.date')} clearable short />
           <MonthField name="month" label={t('shared.devui.month')} short />
@@ -85,6 +99,8 @@ export function Filters() {
   const [month, setMonth] = useState<string | null>('2026-08')
   const [q, setQ] = useState('')
   const [unit, setUnit] = useState<string | null>(null)
+  const [entity, setEntity] = useState('')
+  const entities = useLegalEntities({}, entity)
   const choices = [
     { value: 'positive', label: t('shared.devui.status_positive') },
     { value: 'neutral', label: t('shared.devui.status_neutral') },
@@ -100,6 +116,7 @@ export function Filters() {
         <FilterChip label={t('shared.devui.choice')} icon={IconCircleDot} data={choices} value={choice} onChange={setChoice} />
         <FilterChip label={t('shared.devui.choice')} icon={IconCircleDot} data={choices} value="long" onChange={() => {}} />
         <OrgUnitFilter label={t('shared.devui.org_unit')} value={unit} onChange={setUnit} />
+        <LegalEntityFilter label={t('shared.devui.legal_entity')} options={entities.options} value={entities.chosen} onChange={setEntity} />
         <YearFilter label={t('shared.devui.year')} value={year} years={[2025, 2026, 2027]} onChange={setYear} />
         <MonthFilter label={t('shared.devui.month')} value={month} onChange={setMonth} />
       </Group>
@@ -151,6 +168,23 @@ export function Lines() {
               removeLabel={(n) => `${t('shared.devui.remove')} ${n}`}
               minLines={1}
               footer={<LinesTotals note={t('shared.devui.totals_note')} rows={[[t('shared.devui.subtotal'), formatNumber(3000000)], [t('shared.devui.grand_total'), formatNumber(3240000)]]} />}
+            />
+          </FormRow>
+          <FormRow>
+            <LinesTable
+              readOnly
+              label={t('shared.devui.lines')}
+              lines={[
+                { description: t('shared.devui.name'), quantity: '2', unit_price: 1000000 },
+                { description: t('shared.devui.name'), quantity: '1.5', unit_price: 666667 },
+              ]}
+              columns={[
+                { key: 'description', header: t('shared.devui.name'), value: (l) => l.description },
+                { key: 'quantity', header: t('shared.devui.quantity'), numeric: true, value: (l) => formatDecimal(l.quantity, 3) },
+                { key: 'unit_price', header: t('shared.devui.amount'), numeric: true, value: (l) => formatNumber(l.unit_price) },
+              ]}
+              lineLabel={(n) => `# ${n}`}
+              footer={<LinesTotals rows={[[t('shared.devui.subtotal'), formatNumber(3000000)], [t('shared.devui.grand_total'), formatNumber(3240000)]]} />}
             />
           </FormRow>
         </FormSection>

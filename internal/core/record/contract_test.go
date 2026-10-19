@@ -5,16 +5,12 @@ import (
 	"errors"
 	"sync"
 	"testing"
-	"time"
 
 	"github.com/taoworklabs/mmerp/internal/core/approval"
-	"github.com/taoworklabs/mmerp/internal/core/audit"
+	"github.com/taoworklabs/mmerp/internal/core/coretest"
 	"github.com/taoworklabs/mmerp/internal/core/iam"
-	"github.com/taoworklabs/mmerp/internal/core/notification"
-	"github.com/taoworklabs/mmerp/internal/core/numbering"
 	"github.com/taoworklabs/mmerp/internal/core/record"
 	"github.com/taoworklabs/mmerp/internal/core/record/recordtest"
-	"github.com/taoworklabs/mmerp/internal/core/setting"
 	"github.com/taoworklabs/mmerp/internal/platform"
 	"github.com/taoworklabs/mmerp/internal/platform/pgtest"
 )
@@ -22,52 +18,80 @@ import (
 // TestContract runs recordtest on a bare document type, proving the suite itself.
 func TestContract(t *testing.T) {
 	recordtest.Run(t, func(t *testing.T) recordtest.Harness {
-		pool := pgtest.New(t)
-		ctx := platform.WithKeyring(platform.WithProducts(platform.WithDB(t.Context(), pool), []string{"test"}), pgtest.Keyring())
-		ids := iam.NewService(iam.Deps{Setting: setting.NewService(), Audit: audit.NewService()})
-		ids.RegisterRoles("test", map[string][]string{"approver": {"test.doc.approve"}})
-		rec := record.NewService(record.Deps{IAM: ids, Numbering: numbering.NewService(numbering.Deps{}), Audit: audit.NewService()})
-		ids.SetTreeHook(rec)
-		appr := approval.NewService(approval.Deps{IAM: ids, Record: rec, Audit: audit.NewService(), Notification: notification.NewService(notification.Deps{Record: rec, IAM: ids, Audit: audit.NewService(), Setting: setting.NewService()})})
-		rec.SetApprovalGate(appr)
+		core := coretest.New(t, "test")
+		ids, rec, appr, ctx, admin := core.IAM, core.Record, core.Approval, core.Ctx, core.Admin
+		ids.RegisterRoles("test", map[string][]string{"member": {"test.doc.edit"}, "approver": {"test.doc.approve", "test.doc.edit"}})
 
 		var mu sync.Mutex
-		effects, broken := map[int64]int{}, map[int64]bool{}
+		effects, broken, unready := map[int64]int{}, map[int64]bool{}, map[int64]bool{}
 		rec.Register(record.Type{
 			Code: "test.doc", Product: "test", Kind: record.Document, NumberPrefix: "T",
-			Can: func(context.Context, int64, record.Action) (bool, error) { return true, nil },
+			// Members of the document's unit may do anything with it.
+			Perms:    record.Perms{View: "test.doc.edit", Edit: "test.doc.edit", ViewFiles: "test.doc.edit", Attach: "test.doc.edit"},
+			OnDelete: noRows,
+			BeforeSubmit: func(_ context.Context, d record.Doc) error {
+				mu.Lock()
+				defer mu.Unlock()
+				if unready[d.ID] {
+					return &platform.Error{Status: 422, Code: "not_ready"}
+				}
+				return nil
+			},
 			OnTransition: func(_ context.Context, d record.Doc, _ record.Status) error {
 				mu.Lock()
 				defer mu.Unlock()
-				if d.Status != record.Posted {
-					return nil
-				}
-				if broken[d.ID] {
+				switch {
+				case d.Status == record.Cancelled:
+					effects[d.ID]--
+				case d.Status != record.Posted:
+				case broken[d.ID]:
 					return errors.New("posting broken")
+				default:
+					effects[d.ID]++
 				}
-				effects[d.ID]++
 				return nil
 			},
 		})
 
-		admin := platform.WithActor(ctx, must(t)(ids.CreateAdmin(ctx, "admin", "Admin", "long enough")))
 		c := must(t)(ids.CreateOrgUnit(admin, iam.OrgUnitInput{Kind: "company", Name: "C"}))
 		a := must(t)(ids.CreateOrgUnit(admin, iam.OrgUnitInput{ParentID: &c, Kind: "department", Name: "A"}))
-		actor := platform.WithActor(ctx, must(t)(ids.CreateUser(admin, "actor", "Actor", "long enough")))
+		actorID := must(t)(ids.CreateUser(admin, "actor", "Actor", "long enough"))
+		must(t)(ids.GrantRole(admin, actorID, "test", "member", nil))
+		actor := platform.WithActor(ctx, actorID)
 		approverID := must(t)(ids.CreateUser(admin, "approver", "Approver", "long enough"))
 		must(t)(ids.GrantRole(admin, approverID, "test", "approver", nil))
 		approver := platform.WithActor(ctx, approverID)
 
 		header := func(date string) record.Header { return record.Header{Date: date, OrgUnitID: a} }
+		type detail struct {
+			Doc            record.Doc
+			AllowedActions []string
+		}
 		return recordtest.Harness{
-			Record: rec, Actor: actor, Admin: admin, LegalEntity: c,
-			Create: func(ctx context.Context, date string) (record.Ref, error) {
-				d, err := rec.Create(ctx, "test.doc", header(date))
+			Core: core, Actor: actor, Admin: admin, LegalEntity: c,
+			Create: func(ctx context.Context, date, requestID string) (record.Ref, error) {
+				h := header(date)
+				h.RequestID = requestID
+				d, err := rec.Create(ctx, "test.doc", h)
 				return d.Ref, err
 			},
 			Edit: func(ctx context.Context, ref record.Ref, version int32, date string) error {
 				_, err := rec.Edit(ctx, ref, version, header(date))
 				return err
+			},
+			Get: func(ctx context.Context, ref record.Ref) (any, error) {
+				d, err := rec.Read(ctx, ref)
+				if err != nil {
+					return nil, err
+				}
+				actions, err := rec.Actions(ctx, d)
+				return detail{d, actions}, err
+			},
+			Reject: func(instance int64) error { return appr.Reject(approver, instance, 1, "no") },
+			BreakSubmit: func(_ *testing.T, ref record.Ref) {
+				mu.Lock()
+				defer mu.Unlock()
+				unready[ref.ID] = true
 			},
 			RequireApproval: func(t *testing.T) {
 				role := approval.Approver{Kind: "role", Product: "test", Role: "approver"}
@@ -92,6 +116,15 @@ func TestContract(t *testing.T) {
 	})
 }
 
+// adminDoc registers t as the document type test.doc, which the tenant administrator may do anything with.
+func adminDoc(core *coretest.Core, t record.Type) {
+	core.IAM.RegisterRoles("test", map[string][]string{"member": {"test.doc.edit"}})
+	t.Code, t.Product, t.Kind, t.NumberPrefix = "test.doc", "test", record.Document, "T"
+	t.Perms = record.Perms{View: "test.doc.edit", Edit: "test.doc.edit"}
+	t.OnDelete = noRows
+	core.Record.Register(t)
+}
+
 func must(t *testing.T) func(int64, error) int64 {
 	return func(v int64, err error) int64 {
 		t.Helper()
@@ -103,14 +136,9 @@ func must(t *testing.T) func(int64, error) int64 {
 }
 
 func TestUnitWithDocumentsCannotChangeLegalEntity(t *testing.T) {
-	pool := pgtest.New(t)
-	ctx := platform.WithKeyring(platform.WithProducts(platform.WithDB(t.Context(), pool), []string{"test"}), pgtest.Keyring())
-	ids := iam.NewService(iam.Deps{Setting: setting.NewService(), Audit: audit.NewService()})
-	rec := record.NewService(record.Deps{IAM: ids, Numbering: numbering.NewService(numbering.Deps{}), Audit: audit.NewService()})
-	ids.SetTreeHook(rec)
-	rec.Register(record.Type{Code: "test.doc", Product: "test", Kind: record.Document, NumberPrefix: "T",
-		Can: func(context.Context, int64, record.Action) (bool, error) { return true, nil }})
-	admin := platform.WithActor(ctx, must(t)(ids.CreateAdmin(ctx, "admin", "Admin", "long enough")))
+	core := coretest.New(t, "test")
+	ids, rec, admin := core.IAM, core.Record, core.Admin
+	adminDoc(core, record.Type{})
 	c1 := must(t)(ids.CreateOrgUnit(admin, iam.OrgUnitInput{Kind: "company", Name: "C1"}))
 	c2 := must(t)(ids.CreateOrgUnit(admin, iam.OrgUnitInput{Kind: "company", Name: "C2"}))
 	a := must(t)(ids.CreateOrgUnit(admin, iam.OrgUnitInput{ParentID: &c1, Kind: "department", Name: "A"}))
@@ -130,14 +158,9 @@ func TestUnitWithDocumentsCannotChangeLegalEntity(t *testing.T) {
 // A document created while its unit moves to another legal entity waits for the move,
 // then belongs to the legal entity the unit is under.
 func TestCreateWaitsForATreeMove(t *testing.T) {
-	pool := pgtest.New(t)
-	ctx := platform.WithKeyring(platform.WithProducts(platform.WithDB(t.Context(), pool), []string{"test"}), pgtest.Keyring())
-	ids := iam.NewService(iam.Deps{Setting: setting.NewService(), Audit: audit.NewService()})
-	rec := record.NewService(record.Deps{IAM: ids, Numbering: numbering.NewService(numbering.Deps{}), Audit: audit.NewService()})
-	ids.SetTreeHook(rec)
-	rec.Register(record.Type{Code: "test.doc", Product: "test", Kind: record.Document, NumberPrefix: "T",
-		Can: func(context.Context, int64, record.Action) (bool, error) { return true, nil }})
-	admin := platform.WithActor(ctx, must(t)(ids.CreateAdmin(ctx, "admin", "Admin", "long enough")))
+	core := coretest.New(t, "test")
+	ids, rec, admin := core.IAM, core.Record, core.Admin
+	adminDoc(core, record.Type{})
 	c1 := must(t)(ids.CreateOrgUnit(admin, iam.OrgUnitInput{Kind: "company", Name: "C1"}))
 	c2 := must(t)(ids.CreateOrgUnit(admin, iam.OrgUnitInput{Kind: "company", Name: "C2"}))
 	a := must(t)(ids.CreateOrgUnit(admin, iam.OrgUnitInput{ParentID: &c1, Kind: "department", Name: "A"}))
@@ -149,7 +172,7 @@ func TestCreateWaitsForATreeMove(t *testing.T) {
 			return err
 		}
 		wg.Go(func() { d, created = rec.Create(admin, "test.doc", record.Header{Date: "2026-03-10", OrgUnitID: a}) })
-		time.Sleep(100 * time.Millisecond)
+		pgtest.AwaitLockWait(t, core.Pool)
 		return nil
 	}); err != nil {
 		t.Fatal(err)
@@ -162,14 +185,11 @@ func TestCreateWaitsForATreeMove(t *testing.T) {
 
 // BeforeSubmit runs when a draft is sent, approval or not, and its error keeps the draft.
 func TestBeforeSubmitKeepsADraft(t *testing.T) {
-	pool := pgtest.New(t)
-	ctx := platform.WithKeyring(platform.WithProducts(platform.WithDB(t.Context(), pool), []string{"test"}), pgtest.Keyring())
-	ids := iam.NewService(iam.Deps{Setting: setting.NewService(), Audit: audit.NewService()})
-	rec := record.NewService(record.Deps{IAM: ids, Numbering: numbering.NewService(numbering.Deps{}), Audit: audit.NewService()})
+	core := coretest.New(t, "test")
+	ids, rec, admin := core.IAM, core.Record, core.Admin
 	refuse := errors.New("not ready")
 	var calls int
-	rec.Register(record.Type{Code: "test.doc", Product: "test", Kind: record.Document, NumberPrefix: "T",
-		Can: func(context.Context, int64, record.Action) (bool, error) { return true, nil },
+	adminDoc(core, record.Type{
 		BeforeSubmit: func(context.Context, record.Doc) error {
 			calls++
 			if calls == 1 {
@@ -177,7 +197,6 @@ func TestBeforeSubmitKeepsADraft(t *testing.T) {
 			}
 			return nil
 		}})
-	admin := platform.WithActor(ctx, must(t)(ids.CreateAdmin(ctx, "admin", "Admin", "long enough")))
 	c := must(t)(ids.CreateOrgUnit(admin, iam.OrgUnitInput{Kind: "company", Name: "C"}))
 	d, err := rec.Create(admin, "test.doc", record.Header{Date: "2026-03-10", OrgUnitID: c})
 	if err != nil {

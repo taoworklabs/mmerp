@@ -51,7 +51,6 @@
   "hrm.print.contract.parent": "Appendix to contract {number}",
   "hrm.print.contract.employer": "Employer",
   "hrm.print.contract.employer_name": "Name",
-  "hrm.print.contract.tax_code": "Tax code",
   "hrm.print.contract.address": "Address",
   "hrm.print.contract.employee": "Employee",
   "hrm.print.contract.employee_name": "Full name",

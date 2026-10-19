@@ -1,37 +1,30 @@
 import { Button } from '@mantine/core'
-import { IconBuildingSkyscraper, IconCircleDot, IconPlus } from '@tabler/icons-react'
-import { keepPreviousData, useQuery, useQueryClient } from '@tanstack/react-query'
+import { IconBuildingSkyscraper, IconPlus } from '@tabler/icons-react'
+import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router'
 import { api, unwrap, type PayrollListItem } from '@/shared/api/hrm'
-import { DocumentStatus, useStatusLabel } from '@/shared/document'
-import { errorText, formatMonthShort } from '@/shared/i18n'
-import { DataTable, type Column } from '@/shared/ui/DataTable'
-import { FilterChip, Form, FormActions, MonthField, MonthFilter, SelectField, useOrgUnits } from '@/shared/ui/form'
+import { useInvalidateRecord } from '@/shared/area'
+import { DocumentStatus, DocumentStatusFilter, type DocStatus } from '@/shared/document'
+import { formatMonthShort } from '@/shared/i18n'
+import { type Column } from '@/shared/ui/DataTable'
+import { FilterChip, Form, FormActions, LegalEntityField, MonthField, MonthFilter, useLegalEntities } from '@/shared/ui/form'
+import { useListView } from '@/shared/ui/ListView'
 import { notifySuccess } from '@/shared/ui/notify'
 import { FormModal, ListPage } from '@/shared/ui/page'
-import { ContentSkeleton, EmptyState, ErrorState } from '@/shared/ui/states'
 import { icon } from '@/shared/ui/theme'
 import { useListParams } from '@/shared/url/listParams'
 import { usePayrollActions } from '../hooks/usePayroll'
 import { hrmKeys, payrollDocType } from '../keys'
 
-const statuses = ['draft', 'pending_approval', 'posted', 'cancelled'] as const
 const defaults = { filters: { month: '', legal_entity_id: '', status: '' }, sort: '', sorts: [], pageSize: 50 }
-
-// useLegalEntities lists the legal entities where the user holds a payroll permission.
-function useLegalEntities(permission: string) {
-  const units = useOrgUnits({ product: 'hrm', permission })
-  return (units.data ?? []).filter((u) => u.kind === 'company').map((u) => ({ value: String(u.id), label: u.name }))
-}
 
 export function PayrollsPage() {
   const { t } = useTranslation()
-  const statusLabel = useStatusLabel()
   const canCreate = usePayrollActions().data?.includes('create') ?? false
-  const entities = useLegalEntities('hrm.payroll.view')
+  const entities = useLegalEntities({ product: 'hrm', permission: 'hrm.payroll.view' }).options
   const [creating, setCreating] = useState(false)
   const [params, set, filterBar] = useListParams(defaults)
   const { month, legal_entity_id, status } = params.filters as typeof defaults.filters
@@ -45,7 +38,7 @@ export function PayrollsPage() {
             query: {
               month: month || undefined,
               legal_entity_id: legal_entity_id ? Number(legal_entity_id) : undefined,
-              status: (status || undefined) as (typeof statuses)[number] | undefined,
+              status: (status || undefined) as DocStatus | undefined,
               page: params.page,
               page_size: params.pageSize as 50,
             },
@@ -61,24 +54,7 @@ export function PayrollsPage() {
     { key: 'month', header: t('hrm.payroll.month'), role: 'meta', kind: 'date', render: (p) => formatMonthShort(p.period_start.slice(0, 7)) },
     { key: 'status', header: t('hrm.payroll.status'), role: 'status', kind: 'status', render: (p) => <DocumentStatus docType={payrollDocType} status={p.status} /> },
   ]
-
-  let body
-  if (list.isPending) body = <ContentSkeleton />
-  else if (list.isError) body = <ErrorState message={errorText(t, list.error)} onRetry={() => void list.refetch()} />
-  else if (list.data.items.length === 0)
-    body = filterBar.active ? (
-      <EmptyState
-        title={t('hrm.payrolls.no_results')}
-        action={
-          <Button variant="default" onClick={filterBar.clear}>
-            {t('hrm.common.clear_filters')}
-          </Button>
-        }
-      />
-    ) : (
-      <EmptyState title={t('hrm.payrolls.empty')} description={t('hrm.payrolls.empty_description')} />
-    )
-  else body = <DataTable label={t('hrm.payrolls.title')} columns={columns} rows={list.data.items} rowKey={(p) => p.id} href={(p) => `/hrm/payrolls/${p.id}`} />
+  const view = useListView('hrm.payrolls', columns)
 
   return (
     <ListPage
@@ -100,26 +76,25 @@ export function PayrollsPage() {
             data={entities}
             {...filterBar.bind('legal_entity_id')}
           />
-          <FilterChip
-            label={t('hrm.payroll.status')}
-            icon={IconCircleDot}
-            data={statuses.map((s) => ({ value: s, label: statusLabel(payrollDocType, s) }))}
-            {...filterBar.bind('status')}
-          />
+          <DocumentStatusFilter docType={payrollDocType} {...filterBar.bind('status')} />
           <MonthFilter label={t('hrm.payroll.month')} {...filterBar.bind('month')} />
         </>
       }
-      paging={
-        list.data && {
-          page: params.page,
-          pageSize: params.pageSize,
-          total: list.data.total,
-          onPage: (page) => set({ page }),
-          onPageSize: (pageSize) => set({ pageSize }),
-        }
-      }
+      tools={view.tools}
+      list={{
+        query: list,
+        table: {
+          label: t('hrm.payrolls.title'),
+          columns: view.columns,
+          onResize: view.onResize,
+          rowKey: (p) => p.id,
+          href: (p) => `/hrm/payrolls/${p.id}`,
+        },
+        empty: { title: t('hrm.payrolls.empty'), description: t('hrm.payrolls.empty_description') },
+        noResults: t('hrm.payrolls.no_results'),
+        paging: { page: params.page, pageSize: params.pageSize, onPage: (page) => set({ page }), onPageSize: (pageSize) => set({ pageSize }) },
+      }}
     >
-      {body}
       {creating && <NewPayroll onClose={() => setCreating(false)} />}
     </ListPage>
   )
@@ -128,25 +103,26 @@ export function PayrollsPage() {
 // NewPayroll creates a draft for a legal entity and month, then opens it while the job computes it.
 function NewPayroll({ onClose }: { onClose: () => void }) {
   const { t } = useTranslation()
+  // One id per opened form: sending it twice returns the document made the first time.
+  const [requestId] = useState(() => crypto.randomUUID())
   const navigate = useNavigate()
-  const qc = useQueryClient()
-  const entities = useLegalEntities('hrm.payroll.edit')
+  const invalidate = useInvalidateRecord()
   const form = useForm<{ legal_entity_id: string | null; month: string | null }>({
     mode: 'onBlur',
-    defaultValues: { legal_entity_id: entities.length === 1 ? entities[0]!.value : null, month: null },
+    defaultValues: { legal_entity_id: null, month: null },
   })
 
   async function create(v: { legal_entity_id: string | null; month: string | null }) {
-    const { id, job_id } = await unwrap(api.POST('/hrm/payrolls', { body: { legal_entity_id: Number(v.legal_entity_id), month: v.month ?? '' } }))
-    await qc.invalidateQueries({ queryKey: hrmKeys.payrolls.lists() })
+    const { id, job_id } = await unwrap(api.POST('/hrm/payrolls', { body: { request_id: requestId, legal_entity_id: Number(v.legal_entity_id), month: v.month ?? '' } }))
+    await invalidate(payrollDocType, id)
     notifySuccess(t('hrm.payrolls.created'))
-    navigate(`/hrm/payrolls/${id}?job=${job_id}`)
+    navigate(job_id ? `/hrm/payrolls/${id}?job=${job_id}` : `/hrm/payrolls/${id}`)
   }
 
   return (
     <FormModal opened title={t('hrm.payrolls.create')} onClose={onClose}>
-      <Form form={form} onSubmit={create} fieldOf={(err) => (err.code === 'payroll_timesheets_missing' ? 'month' : undefined)}>
-        <SelectField name="legal_entity_id" label={t('hrm.payroll.legal_entity')} data={entities} required />
+      <Form form={form} onSubmit={create} errorFields={{ payroll_timesheets_missing: 'month' }}>
+        <LegalEntityField name="legal_entity_id" label={t('hrm.payroll.legal_entity')} product="hrm" permission="hrm.payroll.edit" required />
         <MonthField name="month" label={t('hrm.payroll.month')} description={t('hrm.payroll.month_hint')} required />
         <FormActions submitLabel={t('hrm.payrolls.create_compute')} onCancel={onClose} cancelLabel={t('hrm.common.cancel')} />
       </Form>

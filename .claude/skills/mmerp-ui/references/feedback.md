@@ -66,20 +66,17 @@ Two exceptions: the attachments panel shows its empty list as an 80px dashed fra
 
 The description never depends on permissions; only the button does.
 
+A list page gets these from `ListPage`'s `list`: it shows `ContentSkeleton`, `ErrorState` with Retry, the empty state, or, while a filter is set (`onClearFilters`), the no-results state with "Xóa bộ lọc" (`shared.list.clear_filters`). The screen passes only the texts:
+
 ```tsx
-if (list.isPending) body = <ContentSkeleton />
-else if (list.isError) body = <ErrorState message={errorText(t, list.error)} onRetry={() => void list.refetch()} />
-else if (list.data.items.length === 0)
-  body = filtered
-    ? <EmptyState title={t('sales.common.no_results')} action={<Button variant="default" onClick={clear}>{t('sales.common.clear_filters')}</Button>} />
-    : <EmptyState title={t('sales.customers.empty')} description={t('sales.customers.empty_description')} />
+list={{ query: list, table: {…}, empty: { title: t('sales.customers.empty'), description: t('sales.customers.empty_description') }, noResults: t('sales.common.no_results'), paging: {…} }}
 ```
 
 ## Error levels
 
 | Level | Component | Example |
 | --- | --- | --- |
-| Field | The field's error (`fieldOf` for server codes) | "Mã đã tồn tại." under Code |
+| Field | The field's error (`errorFields` for server codes) | "Mã đã tồn tại." under Code |
 | Line of a table | The cell's field error (`lines.<i>.<field>`) | A quantity of 0 on line 3 |
 | Section or form | `Alert` at the top of the form; the section's error count | "Kỳ tháng 3 đã khóa sổ…" |
 | Region | `ErrorState` with Retry | A table that failed to load |

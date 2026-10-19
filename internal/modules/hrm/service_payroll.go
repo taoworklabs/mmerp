@@ -7,7 +7,6 @@ import (
 	"errors"
 	"maps"
 	"slices"
-	"time"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
@@ -62,30 +61,6 @@ type adjustment struct {
 	Reason string `json:"reason"`
 }
 
-// canPayroll goes by the payroll's legal entity.
-func (s *Service) canPayroll(ctx context.Context, id int64, action record.Action) (bool, error) {
-	p, err := store.New(platform.DBFrom(ctx)).GetPayroll(ctx, id)
-	if errors.Is(err, pgx.ErrNoRows) {
-		return false, nil
-	}
-	if err != nil {
-		return false, err
-	}
-	switch action {
-	case record.View, record.Export:
-		return s.allowed(ctx, PermPayrollView, p.LegalEntityID)
-	case record.Edit, record.Post, record.Cancel:
-		return s.allowed(ctx, PermPayrollEdit, p.LegalEntityID)
-	case record.Print:
-		// Payslips show each person's pay.
-		if ok, err := s.allowed(ctx, PermSalaryView, p.LegalEntityID); err != nil || !ok {
-			return false, err
-		}
-		return s.allowed(ctx, PermPayrollView, p.LegalEntityID)
-	}
-	return false, nil
-}
-
 // PayrollActions lists what the actor may do before picking a payroll: create.
 func (s *Service) PayrollActions(ctx context.Context) ([]string, error) {
 	out := []string{}
@@ -105,16 +80,14 @@ func (s *Service) PayrollActions(ctx context.Context) ([]string, error) {
 // CreatePayroll adds a draft payroll of a legal entity and month and queues its computation.
 func (s *Service) CreatePayroll(ctx context.Context, in NewPayroll) (PayrollJob, error) {
 	var out PayrollJob
-	start, end, err := period(in.Month)
+	start, end, err := platform.MonthPeriod(in.Month)
 	if err != nil {
 		return out, err
 	}
 	if err := s.checkLegalEntity(ctx, in.LegalEntityID); err != nil {
 		return out, err
 	}
-	if err := s.require(ctx, PermPayrollEdit, in.LegalEntityID); err != nil {
-		return out, err
-	}
+	// Create checks the payroll permission; computing also reads salaries.
 	if err := s.require(ctx, PermSalaryView, in.LegalEntityID); err != nil {
 		return out, err
 	}
@@ -123,11 +96,11 @@ func (s *Service) CreatePayroll(ctx context.Context, in NewPayroll) (PayrollJob,
 		return out, err
 	}
 	err = platform.InTx(ctx, func(ctx context.Context) error {
-		d, err := s.d.Record.Create(ctx, payrollType, record.Header{Date: *platform.DatePtr(end), OrgUnitID: in.LegalEntityID})
-		if err != nil {
+		d, err := s.d.Record.Create(ctx, payrollType, record.Header{Date: *platform.DatePtr(end), OrgUnitID: in.LegalEntityID, RequestID: in.RequestID})
+		out.ID = d.ID
+		if err != nil || d.Reused {
 			return err
 		}
-		out.ID = d.ID
 		if err := store.New(platform.DBFrom(ctx)).CreatePayroll(ctx, store.CreatePayrollParams{ID: d.ID, PeriodStart: start, PeriodEnd: end}); err != nil {
 			return err
 		}
@@ -151,11 +124,11 @@ func (s *Service) RecomputePayroll(ctx context.Context, id int64, version int32)
 
 // editablePayroll reads a draft the actor may edit, at the version they saw.
 func (s *Service) editablePayroll(ctx context.Context, id int64, version int32) (store.GetPayrollRow, record.Doc, error) {
-	p, err := s.visiblePayroll(ctx, id)
+	d, err := s.d.Record.Read(ctx, record.Ref{Type: payrollType, ID: id})
 	if err != nil {
-		return p, record.Doc{}, err
+		return store.GetPayrollRow{}, d, err
 	}
-	d, err := s.d.Record.Get(ctx, record.Ref{Type: payrollType, ID: id})
+	p, err := store.New(platform.DBFrom(ctx)).GetPayroll(ctx, id)
 	if err != nil {
 		return p, d, err
 	}
@@ -177,16 +150,13 @@ func (s *Service) editablePayroll(ctx context.Context, id int64, version int32) 
 func (s *Service) computePayroll(ctx context.Context, j *river.Job[payrollComputeArgs]) error {
 	ref := record.Ref{Type: payrollType, ID: j.Args.ID}
 	return platform.InTx(ctx, func(ctx context.Context) error {
-		p, err := s.visiblePayroll(ctx, ref.ID)
-		if errors.Is(err, platform.ErrNotFound) {
-			return platform.ErrForbidden
-		}
-		if err != nil {
-			return err
-		}
 		// Checked before any salary is decrypted; record.Edit checks again under its locks.
 		if ok, err := s.d.Record.Can(ctx, payrollType, ref.ID, record.Edit); err != nil || !ok {
 			return platform.OrErr(err, platform.ErrForbidden)
+		}
+		p, err := store.New(platform.DBFrom(ctx)).GetPayroll(ctx, ref.ID)
+		if err != nil {
+			return err
 		}
 		if err := s.require(ctx, PermSalaryView, p.LegalEntityID); err != nil {
 			return err
@@ -203,7 +173,7 @@ func (s *Service) computePayroll(ctx context.Context, j *river.Job[payrollComput
 		if err != nil {
 			return err
 		}
-		res := calcPayroll(prm, platform.Rounding(b.Rounding), in)
+		res := calcPayroll(prm, b.Rounding, in)
 		var cost int64
 		for i := range b.Employees {
 			cost += res[i].Cost
@@ -332,7 +302,7 @@ func (s *Service) payrollTransition(ctx context.Context, d record.Doc, from reco
 	if err != nil {
 		return err
 	}
-	if err := s.d.Posting.Record(ctx, ref, le, d.Date, postingLines(le, lines)); err != nil {
+	if err := s.d.Posting.Record(ctx, ref, postingLines(le, lines)); err != nil {
 		return err
 	}
 	return set(pgtype.Int8{Int64: d.ID, Valid: true})
@@ -417,16 +387,15 @@ func (s *Service) adjustments(ctx context.Context, id int64) ([]PayrollAdjustmen
 func (s *Service) SavePayrollAdjustments(ctx context.Context, id int64, in PayrollAdjustments) (int64, error) {
 	var job int64
 	err := platform.InTx(ctx, func(ctx context.Context) error {
-		p, err := s.visiblePayroll(ctx, id)
-		if err != nil {
-			return err
-		}
 		ref := record.Ref{Type: payrollType, ID: id}
-		old, err := s.d.Record.Get(ctx, ref)
+		if _, err := s.d.Record.Read(ctx, ref); err != nil {
+			return err
+		}
+		p, err := store.New(platform.DBFrom(ctx)).GetPayroll(ctx, id)
 		if err != nil {
 			return err
 		}
-		d, err := s.d.Record.Edit(ctx, ref, in.Version, record.Header{Date: old.Date, OrgUnitID: old.OrgUnitID, Amount: old.Amount})
+		version, err := s.d.Record.Touch(ctx, ref, in.Version)
 		if err != nil {
 			return err
 		}
@@ -442,7 +411,7 @@ func (s *Service) SavePayrollAdjustments(ctx context.Context, id int64, in Payro
 			return err
 		}
 		for _, a := range in.Items {
-			start, _, err := period(a.SourcePeriod)
+			start, _, err := platform.MonthPeriod(a.SourcePeriod)
 			if err != nil || a.Amount == 0 || !start.Time.Before(p.PeriodStart.Time) {
 				return ErrAdjustment
 			}
@@ -478,7 +447,7 @@ func (s *Service) SavePayrollAdjustments(ctx context.Context, id int64, in Payro
 		}); err != nil {
 			return err
 		}
-		job, err = platform.Enqueue(ctx, payrollComputeArgs{ID: id, Version: d.Version})
+		job, err = platform.Enqueue(ctx, payrollComputeArgs{ID: id, Version: version})
 		return err
 	})
 	return job, err
@@ -493,7 +462,7 @@ func (s *Service) Payrolls(ctx context.Context, f PayrollFilter) (PayrollList, e
 	}
 	var start pgtype.Date
 	if f.Month != "" {
-		if start, _, err = period(f.Month); err != nil {
+		if start, _, err = platform.MonthPeriod(f.Month); err != nil {
 			return out, err
 		}
 	}
@@ -505,7 +474,7 @@ func (s *Service) Payrolls(ctx context.Context, f PayrollFilter) (PayrollList, e
 		out.Total = r.Total
 		out.Items = append(out.Items, PayrollListItem{ID: r.ID, Number: r.Number, Status: r.Status, LegalEntityID: r.LegalEntityID,
 			LegalEntityName: r.LegalEntityName, PeriodStart: *platform.DatePtr(r.PeriodStart), PeriodEnd: *platform.DatePtr(r.PeriodEnd),
-			ComputedAt: instant(r.ComputedAt)})
+			ComputedAt: platform.Instant(r.ComputedAt)})
 	}
 	return out, err
 }
@@ -515,16 +484,16 @@ func (s *Service) Payrolls(ctx context.Context, f PayrollFilter) (PayrollList, e
 func (s *Service) Payroll(ctx context.Context, id int64) (Payroll, error) {
 	var out Payroll
 	err := platform.InTx(ctx, func(ctx context.Context) error {
-		p, err := s.visiblePayroll(ctx, id)
-		if err != nil {
-			return err
-		}
 		ref := record.Ref{Type: payrollType, ID: id}
-		d, err := s.d.Record.Get(ctx, ref)
+		d, err := s.d.Record.Read(ctx, ref)
 		if err != nil {
 			return err
 		}
-		actions, err := s.d.Record.DocumentActions(ctx, d)
+		p, err := store.New(platform.DBFrom(ctx)).GetPayroll(ctx, id)
+		if err != nil {
+			return err
+		}
+		actions, err := s.d.Record.Actions(ctx, d)
 		if err != nil {
 			return err
 		}
@@ -535,19 +504,9 @@ func (s *Service) Payroll(ctx context.Context, id int64) (Payroll, error) {
 		if salary && slices.Contains(actions, "edit") {
 			actions = append(actions, "compute", "adjust")
 		}
-		if ok, err := s.d.Record.Can(ctx, payrollType, id, record.Export); err != nil {
-			return err
-		} else if ok && salary && p.ComputedAt.Valid {
-			actions = append(actions, "export")
-		}
-		if ok, err := s.d.Record.Can(ctx, payrollType, id, record.Print); err != nil {
-			return err
-		} else if ok && p.ComputedAt.Valid {
-			actions = append(actions, "print")
-		}
 		out = Payroll{ID: id, Number: d.Number, Status: string(d.Status), Version: d.Version, LegalEntityID: p.LegalEntityID,
 			LegalEntityName: p.LegalEntityName, PeriodStart: *platform.DatePtr(p.PeriodStart), PeriodEnd: *platform.DatePtr(p.PeriodEnd),
-			ComputedAt: instant(p.ComputedAt), AllowedActions: actions}
+			ComputedAt: platform.Instant(p.ComputedAt), AllowedActions: actions}
 		if p.ComputedAt.Valid && (d.Status == record.Draft || d.Status == record.PendingApproval) {
 			if out.SourcesChanged, err = s.sourcesChanged(ctx, p); err != nil {
 				return err
@@ -601,31 +560,8 @@ func payrollTotals(ctx context.Context, lines []PayrollLine) ([]PayrollTotal, er
 	return out, err
 }
 
-// DeletePayroll removes a draft at the version the actor saw; its lines go with it.
-func (s *Service) DeletePayroll(ctx context.Context, id int64, version int32) error {
-	return platform.InTx(ctx, func(ctx context.Context) error {
-		if _, err := s.visiblePayroll(ctx, id); err != nil {
-			return err
-		}
-		if err := s.d.Record.Delete(ctx, record.Ref{Type: payrollType, ID: id}, version); err != nil {
-			return err
-		}
-		return store.New(platform.DBFrom(ctx)).DeletePayroll(ctx, id)
-	})
-}
-
-func (s *Service) visiblePayroll(ctx context.Context, id int64) (store.GetPayrollRow, error) {
-	if ok, err := s.d.Record.Can(ctx, payrollType, id, record.View); err != nil || !ok {
-		return store.GetPayrollRow{}, platform.OrErr(err, platform.ErrNotFound)
-	}
-	return store.New(platform.DBFrom(ctx)).GetPayroll(ctx, id)
-}
-
-func instant(t pgtype.Timestamptz) *string {
-	if !t.Valid {
-		return nil
-	}
-	return new(t.Time.UTC().Format(time.RFC3339))
+func deletePayroll(ctx context.Context, id int64) error {
+	return store.New(platform.DBFrom(ctx)).DeletePayroll(ctx, id)
 }
 
 // payrollColumns are the money columns of the export, in order.
@@ -646,17 +582,12 @@ func (s *Service) exportablePayroll(ctx context.Context, params json.RawMessage)
 	if err := json.Unmarshal(params, &in); err != nil || in.PayrollID == 0 {
 		return store.GetPayrollRow{}, dataio.ErrInvalidParams
 	}
-	p, err := s.visiblePayroll(ctx, in.PayrollID)
-	if errors.Is(err, platform.ErrNotFound) {
-		return p, platform.ErrForbidden
+	// Export is refined by the salary permission; the requester named the payroll, so one
+	// they may not export is a permission error.
+	if ok, err := s.d.Record.Can(ctx, payrollType, in.PayrollID, record.Export); err != nil || !ok {
+		return store.GetPayrollRow{}, platform.OrErr(err, platform.ErrForbidden)
 	}
-	if err != nil {
-		return p, err
-	}
-	if ok, err := s.d.Record.Can(ctx, payrollType, p.ID, record.Export); err != nil || !ok {
-		return p, platform.OrErr(err, platform.ErrForbidden)
-	}
-	return p, s.require(ctx, PermSalaryView, p.LegalEntityID)
+	return store.New(platform.DBFrom(ctx)).GetPayroll(ctx, in.PayrollID)
 }
 
 // exportPayroll writes one row per employee with every amount, department by department,

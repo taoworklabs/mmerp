@@ -43,7 +43,7 @@ Run every item against the change before calling it done. An item that does not 
 
 ## Forms (`forms.md`)
 
-- [ ] Labels above, `*` on required, `mode: 'onBlur'`, server field errors through `fieldOf`, others as the form banner.
+- [ ] Labels above, `*` on required, `mode: 'onBlur'`, server field errors through `errorFields`, others as the form banner.
 - [ ] `FormActions` without `onCancel` on a page, with it in a modal or an `EditablePanel` card; a create page passes `cancelTo` (its list); submit never disabled to signal errors.
 - [ ] Same data, same field (`MonthField`, `IntegerField`, `MoneyField`…).
 - [ ] Lines in `LinesTable` inside `FormSection wide`; totals only from the server, with their note.

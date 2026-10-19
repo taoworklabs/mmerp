@@ -5,14 +5,13 @@ import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router'
 import { api, unwrap, type EmployeeListItem, type EmployeeSort } from '@/shared/api/hrm'
-import { errorText, formatDate } from '@/shared/i18n'
+import { formatDate } from '@/shared/i18n'
 import { ImportDialog } from '@/shared/jobs'
 import { PersonName } from '@/shared/ui/avatar'
-import { DataTable, type Column } from '@/shared/ui/DataTable'
+import { type Column } from '@/shared/ui/DataTable'
 import { FilterChip, OrgUnitFilter, SearchInput } from '@/shared/ui/form'
 import { useListView } from '@/shared/ui/ListView'
 import { ListPage } from '@/shared/ui/page'
-import { ContentSkeleton, EmptyState, ErrorState } from '@/shared/ui/states'
 import { icon } from '@/shared/ui/theme'
 import { useListParams } from '@/shared/url/listParams'
 import { EmployeeStatus } from '../components/EmployeeStatus'
@@ -60,36 +59,6 @@ export function EmployeesPage() {
   ]
 
   const view = useListView('hrm.employees', columns)
-  let body
-  if (list.isPending) body = <ContentSkeleton />
-  else if (list.isError) body = <ErrorState message={errorText(t, list.error)} onRetry={() => void list.refetch()} />
-  else if (list.data.items.length === 0)
-    body = filterBar.active ? (
-      <EmptyState
-        title={t('hrm.employees.no_results')}
-        action={
-          <Button variant="default" onClick={filterBar.clear}>
-            {t('hrm.common.clear_filters')}
-          </Button>
-        }
-      />
-    ) : (
-      <EmptyState title={t('hrm.employees.empty')} description={t('hrm.employees.empty_description')} />
-    )
-  else
-    body = (
-      <DataTable
-        label={t('hrm.employees.title')}
-        columns={view.columns}
-        onResize={view.onResize}
-        rows={list.data.items}
-        rowKey={(e) => e.id}
-        href={(e) => `/hrm/employees/${e.id}`}
-        sort={params.sort}
-        onSort={(sort) => set({ sort })}
-      />
-    )
-
   return (
     <ListPage
       title={t('hrm.employees.title')}
@@ -130,23 +99,28 @@ export function EmployeesPage() {
       }
       onClearFilters={filterBar.active ? filterBar.clear : undefined}
       tools={view.tools}
-      paging={
-        list.data && {
-          page: params.page,
-          pageSize: params.pageSize,
-          total: list.data.total,
-          onPage: (page) => set({ page }),
-          onPageSize: (pageSize) => set({ pageSize }),
-        }
-      }
+      list={{
+        query: list,
+        table: {
+          label: t('hrm.employees.title'),
+          columns: view.columns,
+          onResize: view.onResize,
+          rowKey: (e) => e.id,
+          href: (e) => `/hrm/employees/${e.id}`,
+          sort: params.sort,
+          onSort: (sort) => set({ sort }),
+        },
+        empty: { title: t('hrm.employees.empty'), description: t('hrm.employees.empty_description') },
+        noResults: t('hrm.employees.no_results'),
+        paging: { page: params.page, pageSize: params.pageSize, onPage: (page) => set({ page }), onPageSize: (pageSize) => set({ pageSize }) },
+      }}
     >
-      {body}
       {importing && (
         <ImportDialog
           kind="hrm.leave_balance"
           title={t('hrm.employees.import_balances')}
           description={t('hrm.employees.import_balances_hint')}
-          invalidate={[hrmKeys.balances.all()]}
+          writes={[hrmKeys.balances.all()]}
           onClose={() => setImporting(false)}
         />
       )}

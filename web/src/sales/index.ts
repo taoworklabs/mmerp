@@ -40,7 +40,8 @@ export const sales: AreaManifest = {
     },
     [customerDocType]: {
       path: (id) => `customers/${id}`,
-      invalidate: (id) => [salesKeys.customers.detail(id), salesKeys.customers.lists()],
+      // Names show in pickers too, so every customer query.
+      invalidate: () => [salesKeys.customers.all()],
     },
   },
 }

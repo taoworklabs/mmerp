@@ -1,10 +1,11 @@
 import { IconClockHour4 } from '@tabler/icons-react'
+import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { useTranslation } from 'react-i18next'
 import { api, unwrap, type Overtime } from '@/shared/api/hrm'
 import { useDocumentMutation } from '@/shared/document'
 import { notifySuccess } from '@/shared/ui/notify'
-import { DateField, DecimalField, Form, FormActions, FormFields, FormSection, SelectField, TextField } from '@/shared/ui/form'
+import { DateField, DecimalField, Form, FormActions, FormFields, FormSection, SelectField, TextField, type ErrorFields } from '@/shared/ui/form'
 import { overtimeDocType } from '../keys'
 import { EmployeeField } from './EmployeeField'
 
@@ -22,7 +23,7 @@ type DayKind = Overtime['day_kind']
 const dayKindSet: Record<DayKind, true> = { weekday: true, weekly_off: true, holiday: true }
 const dayKinds = Object.keys(dayKindSet) as DayKind[]
 
-const fieldOfCode: Record<string, keyof Values> = {
+const errorFields: ErrorFields<Values> = {
   invalid_overtime_hours: 'day_hours',
   overtime_day_kind_mismatch: 'day_kind',
   not_an_employee: 'employee_id',
@@ -42,6 +43,8 @@ type Props = {
 // its card with onClose); otherwise it is read-only.
 export function OvertimeForm({ overtime, self, chooseEmployee, onCreated, onClose }: Props) {
   const { t } = useTranslation()
+  // One id per opened form: sending it twice returns the document made the first time.
+  const [requestId] = useState(() => crypto.randomUUID())
   const mutation = useDocumentMutation(overtimeDocType, overtime?.id ?? 0, overtime?.version ?? 0)
   const form = useForm<Values>({
     mode: 'onBlur',
@@ -72,7 +75,7 @@ export function OvertimeForm({ overtime, self, chooseEmployee, onCreated, onClos
       return
     }
     const employee = chooseEmployee && v.employee_id && Number(v.employee_id) !== self?.id ? Number(v.employee_id) : undefined
-    const { id } = await unwrap(api.POST('/hrm/overtimes', { body: { employee_id: employee, ...fields } }))
+    const { id } = await unwrap(api.POST('/hrm/overtimes', { body: { request_id: requestId, employee_id: employee, ...fields } }))
     await onCreated?.(id)
   }
 
@@ -98,14 +101,14 @@ export function OvertimeForm({ overtime, self, chooseEmployee, onCreated, onClos
 
   if (onClose)
     return (
-      <Form form={form} onSubmit={save} fieldOf={(err) => fieldOfCode[err.code]}>
+      <Form form={form} onSubmit={save} errorFields={errorFields}>
         <FormFields>{inputs}</FormFields>
         <FormActions submitLabel={t('hrm.common.save')} onCancel={onClose} cancelLabel={t('hrm.common.cancel')} />
         {mutation.dialog}
       </Form>
     )
   return (
-    <Form form={form} onSubmit={save} fieldOf={(err) => fieldOfCode[err.code]}>
+    <Form form={form} onSubmit={save} errorFields={errorFields}>
       <FormSection title={t('hrm.overtime.section')} description={t('hrm.overtime.section_hint')} icon={IconClockHour4} compact>
         {inputs}
       </FormSection>

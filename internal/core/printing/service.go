@@ -31,7 +31,7 @@ const snapshotAAD = "printing.snapshots.data"
 //go:embed i18n/*.json
 var i18nFiles embed.FS
 
-// loadTranslations adds the watermarks to the catalog, once.
+// loadTranslations adds the watermarks and legal-entity labels to the catalog, once.
 var loadTranslations = sync.OnceValue(func() error {
 	sub, err := fs.Sub(i18nFiles, "i18n")
 	if err != nil {
@@ -52,6 +52,12 @@ func NewService(d Deps) *Service {
 	return s
 }
 
+// LegalEntity reads a legal entity as a print shows it, for a template's Data.
+func (s *Service) LegalEntity(ctx context.Context, id int64) (LegalEntity, error) {
+	r, err := store.New(platform.DBFrom(ctx)).LegalEntity(ctx, id)
+	return LegalEntity{Name: r.Name, TaxCode: platform.TextPtr(r.TaxCode), Address: platform.TextPtr(r.Address)}, err
+}
+
 // Register adds a print template while wiring modules, before serving.
 func (s *Service) Register(t Template) {
 	if len(t.Layouts) == 0 || t.Data == nil {
@@ -66,6 +72,7 @@ func (s *Service) Register(t Template) {
 		panic("printing: " + t.DocType + " has two templates")
 	}
 	s.templates[t.DocType], s.byCode[t.Code] = t, t
+	s.d.Record.Offer(t.DocType, record.Print)
 	s.d.DataIO.RegisterExport(dataio.Export{
 		Kind: "printing." + t.Code, Product: t.product,
 		Render: func(ctx context.Context, raw json.RawMessage) (dataio.File, error) { return s.render(ctx, t, raw) },

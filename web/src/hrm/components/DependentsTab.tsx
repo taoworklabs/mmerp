@@ -1,12 +1,12 @@
 import { Button, Menu, Stack } from '@mantine/core'
 import { IconPencil, IconPlus, IconTrash } from '@tabler/icons-react'
-import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { useQuery } from '@tanstack/react-query'
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { useTranslation } from 'react-i18next'
 import { api, unwrap, type Dependent, type DependentInput, type Employee } from '@/shared/api/hrm'
+import { useInvalidateRecord } from '@/shared/area'
 import { errorText, formatDate, formatMonthShort } from '@/shared/i18n'
-import { documentKeys } from '@/shared/document'
 import { DataTable, type Column } from '@/shared/ui/DataTable'
 import { DateField, Form, FormActions, MonthField, SelectField, TextField } from '@/shared/ui/form'
 import { useConfirm } from '@/shared/ui/confirm'
@@ -27,7 +27,7 @@ export function DependentsTab({ employee }: { employee: Employee }) {
 
 function Dependents({ employee }: { employee: Employee }) {
   const { t } = useTranslation()
-  const qc = useQueryClient()
+  const invalidate = useInvalidateRecord()
   const canEdit = employee.allowed_actions.includes('edit')
   const [editing, setEditing] = useState<Dependent | 'new' | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -51,7 +51,7 @@ function Dependents({ employee }: { employee: Employee }) {
       setError(errorText(t, err))
       return
     }
-    await Promise.all([qc.invalidateQueries({ queryKey: key }), qc.invalidateQueries({ queryKey: documentKeys.history(employeeDocType, employee.id) })])
+    await invalidate(employeeDocType, employee.id)
     notifySuccess(t('hrm.dependent.deleted'))
   }
 
@@ -121,7 +121,7 @@ type Values = {
 
 function DependentModal({ employeeId, dependent, onClose }: { employeeId: number; dependent: Dependent | null; onClose: () => void }) {
   const { t } = useTranslation()
-  const qc = useQueryClient()
+  const invalidate = useInvalidateRecord()
   const form = useForm<Values>({
     mode: 'onBlur',
     defaultValues: {
@@ -147,10 +147,7 @@ function DependentModal({ employeeId, dependent, onClose }: { employeeId: number
     const path = { id: employeeId }
     if (dependent) await unwrap(api.PUT('/hrm/employees/{id}/dependents/{dependent}', { params: { path: { ...path, dependent: dependent.id } }, body }))
     else await unwrap(api.POST('/hrm/employees/{id}/dependents', { params: { path }, body }))
-    await Promise.all([
-      qc.invalidateQueries({ queryKey: hrmKeys.employees.dependents(employeeId) }),
-      qc.invalidateQueries({ queryKey: documentKeys.history(employeeDocType, employeeId) }),
-    ])
+    await invalidate(employeeDocType, employeeId)
     notifySuccess(t('hrm.dependent.saved'))
     onClose()
   }

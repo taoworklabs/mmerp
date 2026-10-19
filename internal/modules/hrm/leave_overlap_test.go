@@ -5,11 +5,11 @@ import (
 	"fmt"
 	"sync"
 	"testing"
-	"time"
 
 	"github.com/taoworklabs/mmerp/internal/core/record"
 	"github.com/taoworklabs/mmerp/internal/modules/hrm"
 	"github.com/taoworklabs/mmerp/internal/platform"
+	"github.com/taoworklabs/mmerp/internal/platform/pgtest"
 )
 
 // holiday adds 2026-04-30 to the company's calendar, so the leave tests below have a
@@ -256,7 +256,7 @@ func TestOverlappingRequestsApprovedAtOnce(t *testing.T) {
 	f.check(platform.InTx(f.m, func(ctx context.Context) error {
 		f.check(f.appr.Approve(ctx, ta, 1))
 		wg.Go(func() { second = f.appr.Approve(f.m, tb, 1) })
-		time.Sleep(100 * time.Millisecond)
+		pgtest.AwaitLockWait(t, f.pool)
 		return nil
 	}))
 	wg.Wait()

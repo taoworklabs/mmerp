@@ -1,11 +1,12 @@
 import { IconCalendarEvent } from '@tabler/icons-react'
+import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { useTranslation } from 'react-i18next'
 import { api, unwrap, type Leave } from '@/shared/api/hrm'
 import { useDocumentMutation } from '@/shared/document'
 import { formatDecimal } from '@/shared/i18n'
 import { notifySuccess } from '@/shared/ui/notify'
-import { DateField, DecimalField, Form, FormActions, FormFields, FormSection, SelectField, TextField } from '@/shared/ui/form'
+import { DateField, DecimalField, Form, FormActions, FormFields, FormSection, SelectField, TextField, type ErrorFields } from '@/shared/ui/form'
 import { useLeaveTypes, useLeaveWorkingDays } from '../hooks/useLeave'
 import { EmployeeField } from './EmployeeField'
 import { leaveDocType } from '../keys'
@@ -19,7 +20,7 @@ type Values = {
   reason: string
 }
 
-const fieldOfCode: Record<string, keyof Values> = {
+const errorFields: ErrorFields<Values> = {
   invalid_leave_days: 'days',
   leave_days_exceed_working_days: 'days',
   leave_days_exceed_type_max: 'days',
@@ -45,6 +46,8 @@ type Props = {
 // card with onClose); otherwise it is read-only.
 export function LeaveForm({ leave, self, chooseEmployee, onCreated, onClose }: Props) {
   const { t } = useTranslation()
+  // One id per opened form: sending it twice returns the document made the first time.
+  const [requestId] = useState(() => crypto.randomUUID())
   const types = useLeaveTypes()
   const mutation = useDocumentMutation(leaveDocType, leave?.id ?? 0, leave?.version ?? 0)
   const form = useForm<Values>({
@@ -92,7 +95,7 @@ export function LeaveForm({ leave, self, chooseEmployee, onCreated, onClose }: P
       return
     }
     const employee = chooseEmployee && v.employee_id && Number(v.employee_id) !== self?.id ? Number(v.employee_id) : undefined
-    const { id } = await unwrap(api.POST('/hrm/leaves', { body: { employee_id: employee, ...fields } }))
+    const { id } = await unwrap(api.POST('/hrm/leaves', { body: { request_id: requestId, employee_id: employee, ...fields } }))
     await onCreated?.(id)
   }
 
@@ -118,14 +121,14 @@ export function LeaveForm({ leave, self, chooseEmployee, onCreated, onClose }: P
 
   if (onClose)
     return (
-      <Form form={form} onSubmit={save} fieldOf={(err) => fieldOfCode[err.code]}>
+      <Form form={form} onSubmit={save} errorFields={errorFields}>
         <FormFields>{inputs}</FormFields>
         <FormActions submitLabel={t('hrm.common.save')} onCancel={onClose} cancelLabel={t('hrm.common.cancel')} />
         {mutation.dialog}
       </Form>
     )
   return (
-    <Form form={form} onSubmit={save} fieldOf={(err) => fieldOfCode[err.code]}>
+    <Form form={form} onSubmit={save} errorFields={errorFields}>
       <FormSection title={t('hrm.leave.section')} description={t('hrm.leave.section_hint')} icon={IconCalendarEvent} compact>
         {inputs}
       </FormSection>

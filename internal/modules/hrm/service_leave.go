@@ -73,7 +73,7 @@ func (s *Service) SaveLeaveType(ctx context.Context, id int64, in LeaveTypeInput
 	return id, err
 }
 
-func (s *Service) canLeave(ctx context.Context, id int64, action record.Action) (bool, error) {
+func (s *Service) leaveGrant(ctx context.Context, id int64, action record.Action) (bool, error) {
 	r, err := store.New(platform.DBFrom(ctx)).GetLeaveRequest(ctx, id)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return false, nil
@@ -81,9 +81,7 @@ func (s *Service) canLeave(ctx context.Context, id int64, action record.Action) 
 	if err != nil {
 		return false, err
 	}
-	// Attachments (a medical certificate) go with the request, asking nothing more.
-	action, _ = filesAction(action)
-	return s.canSelfService(ctx, selfService{r.EmployeeID, r.EmployeeUserID, r.OrgUnitID}, action, PermLeaveView, PermLeaveEdit)
+	return selfGrant(ctx, r.EmployeeID, r.EmployeeUserID, action)
 }
 
 func (s *Service) leaveApprovers(ctx context.Context, ref record.Ref, level int) ([]int64, error) {
@@ -188,7 +186,7 @@ func (s *Service) leaveTransition(ctx context.Context, d record.Doc, from record
 
 // LeaveActions lists what the actor may do before picking a leave request.
 func (s *Service) LeaveActions(ctx context.Context) (SelfServiceActions, error) {
-	return s.selfServiceActions(ctx, PermLeaveEdit)
+	return s.selfServiceActions(ctx, leaveType)
 }
 
 // Leaves lists the leave requests the actor may see: their own, their reports', and those in scope.
@@ -208,7 +206,7 @@ func (s *Service) Leaves(ctx context.Context, f LeaveFilter) (LeaveList, error) 
 		AllUnits: sc.All, Units: sc.Units, Actor: actor, Reports: reports, Status: f.Status, Q: strings.TrimSpace(f.Q),
 		OrgUnitID:  pgtype.Int8{Int64: f.OrgUnitID, Valid: f.OrgUnitID != 0},
 		EmployeeID: pgtype.Int8{Int64: f.EmployeeID, Valid: f.EmployeeID != 0},
-		FromDate:   platform.NullDate(optional(f.From)), ToDate: platform.NullDate(optional(f.To)),
+		FromDate:   platform.NullDate(platform.Optional(f.From)), ToDate: platform.NullDate(platform.Optional(f.To)),
 		Sort: f.Sort, Lim: f.Limit(), Off: f.Offset(),
 	})
 	for _, r := range rows {
@@ -216,7 +214,7 @@ func (s *Service) Leaves(ctx context.Context, f LeaveFilter) (LeaveList, error) 
 		out.Items = append(out.Items, LeaveListItem{
 			ID: r.ID, Number: r.Number, Status: r.Status, EmployeeID: r.EmployeeID, EmployeeCode: r.EmployeeCode,
 			EmployeeName: r.EmployeeName, LeaveTypeName: r.LeaveTypeName, StartDate: *platform.DatePtr(r.StartDate),
-			EndDate: *platform.DatePtr(r.EndDate), Days: plain(r.Days),
+			EndDate: *platform.DatePtr(r.EndDate), Days: platform.PlainDecimal(r.Days),
 		})
 	}
 	return out, err
@@ -224,20 +222,16 @@ func (s *Service) Leaves(ctx context.Context, f LeaveFilter) (LeaveList, error) 
 
 // Leave returns one leave request; one the actor may not view does not exist.
 func (s *Service) Leave(ctx context.Context, id int64) (Leave, error) {
-	ref := record.Ref{Type: leaveType, ID: id}
-	if ok, err := s.d.Record.Can(ctx, leaveType, id, record.View); err != nil || !ok {
-		return Leave{}, platform.OrErr(err, platform.ErrNotFound)
+	d, err := s.d.Record.Read(ctx, record.Ref{Type: leaveType, ID: id})
+	if err != nil {
+		return Leave{}, err
 	}
 	q := store.New(platform.DBFrom(ctx))
 	r, err := q.GetLeaveRequest(ctx, id)
 	if err != nil {
 		return Leave{}, err
 	}
-	d, err := s.d.Record.Get(ctx, ref)
-	if err != nil {
-		return Leave{}, err
-	}
-	actions, err := s.d.Record.DocumentActions(ctx, d)
+	actions, err := s.d.Record.Actions(ctx, d)
 	if err != nil {
 		return Leave{}, err
 	}
@@ -245,7 +239,7 @@ func (s *Service) Leave(ctx context.Context, id int64) (Leave, error) {
 		ID: id, Number: d.Number, Status: string(d.Status), Version: d.Version, EmployeeID: r.EmployeeID,
 		EmployeeCode: r.EmployeeCode, EmployeeName: r.EmployeeName, LeaveTypeName: r.LeaveTypeName,
 		LeaveFields: LeaveFields{LeaveTypeID: r.LeaveTypeID, StartDate: *platform.DatePtr(r.StartDate), EndDate: *platform.DatePtr(r.EndDate),
-			Days: plain(r.Days), Reason: platform.TextPtr(r.Reason)},
+			Days: platform.PlainDecimal(r.Days), Reason: platform.TextPtr(r.Reason)},
 		AllowedActions: actions,
 	}
 	if ok, err := s.canSeeBalance(ctx, r.EmployeeID); err != nil {
@@ -258,7 +252,7 @@ func (s *Service) Leave(ctx context.Context, id int64) (Leave, error) {
 		out.Balance = new("0")
 		for _, b := range balances {
 			if b.Year == int32(r.StartDate.Time.Year()) {
-				out.Balance = new(plain(b.Days))
+				out.Balance = new(platform.PlainDecimal(b.Days))
 			}
 		}
 	}
@@ -270,19 +264,24 @@ func (s *Service) CreateLeave(ctx context.Context, in NewLeave) (int64, error) {
 	var id int64
 	err := platform.InTx(ctx, func(ctx context.Context) error {
 		q := store.New(platform.DBFrom(ctx))
-		employee, unit, err := s.filer(ctx, in.EmployeeID, PermLeaveEdit)
+		employee, unit, user, err := subject(ctx, in.EmployeeID)
 		if err != nil {
+			return err
+		}
+		if err := s.d.Record.MayCreate(ctx, leaveType, record.Header{OrgUnitID: unit, Subject: user.Int64}); err != nil {
 			return err
 		}
 		h, row, typeName, err := s.leaveHeader(ctx, unit, in.LeaveFields)
 		if err != nil {
 			return err
 		}
+		h.RequestID = in.RequestID
+		h.Subject = user.Int64
 		d, err := s.d.Record.Create(ctx, leaveType, h)
-		if err != nil {
+		id = d.ID
+		if err != nil || d.Reused {
 			return err
 		}
-		id = d.ID
 		row.ID, row.EmployeeID = id, employee
 		if err := q.CreateLeaveRequest(ctx, row); err != nil {
 			return err
@@ -296,7 +295,10 @@ func (s *Service) CreateLeave(ctx context.Context, in NewLeave) (int64, error) {
 func (s *Service) UpdateLeave(ctx context.Context, id int64, in LeaveUpdate) error {
 	return platform.InTx(ctx, func(ctx context.Context) error {
 		q := store.New(platform.DBFrom(ctx))
-		old, err := s.visibleLeave(ctx, id)
+		if _, err := s.d.Record.Read(ctx, record.Ref{Type: leaveType, ID: id}); err != nil {
+			return err
+		}
+		old, err := q.GetLeaveRequest(ctx, id)
 		if err != nil {
 			return err
 		}
@@ -313,29 +315,13 @@ func (s *Service) UpdateLeave(ctx context.Context, id int64, in LeaveUpdate) err
 		}); err != nil {
 			return err
 		}
-		before := LeaveFields{LeaveTypeID: old.LeaveTypeID, StartDate: *platform.DatePtr(old.StartDate), EndDate: *platform.DatePtr(old.EndDate), Days: plain(old.Days), Reason: platform.TextPtr(old.Reason)}
+		before := LeaveFields{LeaveTypeID: old.LeaveTypeID, StartDate: *platform.DatePtr(old.StartDate), EndDate: *platform.DatePtr(old.EndDate), Days: platform.PlainDecimal(old.Days), Reason: platform.TextPtr(old.Reason)}
 		return s.d.Audit.RecordChanges(ctx, "hrm.leave_request_updated", audit.Ref{Type: leaveType, ID: id}, leaveChanges(before, old.LeaveTypeName, in.LeaveFields, typeName))
 	})
 }
 
-// DeleteLeave removes a draft at the version the actor saw.
-func (s *Service) DeleteLeave(ctx context.Context, id int64, version int32) error {
-	return platform.InTx(ctx, func(ctx context.Context) error {
-		if _, err := s.visibleLeave(ctx, id); err != nil {
-			return err
-		}
-		if err := s.d.Record.Delete(ctx, record.Ref{Type: leaveType, ID: id}, version); err != nil {
-			return err
-		}
-		return store.New(platform.DBFrom(ctx)).DeleteLeaveRequest(ctx, id)
-	})
-}
-
-func (s *Service) visibleLeave(ctx context.Context, id int64) (store.GetLeaveRequestRow, error) {
-	if ok, err := s.d.Record.Can(ctx, leaveType, id, record.View); err != nil || !ok {
-		return store.GetLeaveRequestRow{}, platform.OrErr(err, platform.ErrNotFound)
-	}
-	return store.New(platform.DBFrom(ctx)).GetLeaveRequest(ctx, id)
+func deleteLeave(ctx context.Context, id int64) error {
+	return store.New(platform.DBFrom(ctx)).DeleteLeaveRequest(ctx, id)
 }
 
 // checkLeaveDates re-checks on approval what the entry already checked, and refuses dates
@@ -506,7 +492,7 @@ func leaveChanges(old LeaveFields, oldType string, n LeaveFields, newType string
 		{Field: "leave_type", Old: oldType, New: newType},
 		{Field: "start_date", Old: old.StartDate, New: n.StartDate},
 		{Field: "end_date", Old: old.EndDate, New: n.EndDate},
-		{Field: "days", Old: old.Days, New: plain(n.Days)},
+		{Field: "days", Old: old.Days, New: platform.PlainDecimal(n.Days)},
 		{Field: "reason", Old: old.Reason, New: n.Reason},
 	}
 }
@@ -537,7 +523,7 @@ func (s *Service) LeaveBalances(ctx context.Context, employeeID int64) ([]LeaveB
 	rows, err := store.New(platform.DBFrom(ctx)).LeaveBalances(ctx, employeeID)
 	out := make([]LeaveBalance, len(rows))
 	for i, r := range rows {
-		out[i] = LeaveBalance{Year: r.Year, Days: plain(r.Days)}
+		out[i] = LeaveBalance{Year: r.Year, Days: platform.PlainDecimal(r.Days)}
 	}
 	return out, err
 }
@@ -578,14 +564,6 @@ func (s *Service) AdjustLeaveBalance(ctx context.Context, employeeID int64, year
 			return err
 		}
 		return s.d.Audit.RecordFor(ctx, "hrm.leave_balance_adjusted", audit.Ref{Type: employeeType, ID: employeeID},
-			map[string]any{"year": year, "delta": in.Delta, "days": plain(after), "reason": in.Reason})
+			map[string]any{"year": year, "delta": in.Delta, "days": platform.PlainDecimal(after), "reason": in.Reason})
 	})
-}
-
-// plain writes a numeric column's text without trailing zeros: "1.0" is "1", "2.5" stays.
-func plain(s string) string {
-	if d, err := decimal.NewFromString(s); err == nil {
-		return d.String()
-	}
-	return s
 }

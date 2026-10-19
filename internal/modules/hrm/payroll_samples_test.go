@@ -176,9 +176,11 @@ func (f *payrollFixture) payroll(month string) int64 {
 }
 
 // wantJob works queued jobs until job ends, and checks how: completed, or the code it failed with.
+// Jobs only run inside wantJob, so a test sees what a queued job has not done yet.
 func (f *fixture) wantJob(job int64, want string) {
 	f.t.Helper()
-	f.work()
+	f.check(f.jobs.Start(f.t.Context()))
+	defer func() { f.check(f.jobs.Stop(context.Background())) }()
 	for deadline := time.Now().Add(20 * time.Second); time.Now().Before(deadline); time.Sleep(20 * time.Millisecond) {
 		j, err := f.jobs.JobGet(f.admin, job)
 		f.check(err)
@@ -198,16 +200,6 @@ func (f *fixture) wantJob(job int64, want string) {
 		return
 	}
 	f.t.Fatalf("job %d did not end", job)
-}
-
-func (f *fixture) work() {
-	f.t.Helper()
-	if f.started {
-		return
-	}
-	f.started = true
-	f.check(f.jobs.Start(f.t.Context()))
-	f.t.Cleanup(func() { _ = f.jobs.Stop(context.Background()) })
 }
 
 func (f *fixture) check(err error) {

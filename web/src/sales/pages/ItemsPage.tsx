@@ -7,12 +7,11 @@ import { useTranslation } from 'react-i18next'
 import { useCan, useProductOn } from '@/shared/auth/me'
 import { api, unwrap, type Item, type ItemList, type ItemSort } from '@/shared/api/sales'
 import { errorText, formatNumber } from '@/shared/i18n'
-import { DataTable, type Column } from '@/shared/ui/DataTable'
+import { type Column } from '@/shared/ui/DataTable'
 import { CheckboxField, CodeField, FilterChip, Form, FormActions, MoneyField, SearchInput, SelectField, TextField } from '@/shared/ui/form'
 import { useListView } from '@/shared/ui/ListView'
 import { notifySuccess, notifyUndo } from '@/shared/ui/notify'
 import { FormModal, ListPage } from '@/shared/ui/page'
-import { ContentSkeleton, EmptyState, ErrorState } from '@/shared/ui/states'
 import { StatusBadge } from '@/shared/ui/StatusBadge'
 import { icon } from '@/shared/ui/theme'
 import { useListParams } from '@/shared/url/listParams'
@@ -95,50 +94,6 @@ export function ItemsPage() {
     },
   ]
   const view = useListView('sales.items', columns)
-  let body
-  if (list.isPending) body = <ContentSkeleton />
-  else if (list.isError) body = <ErrorState message={errorText(t, list.error)} onRetry={() => void list.refetch()} />
-  else if (list.data.items.length === 0)
-    body =
-      filterBar.active ? (
-        <EmptyState
-          title={t('sales.common.no_results')}
-          action={
-            <Button variant="default" onClick={filterBar.clear}>
-              {t('sales.common.clear_filters')}
-            </Button>
-          }
-        />
-      ) : (
-        <EmptyState title={t('sales.items.empty')} description={t('sales.items.empty_description')} />
-      )
-  else
-    body = (
-      <DataTable
-        label={t('sales.items.title')}
-        columns={view.columns}
-        onResize={view.onResize}
-        rows={list.data.items}
-        rowKey={(x) => x.id}
-        sort={params.sort}
-        onSort={(sort) => set({ sort })}
-        onRowClick={writable ? (x) => setEditing(x) : undefined}
-        menu={
-          writable
-            ? (x) => (
-                <>
-                  <Menu.Item leftSection={<IconPencil {...icon.text} />} onClick={() => setEditing(x)}>
-                    {t('sales.items.edit')}
-                  </Menu.Item>
-                  <Menu.Item leftSection={x.active ? <IconArchive {...icon.text} /> : <IconArchiveOff {...icon.text} />} onClick={() => toggle.mutate({ item: x })}>
-                    {t(x.active ? 'sales.items.retire' : 'sales.items.reactivate')}
-                  </Menu.Item>
-                </>
-              )
-            : undefined
-        }
-      />
-    )
   return (
     <ListPage
       title={t('sales.items.title')}
@@ -166,22 +121,39 @@ export function ItemsPage() {
         </>
       }
       tools={view.tools}
-      paging={
-        list.data && {
-          page: params.page,
-          pageSize: params.pageSize,
-          total: list.data.total,
-          onPage: (page) => set({ page }),
-          onPageSize: (pageSize) => set({ pageSize }),
-        }
-      }
+      list={{
+        query: list,
+        table: {
+          label: t('sales.items.title'),
+          columns: view.columns,
+          onResize: view.onResize,
+          rowKey: (x) => x.id,
+          sort: params.sort,
+          onSort: (sort) => set({ sort }),
+          onRowClick: writable ? (x) => setEditing(x) : undefined,
+          menu: writable
+            ? (x) => (
+                <>
+                  <Menu.Item leftSection={<IconPencil {...icon.text} />} onClick={() => setEditing(x)}>
+                    {t('sales.items.edit')}
+                  </Menu.Item>
+                  <Menu.Item leftSection={x.active ? <IconArchive {...icon.text} /> : <IconArchiveOff {...icon.text} />} onClick={() => toggle.mutate({ item: x })}>
+                    {t(x.active ? 'sales.items.retire' : 'sales.items.reactivate')}
+                  </Menu.Item>
+                </>
+              )
+            : undefined,
+        },
+        empty: { title: t('sales.items.empty'), description: t('sales.items.empty_description') },
+        noResults: t('sales.common.no_results'),
+        paging: { page: params.page, pageSize: params.pageSize, onPage: (page) => set({ page }), onPageSize: (pageSize) => set({ pageSize }) },
+      }}
     >
       {error && (
         <Alert color="danger" icon={<IconAlertCircle {...icon.button} />} role="alert">
           {error}
         </Alert>
       )}
-      {body}
       {editing && <ItemModal item={editing === 'new' ? null : editing} onClose={() => setEditing(null)} />}
     </ListPage>
   )
@@ -213,7 +185,7 @@ function ItemModal({ item, onClose }: { item: Item | null; onClose: () => void }
   }
   return (
     <FormModal opened title={t(item ? 'sales.items.edit' : 'sales.items.create')} onClose={onClose}>
-      <Form form={form} onSubmit={save} fieldOf={(err) => (err.code === 'item_code_taken' ? 'code' : undefined)}>
+      <Form form={form} onSubmit={save} errorFields={{ item_code_taken: 'code' }}>
         <CodeField name="code" label={t('sales.item.code')} existing={!!item} />
         <TextField name="name" label={t('sales.item.name')} required maxLength={300} />
         <TextField name="unit" label={t('sales.item.unit')} description={t('sales.item.unit_hint')} required maxLength={30} />

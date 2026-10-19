@@ -1,15 +1,14 @@
 import { Button, Group } from '@mantine/core'
-import { IconCircleDot, IconPlus } from '@tabler/icons-react'
+import { IconPlus } from '@tabler/icons-react'
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router'
 import { api, unwrap, type DocListItem, type DocSort } from '@/shared/api/sales'
-import { DocumentStatus, useStatusLabel } from '@/shared/document'
-import { errorText, formatDate, formatNumber } from '@/shared/i18n'
-import { DataTable, type Column } from '@/shared/ui/DataTable'
-import { FilterChip, SearchInput } from '@/shared/ui/form'
+import { DocumentStatus, DocumentStatusFilter, type DocStatus } from '@/shared/document'
+import { formatDate, formatNumber } from '@/shared/i18n'
+import { type Column } from '@/shared/ui/DataTable'
+import { SearchInput } from '@/shared/ui/form'
 import { ListPage } from '@/shared/ui/page'
-import { ContentSkeleton, EmptyState, ErrorState } from '@/shared/ui/states'
 import { useListView } from '@/shared/ui/ListView'
 import { icon } from '@/shared/ui/theme'
 import { useListParams } from '@/shared/url/listParams'
@@ -18,13 +17,11 @@ import { useDocActions } from '../hooks/useSales'
 import { docTypeOf, pathOf, salesKeys, type Kind } from '../keys'
 
 const sorts = ['-date', 'date', '-number', 'number', '-total', 'total'] as const satisfies readonly DocSort[]
-const statuses = ['draft', 'pending_approval', 'posted', 'cancelled'] as const
 const defaults = { filters: { q: '', status: '' }, sort: '-date', sorts: [...sorts], pageSize: 50 }
 
 // DocsPage lists the quotations or the orders the user may see.
 export function DocsPage({ kind: docKind }: { kind: Kind }) {
   const { t } = useTranslation()
-  const statusLabel = useStatusLabel()
   const docType = docTypeOf(docKind)
   const base = `/sales/${pathOf(docKind)}`
   const canCreate = useDocActions(docKind).data?.includes('create') ?? false
@@ -38,7 +35,7 @@ export function DocsPage({ kind: docKind }: { kind: Kind }) {
         params: {
           query: {
             q: q || undefined,
-            status: (status || undefined) as (typeof statuses)[number] | undefined,
+            status: (status || undefined) as DocStatus | undefined,
             sort: params.sort as DocSort,
             page: params.page,
             page_size: params.pageSize as 50,
@@ -74,37 +71,6 @@ export function DocsPage({ kind: docKind }: { kind: Kind }) {
   ]
   const view = useListView(`sales.${pathOf(docKind)}`, columns)
 
-  let body
-  if (list.isPending) body = <ContentSkeleton />
-  else if (list.isError) body = <ErrorState message={errorText(t, list.error)} onRetry={() => void list.refetch()} />
-  else if (list.data.items.length === 0)
-    body =
-      filterBar.active ? (
-        <EmptyState
-          title={t('sales.common.no_results')}
-          action={
-            <Button variant="default" onClick={filterBar.clear}>
-              {t('sales.common.clear_filters')}
-            </Button>
-          }
-        />
-      ) : (
-        <EmptyState title={t(`sales.${pathOf(docKind)}.empty`)} description={t(`sales.${pathOf(docKind)}.empty_description`)} />
-      )
-  else
-    body = (
-      <DataTable
-        label={t(`sales.${pathOf(docKind)}.title`)}
-        columns={view.columns}
-        onResize={view.onResize}
-        rows={list.data.items}
-        rowKey={(d) => d.id}
-        href={(d) => `${base}/${d.id}`}
-        sort={params.sort}
-        onSort={(sort) => set({ sort })}
-      />
-    )
-
   return (
     <ListPage
       title={t(`sales.${pathOf(docKind)}.title`)}
@@ -120,26 +86,26 @@ export function DocsPage({ kind: docKind }: { kind: Kind }) {
       filters={
         <>
           <SearchInput label={t('sales.doc.search')} placeholder={t('sales.doc.search_hint')} value={q} onSearch={(v) => set({ filters: { q: v } })} />
-          <FilterChip
-            label={t('sales.doc.status')}
-            icon={IconCircleDot}
-            data={statuses.map((s) => ({ value: s, label: statusLabel(docType, s) }))}
-            {...filterBar.bind('status')}
-          />
+          <DocumentStatusFilter docType={docType} {...filterBar.bind('status')} />
         </>
       }
       tools={view.tools}
-      paging={
-        list.data && {
-          page: params.page,
-          pageSize: params.pageSize,
-          total: list.data.total,
-          onPage: (page) => set({ page }),
-          onPageSize: (pageSize) => set({ pageSize }),
-        }
-      }
+      list={{
+        query: list,
+        table: {
+          label: t(`sales.${pathOf(docKind)}.title`),
+          columns: view.columns,
+          onResize: view.onResize,
+          rowKey: (d) => d.id,
+          href: (d) => `${base}/${d.id}`,
+          sort: params.sort,
+          onSort: (sort) => set({ sort }),
+        },
+        empty: { title: t(`sales.${pathOf(docKind)}.empty`), description: t(`sales.${pathOf(docKind)}.empty_description`) },
+        noResults: t('sales.common.no_results'),
+        paging: { page: params.page, pageSize: params.pageSize, onPage: (page) => set({ page }), onPageSize: (pageSize) => set({ pageSize }) },
+      }}
     >
-      {body}
     </ListPage>
   )
 }

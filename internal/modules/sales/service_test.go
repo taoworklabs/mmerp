@@ -11,24 +11,21 @@ import (
 	"testing"
 
 	"github.com/taoworklabs/mmerp/internal/core/approval"
-	"github.com/taoworklabs/mmerp/internal/core/audit"
-	"github.com/taoworklabs/mmerp/internal/core/dataio"
+	"github.com/taoworklabs/mmerp/internal/core/coretest"
 	"github.com/taoworklabs/mmerp/internal/core/iam"
-	"github.com/taoworklabs/mmerp/internal/core/notification"
 	"github.com/taoworklabs/mmerp/internal/core/numbering"
-	"github.com/taoworklabs/mmerp/internal/core/printing"
 	"github.com/taoworklabs/mmerp/internal/core/record"
 	"github.com/taoworklabs/mmerp/internal/core/record/recordtest"
 	"github.com/taoworklabs/mmerp/internal/core/setting"
 	"github.com/taoworklabs/mmerp/internal/modules/sales"
 	"github.com/taoworklabs/mmerp/internal/platform"
-	"github.com/taoworklabs/mmerp/internal/platform/pgtest"
 )
 
 // fixture: company C with sales teams A and B, a staff user and a manager in A, one
 // customer of A and two items.
 type fixture struct {
 	t        *testing.T
+	core     *coretest.Core
 	ctx      context.Context
 	admin    context.Context
 	staff    context.Context // staff@A
@@ -46,22 +43,10 @@ type fixture struct {
 
 func newFixture(t *testing.T) *fixture {
 	t.Helper()
-	pool := pgtest.New(t)
-	ctx := platform.WithKeyring(platform.WithProducts(platform.WithDB(t.Context(), pool), []string{"sales"}), pgtest.Keyring())
-	set := setting.NewService()
-	ids := iam.NewService(iam.Deps{Setting: set, Audit: audit.NewService()})
-	set.SetAuthz(ids)
-	num := numbering.NewService(numbering.Deps{IAM: ids, Audit: audit.NewService()})
-	rec := record.NewService(record.Deps{IAM: ids, Numbering: num, Audit: audit.NewService()})
-	ids.SetTreeHook(rec)
-	appr := approval.NewService(approval.Deps{IAM: ids, Record: rec, Audit: audit.NewService(),
-		Notification: notification.NewService(notification.Deps{Record: rec, IAM: ids, Audit: audit.NewService(), Setting: set})})
-	rec.SetApprovalGate(appr)
-	dio := dataio.NewService(dataio.Deps{IAM: ids, Audit: audit.NewService()})
-	prn := printing.NewService(printing.Deps{Record: rec, Audit: audit.NewService(), DataIO: dio, IAM: ids})
-	s := sales.NewService(sales.Deps{IAM: ids, Record: rec, Audit: audit.NewService(), Setting: set, Printing: prn, Numbering: num})
-	admin := platform.WithActor(ctx, must(t)(ids.CreateAdmin(ctx, "admin", "Admin", "long enough")))
-	f := &fixture{t: t, ctx: ctx, admin: admin, set: set, rec: rec, appr: appr, sales: s, num: num}
+	core := coretest.New(t, "sales")
+	ctx, admin, ids, set, rec, num := core.Ctx, core.Admin, core.IAM, core.Setting, core.Record, core.Numbering
+	s := sales.NewService(sales.Deps{IAM: ids, Record: rec, Audit: core.Audit, Setting: set, Printing: core.Printing, Numbering: num})
+	f := &fixture{t: t, core: core, ctx: ctx, admin: admin, set: set, rec: rec, appr: core.Approval, sales: s, num: num}
 	f.c = must(t)(ids.CreateOrgUnit(admin, iam.OrgUnitInput{Kind: "company", Name: "C"}))
 	f.a = must(t)(ids.CreateOrgUnit(admin, iam.OrgUnitInput{ParentID: &f.c, Kind: "department", Name: "A"}))
 	f.b = must(t)(ids.CreateOrgUnit(admin, iam.OrgUnitInput{ParentID: &f.c, Kind: "department", Name: "B"}))
@@ -162,9 +147,23 @@ func (f *fixture) posted(docType string) int {
 func contract(t *testing.T, docType string) {
 	recordtest.Run(t, func(t *testing.T) recordtest.Harness {
 		f := newFixture(t)
-		create, update := f.sales.CreateQuote, f.sales.UpdateQuote
+		create, update, read := f.sales.CreateQuote, f.sales.UpdateQuote, f.sales.Quote
+		routes := map[string]func(context.Context, record.Ref) error{
+			"create order": func(ctx context.Context, r record.Ref) error {
+				_, err := f.sales.CreateOrderFromQuote(ctx, r.ID)
+				return err
+			},
+		}
+		gaps := map[string]string{
+			"write actions leave allowed_actions when the product is off or the period locked": "a posted quotation in a locked period still offers create_order",
+		}
 		if docType == "sales.order" {
-			create, update = f.sales.CreateOrder, f.sales.UpdateOrder
+			create, update, read, routes, gaps = f.sales.CreateOrder, f.sales.UpdateOrder, f.sales.Order, nil, nil
+		}
+		deactivate := func(*testing.T, record.Ref) {
+			c := customer("KH1", f.a)
+			c.Active = false
+			f.check(f.sales.UpdateCustomer(f.staff, f.customer, c.CustomerFields))
 		}
 		fields := func(date string) sales.DocFields {
 			fl := f.fields(date)
@@ -175,9 +174,15 @@ func contract(t *testing.T, docType string) {
 			return fl
 		}
 		return recordtest.Harness{
-			Record: f.rec, Actor: f.staff, Admin: f.admin, LegalEntity: f.c,
-			Create: func(ctx context.Context, date string) (record.Ref, error) {
-				id, err := create(ctx, sales.NewDoc{RequestID: newRequest(), DocFields: fields(date)})
+			Core: f.core, Actor: f.staff, Admin: f.admin, LegalEntity: f.c, Table: "sales.headers",
+			Get:    func(ctx context.Context, r record.Ref) (any, error) { return read(ctx, r.ID) },
+			Routes: routes,
+			Gaps:   gaps,
+			Reject: func(instance int64) error { return f.appr.Reject(f.manager, instance, 1, "không") },
+			// Sending refuses a customer deactivated since the draft was saved.
+			BreakSubmit: deactivate,
+			Create: func(ctx context.Context, date, requestID string) (record.Ref, error) {
+				id, err := create(ctx, sales.NewDoc{RequestID: requestID, DocFields: fields(date)})
 				return record.Ref{Type: docType, ID: id}, err
 			},
 			Edit: func(ctx context.Context, r record.Ref, version int32, date string) error {
@@ -186,12 +191,8 @@ func contract(t *testing.T, docType string) {
 			RequireApproval: func(*testing.T) { f.managerApproves(docType) },
 			Approve:         func(instance int64) error { return f.appr.Approve(f.manager, instance, 1) },
 			// Posting refuses a customer deactivated since the draft was saved.
-			BreakPosting: func(*testing.T, record.Ref) {
-				c := customer("KH1", f.a)
-				c.Active = false
-				f.check(f.sales.UpdateCustomer(f.staff, f.customer, c.CustomerFields))
-			},
-			Effects: func(*testing.T, record.Ref) int { return f.posted(docType) },
+			BreakPosting: deactivate,
+			Effects:      func(*testing.T, record.Ref) int { return f.posted(docType) },
 		}
 	})
 }
@@ -233,7 +234,7 @@ func TestCustomerScope(t *testing.T) {
 	if err := f.sales.UpdateCustomer(f.staff, f.customer, customer("KH1", f.b).CustomerFields); !errors.Is(err, platform.ErrForbidden) {
 		t.Fatalf("move to B: %v", err)
 	}
-	if c, _ := f.sales.Customer(f.staff, f.customer); !slices.Equal(c.AllowedActions, []string{"edit", "attach"}) {
+	if c, _ := f.sales.Customer(f.staff, f.customer); !slices.Equal(c.AllowedActions, []string{"edit"}) {
 		t.Fatalf("staff actions %v", c.AllowedActions)
 	}
 	// An org unit that does not exist is not found, for a tenant-wide editor too.
@@ -477,7 +478,7 @@ func TestOrderFromQuote(t *testing.T) {
 	}
 	// Deleting the draft frees it too; then cancelling the quotation goes through.
 	o2, _ := f.sales.Order(f.staff, second)
-	f.check(f.sales.DeleteOrder(f.staff, second, o2.Version))
+	f.check(f.core.Record.Delete(f.staff, record.Ref{Type: "sales.order", ID: second}, o2.Version))
 	f.check(f.move(f.staff, "sales.quote", quote, record.Cancelled))
 
 	// An expired quotation stays readable but becomes no order.

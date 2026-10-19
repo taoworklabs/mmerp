@@ -1,18 +1,17 @@
 import { Button } from '@mantine/core'
-import { IconCircleDot, IconPlus } from '@tabler/icons-react'
+import { IconPlus } from '@tabler/icons-react'
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router'
 import { api, unwrap, type LeaveListItem, type LeaveSort } from '@/shared/api/hrm'
-import { DocumentStatus, useStatusLabel } from '@/shared/document'
-import { errorText, formatDate, formatDecimal } from '@/shared/i18n'
+import { DocumentStatus, DocumentStatusFilter, type DocStatus } from '@/shared/document'
+import { formatDate, formatDecimal } from '@/shared/i18n'
 import { PersonName } from '@/shared/ui/avatar'
-import { DataTable, type Column } from '@/shared/ui/DataTable'
-import { FilterChip, MonthFilter, OrgUnitFilter, SearchInput } from '@/shared/ui/form'
+import { type Column } from '@/shared/ui/DataTable'
+import { MonthFilter, OrgUnitFilter, SearchInput } from '@/shared/ui/form'
 import { useListView } from '@/shared/ui/ListView'
 import { ListPage } from '@/shared/ui/page'
 import { SidePanel, usePeek } from '@/shared/ui/SidePanel'
-import { ContentSkeleton, EmptyState, ErrorState } from '@/shared/ui/states'
 import { icon } from '@/shared/ui/theme'
 import { useListParams } from '@/shared/url/listParams'
 import LeavePreview from '../components/LeavePreview'
@@ -21,14 +20,12 @@ import { hrmKeys, leaveDocType } from '../keys'
 import { monthBounds } from '../month'
 
 const sorts = ['-start_date', 'start_date', '-number', 'number'] as const satisfies readonly LeaveSort[]
-const statuses = ['draft', 'pending_approval', 'posted', 'cancelled'] as const
 const defaults = { filters: { q: '', status: '', org_unit: '', month: '' }, sort: '-start_date', sorts: [...sorts], pageSize: 50 }
 
 // LeavesPage lists the leave requests the user may see; a row opens its preview beside the list.
 export function LeavesPage() {
   const { t } = useTranslation()
-  const statusLabel = useStatusLabel()
-  const canCreate = useLeaveActions().data?.allowed_actions.includes('create') ?? false
+  const canCreate = useLeaveActions().data?.includes('create') ?? false
   const [params, set, filterBar] = useListParams(defaults)
   const peek = usePeek()
   const { q, status, org_unit, month } = params.filters as typeof defaults.filters
@@ -41,7 +38,7 @@ export function LeavesPage() {
           params: {
             query: {
               q: q || undefined,
-              status: (status || undefined) as (typeof statuses)[number] | undefined,
+              status: (status || undefined) as DocStatus | undefined,
               org_unit_id: org_unit ? Number(org_unit) : undefined,
               ...monthBounds(month),
               sort: params.sort as LeaveSort,
@@ -65,38 +62,6 @@ export function LeavesPage() {
   const view = useListView('hrm.leaves', columns)
   const open = list.data?.items.find((l) => String(l.id) === peek.id)
 
-  let body
-  if (list.isPending) body = <ContentSkeleton />
-  else if (list.isError) body = <ErrorState message={errorText(t, list.error)} onRetry={() => void list.refetch()} />
-  else if (list.data.items.length === 0)
-    body =
-      filterBar.active ? (
-        <EmptyState
-          title={t('hrm.leaves.no_results')}
-          action={
-            <Button variant="default" onClick={filterBar.clear}>
-              {t('hrm.common.clear_filters')}
-            </Button>
-          }
-        />
-      ) : (
-        <EmptyState title={t('hrm.leaves.empty')} description={t('hrm.leaves.empty_description')} />
-      )
-  else
-    body = (
-      <DataTable
-        label={t('hrm.leaves.title')}
-        columns={view.columns}
-        onResize={view.onResize}
-        rows={list.data.items}
-        rowKey={(l) => l.id}
-        href={(l) => `/hrm/leaves/${l.id}`}
-        onRowClick={(l) => peek.open(l.id)}
-        sort={params.sort}
-        onSort={(sort) => set({ sort })}
-      />
-    )
-
   return (
     <ListPage
       title={t('hrm.leaves.title')}
@@ -112,12 +77,7 @@ export function LeavesPage() {
       filters={
         <>
           <SearchInput label={t('hrm.leaves.search')} placeholder={t('hrm.common.search_request_hint')} value={q} onSearch={(v) => set({ filters: { q: v } })} />
-          <FilterChip
-            label={t('hrm.leave.status')}
-            icon={IconCircleDot}
-            data={statuses.map((s) => ({ value: s, label: statusLabel(leaveDocType, s) }))}
-            {...filterBar.bind('status')}
-          />
+          <DocumentStatusFilter docType={leaveDocType} {...filterBar.bind('status')} />
           <OrgUnitFilter
             product="hrm"
             permission="hrm.leave.view"
@@ -128,17 +88,23 @@ export function LeavesPage() {
         </>
       }
       tools={view.tools}
-      paging={
-        list.data && {
-          page: params.page,
-          pageSize: params.pageSize,
-          total: list.data.total,
-          onPage: (page) => set({ page }),
-          onPageSize: (pageSize) => set({ pageSize }),
-        }
-      }
+      list={{
+        query: list,
+        table: {
+          label: t('hrm.leaves.title'),
+          columns: view.columns,
+          onResize: view.onResize,
+          rowKey: (l) => l.id,
+          href: (l) => `/hrm/leaves/${l.id}`,
+          onRowClick: (l) => peek.open(l.id),
+          sort: params.sort,
+          onSort: (sort) => set({ sort }),
+        },
+        empty: { title: t('hrm.leaves.empty'), description: t('hrm.leaves.empty_description') },
+        noResults: t('hrm.leaves.no_results'),
+        paging: { page: params.page, pageSize: params.pageSize, onPage: (page) => set({ page }), onPageSize: (pageSize) => set({ pageSize }) },
+      }}
     >
-      {body}
       <SidePanel title={open?.number ?? ''} href={`/hrm/leaves/${open?.id ?? ''}`} opened={!!open} onClose={peek.close}>
         {open && <LeavePreview id={open.id} />}
       </SidePanel>

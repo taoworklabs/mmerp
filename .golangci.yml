@@ -62,7 +62,7 @@ linters:
             - pkg: github.com/xuri/excelize
               desc: Excel is read and written only in dataio; register an import or export with it
         no-pool:
-          files: ["**/internal/core/**", "**/internal/shared/**", "**/internal/modules/**"]
+          files: ["**/internal/core/**", "**/internal/shared/**", "**/internal/modules/**", "!**/internal/core/coretest/**"]
           deny:
             - pkg: github.com/jackc/pgx/v5/pgxpool
               desc: get the connection from platform.DBFrom(ctx)

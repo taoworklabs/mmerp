@@ -15,6 +15,7 @@ import (
 	"github.com/taoworklabs/mmerp/internal/core/record/recordtest"
 	"github.com/taoworklabs/mmerp/internal/modules/hrm"
 	"github.com/taoworklabs/mmerp/internal/platform"
+	"github.com/taoworklabs/mmerp/internal/platform/pgtest"
 )
 
 func payrollRef(id int64) record.Ref { return record.Ref{Type: "hrm.payroll", ID: id} }
@@ -31,16 +32,46 @@ func TestPayrollRecordContract(t *testing.T) {
 	recordtest.Run(t, func(t *testing.T) recordtest.Harness {
 		f := newPayrollFixture(t)
 		approver := f.ctxFor("approver", "payroll@*")
-		create := func(ctx context.Context, month string) (record.Ref, error) {
-			p, err := f.hrm.CreatePayroll(ctx, hrm.NewPayroll{LegalEntityID: f.c, Month: month})
-			if err == nil {
+		// E is paid from February to April, so a posted payroll has posting lines.
+		f.contract(f.emp, sample{salary: 22_000_000}, "2026-01-01", "2026-12-31")
+		for _, m := range []string{"02", "03", "04"} {
+			f.timesheet(f.a, "2026-"+m, map[int64][]string{f.emp: workdays("2026-"+m+"-01", "2026-"+m+"-07")})
+		}
+		create := func(ctx context.Context, month, requestID string) (record.Ref, error) {
+			p, err := f.hrm.CreatePayroll(ctx, hrm.NewPayroll{RequestID: requestID, LegalEntityID: f.c, Month: month})
+			if err == nil && p.JobID != 0 {
 				f.wantJob(p.JobID, "completed")
 			}
 			return payrollRef(p.ID), err
 		}
 		return recordtest.Harness{
-			Record: f.rec, Actor: f.pay, Admin: f.admin, LegalEntity: f.c,
-			Create: func(ctx context.Context, date string) (record.Ref, error) { return create(ctx, date[:7]) },
+			Core: f.core, Actor: f.pay, Admin: f.admin, LegalEntity: f.c, Table: "hrm.payrolls",
+			Get: func(ctx context.Context, r record.Ref) (any, error) { return f.hrm.Payroll(ctx, r.ID) },
+			Routes: map[string]func(context.Context, record.Ref) error{
+				"recompute": func(ctx context.Context, r record.Ref) error {
+					d, err := f.rec.Get(f.admin, r)
+					if err == nil {
+						_, err = f.hrm.RecomputePayroll(ctx, r.ID, d.Version)
+					}
+					return err
+				},
+			},
+			Reject: func(instance int64) error { return f.appr.Reject(approver, instance, 1, "không") },
+			// An overtime posted since the computation changes the sources.
+			BreakSubmit: func(_ *testing.T, r record.Ref) {
+				d, err := f.rec.Get(f.admin, r)
+				f.check(err)
+				f.check(f.rec.Transition(f.hr, record.Ref{Type: "hrm.overtime_request", ID: f.overtime(d.Date)}, 1, record.Posted))
+			},
+			PostingLines: func(_ *testing.T, r record.Ref) int {
+				var n int
+				f.check(f.pool.QueryRow(f.admin, `SELECT count(*) FROM posting.lines WHERE doc_type = $1 AND doc_id = $2 AND voided_at IS NULL`,
+					r.Type, r.ID).Scan(&n))
+				return n
+			},
+			Create: func(ctx context.Context, date, requestID string) (record.Ref, error) {
+				return create(ctx, date[:7], requestID)
+			},
 			// A payroll never moves to another period: within its month an edit is saving its
 			// adjustments, and moving it is left to record, which refuses a locked date first.
 			Edit: func(ctx context.Context, r record.Ref, version int32, date string) error {
@@ -65,7 +96,7 @@ func TestPayrollRecordContract(t *testing.T) {
 			BreakPosting: func(_ *testing.T, r record.Ref) {
 				d, err := f.rec.Get(f.admin, r)
 				f.check(err)
-				other, err := create(f.pay, d.Date[:7])
+				other, err := create(f.pay, d.Date[:7], "")
 				f.check(err)
 				f.closePeriod(d.Date[:8]+"01", d.Date, other.ID)
 			},
@@ -115,7 +146,7 @@ func TestPayrollLifecycle(t *testing.T) {
 	first, second := f.payroll("2026-04"), f.payroll("2026-04")
 	p := f.payrollDoc(first)
 	if p.Number != "BL-2026-00001" || p.ComputedAt == nil || p.SourcesChanged || len(p.Lines) != 1 || p.Lines[0].Earned != 22_000_000 ||
-		!slices.Equal(p.AllowedActions, []string{"edit", "delete", "submit", "compute", "adjust", "export", "print"}) {
+		!slices.Equal(p.AllowedActions, []string{"edit", "delete", "submit", "print", "export", "compute", "adjust"}) {
 		t.Fatalf("payroll %+v", p)
 	}
 	if d, err := f.rec.Get(f.admin, payrollRef(first)); err != nil || d.Amount == nil || *d.Amount != p.Totals[0].Cost {
@@ -257,6 +288,12 @@ func TestPayrollAdjustments(t *testing.T) {
 	if p := f.payrollDoc(id); p.ComputedAt != nil || p.Version != 3 {
 		t.Fatalf("before the job: %+v", p)
 	}
+	// Nothing to print or export until it is computed again.
+	for _, a := range []record.Action{record.Print, record.Export} {
+		if ok, err := f.rec.Can(f.pay, "hrm.payroll", id, a); err != nil || ok || slices.Contains(f.payrollDoc(id).AllowedActions, string(a)) {
+			t.Fatalf("%s before the job: %v %v", a, ok, err)
+		}
+	}
 	wantErr(t, f.send(id), "payroll_not_computed")
 	f.wantJob(job, "completed")
 	p := f.payrollDoc(id)
@@ -287,14 +324,14 @@ func TestPayrollSixDayWeek(t *testing.T) {
 	}
 }
 
-// closing sends a payroll inside a transaction left open for a moment, while other runs at once.
+// closing sends a payroll inside a transaction held open until other waits on its locks.
 func (f *payrollFixture) closing(id int64, other func() error) (otherErr error) {
 	f.t.Helper()
 	var wg sync.WaitGroup
 	f.check(platform.InTx(f.pay, func(ctx context.Context) error {
 		f.check(f.rec.Transition(ctx, payrollRef(id), f.payrollDoc(id).Version, record.Posted))
 		wg.Go(func() { otherErr = other() })
-		time.Sleep(100 * time.Millisecond)
+		pgtest.AwaitLockWait(f.t, f.pool)
 		return nil
 	}))
 	wg.Wait()
@@ -330,7 +367,7 @@ func TestSourceApprovedWhilePayrollCloses(t *testing.T) {
 	f.check(platform.InTx(f.pay, func(ctx context.Context) error {
 		f.check(f.rec.Transition(ctx, ot, 1, record.Posted))
 		wg.Go(func() { sent = f.send(second) })
-		time.Sleep(100 * time.Millisecond)
+		pgtest.AwaitLockWait(t, f.pool)
 		return nil
 	}))
 	wg.Wait()

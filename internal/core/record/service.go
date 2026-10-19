@@ -56,10 +56,12 @@ type Service struct {
 	freezers []Freezer
 	// history says what another module's audit action needs to show on a timeline.
 	history map[string]Action
+	// offers holds the print and export actions a type has something registered for.
+	offers map[string][]Action
 }
 
 func NewService(d Deps) *Service {
-	return &Service{d: d, types: map[string]Type{}, history: map[string]Action{}}
+	return &Service{d: d, types: map[string]Type{}, history: map[string]Action{}, offers: map[string][]Action{}}
 }
 
 // SetApprovalGate wires approval while composing the app. Without a gate nothing needs approval.
@@ -88,7 +90,37 @@ func (s *Service) Register(t Type) {
 	if t.Kind == Document && t.NumberPrefix == "" {
 		panic("record: document type " + t.Code + " has no number prefix")
 	}
+	s.checkDeclaration(t)
 	s.types[t.Code] = t
+}
+
+func (s *Service) checkDeclaration(t Type) {
+	fail := func(why string) { panic("record: type " + t.Code + " " + why) }
+	if t.Perms.View == "" {
+		fail("declares no view permission")
+	}
+	for _, f := range permFields {
+		if perm := f.field(t.Perms); perm != "" && !s.d.IAM.Registered(t.Product, perm) {
+			fail("declares " + perm + ", which no role of " + t.Product + " grants")
+		}
+	}
+	if t.Kind == Document && t.OnDelete == nil {
+		fail("is a document without OnDelete")
+	}
+	if t.Kind == Catalog {
+		if t.NumberPrefix != "" || t.Fields != nil || t.OnTransition != nil || t.BeforeSubmit != nil || t.Approvers != nil || t.SubjectCreates {
+			fail("is a catalog with document-only fields")
+		}
+		if t.Locate == nil {
+			fail("is a catalog without Locate")
+		}
+	}
+}
+
+// Offer says a print template or an export (action Print or Export) exists for a type;
+// without one a type never answers that action. Called while wiring modules.
+func (s *Service) Offer(code string, action Action) {
+	s.offers[code] = append(s.offers[code], action)
 }
 
 // TypeOf returns a registered type.
@@ -144,11 +176,132 @@ func (s *Service) Can(ctx context.Context, code string, id int64, action Action)
 	if !ok {
 		return false, fmt.Errorf("record: unknown type %q", code)
 	}
-	ok, err := t.Can(ctx, id, action)
+	var unit int64
+	var err error
+	if t.Kind == Document {
+		var d Doc
+		d, err = s.Get(ctx, Ref{code, id})
+		unit = d.OrgUnitID
+	} else {
+		unit, err = t.Locate(ctx, id)
+	}
+	if errors.Is(err, platform.ErrNotFound) {
+		return false, nil
+	}
+	if err != nil {
+		return false, err
+	}
+	return s.answer(ctx, t, id, unit, action)
+}
+
+// answer evaluates a type's action on record id at org unit unit.
+func (s *Service) answer(ctx context.Context, t Type, id, unit int64, action Action) (bool, error) {
+	perm := t.Perms.of(action)
+	if perm == "" || (action == Print || action == Export) && !slices.Contains(s.offers[t.Code], action) {
+		return false, nil
+	}
+	ok, err := s.d.IAM.Allowed(ctx, t.Product, perm, unit)
+	if err == nil && !ok && t.Grant != nil {
+		ok, err = t.Grant(ctx, id, action)
+	}
+	if err == nil && ok && t.Refine != nil {
+		ok, err = t.Refine(ctx, id, action)
+	}
 	if err != nil || !ok {
 		return false, err
 	}
 	return platform.ProductGate(ctx, t.Product, action.class()) == nil, nil
+}
+
+// Read returns a document the actor may view; one they may not does not exist.
+func (s *Service) Read(ctx context.Context, ref Ref) (Doc, error) {
+	if err := s.Visible(ctx, ref, View); err != nil {
+		return Doc{}, err
+	}
+	return s.Get(ctx, ref)
+}
+
+// Actions is the whole allowed_actions of d: its lifecycle actions, print and export
+// when available, then extra, the module's own actions it has already decided on.
+// For a catalog record, d names only its Ref and the lifecycle is edit alone.
+func (s *Service) Actions(ctx context.Context, d Doc, extra ...string) ([]string, error) {
+	out, err := s.lifecycleActions(ctx, d)
+	if err != nil {
+		return nil, err
+	}
+	for _, a := range []Action{Print, Export} {
+		ok, err := s.canOn(ctx, d, a)
+		if err != nil {
+			return nil, err
+		}
+		if ok {
+			out = append(out, string(a))
+		}
+	}
+	return append(out, extra...), nil
+}
+
+// canOn is Can on a document already read; a catalog record is located first.
+func (s *Service) canOn(ctx context.Context, d Doc, a Action) (bool, error) {
+	if t := s.types[d.Type]; t.Kind == Document {
+		return s.answer(ctx, t, d.ID, d.OrgUnitID, a)
+	}
+	return s.Can(ctx, d.Type, d.ID, a)
+}
+
+// TypeActions lists what the actor may do with a type before picking a record: create
+// and import, where its declared permission holds anywhere in their scope.
+func (s *Service) TypeActions(ctx context.Context, code string) ([]string, error) {
+	t, ok := s.types[code]
+	if !ok {
+		return nil, fmt.Errorf("record: unknown type %q", code)
+	}
+	out := []string{}
+	if platform.ProductGate(ctx, t.Product, platform.ClassWrite) != nil {
+		return out, nil
+	}
+	for _, a := range []Action{Create, Import} {
+		perm := t.Perms.of(a)
+		if perm == "" {
+			continue
+		}
+		sc, err := s.d.IAM.Scope(ctx, t.Product, perm)
+		if err != nil {
+			return nil, err
+		}
+		if sc.Any() {
+			out = append(out, string(a))
+		}
+	}
+	return out, nil
+}
+
+// MayCreate checks the product gate and a type's create permission at the header's org
+// unit; the subject the header names may create without it if the type says so. Create
+// checks it too; a module calls it first when its own validation would tell an outsider
+// something. Refused for a type with subjects, the subject stays hidden as if it did not exist.
+func (s *Service) MayCreate(ctx context.Context, code string, h Header) error {
+	t, ok := s.types[code]
+	if !ok || t.Kind != Document {
+		return fmt.Errorf("record: %q is not a document type", code)
+	}
+	if err := platform.ProductGate(ctx, t.Product, platform.ClassWrite); err != nil {
+		return err
+	}
+	actor, _ := platform.ActorFrom(ctx)
+	if t.SubjectCreates && h.Subject != 0 && h.Subject == actor {
+		return nil
+	}
+	ok, err := s.d.IAM.Allowed(ctx, t.Product, t.Perms.of(Create), h.OrgUnitID)
+	switch {
+	case err != nil:
+		return err
+	case ok:
+		return nil
+	case t.SubjectCreates:
+		return platform.ErrNotFound
+	}
+	return platform.ErrForbidden
 }
 
 // require fails with the product gate's own error first, so a disabled product says so.
@@ -163,21 +316,6 @@ func (s *Service) require(ctx context.Context, ref Ref, action Action) error {
 	return err
 }
 
-// AllowedActions filters actions down to those the actor may perform, for allowed_actions.
-func (s *Service) AllowedActions(ctx context.Context, code string, id int64, actions ...Action) ([]string, error) {
-	out := []string{}
-	for _, a := range actions {
-		ok, err := s.Can(ctx, code, id, a)
-		if err != nil {
-			return nil, err
-		}
-		if ok {
-			out = append(out, string(a))
-		}
-	}
-	return out, nil
-}
-
 // documentActions maps each status to the API actions and the permission each needs.
 var documentActions = map[Status][]struct {
 	name   string
@@ -188,9 +326,16 @@ var documentActions = map[Status][]struct {
 	Posted:          {{"cancel", Cancel}},
 }
 
-// DocumentActions lists the write actions on d for allowed_actions; none once its date is locked.
-func (s *Service) DocumentActions(ctx context.Context, d Doc) ([]string, error) {
+// lifecycleActions lists the write actions on d for allowed_actions; none once its date is locked.
+func (s *Service) lifecycleActions(ctx context.Context, d Doc) ([]string, error) {
 	out := []string{}
+	if s.types[d.Type].Kind == Catalog {
+		ok, err := s.Can(ctx, d.Type, d.ID, Edit)
+		if ok {
+			out = append(out, "edit")
+		}
+		return out, err
+	}
 	rows, err := store.New(platform.DBFrom(ctx)).LockedUntil(ctx, d.LegalEntityID)
 	if err != nil {
 		return nil, err
@@ -202,7 +347,7 @@ func (s *Service) DocumentActions(ctx context.Context, d Doc) ([]string, error) 
 		if a.name == "withdraw" && !submittedBy(ctx, d) {
 			continue
 		}
-		ok, err := s.Can(ctx, d.Type, d.ID, a.action)
+		ok, err := s.answer(ctx, s.types[d.Type], d.ID, d.OrgUnitID, a.action)
 		if err != nil {
 			return nil, err
 		}
@@ -225,22 +370,26 @@ func (s *Service) Get(ctx context.Context, ref Ref) (Doc, error) {
 	return doc(row)
 }
 
-// Create adds a draft and gives it a number. The caller checks it may create
-// the document, then inserts its own row with the returned id.
+// Create adds a draft and gives it a number; the caller then inserts its own row with
+// the returned id. The type's create permission is checked here.
 func (s *Service) Create(ctx context.Context, code string, h Header) (Doc, error) {
-	t, ok := s.types[code]
-	if !ok || t.Kind != Document {
-		return Doc{}, fmt.Errorf("record: %q is not a document type", code)
-	}
-	if err := platform.ProductGate(ctx, t.Product, platform.ClassWrite); err != nil {
+	if err := s.MayCreate(ctx, code, h); err != nil {
 		return Doc{}, err
 	}
+	t := s.types[code]
 	date, fields, err := s.check(ctx, t, h)
 	if err != nil {
 		return Doc{}, err
 	}
 	var out Doc
 	err = platform.InTx(ctx, func(ctx context.Context) error {
+		if h.RequestID != "" {
+			found, ok, err := byRequest(ctx, code, h.RequestID)
+			if ok || err != nil {
+				out = found
+				return err
+			}
+		}
 		// Before the legal entity is read, so a tree move cannot place the document wrongly.
 		if err := s.d.IAM.ShareTree(ctx); err != nil {
 			return err
@@ -265,6 +414,7 @@ func (s *Service) Create(ctx context.Context, code string, h Header) (Doc, error
 		id, err := store.New(platform.DBFrom(ctx)).InsertDocument(ctx, store.InsertDocumentParams{
 			DocType: code, Number: number, Date: date, LegalEntityID: le, OrgUnitID: h.OrgUnitID,
 			Amount: platform.NullInt8(h.Amount), Fields: fields,
+			RequestID: pgtype.Text{String: h.RequestID, Valid: h.RequestID != ""}, RequestedBy: requester(ctx, h.RequestID),
 		})
 		if err != nil {
 			return err
@@ -274,6 +424,34 @@ func (s *Service) Create(ctx context.Context, code string, h Header) (Doc, error
 		return s.d.Audit.RecordFor(ctx, "record.created", audit.Ref(out.Ref), map[string]any{"number": number})
 	})
 	return out, err
+}
+
+// byRequest finds the document the actor created earlier with requestID. Its lock makes
+// a racing twin wait for the first to commit, then find it.
+func byRequest(ctx context.Context, code, requestID string) (Doc, bool, error) {
+	q := store.New(platform.DBFrom(ctx))
+	if err := q.LockRequest(ctx, requestID); err != nil {
+		return Doc{}, false, err
+	}
+	row, err := q.DocumentByRequest(ctx, store.DocumentByRequestParams{RequestID: requestID, RequestedBy: requester(ctx, requestID)})
+	if errors.Is(err, pgx.ErrNoRows) {
+		return Doc{}, false, nil
+	}
+	if err != nil {
+		return Doc{}, false, err
+	}
+	if row.DocType != code {
+		return Doc{}, false, ErrRequestReused
+	}
+	d, err := doc(row)
+	d.Reused = true
+	return d, true, err
+}
+
+// requester is who a create-once key belongs to; none without a key.
+func requester(ctx context.Context, requestID string) pgtype.Int8 {
+	actor, ok := platform.ActorFrom(ctx)
+	return pgtype.Int8{Int64: actor, Valid: ok && requestID != ""}
 }
 
 // Edit replaces the header of a draft the actor may edit, at the version they saw.
@@ -299,6 +477,12 @@ func (s *Service) Edit(ctx context.Context, ref Ref, version int32, h Header) (D
 		} else if le != d.LegalEntityID {
 			return ErrLegalEntityChanged
 		}
+		if h.OrgUnitID != d.OrgUnitID {
+			t := s.types[ref.Type]
+			if err := s.d.IAM.Require(ctx, t.Product, t.Perms.of(Edit), h.OrgUnitID); err != nil {
+				return err
+			}
+		}
 		if err := store.New(platform.DBFrom(ctx)).UpdateHeader(ctx, store.UpdateHeaderParams{
 			ID: ref.ID, Date: date, OrgUnitID: h.OrgUnitID, Amount: platform.NullInt8(h.Amount), Fields: fields,
 		}); err != nil {
@@ -311,8 +495,27 @@ func (s *Service) Edit(ctx context.Context, ref Ref, version int32, h Header) (D
 	return out, err
 }
 
-// Delete removes a draft; the caller deletes its own row in the same transaction.
+// Touch locks a draft like Edit and bumps its version without changing the header,
+// for module writes that change only child rows. It returns the new version.
+func (s *Service) Touch(ctx context.Context, ref Ref, version int32) (int32, error) {
+	var out int32
+	err := platform.InTx(ctx, func(ctx context.Context) error {
+		d, _, err := s.lockDraft(ctx, ref, version)
+		if err != nil {
+			return err
+		}
+		out = d.Version + 1
+		return store.New(platform.DBFrom(ctx)).BumpVersion(ctx, ref.ID)
+	})
+	return out, err
+}
+
+// Delete removes a draft, its type's own rows (OnDelete) and what keepers hold about it.
 func (s *Service) Delete(ctx context.Context, ref Ref, version int32) error {
+	t, ok := s.types[ref.Type]
+	if !ok || t.Kind != Document {
+		return platform.ErrNotFound
+	}
 	return platform.InTx(ctx, func(ctx context.Context) error {
 		d, _, err := s.lockDraft(ctx, ref, version)
 		if err != nil {
@@ -320,6 +523,11 @@ func (s *Service) Delete(ctx context.Context, ref Ref, version int32) error {
 		}
 		if err := store.New(platform.DBFrom(ctx)).DeleteDocument(ctx, ref.ID); err != nil {
 			return err
+		}
+		if t.OnDelete != nil {
+			if err := t.OnDelete(ctx, ref.ID); err != nil {
+				return err
+			}
 		}
 		for _, k := range s.keepers {
 			if err := k.Deleted(ctx, ref); err != nil {

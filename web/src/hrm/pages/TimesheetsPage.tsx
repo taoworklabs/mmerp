@@ -1,31 +1,29 @@
 import { Button } from '@mantine/core'
-import { IconCircleDot, IconPlus } from '@tabler/icons-react'
-import { keepPreviousData, useQuery, useQueryClient } from '@tanstack/react-query'
+import { IconPlus } from '@tabler/icons-react'
+import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router'
 import { api, unwrap, type TimesheetListItem, type TimesheetSort } from '@/shared/api/hrm'
-import { DocumentStatus, useStatusLabel } from '@/shared/document'
-import { errorText, formatMonthShort } from '@/shared/i18n'
-import { DataTable, type Column } from '@/shared/ui/DataTable'
-import { FilterChip, Form, FormActions, MonthField, MonthFilter, OrgUnitField, OrgUnitFilter } from '@/shared/ui/form'
+import { useInvalidateRecord } from '@/shared/area'
+import { DocumentStatus, DocumentStatusFilter, type DocStatus } from '@/shared/document'
+import { formatMonthShort } from '@/shared/i18n'
+import { type Column } from '@/shared/ui/DataTable'
+import { Form, FormActions, MonthField, MonthFilter, OrgUnitField, OrgUnitFilter } from '@/shared/ui/form'
 import { useListView } from '@/shared/ui/ListView'
 import { notifySuccess } from '@/shared/ui/notify'
 import { FormModal, ListPage } from '@/shared/ui/page'
-import { ContentSkeleton, EmptyState, ErrorState } from '@/shared/ui/states'
 import { icon } from '@/shared/ui/theme'
 import { useListParams } from '@/shared/url/listParams'
 import { useTimesheetActions } from '../hooks/useTimesheet'
 import { hrmKeys, timesheetDocType } from '../keys'
 
-const statuses = ['draft', 'pending_approval', 'posted', 'cancelled'] as const
 const sorts = ['-period', 'period', '-number', 'number'] as const satisfies readonly TimesheetSort[]
 const defaults = { filters: { month: '', org_unit_id: '', status: '' }, sort: '-period', sorts: [...sorts], pageSize: 50 }
 
 export function TimesheetsPage() {
   const { t } = useTranslation()
-  const statusLabel = useStatusLabel()
   const canCreate = useTimesheetActions().data?.includes('create') ?? false
   const [creating, setCreating] = useState(false)
   const [params, set, filterBar] = useListParams(defaults)
@@ -40,7 +38,7 @@ export function TimesheetsPage() {
             query: {
               month: month || undefined,
               org_unit_id: org_unit_id ? Number(org_unit_id) : undefined,
-              status: (status || undefined) as (typeof statuses)[number] | undefined,
+              status: (status || undefined) as DocStatus | undefined,
               sort: params.sort as TimesheetSort,
               page: params.page,
               page_size: params.pageSize as 50,
@@ -58,36 +56,6 @@ export function TimesheetsPage() {
     { key: 'status', header: t('hrm.timesheet.status'), role: 'status', kind: 'status', render: (s) => <DocumentStatus docType={timesheetDocType} status={s.status} /> },
   ]
   const view = useListView('hrm.timesheets', columns)
-
-  let body
-  if (list.isPending) body = <ContentSkeleton />
-  else if (list.isError) body = <ErrorState message={errorText(t, list.error)} onRetry={() => void list.refetch()} />
-  else if (list.data.items.length === 0)
-    body = filterBar.active ? (
-      <EmptyState
-        title={t('hrm.timesheets.no_results')}
-        action={
-          <Button variant="default" onClick={filterBar.clear}>
-            {t('hrm.common.clear_filters')}
-          </Button>
-        }
-      />
-    ) : (
-      <EmptyState title={t('hrm.timesheets.empty')} description={t('hrm.timesheets.empty_description')} />
-    )
-  else
-    body = (
-      <DataTable
-        label={t('hrm.timesheets.title')}
-        columns={view.columns}
-        onResize={view.onResize}
-        rows={list.data.items}
-        rowKey={(s) => s.id}
-        href={(s) => `/hrm/timesheets/${s.id}`}
-        sort={params.sort}
-        onSort={(sort) => set({ sort })}
-      />
-    )
 
   return (
     <ListPage
@@ -109,27 +77,27 @@ export function TimesheetsPage() {
             permission="hrm.timesheet.view"
             {...filterBar.bind('org_unit_id')}
           />
-          <FilterChip
-            label={t('hrm.timesheet.status')}
-            icon={IconCircleDot}
-            data={statuses.map((s) => ({ value: s, label: statusLabel(timesheetDocType, s) }))}
-            {...filterBar.bind('status')}
-          />
+          <DocumentStatusFilter docType={timesheetDocType} {...filterBar.bind('status')} />
           <MonthFilter label={t('hrm.timesheet.month')} {...filterBar.bind('month')} />
         </>
       }
       tools={view.tools}
-      paging={
-        list.data && {
-          page: params.page,
-          pageSize: params.pageSize,
-          total: list.data.total,
-          onPage: (page) => set({ page }),
-          onPageSize: (pageSize) => set({ pageSize }),
-        }
-      }
+      list={{
+        query: list,
+        table: {
+          label: t('hrm.timesheets.title'),
+          columns: view.columns,
+          onResize: view.onResize,
+          rowKey: (s) => s.id,
+          href: (s) => `/hrm/timesheets/${s.id}`,
+          sort: params.sort,
+          onSort: (sort) => set({ sort }),
+        },
+        empty: { title: t('hrm.timesheets.empty'), description: t('hrm.timesheets.empty_description') },
+        noResults: t('hrm.timesheets.no_results'),
+        paging: { page: params.page, pageSize: params.pageSize, onPage: (page) => set({ page }), onPageSize: (pageSize) => set({ pageSize }) },
+      }}
     >
-      {body}
       {creating && <NewTimesheet onClose={() => setCreating(false)} />}
     </ListPage>
   )
@@ -138,20 +106,22 @@ export function TimesheetsPage() {
 // NewTimesheet creates an empty draft for an org unit and month, then opens it.
 function NewTimesheet({ onClose }: { onClose: () => void }) {
   const { t } = useTranslation()
+  // One id per opened form: sending it twice returns the document made the first time.
+  const [requestId] = useState(() => crypto.randomUUID())
   const navigate = useNavigate()
-  const qc = useQueryClient()
+  const invalidate = useInvalidateRecord()
   const form = useForm<{ org_unit_id: string | null; month: string | null }>({ mode: 'onBlur', defaultValues: { org_unit_id: null, month: null } })
 
   async function create(v: { org_unit_id: string | null; month: string | null }) {
-    const { id } = await unwrap(api.POST('/hrm/timesheets', { body: { org_unit_id: Number(v.org_unit_id), month: v.month ?? '' } }))
-    await qc.invalidateQueries({ queryKey: hrmKeys.timesheets.lists() })
+    const { id } = await unwrap(api.POST('/hrm/timesheets', { body: { request_id: requestId, org_unit_id: Number(v.org_unit_id), month: v.month ?? '' } }))
+    await invalidate(timesheetDocType, id)
     notifySuccess(t('hrm.timesheets.created'))
     navigate(`/hrm/timesheets/${id}`)
   }
 
   return (
     <FormModal opened title={t('hrm.timesheets.create')} onClose={onClose}>
-      <Form form={form} onSubmit={create} fieldOf={(err) => (err.code === 'timesheet_exists' ? 'month' : undefined)}>
+      <Form form={form} onSubmit={create} errorFields={{ timesheet_exists: 'month' }}>
         <OrgUnitField name="org_unit_id" label={t('hrm.timesheet.org_unit')} product="hrm" permission="hrm.timesheet.edit" required />
         <MonthField name="month" label={t('hrm.timesheet.month')} description={t('hrm.timesheet.month_hint')} required />
         <FormActions submitLabel={t('hrm.common.create_draft')} onCancel={onClose} cancelLabel={t('hrm.common.cancel')} />

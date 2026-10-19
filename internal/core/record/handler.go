@@ -23,6 +23,12 @@ type transitionInput struct {
 	}
 }
 
+type deleteInput struct {
+	Type    string `path:"type"`
+	ID      int64  `path:"id"`
+	Version int32  `query:"version" required:"true"`
+}
+
 type historyOutput struct{ Body []HistoryEntry }
 
 type periodLocksOutput struct{ Body []PeriodLock }
@@ -41,6 +47,10 @@ func registerHandlers(api huma.API, s *Service) {
 				return nil, platform.ErrNotFound
 			}
 			return nil, s.Transition(ctx, Ref{in.Type, in.ID}, in.Body.Version, Status(in.Body.To))
+		})
+	huma.Register(api, huma.Operation{OperationID: "delete-document", Method: http.MethodDelete, Path: "/documents/{type}/{id}", DefaultStatus: http.StatusNoContent},
+		func(ctx context.Context, in *deleteInput) (*struct{}, error) {
+			return nil, s.Delete(ctx, Ref{in.Type, in.ID}, in.Version)
 		})
 	huma.Register(api, huma.Operation{OperationID: "get-document-history", Method: http.MethodGet, Path: "/documents/{type}/{id}/history"},
 		func(ctx context.Context, in *refInput) (*historyOutput, error) {

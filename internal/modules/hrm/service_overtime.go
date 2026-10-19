@@ -31,7 +31,7 @@ func (s *Service) dayKindOptions(ctx context.Context) ([]record.Option, error) {
 	return out, nil
 }
 
-func (s *Service) canOvertime(ctx context.Context, id int64, action record.Action) (bool, error) {
+func (s *Service) overtimeGrant(ctx context.Context, id int64, action record.Action) (bool, error) {
 	r, err := store.New(platform.DBFrom(ctx)).GetOvertimeRequest(ctx, id)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return false, nil
@@ -39,9 +39,7 @@ func (s *Service) canOvertime(ctx context.Context, id int64, action record.Actio
 	if err != nil {
 		return false, err
 	}
-	// Attachments (a signed overtime sheet) go with the request, asking nothing more.
-	action, _ = filesAction(action)
-	return s.canSelfService(ctx, selfService{r.EmployeeID, r.EmployeeUserID, r.OrgUnitID}, action, PermOvertimeView, PermOvertimeEdit)
+	return selfGrant(ctx, r.EmployeeID, r.EmployeeUserID, action)
 }
 
 func (s *Service) overtimeApprovers(ctx context.Context, ref record.Ref, level int) ([]int64, error) {
@@ -104,7 +102,7 @@ func dayKindOn(ctx context.Context, legalEntity int64, date, kind string) error 
 
 // OvertimeActions lists what the actor may do before picking an overtime request.
 func (s *Service) OvertimeActions(ctx context.Context) (SelfServiceActions, error) {
-	return s.selfServiceActions(ctx, PermOvertimeEdit)
+	return s.selfServiceActions(ctx, overtimeType)
 }
 
 // Overtimes lists the overtime requests the actor may see: their own, their reports', and those in scope.
@@ -124,7 +122,7 @@ func (s *Service) Overtimes(ctx context.Context, f OvertimeFilter) (OvertimeList
 		AllUnits: sc.All, Units: sc.Units, Actor: actor, Reports: reports, Status: f.Status, Q: strings.TrimSpace(f.Q),
 		OrgUnitID:  pgtype.Int8{Int64: f.OrgUnitID, Valid: f.OrgUnitID != 0},
 		EmployeeID: pgtype.Int8{Int64: f.EmployeeID, Valid: f.EmployeeID != 0},
-		FromDate:   platform.NullDate(optional(f.From)), ToDate: platform.NullDate(optional(f.To)),
+		FromDate:   platform.NullDate(platform.Optional(f.From)), ToDate: platform.NullDate(platform.Optional(f.To)),
 		Sort: f.Sort, Lim: f.Limit(), Off: f.Offset(),
 	})
 	for _, r := range rows {
@@ -132,7 +130,7 @@ func (s *Service) Overtimes(ctx context.Context, f OvertimeFilter) (OvertimeList
 		out.Items = append(out.Items, OvertimeListItem{
 			ID: r.ID, Number: r.Number, Status: r.Status, EmployeeID: r.EmployeeID, EmployeeCode: r.EmployeeCode,
 			EmployeeName: r.EmployeeName, Date: *platform.DatePtr(r.Date), DayKind: r.DayKind,
-			DayHours: plain(r.DayHours), NightHours: plain(r.NightHours),
+			DayHours: platform.PlainDecimal(r.DayHours), NightHours: platform.PlainDecimal(r.NightHours),
 		})
 	}
 	return out, err
@@ -140,15 +138,15 @@ func (s *Service) Overtimes(ctx context.Context, f OvertimeFilter) (OvertimeList
 
 // Overtime returns one overtime request; one the actor may not view does not exist.
 func (s *Service) Overtime(ctx context.Context, id int64) (Overtime, error) {
-	r, err := s.visibleOvertime(ctx, id)
+	d, err := s.d.Record.Read(ctx, record.Ref{Type: overtimeType, ID: id})
 	if err != nil {
 		return Overtime{}, err
 	}
-	d, err := s.d.Record.Get(ctx, record.Ref{Type: overtimeType, ID: id})
+	r, err := store.New(platform.DBFrom(ctx)).GetOvertimeRequest(ctx, id)
 	if err != nil {
 		return Overtime{}, err
 	}
-	actions, err := s.d.Record.DocumentActions(ctx, d)
+	actions, err := s.d.Record.Actions(ctx, d)
 	if err != nil {
 		return Overtime{}, err
 	}
@@ -162,22 +160,27 @@ func (s *Service) Overtime(ctx context.Context, id int64) (Overtime, error) {
 func (s *Service) CreateOvertime(ctx context.Context, in NewOvertime) (int64, error) {
 	var id int64
 	err := platform.InTx(ctx, func(ctx context.Context) error {
-		employee, unit, err := s.filer(ctx, in.EmployeeID, PermOvertimeEdit)
+		employee, unit, user, err := subject(ctx, in.EmployeeID)
 		if err != nil {
+			return err
+		}
+		if err := s.d.Record.MayCreate(ctx, overtimeType, record.Header{OrgUnitID: unit, Subject: user.Int64}); err != nil {
 			return err
 		}
 		h, err := overtimeHeader(unit, in.OvertimeFields)
 		if err != nil {
 			return err
 		}
+		h.Subject = user.Int64
 		if err := s.checkDayKind(ctx, unit, in.Date, in.DayKind); err != nil {
 			return err
 		}
+		h.RequestID = in.RequestID
 		d, err := s.d.Record.Create(ctx, overtimeType, h)
-		if err != nil {
+		id = d.ID
+		if err != nil || d.Reused {
 			return err
 		}
-		id = d.ID
 		f := in.OvertimeFields
 		if err := store.New(platform.DBFrom(ctx)).CreateOvertimeRequest(ctx, store.CreateOvertimeRequestParams{
 			ID: id, EmployeeID: employee, Date: platform.NullDate(&f.Date), DayKind: f.DayKind,
@@ -193,7 +196,10 @@ func (s *Service) CreateOvertime(ctx context.Context, in NewOvertime) (int64, er
 // UpdateOvertime replaces the fields of a draft at the version the actor saw.
 func (s *Service) UpdateOvertime(ctx context.Context, id int64, in OvertimeUpdate) error {
 	return platform.InTx(ctx, func(ctx context.Context) error {
-		old, err := s.visibleOvertime(ctx, id)
+		if _, err := s.d.Record.Read(ctx, record.Ref{Type: overtimeType, ID: id}); err != nil {
+			return err
+		}
+		old, err := store.New(platform.DBFrom(ctx)).GetOvertimeRequest(ctx, id)
 		if err != nil {
 			return err
 		}
@@ -217,24 +223,8 @@ func (s *Service) UpdateOvertime(ctx context.Context, id int64, in OvertimeUpdat
 	})
 }
 
-// DeleteOvertime removes a draft at the version the actor saw.
-func (s *Service) DeleteOvertime(ctx context.Context, id int64, version int32) error {
-	return platform.InTx(ctx, func(ctx context.Context) error {
-		if _, err := s.visibleOvertime(ctx, id); err != nil {
-			return err
-		}
-		if err := s.d.Record.Delete(ctx, record.Ref{Type: overtimeType, ID: id}, version); err != nil {
-			return err
-		}
-		return store.New(platform.DBFrom(ctx)).DeleteOvertimeRequest(ctx, id)
-	})
-}
-
-func (s *Service) visibleOvertime(ctx context.Context, id int64) (store.GetOvertimeRequestRow, error) {
-	if ok, err := s.d.Record.Can(ctx, overtimeType, id, record.View); err != nil || !ok {
-		return store.GetOvertimeRequestRow{}, platform.OrErr(err, platform.ErrNotFound)
-	}
-	return store.New(platform.DBFrom(ctx)).GetOvertimeRequest(ctx, id)
+func deleteOvertime(ctx context.Context, id int64) error {
+	return store.New(platform.DBFrom(ctx)).DeleteOvertimeRequest(ctx, id)
 }
 
 // overtimeHeader checks the hours and builds the record header; hours is day plus night.
@@ -251,15 +241,15 @@ func overtimeHeader(unit int64, in OvertimeFields) (record.Header, error) {
 }
 
 func overtimeFields(r store.GetOvertimeRequestRow) OvertimeFields {
-	return OvertimeFields{Date: *platform.DatePtr(r.Date), DayKind: r.DayKind, DayHours: plain(r.DayHours), NightHours: plain(r.NightHours), Reason: platform.TextPtr(r.Reason)}
+	return OvertimeFields{Date: *platform.DatePtr(r.Date), DayKind: r.DayKind, DayHours: platform.PlainDecimal(r.DayHours), NightHours: platform.PlainDecimal(r.NightHours), Reason: platform.TextPtr(r.Reason)}
 }
 
 func overtimeChanges(old, n OvertimeFields) []audit.Change {
 	return []audit.Change{
 		{Field: "date", Old: old.Date, New: n.Date},
 		{Field: "day_kind", Old: old.DayKind, New: n.DayKind},
-		{Field: "day_hours", Old: old.DayHours, New: plain(n.DayHours)},
-		{Field: "night_hours", Old: old.NightHours, New: plain(n.NightHours)},
+		{Field: "day_hours", Old: old.DayHours, New: platform.PlainDecimal(n.DayHours)},
+		{Field: "night_hours", Old: old.NightHours, New: platform.PlainDecimal(n.NightHours)},
 		{Field: "reason", Old: old.Reason, New: n.Reason},
 	}
 }

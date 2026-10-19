@@ -21,4 +21,6 @@ type RecordDocument struct {
 	Fields         []byte
 	ApprovalTicket pgtype.Int8
 	SubmittedBy    pgtype.Int8
+	RequestID      pgtype.UUID
+	RequestedBy    pgtype.Int8
 }

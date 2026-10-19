@@ -14,7 +14,6 @@ import (
 
 	"github.com/taoworklabs/mmerp/internal/core/audit"
 	"github.com/taoworklabs/mmerp/internal/core/record"
-	"github.com/taoworklabs/mmerp/internal/core/setting"
 	"github.com/taoworklabs/mmerp/internal/modules/hrm/internal/store"
 	"github.com/taoworklabs/mmerp/internal/platform"
 )
@@ -58,7 +57,7 @@ type payrollBasis struct {
 	LegalEntity int64                 `json:"legal_entity"`
 	Start       string                `json:"start"`
 	End         string                `json:"end"`
-	Rounding    string                `json:"rounding"`
+	Rounding    platform.Rounding     `json:"rounding"`
 	Region      string                `json:"region"`
 	Params      map[string]LegalParam `json:"params"`
 	Calendar    calendar              `json:"calendar"`
@@ -89,7 +88,7 @@ func (s *Service) readBasis(ctx context.Context, legalEntity, payrollID int64, s
 	yearStart := time.Date(start.Year(), 1, 1, 0, 0, 0, 0, time.UTC)
 	b := payrollBasis{LegalEntity: legalEntity, Start: ps, End: pe, Worked: map[string]string{}}
 	var err error
-	if b.Rounding, err = s.d.Setting.GetFor(ctx, legalEntity, setting.Rounding); err != nil {
+	if b.Rounding, err = s.d.Setting.RoundingOf(ctx, legalEntity); err != nil {
 		return b, err
 	}
 	if b.Region, err = s.d.Setting.GetFor(ctx, legalEntity, SettingWageRegion); err != nil {

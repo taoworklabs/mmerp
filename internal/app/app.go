@@ -82,7 +82,7 @@ func Modules() []platform.Module {
 	ntf := notification.NewService(notification.Deps{Record: rec, IAM: ids, Audit: audit.NewService(), Setting: set})
 	appr := approval.NewService(approval.Deps{IAM: ids, Record: rec, Audit: audit.NewService(), Notification: ntf})
 	rec.SetApprovalGate(appr)
-	dio := dataio.NewService(dataio.Deps{IAM: ids, Audit: audit.NewService()})
+	dio := dataio.NewService(dataio.Deps{IAM: ids, Audit: audit.NewService(), Record: rec})
 	prn := printing.NewService(printing.Deps{Record: rec, Audit: audit.NewService(), DataIO: dio, IAM: ids})
 	att := attachment.NewService(attachment.Deps{Record: rec, Audit: audit.NewService()})
 	dis := discussion.NewService(discussion.Deps{Record: rec, Audit: audit.NewService(), IAM: ids, Notification: ntf})
