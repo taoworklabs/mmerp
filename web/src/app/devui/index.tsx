@@ -16,7 +16,7 @@ import { key, useEntryTitle } from './DocPage'
 import { Overview } from './start'
 import { ApprovalPanelDoc, ActivityFeedDoc, AttachmentPanelDoc, DocumentPreviewDoc, DocumentStatusDoc } from './documents'
 import { BulkBarDoc, MoreActionsDoc, NoticeDoc, NotifyDoc, QueryViewDoc, SidePanelDoc, StatesDoc, UseActionDoc, UseConfirmDoc } from './actions'
-import { Bulk } from './data'
+import { BulkPattern, ConfirmDeletePattern, CreateEditPattern, DocumentApprovalPattern, FilterSearchPattern, LoadingEmptyErrorPattern } from './patterns'
 import { EditablePanelDoc, FiltersDoc, FormDoc, FormModalDoc, InlineEditFieldDoc, LinesTableDoc } from './forms'
 import { CellGridDoc, DataTableDoc, FieldListDoc, KeyFactsDoc, PanelDoc, PersonAvatarDoc, SectionDoc, StatusBadgeDoc, TilesDoc, TreeListDoc } from './display'
 import { AnchorDoc, ButtonDoc, LayoutTextDoc, LoaderDoc, SkeletonDoc, TooltipDoc } from './mantine'
@@ -68,12 +68,12 @@ const pages: Record<Path, ComponentType> = {
   'mmerp/tree-list': TreeListDoc,
   'mmerp/use-action': UseActionDoc,
   'mmerp/use-confirm': UseConfirmDoc,
-  'patterns/filter-search': FiltersDoc,
-  'patterns/create-edit': FormDoc,
-  'patterns/confirm-delete': UseActionDoc,
-  'patterns/loading-empty-error': QueryViewDoc,
-  'patterns/bulk': Bulk,
-  'patterns/document-approval': ApprovalPanelDoc,
+  'patterns/filter-search': FilterSearchPattern,
+  'patterns/create-edit': CreateEditPattern,
+  'patterns/confirm-delete': ConfirmDeletePattern,
+  'patterns/loading-empty-error': LoadingEmptyErrorPattern,
+  'patterns/bulk': BulkPattern,
+  'patterns/document-approval': DocumentApprovalPattern,
   'templates/auth': AuthTemplate,
   'templates/document': DocumentTemplate,
   'templates/inbox': InboxTemplate,

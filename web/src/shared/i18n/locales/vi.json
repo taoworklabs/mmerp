@@ -819,5 +819,12 @@
   "shared.devui.do_confirm_verb": "Nút xác nhận lặp đúng động từ: \"Hủy chứng từ\".",
   "shared.devui.dont_confirm_yes": "Nút xác nhận \"Có\" hay \"Đồng ý\": người dùng phải đọc lại câu hỏi.",
   "shared.devui.bulk_select": "Chọn hai dòng",
-  "shared.devui.open_panel": "Mở bảng bên"
+  "shared.devui.open_panel": "Mở bảng bên",
+  "shared.devui.band_high": "Từ 10 triệu",
+  "shared.devui.band_low": "Dưới 10 triệu",
+  "shared.devui.do_filter_url": "Bộ lọc nằm trên URL và gửi lên máy chủ; xóa lọc đưa danh sách về đầy đủ.",
+  "shared.devui.dont_filter_client": "Lọc trong trình duyệt một danh sách lấy theo trang: chỉ lọc được trang đang xem.",
+  "shared.devui.case_create_modal": "Tạo một mục nhỏ trong hộp thoại",
+  "shared.devui.case_edit_in_place": "Sửa một nhóm giá trị tại chỗ",
+  "shared.devui.dont_confirm_undoable": "Hỏi xác nhận cho việc hoàn tác được: làm luôn rồi cho Hoàn tác."
 }

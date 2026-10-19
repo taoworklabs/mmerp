@@ -819,5 +819,12 @@
   "shared.devui.do_confirm_verb": "The confirm button repeats the exact verb: \"Cancel document\".",
   "shared.devui.dont_confirm_yes": "A \"Yes\" or \"OK\" confirm button: users must reread the question.",
   "shared.devui.bulk_select": "Select two rows",
-  "shared.devui.open_panel": "Open side panel"
+  "shared.devui.open_panel": "Open side panel",
+  "shared.devui.band_high": "10 million and above",
+  "shared.devui.band_low": "Below 10 million",
+  "shared.devui.do_filter_url": "Filters live on the URL and go to the server; clearing them restores the full list.",
+  "shared.devui.dont_filter_client": "Filtering a paged list in the browser: it only filters the page on screen.",
+  "shared.devui.case_create_modal": "Creating a small item in a dialog",
+  "shared.devui.case_edit_in_place": "Editing a group of values in place",
+  "shared.devui.dont_confirm_undoable": "Asking to confirm something undoable: apply it and offer Undo."
 }
