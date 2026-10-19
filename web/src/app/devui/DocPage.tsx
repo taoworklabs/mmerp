@@ -17,7 +17,7 @@ export function useEntryTitle() {
 function DocSection({ id, title, children }: { id: string; title: string; children: ReactNode }) {
   return (
     <Stack gap="sm" component="section" aria-labelledby={id}>
-      <Title order={2} size="h4" id={id} data-devui-section>
+      <Title order={2} size="h4" id={id} data-devui-section className={classes.heading}>
         {title}
       </Title>
       {children}
@@ -33,7 +33,7 @@ export function DocPage({ path, example, variants, doDont, code }: { path: Path;
   const entry = entryByPath(path)
   const k = key(entry)
   const component = entry.layer === 'mantine' || entry.layer === 'mmerp'
-  const imports = entry.source ? `import { ${entry.name} } from '${entry.source}'` : ''
+  const imports = entry.source ? `import { ${(entry.exports ?? [entry.name]).join(', ')} } from '${entry.source}'` : ''
   const snippet = [imports, code].filter(Boolean).join('\n\n')
   const tag =
     entry.layer === 'mantine' ? (

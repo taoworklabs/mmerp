@@ -7,6 +7,7 @@ const all = entries as readonly Entry[]
 const vi = viJson as Record<string, string>
 // The catalogue's own sources, to check the links inside its pages.
 const pages = import.meta.glob<string>('./*.tsx', { query: '?raw', import: 'default', eager: true })
+const shared = import.meta.glob<string>('../../shared/**/*.{ts,tsx}', { query: '?raw', import: 'default', eager: true })
 const key = (e: Entry) => e.path.slice(e.path.indexOf('/') + 1).replaceAll('-', '_')
 const byName = (a: string, b: string) => a.localeCompare(b, undefined, { sensitivity: 'base' })
 
@@ -25,6 +26,19 @@ describe('devui catalogue', () => {
 
   it('every mmerp entry names its import source', () => {
     for (const e of all.filter((x) => x.layer === 'mmerp')) expect(e.source, e.path).toMatch(/^@\/shared\//)
+  })
+
+  it('every mmerp import line names real exports of its source', () => {
+    const missing: string[] = []
+    for (const e of all.filter((x) => x.layer === 'mmerp')) {
+      const dir = e.source!.replace('@/', '../../')
+      const files = Object.entries(shared).filter(([f]) => f.startsWith(`${dir}/`) || f.startsWith(`${dir}.`))
+      for (const name of e.exports ?? [e.name!]) {
+        const exported = new RegExp(`\\bexport\\b[^\\n]*\\b${name}\\b`)
+        if (!/^\w+$/.test(name) || !files.some(([, src]) => exported.test(src))) missing.push(`${e.path}: ${name}`)
+      }
+    }
+    expect(missing).toEqual([])
   })
 
   it('component layers are alphabetical', () => {
@@ -47,6 +61,13 @@ describe('devui catalogue', () => {
       if (['mantine', 'mmerp', 'patterns', 'templates'].includes(e.layer)) for (const p of ['about', 'use', 'avoid']) need(`shared.devui.${p}_${key(e)}`)
     }
     expect(missing).toEqual([])
+  })
+
+  it('a page frame named in the texts is a catalogued template', () => {
+    const known = new Set(all.flatMap((e) => [...(e.layer === 'templates' ? [e.name!] : []), ...(e.exports ?? [])]))
+    const texts = Object.entries(vi).filter(([k]) => /^shared\.devui\.(about|use|avoid)_/.test(k))
+    const unknown = texts.flatMap(([k, v]) => [...v.matchAll(/\b[A-Z]\w*Page\b/g)].filter((m) => !known.has(m[0])).map((m) => `${k}: ${m[0]}`))
+    expect(unknown).toEqual([])
   })
 
   it('related points at real entries', () => {

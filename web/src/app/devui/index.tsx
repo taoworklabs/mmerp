@@ -3,7 +3,7 @@ import { useDisclosure } from '@mantine/hooks'
 import { IconComponents } from '@tabler/icons-react'
 import type { ComponentType, ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
-import { createBrowserRouter, Link, Navigate, Outlet, useLocation } from 'react-router'
+import { createBrowserRouter, Link, Navigate, Outlet, ScrollRestoration, useLocation } from 'react-router'
 import { client } from '@/shared/api/client'
 import type { Me } from '@/shared/api/core'
 import { MeProvider } from '@/shared/auth/me'
@@ -179,6 +179,8 @@ function DevUiLayout() {
         <AppShell.Main>
           {template && <TemplateNote entry={template} />}
           <Outlet />
+          {/* Keyed by path, so opening a side panel (a search param) keeps the scroll. */}
+          <ScrollRestoration getKey={(location) => location.pathname} />
         </AppShell.Main>
       </AppShell>
     </MeProvider>

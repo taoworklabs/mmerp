@@ -55,8 +55,7 @@ const code = {
   </FormSection>
   <FormActions submitLabel />
 </Form>`,
-  filters: `import { SearchInput, FilterChip, OrgUnitFilter, LegalEntityFilter, MonthFilter, YearFilter } from '@/shared/ui/form'
-import { DocumentStatusFilter } from '@/shared/document'
+  filters: `import { DocumentStatusFilter } from '@/shared/document'
 // values live on the URL: useListParams from '@/shared/url/listParams'`,
   inline: `<InlineEditField label value onSave validate? readOnly? />`,
   lines: `<LinesTable name label columns newLine addLabel lineLabel removeLabel minLines? footer? />

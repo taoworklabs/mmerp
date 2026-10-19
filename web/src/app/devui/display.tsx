@@ -44,8 +44,7 @@ import { OrgUnitName } from '@/shared/ui/OrgUnitName'   // render an org unit`,
   statusBadge: `<StatusBadge tone="positive" | "neutral" | "info" | "warning" | "negative">{label}</StatusBadge>`,
   personAvatar: `<PersonAvatar name size="sm" | "md" | "lg" />
 import { PersonName } from '@/shared/ui/avatar'   // avatar and name together`,
-  tiles: `import { TileGrid, StatTile, LinkTile } from '@/shared/ui/Tile'
-<TileGrid><StatTile label value to error? onRetry? /><LinkTile icon title to /></TileGrid>`,
+  tiles: `<TileGrid><StatTile label value to error? onRetry? /><LinkTile icon title to /></TileGrid>`,
   section: `<Section title description? actions?>{content}</Section>`,
   panel: `<Panel title icon? actions? plain?>{content}</Panel>`,
 }

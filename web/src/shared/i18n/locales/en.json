@@ -133,7 +133,7 @@
   "shared.devui.use_record": "one record without a lifecycle: an employee, a customer, a user; key facts in the header, each part a full-width tab, the Overview tab to read and edit each group of values.",
   "shared.devui.avoid_record": "the record has a number, a date and a draft, pending, posted lifecycle: use DocumentPage.",
   "shared.devui.use_document": "viewing and editing one document, from draft to posted or cancelled, with its approval.",
-  "shared.devui.avoid_document": "the record has no lifecycle: use DetailPage; never split off a separate edit page.",
+  "shared.devui.avoid_document": "the record has no lifecycle: use RecordPage; never split off a separate edit page.",
   "shared.devui.use_inbox": "working through pending items one by one: the list beside the selected item's detail.",
   "shared.devui.avoid_inbox": "searching or filtering many records: use ListPage.",
   "shared.devui.use_auth": "a screen outside the app shell, before there is a session: sign-in.",

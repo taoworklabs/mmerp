@@ -11,8 +11,9 @@ export type Entry = {
   path: string
   name?: string
   label?: string
-  // mmerp: where to import it from.
+  // mmerp: where to import it from, and the exports to import when the page covers a family.
   source?: string
+  exports?: readonly string[]
   // mantine: the @mantine/core names the page documents, when more than its name.
   covers?: readonly string[]
   // Paths of the entries a page links to: related components, or what a pattern or template uses.
@@ -42,23 +43,23 @@ export const entries = [
   { layer: 'mmerp', path: 'mmerp/document-status', name: 'DocumentStatus', source: '@/shared/document', related: ['mmerp/status-badge', 'patterns/document-approval'] },
   { layer: 'mmerp', path: 'mmerp/editable-panel', name: 'EditablePanel', source: '@/shared/ui/form', related: ['mmerp/inline-edit-field', 'patterns/create-edit', 'templates/record'] },
   { layer: 'mmerp', path: 'mmerp/field-list', name: 'FieldList', source: '@/shared/ui/FieldList', related: ['mmerp/panel', 'mmerp/key-facts'] },
-  { layer: 'mmerp', path: 'mmerp/filters', name: 'Filters', source: '@/shared/ui/form', related: ['patterns/filter-search', 'templates/list'] },
-  { layer: 'mmerp', path: 'mmerp/form', name: 'Form · fields', source: '@/shared/ui/form', related: ['mmerp/form-modal', 'mmerp/editable-panel', 'patterns/create-edit'] },
+  { layer: 'mmerp', path: 'mmerp/filters', name: 'Filters', source: '@/shared/ui/form', exports: ['SearchInput', 'FilterChip', 'OrgUnitFilter', 'LegalEntityFilter', 'MonthFilter', 'YearFilter'], related: ['patterns/filter-search', 'templates/list'] },
+  { layer: 'mmerp', path: 'mmerp/form', name: 'Form · fields', source: '@/shared/ui/form', exports: ['Form', 'FormSection', 'FormFields', 'FormActions', 'TextField'], related: ['mmerp/form-modal', 'mmerp/editable-panel', 'patterns/create-edit'] },
   { layer: 'mmerp', path: 'mmerp/form-modal', name: 'FormModal', source: '@/shared/ui/page', related: ['mmerp/form', 'patterns/create-edit', 'mmerp/use-confirm'] },
   { layer: 'mmerp', path: 'mmerp/inline-edit-field', name: 'InlineEditField', source: '@/shared/ui/InlineEditField', related: ['mmerp/editable-panel'] },
   { layer: 'mmerp', path: 'mmerp/key-facts', name: 'KeyFacts', source: '@/shared/ui/KeyFacts', related: ['templates/record', 'mmerp/field-list'] },
   { layer: 'mmerp', path: 'mmerp/lines-table', name: 'LinesTable', source: '@/shared/ui/form', related: ['mmerp/form', 'mmerp/cell-grid', 'templates/document'] },
   { layer: 'mmerp', path: 'mmerp/more-actions', name: 'MoreActions', source: '@/shared/ui/MoreActions', related: ['patterns/confirm-delete', 'mantine/button'] },
   { layer: 'mmerp', path: 'mmerp/notice', name: 'Notice', source: '@/shared/ui/Notice', related: ['mmerp/notify', 'mmerp/use-action'] },
-  { layer: 'mmerp', path: 'mmerp/notify', name: 'notify', source: '@/shared/ui/notify', related: ['mmerp/notice', 'mmerp/use-action'] },
+  { layer: 'mmerp', path: 'mmerp/notify', name: 'notify', source: '@/shared/ui/notify', exports: ['notifySuccess', 'notifyError', 'notifyUndo'], related: ['mmerp/notice', 'mmerp/use-action'] },
   { layer: 'mmerp', path: 'mmerp/panel', name: 'Panel', source: '@/shared/ui/page', related: ['mmerp/editable-panel', 'templates/record'] },
   { layer: 'mmerp', path: 'mmerp/person-avatar', name: 'PersonAvatar', source: '@/shared/ui/avatar', related: ['templates/record'] },
   { layer: 'mmerp', path: 'mmerp/query-view', name: 'QueryView', source: '@/shared/ui/QueryView', related: ['mmerp/states', 'patterns/loading-empty-error'] },
   { layer: 'mmerp', path: 'mmerp/section', name: 'Section', source: '@/shared/ui/Section', related: ['mmerp/panel', 'mmerp/form'] },
   { layer: 'mmerp', path: 'mmerp/side-panel', name: 'SidePanel', source: '@/shared/ui/SidePanel', related: ['patterns/bulk', 'mmerp/document-preview'] },
-  { layer: 'mmerp', path: 'mmerp/states', name: 'States', source: '@/shared/ui/states', related: ['mmerp/query-view', 'patterns/loading-empty-error'] },
+  { layer: 'mmerp', path: 'mmerp/states', name: 'States', source: '@/shared/ui/states', exports: ['EmptyState', 'ErrorState', 'PageSkeleton', 'ContentSkeleton', 'ReadOnlyBanner', 'NotFoundPage', 'ForbiddenPage'], related: ['mmerp/query-view', 'patterns/loading-empty-error'] },
   { layer: 'mmerp', path: 'mmerp/status-badge', name: 'StatusBadge', source: '@/shared/ui/StatusBadge', related: ['mmerp/document-status'] },
-  { layer: 'mmerp', path: 'mmerp/tiles', name: 'Tiles', source: '@/shared/ui/Tile', related: ['templates/page'] },
+  { layer: 'mmerp', path: 'mmerp/tiles', name: 'Tiles', source: '@/shared/ui/Tile', exports: ['TileGrid', 'StatTile', 'LinkTile'], related: ['templates/page'] },
   { layer: 'mmerp', path: 'mmerp/tree-list', name: 'TreeList', source: '@/shared/ui/TreeList', related: ['mmerp/data-table'] },
   { layer: 'mmerp', path: 'mmerp/use-action', name: 'useAction', source: '@/shared/ui/useAction', related: ['mmerp/use-confirm', 'patterns/confirm-delete'] },
   { layer: 'mmerp', path: 'mmerp/attachment-panel', name: 'useAttachmentSection', source: '@/shared/document', related: ['templates/document'] },

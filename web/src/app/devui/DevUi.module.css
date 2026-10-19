@@ -55,3 +55,8 @@
   top: calc(var(--app-shell-header-height) + var(--mantine-spacing-md));
   flex-shrink: 0;
 }
+
+/* A heading the table of contents jumps to stops below the fixed header, not under it. */
+.heading {
+  scroll-margin-top: calc(var(--app-shell-header-height) + var(--mantine-spacing-md));
+}

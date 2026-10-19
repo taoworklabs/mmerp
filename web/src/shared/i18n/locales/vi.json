@@ -133,7 +133,7 @@
   "shared.devui.use_record": "một bản ghi không có vòng đời: nhân viên, khách hàng, người dùng; tóm tắt ở header, mỗi phần một tab toàn chiều rộng, tab Tổng quan để xem và sửa từng nhóm giá trị.",
   "shared.devui.avoid_record": "bản ghi có số, ngày và trạng thái nháp, chờ duyệt, đã ghi sổ: dùng DocumentPage.",
   "shared.devui.use_document": "xem và sửa một chứng từ, từ nháp đến đã ghi sổ hoặc đã hủy, cùng luồng duyệt.",
-  "shared.devui.avoid_document": "bản ghi không có vòng đời: dùng DetailPage; không tách một trang sửa riêng.",
+  "shared.devui.avoid_document": "bản ghi không có vòng đời: dùng RecordPage; không tách một trang sửa riêng.",
   "shared.devui.use_inbox": "xử lý lần lượt các mục đang chờ: danh sách bên cạnh chi tiết của mục đang chọn.",
   "shared.devui.avoid_inbox": "tìm hoặc lọc trong nhiều bản ghi: dùng ListPage.",
   "shared.devui.use_auth": "màn hình nằm ngoài khung ứng dụng, khi chưa có phiên: đăng nhập.",
