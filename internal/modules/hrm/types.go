@@ -79,6 +79,15 @@ type SensitivePresence struct {
 	BankAccount       bool `json:"bank_account"`
 }
 
+// SensitiveTails holds the last four digits of each sensitive value with at least eight, for an
+// actor who may read the value; null otherwise. Reading them is not an audited read.
+type SensitiveTails struct {
+	NationalID        *string `json:"national_id"`
+	SocialInsuranceNo *string `json:"social_insurance_no"`
+	TaxCode           *string `json:"tax_code"`
+	BankAccount       *string `json:"bank_account"`
+}
+
 type NewEmployee struct {
 	Code string `json:"code,omitempty" maxLength:"50" doc:"Empty or absent: issued from the hrm.employee code series"`
 	EmployeeInput
@@ -88,11 +97,12 @@ type Employee struct {
 	ID   int64  `json:"id"`
 	Code string `json:"code"`
 	EmployeeFields
-	OrgUnitName string            `json:"org_unit_name"`
-	ManagerCode *string           `json:"manager_code"`
-	ManagerName *string           `json:"manager_name"`
-	Status      string            `json:"status" enum:"active,terminated"`
-	Sensitive   SensitivePresence `json:"sensitive"`
+	OrgUnitName   string            `json:"org_unit_name"`
+	ManagerCode   *string           `json:"manager_code"`
+	ManagerName   *string           `json:"manager_name"`
+	Status        string            `json:"status" enum:"active,terminated"`
+	Sensitive     SensitivePresence `json:"sensitive"`
+	SensitiveTail SensitiveTails    `json:"sensitive_tail"`
 	// view, edit, view_sensitive, adjust_leave_balance, view_contracts, create_contract.
 	AllowedActions []string `json:"allowed_actions" nullable:"false"`
 }

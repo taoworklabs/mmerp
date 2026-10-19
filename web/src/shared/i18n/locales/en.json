@@ -541,5 +541,8 @@
   "shared.field.missing": "Not filled in",
   "shared.record.overview": "Overview",
   "shared.record.history": "History",
-  "shared.record.see_all": "See all"
+  "shared.record.see_all": "See all",
+  "shared.sensitive.masked_tail": "Hidden, ending in {{tail}}",
+  "shared.sensitive.show_all": "Show all",
+  "shared.sensitive.hide_all": "Hide all"
 }

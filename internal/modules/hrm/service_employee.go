@@ -101,10 +101,19 @@ func (s *Service) Employee(ctx context.Context, id int64) (Employee, error) {
 	if err != nil {
 		return Employee{}, err
 	}
+	var tails SensitiveTails
 	if ok, err := s.allowed(ctx, PermSensitive, e.OrgUnitID); err != nil {
 		return Employee{}, err
 	} else if ok {
 		actions = append(actions, "view_sensitive")
+		sealed := sealedOf(store.HrmEmployee{NationalID: e.NationalID, SocialInsuranceNo: e.SocialInsuranceNo, TaxCode: e.TaxCode, BankAccount: e.BankAccount})
+		for field, out := range map[string]**string{"national_id": &tails.NationalID, "social_insurance_no": &tails.SocialInsuranceNo, "tax_code": &tails.TaxCode, "bank_account": &tails.BankAccount} {
+			v, err := open(ctx, field, sealed[field])
+			if err != nil {
+				return Employee{}, err
+			}
+			*out = digitTail(v)
+		}
 	}
 	if ok, err := s.allowed(ctx, PermBalanceAdjust, e.OrgUnitID); err != nil {
 		return Employee{}, err
@@ -138,6 +147,7 @@ func (s *Service) Employee(ctx context.Context, id int64) (Employee, error) {
 			NationalID: e.NationalID != nil, SocialInsuranceNo: e.SocialInsuranceNo != nil,
 			TaxCode: e.TaxCode != nil, BankAccount: e.BankAccount != nil,
 		},
+		SensitiveTail:  tails,
 		AllowedActions: actions,
 	}, nil
 }
@@ -370,6 +380,25 @@ func open(ctx context.Context, field string, sealed []byte) (*string, error) {
 	pt, err := platform.Decrypt(ctx, "hrm.employees."+field, sealed)
 	v := string(pt)
 	return &v, err
+}
+
+// digitTail is the last four digits of v when it holds at least eight, so a short value is never
+// mostly disclosed; nil otherwise.
+func digitTail(v *string) *string {
+	if v == nil {
+		return nil
+	}
+	var digits []rune
+	for _, r := range *v {
+		if r >= '0' && r <= '9' {
+			digits = append(digits, r)
+		}
+	}
+	if len(digits) < 8 {
+		return nil
+	}
+	tail := string(digits[len(digits)-4:])
+	return &tail
 }
 
 // status: terminated once the termination date has passed in the tenant's time zone.

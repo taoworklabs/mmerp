@@ -1,6 +1,6 @@
 import { ActionIcon, Anchor, Group, Input, Text, TextInput, Tooltip, VisuallyHidden } from '@mantine/core'
 import { IconEye, IconEyeOff } from '@tabler/icons-react'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useController, useFormContext } from 'react-hook-form'
 import { useTranslation } from 'react-i18next'
 import { errorText } from '@/shared/i18n'
@@ -110,15 +110,14 @@ function RevealLink({ label, busy, onClick }: { label: string; busy?: boolean; o
 type ValueProps = Omit<Props, 'name' | 'canEdit'>
 
 // SensitiveValue is the read-only face of a SensitiveField, for a label–value list: masked until
-// asked for, then the value as text with a link to mask it again. Showing it again is another
-// audited read.
-export function SensitiveValue({ label, present, canView, reveal }: ValueProps) {
+// asked for (with its last digits when the API sends them), then the value as text with a link to
+// mask it again. Showing it again is another audited read. revealAll shows it as if asked, for a
+// "Show all" over several values.
+export function SensitiveValue({ label, present, canView, reveal, tail, revealAll }: ValueProps & { tail?: string | null; revealAll?: boolean }) {
   const { t } = useTranslation()
   const [shown, setShown] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  if (!canView) return <Text c="dimmed">{t('shared.sensitive.no_permission')}</Text>
-  if (!present) return <Text c="dimmed">—</Text>
   async function show() {
     setBusy(true)
     setError(null)
@@ -130,6 +129,12 @@ export function SensitiveValue({ label, present, canView, reveal }: ValueProps) 
       setBusy(false)
     }
   }
+  useEffect(() => {
+    if (revealAll && present && canView) void show()
+    // Only a new "Show all" reveals; a value shown or hidden by hand stays as the user left it.
+  }, [revealAll])
+  if (!canView) return <Text c="dimmed">{t('shared.sensitive.no_permission')}</Text>
+  if (!present) return <Text c="dimmed">—</Text>
   return (
     <>
       <Group gap="sm" wrap="nowrap" component="span">
@@ -138,7 +143,8 @@ export function SensitiveValue({ label, present, canView, reveal }: ValueProps) 
             <Text span aria-hidden>
               ••••••
             </Text>
-            <VisuallyHidden>{t('shared.sensitive.masked')}</VisuallyHidden>
+            {tail && <Text span aria-hidden>{tail}</Text>}
+            <VisuallyHidden>{tail ? t('shared.sensitive.masked_tail', { tail }) : t('shared.sensitive.masked')}</VisuallyHidden>
             <RevealLink label={label} busy={busy} onClick={() => void show()} />
           </>
         ) : (

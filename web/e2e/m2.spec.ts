@@ -55,6 +55,8 @@ test('a sensitive field is masked, shown on request, and cleared when the permis
   const field = 'Số CCCD hoặc hộ chiếu'
   await expect(page.getByText('••••••').first()).toBeVisible()
   await expect(page.getByText(nationalId)).toHaveCount(0)
+  // The last four digits come masked from the API, the rest never reaches the page unasked.
+  await expect(page.getByText('Đã ẩn, kết thúc bằng 6789')).toBeAttached()
   // Shown as text in the profile, not as an input: viewing is not editing.
   await page.getByRole('button', { name: `Hiện ${field}` }).click()
   await expect(page.getByText(nationalId)).toBeVisible()
@@ -82,6 +84,20 @@ test('a sensitive field is masked, shown on request, and cleared when the permis
 
   // Restore for the other tests.
   await created(admin.post(`/api/users/${ids.hrA}/roles`, { data: { product: 'hrm', role: 'sensitive_viewer', org_unit_id: ids.a } }))
+})
+
+test('show all reveals every sensitive value, each an audited read, and hide all masks them again', async ({ page }) => {
+  await signInAs(page, hrA, `/hrm/employees/${ids.ea}`)
+  const card = page.getByRole('region', { name: 'Thông tin nhạy cảm' })
+  const reads: string[] = []
+  page.on('request', (r) => r.url().includes('/sensitive/') && reads.push(r.url()))
+  await card.getByRole('button', { name: 'Hiện tất cả' }).click()
+  await expect(card.getByText(nationalId)).toBeVisible()
+  // One audited call per field holding a value (only the ID here), none for the empty ones.
+  expect(reads).toEqual([expect.stringContaining(`/api/hrm/employees/${ids.ea}/sensitive/national_id`)])
+  await card.getByRole('button', { name: 'Ẩn tất cả' }).click()
+  await expect(card.getByText(nationalId)).toHaveCount(0)
+  await expect(card.getByRole('button', { name: 'Hiện tất cả' })).toBeVisible()
 })
 
 test('filters, sort and page live on the URL and Back restores each step', async ({ page }) => {

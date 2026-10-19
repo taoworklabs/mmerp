@@ -541,5 +541,8 @@
   "shared.field.missing": "Chưa cập nhật",
   "shared.record.overview": "Tổng quan",
   "shared.record.history": "Lịch sử",
-  "shared.record.see_all": "Xem tất cả"
+  "shared.record.see_all": "Xem tất cả",
+  "shared.sensitive.masked_tail": "Đã ẩn, kết thúc bằng {{tail}}",
+  "shared.sensitive.show_all": "Hiện tất cả",
+  "shared.sensitive.hide_all": "Ẩn tất cả"
 }

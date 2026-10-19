@@ -2118,6 +2118,7 @@ export interface components {
             org_unit_name: string;
             phone: string | null;
             sensitive: components["schemas"]["SensitivePresence"];
+            sensitive_tail: components["schemas"]["SensitiveTails"];
             /** @enum {string} */
             status: "active" | "terminated";
             /** Format: date */
@@ -3405,6 +3406,12 @@ export interface components {
             national_id: boolean;
             social_insurance_no: boolean;
             tax_code: boolean;
+        };
+        SensitiveTails: {
+            bank_account: string | null;
+            national_id: string | null;
+            social_insurance_no: string | null;
+            tax_code: string | null;
         };
         SensitiveValues: {
             bank_account?: string;

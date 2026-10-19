@@ -1,5 +1,5 @@
-import { Anchor } from '@mantine/core'
-import { IconAddressBook, IconBriefcase, IconLock } from '@tabler/icons-react'
+import { Anchor, Button } from '@mantine/core'
+import { IconAddressBook, IconBriefcase, IconEye, IconEyeOff, IconLock } from '@tabler/icons-react'
 import { useState, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { type Employee } from '@/shared/api/hrm'
@@ -9,6 +9,7 @@ import { formatDate, today } from '@/shared/i18n'
 import { FieldList, MissingValue, type FieldRow } from '@/shared/ui/FieldList'
 import { DateField, EditablePanel, Form, FormActions, FormFields, OrgUnitField, SensitiveValue } from '@/shared/ui/form'
 import { FormModal } from '@/shared/ui/page'
+import { icon } from '@/shared/ui/theme'
 import { currentContract, useEmployeeContracts } from '../hooks/useEmployeeRecords'
 import { employeeDocType } from '../keys'
 import { tenure } from '../tenure'
@@ -27,15 +28,24 @@ export function EmployeeProfile({ employee: e, onSaved }: { employee: Employee; 
   const { t } = useTranslation()
   const me = useMe()
   const invalidate = useInvalidateRecord()
-  // Bumped by each save, so a sensitive value shown before it is masked again rather than left stale.
+  // Bumped by each save and by "Hide all", so a sensitive value shown before is masked again.
   const [saves, setSaves] = useState(0)
+  // "Show all": every sensitive value with one, each an audited read of its own.
+  const [all, setAll] = useState(false)
+  const canSensitive = e.allowed_actions.includes('view_sensitive')
+  const anySensitive = sensitiveFields.some((f) => e.sensitive[f])
   const canEdit = e.allowed_actions.includes('edit')
   const contracts = useEmployeeContracts(e)
   const now = today(me.timezone)
   const current = currentContract(contracts.data, now)
   const saved = async () => {
     await onSaved()
+    setAll(false)
     setSaves((n) => n + 1)
+  }
+  const toggleAll = () => {
+    if (all) setSaves((n) => n + 1)
+    setAll(!all)
   }
   const edit = (part: Part) => (close: () => void) => <PartForm employee={e} part={part} onClose={close} onSaved={saved} />
   // An empty value: "+ Bổ sung" opening the card's form for who may edit.
@@ -87,7 +97,20 @@ export function EmployeeProfile({ employee: e, onSaved }: { employee: Employee; 
         )}
       </EditablePanel>
       {/* Masked in both views: showing a value is its own audited read, editing or not. */}
-      <EditablePanel title={t('hrm.employee.section.sensitive')} icon={IconLock} editable={canEdit} edit={edit('sensitive')}>
+      <EditablePanel
+        title={t('hrm.employee.section.sensitive')}
+        icon={IconLock}
+        editable={canEdit}
+        edit={edit('sensitive')}
+        actions={
+          canSensitive &&
+          anySensitive && (
+            <Button variant="subtle" leftSection={all ? <IconEyeOff {...icon.button} /> : <IconEye {...icon.button} />} onClick={toggleAll}>
+              {t(all ? 'shared.sensitive.hide_all' : 'shared.sensitive.show_all')}
+            </Button>
+          )
+        }
+      >
         <FieldList
           key={saves}
           stacked
@@ -97,7 +120,9 @@ export function EmployeeProfile({ employee: e, onSaved }: { employee: Employee; 
               key={f}
               label={t(`hrm.employee.${f}`)}
               present={e.sensitive[f]}
-              canView={e.allowed_actions.includes('view_sensitive')}
+              tail={e.sensitive_tail[f]}
+              revealAll={all}
+              canView={canSensitive}
               reveal={async () => {
                 const value = await revealSensitive(e.id, f)()
                 // Each reveal is a read in the activity feed beside it.

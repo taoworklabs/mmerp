@@ -1828,6 +1828,9 @@
           "sensitive": {
             "$ref": "#/components/schemas/SensitivePresence"
           },
+          "sensitive_tail": {
+            "$ref": "#/components/schemas/SensitiveTails"
+          },
           "status": {
             "enum": [
               "active",
@@ -1859,6 +1862,7 @@
           "manager_name",
           "status",
           "sensitive",
+          "sensitive_tail",
           "allowed_actions",
           "full_name",
           "date_of_birth",
@@ -5632,6 +5636,42 @@
           },
           "tax_code": {
             "type": "boolean"
+          }
+        },
+        "required": [
+          "national_id",
+          "social_insurance_no",
+          "tax_code",
+          "bank_account"
+        ],
+        "type": "object"
+      },
+      "SensitiveTails": {
+        "additionalProperties": false,
+        "properties": {
+          "bank_account": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "national_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "social_insurance_no": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "tax_code": {
+            "type": [
+              "string",
+              "null"
+            ]
           }
         },
         "required": [
