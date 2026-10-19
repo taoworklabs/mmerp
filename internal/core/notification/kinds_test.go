@@ -126,8 +126,8 @@ func fakeSMTP(t *testing.T) *smtpFake {
 						return
 					}
 					cmd := strings.ToUpper(strings.TrimSpace(line))
-					switch {
-					case cmd == "DATA":
+					switch cmd {
+					case "DATA":
 						say("354 go")
 						for {
 							l, err := r.ReadString('\n')
@@ -139,7 +139,7 @@ func fakeSMTP(t *testing.T) *smtpFake {
 						f.mails <- b.String()
 						b.Reset()
 						say("250 ok")
-					case cmd == "QUIT":
+					case "QUIT":
 						say("221 bye")
 						return
 					default:
