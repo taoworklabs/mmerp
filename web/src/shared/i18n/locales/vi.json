@@ -634,5 +634,20 @@
   "shared.sensitive.hide_all": "Ẩn tất cả",
   "shared.activity.day_count_one": "{{count}} mục",
   "shared.activity.day_count_other": "{{count}} mục",
-  "shared.record.recent_activity": "Hoạt động gần đây"
+  "shared.record.recent_activity": "Hoạt động gần đây",
+  "shared.devui.sec_example": "Ví dụ",
+  "shared.devui.sec_usage": "Khi nào dùng",
+  "shared.devui.sec_variants": "Biến thể và trạng thái",
+  "shared.devui.sec_do_dont": "Nên và không nên",
+  "shared.devui.sec_code": "Code",
+  "shared.devui.sec_related": "Liên quan",
+  "shared.devui.sec_uses": "Dùng các thành phần",
+  "shared.devui.on_this_page": "Trên trang này",
+  "shared.devui.source_mantine": "Mantine · dùng thẳng",
+  "shared.devui.source_mmerp": "mmerp · dựng sẵn",
+  "shared.devui.mantine_docs": "Tài liệu Mantine",
+  "shared.devui.about_button": "Nút bấm của Mantine, dùng thẳng với các biến thể dưới đây; không có bản bọc trong shared/ui.",
+  "shared.devui.use_button": "một hành động trên trang, trong một phần hoặc ở chân form, hộp thoại.",
+  "shared.devui.avoid_button": "đi tới một trang khác: dùng Anchor; thao tác của một dòng: để trong MoreActions.",
+  "shared.devui.dont_two_primary": "Hai nút chính cạnh nhau: người dùng không biết bước nào là chính."
 }

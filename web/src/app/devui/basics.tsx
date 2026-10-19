@@ -25,46 +25,90 @@ import { icon } from '@/shared/ui/theme'
 import { LinkTile, StatTile, TileGrid } from '@/shared/ui/Tile'
 import { TreeList } from '@/shared/ui/TreeList'
 import { Case, Demo, rows } from './Demo'
+import { DocPage, DoDont } from './DocPage'
+
+// The props each button kind takes; data, not interface text.
+const buttonCode = `<Button>                              // primary: one per place
+<Button variant="default">            // secondary
+<Button variant="subtle" color="gray"> // the way out beside a primary
+<Button color="danger">               // destructive, after a confirmation`
 
 export function Buttons() {
   const { t } = useTranslation()
   return (
-    <Demo title={t('shared.devui.buttons')} description={t('shared.devui.buttons_hint')}>
-      <Case label={t('shared.devui.case_primary')}>
-        <Group>
-          <Button leftSection={<IconPlus {...icon.button} />}>{t('shared.devui.primary')}</Button>
-        </Group>
-      </Case>
-      <Case label={t('shared.devui.case_secondary')}>
-        <Group>
-          <Button variant="default">{t('shared.devui.secondary')}</Button>
-          <Button variant="subtle">{t('shared.devui.add')}</Button>
-          <Button variant="subtle" color="gray">
-            {t('shared.form.cancel')}
-          </Button>
-          <Button variant="light" leftSection={<IconPlus {...icon.button} />}>
-            {t('shared.devui.add_line')}
-          </Button>
-        </Group>
-      </Case>
-      <Case label={t('shared.devui.case_destructive')}>
-        <Group>
-          <Button variant="subtle" color="danger">
-            {t('shared.devui.danger')}
-          </Button>
-          <Button variant="outline" color="danger">
-            {t('shared.devui.reject')}
-          </Button>
-          <Button color="danger">{t('shared.devui.danger')}</Button>
-        </Group>
-      </Case>
-      <Case label={t('shared.devui.case_states')}>
-        <Group>
-          <Button loading>{t('shared.devui.primary')}</Button>
-          <Button disabled>{t('shared.devui.primary')}</Button>
-        </Group>
-      </Case>
-    </Demo>
+    <DocPage
+      path="mantine/button"
+      example={
+        <Case>
+          <Group justify="flex-end">
+            <Button variant="subtle" color="gray">
+              {t('shared.form.cancel')}
+            </Button>
+            <Button leftSection={<IconPlus {...icon.button} />}>{t('shared.devui.primary')}</Button>
+          </Group>
+        </Case>
+      }
+      variants={
+        <>
+          <Case label={t('shared.devui.case_primary')}>
+            <Group>
+              <Button leftSection={<IconPlus {...icon.button} />}>{t('shared.devui.primary')}</Button>
+            </Group>
+          </Case>
+          <Case label={t('shared.devui.case_secondary')}>
+            <Group>
+              <Button variant="default">{t('shared.devui.secondary')}</Button>
+              <Button variant="subtle">{t('shared.devui.add')}</Button>
+              <Button variant="subtle" color="gray">
+                {t('shared.form.cancel')}
+              </Button>
+              <Button variant="light" leftSection={<IconPlus {...icon.button} />}>
+                {t('shared.devui.add_line')}
+              </Button>
+            </Group>
+          </Case>
+          <Case label={t('shared.devui.case_destructive')}>
+            <Group>
+              <Button variant="subtle" color="danger">
+                {t('shared.devui.danger')}
+              </Button>
+              <Button variant="outline" color="danger">
+                {t('shared.devui.reject')}
+              </Button>
+              <Button color="danger">{t('shared.devui.danger')}</Button>
+            </Group>
+          </Case>
+          <Case label={t('shared.devui.case_states')}>
+            <Group>
+              <Button loading>{t('shared.devui.primary')}</Button>
+              <Button disabled>{t('shared.devui.primary')}</Button>
+            </Group>
+          </Case>
+        </>
+      }
+      doDont={
+        <DoDont
+          good={
+            <Group>
+              <Button variant="default">{t('shared.devui.secondary')}</Button>
+              <Button>{t('shared.devui.primary')}</Button>
+            </Group>
+          }
+          bad={
+            <>
+              <Group>
+                <Button>{t('shared.devui.secondary')}</Button>
+                <Button>{t('shared.devui.primary')}</Button>
+              </Group>
+              <Text size="sm" c="dimmed">
+                {t('shared.devui.dont_two_primary')}
+              </Text>
+            </>
+          }
+        />
+      }
+      code={buttonCode}
+    />
   )
 }
 

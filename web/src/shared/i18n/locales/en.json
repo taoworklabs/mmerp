@@ -634,5 +634,20 @@
   "shared.sensitive.hide_all": "Hide all",
   "shared.activity.day_count_one": "{{count}} event",
   "shared.activity.day_count_other": "{{count}} events",
-  "shared.record.recent_activity": "Recent activity"
+  "shared.record.recent_activity": "Recent activity",
+  "shared.devui.sec_example": "Example",
+  "shared.devui.sec_usage": "When to use",
+  "shared.devui.sec_variants": "Variants and states",
+  "shared.devui.sec_do_dont": "Do and don't",
+  "shared.devui.sec_code": "Code",
+  "shared.devui.sec_related": "Related",
+  "shared.devui.sec_uses": "Uses",
+  "shared.devui.on_this_page": "On this page",
+  "shared.devui.source_mantine": "Mantine · used directly",
+  "shared.devui.source_mmerp": "mmerp · ready-made",
+  "shared.devui.mantine_docs": "Mantine docs",
+  "shared.devui.about_button": "Mantine's button, used directly with the variants below; shared/ui has no wrapper.",
+  "shared.devui.use_button": "an action on a page, in a section, or in a form or dialog footer.",
+  "shared.devui.avoid_button": "going to another page: use Anchor; a row's actions: put them in MoreActions.",
+  "shared.devui.dont_two_primary": "Two primary buttons side by side: users cannot tell which step comes first."
 }
