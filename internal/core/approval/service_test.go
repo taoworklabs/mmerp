@@ -590,6 +590,9 @@ func TestReassignReplacesOneVoter(t *testing.T) {
 	if code(f.appr.Reassign(f.as("hr"), id, 1, f.users["c2"], "c1")) != "approval_already_voted" {
 		t.Fatal("reassigned to a voter of the step")
 	}
+	if code(f.appr.Reassign(f.as("hr"), id, 1, f.users["c3"], "big_boss")) != "not_found" {
+		t.Fatal("reassigned someone who is not a voter")
+	}
 	f.check(f.appr.Reassign(f.as("hr"), id, 1, f.users["c2"], "big_boss"))
 	if code(f.appr.Approve(f.as("c2"), id, 1)) != "forbidden" {
 		t.Fatal("replaced voter approved")
@@ -601,5 +604,39 @@ func TestReassignReplacesOneVoter(t *testing.T) {
 	f.check(f.appr.Approve(f.as("big_boss"), id, 1))
 	if st := f.status(d); st != record.Posted {
 		t.Fatalf("status %s", st)
+	}
+}
+
+// statuses lists the instance's step statuses by position.
+func statuses(inst *approval.Instance) []string {
+	var out []string
+	for _, s := range inst.Steps {
+		out = append(out, s.Status)
+	}
+	return out
+}
+
+func TestClosedInstancesCancelTheirSteps(t *testing.T) {
+	f := newFixture(t)
+	f.rule(f.user("boss"), f.user("big_boss"))
+
+	d, err := f.send("1", "a")
+	f.check(err)
+	f.check(f.rec.Transition(f.as("submitter"), d.Ref, d.Version, record.Draft))
+	if inst := f.panel("boss", d); inst.Status != "withdrawn" || !slices.Equal(statuses(inst), []string{"cancelled", "cancelled"}) {
+		t.Fatalf("after withdrawal: %s %v", inst.Status, statuses(inst))
+	}
+
+	d, err = f.send("1", "a")
+	f.check(err)
+	// The document moved on behind the instance's back.
+	if _, err := platform.DBFrom(f.admin).Exec(f.admin, `UPDATE record.documents SET version = version + 1 WHERE id = $1`, d.ID); err != nil {
+		t.Fatal(err)
+	}
+	if !errors.Is(f.appr.Approve(f.as("boss"), *d.ApprovalTicket, 1), record.ErrApprovalStale) {
+		t.Fatal("want stale")
+	}
+	if inst := f.panel("boss", d); inst.Status != "stale" || !slices.Equal(statuses(inst), []string{"cancelled", "cancelled"}) {
+		t.Fatalf("after stale: %s %v", inst.Status, statuses(inst))
 	}
 }

@@ -38,7 +38,7 @@ func (s *Service) Submit(ctx context.Context, d record.Doc) (int64, bool, error)
 	if err := json.Unmarshal(rule.Flow, &flow); err != nil {
 		return 0, false, err
 	}
-	plan, steps, err := resolve(flow.normalize(), func(e Expr) (bool, error) { return s.holds(ctx, d, e) })
+	plan, steps, err := resolve(flow.normalize(), func(e Expr, doubt bool) (bool, error) { return s.holds(ctx, d, e, doubt) })
 	if err != nil || len(steps) == 0 {
 		return 0, false, err
 	}
@@ -83,7 +83,11 @@ func (s *Service) startSteps(ctx context.Context, inst store.ApprovalInstance, d
 
 // Withdrawn implements record.ApprovalGate.
 func (s *Service) Withdrawn(ctx context.Context, d record.Doc) error {
-	return store.New(platform.DBFrom(ctx)).CloseInstance(ctx, store.CloseInstanceParams{ID: *d.ApprovalTicket, Status: "withdrawn"})
+	q := store.New(platform.DBFrom(ctx))
+	if err := q.CancelOpenSteps(ctx, *d.ApprovalTicket); err != nil {
+		return err
+	}
+	return q.CloseInstance(ctx, store.CloseInstanceParams{ID: *d.ApprovalTicket, Status: "withdrawn"})
 }
 
 // startStep fixes who approves a step. The submitter never approves; when nobody
@@ -158,12 +162,12 @@ func (s *Service) startStep(ctx context.Context, inst store.ApprovalInstance, d 
 	return s.d.Notification.Send(ctx, notification.ApprovalRequested, d.Ref, users)
 }
 
-// holds evaluates one condition leaf for d. A leaf that cannot be evaluated
-// (missing or malformed value) holds: a doubt adds approval, never removes it.
-func (s *Service) holds(ctx context.Context, d record.Doc, c Expr) (bool, error) {
+// holds evaluates one condition leaf for d; a leaf that cannot be evaluated
+// (missing or malformed value) is doubt, and resolve decides what doubt means.
+func (s *Service) holds(ctx context.Context, d record.Doc, c Expr, doubt bool) (bool, error) {
 	v, ok := valueOf(d, c.Field)
 	if !ok {
-		return true, nil
+		return doubt, nil
 	}
 	switch c.Op {
 	case OpEq:
@@ -172,14 +176,14 @@ func (s *Service) holds(ctx context.Context, d record.Doc, c Expr) (bool, error)
 		unit, err1 := strconv.ParseInt(v, 10, 64)
 		ancestor, err2 := strconv.ParseInt(c.Value, 10, 64)
 		if err1 != nil || err2 != nil {
-			return true, nil
+			return doubt, nil
 		}
 		return store.New(platform.DBFrom(ctx)).Within(ctx, store.WithinParams{Unit: unit, Ancestor: ancestor})
 	}
 	x, ok1 := record.ParseNumber(v)
 	y, ok2 := record.ParseNumber(c.Value)
 	if !ok1 || !ok2 {
-		return true, nil
+		return doubt, nil
 	}
 	if c.Op == OpGTE {
 		return x.GreaterThanOrEqual(y), nil
@@ -260,6 +264,9 @@ func (s *Service) act(ctx context.Context, id int64, step int32, fn func(ctx con
 		}
 		if d.Status != record.PendingApproval || d.ApprovalTicket == nil || *d.ApprovalTicket != id || d.Version != inst.Version {
 			stale = true
+			if err := q.CancelOpenSteps(ctx, id); err != nil {
+				return err
+			}
 			return q.CloseInstance(ctx, store.CloseInstanceParams{ID: id, Status: "stale"})
 		}
 		return fn(ctx, inst, st, d)
@@ -392,7 +399,10 @@ func (s *Service) Reassign(ctx context.Context, id int64, step int32, from int64
 		}
 		q := store.New(platform.DBFrom(ctx))
 		i := slices.Index(st.Approvers, from)
-		if i < 0 || slices.Contains(st.Approvers, user) {
+		if i < 0 {
+			return platform.ErrNotFound
+		}
+		if slices.Contains(st.Approvers, user) {
 			return ErrAlreadyVoted
 		}
 		if voted, err := q.HasVoted(ctx, store.HasVotedParams{InstanceID: id, Position: step, UserID: from}); err != nil || voted {

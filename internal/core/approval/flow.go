@@ -275,8 +275,9 @@ func (c *flowChecker) checkExpr(e Expr) string {
 
 // resolve evaluates f's conditions, numbering the applying steps 1..n in
 // reading order. The result is always a sequence (even of one step), or
-// Plan{} when nothing applies.
-func resolve(f Flow, holds func(Expr) (bool, error)) (Plan, []StepDef, error) {
+// Plan{} when nothing applies. holds evaluates a leaf; doubt is what a leaf it
+// cannot read evaluates to.
+func resolve(f Flow, holds func(e Expr, doubt bool) (bool, error)) (Plan, []StepDef, error) {
 	r := &resolver{holds: holds}
 	cs, err := r.candidates(f)
 	if err != nil {
@@ -289,14 +290,14 @@ func resolve(f Flow, holds func(Expr) (bool, error)) (Plan, []StepDef, error) {
 }
 
 type resolver struct {
-	holds func(Expr) (bool, error)
+	holds func(e Expr, doubt bool) (bool, error)
 	steps []StepDef
 }
 
 // candidates resolves each element of f in order. A choose-one split is
 // transparent: the chosen branch's own elements splice straight into the
 // list, since two steps run one after another whether or not a split chose
-// the path to get there. A parallel split is opaque: it contributes at most
+// the path to get there. When doubt chose several bodies they run in parallel. A parallel split is opaque: it contributes at most
 // one node (its holding branches, collapsed into a group). Anything empty
 // drops out.
 func (r *resolver) candidates(f Flow) ([]Plan, error) {
@@ -309,15 +310,27 @@ func (r *resolver) candidates(f Flow) ([]Plan, error) {
 		case e.Split == nil:
 			// neither Step nor Split: an invalid flow (checkFlow rejects it), nothing to resolve.
 		case e.Split.Mode == ChooseOne:
-			body, err := r.chosenBody(*e.Split)
+			bodies, err := r.chosenBodies(*e.Split)
 			if err != nil {
 				return nil, err
 			}
-			ps, err := r.candidates(body)
+			if len(bodies) == 1 {
+				ps, err := r.candidates(bodies[0])
+				if err != nil {
+					return nil, err
+				}
+				out = append(out, ps...)
+				continue
+			}
+			p, err := r.group(bodies)
 			if err != nil {
 				return nil, err
 			}
-			out = append(out, ps...)
+			if p.Seq != nil {
+				out = append(out, p.Seq...)
+			} else if !isEmptyPlan(p) {
+				out = append(out, p)
+			}
 		default: // Parallel
 			p, err := r.parallel(*e.Split)
 			if err != nil {
@@ -331,33 +344,49 @@ func (r *resolver) candidates(f Flow) ([]Plan, error) {
 	return out, nil
 }
 
-// chosenBody is the branch body that applies: the first holding branch, or Otherwise.
-func (r *resolver) chosenBody(sp Split) (Flow, error) {
+// chosenBodies lists the bodies that apply: up to and including the first branch
+// that surely holds, or else the otherwise too. A branch that holds only through
+// doubt runs and the choice goes on, so doubt adds approval, never skips a
+// stricter branch.
+func (r *resolver) chosenBodies(sp Split) ([]Flow, error) {
+	var out []Flow
 	for _, b := range sp.Branches {
-		ok, err := r.holdsBranch(b)
+		maybe, surely, err := r.holdsBranch(b)
 		if err != nil {
 			return nil, err
 		}
-		if ok {
-			return b.Body, nil
+		if !maybe {
+			continue
+		}
+		out = append(out, b.Body)
+		if surely {
+			return out, nil
 		}
 	}
-	return sp.Otherwise, nil
+	return append(out, sp.Otherwise), nil
 }
 
-// parallel resolves every holding branch's body into one node for the parent
+// parallel resolves every branch that may hold into one node for the parent
 // sequence: empty bodies drop out, and a single holding branch collapses into it.
 func (r *resolver) parallel(sp Split) (Plan, error) {
-	var par []Plan
+	var bodies []Flow
 	for _, b := range sp.Branches {
-		ok, err := r.holdsBranch(b)
+		maybe, _, err := r.holdsBranch(b)
 		if err != nil {
 			return Plan{}, err
 		}
-		if !ok {
-			continue
+		if maybe {
+			bodies = append(bodies, b.Body)
 		}
-		ps, err := r.candidates(b.Body)
+	}
+	return r.group(bodies)
+}
+
+// group resolves bodies that run at the same time into one plan.
+func (r *resolver) group(bodies []Flow) (Plan, error) {
+	var par []Plan
+	for _, body := range bodies {
+		ps, err := r.candidates(body)
 		if err != nil {
 			return Plan{}, err
 		}
@@ -368,11 +397,17 @@ func (r *resolver) parallel(sp Split) (Plan, error) {
 	return collapsePar(par), nil
 }
 
-func (r *resolver) holdsBranch(b Branch) (bool, error) {
+// holdsBranch evaluates b's condition with unreadable leaves taken as true
+// (maybe), then as false (surely); they differ only when the outcome rests on doubt.
+func (r *resolver) holdsBranch(b Branch) (maybe, surely bool, err error) {
 	if b.Condition == nil {
-		return true, nil
+		return true, true, nil
 	}
-	return b.Condition.eval(r.holds)
+	if maybe, err = b.Condition.eval(func(e Expr) (bool, error) { return r.holds(e, true) }); err != nil || !maybe {
+		return maybe, false, err
+	}
+	surely, err = b.Condition.eval(func(e Expr) (bool, error) { return r.holds(e, false) })
+	return maybe, surely, err
 }
 
 // collapse turns a list of plans into an empty plan, the one plan it holds, or a sequence.

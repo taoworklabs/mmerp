@@ -21,7 +21,7 @@ This records the shape of approval flows at decision level for the whole upgrade
 
 - **Approvers are fixed when the step starts**, filtered as today: the submitter, the document type's `Subjects`, and people without `view` are removed. An empty list after filtering falls back to the rule's fallback role, with the counts unchanged. If fewer people are eligible than the step's `approvals`, the step cannot start: the operation fails with `no_approver`, naming the step; the count is never lowered to fit who is left.
 
-- **Conditions** are an expression tree: `{all: […]}`, `{any: […]}`, or a leaf `{field, op, value}` (operators unchanged from ADR-0015). A leaf that cannot be evaluated holds.
+- **Conditions** are an expression tree: `{all: […]}`, `{any: […]}`, or a leaf `{field, op, value}` (operators unchanged from ADR-0015). A leaf that cannot be evaluated (a missing or malformed field) is doubt, and doubt only ever adds approval: a branch whose outcome rests on doubt runs, and in a choose-one split the choice then continues to the next branches (and to the otherwise when no branch surely holds), the chosen bodies running in parallel. Doubt never lets a document skip a stricter branch.
 
 - **Resolution at submit.** Conditions are evaluated once, when the document is submitted. The instance stores the resolved plan — the steps that will run, numbered 1..n in reading order, with their sequence/parallel structure — not a reference to the rule. Editing the rule afterwards never changes an open instance.
 

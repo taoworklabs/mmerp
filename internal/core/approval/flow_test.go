@@ -23,8 +23,8 @@ func ids(steps []StepDef) []int64 {
 }
 
 // holdsStub evaluates "amount" (gt/gte against amount) and "kind" (eq against kind).
-func holdsStub(amount int, kind string) func(Expr) (bool, error) {
-	return func(e Expr) (bool, error) {
+func holdsStub(amount int, kind string) func(Expr, bool) (bool, error) {
+	return func(e Expr, _ bool) (bool, error) {
 		switch e.Field {
 		case "amount":
 			threshold, _ := strconv.Atoi(e.Value)
@@ -157,6 +157,43 @@ func TestResolveDoubtTakesTheBranch(t *testing.T) {
 	leafFor := func(vals map[string]bool) func(Expr) (bool, error) {
 		return func(e Expr) (bool, error) { return vals[e.Field], nil }
 	}
+
+	// kind is unreadable; amount is 600.
+	doubting := func(e Expr, doubt bool) (bool, error) {
+		if e.Field == "kind" {
+			return doubt, nil
+		}
+		return holdsStub(600, "")(e, doubt)
+	}
+	// A doubtful choose-one branch runs, and so does the next branch that surely holds.
+	flow1 := Flow{{Split: &Split{Mode: ChooseOne, Branches: []Branch{
+		{Condition: kindCond("a"), Body: Flow{step(1)}},
+		{Condition: amountCond(OpGT, "500"), Body: Flow{step(2)}},
+		{Condition: amountCond(OpGT, "100"), Body: Flow{step(3)}},
+	}, Otherwise: Flow{step(4)}}}}
+	plan, steps, err := resolve(flow1, doubting)
+	if err != nil {
+		t.Fatal(err)
+	}
+	assertPlan(t, plan, Plan{Seq: []Plan{{Par: []Plan{{Step: 1}, {Step: 2}}}}})
+	assertIDs(t, ids(steps), []int64{1, 2})
+	// Doubt that cannot change the outcome is no doubt: all[kind=a, amount>5000] surely fails.
+	flow2 := Flow{{Split: &Split{Mode: ChooseOne, Branches: []Branch{
+		{Condition: &Expr{All: []Expr{*kindCond("a"), *amountCond(OpGT, "5000")}}, Body: Flow{step(1)}},
+	}, Otherwise: Flow{step(2)}}}}
+	if _, steps, err = resolve(flow2, doubting); err != nil {
+		t.Fatal(err)
+	}
+	assertIDs(t, ids(steps), []int64{2})
+	// A parallel split runs a doubtful branch.
+	flow3 := Flow{{Split: &Split{Mode: Parallel, Branches: []Branch{
+		{Condition: kindCond("a"), Body: Flow{step(1)}},
+		{Condition: amountCond(OpGT, "5000"), Body: Flow{step(2)}},
+	}}}}
+	if _, steps, err = resolve(flow3, doubting); err != nil {
+		t.Fatal(err)
+	}
+	assertIDs(t, ids(steps), []int64{1})
 
 	all := Expr{All: []Expr{{Field: "a"}, {Field: "b"}}}
 	if ok, err := all.eval(leafFor(map[string]bool{"a": true, "b": false})); err != nil || ok {
@@ -411,4 +448,26 @@ func TestNormalizeDefaultsCounts(t *testing.T) {
 	if otherwiseStep.Approvals != 1 || otherwiseStep.Rejections != 1 {
 		t.Fatalf("otherwise step = %+v, want Approvals=1, Rejections=1", otherwiseStep)
 	}
+}
+
+func TestResolveChooseOneDoubtKeepsLaterBranches(t *testing.T) {
+	const a, c = 1, 3
+	flow := Flow{{Split: &Split{Mode: ChooseOne, Branches: []Branch{
+		{Condition: kindCond("a"), Body: Flow{step(a)}},
+	}, Otherwise: Flow{step(c)}}}}
+
+	unreadable := func(_ Expr, doubt bool) (bool, error) { return doubt, nil }
+	plan, steps, err := resolve(flow, unreadable)
+	if err != nil {
+		t.Fatal(err)
+	}
+	assertPlan(t, plan, Plan{Seq: []Plan{{Par: []Plan{{Step: 1}, {Step: 2}}}}})
+	assertIDs(t, ids(steps), []int64{a, c})
+
+	plan, steps, err = resolve(flow, holdsStub(0, "a"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	assertPlan(t, plan, Plan{Seq: []Plan{{Step: 1}}})
+	assertIDs(t, ids(steps), []int64{a})
 }
