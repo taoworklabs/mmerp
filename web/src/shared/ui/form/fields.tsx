@@ -285,8 +285,8 @@ export function MoneyField(props: Base & { min?: number }) {
 
 // IntegerField holds a whole number (a port, a year, a count of levels) without digit grouping,
 // so 8080 and 2026 read as typed.
-export function IntegerField(props: Base & { min?: number; max?: number }) {
-  const { field, common } = useField(props)
+export function IntegerField(props: Base & { min?: number; max?: number; rules?: RegisterOptions }) {
+  const { field, common } = useField(props, props.rules)
   return (
     <NumberInput
       {...common}

@@ -81,7 +81,8 @@ export function Form<T extends FieldValues>({ form, onSubmit, errorFields, id, c
       setBanner(null)
       try {
         await onSubmit(values)
-        form.reset(values)
+        // onSubmit may put a server error on a field itself (a path errorFields cannot name); keep the edits then.
+        if (Object.keys(form.formState.errors).length === 0) form.reset(values)
       } catch (err) {
         const field = err instanceof ApiError ? fieldOfError(errorFields, err) : undefined
         if (field) form.setError(field, { message: errorText(t, err) }, { shouldFocus: true })
