@@ -460,7 +460,6 @@
   "hrm.employee.terminate_confirm": "Terminate {{name}} with {{date}} as the last working day? From the next day the employee shows as terminated.",
   "hrm.employee.tab.contracts_count": "Contracts ({{count}})",
   "hrm.employee.tab.leave": "Leave",
-  "hrm.employee.section.work": "Work",
   "hrm.employee.age_one": "{{count}} year old",
   "hrm.employee.age_other": "{{count}} years old",
   "hrm.employee.current_contract": "Current contract",

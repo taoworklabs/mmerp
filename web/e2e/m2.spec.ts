@@ -196,12 +196,12 @@ test('HR creates an employee with a sensitive field, edits it and adds a depende
   await expect(page.getByText('Đã tạo nhân viên.')).toBeVisible()
   await page.mouse.move(0, 0)
   await expect(page.getByText('Đã tạo nhân viên.')).toBeHidden()
-  const main = page.getByRole('region', { name: 'Công việc' })
+  const main = page.getByRole('region', { name: 'Thông tin chính' })
   await expect(main.getByText('05/01/2026')).toBeVisible()
   await expect(page.getByText('••••••').first()).toBeVisible()
 
   // Each part of the profile is edited on its own, in place in its card.
-  await main.getByRole('button', { name: 'Sửa Công việc' }).click()
+  await main.getByRole('button', { name: 'Sửa Thông tin chính' }).click()
   await main.getByRole('textbox', { name: 'Họ tên' }).fill('Lê Văn Đổi')
   await main.getByRole('button', { name: 'Lưu' }).click()
   await expect(page.getByRole('heading', { name: 'Lê Văn Đổi' })).toBeVisible()
@@ -293,7 +293,7 @@ test('leaving a record asks only when something was edited', async ({ page }) =>
     await expect(page).toHaveURL(new RegExp(`/hrm/employees/${ids.ea}$`))
   }
   await openFromList()
-  await page.getByRole('button', { name: 'Sửa Công việc' }).click()
+  await page.getByRole('button', { name: 'Sửa Thông tin chính' }).click()
   await page.getByRole('textbox', { name: 'Họ tên' }).fill('Tên đang sửa')
   await page.evaluate(() => history.back())
   await expect(page.getByRole('dialog', { name: 'Rời trang?' })).toBeVisible()
@@ -324,7 +324,7 @@ test('status comes from the API, and the manager picker keeps one stable label',
   page.on('request', (r) => r.url().includes('/api/hrm/employees?') && searches++)
   await page.goto(`/hrm/employees/${left}`)
   await expect(page.getByText('Đã nghỉ việc')).toBeVisible()
-  await page.getByRole('button', { name: 'Sửa Công việc' }).click()
+  await page.getByRole('button', { name: 'Sửa Thông tin chính' }).click()
   const manager = page.getByRole('combobox', { name: 'Quản lý trực tiếp' })
   await expect(manager).toHaveValue(`M${run} · Nhân viên M${run}`)
   searches = 0

@@ -1,5 +1,5 @@
 import { Anchor, Button } from '@mantine/core'
-import { IconAddressBook, IconBriefcase, IconEye, IconEyeOff, IconLock } from '@tabler/icons-react'
+import { IconAddressBook, IconEye, IconEyeOff, IconLock, IconUser } from '@tabler/icons-react'
 import { useState, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { type Employee } from '@/shared/api/hrm'
@@ -10,10 +10,10 @@ import { FieldList, MissingValue, type FieldRow } from '@/shared/ui/FieldList'
 import { DateField, EditablePanel, Form, FormActions, FormFields, OrgUnitField, SensitiveValue } from '@/shared/ui/form'
 import { FormModal } from '@/shared/ui/page'
 import { icon } from '@/shared/ui/theme'
-import { currentContract, useEmployeeContracts } from '../hooks/useEmployeeRecords'
 import { employeeDocType } from '../keys'
 import { tenure } from '../tenure'
 import { EmployeeField } from './EmployeeField'
+import { EmployeeLink } from './EmployeeLink'
 import { useConfirm } from '@/shared/ui/confirm'
 import { MainFields, PersonalFields, revealSensitive, SensitiveFields, sensitiveFields, useEmployeeForm, type EmployeeValues } from './EmployeeForm'
 
@@ -22,8 +22,8 @@ type Part = 'main' | 'personal' | 'sensitive'
 export type Move = 'transfer' | 'terminate'
 
 // EmployeeProfile is an employee's values in three cards, each read as label–value pairs and
-// edited in place. What the page header already shows (name, code, manager, login) is not repeated;
-// the work card's form still edits it, as it is one form. An empty value offers to fill it in.
+// edited in place. A card shows every value its form edits, those in the page header included, so
+// what can be changed is where it is read. An empty value offers to fill it in.
 export function EmployeeProfile({ employee: e, onSaved }: { employee: Employee; onSaved: () => Promise<void> }) {
   const { t } = useTranslation()
   const me = useMe()
@@ -35,9 +35,7 @@ export function EmployeeProfile({ employee: e, onSaved }: { employee: Employee; 
   const canSensitive = e.allowed_actions.includes('view_sensitive')
   const anySensitive = sensitiveFields.some((f) => e.sensitive[f])
   const canEdit = e.allowed_actions.includes('edit')
-  const contracts = useEmployeeContracts(e)
   const now = today(me.timezone)
-  const current = currentContract(contracts.data, now)
   const saved = async () => {
     await onSaved()
     setAll(false)
@@ -53,28 +51,25 @@ export function EmployeeProfile({ employee: e, onSaved }: { employee: Employee; 
 
   return (
     <>
-      <EditablePanel title={t('hrm.employee.section.work')} icon={IconBriefcase} editable={canEdit} edit={edit('main')}>
-        <FieldList
-          stacked
-          rows={[
-            [t('hrm.employee.org_unit'), e.org_unit_name],
-            [t('hrm.employee.hire_date'), formatDate(e.hire_date)],
-            ...(e.allowed_actions.includes('view_contracts')
-              ? [
-                  [
-                    t('hrm.employee.contract_type'),
-                    contracts.isPending ? '' : (current?.contract_type_name ?? (
-                      <MissingValue
-                        label={t('hrm.employee.contract_type')}
-                        to={e.allowed_actions.includes('create_contract') ? `/hrm/contracts/new?employee=${e.id}` : undefined}
-                      />
-                    )),
-                  ] as FieldRow,
-                ]
-              : []),
-            ...(e.termination_date ? [[t('hrm.employee.termination_date'), formatDate(e.termination_date)] as FieldRow] : []),
-          ]}
-        />
+      <EditablePanel title={t('hrm.employee.section.main')} icon={IconUser} editable={canEdit} edit={edit('main')}>
+        {(open) => (
+          <FieldList
+            stacked
+            rows={[
+              [t('hrm.employee.full_name'), e.full_name],
+              [t('hrm.employee.code'), e.code],
+              [t('hrm.employee.org_unit'), e.org_unit_name],
+              [t('hrm.employee.hire_date'), formatDate(e.hire_date)],
+              [
+                t('hrm.employee.manager'),
+                or(open, t('hrm.employee.manager'), e.manager_id && e.manager_code && e.manager_name && <EmployeeLink id={e.manager_id}>{`${e.manager_code} · ${e.manager_name}`}</EmployeeLink>),
+              ],
+              [t('hrm.employee.user_login'), or(open, t('hrm.employee.user_login'), e.user_login)],
+              // Leaving is recorded through "Cho nghỉ việc"; the date shows once there is one.
+              ...(e.termination_date ? [[t('hrm.employee.termination_date'), formatDate(e.termination_date)] as FieldRow] : []),
+            ]}
+          />
+        )}
       </EditablePanel>
       <EditablePanel title={t('hrm.employee.section.personal')} icon={IconAddressBook} editable={canEdit} edit={edit('personal')}>
         {(open) => (

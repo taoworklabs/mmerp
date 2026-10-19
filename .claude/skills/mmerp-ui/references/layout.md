@@ -121,7 +121,7 @@ Manager        Tenure        Contract type        Leave left 2026
 + Add          4 years       Open-ended           12 days
 Overview | Contracts (2) | Leave | Dependants | Files (1) | Activity
 ┌ ~1.6 ───────────────────────────────────┐ ┌ ~1 ──────────────────────────┐
-│ ▣ Work                          ✎ Sửa │   Current contract    See all
+│ ▣ Main details                  ✎ Sửa │   Current contract    See all
 │ Label            Label                 │  ──────────────────────────────
 │ value            value                 │   Leave 2026          See all
 └────────────────────────────────────────┘  ──────────────────────────────
