@@ -29,7 +29,7 @@ export function Table() {
           label={t('shared.devui.table')}
           rows={rows}
           rowKey={(r) => r.id}
-          href={() => '/dev/ui/table'}
+          href={() => '/dev/ui/mmerp/data-table'}
           menu={() => <Menu.Item>{t('shared.devui.secondary')}</Menu.Item>}
           sort={sort}
           onSort={setSort}
@@ -108,12 +108,12 @@ export function Bulk() {
           columns={view.columns}
           rows={rows}
           rowKey={(r) => r.id}
-          href={(r) => `/dev/ui/bulk?peek=${r.id}`}
+          href={(r) => `/dev/ui/patterns/bulk?peek=${r.id}`}
           onRowClick={(r) => peek.open(r.id)}
           selection={{ selected, onChange: setSelected }}
           onResize={view.onResize}
         />
-        <SidePanel title={open?.name ?? ''} href="/dev/ui/bulk" opened={!!open} onClose={peek.close}>
+        <SidePanel title={open?.name ?? ''} href="/dev/ui/patterns/bulk" opened={!!open} onClose={peek.close}>
           {open && (
             <FieldList
               rows={[

@@ -16,8 +16,8 @@ import { icon } from '@/shared/ui/theme'
 import { Case, Demo } from './Demo'
 
 const crumbs = [
-  { label: 'Nhân sự', to: '/dev/ui/headers' },
-  { label: 'Nhân viên', to: '/dev/ui/headers' },
+  { label: 'Nhân sự', to: '/dev/ui/templates/page' },
+  { label: 'Nhân viên', to: '/dev/ui/templates/page' },
 ]
 
 const facts: [string, ReactNode][] = [

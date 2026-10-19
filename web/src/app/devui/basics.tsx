@@ -192,7 +192,7 @@ export function Links() {
     <Demo title={t('shared.devui.links')} description={t('shared.devui.links_hint')}>
       <Case label={t('shared.devui.case_link_record')}>
         <Group>
-          <Anchor component={Link} to="/dev/ui/links" size="sm">
+          <Anchor component={Link} to="/dev/ui/mantine/anchor" size="sm">
             {sample.person}
           </Anchor>
         </Group>
@@ -216,10 +216,10 @@ export function Links() {
       </Case>
       <Case label={t('shared.devui.case_breadcrumbs')}>
         <Breadcrumbs separator={<IconChevronRight {...icon.text} />} separatorMargin="xxs">
-          <Anchor component={Link} to="/dev/ui/links" size="sm" c="dimmed">
+          <Anchor component={Link} to="/dev/ui/mantine/anchor" size="sm" c="dimmed">
             {t('shared.devui.title')}
           </Anchor>
-          <Anchor component={Link} to="/dev/ui/links" size="sm" c="dimmed">
+          <Anchor component={Link} to="/dev/ui/mantine/anchor" size="sm" c="dimmed">
             {t('shared.devui.group_navigation')}
           </Anchor>
         </Breadcrumbs>
@@ -367,7 +367,7 @@ export function FieldLists() {
           rows={[
             [
               'Nhân viên',
-              <Anchor key="p" component={Link} to="/dev/ui/field-list" size="sm" inherit>
+              <Anchor key="p" component={Link} to="/dev/ui/mmerp/field-list" size="sm" inherit>
                 {sample.person}
               </Anchor>,
             ],
@@ -414,14 +414,14 @@ export function Tiles() {
     <Demo title={t('shared.devui.tiles')} description={t('shared.devui.tiles_hint')}>
       <Case label={t('shared.devui.case_stat_tile')}>
         <TileGrid>
-          <StatTile label={t('shared.devui.name')} value={128} to="/dev/ui/tiles" />
-          <StatTile label={t('shared.devui.name')} value={undefined} to="/dev/ui/tiles" />
-          <StatTile label={t('shared.devui.name')} value={undefined} to="/dev/ui/tiles" error={t('shared.devui.error')} />
+          <StatTile label={t('shared.devui.name')} value={128} to="/dev/ui/mmerp/tiles" />
+          <StatTile label={t('shared.devui.name')} value={undefined} to="/dev/ui/mmerp/tiles" />
+          <StatTile label={t('shared.devui.name')} value={undefined} to="/dev/ui/mmerp/tiles" error={t('shared.devui.error')} />
         </TileGrid>
       </Case>
       <Case label={t('shared.devui.case_link_tile')}>
         <TileGrid>
-          <LinkTile icon={IconUsersGroup} title={t('shared.devui.name')} to="/dev/ui/tiles" />
+          <LinkTile icon={IconUsersGroup} title={t('shared.devui.name')} to="/dev/ui/mmerp/tiles" />
         </TileGrid>
       </Case>
     </Demo>
