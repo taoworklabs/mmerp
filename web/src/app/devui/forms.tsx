@@ -1,11 +1,12 @@
-import { Group, Text } from '@mantine/core'
-import { IconCircleDot } from '@tabler/icons-react'
+import { Button, Group, Stack, Text } from '@mantine/core'
+import { IconCircleDot, IconUsersGroup } from '@tabler/icons-react'
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { useTranslation } from 'react-i18next'
 import { formatDecimal, formatNumber } from '@/shared/i18n'
 import {
   CheckboxField,
+  EditablePanel,
   CodeField,
   DateField,
   DecimalField,
@@ -37,8 +38,30 @@ import {
   YearFilter,
 } from '@/shared/ui/form'
 import { DocumentStatusFilter } from '@/shared/document'
+import { FieldList, MissingValue } from '@/shared/ui/FieldList'
 import { InlineEditField } from '@/shared/ui/InlineEditField'
-import { Case, Demo } from './Demo'
+import { ModalFooter } from '@/shared/ui/ModalFooter'
+import { FormModal } from '@/shared/ui/page'
+import { EmptyState } from '@/shared/ui/states'
+import { Case, rows } from './Demo'
+import { DocPage } from './DocPage'
+
+// The main props of each component; data, not interface text.
+const code = {
+  form: `const form = useForm({ defaultValues })
+<Form form={form} onSubmit={save}>
+  <FormSection title>  // or <FormFields> inside a card
+    <TextField name label required? description? />  // DateField, MoneyField, SelectField…
+  </FormSection>
+  <FormActions submitLabel />
+</Form>`,
+  filters: `import { DocumentStatusFilter } from '@/shared/document'
+// values live on the URL: useListParams from '@/shared/url/listParams'`,
+  inline: `<InlineEditField label value onSave validate? readOnly? />`,
+  lines: `<LinesTable name label columns newLine addLabel lineLabel removeLabel minLines? footer? />
+<LinesTable readOnly label lines columns lineLabel footer? />
+import { LinesTotals } from '@/shared/ui/form'`,
+}
 
 // Searched in the browser: the catalogue has no server.
 const people = [
@@ -48,14 +71,29 @@ const people = [
 ]
 const searchPeople = async (q: string) => people.filter((p) => `${p.code} ${p.name}`.toLowerCase().includes(q.toLowerCase()))
 
-export function Fields() {
+export function FormDoc() {
   const { t } = useTranslation()
   // A card's fields edited in place: no section title, two to a row.
   const pair = useForm({ defaultValues: { name: 'Nguyễn Văn An', code: 'NV001', date: null, salary: undefined } })
   const form = useForm({ defaultValues: { code: '', password: '', unit: null, entity: null, person: '3', date: null, month: '2026-03', file: null, choice: null, masked: undefined, open: undefined, denied: undefined, days: '2.5', flag: true } })
   return (
-    <Demo title={t('shared.devui.form')}>
-      <Case label={t('shared.devui.case_form_section')}>
+    <DocPage
+      path="mmerp/form"
+      example={
+        <Case label={t('shared.devui.case_form_fields')}>
+        <Form form={pair} onSubmit={async () => {}}>
+          <FormFields>
+            <TextField name="name" label={t('shared.devui.name')} required />
+            <TextField name="code" label={t('shared.devui.code')} />
+            <DateField name="date" label={t('shared.devui.date')} />
+            <MoneyField name="salary" label={t('shared.devui.money')} />
+          </FormFields>
+        </Form>
+      </Case>
+      }
+      variants={
+        <>
+          <Case label={t('shared.devui.case_form_section')}>
         <Form form={form} onSubmit={async () => {}}>
           <FormSection title={t('shared.devui.form')} description={t('shared.devui.hint')}>
             <TextField name="code" label={t('shared.devui.code')} required description={t('shared.devui.hint')} />
@@ -94,21 +132,14 @@ export function Fields() {
           <FormActions submitLabel={t('shared.devui.primary')} />
         </Form>
       </Case>
-      <Case label={t('shared.devui.case_form_fields')}>
-        <Form form={pair} onSubmit={async () => {}}>
-          <FormFields>
-            <TextField name="name" label={t('shared.devui.name')} required />
-            <TextField name="code" label={t('shared.devui.code')} />
-            <DateField name="date" label={t('shared.devui.date')} />
-            <MoneyField name="salary" label={t('shared.devui.money')} />
-          </FormFields>
-        </Form>
-      </Case>
-    </Demo>
+        </>
+      }
+      code={code.form}
+    />
   )
 }
 
-export function Filters() {
+export function FiltersDoc() {
   const { t } = useTranslation()
   const [year, setYear] = useState(2026)
   const [choice, setChoice] = useState<string | null>('positive')
@@ -124,47 +155,56 @@ export function Filters() {
     { value: 'long', label: t('shared.devui.long_value') },
   ]
   return (
-    <Demo title={t('shared.devui.filters')}>
-      <Case label={t('shared.devui.case_search')}>
+    <DocPage
+      path="mmerp/filters"
+      example={
+        <Case label={t('shared.devui.case_search')}>
         <Group gap="xs">
           <SearchInput label={t('shared.devui.name')} value={q} onSearch={setQ} />
         </Group>
       </Case>
-      {/* Unset with a search (type to see no results), set (tinted, with its clear button), a value too long for the chip. */}
-      <Case label={t('shared.devui.case_filter_chip')}>
+      }
+      variants={
+        <>
+          <Case label={t('shared.devui.case_filter_chip')}>
         <Group gap="xs">
           <FilterChip label={t('shared.devui.choice')} icon={IconCircleDot} data={choices} value={null} onChange={() => {}} searchable />
           <FilterChip label={t('shared.devui.choice')} icon={IconCircleDot} data={choices} value={choice} onChange={setChoice} />
           <FilterChip label={t('shared.devui.choice')} icon={IconCircleDot} data={choices} value="long" onChange={() => {}} />
         </Group>
       </Case>
-      <Case label={t('shared.devui.case_filter_status')}>
+          <Case label={t('shared.devui.case_filter_status')}>
         <Group gap="xs">
           <DocumentStatusFilter docType="shared" value={status} onChange={setStatus} />
         </Group>
       </Case>
-      <Case label={t('shared.devui.case_filter_org')}>
+          <Case label={t('shared.devui.case_filter_org')}>
         <Group gap="xs">
           <OrgUnitFilter label={t('shared.devui.org_unit')} value={unit} onChange={setUnit} />
           <LegalEntityFilter label={t('shared.devui.legal_entity')} options={entities.options} value={entities.chosen} onChange={setEntity} />
         </Group>
       </Case>
-      <Case label={t('shared.devui.case_filter_period')}>
+          <Case label={t('shared.devui.case_filter_period')}>
         <Group gap="xs">
           <YearFilter label={t('shared.devui.year')} value={year} years={[2025, 2026, 2027]} onChange={setYear} />
           <MonthFilter label={t('shared.devui.month')} value={month} onChange={setMonth} />
         </Group>
       </Case>
-    </Demo>
+        </>
+      }
+      code={code.filters}
+    />
   )
 }
 
-export function Inline() {
+export function InlineEditFieldDoc() {
   const { t } = useTranslation()
   const [name, setName] = useState('Công ty CP Demo')
   return (
-    <Demo title={t('shared.devui.inline')} description={t('shared.devui.inline_hint')}>
-      <Case label={t('shared.devui.case_inline_edit')}>
+    <DocPage
+      path="mmerp/inline-edit-field"
+      example={
+        <Case label={t('shared.devui.case_inline_edit')}>
         <InlineEditField
           label={t('shared.devui.name')}
           value={name}
@@ -175,19 +215,27 @@ export function Inline() {
           }}
         />
       </Case>
-      <Case label={t('shared.devui.case_inline_read_only')}>
+      }
+      variants={
+        <>
+          <Case label={t('shared.devui.case_inline_read_only')}>
         <InlineEditField label={t('shared.devui.code')} value="KH001" readOnly onSave={async () => {}} />
       </Case>
-    </Demo>
+        </>
+      }
+      code={code.inline}
+    />
   )
 }
 
-export function Lines() {
+export function LinesTableDoc() {
   const { t } = useTranslation()
   const form = useForm({ defaultValues: { levels: 2, lines: [{ description: 'Dịch vụ tư vấn', quantity: '2', unit_price: 1500000 }] } })
   return (
-    <Demo title={t('shared.devui.lines')} description={t('shared.devui.lines_hint')}>
-      <Case label={t('shared.devui.case_lines_edit')}>
+    <DocPage
+      path="mmerp/lines-table"
+      example={
+        <Case label={t('shared.devui.case_lines_edit')}>
         <Form form={form} onSubmit={async () => {}}>
           <FormSection title={t('shared.devui.form')}>
             <IntegerField name="levels" label={t('shared.devui.levels')} min={1} max={5} />
@@ -212,7 +260,10 @@ export function Lines() {
           <FormActions submitLabel={t('shared.devui.primary')} />
         </Form>
       </Case>
-      <Case label={t('shared.devui.case_lines_read_only')}>
+      }
+      variants={
+        <>
+          <Case label={t('shared.devui.case_lines_read_only')}>
             <LinesTable
               readOnly
               label={t('shared.devui.lines')}
@@ -229,6 +280,95 @@ export function Lines() {
               footer={<LinesTotals rows={[[t('shared.devui.subtotal'), formatNumber(3000000)], [t('shared.devui.grand_total'), formatNumber(3240000)]]} />}
             />
       </Case>
-    </Demo>
+        </>
+      }
+      code={code.lines}
+    />
+  )
+}
+
+const editableCode = `<EditablePanel title icon? editable edit={(close) => <Form …><FormActions onCancel={close} /></Form>}>
+  {(open) => <FieldList stacked rows={…} />}   // open() starts editing, e.g. from MissingValue
+</EditablePanel>`
+
+export function EditablePanelDoc() {
+  const { t } = useTranslation()
+  const form = useForm({ defaultValues: { department: 'Kế toán', email: '' } })
+  return (
+    <DocPage
+      path="mmerp/editable-panel"
+      example={
+        <Case>
+          <EditablePanel
+            title={t('shared.devui.section_staff')}
+            icon={IconUsersGroup}
+            editable
+            edit={(close) => (
+              <Form form={form} onSubmit={async () => close()}>
+                <FormFields>
+                  <TextField name="department" label="Phòng ban" />
+                  <TextField name="email" label="Email" />
+                </FormFields>
+                <FormActions submitLabel={t('shared.devui.save')} onCancel={close} cancelLabel={t('shared.form.cancel')} />
+              </Form>
+            )}
+          >
+            {(open) => (
+              <FieldList
+                stacked
+                rows={[
+                  ['Phòng ban', 'Kế toán'],
+                  ['Email', <MissingValue key="e" label="Email" onAdd={open} />],
+                ]}
+              />
+            )}
+          </EditablePanel>
+        </Case>
+      }
+      code={editableCode}
+    />
+  )
+}
+
+const modalCode = `<FormModal title opened onClose wide?>{form}</FormModal>
+import { ModalFooter } from '@/shared/ui/ModalFooter'   // a footer for a modal without a Form`
+
+export function FormModalDoc() {
+  const { t } = useTranslation()
+  const [modal, setModal] = useState<'form' | 'footer' | null>(null)
+  return (
+    <DocPage
+      path="mmerp/form-modal"
+      example={
+        <Case>
+          <Group>
+            <Button variant="default" onClick={() => setModal('form')}>
+              {t('shared.devui.open_modal')}
+            </Button>
+          </Group>
+          <FormModal opened={modal === 'form'} onClose={() => setModal(null)} title={t('shared.devui.open_modal')}>
+            <EmptyState title={t('shared.devui.empty')} />
+          </FormModal>
+        </Case>
+      }
+      variants={
+        <Case label={t('shared.devui.case_modal_footer')}>
+          <Group>
+            <Button variant="default" onClick={() => setModal('footer')}>
+              {t('shared.devui.open_modal')}
+            </Button>
+          </Group>
+          <FormModal opened={modal === 'footer'} onClose={() => setModal(null)} title={t('shared.devui.export')}>
+            <Stack gap="md">
+              <Text>{`${rows[0]!.code} · ${rows[0]!.name}`}</Text>
+              <ModalFooter>
+                <Button onClick={() => setModal(null)}>{t('shared.devui.export')}</Button>
+              </ModalFooter>
+            </Stack>
+          </FormModal>
+        </Case>
+      }
+      code={modalCode}
+    />
   )
 }

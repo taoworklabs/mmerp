@@ -1,9 +1,9 @@
-import { AppShell, Burger, Group, NavLink, ScrollArea, Stack, Text, ThemeIcon } from '@mantine/core'
+import { Anchor, AppShell, Burger, Group, NavLink, ScrollArea, Stack, Text, ThemeIcon } from '@mantine/core'
 import { useDisclosure } from '@mantine/hooks'
 import { IconComponents } from '@tabler/icons-react'
-import type { ComponentType } from 'react'
+import type { ComponentType, ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
-import { createBrowserRouter, Link, Navigate, Outlet, useLocation } from 'react-router'
+import { createBrowserRouter, Link, Navigate, Outlet, ScrollRestoration, useLocation } from 'react-router'
 import { client } from '@/shared/api/client'
 import type { Me } from '@/shared/api/core'
 import { MeProvider } from '@/shared/auth/me'
@@ -11,132 +11,112 @@ import { icon } from '@/shared/ui/theme'
 import classes from '../AppLayout.module.css'
 import { offline } from './api'
 import devui from './DevUi.module.css'
-import { Alerts, Avatars, Badges, Buttons, FieldLists, IconButtons, Links, Menus, Overlays, Sections, TabsDemo, Tiles, Tree } from './basics'
-import { Bulk, Grid, GroupedTable, Table } from './data'
-import { ActivityDemo, Cards, DocumentPanels, Headers } from './blocks'
-import { Actions, Dialogs, QueryViews, States, ToastsDemo } from './feedback'
+import { type Entry, entries, entryByPath, layers, type Path } from './catalogue'
+import { key, useEntryTitle } from './DocPage'
+import { Overview } from './start'
+import { ApprovalPanelDoc, ActivityFeedDoc, AttachmentPanelDoc, DocumentPreviewDoc, DocumentStatusDoc } from './documents'
+import { BulkBarDoc, MoreActionsDoc, NoticeDoc, NotifyDoc, QueryViewDoc, SidePanelDoc, StatesDoc, UseActionDoc, UseConfirmDoc } from './actions'
+import { BulkPattern, ConfirmDeletePattern, CreateEditPattern, DocumentApprovalPattern, FilterSearchPattern, LoadingEmptyErrorPattern } from './patterns'
+import { EditablePanelDoc, FiltersDoc, FormDoc, FormModalDoc, InlineEditFieldDoc, LinesTableDoc } from './forms'
+import { CellGridDoc, DataTableDoc, FieldListDoc, KeyFactsDoc, PanelDoc, PersonAvatarDoc, SectionDoc, StatusBadgeDoc, TilesDoc, TreeListDoc } from './display'
+import { AnchorDoc, ButtonDoc, LayoutTextDoc, LoaderDoc, SkeletonDoc, TooltipDoc } from './mantine'
 import { Colour, Icons, Principles, Spacing, Surfaces, Typography } from './foundations'
-import { Fields, Filters, Inline, Lines } from './input'
 import { AuthTemplate, DocumentTemplate, InboxTemplate, ListTemplate, PageTemplate, RecordTemplate } from './templates'
 
-// An entry is labelled by an i18n key, or by its component name for the templates.
-type Entry = { path: string; label?: string; name?: string; Component: ComponentType }
+// Every entry's page; a missing or extra one fails tsc.
+const pages: Record<Path, ComponentType> = {
+  'start/overview': Overview,
+  'foundations/principles': Principles,
+  'foundations/colour': Colour,
+  'foundations/typography': Typography,
+  'foundations/spacing': Spacing,
+  'foundations/surfaces': Surfaces,
+  'foundations/icons': Icons,
+  'mantine/anchor': AnchorDoc,
+  'mantine/button': ButtonDoc,
+  'mantine/layout-text': LayoutTextDoc,
+  'mantine/loader': LoaderDoc,
+  'mantine/skeleton': SkeletonDoc,
+  'mantine/tooltip': TooltipDoc,
+  'mmerp/activity-feed': ActivityFeedDoc,
+  'mmerp/approval-panel': ApprovalPanelDoc,
+  'mmerp/attachment-panel': AttachmentPanelDoc,
+  'mmerp/bulk-bar': BulkBarDoc,
+  'mmerp/cell-grid': CellGridDoc,
+  'mmerp/data-table': DataTableDoc,
+  'mmerp/document-preview': DocumentPreviewDoc,
+  'mmerp/document-status': DocumentStatusDoc,
+  'mmerp/editable-panel': EditablePanelDoc,
+  'mmerp/field-list': FieldListDoc,
+  'mmerp/filters': FiltersDoc,
+  'mmerp/form': FormDoc,
+  'mmerp/form-modal': FormModalDoc,
+  'mmerp/inline-edit-field': InlineEditFieldDoc,
+  'mmerp/key-facts': KeyFactsDoc,
+  'mmerp/lines-table': LinesTableDoc,
+  'mmerp/more-actions': MoreActionsDoc,
+  'mmerp/notice': NoticeDoc,
+  'mmerp/notify': NotifyDoc,
+  'mmerp/panel': PanelDoc,
+  'mmerp/person-avatar': PersonAvatarDoc,
+  'mmerp/query-view': QueryViewDoc,
+  'mmerp/section': SectionDoc,
+  'mmerp/side-panel': SidePanelDoc,
+  'mmerp/states': StatesDoc,
+  'mmerp/status-badge': StatusBadgeDoc,
+  'mmerp/tiles': TilesDoc,
+  'mmerp/tree-list': TreeListDoc,
+  'mmerp/use-action': UseActionDoc,
+  'mmerp/use-confirm': UseConfirmDoc,
+  'patterns/filter-search': FilterSearchPattern,
+  'patterns/create-edit': CreateEditPattern,
+  'patterns/confirm-delete': ConfirmDeletePattern,
+  'patterns/loading-empty-error': LoadingEmptyErrorPattern,
+  'patterns/bulk': BulkPattern,
+  'patterns/document-approval': DocumentApprovalPattern,
+  'templates/auth': AuthTemplate,
+  'templates/document': DocumentTemplate,
+  'templates/inbox': InboxTemplate,
+  'templates/list': ListTemplate,
+  'templates/page': PageTemplate,
+  'templates/record': RecordTemplate,
+}
 
-const groups: { label: string; entries: Entry[] }[] = [
-  {
-    label: 'shared.devui.group_foundations',
-    entries: [
-      { path: 'principles', label: 'shared.devui.principles', Component: Principles },
-      { path: 'colour', label: 'shared.devui.colour', Component: Colour },
-      { path: 'typography', label: 'shared.devui.typography', Component: Typography },
-      { path: 'spacing', label: 'shared.devui.spacing', Component: Spacing },
-      { path: 'surfaces', label: 'shared.devui.surfaces', Component: Surfaces },
-      { path: 'icons', label: 'shared.devui.icons', Component: Icons },
-    ],
-  },
-  {
-    label: 'shared.devui.group_actions',
-    entries: [
-      { path: 'buttons', label: 'shared.devui.buttons', Component: Buttons },
-      { path: 'icon-buttons', label: 'shared.devui.icon_buttons', Component: IconButtons },
-      { path: 'menus', label: 'shared.devui.menus', Component: Menus },
-    ],
-  },
-  {
-    label: 'shared.devui.group_navigation',
-    entries: [
-      { path: 'links', label: 'shared.devui.links', Component: Links },
-      { path: 'tabs', label: 'shared.devui.tabs', Component: TabsDemo },
-    ],
-  },
-  {
-    label: 'shared.devui.group_display',
-    entries: [
-      { path: 'badges', label: 'shared.devui.badges', Component: Badges },
-      { path: 'avatars', label: 'shared.devui.avatars', Component: Avatars },
-      { path: 'field-list', label: 'shared.devui.field_list', Component: FieldLists },
-      { path: 'tree', label: 'shared.devui.tree', Component: Tree },
-      { path: 'tiles', label: 'shared.devui.tiles', Component: Tiles },
-    ],
-  },
-  {
-    label: 'shared.devui.group_tables',
-    entries: [
-      { path: 'table', label: 'shared.devui.table', Component: Table },
-      { path: 'grouped', label: 'shared.devui.grouped', Component: GroupedTable },
-      { path: 'grid', label: 'shared.devui.grid', Component: Grid },
-      { path: 'bulk', label: 'shared.devui.bulk', Component: Bulk },
-    ],
-  },
-  {
-    label: 'shared.devui.group_input',
-    entries: [
-      { path: 'fields', label: 'shared.devui.form', Component: Fields },
-      { path: 'filters', label: 'shared.devui.filters', Component: Filters },
-      { path: 'inline', label: 'shared.devui.inline', Component: Inline },
-      { path: 'lines', label: 'shared.devui.lines', Component: Lines },
-    ],
-  },
-  {
-    label: 'shared.devui.group_feedback',
-    entries: [
-      { path: 'alerts', label: 'shared.devui.alerts', Component: Alerts },
-      { path: 'states', label: 'shared.devui.states', Component: States },
-      { path: 'query-view', label: 'shared.devui.query_view', Component: QueryViews },
-      { path: 'toasts', label: 'shared.devui.toasts', Component: ToastsDemo },
-      { path: 'use-action', label: 'shared.devui.use_action', Component: Actions },
-    ],
-  },
-  {
-    label: 'shared.devui.group_overlays',
-    entries: [
-      { path: 'overlays', label: 'shared.devui.overlays', Component: Overlays },
-      { path: 'dialogs', label: 'shared.devui.dialogs', Component: Dialogs },
-    ],
-  },
-  {
-    label: 'shared.devui.group_blocks',
-    entries: [
-      { path: 'headers', label: 'shared.devui.headers', Component: Headers },
-      { path: 'cards', label: 'shared.devui.cards', Component: Cards },
-      { path: 'activity', label: 'shared.devui.activity', Component: ActivityDemo },
-      { path: 'document-panels', label: 'shared.devui.doc_panels', Component: DocumentPanels },
-    ],
-  },
-  {
-    label: 'shared.devui.group_layout',
-    entries: [
-      { path: 'sections', label: 'shared.devui.section', Component: Sections },
-      { path: 'page', name: 'Page', Component: PageTemplate },
-      { path: 'list', name: 'ListPage', Component: ListTemplate },
-      { path: 'record', name: 'RecordPage', Component: RecordTemplate },
-      { path: 'document', name: 'DocumentPage', Component: DocumentTemplate },
-      { path: 'inbox', name: 'InboxPage', Component: InboxTemplate },
-      { path: 'auth', name: 'AuthPage', Component: AuthTemplate },
-    ],
-  },
-]
+const all = entries as readonly Entry[]
 
 // The signed-in user the catalogue pretends to be: components such as the activity feed read it.
 const me: Me = { authz_version: '0', id: 1, locale: 'vi', login: 'an.nguyen', name: 'Nguyễn Văn An', permissions: {}, products: [], products_with_data: [], timezone: 'Asia/Ho_Chi_Minh' }
 
-// Usage sits above a template, outside it: when to reach for it, and when another one fits better.
-function Usage({ path }: { path: string }) {
+// TemplateNote sits above a template, outside it: the problem it solves, when to reach for it and
+// when another fits better, and the components it is built from.
+function TemplateNote({ entry }: { entry: Entry }) {
+  const k = key(entry)
   const { t } = useTranslation()
+  const title = useEntryTitle()
+  const line = (label: string, text: ReactNode) => (
+    <Text size="sm">
+      <Text span fw={600}>
+        {label}
+      </Text>{' '}
+      {text}
+    </Text>
+  )
   return (
     <Stack gap="xxxs" px="md" py="xs" className={devui.usage}>
-      <Text size="sm">
-        <Text span fw={600}>
-          {t('shared.devui.use_when')}
-        </Text>{' '}
-        {t(`shared.devui.use_${path}`)}
-      </Text>
-      <Text size="sm">
-        <Text span fw={600}>
-          {t('shared.devui.avoid_when')}
-        </Text>{' '}
-        {t(`shared.devui.avoid_${path}`)}
-      </Text>
+      <Text size="sm">{t(`shared.devui.about_${k}`)}</Text>
+      {line(t('shared.devui.use_when'), t(`shared.devui.use_${k}`))}
+      {line(t('shared.devui.avoid_when'), t(`shared.devui.avoid_${k}`))}
+      {entry.related &&
+        line(
+          t('shared.devui.built_from'),
+          <Group component="span" gap="xs" display="inline-flex">
+            {entry.related.map((p) => (
+              <Anchor key={p} component={Link} to={`/dev/ui/${p}`} size="sm">
+                {title(entryByPath(p))}
+              </Anchor>
+            ))}
+          </Group>,
+        )}
     </Stack>
   )
 }
@@ -146,7 +126,8 @@ function DevUiLayout() {
   const { t } = useTranslation()
   const { pathname } = useLocation()
   const [drawer, { toggle, close }] = useDisclosure()
-  const template = groups.flatMap((g) => g.entries).find((e) => e.name && pathname === `/dev/ui/${e.path}`)
+  const title = useEntryTitle()
+  const template = all.find((e) => e.layer === 'templates' && pathname === `/dev/ui/${e.path}`)
   return (
     <MeProvider me={me}>
       <AppShell header={{ height: 48 }} navbar={{ width: 280, breakpoint: 'md', collapsed: { mobile: !drawer } }} padding={0}>
@@ -164,24 +145,31 @@ function DevUiLayout() {
         <AppShell.Navbar>
           <AppShell.Section grow component={ScrollArea} p="xs">
             <Stack gap="md">
-              {groups.map((g) => (
-                <Stack key={g.label} gap="xxs" role="group" aria-label={t(g.label)}>
-                  <Text size="xs" fw={600} px="xs">
-                    {t(g.label)}
-                  </Text>
+              {layers.map((l, i) => (
+                <Stack key={l} gap="xxs" role="group" aria-label={t(`shared.devui.layer_${l}`)}>
+                  <Stack gap={0} px="xs">
+                    <Text size="xs" fw={600}>
+                      {`${i + 1} · ${t(`shared.devui.layer_${l}`)}`}
+                    </Text>
+                    <Text size="xs" c="dimmed">
+                      {t(`shared.devui.layer_${l}_note`)}
+                    </Text>
+                  </Stack>
                   <Stack gap={0} className={devui.entries}>
-                    {g.entries.map((e) => (
-                      <NavLink
-                        key={e.path}
-                        className={classes.item}
-                        component={Link}
-                        to={e.path}
-                        label={e.name ?? t(e.label ?? '')}
-                        active={pathname === `/dev/ui/${e.path}`}
-                        variant="light"
-                        onClick={close}
-                      />
-                    ))}
+                    {all
+                      .filter((e) => e.layer === l)
+                      .map((e) => (
+                        <NavLink
+                          key={e.path}
+                          className={classes.item}
+                          component={Link}
+                          to={e.path}
+                          label={title(e)}
+                          active={pathname === `/dev/ui/${e.path}`}
+                          variant="light"
+                          onClick={close}
+                        />
+                      ))}
                   </Stack>
                 </Stack>
               ))}
@@ -189,8 +177,10 @@ function DevUiLayout() {
           </AppShell.Section>
         </AppShell.Navbar>
         <AppShell.Main>
-          {template && <Usage path={template.path} />}
+          {template && <TemplateNote entry={template} />}
           <Outlet />
+          {/* Keyed by path, so opening a side panel (a search param) keeps the scroll. */}
+          <ScrollRestoration getKey={(location) => location.pathname} />
         </AppShell.Main>
       </AppShell>
     </MeProvider>
@@ -200,13 +190,12 @@ function DevUiLayout() {
 // devUiRouter serves the catalogue under /dev/ui, outside the app and its session; called once.
 export function devUiRouter() {
   client.use(offline)
-  const entries = groups.flatMap((g) => g.entries)
   return createBrowserRouter([
     {
       path: '/dev/ui',
       Component: DevUiLayout,
-      children: [{ index: true, element: <Navigate to={entries[0]!.path} replace /> }, ...entries.map((e) => ({ path: e.path, Component: e.Component }))],
+      children: [{ index: true, element: <Navigate to="start/overview" replace /> }, ...all.map((e) => ({ path: e.path, Component: pages[e.path as Path] }))],
     },
-    { path: '*', element: <Navigate to="/dev/ui" replace /> },
+    { path: '*', element: <Navigate to="/dev/ui/start/overview" replace /> },
   ])
 }
