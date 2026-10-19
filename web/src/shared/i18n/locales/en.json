@@ -814,5 +814,10 @@
   "shared.devui.dont_table_own": "A hand-written <Table> in an area: lint blocks it; every list goes through DataTable.",
   "shared.devui.case_stacked": "Label above value, in a narrow card",
   "shared.devui.dont_badge_tone": "A tone that does not match the meaning: green for a neutral status.",
-  "shared.devui.case_panel_plain": "Plain, in the side column"
+  "shared.devui.case_panel_plain": "Plain, in the side column",
+  "shared.devui.dont_danger_first": "A destructive action first in the menu: easy to hit by mistake; put it last, after a divider.",
+  "shared.devui.do_confirm_verb": "The confirm button repeats the exact verb: \"Cancel document\".",
+  "shared.devui.dont_confirm_yes": "A \"Yes\" or \"OK\" confirm button: users must reread the question.",
+  "shared.devui.bulk_select": "Select two rows",
+  "shared.devui.open_panel": "Open side panel"
 }

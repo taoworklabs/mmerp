@@ -11,17 +11,16 @@ import { icon } from '@/shared/ui/theme'
 import classes from '../AppLayout.module.css'
 import { offline } from './api'
 import devui from './DevUi.module.css'
-import { Alerts, Badges, Menus } from './basics'
 import { type Entry, entries, layers, type Path } from './catalogue'
 import { key, useEntryTitle } from './DocPage'
 import { Overview } from './start'
+import { ApprovalPanelDoc, ActivityFeedDoc, AttachmentPanelDoc, DocumentPreviewDoc, DocumentStatusDoc } from './documents'
+import { BulkBarDoc, MoreActionsDoc, NoticeDoc, NotifyDoc, QueryViewDoc, SidePanelDoc, StatesDoc, UseActionDoc, UseConfirmDoc } from './actions'
 import { Bulk } from './data'
+import { EditablePanelDoc, FiltersDoc, FormDoc, FormModalDoc, InlineEditFieldDoc, LinesTableDoc } from './forms'
 import { CellGridDoc, DataTableDoc, FieldListDoc, KeyFactsDoc, PanelDoc, PersonAvatarDoc, SectionDoc, StatusBadgeDoc, TilesDoc, TreeListDoc } from './display'
 import { AnchorDoc, ButtonDoc, LayoutTextDoc, LoaderDoc, SkeletonDoc, TooltipDoc } from './mantine'
-import { ActivityDemo, Cards, DocumentPanels } from './blocks'
-import { Actions, Dialogs, QueryViews, States, ToastsDemo } from './feedback'
 import { Colour, Icons, Principles, Spacing, Surfaces, Typography } from './foundations'
-import { Fields, Filters, Inline, Lines } from './input'
 import { AuthTemplate, DocumentTemplate, InboxTemplate, ListTemplate, PageTemplate, RecordTemplate } from './templates'
 
 // Every entry's page; a missing or extra one fails tsc.
@@ -39,42 +38,42 @@ const pages: Record<Path, ComponentType> = {
   'mantine/loader': LoaderDoc,
   'mantine/skeleton': SkeletonDoc,
   'mantine/tooltip': TooltipDoc,
-  'mmerp/activity-feed': ActivityDemo,
-  'mmerp/approval-panel': DocumentPanels,
-  'mmerp/attachment-panel': DocumentPanels,
-  'mmerp/bulk-bar': Bulk,
+  'mmerp/activity-feed': ActivityFeedDoc,
+  'mmerp/approval-panel': ApprovalPanelDoc,
+  'mmerp/attachment-panel': AttachmentPanelDoc,
+  'mmerp/bulk-bar': BulkBarDoc,
   'mmerp/cell-grid': CellGridDoc,
   'mmerp/data-table': DataTableDoc,
-  'mmerp/document-preview': DocumentPanels,
-  'mmerp/document-status': Badges,
-  'mmerp/editable-panel': Cards,
+  'mmerp/document-preview': DocumentPreviewDoc,
+  'mmerp/document-status': DocumentStatusDoc,
+  'mmerp/editable-panel': EditablePanelDoc,
   'mmerp/field-list': FieldListDoc,
-  'mmerp/filters': Filters,
-  'mmerp/form': Fields,
-  'mmerp/form-modal': Dialogs,
-  'mmerp/inline-edit-field': Inline,
+  'mmerp/filters': FiltersDoc,
+  'mmerp/form': FormDoc,
+  'mmerp/form-modal': FormModalDoc,
+  'mmerp/inline-edit-field': InlineEditFieldDoc,
   'mmerp/key-facts': KeyFactsDoc,
-  'mmerp/lines-table': Lines,
-  'mmerp/more-actions': Menus,
-  'mmerp/notice': Alerts,
-  'mmerp/notify': ToastsDemo,
+  'mmerp/lines-table': LinesTableDoc,
+  'mmerp/more-actions': MoreActionsDoc,
+  'mmerp/notice': NoticeDoc,
+  'mmerp/notify': NotifyDoc,
   'mmerp/panel': PanelDoc,
   'mmerp/person-avatar': PersonAvatarDoc,
-  'mmerp/query-view': QueryViews,
+  'mmerp/query-view': QueryViewDoc,
   'mmerp/section': SectionDoc,
-  'mmerp/side-panel': Bulk,
-  'mmerp/states': States,
+  'mmerp/side-panel': SidePanelDoc,
+  'mmerp/states': StatesDoc,
   'mmerp/status-badge': StatusBadgeDoc,
   'mmerp/tiles': TilesDoc,
   'mmerp/tree-list': TreeListDoc,
-  'mmerp/use-action': Actions,
-  'mmerp/use-confirm': Dialogs,
-  'patterns/filter-search': Filters,
-  'patterns/create-edit': Fields,
-  'patterns/confirm-delete': Actions,
-  'patterns/loading-empty-error': QueryViews,
+  'mmerp/use-action': UseActionDoc,
+  'mmerp/use-confirm': UseConfirmDoc,
+  'patterns/filter-search': FiltersDoc,
+  'patterns/create-edit': FormDoc,
+  'patterns/confirm-delete': UseActionDoc,
+  'patterns/loading-empty-error': QueryViewDoc,
   'patterns/bulk': Bulk,
-  'patterns/document-approval': DocumentPanels,
+  'patterns/document-approval': ApprovalPanelDoc,
   'templates/auth': AuthTemplate,
   'templates/document': DocumentTemplate,
   'templates/inbox': InboxTemplate,

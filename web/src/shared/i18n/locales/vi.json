@@ -814,5 +814,10 @@
   "shared.devui.dont_table_own": "Tự viết <Table> trong area: lint chặn; mọi danh sách đi qua DataTable.",
   "shared.devui.case_stacked": "Nhãn trên giá trị, trong thẻ hẹp",
   "shared.devui.dont_badge_tone": "Màu không khớp nghĩa: xanh lá cho trạng thái trung tính.",
-  "shared.devui.case_panel_plain": "Không khung, ở cột bên"
+  "shared.devui.case_panel_plain": "Không khung, ở cột bên",
+  "shared.devui.dont_danger_first": "Thao tác phá hủy đứng đầu menu: dễ bấm nhầm; để cuối, sau một đường kẻ.",
+  "shared.devui.do_confirm_verb": "Nút xác nhận lặp đúng động từ: \"Hủy chứng từ\".",
+  "shared.devui.dont_confirm_yes": "Nút xác nhận \"Có\" hay \"Đồng ý\": người dùng phải đọc lại câu hỏi.",
+  "shared.devui.bulk_select": "Chọn hai dòng",
+  "shared.devui.open_panel": "Mở bảng bên"
 }
