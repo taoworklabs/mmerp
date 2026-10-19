@@ -16,7 +16,7 @@ What the user can do, where it sits, how it confirms and how it answers. Which a
 - **One primary per place.** A page header has at most one; a modal's footer one; a section none or one.
 - **At most three buttons** in a page header; the rest go into `MoreActions place="page"`, placed before the primary button. A table row puts every secondary action into its `menu` (`MoreActions` on the row) when it has two or more; a row with one action opens it on click.
 - **One size** (`components.md`): every button is the default `sm`, 30px, wherever it sits; a lesser action is quieter in style, not smaller.
-- Buttons are right-aligned in the page header, `TabActions`, section headers and footers.
+- Buttons are right-aligned in the page header, `TabContent`'s `actions`, section headers and footers.
 
 ```tsx
 <Page
@@ -25,7 +25,7 @@ What the user can do, where it sits, how it confirms and how it answers. Which a
     <Group gap="xs">
       <ExportButton … />                         {/* secondary */}
       <MoreActions place="page">
-        <Menu.Item leftSection={<IconShoppingCart {...icon.text} />} onClick={createOrder}>{t('sales.quote.create_order')}</Menu.Item>
+        <MenuAction icon={IconShoppingCart} onClick={createOrder}>{t('sales.quote.create_order')}</MenuAction>
       </MoreActions>
       <DocumentActions … />                      {/* Delete (red text) · Withdraw · Submit (primary) */}
     </Group>
@@ -65,6 +65,21 @@ async function cancelDocument() {
   if (!(await ask({ title: t('shared.document.action.cancel'), message: t('shared.document.confirm.cancel', { number }), confirmLabel: t('shared.document.action.cancel'), danger: true }))) return
   await run(transition('cancelled'))
 }
+```
+
+In an area, a region's own action (delete a row, revoke, send a test) goes through `useAction`: it confirms, keeps the failure for the region to show, and toasts.
+
+```tsx
+const action = useAction()
+const remove = (d: Dependent) =>
+  action.run(
+    async () => {
+      await unwrap(api.DELETE('/hrm/employees/{id}/dependents/{dependent}', { params: { path: { id, dependent: d.id } } }))
+      await invalidate(employeeDocType, id)
+    },
+    { confirm: { title: t('hrm.dependent.delete_title'), message: t('hrm.dependent.delete_confirm', { name: d.full_name }), confirmLabel: t('hrm.dependent.delete'), danger: true }, success: t('hrm.dependent.deleted') },
+  )
+// <TabContent error={action.error}>…{action.dialog}</TabContent>
 ```
 
 An undo needs an inverse the server already offers (reactivate is an edit with `active: true`); when there is none, the action confirms instead.

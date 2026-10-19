@@ -103,7 +103,7 @@ Spare room goes to every column in proportion to its content, so the gaps betwee
 | Click on the identifier link | Opens the record's page; middle click and Ctrl+click open a new tab |
 | Click elsewhere on the row | Follows `href`, or calls `onRowClick` when given: the list's side panel, or the edit modal of a settings row |
 | Keyboard | Tab reaches the identifier (a link, or a button with `onRowClick` and no `href`), Enter opens it |
-| "…" at the row end (`menu`) | Secondary actions as `Menu.Item`; only when a row has two or more actions; never a button per row |
+| "…" at the row end (`menu`) | Secondary actions as `MenuAction`; only when a row has two or more actions; never a button per row |
 
 ### Side panel
 
@@ -141,7 +141,7 @@ const [selected, setSelected] = useState<Set<string | number>>(new Set())
 
 - Offered only when the list's `/actions` include the bulk action. A checkbox column comes first; the header box selects or clears every row of the page (indeterminate when some are). Selection covers the visible page only: the page owns `selected` and clears it whenever filters, sort or page change (`useEffect(() => setSelected(new Set()), [params])`).
 - While rows are selected, `BulkBar` replaces the filter bar: "N selected", the actions, Clear selection.
-- A bulk action runs as a job (one document per transaction): confirm with the count when it changes data ("Gửi duyệt 12 đơn?"). Send every selected id, whatever its status: the job re-checks each document's permission and state, acts on those it can, and reports the skipped ones in its result. Once the job starts: clear the selection and `notifySuccess` that it started ("Đã bắt đầu gửi duyệt 12 đơn. Theo dõi ở màn hình tác vụ."); its end arrives as a notification. A failure to start shows as an `Alert` above the table.
+- A bulk action runs as a job (one document per transaction): confirm with the count when it changes data ("Gửi duyệt 12 đơn?"). Send every selected id, whatever its status: the job re-checks each document's permission and state, acts on those it can, and reports the skipped ones in its result. Once the job starts: clear the selection and `notifySuccess` that it started ("Đã bắt đầu gửi duyệt 12 đơn. Theo dõi ở màn hình tác vụ."); its end arrives as a notification. A failure to start shows as an `ErrorState` above the table.
 - Wide screens only; below 1024px no selection.
 
 ## Paging

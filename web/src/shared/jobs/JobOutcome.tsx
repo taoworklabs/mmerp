@@ -1,9 +1,10 @@
-import { Alert, Button, Group, Loader, Stack, Text } from '@mantine/core'
-import { IconAlertCircle, IconCircleCheck, IconDownload } from '@tabler/icons-react'
+import { Button, Group, Loader, Stack, Text } from '@mantine/core'
+import { IconDownload } from '@tabler/icons-react'
 import { useTranslation } from 'react-i18next'
 import { ApiError } from '@/shared/api/error'
 import { errorText, formatNumber } from '@/shared/i18n'
 import { DataTable } from '@/shared/ui/DataTable'
+import { Notice } from '@/shared/ui/Notice'
 import { icon } from '@/shared/ui/theme'
 import type { Job } from './useJobStatus'
 
@@ -20,9 +21,9 @@ export function JobOutcome({ job, error }: { job: Job | undefined; error?: unkno
   const { t } = useTranslation()
   if (error)
     return (
-      <Alert color="danger" icon={<IconAlertCircle {...icon.button} />} role="alert">
+      <Notice tone="danger">
         {errorText(t, error)}
-      </Alert>
+      </Notice>
     )
   if (!job || job.state === 'queued' || job.state === 'running' || job.state === 'retrying')
     return (
@@ -33,7 +34,7 @@ export function JobOutcome({ job, error }: { job: Job | undefined; error?: unkno
     )
   if (job.state === 'completed')
     return (
-      <Alert color="success" icon={<IconCircleCheck {...icon.button} />} aria-live="polite">
+      <Notice tone="success" announce="polite">
         {job.file_id ? (
           <Group justify="space-between">
             <Text>{t('shared.jobs.exported')}</Text>
@@ -44,13 +45,13 @@ export function JobOutcome({ job, error }: { job: Job | undefined; error?: unkno
         ) : (
           t('shared.jobs.imported', { rows: formatNumber(job.rows ?? 0) })
         )}
-      </Alert>
+      </Notice>
     )
   return (
     <Stack gap="sm">
-      <Alert color="danger" icon={<IconAlertCircle {...icon.button} />} role="alert">
+      <Notice tone="danger">
         {jobError(t, job)}
-      </Alert>
+      </Notice>
       {job.row_errors.length > 0 && (
         <DataTable
           label={t('shared.jobs.row_errors')}

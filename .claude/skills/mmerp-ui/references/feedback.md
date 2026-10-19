@@ -7,10 +7,10 @@ How a screen tells the user what is happening: loading, empty, errors, results. 
 | Message | Channel | Stays |
 | --- | --- | --- |
 | A field's value is wrong | Under the field (`Form`) | Until fixed |
-| A form or document cannot be saved for a reason that is not one field (period locked, conflict of rules) | `Alert` banner at the top of the form or page, `role="alert"` | Until the next attempt |
-| An action on the page failed (lifecycle, delete, compute, bulk start, optimistic undo) | The page's banner: `DocumentPage`'s `error` prop; on a list, an `Alert` as the first child of `ListPage` | Until the next action |
+| A form or document cannot be saved for a reason that is not one field (period locked, conflict of rules) | `ErrorState` banner at the top of the form or page (announced) | Until the next attempt |
+| An action on the page failed (lifecycle, delete, compute, bulk start, optimistic undo) | The page's banner: `DocumentPage`'s `error` prop; on a list, an `ErrorState` as the first child of `ListPage` | Until the next action |
 | A region failed to load | `ErrorState` in place of the region, with Retry | Until retried |
-| The data on screen needs attention (sources changed since compute, overtime over the limit) | `Alert color="warning"` at the top of the region it is about, with an icon | While true |
+| The data on screen needs attention (sources changed since compute, overtime over the limit) | `Notice tone="warning"` at the top of the region it is about | While true |
 | The whole area cannot be changed (product off) | `ReadOnlyBanner`, shown by the app shell | While true |
 | A save or action succeeded | `notifySuccess`: toast bottom right (top centre below 1024px), 3 seconds | 3 s |
 | A reversible action took effect | `notifyUndo`: toast with Undo, 5 seconds | 5 s |
@@ -32,7 +32,7 @@ async function remove() {
     await qc.invalidateQueries({ queryKey: … })
     notifySuccess(t('hrm.calendar.saved'))
   } catch (err) {
-    setError(errorText(t, err)) // rendered as an Alert at the top of the region
+    setError(errorText(t, err)) // rendered as an ErrorState at the top of the region
   }
 }
 ```
@@ -45,7 +45,7 @@ async function remove() {
 | A region loads (table, tab, panel) | `ContentSkeleton` in its place, no margins of its own |
 | A list refetches (filter, sort, page) | The previous rows stay (`keepPreviousData`); no skeleton, no spinner |
 | A button's action runs | The button is busy and cannot be pressed again; its spinner appears only after 300ms (`FormActions`, `loading` on `Button`) |
-| Long work on the open record (compute a payroll, import into a timesheet) | A job, with an `Alert` holding a `Loader` on that page while it runs |
+| Long work on the open record (compute a payroll, import into a timesheet) | A job, with a `Notice tone="info" icon={<Loader size="sm" />} announce="polite"` on that page while it runs |
 | Long work on many records or a file (bulk action, export, print) | A job: a toast that it started; progress on the jobs screen; its end as a notification (`ExportButton` turns into a download link when the file is ready) |
 
 Never a full-page spinner; never a spinner where a skeleton fits the layout.
@@ -78,7 +78,7 @@ list={{ query: list, table: {…}, empty: { title: t('sales.customers.empty'), d
 | --- | --- | --- |
 | Field | The field's error (`errorFields` for server codes) | "Mã đã tồn tại." under Code |
 | Line of a table | The cell's field error (`lines.<i>.<field>`) | A quantity of 0 on line 3 |
-| Section or form | `Alert` at the top of the form; the section's error count | "Kỳ tháng 3 đã khóa sổ…" |
+| Section or form | `ErrorState` at the top of the form; the section's error count | "Kỳ tháng 3 đã khóa sổ…" |
 | Region | `ErrorState` with Retry | A table that failed to load |
 | Page | `ErrorState` (via `loaded()`), `NotFoundPage`, `ForbiddenPage` | A record that does not exist |
 
@@ -88,7 +88,8 @@ Error text comes from the API's code through `errorText(t, err)`; never a techni
 
 ```tsx
 // Do
-{error && <Alert color="danger" icon={<IconAlertCircle {...icon.button} />} role="alert">{error}</Alert>}
+{error && <ErrorState message={error} />}
+<QueryView query={list} empty={<EmptyState title={t('hrm.dependent.empty')} />}>{(rows) => <DataTable … rows={rows} />}</QueryView>
 notifySuccess(t('sales.customer.created'))
 
 // Don't
@@ -96,4 +97,5 @@ notifyError(errorText(t, err))           // the current action's error in a toas
 await unwrap(api.DELETE(…))              // no try/catch: a failure shows nothing
 {list.isPending && <Loader />}           // spinner where the table's skeleton belongs
 <Text c="dimmed">{t('…empty')}</Text>    // a hand-made empty state
+if (list.isPending) body = <ContentSkeleton /> … // hand-written loading/error/empty: use QueryView
 ```

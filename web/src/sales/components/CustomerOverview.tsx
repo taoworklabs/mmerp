@@ -3,12 +3,13 @@ import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router'
 import type { Customer } from '@/shared/api/sales'
 import { ActivityFeed, DocumentStatus } from '@/shared/document'
-import { errorText, formatDate, formatNumber } from '@/shared/i18n'
+import { formatDate, formatNumber } from '@/shared/i18n'
 import { DataTable } from '@/shared/ui/DataTable'
 import { MissingValue } from '@/shared/ui/FieldList'
 import { KeyFacts } from '@/shared/ui/KeyFacts'
-import { Panel, SeeAll } from '@/shared/ui/page'
-import { ContentSkeleton, EmptyState, ErrorState } from '@/shared/ui/states'
+import { Panel, SeeAll, TabContent } from '@/shared/ui/page'
+import { QueryView } from '@/shared/ui/QueryView'
+import { ContentSkeleton, EmptyState } from '@/shared/ui/states'
 import { useCustomerDocs } from '../hooks/useSales'
 import { customerDocType, docTypeOf, pathOf, type Kind } from '../keys'
 import { useDocColumns } from './docColumns'
@@ -39,10 +40,13 @@ export function CustomerDocsTab({ customer: c, kind }: { customer: Customer; kin
   const { t } = useTranslation()
   const list = useCustomerDocs(kind, c.id)
   const columns = useDocColumns(kind, { customer: false })
-  if (list.isPending) return <ContentSkeleton />
-  if (list.isError) return <ErrorState message={errorText(t, list.error)} onRetry={() => void list.refetch()} />
-  if (list.data.items.length === 0) return <EmptyState title={t(`sales.${pathOf(kind)}.empty`)} />
-  return <DataTable label={t(`sales.${pathOf(kind)}.title`)} columns={columns} rows={list.data.items} rowKey={(d) => d.id} href={(d) => `/sales/${pathOf(kind)}/${d.id}`} />
+  return (
+    <TabContent>
+      <QueryView query={list} select={(d) => d.items} empty={<EmptyState title={t(`sales.${pathOf(kind)}.empty`)} />}>
+        {(rows) => <DataTable label={t(`sales.${pathOf(kind)}.title`)} columns={columns} rows={rows} rowKey={(d) => d.id} href={(d) => `/sales/${pathOf(kind)}/${d.id}`} />}
+      </QueryView>
+    </TabContent>
+  )
 }
 
 // Latest is a digest of the customer's three latest quotations or orders.

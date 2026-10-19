@@ -5,12 +5,13 @@ import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { useTranslation } from 'react-i18next'
 import { api, unwrap, type LegalParam } from '@/shared/api/hrm'
-import { errorText, formatDate, formatDecimal, formatNumber } from '@/shared/i18n'
+import { formatDate, formatDecimal, formatNumber } from '@/shared/i18n'
 import { DataTable, type Column } from '@/shared/ui/DataTable'
 import { DateField, Form, FormActions, SelectField, TextField } from '@/shared/ui/form'
 import { notifySuccess } from '@/shared/ui/notify'
 import { FormModal, ListPage } from '@/shared/ui/page'
-import { ContentSkeleton, EmptyState, ErrorState } from '@/shared/ui/states'
+import { QueryView } from '@/shared/ui/QueryView'
+import { EmptyState } from '@/shared/ui/states'
 import { icon } from '@/shared/ui/theme'
 import { hrmKeys } from '../keys'
 
@@ -74,27 +75,27 @@ export function LegalParamsPage() {
   const [editing, setEditing] = useState<LegalParam | 'new' | null>(null)
   const list = useQuery({ queryKey: hrmKeys.legalParams(), queryFn: () => unwrap(api.GET('/hrm/legal-params')) })
   const manage = list.data?.allowed_actions.includes('manage') ?? false
-  const rows = [...(list.data?.items ?? [])].sort((a, b) => keys.indexOf(a.key) - keys.indexOf(b.key) || a.effective_from.localeCompare(b.effective_from))
+  const sorted = (d: { items: LegalParam[] }) => [...d.items].sort((a, b) => keys.indexOf(a.key) - keys.indexOf(b.key) || a.effective_from.localeCompare(b.effective_from))
   const columns: Column<LegalParam>[] = [
     { key: 'key', header: t('hrm.legal_param.key'), role: 'title', render: (p) => t(`hrm.legal_param.${p.key}`) },
     { key: 'from', header: t('hrm.legal_param.effective_from'), role: 'meta', kind: 'date', render: (p) => formatDate(p.effective_from) },
     { key: 'value', header: t('hrm.legal_param.value'), role: 'meta', kind: 'number', render: (p) => paramValue(t, p) },
   ]
-  let body
-  if (list.isPending) body = <ContentSkeleton />
-  else if (list.isError) body = <ErrorState message={errorText(t, list.error)} onRetry={() => void list.refetch()} />
-  else if (rows.length === 0) body = <EmptyState title={t('hrm.legal_param.empty')} />
-  else
-    body = (
-      <DataTable
-        label={t('hrm.legal_param.title')}
-        columns={columns}
-        rows={rows}
-        rowKey={(p) => `${p.key}:${p.effective_from}`}
-        // One action per row: the row itself opens it.
-        onRowClick={manage ? (p) => setEditing(p) : undefined}
-      />
-    )
+  const body = (
+    <QueryView query={list} select={sorted} empty={<EmptyState title={t('hrm.legal_param.empty')} />}>
+      {(rows) => (
+        <DataTable
+          label={t('hrm.legal_param.title')}
+          columns={columns}
+          rows={rows}
+          rowKey={(p) => `${p.key}:${p.effective_from}`}
+          // One action per row: the row itself opens it.
+          onRowClick={manage ? (p) => setEditing(p) : undefined}
+        />
+      )}
+    </QueryView>
+  )
+
   return (
     <ListPage
       title={t('hrm.legal_param.title')}

@@ -1,9 +1,10 @@
-import { Alert, Button, Paper, Skeleton, Stack, Text, ThemeIcon } from '@mantine/core'
-import { IconAlertCircle, IconInbox, IconInfoCircle, type Icon as TablerIcon } from '@tabler/icons-react'
+import { Button, Paper, Skeleton, Stack, Text, ThemeIcon } from '@mantine/core'
+import { IconInbox, type Icon as TablerIcon } from '@tabler/icons-react'
 import type { ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router'
 import { Page, pageFrame } from './page'
+import { Notice } from './Notice'
 import classes from './states.module.css'
 import { icon } from './theme'
 
@@ -31,7 +32,7 @@ export function EmptyState({ title, description, action, icon: Icon = IconInbox 
 export function ErrorState({ message, onRetry }: { message: string; onRetry?: () => void }) {
   const { t } = useTranslation()
   return (
-    <Alert color="danger" icon={<IconAlertCircle {...icon.button} />} role="alert">
+    <Notice tone="danger">
       <Stack gap="xs" align="flex-start">
         <Text>{message}</Text>
         {onRetry && (
@@ -40,7 +41,7 @@ export function ErrorState({ message, onRetry }: { message: string; onRetry?: ()
           </Button>
         )}
       </Stack>
-    </Alert>
+    </Notice>
   )
 }
 
@@ -90,8 +91,6 @@ function BlockedPage({ kind, back }: { kind: 'notfound' | 'forbidden'; back?: { 
 export function ReadOnlyBanner() {
   const { t } = useTranslation()
   return (
-    <Alert color="info" icon={<IconInfoCircle {...icon.button} />}>
-      {t('shared.state.read_only')}
-    </Alert>
+    <Notice tone="info">{t('shared.state.read_only')}</Notice>
   )
 }

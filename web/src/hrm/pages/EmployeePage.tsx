@@ -1,4 +1,4 @@
-import { Button, Menu } from '@mantine/core'
+import { Button } from '@mantine/core'
 import { IconArrowsExchange, IconUserOff } from '@tabler/icons-react'
 import { useQuery } from '@tanstack/react-query'
 import { useState } from 'react'
@@ -8,6 +8,7 @@ import { api, unwrap } from '@/shared/api/hrm'
 import { useInvalidateRecord } from '@/shared/area'
 import { ActivityFeed, useAttachmentSection } from '@/shared/document'
 import { PersonAvatar } from '@/shared/ui/avatar'
+import { MenuAction } from '@/shared/ui/MenuAction'
 import { notifySuccess } from '@/shared/ui/notify'
 import { RecordColumns, RecordPage } from '@/shared/ui/page'
 import { icon } from '@/shared/ui/theme'
@@ -75,9 +76,9 @@ export function EmployeePage() {
       more={
         canEdit &&
         !e.termination_date && (
-          <Menu.Item color="danger" leftSection={<IconUserOff {...icon.text} />} onClick={() => setMove('terminate')}>
+          <MenuAction icon={IconUserOff} danger onClick={() => setMove('terminate')}>
             {t('hrm.employee.terminate')}
-          </Menu.Item>
+          </MenuAction>
         )
       }
       tabs={tabs}

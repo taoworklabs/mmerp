@@ -1,5 +1,5 @@
-import { Alert, Button, Menu } from '@mantine/core'
-import { IconAlertCircle, IconArchive, IconArchiveOff, IconCircleDot, IconPencil, IconPlus } from '@tabler/icons-react'
+import { Button } from '@mantine/core'
+import { IconArchive, IconArchiveOff, IconCircleDot, IconPencil, IconPlus } from '@tabler/icons-react'
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
@@ -10,8 +10,10 @@ import { errorText, formatNumber } from '@/shared/i18n'
 import { type Column } from '@/shared/ui/DataTable'
 import { CheckboxField, CodeField, FilterChip, Form, FormActions, MoneyField, SearchInput, SelectField, TextField } from '@/shared/ui/form'
 import { useListView } from '@/shared/ui/ListView'
+import { MenuAction } from '@/shared/ui/MenuAction'
 import { notifySuccess, notifyUndo } from '@/shared/ui/notify'
 import { FormModal, ListPage } from '@/shared/ui/page'
+import { ErrorState } from '@/shared/ui/states'
 import { StatusBadge } from '@/shared/ui/StatusBadge'
 import { icon } from '@/shared/ui/theme'
 import { useListParams } from '@/shared/url/listParams'
@@ -134,12 +136,12 @@ export function ItemsPage() {
           menu: writable
             ? (x) => (
                 <>
-                  <Menu.Item leftSection={<IconPencil {...icon.text} />} onClick={() => setEditing(x)}>
+                  <MenuAction icon={IconPencil} onClick={() => setEditing(x)}>
                     {t('sales.items.edit')}
-                  </Menu.Item>
-                  <Menu.Item leftSection={x.active ? <IconArchive {...icon.text} /> : <IconArchiveOff {...icon.text} />} onClick={() => toggle.mutate({ item: x })}>
+                  </MenuAction>
+                  <MenuAction icon={x.active ? IconArchive : IconArchiveOff} onClick={() => toggle.mutate({ item: x })}>
                     {t(x.active ? 'sales.items.retire' : 'sales.items.reactivate')}
-                  </Menu.Item>
+                  </MenuAction>
                 </>
               )
             : undefined,
@@ -149,11 +151,7 @@ export function ItemsPage() {
         paging: { page: params.page, pageSize: params.pageSize, onPage: (page) => set({ page }), onPageSize: (pageSize) => set({ pageSize }) },
       }}
     >
-      {error && (
-        <Alert color="danger" icon={<IconAlertCircle {...icon.button} />} role="alert">
-          {error}
-        </Alert>
-      )}
+      {error && <ErrorState message={error} />}
       {editing && <ItemModal item={editing === 'new' ? null : editing} onClose={() => setEditing(null)} />}
     </ListPage>
   )

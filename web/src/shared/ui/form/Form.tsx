@@ -1,4 +1,4 @@
-import { Alert, Anchor, Badge, Box, Button, Grid, Group, Stack, Text } from '@mantine/core'
+import { Anchor, Badge, Box, Button, Grid, Group, Stack, Text } from '@mantine/core'
 import { IconAlertCircle, type Icon as TablerIcon } from '@tabler/icons-react'
 import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from 'react'
 import { FormProvider, useFormContext, useFormState, type FieldErrors, type FieldValues, type UseFormReturn } from 'react-hook-form'
@@ -8,6 +8,7 @@ import { ApiError } from '@/shared/api/error'
 import { errorText } from '@/shared/i18n'
 import { useConfirm } from '../confirm'
 import { ModalFooter } from '../ModalFooter'
+import { Notice } from '../Notice'
 import { icon } from '../theme'
 import { fieldOfError, type ErrorFields } from './errorFields'
 import classes from './Form.module.css'
@@ -129,9 +130,9 @@ export function Form<T extends FieldValues>({ form, onSubmit, errorFields, id, c
       <form ref={ref} id={id} onSubmit={submit} noValidate>
         <Stack gap="md">
           {banner && (
-            <Alert color="danger" icon={<IconAlertCircle {...icon.button} />} role="alert">
+            <Notice tone="danger">
               {banner}
-            </Alert>
+            </Notice>
           )}
           {children}
         </Stack>

@@ -1,5 +1,4 @@
-import { Alert, List, Stack, Text } from '@mantine/core'
-import { IconAlertTriangle } from '@tabler/icons-react'
+import { List, Stack, Text } from '@mantine/core'
 import { useController, useForm } from 'react-hook-form'
 import { useTranslation } from 'react-i18next'
 import { api, unwrap, type Timesheet } from '@/shared/api/hrm'
@@ -7,8 +6,8 @@ import { useDocumentMutation } from '@/shared/document'
 import { formatDate, formatDecimal, formatWeekday } from '@/shared/i18n'
 import { CellGrid } from '@/shared/ui/CellGrid'
 import { fieldId, Form, FormActions } from '@/shared/ui/form'
+import { Notice } from '@/shared/ui/Notice'
 import { notifySuccess } from '@/shared/ui/notify'
-import { icon } from '@/shared/ui/theme'
 import { timesheetDocType } from '../keys'
 
 type Cells = Record<string, string> // "<employee id>:<YYYY-MM-DD>" → the cell as typed
@@ -72,13 +71,13 @@ function Warnings({ timesheet: ts }: { timesheet: Timesheet }) {
   const codes = [...new Set(ts.warnings.map((w) => w.code))]
   if (codes.length === 0) return null
   return (
-    <Alert color="warning" icon={<IconAlertTriangle {...icon.button} />} title={t('hrm.timesheet.warnings')}>
+    <Notice tone="warning" title={t('hrm.timesheet.warnings')}>
       <List size="sm">
         {codes.map((c) => (
           <List.Item key={c}>{t(`hrm.timesheet.warning.${c}`)}</List.Item>
         ))}
       </List>
-    </Alert>
+    </Notice>
   )
 }
 

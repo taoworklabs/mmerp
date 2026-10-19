@@ -42,9 +42,11 @@ export default tseslint.config(
         {
           paths: [
             {
+              // Areas compose screens from shared/ui; only these layout and text primitives come from Mantine directly.
               name: '@mantine/core',
-              importNames: ['Table', 'Modal', 'Badge', 'Notification', 'NumberInput'],
-              message: 'Use the shared/ui component (DataTable, FormModal, DocumentStatus, MoneyField, DecimalField…).',
+              allowImportNames: ['Anchor', 'Button', 'Divider', 'Group', 'List', 'Loader', 'Skeleton', 'Stack', 'Text', 'Tooltip'],
+              message:
+                'Use the shared/ui component (DataTable, FormModal, Notice, MenuAction, QueryView, StatusBadge, the form fields…); add one there if none fits.',
             },
             { name: '@mantine/notifications', message: 'Use the shared/ui notification helpers.' },
             { name: '@mantine/dates', message: 'Use DateField from shared/ui.' },

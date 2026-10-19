@@ -1,5 +1,5 @@
-import { ActionIcon, Alert, Button, Group, Paper, Stack, Text, Tooltip } from '@mantine/core'
-import { IconAlertCircle, IconPlus, IconTrash } from '@tabler/icons-react'
+import { ActionIcon, Button, Group, Paper, Stack, Text, Tooltip } from '@mantine/core'
+import { IconPlus, IconTrash } from '@tabler/icons-react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
 import { useFieldArray, useForm, useWatch, type Control } from 'react-hook-form'
@@ -10,6 +10,7 @@ import { errorText } from '@/shared/i18n'
 import { DataTable, type Column } from '@/shared/ui/DataTable'
 import { useConfirm } from '@/shared/ui/confirm'
 import { DecimalField, Form, FormActions, FormSection, SelectField, type Option } from '@/shared/ui/form'
+import { Notice } from '@/shared/ui/Notice'
 import { notifySuccess } from '@/shared/ui/notify'
 import { ListPage, Page } from '@/shared/ui/page'
 import { ContentSkeleton, EmptyState, ErrorState, NotFoundPage, PageSkeleton } from '@/shared/ui/states'
@@ -179,9 +180,9 @@ function RuleForm({ rule, basePath, roles, userOptions }: { rule: TypeRule; base
       }
     >
       {error && (
-        <Alert color="danger" icon={<IconAlertCircle {...icon.button} />} role="alert">
+        <Notice tone="danger">
           {error}
-        </Alert>
+        </Notice>
       )}
       <Form form={form} onSubmit={save}>
         <Stack gap="md">

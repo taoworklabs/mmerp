@@ -215,8 +215,9 @@ A field that picks a business object (e.g. picking an employee) belongs to the a
 
 What `shared/ui` already has (see also `/dev/ui`), to use before building your own:
 
-- Actions and feedback: `useConfirm` (confirmation dialog), `notifySuccess`/`notifyError` (`notify.ts`).
-- States (`states.tsx`): `EmptyState`, `ErrorState`, `PageSkeleton`, `ContentSkeleton`, `ForbiddenPage`, `NotFoundPage`, `ReadOnlyBanner`.
+- Actions and feedback: `useConfirm` (confirmation dialog), `useAction` (a region's action: confirm, error kept for the region, success toast), `notifySuccess`/`notifyError` (`notify.ts`).
+- States (`states.tsx`): `EmptyState`, `ErrorState`, `PageSkeleton`, `ContentSkeleton`, `ForbiddenPage`, `NotFoundPage`, `ReadOnlyBanner`; `QueryView` picks among them for a region fed by one query; `Notice` is a banner whose tone sets colour and icon.
+- Menus: `MoreActions` holds `MenuAction`s (icon at text size, `danger` for an action that loses something).
 - Display: `DataTable`, `FieldList`, `StatusBadge`, `CellGrid` (grid of inputs along two axes, like a timesheet), `TileGrid`/`StatTile`/`LinkTile`, `OrgUnitName`, `PersonName`/`PersonAvatar`.
 - Forms (`shared/ui/form`): `Form`, `FormSection`, `InputRow`, `FormActions`, `FormFields`, `EditablePanel`; fields `TextField`, `PasswordField`, `CheckboxField`, `DateField`, `MonthField`, `FileField`, `SelectField`, `DecimalField`, `MoneyField`, `SensitiveField`, `SensitiveValue`, `OrgUnitField`, `LegalEntityField`, `RemoteSelectField`; filters `SearchInput`, `FilterChip`, `OrgUnitFilter`, `LegalEntityFilter`, `MonthFilter`, `YearFilter`.
 - Outside `shared/ui`: `useListParams` (`shared/url`: filters, sort, page in the URL, and the `filterBar` a filter bar binds its chips to), `ExportButton`/`ImportDialog` (`shared/jobs`), `OrgTree` (`shared/org`).
@@ -229,7 +230,7 @@ What `shared/ui` already has (see also `/dev/ui`), to use before building your o
 
 - **Button hierarchy:** each view has one primary button (filled, `primary` colour). Other buttons are secondary (outlined), except the way out of a form or dialog beside its primary button ("Hủy", "Quay lại"), which is quiet (grey text, `variant="subtle" color="gray"`) so the primary stands alone. Red (`danger`) buttons are only for destructive or data-losing actions: delete, cancel a document, revoke a role, leave a page with unsaved changes.
 - **One button size everywhere:** `sm` (30px, the default, so no `size` prop) with an 18px icon, in the page header, tabs, sections, the side column, footers and among content alike. A button never sets a smaller size; what matters less is quieter in style (`default`, `light`, `subtle`), never smaller. Within a strip all controls have the same height, so a button beside an input is exactly as tall as the input. Among a form section's fields and in a modal's body every control is 40px (a lines table and the modal footer keep 30px); the theme sets this, a screen sets nothing.
-- **Button placement:** action buttons are always right-aligned: in the page header (the page template's `actions`), at the top of a `RecordPage` tab (`TabActions`) and in a form or modal footer (`FormActions`). Areas do not align buttons themselves.
+- **Button placement:** action buttons are always right-aligned: in the page header (the page template's `actions`), at the top of a `RecordPage` tab (`TabContent`'s `actions`) and in a form or modal footer (`FormActions`). Areas do not align buttons themselves.
 - **Button names are specific verbs:** "Lưu" (Save), "Gửi duyệt" (Submit for approval), "Rút lại" (Withdraw), "Duyệt" (Approve), "Từ chối" (Reject), "Hủy chứng từ" (Cancel document). Never "OK" or "Đồng ý" (Agree).
 - **Ask for confirmation** before deleting a draft, cancelling a posted document, rejecting an approval, and any step the server cannot take back (revoking a role, recomputing results). Rejecting requires a reason. The confirm button repeats the exact verb ("Hủy chứng từ"), not "Có" (Yes). Edits inside an unsaved form (removing a line) do not ask: Discard covers them.
 - **Undo instead of confirmation** for reversible actions that write no ledger, approval or notification (mark read, retire or reactivate a catalogue record): they apply at once, optimistically, and a toast offers Undo for 5 seconds (`notifyUndo`). Lifecycle actions never offer undo.
@@ -287,7 +288,7 @@ The rules above are enforced by tools wherever tools can do it:
 
 | Rule | Enforced by |
 | --- | --- |
-| Areas do not use Mantine components that carry conventions directly: `Table`, `Modal`, `Badge`, `Notification`, `NumberInput`, the `@mantine/dates` package and the `@mantine/notifications` package | ESLint `no-restricted-imports` (`importNames` option), with a message pointing to the matching `shared/ui` component |
+| Areas take from `@mantine/core` only plain layout and text primitives (`Anchor`, `Button`, `Divider`, `Group`, `List`, `Loader`, `Skeleton`, `Stack`, `Text`, `Tooltip`), and nothing from `@mantine/dates` or `@mantine/notifications`; everything else comes from `shared/ui` | ESLint `no-restricted-imports` (`allowImportNames` option), with a message pointing to `shared/ui` |
 | No inline `style` and no CSS files in areas | ESLint `no-restricted-syntax` blocks the `style` attribute in JSX (outside `shared/ui`); dependency-cruiser blocks `*.css` imports from areas. CSS modules exist only in `shared/ui` |
 | No colour codes outside `shared/ui` | `make lint` scans for hex codes (3, 6 and 8 digits), `rgb(` and `hsl(` in every file of `web/src` except `shared/ui`, `.css` files included |
 | No hard-coded text in JSX | ESLint `i18next/no-literal-string` |

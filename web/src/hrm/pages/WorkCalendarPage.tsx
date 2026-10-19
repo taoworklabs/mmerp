@@ -1,5 +1,5 @@
-import { Alert, Button, Menu, Stack, Text } from '@mantine/core'
-import { IconAlertCircle, IconPencil, IconPlus, IconTrash } from '@tabler/icons-react'
+import { Button, Stack, Text } from '@mantine/core'
+import { IconPencil, IconPlus, IconTrash } from '@tabler/icons-react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
@@ -7,14 +7,15 @@ import { useTranslation } from 'react-i18next'
 import { api, unwrap, type Holiday, type WorkWeek } from '@/shared/api/hrm'
 import { useMe } from '@/shared/auth/me'
 import { currentYear, errorText, formatDate } from '@/shared/i18n'
-import { useConfirm } from '@/shared/ui/confirm'
 import { DataTable, type Column } from '@/shared/ui/DataTable'
 import { CheckboxField, DateField, Form, FormActions, LegalEntityFilter, TextField, useLegalEntities, YearFilter } from '@/shared/ui/form'
+import { MenuAction } from '@/shared/ui/MenuAction'
 import { notifySuccess } from '@/shared/ui/notify'
 import { FormModal, ListPage } from '@/shared/ui/page'
 import { ContentSkeleton, EmptyState, ErrorState } from '@/shared/ui/states'
 import { Section } from '@/shared/ui/Section'
 import { icon } from '@/shared/ui/theme'
+import { useAction } from '@/shared/ui/useAction'
 import { useListParams } from '@/shared/url/listParams'
 import { hrmKeys } from '../keys'
 
@@ -27,12 +28,11 @@ export function WorkCalendarPage() {
   const { t } = useTranslation()
   const me = useMe()
   const qc = useQueryClient()
-  const [confirm, confirmDialog] = useConfirm()
   const [params, set] = useListParams(defaults)
   const [editingWeek, setEditingWeek] = useState<WorkWeek | 'new' | null>(null)
   const [editingHoliday, setEditingHoliday] = useState<Holiday | 'new' | null>(null)
-  // A failed delete, shown above the tables until the next attempt.
-  const [error, setError] = useState<string | null>(null)
+  // A failed delete stays above the tables until the next attempt.
+  const action = useAction()
   const units = useLegalEntities({ product: 'hrm', permission: 'hrm.calendar.manage' }, params.filters.legal_entity)
   const entity = units.chosen
   const thisYear = currentYear(me.timezone)
@@ -45,17 +45,14 @@ export function WorkCalendarPage() {
   const manage = cal.data?.allowed_actions.includes('manage') ?? false
   const days = (w: WorkWeek) => weekdays.filter((d) => w.off_days.includes(d)).map((d) => t(`hrm.calendar.day.${d}`)).join(', ') || t('hrm.calendar.no_days_off')
 
-  async function remove(path: () => Promise<unknown>, message: string) {
-    if (!(await confirm({ title: t('hrm.calendar.delete_title'), message, confirmLabel: t('hrm.calendar.delete'), danger: true }))) return
-    setError(null)
-    try {
-      await path()
-      await qc.invalidateQueries({ queryKey: hrmKeys.calendars() })
-      notifySuccess(t('hrm.calendar.saved'))
-    } catch (err) {
-      setError(errorText(t, err))
-    }
-  }
+  const remove = (path: () => Promise<unknown>, message: string) =>
+    action.run(
+      async () => {
+        await path()
+        await qc.invalidateQueries({ queryKey: hrmKeys.calendars() })
+      },
+      { confirm: { title: t('hrm.calendar.delete_title'), message, confirmLabel: t('hrm.calendar.delete'), danger: true }, success: t('hrm.calendar.saved') },
+    )
 
   const weekColumns: Column<WorkWeek>[] = [
     { key: 'from', header: t('hrm.calendar.effective_from'), role: 'title', kind: 'date', render: (w) => formatDate(w.effective_from) },
@@ -68,12 +65,12 @@ export function WorkCalendarPage() {
 
   const weekMenu = (w: WorkWeek) => (
     <>
-      <Menu.Item leftSection={<IconPencil {...icon.text} />} onClick={() => setEditingWeek(w)}>
+      <MenuAction icon={IconPencil} onClick={() => setEditingWeek(w)}>
         {t('hrm.calendar.edit')}
-      </Menu.Item>
-      <Menu.Item
-        color="danger"
-        leftSection={<IconTrash {...icon.text} />}
+      </MenuAction>
+      <MenuAction
+        icon={IconTrash}
+        danger
         onClick={() =>
           void remove(
             () => unwrap(api.DELETE('/hrm/calendars/{legal_entity}/weeks/{effective_from}', { params: { path: { legal_entity: entity!, effective_from: w.effective_from } } })),
@@ -82,17 +79,17 @@ export function WorkCalendarPage() {
         }
       >
         {t('hrm.calendar.delete')}
-      </Menu.Item>
+      </MenuAction>
     </>
   )
   const holidayMenu = (h: Holiday) => (
     <>
-      <Menu.Item leftSection={<IconPencil {...icon.text} />} onClick={() => setEditingHoliday(h)}>
+      <MenuAction icon={IconPencil} onClick={() => setEditingHoliday(h)}>
         {t('hrm.calendar.edit')}
-      </Menu.Item>
-      <Menu.Item
-        color="danger"
-        leftSection={<IconTrash {...icon.text} />}
+      </MenuAction>
+      <MenuAction
+        icon={IconTrash}
+        danger
         onClick={() =>
           void remove(
             () => unwrap(api.DELETE('/hrm/calendars/{legal_entity}/holidays/{date}', { params: { path: { legal_entity: entity!, date: h.date } } })),
@@ -101,7 +98,7 @@ export function WorkCalendarPage() {
         }
       >
         {t('hrm.calendar.delete')}
-      </Menu.Item>
+      </MenuAction>
     </>
   )
 
@@ -170,17 +167,13 @@ export function WorkCalendarPage() {
         </>
       }
     >
-      {error && (
-        <Alert color="danger" icon={<IconAlertCircle {...icon.button} />} role="alert">
-          {error}
-        </Alert>
-      )}
+      {action.error && <ErrorState message={action.error} />}
       {body}
       {entity !== undefined && editingWeek && <WeekModal entity={entity} week={editingWeek === 'new' ? null : editingWeek} onClose={() => setEditingWeek(null)} />}
       {entity !== undefined && editingHoliday && (
         <HolidayModal entity={entity} holiday={editingHoliday === 'new' ? null : editingHoliday} onClose={() => setEditingHoliday(null)} />
       )}
-      {confirmDialog}
+      {action.dialog}
     </ListPage>
   )
 }

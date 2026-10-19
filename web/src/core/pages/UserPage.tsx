@@ -1,4 +1,4 @@
-import { Button, Menu, Stack, Text } from '@mantine/core'
+import { Button, Stack, Text } from '@mantine/core'
 import { IconMail, IconPlus, IconTrash, IconUserCircle } from '@tabler/icons-react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
@@ -14,11 +14,13 @@ import { Form, FormActions, OrgUnitField, SelectField } from '@/shared/ui/form'
 import { FieldList, MissingValue } from '@/shared/ui/FieldList'
 import { KeyFacts } from '@/shared/ui/KeyFacts'
 import { InlineEditField } from '@/shared/ui/InlineEditField'
-import { useConfirm } from '@/shared/ui/confirm'
+import { MenuAction } from '@/shared/ui/MenuAction'
 import { notifySuccess } from '@/shared/ui/notify'
-import { FormModal, Panel, RecordColumns, RecordPage, SeeAll } from '@/shared/ui/page'
+import { FormModal, Panel, RecordColumns, RecordPage, SeeAll, TabContent } from '@/shared/ui/page'
+import { QueryView } from '@/shared/ui/QueryView'
 import { ContentSkeleton, EmptyState, ErrorState, NotFoundPage, PageSkeleton } from '@/shared/ui/states'
 import { icon } from '@/shared/ui/theme'
+import { useAction } from '@/shared/ui/useAction'
 import { coreKeys } from '../keys'
 
 export function UserPage() {
@@ -110,55 +112,54 @@ const roleLabel = (t: TFunction, product: string, role: string) => t(`${product}
 function RolesTab({ userId }: { userId: number }) {
   const { t } = useTranslation()
   const qc = useQueryClient()
-  const [error, setError] = useState<string | null>(null)
   const grants = useGrants(userId)
+  const action = useAction()
 
-  const [ask, dialog] = useConfirm()
-
-  async function revoke(g: Grant) {
-    const role = roleLabel(t, g.product, g.role)
-    if (!(await ask({ title: t('core.user.revoke_title'), message: t('core.user.revoke_confirm', { role }), confirmLabel: t('core.user.revoke'), danger: true }))) return
-    setError(null)
-    try {
-      await unwrap(api.DELETE('/users/{id}/roles/{grant}', { params: { path: { id: userId, grant: g.id } } }))
-    } catch (err) {
-      setError(errorText(t, err))
-      return
-    }
-    await qc.invalidateQueries({ queryKey: coreKeys.users.roles(userId) })
-    notifySuccess(t('core.user.revoked'))
-  }
+  const revoke = (g: Grant) =>
+    action.run(
+      async () => {
+        await unwrap(api.DELETE('/users/{id}/roles/{grant}', { params: { path: { id: userId, grant: g.id } } }))
+        await qc.invalidateQueries({ queryKey: coreKeys.users.roles(userId) })
+      },
+      {
+        confirm: {
+          title: t('core.user.revoke_title'),
+          message: t('core.user.revoke_confirm', { role: roleLabel(t, g.product, g.role) }),
+          confirmLabel: t('core.user.revoke'),
+          danger: true,
+        },
+        success: t('core.user.revoked'),
+      },
+    )
 
   const columns: Column<Grant>[] = [
     { key: 'role', header: t('core.user.role'), role: 'title', render: (g) => roleLabel(t, g.product, g.role) },
     { key: 'unit', header: t('core.user.org_unit'), role: 'meta', render: (g) => g.org_unit_name ?? t('core.user.tenant_wide') },
   ]
 
-  let body
-  if (grants.isPending) body = <ContentSkeleton />
-  else if (grants.isError) body = <ErrorState message={errorText(t, grants.error)} onRetry={() => void grants.refetch()} />
-  else if (grants.data.length === 0) body = <EmptyState title={t('core.user.no_roles')} />
-  else
-    body = (
-      <DataTable
-        label={t('core.user.roles')}
-        columns={columns}
-        rows={grants.data}
-        rowKey={(g) => g.id}
-        menu={(g) => (
-          <Menu.Item color="danger" leftSection={<IconTrash {...icon.text} />} onClick={() => void revoke(g)}>
-            {t('core.user.revoke')}
-          </Menu.Item>
-        )}
-      />
-    )
+  const body = (
+    <QueryView query={grants} empty={<EmptyState title={t('core.user.no_roles')} />}>
+      {(data) => (
+        <DataTable
+          label={t('core.user.roles')}
+          columns={columns}
+          rows={data}
+          rowKey={(g) => g.id}
+          menu={(g) => (
+            <MenuAction icon={IconTrash} danger onClick={() => void revoke(g)}>
+              {t('core.user.revoke')}
+            </MenuAction>
+          )}
+        />
+      )}
+    </QueryView>
+  )
 
   return (
-    <Stack gap="md">
-      {error && <ErrorState message={error} />}
+    <TabContent error={action.error}>
       {body}
-      {dialog}
-    </Stack>
+      {action.dialog}
+    </TabContent>
   )
 }
 

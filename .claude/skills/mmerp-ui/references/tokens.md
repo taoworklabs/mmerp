@@ -60,7 +60,7 @@ Do:
 
 ```tsx
 <Text size="sm" c="dimmed">{t('sales.customers.description')}</Text>
-<Alert color="warning" icon={<IconAlertTriangle {...icon.button} />}>{t('hrm.payroll.sources_changed')}</Alert>
+<Notice tone="warning">{t('hrm.payroll.sources_changed')}</Notice>
 ```
 
 Don't:
@@ -68,9 +68,9 @@ Don't:
 ```tsx
 <Text c="#666">…</Text>            // colour code: lint fails outside shared/ui
 <Text c="gray.6">…</Text>          // a step instead of a role: use c="dimmed"
-<Alert color="orange">…</Alert>    // a hue instead of a meaning: use color="warning"
+<Button color="orange">…</Button>  // a hue instead of a meaning: use a role (color="danger", c="dimmed")
 // Accent hues (grape, blue, teal, orange, red, green) only name a kind: PersonAvatar, OrgUnitIcon, the file-type icons of AttachmentPanel.
-<Alert color="discovery">…</Alert> // discovery for something that is not new
+<Notice tone="discovery">…</Notice> // discovery for something that is not new
 ```
 
 ## Typography

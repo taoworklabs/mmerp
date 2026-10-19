@@ -1,11 +1,10 @@
-import { Alert, Tabs } from '@mantine/core'
+import { Tabs } from '@mantine/core'
 import { useMediaQuery } from '@mantine/hooks'
-import { IconAlertCircle } from '@tabler/icons-react'
 import type { ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useSearchParams } from 'react-router'
 import { UnsavedProvider } from '../form'
-import { icon } from '../theme'
+import { Notice } from '../Notice'
 import { Activity, Panel, type DocumentSection } from './Activity'
 import { DetailPage } from './DetailPage'
 import classes from './DocumentPage.module.css'
@@ -54,9 +53,9 @@ function DocumentLayout({ actions, error, approval, activity, sections = [], ful
   const log: DocumentSection = { key: 'activity', title: t('shared.document.tab.activity'), content: activity }
   const side = [...top, log]
   const banner = error && (
-    <Alert color="danger" icon={<IconAlertCircle {...icon.button} />} role="alert">
+    <Notice tone="danger">
       {error}
-    </Alert>
+    </Notice>
   )
 
   if (!fullWidth)

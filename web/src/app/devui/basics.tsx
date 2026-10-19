@@ -1,14 +1,10 @@
-import { ActionIcon, Alert, Anchor, Badge, Breadcrumbs, Button, Checkbox, Group, Menu, Popover, SegmentedControl, Stack, Tabs, Text, TextInput, Tooltip } from '@mantine/core'
+import { ActionIcon, Anchor, Badge, Breadcrumbs, Button, Checkbox, Group, Menu, Popover, SegmentedControl, Stack, Tabs, Text, TextInput, Tooltip } from '@mantine/core'
 import {
-  IconAlertTriangle,
   IconChevronRight,
-  IconCircleCheck,
   IconColumns3,
   IconDownload,
-  IconInfoCircle,
   IconPencil,
   IconPlus,
-  IconSparkles,
   IconTrash,
   IconUsersGroup,
 } from '@tabler/icons-react'
@@ -17,7 +13,9 @@ import { Link } from 'react-router'
 import { DocumentStatus, type DocStatus } from '@/shared/document'
 import { PersonAvatar, PersonName } from '@/shared/ui/avatar'
 import { FieldList } from '@/shared/ui/FieldList'
+import { MenuAction } from '@/shared/ui/MenuAction'
 import { MoreActions } from '@/shared/ui/MoreActions'
+import { Notice } from '@/shared/ui/Notice'
 import { OrgUnitName } from '@/shared/ui/OrgUnitName'
 import { Section } from '@/shared/ui/Section'
 import { StatusBadge } from '@/shared/ui/StatusBadge'
@@ -109,12 +107,16 @@ export function Menus() {
   const { t } = useTranslation()
   const items = (
     <>
-      <Menu.Item leftSection={<IconDownload {...icon.text} />}>{t('shared.devui.export')}</Menu.Item>
-      <Menu.Item leftSection={<IconPencil {...icon.text} />}>{t('shared.devui.edit')}</Menu.Item>
+      <MenuAction icon={IconDownload} onClick={() => {}}>
+        {t('shared.devui.export')}
+      </MenuAction>
+      <MenuAction icon={IconPencil} onClick={() => {}}>
+        {t('shared.devui.edit')}
+      </MenuAction>
       <Menu.Divider />
-      <Menu.Item color="danger" leftSection={<IconTrash {...icon.text} />}>
+      <MenuAction icon={IconTrash} danger onClick={() => {}}>
         {t('shared.devui.danger')}
-      </Menu.Item>
+      </MenuAction>
     </>
   )
   return (
@@ -218,21 +220,11 @@ export function Alerts() {
   const { t } = useTranslation()
   return (
     <Demo title={t('shared.devui.alerts')} description={t('shared.devui.alerts_hint')}>
-      <Alert color="info" icon={<IconInfoCircle {...icon.button} />}>
-        {t('shared.devui.alert_info')}
-      </Alert>
-      <Alert color="success" icon={<IconCircleCheck {...icon.button} />}>
-        {t('shared.devui.alert_success')}
-      </Alert>
-      <Alert color="warning" icon={<IconAlertTriangle {...icon.button} />}>
-        {t('shared.devui.alert_warning')}
-      </Alert>
-      <Alert color="danger" icon={<IconAlertTriangle {...icon.button} />} role="alert">
-        {t('shared.devui.alert_danger')}
-      </Alert>
-      <Alert color="discovery" icon={<IconSparkles {...icon.button} />}>
-        {t('shared.devui.alert_discovery')}
-      </Alert>
+      <Notice tone="info">{t('shared.devui.alert_info')}</Notice>
+      <Notice tone="success">{t('shared.devui.alert_success')}</Notice>
+      <Notice tone="warning">{t('shared.devui.alert_warning')}</Notice>
+      <Notice tone="danger">{t('shared.devui.alert_danger')}</Notice>
+      <Notice tone="discovery">{t('shared.devui.alert_discovery')}</Notice>
     </Demo>
   )
 }

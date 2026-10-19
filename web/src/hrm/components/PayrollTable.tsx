@@ -1,10 +1,10 @@
-import { Menu, Text } from '@mantine/core'
+import { Text } from '@mantine/core'
 import { IconPrinter } from '@tabler/icons-react'
 import { useTranslation } from 'react-i18next'
 import type { Payroll, PayrollLine, PayrollTotal } from '@/shared/api/hrm'
 import { formatDecimal, formatNumber } from '@/shared/i18n'
 import { DataTable, type Column } from '@/shared/ui/DataTable'
-import { icon } from '@/shared/ui/theme'
+import { MenuAction } from '@/shared/ui/MenuAction'
 
 type Amounts = Omit<PayrollTotal, 'org_unit_id' | 'org_unit_name' | 'employees'>
 type Key = keyof Amounts
@@ -139,9 +139,9 @@ export function PayrollTable({ payroll, onPrint }: { payroll: Payroll; onPrint?:
         onPrint &&
         ((l) =>
           l.employee_id ? (
-            <Menu.Item leftSection={<IconPrinter {...icon.button} />} onClick={() => onPrint(l)}>
+            <MenuAction icon={IconPrinter} onClick={() => onPrint(l)}>
               {t('hrm.payroll.print_payslip')}
-            </Menu.Item>
+            </MenuAction>
           ) : null)
       }
       group={{ of: (l) => names.get(l.org_unit_id) ?? '', total: (rows) => total(t('hrm.payroll.group_total'), rows) }}

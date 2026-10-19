@@ -26,7 +26,7 @@ Run every item against the change before calling it done. An item that does not 
 - [ ] Create in a `FormModal` only for ≤ 6 fields whose result lives in a list or is worked on its own page; otherwise a page.
 - [ ] A record's page is a `RecordPage`, a document's a `DocumentPage`: values in `EditablePanel` cards (`FieldList stacked`), each showing every value its form edits (header facts included), each group edited in place in its card, never in a `FormModal`; read values are label–value pairs, never read-only inputs; an empty value the user may fill in is a `MissingValue` (on a document, only while the draft may be edited).
 - [ ] An empty value the user can add is a `MissingValue`, not "—".
-- [ ] A record's own lists are full-width `RecordPage` tabs (first tab the overview, the tab on the URL; buttons in `TabActions`; full `DataTable`s, not cards); its overview's right column is unframed digests, and a document's side column is unframed too.
+- [ ] A record's own lists are full-width `RecordPage` tabs (first tab the overview, the tab on the URL; the tab body in `TabContent`; full `DataTable`s, not cards); its overview's right column is unframed digests, and a document's side column is unframed too.
 - [ ] On a document page, Approve / Reject are in the header (`ApprovalDecision`) and `ApprovalPanel` gets `decideElsewhere`; "Rút lại" confirms.
 - [ ] People link to their profile (`EmployeeLink`); a phone is `tel:`, an email `mailto:`.
 - [ ] A document with a wide table (editable lines, grid, payroll) uses `fullWidth`; form pages rely on the 1200px cap and detail pages on the 1440px one, not their own width.
