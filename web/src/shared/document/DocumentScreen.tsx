@@ -49,6 +49,12 @@ function Screen({ docType, doc: d, list, facts, badges, subject, fullWidth, extr
     <DocumentPage
       title={d.number}
       breadcrumbs={[list]}
+      status={
+        <Group gap="xs" wrap="nowrap">
+          <DocumentStatus docType={docType} status={d.status} />
+          {badges}
+        </Group>
+      }
       description={
         <Group gap="xs" component="span">
           {facts
@@ -59,8 +65,6 @@ function Screen({ docType, doc: d, list, facts, badges, subject, fullWidth, extr
                 {typeof f === 'string' ? <span>{f}</span> : f}
               </Fragment>
             ))}
-          <DocumentStatus docType={docType} status={d.status} />
-          {badges}
         </Group>
       }
       error={error}

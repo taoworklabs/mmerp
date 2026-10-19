@@ -3,15 +3,17 @@ import type { ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link, useSearchParams } from 'react-router'
 import { MoreActions } from '../MoreActions'
-import type { DetailTab } from './DetailPage'
 import { Page, type PageHeaderProps } from './Page'
 import classes from './RecordPage.module.css'
+
+// A part of the record: its tab's value on the URL, label (a count once known) and content.
+export type RecordTab = { value: string; label: string; content: ReactNode }
 
 type Props = Omit<PageHeaderProps, 'tabs' | 'withBack' | 'plain' | 'current'> & {
   // Menu.Item children: the rarer and the destructive actions, in a "…" menu after the buttons.
   more?: ReactNode
   // The record's parts, the first (its overview) open by default; a label may carry a count.
-  tabs: DetailTab[]
+  tabs: RecordTab[]
   // Tab values of older links and the tab they now open.
   aliases?: Record<string, string>
   // Outside the tabs, e.g. a modal the header opens.
@@ -95,4 +97,9 @@ export function SeeAll({ tab }: { tab: string }) {
       {t('shared.record.see_all')}
     </Anchor>
   )
+}
+
+// TabActions holds a tab's actions, on the right like the page's own.
+export function TabActions({ children }: { children: ReactNode }) {
+  return <Group justify="flex-end">{children}</Group>
 }

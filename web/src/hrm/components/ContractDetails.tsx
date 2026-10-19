@@ -22,6 +22,7 @@ export function ContractDetails({ contract: c }: { contract: Contract }) {
     <Fragment key={c.version}>
       <EditablePanel title={t(appendix ? 'hrm.contract.section_appendix' : 'hrm.contract.section')} icon={IconFileText} editable={canEdit} edit={edit('main')}>
         <FieldList
+          stacked
           rows={[
             [t('hrm.contract.kind'), c.contract_type_name],
             [t('hrm.contract.start_date'), formatDate(c.start_date)],
@@ -35,7 +36,7 @@ export function ContractDetails({ contract: c }: { contract: Contract }) {
             {t('hrm.contract.terms_hidden')}
           </Text>
         ) : (
-          <FieldList rows={[[t('hrm.contract.salary'), formatMoney(c.terms!.salary)]]} />
+          <FieldList stacked rows={[[t('hrm.contract.salary'), formatMoney(c.terms!.salary)]]} />
         )}
       </EditablePanel>
       {!hidden && (
