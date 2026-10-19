@@ -39,3 +39,5 @@ test-results/
 # Generated code from `make gen` is committed on purpose: CI fails if it differs.
 web/test-results/
 web/playwright-report/
+
+.superpowers/
