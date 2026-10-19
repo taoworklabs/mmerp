@@ -800,5 +800,19 @@
   "shared.devui.about_inbox": "A list of items to process beside the detail of the selected one.",
   "shared.devui.about_list": "A list with filter bar, table, paging and side panel, its state on the URL.",
   "shared.devui.about_page": "The frame every other template builds on: breadcrumbs, title, status, actions.",
-  "shared.devui.about_record": "A record page without a lifecycle: a summary in the header, one tab per part."
+  "shared.devui.about_record": "A record page without a lifecycle: a summary in the header, one tab per part.",
+  "shared.devui.case_group_stack": "Group lays out in a row, Stack in a column",
+  "shared.devui.case_divider": "A divider between two parts",
+  "shared.devui.case_list": "A bulleted list",
+  "shared.devui.case_text": "Text sizes and colours",
+  "shared.devui.loading": "Loading…",
+  "shared.devui.dont_loader_region": "A spinner in an empty region: users cannot tell what is coming; use ContentSkeleton.",
+  "shared.devui.dont_skeleton_stack": "A hand-built stack of Skeletons for a whole region: use ContentSkeleton or PageSkeleton.",
+  "shared.devui.dont_tooltip_repeat": "A tooltip repeating the button text: it adds nothing but noise.",
+  "shared.devui.case_column_tools": "Choosing and resizing columns",
+  "shared.devui.do_table_numbers": "Numbers and money use kind \"number\": right-aligned, locale-formatted.",
+  "shared.devui.dont_table_own": "A hand-written <Table> in an area: lint blocks it; every list goes through DataTable.",
+  "shared.devui.case_stacked": "Label above value, in a narrow card",
+  "shared.devui.dont_badge_tone": "A tone that does not match the meaning: green for a neutral status.",
+  "shared.devui.case_panel_plain": "Plain, in the side column"
 }

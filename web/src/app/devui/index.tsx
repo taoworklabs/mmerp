@@ -11,11 +11,13 @@ import { icon } from '@/shared/ui/theme'
 import classes from '../AppLayout.module.css'
 import { offline } from './api'
 import devui from './DevUi.module.css'
-import { Alerts, Avatars, Badges, Buttons, FieldLists, Links, Menus, Overlays, Sections, Tiles, Tree } from './basics'
+import { Alerts, Badges, Menus } from './basics'
 import { type Entry, entries, layers, type Path } from './catalogue'
 import { key, useEntryTitle } from './DocPage'
 import { Overview } from './start'
-import { Bulk, Grid, Table } from './data'
+import { Bulk } from './data'
+import { CellGridDoc, DataTableDoc, FieldListDoc, KeyFactsDoc, PanelDoc, PersonAvatarDoc, SectionDoc, StatusBadgeDoc, TilesDoc, TreeListDoc } from './display'
+import { AnchorDoc, ButtonDoc, LayoutTextDoc, LoaderDoc, SkeletonDoc, TooltipDoc } from './mantine'
 import { ActivityDemo, Cards, DocumentPanels } from './blocks'
 import { Actions, Dialogs, QueryViews, States, ToastsDemo } from './feedback'
 import { Colour, Icons, Principles, Spacing, Surfaces, Typography } from './foundations'
@@ -31,40 +33,40 @@ const pages: Record<Path, ComponentType> = {
   'foundations/spacing': Spacing,
   'foundations/surfaces': Surfaces,
   'foundations/icons': Icons,
-  'mantine/anchor': Links,
-  'mantine/button': Buttons,
-  'mantine/layout-text': Overview,
-  'mantine/loader': Overview,
-  'mantine/skeleton': Overview,
-  'mantine/tooltip': Overlays,
+  'mantine/anchor': AnchorDoc,
+  'mantine/button': ButtonDoc,
+  'mantine/layout-text': LayoutTextDoc,
+  'mantine/loader': LoaderDoc,
+  'mantine/skeleton': SkeletonDoc,
+  'mantine/tooltip': TooltipDoc,
   'mmerp/activity-feed': ActivityDemo,
   'mmerp/approval-panel': DocumentPanels,
   'mmerp/attachment-panel': DocumentPanels,
   'mmerp/bulk-bar': Bulk,
-  'mmerp/cell-grid': Grid,
-  'mmerp/data-table': Table,
+  'mmerp/cell-grid': CellGridDoc,
+  'mmerp/data-table': DataTableDoc,
   'mmerp/document-preview': DocumentPanels,
   'mmerp/document-status': Badges,
   'mmerp/editable-panel': Cards,
-  'mmerp/field-list': FieldLists,
+  'mmerp/field-list': FieldListDoc,
   'mmerp/filters': Filters,
   'mmerp/form': Fields,
   'mmerp/form-modal': Dialogs,
   'mmerp/inline-edit-field': Inline,
-  'mmerp/key-facts': Cards,
+  'mmerp/key-facts': KeyFactsDoc,
   'mmerp/lines-table': Lines,
   'mmerp/more-actions': Menus,
   'mmerp/notice': Alerts,
   'mmerp/notify': ToastsDemo,
-  'mmerp/panel': Cards,
-  'mmerp/person-avatar': Avatars,
+  'mmerp/panel': PanelDoc,
+  'mmerp/person-avatar': PersonAvatarDoc,
   'mmerp/query-view': QueryViews,
-  'mmerp/section': Sections,
+  'mmerp/section': SectionDoc,
   'mmerp/side-panel': Bulk,
   'mmerp/states': States,
-  'mmerp/status-badge': Badges,
-  'mmerp/tiles': Tiles,
-  'mmerp/tree-list': Tree,
+  'mmerp/status-badge': StatusBadgeDoc,
+  'mmerp/tiles': TilesDoc,
+  'mmerp/tree-list': TreeListDoc,
   'mmerp/use-action': Actions,
   'mmerp/use-confirm': Dialogs,
   'patterns/filter-search': Filters,

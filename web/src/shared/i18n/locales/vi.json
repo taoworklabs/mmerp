@@ -800,5 +800,19 @@
   "shared.devui.about_inbox": "Danh sách mục chờ xử lý cạnh chi tiết của mục đang chọn.",
   "shared.devui.about_list": "Danh sách có thanh lọc, bảng, phân trang và bảng bên, trạng thái trên URL.",
   "shared.devui.about_page": "Khung chung mọi khung khác dựng trên: đường dẫn, tiêu đề, trạng thái, thao tác.",
-  "shared.devui.about_record": "Trang của một bản ghi không có vòng đời: tóm tắt ở header, mỗi phần một tab."
+  "shared.devui.about_record": "Trang của một bản ghi không có vòng đời: tóm tắt ở header, mỗi phần một tab.",
+  "shared.devui.case_group_stack": "Group xếp ngang, Stack xếp dọc",
+  "shared.devui.case_divider": "Đường kẻ chia hai phần",
+  "shared.devui.case_list": "Danh sách gạch đầu dòng",
+  "shared.devui.case_text": "Cỡ và màu chữ",
+  "shared.devui.loading": "Đang tải…",
+  "shared.devui.dont_loader_region": "Vòng quay giữa một vùng trống: người dùng không biết sắp hiện gì; dùng ContentSkeleton.",
+  "shared.devui.dont_skeleton_stack": "Tự xếp nhiều Skeleton cho cả vùng: dùng ContentSkeleton hoặc PageSkeleton.",
+  "shared.devui.dont_tooltip_repeat": "Tooltip lặp lại chữ đã có trên nút: không thêm gì, chỉ gây nhiễu.",
+  "shared.devui.case_column_tools": "Chọn cột và đổi độ rộng",
+  "shared.devui.do_table_numbers": "Số và tiền dùng kind \"number\": canh phải, định dạng theo locale.",
+  "shared.devui.dont_table_own": "Tự viết <Table> trong area: lint chặn; mọi danh sách đi qua DataTable.",
+  "shared.devui.case_stacked": "Nhãn trên giá trị, trong thẻ hẹp",
+  "shared.devui.dont_badge_tone": "Màu không khớp nghĩa: xanh lá cho trạng thái trung tính.",
+  "shared.devui.case_panel_plain": "Không khung, ở cột bên"
 }

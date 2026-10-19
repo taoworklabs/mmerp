@@ -1,9 +1,8 @@
-import { Button, Group, Menu, Text } from '@mantine/core'
+import { Button, Group, Text } from '@mantine/core'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { formatNumber } from '@/shared/i18n'
 import { BulkBar } from '@/shared/ui/BulkBar'
-import { CellGrid } from '@/shared/ui/CellGrid'
 import { DataTable, type Column } from '@/shared/ui/DataTable'
 import { FieldList } from '@/shared/ui/FieldList'
 import { useListView } from '@/shared/ui/ListView'
@@ -17,69 +16,6 @@ function useColumns(sortable = false): Column<Row>[] {
     { key: 'name', header: t('shared.devui.name'), role: 'meta', sortable, render: (r) => r.name },
     { key: 'amount', header: t('shared.devui.amount'), role: 'meta', kind: 'number', render: (r) => formatNumber(r.amount) },
   ]
-}
-
-export function Table() {
-  const { t } = useTranslation()
-  const [sort, setSort] = useState('code')
-  return (
-    <Demo title={t('shared.devui.table')}>
-      <Case>
-        <DataTable
-          label={t('shared.devui.table')}
-          rows={rows}
-          rowKey={(r) => r.id}
-          href={() => '/dev/ui/mmerp/data-table'}
-          menu={() => <Menu.Item>{t('shared.devui.secondary')}</Menu.Item>}
-          sort={sort}
-          onSort={setSort}
-          columns={useColumns(true)}
-        />
-      </Case>
-    </Demo>
-  )
-}
-
-export function GroupedTable() {
-  const { t } = useTranslation()
-  const total = (name: string, of: Row[]) => ({ id: 0, code: '', name: t('shared.devui.total', { name }), amount: of.reduce((s, r) => s + r.amount, 0) })
-  return (
-    <Demo title={t('shared.devui.grouped')}>
-      <Case>
-        <DataTable
-          label={t('shared.devui.grouped')}
-          rows={rows}
-          rowKey={(r) => r.id}
-          group={{ of: (r) => (r.id === 1 ? 'A' : 'B'), total: (g, name) => total(name, g) }}
-          footer={total('', rows)}
-          columns={useColumns()}
-        />
-      </Case>
-    </Demo>
-  )
-}
-
-export function Grid() {
-  const { t } = useTranslation()
-  const [cells, setCells] = useState<Record<string, string>>({ 'NV001:1': '1', 'NV001:2': '0,5', 'NV002:2': '2' })
-  return (
-    <Demo title={t('shared.devui.grid')}>
-      <Case>
-        <CellGrid
-          label={t('shared.devui.grid')}
-          corner={t('shared.devui.name')}
-          rows={rows.map((r) => ({ key: r.code, header: r.name, label: r.name }))}
-          columns={Array.from({ length: 10 }, (_, i) => ({ key: String(i + 1), header: i + 1, label: String(i + 1) }))}
-          value={(r, c) => cells[`${r}:${c}`] ?? ''}
-          onChange={(r, c, v) => setCells({ ...cells, [`${r}:${c}`]: v })}
-          invalid={(v) => !['', '1', '0,5', '0.5'].includes(v)}
-          off={(r, c) => r === 'NV002' && c === '1'}
-          warning={(r, c) => (r === 'NV001' && c === '3' ? t('shared.devui.hint') : undefined)}
-          total={{ header: t('shared.devui.total'), value: (r) => Object.entries(cells).filter(([k]) => k.startsWith(`${r}:`)).length }}
-        />
-      </Case>
-    </Demo>
-  )
 }
 
 export function Bulk() {
