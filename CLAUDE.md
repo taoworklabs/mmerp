@@ -110,7 +110,7 @@ CI (GitHub Actions, `.github/workflows/ci.yml`) runs `make gen` (fails on diff),
 
 ## Workflow
 
-- **Remote: GitHub** (`https://github.com/taoworklabs/mmerp`). Each spec gets one branch off `main` holding all its tickets (a commit per ticket) and one PR into `main` that closes the spec and its tickets; never commit directly to `main`. Only merge when asked. Push to `github`, using the `gh` CLI for GitHub operations.
+- **Remote: GitHub** (`https://github.com/taoworklabs/mmerp`). Each spec gets one branch off `main` holding all its tickets (a commit per ticket) and one PR into `main` that closes the spec and its tickets; never commit directly to `main`. PRs are squash-merged (the only method the repo allows): the squash commit takes the PR title and body, so the title follows Conventional Commits and the body lists every piece of work the PR delivers (per ticket, with its commits), the deliberate behaviour changes and the migrations, then `Closes #<n>` for the spec and each ticket. Only merge when asked. Push to `github`, using the `gh` CLI for GitHub operations.
 - **Use the relevant skills when applying code**:
   - `mattpocock-skills:tdd` when building a feature or fixing a bug test-first;
   - `mattpocock-skills:diagnosing-bugs` when debugging;
