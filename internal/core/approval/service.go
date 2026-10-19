@@ -220,6 +220,13 @@ func (s *Service) holds(ctx context.Context, d record.Doc, c Expr, doubt bool) (
 			return doubt, nil
 		}
 		return store.New(platform.DBFrom(ctx)).Within(ctx, store.WithinParams{Unit: unit, Ancestor: ancestor})
+	case OpHas:
+		ids, ok := record.ParseSet(v)
+		id, err := strconv.ParseInt(c.Value, 10, 64)
+		if !ok || err != nil {
+			return doubt, nil
+		}
+		return slices.Contains(ids, id), nil
 	}
 	x, ok1 := record.ParseNumber(v)
 	y, ok2 := record.ParseNumber(c.Value)
@@ -700,7 +707,7 @@ func (s *Service) Rules(ctx context.Context, product string) ([]TypeRule, error)
 		// across every action of the type, since they don't change what the document is about.
 		fields := []Field{{Key: FieldOrgUnit, Kind: string(record.OrgUnit), Label: "shared.rule.field.org_unit", Ops: []Op{OpWithin}}}
 		for _, f := range t.Fields {
-			field := Field{Key: f.Key, Kind: string(f.Kind), Label: f.Label, Ops: opsByKind[f.Kind]}
+			field := Field{Key: f.Key, Kind: string(f.Kind), Label: f.Label, Ops: opsByKind[f.Kind], Searchable: f.Search != nil}
 			if f.Options != nil {
 				if field.Options, err = f.Options(ctx); err != nil {
 					return nil, err
@@ -726,6 +733,28 @@ func (s *Service) Rules(ctx context.Context, product string) ([]TypeRule, error)
 		}
 	}
 	return out, nil
+}
+
+// FieldOptions finds the values a set field of docType may hold, for whoever configures
+// its rules: the entries naming ids when ids is set, else up to 20 matches of q.
+func (s *Service) FieldOptions(ctx context.Context, docType, key, q string, ids []int64) ([]record.FieldOption, error) {
+	t, ok := s.d.Record.TypeOf(docType)
+	if !ok || t.Kind != record.Document {
+		return nil, platform.ErrNotFound
+	}
+	if ok, err := s.managesProduct(ctx, t.Product); err != nil {
+		return nil, err
+	} else if !ok {
+		return nil, platform.ErrForbidden
+	}
+	i := slices.IndexFunc(t.Fields, func(f record.Field) bool { return f.Key == key && f.Search != nil })
+	if i < 0 {
+		return nil, platform.ErrNotFound
+	}
+	if len(ids) > 0 {
+		return t.Fields[i].Labels(ctx, ids)
+	}
+	return t.Fields[i].Search(ctx, q)
 }
 
 // Users lists the accounts a rule may name as approver, for whoever configures rules.

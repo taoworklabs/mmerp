@@ -65,7 +65,18 @@ func newFixture(t *testing.T) *fixture {
 		Fields: []record.Field{{Key: "days", Kind: record.Number}, {Key: "kind", Kind: record.Choice,
 			Options: func(context.Context) ([]record.Option, error) {
 				return []record.Option{{Value: "a"}, {Value: "b"}}, nil
-			}}},
+			}},
+			{Key: "parts", Kind: record.Set,
+				Search: func(_ context.Context, q string) ([]record.FieldOption, error) {
+					return []record.FieldOption{{ID: 17, Code: "P-17", Name: "part " + q}}, nil
+				},
+				Labels: func(_ context.Context, ids []int64) ([]record.FieldOption, error) {
+					out := []record.FieldOption{}
+					for _, id := range ids {
+						out = append(out, record.FieldOption{ID: id, Code: "P-" + strconv.FormatInt(id, 10)})
+					}
+					return out, nil
+				}}},
 		Approvers: func(_ context.Context, _ record.Ref, level int) ([]int64, error) { return f.managers[level], nil },
 	})
 	// A type of another product, for rules a product's administrator may not touch.
@@ -408,7 +419,7 @@ func TestRulesOfferTheOrgUnit(t *testing.T) {
 	for _, f := range rules[0].Fields[1:] {
 		keys = append(keys, f.Key)
 	}
-	if !slices.Equal(keys, []string{"days", "kind"}) {
+	if !slices.Equal(keys, []string{"days", "kind", "parts"}) || !rules[0].Fields[3].Searchable || rules[0].Fields[1].Searchable {
 		t.Fatalf("fields after org unit: %v", keys)
 	}
 }
@@ -910,5 +921,64 @@ func TestModuleActionRunsOnce(t *testing.T) {
 	f.unchanged(d)
 	if acts := f.actions("submitter", d); !slices.Contains(acts, "cancel") {
 		t.Fatalf("after stamping: %v", acts)
+	}
+}
+
+// sendFields creates a draft with the given fields as the submitter and sends it.
+func (f *fixture) sendFields(fields map[string]string) record.Doc {
+	f.t.Helper()
+	d, err := f.rec.Create(f.as("submitter"), "test.doc", record.Header{Date: "2026-03-10", OrgUnitID: f.unit, Subject: f.users["submitter"], Fields: fields})
+	f.check(err)
+	_, err = f.rec.Transition(f.as("submitter"), d.Ref, 1, record.Posted)
+	f.check(err)
+	d, err = f.rec.Get(f.admin, d.Ref)
+	f.check(err)
+	return d
+}
+
+func TestHasRoutesBySet(t *testing.T) {
+	f := newFixture(t)
+	f.rule(split(approval.ChooseOne, approval.Flow{}, when(leaf("parts", "has", "17"), f.user("boss"))))
+	d := f.sendFields(map[string]string{"parts": "3,17"})
+	if s := f.panel("hr", d).Steps; len(s) != 1 || !slices.Equal(names(s[0]), []string{"boss"}) {
+		t.Fatalf("3,17: %+v", s)
+	}
+	if d := f.sendFields(map[string]string{"parts": "3"}); d.Status != record.Posted {
+		t.Fatalf("3: %s", d.Status)
+	}
+}
+
+// A document saved before its type declared the set field still meets the condition.
+func TestSetFieldMissingHolds(t *testing.T) {
+	f := newFixture(t)
+	f.rule(split(approval.ChooseOne, approval.Flow{}, when(leaf("parts", "has", "17"), f.user("boss"))))
+	d := f.sendFields(nil)
+	if s := f.panel("hr", d).Steps; len(s) != 1 || !slices.Equal(names(s[0]), []string{"boss"}) {
+		t.Fatalf("no parts: %+v", s)
+	}
+}
+
+func TestFieldOptionsNeedRulePermission(t *testing.T) {
+	f := newFixture(t)
+	got, err := f.appr.FieldOptions(f.as("rules"), "test.doc", "parts", "bolt", nil)
+	f.check(err)
+	if !reflect.DeepEqual(got, []record.FieldOption{{ID: 17, Code: "P-17", Name: "part bolt"}}) {
+		t.Fatalf("search %+v", got)
+	}
+	got, err = f.appr.FieldOptions(f.as("rules"), "test.doc", "parts", "", []int64{3, 17})
+	f.check(err)
+	if !reflect.DeepEqual(got, []record.FieldOption{{ID: 3, Code: "P-3"}, {ID: 17, Code: "P-17"}}) {
+		t.Fatalf("labels %+v", got)
+	}
+	if _, err := f.appr.FieldOptions(platform.WithProducts(f.as("rules"), nil), "test.doc", "parts", "bolt", nil); err != nil {
+		t.Fatalf("disabled product: %v", err)
+	}
+	if _, err := f.appr.FieldOptions(f.as("outsider"), "test.doc", "parts", "bolt", nil); code(err) != "forbidden" {
+		t.Fatalf("outsider: %v", err)
+	}
+	for _, c := range [][2]string{{"test.doc", "days"}, {"test.doc", "nope"}, {"test.nope", "parts"}} {
+		if _, err := f.appr.FieldOptions(f.as("rules"), c[0], c[1], "", nil); code(err) != "not_found" {
+			t.Errorf("%v: %v", c, err)
+		}
 	}
 }

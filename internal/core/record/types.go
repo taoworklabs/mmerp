@@ -4,6 +4,9 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
+	"slices"
+	"strconv"
+	"strings"
 
 	"github.com/jackc/pgx/v5/pgtype"
 
@@ -143,6 +146,7 @@ const (
 	Number  FieldKind = "number"   // decimal string, e.g. "2.5"
 	Choice  FieldKind = "choice"   // one of Options
 	OrgUnit FieldKind = "org_unit" // org unit id
+	Set     FieldKind = "set"      // distinct ids the lines reference, canonical "3,17,42"
 )
 
 // Field is an approval field: a typed value approval rules may test.
@@ -151,6 +155,43 @@ type Field struct {
 	Kind    FieldKind
 	Label   string // i18n key
 	Options func(ctx context.Context) ([]Option, error)
+	// Set fields only, both required: Search finds up to 20 matches of q, Labels names saved ids.
+	Search func(ctx context.Context, q string) ([]FieldOption, error)
+	Labels func(ctx context.Context, ids []int64) ([]FieldOption, error)
+}
+
+// FieldOption is one catalogue entry a set field may hold.
+type FieldOption struct {
+	ID   int64  `json:"id"`
+	Code string `json:"code"`
+	Name string `json:"name"`
+}
+
+// SetValue writes ids as a set field's canonical value.
+func SetValue(ids []int64) string {
+	ids = slices.Compact(slices.Sorted(slices.Values(ids)))
+	parts := make([]string, len(ids))
+	for i, id := range ids {
+		parts[i] = strconv.FormatInt(id, 10)
+	}
+	return strings.Join(parts, ",")
+}
+
+// ParseSet reads a set field's canonical value; false when v is not canonical
+// (a positive id list, strictly ascending), so nothing else is ever stored.
+func ParseSet(v string) ([]int64, bool) {
+	if v == "" {
+		return nil, true
+	}
+	var ids []int64
+	for p := range strings.SplitSeq(v, ",") {
+		id, err := strconv.ParseInt(p, 10, 64)
+		if err != nil || id <= 0 || p[0] == '0' || p[0] == '+' || (len(ids) > 0 && id <= ids[len(ids)-1]) {
+			return nil, false
+		}
+		ids = append(ids, id)
+	}
+	return ids, true
 }
 
 // Option is one value of a choice field; Label is shown as is.

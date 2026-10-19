@@ -107,6 +107,11 @@ func (s *Service) checkDeclaration(t Type) {
 	if t.Kind == Document && t.OnDelete == nil {
 		fail("is a document without OnDelete")
 	}
+	for _, f := range t.Fields {
+		if (f.Kind == Set) != (f.Search != nil) || (f.Kind == Set) != (f.Labels != nil) {
+			fail("field " + f.Key + ": Search and Labels go with set fields only, and both")
+		}
+	}
 	if t.Kind == Catalog {
 		if t.NumberPrefix != "" || t.Fields != nil || t.OnTransition != nil || t.BeforeSubmit != nil || t.Approvers != nil || t.SubjectCreates || t.ModuleActions != nil {
 			fail("is a catalog with document-only fields")
@@ -913,6 +918,8 @@ func (s *Service) check(ctx context.Context, t Type, h Header) (pgtype.Date, []b
 		case OrgUnit:
 			_, err := strconv.ParseInt(v, 10, 64)
 			ok = err == nil
+		case Set:
+			_, ok = ParseSet(v)
 		case Choice:
 			opts, err := f.Options(ctx)
 			if err != nil {

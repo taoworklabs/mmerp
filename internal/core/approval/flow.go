@@ -52,7 +52,7 @@ type Expr struct {
 	All   []Expr `json:"all,omitempty"`
 	Any   []Expr `json:"any,omitempty"`
 	Field string `json:"field,omitempty"`
-	Op    Op     `json:"op,omitempty" enum:"gt,gte,eq,within"`
+	Op    Op     `json:"op,omitempty" enum:"gt,gte,eq,within,has"`
 	Value string `json:"value,omitempty" minLength:"1" maxLength:"30"`
 }
 
@@ -268,7 +268,13 @@ func (c *flowChecker) checkExpr(e Expr) string {
 		if !ok || !slices.Contains(ops, e.Op) {
 			return "invalid_condition"
 		}
-		if kind != record.Choice {
+		switch kind {
+		case record.Choice:
+		case record.Set:
+			if ids, ok := record.ParseSet(e.Value); !ok || len(ids) != 1 {
+				return "invalid_condition"
+			}
+		default:
 			if _, ok := record.ParseNumber(e.Value); !ok {
 				return "invalid_condition"
 			}

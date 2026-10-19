@@ -15,6 +15,7 @@ const (
 	OpGTE    Op = "gte"
 	OpEq     Op = "eq"
 	OpWithin Op = "within" // the unit or below it
+	OpHas    Op = "has"    // the set holds the id
 )
 
 // opsByKind lists the comparisons each kind of field allows.
@@ -22,6 +23,7 @@ var opsByKind = map[record.FieldKind][]Op{
 	record.Number:  {OpGT, OpGTE},
 	record.Choice:  {OpEq},
 	record.OrgUnit: {OpWithin},
+	record.Set:     {OpHas},
 }
 
 // Header fields every document has, beside the approval fields of its type.
@@ -61,11 +63,13 @@ type RuleInput struct {
 // Field is an approval field of a document type, for building conditions.
 type Field struct {
 	Key     string          `json:"key"`
-	Kind    string          `json:"kind" enum:"number,choice,org_unit"`
+	Kind    string          `json:"kind" enum:"number,choice,org_unit,set"`
 	Label   string          `json:"label" doc:"i18n key"`
 	Options []record.Option `json:"options,omitempty"`
 	// The comparisons a condition on this field may use.
 	Ops []Op `json:"ops" nullable:"false"`
+	// Values are picked by searching the field's options endpoint.
+	Searchable bool `json:"searchable"`
 }
 
 // TypeRule is one action of a document type, with its approval fields and its rule, if any.

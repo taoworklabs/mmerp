@@ -70,6 +70,15 @@ type docTypeInput struct {
 	Action  string `query:"action" default:"post" doc:"post, cancel, or a module action of the type"`
 }
 
+type fieldOptionsInput struct {
+	DocType string  `path:"doc_type"`
+	Key     string  `path:"key"`
+	Q       string  `query:"q" maxLength:"100"`
+	IDs     []int64 `query:"ids" maxItems:"100" doc:"Name these ids instead of searching"`
+}
+
+type fieldOptionsOutput struct{ Body []record.FieldOption }
+
 type saveRuleInput struct {
 	DocType string `path:"doc_type"`
 	Action  string `query:"action" default:"post" doc:"post, cancel, or a module action of the type"`
@@ -119,6 +128,11 @@ func registerHandlers(api huma.API, s *Service) {
 		func(ctx context.Context, _ *struct{}) (*usersOutput, error) {
 			u, err := s.Users(ctx)
 			return &usersOutput{Body: u}, err
+		})
+	huma.Register(api, huma.Operation{OperationID: "list-approval-field-options", Method: http.MethodGet, Path: "/approval-rules/{doc_type}/fields/{key}/options"},
+		func(ctx context.Context, in *fieldOptionsInput) (*fieldOptionsOutput, error) {
+			o, err := s.FieldOptions(ctx, in.DocType, in.Key, in.Q, in.IDs)
+			return &fieldOptionsOutput{Body: o}, err
 		})
 	huma.Register(api, huma.Operation{OperationID: "save-approval-rule", Method: http.MethodPut, Path: "/approval-rules/{doc_type}", DefaultStatus: http.StatusNoContent},
 		func(ctx context.Context, in *saveRuleInput) (*struct{}, error) {

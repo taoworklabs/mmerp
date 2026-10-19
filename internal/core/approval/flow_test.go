@@ -254,6 +254,13 @@ func numberField(f string) (record.FieldKind, bool) {
 	return "", false
 }
 
+func setField(f string) (record.FieldKind, bool) {
+	if f == "parts" {
+		return record.Set, true
+	}
+	return "", false
+}
+
 func orgUnitField(f string) (record.FieldKind, bool) {
 	if f == "org_unit" {
 		return record.OrgUnit, true
@@ -333,6 +340,32 @@ func TestCheckFlowReasons(t *testing.T) {
 			fieldKind: numberField,
 			path:      "1.branches.1",
 			reason:    "invalid_condition",
+		},
+		{
+			name:      "has on a number field",
+			flow:      Flow{{Split: &Split{Mode: ChooseOne, Branches: []Branch{{Condition: amountCond(OpHas, "3"), Body: Flow{step(1)}}}}}},
+			fieldKind: numberField,
+			path:      "1.branches.1",
+			reason:    "invalid_condition",
+		},
+		{
+			name:      "has a non-id value",
+			flow:      Flow{{Split: &Split{Mode: ChooseOne, Branches: []Branch{{Condition: &Expr{Field: "parts", Op: OpHas, Value: "abc"}, Body: Flow{step(1)}}}}}},
+			fieldKind: setField,
+			path:      "1.branches.1",
+			reason:    "invalid_condition",
+		},
+		{
+			name:      "has zero",
+			flow:      Flow{{Split: &Split{Mode: ChooseOne, Branches: []Branch{{Condition: &Expr{Field: "parts", Op: OpHas, Value: "0"}, Body: Flow{step(1)}}}}}},
+			fieldKind: setField,
+			path:      "1.branches.1",
+			reason:    "invalid_condition",
+		},
+		{
+			name:      "has an id is valid",
+			flow:      Flow{{Split: &Split{Mode: ChooseOne, Branches: []Branch{{Condition: &Expr{Field: "parts", Op: OpHas, Value: "17"}, Body: Flow{step(1)}}}}}},
+			fieldKind: setField,
 		},
 		{
 			name:   "approvals exceed users",
