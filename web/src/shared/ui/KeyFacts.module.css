@@ -1,12 +1,9 @@
-/* A sunken well, set apart from the title above and the tabs below. */
+/* Set apart from the title above and the tabs below; each fact a sunken tile of its own. */
 .facts {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: var(--mantine-spacing-sm) var(--mantine-spacing-lg);
+  gap: var(--mantine-spacing-sm);
   margin: var(--mantine-spacing-md) 0;
-  padding: var(--mantine-spacing-sm) var(--mantine-spacing-md);
-  background: var(--mmerp-elevation-surface-sunken);
-  border-radius: var(--mantine-radius-md);
 }
 
 @media (min-width: 48em) {
@@ -17,6 +14,9 @@
 
 .fact {
   min-width: 0;
+  padding: var(--mantine-spacing-sm) var(--mantine-spacing-md);
+  background: var(--mmerp-elevation-surface-sunken);
+  border-radius: var(--mantine-radius-md);
 }
 
 .fact dd {
