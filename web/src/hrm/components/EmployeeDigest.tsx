@@ -35,7 +35,7 @@ export function EmployeeDigest({ employee: e }: { employee: Employee }) {
   return (
     <>
       {e.allowed_actions.includes('view_contracts') && (
-        <Panel title={t('hrm.employee.current_contract')} actions={<SeeAll tab="contracts" />}>
+        <Panel plain title={t('hrm.employee.current_contract')} actions={<SeeAll tab="contracts" />}>
           {contracts.isPending ? (
             <ContentSkeleton />
           ) : current ? (
@@ -58,7 +58,7 @@ export function EmployeeDigest({ employee: e }: { employee: Employee }) {
         </Panel>
       )}
       {canBalances && (
-        <Panel title={t('hrm.employee.leave_year', { year })} actions={<SeeAll tab="balances" />}>
+        <Panel plain title={t('hrm.employee.leave_year', { year })} actions={<SeeAll tab="balances" />}>
           {balances.isPending ? (
             <ContentSkeleton />
           ) : (
@@ -66,7 +66,7 @@ export function EmployeeDigest({ employee: e }: { employee: Employee }) {
           )}
         </Panel>
       )}
-      <Panel title={t('hrm.employee.recent_activity')} actions={<SeeAll tab="activity" />}>
+      <Panel plain title={t('hrm.employee.recent_activity')} actions={<SeeAll tab="activity" />}>
         <ActivityFeed docType={employeeDocType} id={e.id} recent={5} />
       </Panel>
     </>

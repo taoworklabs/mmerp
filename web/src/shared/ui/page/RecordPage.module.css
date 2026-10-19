@@ -22,3 +22,8 @@
     grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr);
   }
 }
+
+.side > * + * {
+  border-top: 1px solid var(--mantine-color-default-border);
+  border-radius: 0;
+}

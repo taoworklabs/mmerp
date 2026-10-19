@@ -224,7 +224,7 @@ export function RecordTemplate() {
                       )}
                     </EditablePanel>
                   }
-                  side={<Panel title={t('shared.document.tab.activity')}>{activity}</Panel>}
+                  side={<Panel plain title={t('shared.document.tab.activity')}>{activity}</Panel>}
                 />
               ),
             },

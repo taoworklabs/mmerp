@@ -121,17 +121,16 @@ Manager        Tenure        Contract type        Leave left 2026
 + Add          4 years       Open-ended           12 days
 Overview | Contracts (2) | Leave | Dependants | Files (1) | Activity
 ┌ ~1.6 ───────────────────────────────────┐ ┌ ~1 ──────────────────────────┐
-│ ▣ Work                          ✎ Sửa │ │ Current contract    See all  │
-│ Label            Label                 │ ├──────────────────────────────┤
-│ value            value                 │ │ Leave 2026          See all  │
-└────────────────────────────────────────┘ ├──────────────────────────────┤
-                                            │ Recent activity     See all  │
-                                            └──────────────────────────────┘
+│ ▣ Work                          ✎ Sửa │   Current contract    See all
+│ Label            Label                 │  ──────────────────────────────
+│ value            value                 │   Leave 2026          See all
+└────────────────────────────────────────┘  ──────────────────────────────
+                                              Recent activity     See all
 ```
 
 - Header: breadcrumb ending with the page, no back button; status beside the title (`status`); key facts as a line under it; `KeyFacts` (`summary`) under that. A destructive action sits in `more`, in red, and confirms.
 - Tabs on the header's rule, the whole width, the open tab on `?tab=` (replaced; the first tab is the bare URL); counts in labels once known. Tables in tabs are full `DataTable`s, not cards. "Hoạt động" (Activity) is the `ActivityFeed` with its filter; this is the one place the activity is a tab.
-- Overview: `RecordColumns`, about 1.6/1, one column below 1024px with the right one under. Cards' pairs are `FieldList stacked`, one to a row below 768px.
+- Overview: `RecordColumns`, about 1.6/1, one column below 1024px with the right one under. Left: `EditablePanel` cards, pairs `FieldList stacked`, one to a row below 768px. Right: digests as `Panel plain`, unframed, parted by rules, never cards.
 - Below 1024px the actions stay in the header (wrapping under the title below 768px); `KeyFacts` go two to a row below 768px; the tab line scrolls sideways.
 
 ### Document detail

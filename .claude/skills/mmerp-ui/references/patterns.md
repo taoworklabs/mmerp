@@ -152,7 +152,7 @@ Working example: `web/src/hrm/pages/EmployeePage.tsx` with `hrm/components/Emplo
 </RecordPage>
 ```
 
-The overview's left column holds the `EditablePanel` cards, pairs `FieldList stacked` (label over value, two to a row, an address `'wide'`); values the header already shows are not repeated, though the card's form still edits them. An empty value is a `MissingValue` (`children` of `EditablePanel` as a function receives `open`). The right column holds digests, each a `Panel` with a "Xem tất cả" link to its tab: the current item, a figure, and `ActivityFeed recent={5}` (comments and changes only, no filter) under "Hoạt động gần đây". A part the user may not read is left out, not shown empty.
+The overview's left column holds the `EditablePanel` cards, pairs `FieldList stacked` (label over value, two to a row, an address `'wide'`); values the header already shows are not repeated, though the card's form still edits them. An empty value is a `MissingValue` (`children` of `EditablePanel` as a function receives `open`). The right column holds digests, each a `Panel plain` (no frame: the values in cards read first; `RecordColumns` parts them with rules) with a "Xem tất cả" link to its tab: the current item, a figure, and `ActivityFeed recent={5}` (comments and changes only, no filter) under "Hoạt động gần đây". A part the user may not read is left out, not shown empty.
 
 ## Settings list
 

@@ -70,15 +70,16 @@ export function RecordPage({ more, actions, tabs, aliases, children, ...header }
   )
 }
 
-// RecordColumns lays out a record's overview: its values on the left, digests of its parts on the
-// right, about 1.6 to 1; one column below 1024px, the right one under the left.
+// RecordColumns lays out a record's overview: its values in cards on the left, digests of its parts
+// on the right, about 1.6 to 1; one column below 1024px, the right one under the left. The digests
+// are plain Panels, unframed so the values read first, parted by rules.
 export function RecordColumns({ main, side }: { main: ReactNode; side: ReactNode }) {
   return (
     <div className={classes.columns}>
       <Stack gap="md" miw={0}>
         {main}
       </Stack>
-      <Stack gap="md" miw={0}>
+      <Stack gap={0} miw={0} className={classes.side}>
         {side}
       </Stack>
     </div>
