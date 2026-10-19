@@ -68,6 +68,9 @@ func newFixture(t *testing.T) *fixture {
 			}},
 			{Key: "parts", Kind: record.Set,
 				Search: func(_ context.Context, q string) ([]record.FieldOption, error) {
+					if q == "none" {
+						return nil, nil
+					}
 					return []record.FieldOption{{ID: 17, Code: "P-17", Name: "part " + q}}, nil
 				},
 				Labels: func(_ context.Context, ids []int64) ([]record.FieldOption, error) {
@@ -969,6 +972,9 @@ func TestFieldOptionsNeedRulePermission(t *testing.T) {
 	f.check(err)
 	if !reflect.DeepEqual(got, []record.FieldOption{{ID: 3, Code: "P-3"}, {ID: 17, Code: "P-17"}}) {
 		t.Fatalf("labels %+v", got)
+	}
+	if got, err := f.appr.FieldOptions(f.as("rules"), "test.doc", "parts", "none", nil); err != nil || got == nil || len(got) != 0 {
+		t.Fatalf("no match: %#v %v", got, err)
 	}
 	if _, err := f.appr.FieldOptions(platform.WithProducts(f.as("rules"), nil), "test.doc", "parts", "bolt", nil); err != nil {
 		t.Fatalf("disabled product: %v", err)

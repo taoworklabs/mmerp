@@ -751,10 +751,17 @@ func (s *Service) FieldOptions(ctx context.Context, docType, key, q string, ids 
 	if i < 0 {
 		return nil, platform.ErrNotFound
 	}
+	var out []record.FieldOption
+	var err error
 	if len(ids) > 0 {
-		return t.Fields[i].Labels(ctx, ids)
+		out, err = t.Fields[i].Labels(ctx, ids)
+	} else {
+		out, err = t.Fields[i].Search(ctx, q)
 	}
-	return t.Fields[i].Search(ctx, q)
+	if out == nil && err == nil {
+		out = []record.FieldOption{} // a list, never null
+	}
+	return out, err
 }
 
 // Users lists the accounts a rule may name as approver, for whoever configures rules.
