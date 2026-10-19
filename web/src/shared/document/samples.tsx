@@ -33,7 +33,9 @@ const discussion: Discussion = {
 // A decided first step, then two parallel steps the viewer may vote on, so each carries its own decision.
 const approval: ApprovalInstance = {
   id: 1,
+  action: 'post',
   status: 'open',
+  allowed_actions: [],
   submitted_by_name: 'Nguyễn Văn An',
   submitted_at: '2026-03-09T08:20:00Z',
   plan: { seq: [{ step: 1 }, { par: [{ step: 2 }, { step: 3 }] }] },

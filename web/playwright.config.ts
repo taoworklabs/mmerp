@@ -1,7 +1,7 @@
 import { defineConfig, devices } from '@playwright/test'
 
-// m6 and approval-flows change approval rules other files rely on; m9 checks tenant-wide counts.
-const exclusive = /\/(m6|m9|approval-flows)\.spec\.ts$/
+// m6, approval-flows and approval-actions change approval rules other files rely on; m9 checks tenant-wide counts.
+const exclusive = /\/(m6|m9|approval-flows|approval-actions)\.spec\.ts$/
 
 export default defineConfig({
   testDir: 'e2e',

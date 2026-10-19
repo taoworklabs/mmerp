@@ -84,6 +84,7 @@
           },
           "step": {
             "format": "int32",
+            "minimum": 1,
             "type": "integer"
           }
         },
@@ -2432,6 +2433,15 @@
       "Instance": {
         "additionalProperties": false,
         "properties": {
+          "action": {
+            "type": "string"
+          },
+          "allowed_actions": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
           "id": {
             "format": "int64",
             "type": "integer"
@@ -2465,11 +2475,13 @@
         },
         "required": [
           "id",
+          "action",
           "status",
           "submitted_by_name",
           "submitted_at",
           "plan",
-          "steps"
+          "steps",
+          "allowed_actions"
         ],
         "type": "object"
       },
@@ -4321,6 +4333,35 @@
         ],
         "type": "object"
       },
+      "OrderFromQuoteOutputBody": {
+        "additionalProperties": false,
+        "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "/api/schemas/OrderFromQuoteOutputBody.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
+          "held": {
+            "type": "boolean"
+          },
+          "id": {
+            "format": "int64",
+            "type": [
+              "integer",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "held"
+        ],
+        "type": "object"
+      },
       "OrgUnit": {
         "additionalProperties": false,
         "properties": {
@@ -5504,6 +5545,7 @@
           },
           "step": {
             "format": "int32",
+            "minimum": 1,
             "type": "integer"
           }
         },
@@ -5533,6 +5575,7 @@
           },
           "step": {
             "format": "int32",
+            "minimum": 1,
             "type": "integer"
           }
         },
@@ -6323,9 +6366,34 @@
         ],
         "type": "object"
       },
+      "TransitionOutputBody": {
+        "additionalProperties": false,
+        "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "/api/schemas/TransitionOutputBody.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
+          "held": {
+            "description": "The cancel awaits approval; the document is unchanged until then",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "held"
+        ],
+        "type": "object"
+      },
       "TypeRule": {
         "additionalProperties": false,
         "properties": {
+          "action": {
+            "type": "string"
+          },
           "allowed_actions": {
             "items": {
               "type": "string"
@@ -6353,6 +6421,7 @@
         },
         "required": [
           "doc_type",
+          "action",
           "product",
           "fields",
           "module_approvers",
@@ -6636,6 +6705,17 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "description": "post, cancel, or a module action of the type",
+            "explode": false,
+            "in": "query",
+            "name": "action",
+            "schema": {
+              "default": "post",
+              "description": "post, cancel, or a module action of the type",
+              "type": "string"
+            }
           }
         ],
         "responses": {
@@ -6666,6 +6746,17 @@
             "name": "doc_type",
             "required": true,
             "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "post, cancel, or a module action of the type",
+            "explode": false,
+            "in": "query",
+            "name": "action",
+            "schema": {
+              "default": "post",
+              "description": "post, cancel, or a module action of the type",
               "type": "string"
             }
           }
@@ -6846,6 +6937,41 @@
           },
           "required": true
         },
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "tags": [
+          "core",
+          "core"
+        ]
+      }
+    },
+    "/approvals/{id}/withdraw": {
+      "post": {
+        "operationId": "withdraw-approval",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          }
+        ],
         "responses": {
           "204": {
             "description": "No Content"
@@ -7338,8 +7464,15 @@
           "required": true
         },
         "responses": {
-          "204": {
-            "description": "No Content"
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TransitionOutputBody"
+                }
+              }
+            },
+            "description": "OK"
           },
           "default": {
             "content": {
@@ -12605,7 +12738,7 @@
     },
     "/sales/quotes/{id}/order": {
       "post": {
-        "description": "While an order from the quotation is not cancelled, returns that order instead of making another.",
+        "description": "While an order from the quotation is not cancelled, returns that order instead of making another. When an approval rule holds the quotation, answers held with no id.",
         "operationId": "create-order-from-quote",
         "parameters": [
           {
@@ -12619,15 +12752,15 @@
           }
         ],
         "responses": {
-          "201": {
+          "200": {
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/CreatedOutputBody"
+                  "$ref": "#/components/schemas/OrderFromQuoteOutputBody"
                 }
               }
             },
-            "description": "Created"
+            "description": "OK"
           },
           "default": {
             "content": {

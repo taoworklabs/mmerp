@@ -594,5 +594,14 @@
   "shared.approval.step_status.cancelled": "No longer needed",
   "shared.approval.count": "{{n}} of {{m}} approvals",
   "shared.approval.reassign_from": "Replace",
-  "shared.devui.multi_choice": "Several choices"
+  "shared.devui.multi_choice": "Several choices",
+  "shared.rule.action.post": "Send for approval",
+  "shared.rule.action.cancel": "Cancel document",
+  "shared.approval.request.cancel": "Request to cancel the document",
+  "shared.approval.request.module": "Approval request: {{action}}",
+  "shared.approval.withdraw": "Withdraw request",
+  "shared.approval.withdraw_confirm": "Withdraw this approval request? The document stays as it is; the approvals given so far are dropped.",
+  "shared.approval.done.withdraw": "Request withdrawn.",
+  "shared.document.sent_for_approval": "Approval request sent for {{number}}.",
+  "shared.error.awaiting_approval": "The document awaits approval of a request."
 }

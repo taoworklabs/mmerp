@@ -135,7 +135,7 @@ test('an administrator builds a flow with a choose-one and a parallel split, and
     asE.post('/api/hrm/leaves', { data: { leave_type_id: ids.type, start_date: '2026-08-10', end_date: '2026-08-14', days: '5', reason: null } }),
   )
   const sent = await asE.post(`/api/documents/hrm.leave_request/${leave}/transitions`, { data: { to: 'posted', version: 1 } })
-  expect(sent.status(), await sent.text()).toBe(204)
+  expect(sent.status(), await sent.text()).toBe(200)
 
   for (const [user, after] of [
     [login.a, 'Chờ duyệt'],
@@ -187,7 +187,7 @@ test('removing a nested group down to no rows drops the group itself', async ({ 
 test('a rejected flow keeps its error on the card and the form unsaved', async ({ browser }) => {
   await putBuilt()
   const page = await as(browser, admin.login, url)
-  await page.route('**/api/approval-rules/hrm.leave_request', (route) =>
+  await page.route(/\/api\/approval-rules\/hrm\.leave_request(\?|$)/, (route) =>
     route.request().method() === 'PUT'
       ? route.fulfill({ status: 422, contentType: 'application/json', body: JSON.stringify({ code: 'invalid_rule', params: { path: '1', reason: 'unknown_role' } }) })
       : route.continue(),

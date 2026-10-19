@@ -1,6 +1,7 @@
 import { Alert, Button } from '@mantine/core'
 import { IconAlertCircle, IconTrash } from '@tabler/icons-react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
+import type { TFunction } from 'i18next'
 import { useEffect, useRef, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { useTranslation } from 'react-i18next'
@@ -15,6 +16,7 @@ import { notifySuccess } from '@/shared/ui/notify'
 import { ListPage, Page } from '@/shared/ui/page'
 import { ContentSkeleton, EmptyState, ErrorState, NotFoundPage, PageSkeleton } from '@/shared/ui/states'
 import { icon } from '@/shared/ui/theme'
+import { actionLabel } from './ApprovalPanel'
 import { documentKeys } from './keys'
 import { FlowBlock } from './flowEditor/FlowBlock'
 import { flowSummary, formPathOf, fromFlowValues, newStep, splitRole, toFlowValues, type FlowValues } from './flowForm'
@@ -28,13 +30,22 @@ function useRules(product: string) {
   })
 }
 
-// ApprovalRules lists and edits the approval rules of one product's document types.
+// ruleLabel names one rule: the document type, then the action it gates.
+function ruleLabel(t: TFunction, r: TypeRule) {
+  return `${t(`${r.doc_type}.name`, { defaultValue: r.doc_type })} · ${actionLabel(t, r.doc_type, r.action)}`
+}
+
+// A post rule keeps the type's own path; other actions get theirs under it.
+const rulePath = (basePath: string, r: TypeRule) => (r.action === 'post' ? `${basePath}/${r.doc_type}` : `${basePath}/${r.doc_type}/${r.action}`)
+
+// ApprovalRules lists and edits the approval rules of one product's document types, one per action.
 // The area mounts it at a splat route ("approval-rules/*").
 export function ApprovalRules(props: Props) {
   return (
     <Routes>
       <Route index element={<RuleList {...props} />} />
       <Route path=":docType" element={<RuleEditor {...props} />} />
+      <Route path=":docType/:action" element={<RuleEditor {...props} />} />
     </Routes>
   )
 }
@@ -43,7 +54,7 @@ function RuleList({ product, basePath }: Props) {
   const { t } = useTranslation()
   const rules = useRules(product)
   const columns: Column<TypeRule>[] = [
-    { key: 'doc_type', header: t('shared.rule.doc_type'), role: 'title', render: (r) => t(`${r.doc_type}.name`, { defaultValue: r.doc_type }) },
+    { key: 'doc_type', header: t('shared.rule.doc_type'), role: 'title', render: (r) => ruleLabel(t, r) },
     {
       key: 'rule',
       header: t('shared.rule.steps'),
@@ -65,8 +76,8 @@ function RuleList({ product, basePath }: Props) {
         label={t('shared.rule.title')}
         columns={columns}
         rows={rules.data}
-        rowKey={(r) => r.doc_type}
-        href={(r) => `${basePath}/${r.doc_type}`}
+        rowKey={(r) => `${r.doc_type}:${r.action}`}
+        href={(r) => rulePath(basePath, r)}
       />
     )
   return (
@@ -95,10 +106,12 @@ function toInput(v: Values): RuleInput {
   }
 }
 
-// RuleEditor edits the rule of one document type: its approval flow, plus the fallback role.
+// RuleEditor edits the rule of one document type's action: its approval flow, plus the fallback role.
 function RuleEditor({ product, basePath }: Props) {
   const { t } = useTranslation()
-  const docType = useParams().docType ?? ''
+  const params = useParams()
+  const docType = params.docType ?? ''
+  const action = params.action ?? 'post'
   const rules = useRules(product)
   const roles = useQuery({ queryKey: documentKeys.roles(), queryFn: async () => (await unwrap(api.GET('/roles'))) ?? [] })
   const users = useQuery({ queryKey: documentKeys.approvalRuleUsers(), queryFn: async () => (await unwrap(api.GET('/approval-rules/users'))) ?? [] })
@@ -106,11 +119,11 @@ function RuleEditor({ product, basePath }: Props) {
   if (rules.isError) return <ErrorState message={errorText(t, rules.error)} onRetry={() => void rules.refetch()} />
   if (roles.isError) return <ErrorState message={errorText(t, roles.error)} onRetry={() => void roles.refetch()} />
   if (users.isError) return <ErrorState message={errorText(t, users.error)} onRetry={() => void users.refetch()} />
-  const rule = rules.data.find((r) => r.doc_type === docType)
+  const rule = rules.data.find((r) => r.doc_type === docType && r.action === action)
   if (!rule) return <NotFoundPage back={{ to: basePath, label: t('shared.rule.back') }} />
   const userOptions = users.data.map((u) => ({ value: String(u.id), label: `${u.name} (${u.login})` }))
   // Tenant-wide roles administer the system; they do not approve documents.
-  return <RuleForm key={docType} rule={rule} basePath={basePath} roles={roles.data.filter((r) => !r.tenant_wide)} userOptions={userOptions} />
+  return <RuleForm key={`${docType}:${action}`} rule={rule} basePath={basePath} roles={roles.data.filter((r) => !r.tenant_wide)} userOptions={userOptions} />
 }
 
 function RuleForm({ rule, basePath, roles, userOptions }: { rule: TypeRule; basePath: string; roles: Role[]; userOptions: Option[] }) {
@@ -121,7 +134,8 @@ function RuleForm({ rule, basePath, roles, userOptions }: { rule: TypeRule; base
   // A failed delete, shown at the top of the page until the next attempt.
   const [error, setError] = useState<string | null>(null)
   const form = useForm<Values>({ mode: 'onBlur', defaultValues: toValues(rule) })
-  const name = t(`${rule.doc_type}.name`, { defaultValue: rule.doc_type })
+  const name = ruleLabel(t, rule)
+  const params = { path: { doc_type: rule.doc_type }, query: { action: rule.action } }
   const allowed = rule.allowed_actions
   // Read-only while the product is disabled.
   const readOnly = !allowed.includes('save')
@@ -141,7 +155,7 @@ function RuleForm({ rule, basePath, roles, userOptions }: { rule: TypeRule; base
 
   async function save(v: Values): Promise<void | false> {
     try {
-      await unwrap(api.PUT('/approval-rules/{doc_type}', { params: { path: { doc_type: rule.doc_type } }, body: toInput(v) }))
+      await unwrap(api.PUT('/approval-rules/{doc_type}', { params, body: toInput(v) }))
     } catch (err) {
       if (!(err instanceof ApiError) || err.code !== 'invalid_rule') throw err
       const path = String(err.params.path ?? '')
@@ -161,7 +175,7 @@ function RuleForm({ rule, basePath, roles, userOptions }: { rule: TypeRule; base
     if (!(await ask({ title: t('shared.rule.delete'), message: t('shared.rule.delete_confirm', { name }), confirmLabel: t('shared.rule.delete'), danger: true }))) return
     setError(null)
     try {
-      await unwrap(api.DELETE('/approval-rules/{doc_type}', { params: { path: { doc_type: rule.doc_type } } }))
+      await unwrap(api.DELETE('/approval-rules/{doc_type}', { params }))
       await qc.invalidateQueries({ queryKey: documentKeys.approvalRules() })
       notifySuccess(t('shared.rule.deleted'))
       navigate(basePath)

@@ -1,6 +1,7 @@
 import { Alert, Badge, Button, Group, Stack, Text, Timeline } from '@mantine/core'
-import { IconAlertCircle, IconCheck, IconUserShare, IconX, type Icon as TablerIcon } from '@tabler/icons-react'
+import { IconAlertCircle, IconArrowBackUp, IconCheck, IconUserShare, IconX, type Icon as TablerIcon } from '@tabler/icons-react'
 import { useQuery } from '@tanstack/react-query'
+import type { TFunction } from 'i18next'
 import { useState, type ReactNode } from 'react'
 import { useForm } from 'react-hook-form'
 import { useTranslation } from 'react-i18next'
@@ -8,6 +9,7 @@ import { api, ApiError, unwrap, type ApprovalInstance, type ApprovalPlan, type A
 import { useInvalidateRecord } from '@/shared/area'
 import { useMe } from '@/shared/auth/me'
 import { errorText, formatDateTime } from '@/shared/i18n'
+import { useConfirm } from '@/shared/ui/confirm'
 import { Form, FormActions, SelectField, TextField } from '@/shared/ui/form'
 import { notifySuccess } from '@/shared/ui/notify'
 import { FormModal } from '@/shared/ui/page'
@@ -15,6 +17,13 @@ import { ContentSkeleton, ErrorState } from '@/shared/ui/states'
 import { icon } from '@/shared/ui/theme'
 import classes from './ApprovalPanel.module.css'
 import { documentKeys } from './keys'
+
+// actionLabel names an approval action: post and cancel are core's, the rest the type's product's.
+export function actionLabel(t: TFunction, docType: string, action: string) {
+  if (action === 'post' || action === 'cancel') return t(`shared.rule.action.${action}`)
+  const product = docType.split('.')[0]
+  return t(`${product}.action.${action}`, { defaultValue: action })
+}
 
 type PanelProps = {
   docType: string
@@ -94,7 +103,7 @@ function useDecide(docType: string, id: number, inst: ApprovalInstance, onDone?:
   const [modal, setModal] = useState<{ kind: 'reject'; step: number } | { kind: 'reassign'; step: ApprovalStep } | null>(null)
   const path = { path: { id: inst.id } }
 
-  async function decide(action: 'approve' | 'reject' | 'reassign', call: () => Promise<unknown>) {
+  async function decide(action: 'approve' | 'reject' | 'reassign' | 'withdraw', call: () => Promise<unknown>) {
     setError(null)
     setBusy(true)
     try {
@@ -136,7 +145,8 @@ function useDecide(docType: string, id: number, inst: ApprovalInstance, onDone?:
       )}
     </>
   )
-  return { error, busy, approve, setModal, dialogs }
+  const withdraw = () => void decide('withdraw', () => unwrap(api.POST('/approvals/{id}/withdraw', { params: path }))).catch(() => {})
+  return { error, busy, approve, withdraw, setModal, dialogs }
 }
 
 // namedAria is set only when several steps show their own buttons, so each pair names its step
@@ -176,6 +186,7 @@ function Instance({ docType, id, inst, onDone, sticky, subject, decideElsewhere 
   const { t } = useTranslation()
   const me = useMe()
   const d = useDecide(docType, id, inst, onDone)
+  const [ask, confirm] = useConfirm()
   const at = formatDateTime(inst.submitted_at, me.timezone)
   const only = soleVoting(inst)
   const byPos = new Map(inst.steps.map((s) => [s.position, s]))
@@ -217,8 +228,18 @@ function Instance({ docType, id, inst, onDone, sticky, subject, decideElsewhere 
       />
     )
   }
+  // Withdrawing drops the approvals given so far, so it asks first, though the document is untouched.
+  const withdraw = async () => {
+    const label = t('shared.approval.withdraw')
+    if (await ask({ title: label, message: t('shared.approval.withdraw_confirm'), confirmLabel: label })) d.withdraw()
+  }
   return (
     <Stack gap="md">
+      {inst.action !== 'post' && (
+        <Text size="sm" fw={600}>
+          {requestTitle(t, docType, inst.action)}
+        </Text>
+      )}
       <Text size="sm" c="dimmed">
         {subject && subject !== inst.submitted_by_name
           ? t('shared.approval.submitted_for', { name: inst.submitted_by_name, subject, at })
@@ -259,9 +280,23 @@ function Instance({ docType, id, inst, onDone, sticky, subject, decideElsewhere 
           <DecisionButtons d={d} step={only} />
         </Group>
       )}
+      {inst.allowed_actions.includes('withdraw') && (
+        <Group gap="xs" justify="flex-end">
+          <Button variant="default" leftSection={<IconArrowBackUp {...icon.button} />} disabled={d.busy} onClick={() => void withdraw()}>
+            {t('shared.approval.withdraw')}
+          </Button>
+        </Group>
+      )}
       {d.dialogs}
+      {confirm}
     </Stack>
   )
+}
+
+// requestTitle names an approval request by the action it waits to run.
+function requestTitle(t: TFunction, docType: string, action: string) {
+  if (action === 'cancel') return t('shared.approval.request.cancel')
+  return t('shared.approval.request.module', { action: actionLabel(t, docType, action) })
 }
 
 // stepLook: approved is a green check, rejected a red cross, an open step amber, the rest grey.

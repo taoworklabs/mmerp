@@ -65,7 +65,7 @@ async function sendViaApi(baseURL: string, user: string, month: string, days: st
     as.post('/api/hrm/leaves', { data: { leave_type_id: ids.annual, start_date: `2026-${month}-10`, end_date: `2026-${month}-14`, days, reason: null } }),
   )
   const res = await as.post(`/api/documents/hrm.leave_request/${id}/transitions`, { data: { to: 'posted', version: 1 } })
-  expect(res.status(), await res.text()).toBe(204)
+  expect(res.status(), await res.text()).toBe(200)
   return id
 }
 

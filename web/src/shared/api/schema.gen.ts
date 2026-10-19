@@ -116,6 +116,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/approvals/{id}/withdraw": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["withdraw-approval"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/attachments/{id}": {
         parameters: {
             query?: never;
@@ -1472,7 +1488,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** @description While an order from the quotation is not cancelled, returns that order instead of making another. */
+        /** @description While an order from the quotation is not cancelled, returns that order instead of making another. When an approval rule holds the quotation, answers held with no id. */
         post: operations["create-order-from-quote"];
         delete?: never;
         options?: never;
@@ -2293,6 +2309,8 @@ export interface components {
             items: components["schemas"]["InboxItem"][];
         };
         Instance: {
+            action: string;
+            allowed_actions: string[];
             /** Format: int64 */
             id: number;
             plan: components["schemas"]["Plan"];
@@ -2926,6 +2944,17 @@ export interface components {
         Option: {
             label: string;
             value: string;
+        };
+        OrderFromQuoteOutputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example /api/schemas/OrderFromQuoteOutputBody.json
+             */
+            readonly $schema?: string;
+            held: boolean;
+            /** Format: int64 */
+            id: number | null;
         };
         OrgUnit: {
             address?: string;
@@ -3610,7 +3639,18 @@ export interface components {
             /** Format: int32 */
             version: number;
         };
+        TransitionOutputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example /api/schemas/TransitionOutputBody.json
+             */
+            readonly $schema?: string;
+            /** @description The cancel awaits approval; the document is unchanged until then */
+            held: boolean;
+        };
         TypeRule: {
+            action: string;
             allowed_actions: string[];
             doc_type: string;
             fields: components["schemas"]["Field"][];
@@ -3749,7 +3789,10 @@ export interface operations {
     };
     "save-approval-rule": {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description post, cancel, or a module action of the type */
+                action?: string;
+            };
             header?: never;
             path: {
                 doc_type: string;
@@ -3782,7 +3825,10 @@ export interface operations {
     };
     "delete-approval-rule": {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description post, cancel, or a module action of the type */
+                action?: string;
+            };
             header?: never;
             path: {
                 doc_type: string;
@@ -3918,6 +3964,35 @@ export interface operations {
                 "application/json": components["schemas"]["RejectInputBody"];
             };
         };
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "withdraw-approval": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
         responses: {
             /** @description No Content */
             204: {
@@ -4255,12 +4330,14 @@ export interface operations {
             };
         };
         responses: {
-            /** @description No Content */
-            204: {
+            /** @description OK */
+            200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["TransitionOutputBody"];
+                };
             };
             /** @description Error */
             default: {
@@ -7664,13 +7741,13 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Created */
-            201: {
+            /** @description OK */
+            200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["CreatedOutputBody"];
+                    "application/json": components["schemas"]["OrderFromQuoteOutputBody"];
                 };
             };
             /** @description Error */

@@ -38,5 +38,6 @@
   "sales.error.order_delivery_before_date": "The delivery date cannot be before the order date.",
   "sales.error.quote_expired": "The quotation has expired, so no order can be made from it. Make a new quotation or enter the order directly.",
   "sales.error.quote_not_posted": "Only an approved quotation can become an order.",
-  "sales.error.quote_has_order": "The quotation has an order. Cancel the order before cancelling the quotation."
+  "sales.error.quote_has_order": "The quotation has an order. Cancel the order before cancelling the quotation.",
+  "sales.action.create_order": "Create sales order"
 }

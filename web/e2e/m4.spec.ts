@@ -86,7 +86,7 @@ async function contractViaApi(employeeId: number, kind: number, start: string, e
   )
   if (!send) return id
   const res = await api.post(`/api/documents/hrm.contract/${id}/transitions`, { data: { to: 'posted', version: 1 } })
-  expect(res.status(), await res.text()).toBe(204)
+  expect(res.status(), await res.text()).toBe(200)
   await approveAsDir(id)
   return id
 }
@@ -195,7 +195,7 @@ test.describe('contracts', () => {
     const h = await created(api.post('/api/hrm/employees', { data: employee(`M4H${run}`, ids.q, { manager_id: ids.m }) }))
     await contractViaApi(h, ids.open, '2024-01-01', null)
     const second = await contractViaApi(h, ids.fixed, '2026-03-01', '2026-08-31', false)
-    expect((await api.post(`/api/documents/hrm.contract/${second}/transitions`, { data: { to: 'posted', version: 1 } })).status()).toBe(204)
+    expect((await api.post(`/api/documents/hrm.contract/${second}/transitions`, { data: { to: 'posted', version: 1 } })).status()).toBe(200)
     const d = await as(browser, login.dir, `/hrm/contracts/${second}`)
     await d.getByRole('button', { name: 'Duyệt', exact: true }).click()
     await expect(d.getByText(/Nhân viên đã có hợp đồng có hiệu lực trùng thời hạn này/)).toBeVisible()
