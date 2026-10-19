@@ -456,5 +456,8 @@
   "hrm.leave.impact": "Ảnh hưởng",
   "hrm.leave.overlapping": "Cùng phòng nghỉ trùng",
   "hrm.leave.overlapping_none": "Không ai trong phòng nghỉ trùng thời gian.",
-  "hrm.leave.handover": "Người nhận bàn giao"
+  "hrm.leave.handover": "Người nhận bàn giao",
+  "hrm.employee.tenure": "Thâm niên",
+  "hrm.employee.leave_left": "Phép còn lại {{year}}",
+  "hrm.employee.terminate_confirm": "Cho {{name}} nghỉ việc, ngày làm việc cuối cùng {{date}}? Từ hôm sau nhân viên ở trạng thái đã nghỉ việc."
 }

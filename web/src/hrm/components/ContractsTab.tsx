@@ -1,25 +1,22 @@
 import { Button, Menu, Stack } from '@mantine/core'
 import { IconFilePlus, IconPlus } from '@tabler/icons-react'
-import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { Link, useNavigate } from 'react-router'
-import { api, unwrap, type ContractListItem, type Employee } from '@/shared/api/hrm'
+import { type ContractListItem, type Employee } from '@/shared/api/hrm'
 import { DocumentStatus } from '@/shared/document'
 import { errorText, formatDate } from '@/shared/i18n'
 import { DataTable, type Column } from '@/shared/ui/DataTable'
 import { TabActions } from '@/shared/ui/page'
 import { ContentSkeleton, EmptyState, ErrorState } from '@/shared/ui/states'
 import { icon } from '@/shared/ui/theme'
-import { contractDocType, hrmKeys } from '../keys'
+import { useEmployeeContracts } from '../hooks/useEmployeeRecords'
+import { contractDocType } from '../keys'
 
 // ContractsTab: an employee's contracts, each original followed by its appendices.
 export function ContractsTab({ employee }: { employee: Employee }) {
   const { t } = useTranslation()
   const navigate = useNavigate()
-  const list = useQuery({
-    queryKey: hrmKeys.contracts.employee(employee.id),
-    queryFn: async () => (await unwrap(api.GET('/hrm/employees/{id}/contracts', { params: { path: { id: employee.id } } }))) ?? [],
-  })
+  const list = useEmployeeContracts(employee)
   const canCreate = employee.allowed_actions.includes('create_contract')
   const numbers = new Map((list.data ?? []).map((c) => [c.id, c.number]))
   const newPath = `/hrm/contracts/new?employee=${employee.id}`

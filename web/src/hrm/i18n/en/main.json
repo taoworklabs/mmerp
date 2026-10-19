@@ -456,5 +456,8 @@
   "hrm.leave.impact": "Impact",
   "hrm.leave.overlapping": "Away at the same time",
   "hrm.leave.overlapping_none": "No one in the department is away over these days.",
-  "hrm.leave.handover": "Handover to"
+  "hrm.leave.handover": "Handover to",
+  "hrm.employee.tenure": "Tenure",
+  "hrm.employee.leave_left": "Leave left {{year}}",
+  "hrm.employee.terminate_confirm": "Terminate {{name}} with {{date}} as the last working day? From the next day the employee shows as terminated."
 }

@@ -14,7 +14,8 @@ import { employeeDocType, hrmKeys } from '../keys'
 import { tenure } from '../tenure'
 import { EmployeeField } from './EmployeeField'
 import { EmployeeLink } from './EmployeeLink'
-import { MainFields, PersonalFields, revealSensitive, SensitiveFields, sensitiveFields, useEmployeeForm } from './EmployeeForm'
+import { useConfirm } from '@/shared/ui/confirm'
+import { MainFields, PersonalFields, revealSensitive, SensitiveFields, sensitiveFields, useEmployeeForm, type EmployeeValues } from './EmployeeForm'
 
 type Part = 'main' | 'personal' | 'sensitive'
 // A move is saved like any edit, through a form that holds only what it changes.
@@ -132,13 +133,22 @@ function PartForm({ employee: e, part, onClose, onSaved }: { employee: Employee;
 // MoveModal moves an employee to another department (and manager), or records their leaving.
 export function MoveModal({ employee: e, move, onClose, onSaved }: { employee: Employee; move: Move; onClose: () => void; onSaved: () => Promise<void> }) {
   const { t } = useTranslation()
+  const [ask, dialog] = useConfirm()
   const { form, save, errorFields } = useEmployeeForm(e, async () => {
     await onSaved()
     onClose()
   })
+  // Leaving cannot be taken back from here: the date is asked for, then confirmed.
+  const submit = async (v: EmployeeValues) => {
+    if (move === 'terminate') {
+      const message = t('hrm.employee.terminate_confirm', { name: e.full_name, date: formatDate(v.termination_date) })
+      if (!(await ask({ title: t('hrm.employee.terminate'), message, confirmLabel: t('hrm.employee.terminate'), danger: true }))) return
+    }
+    await save(v)
+  }
   return (
     <FormModal opened title={t(`hrm.employee.${move}_title`, { name: e.full_name })} onClose={onClose}>
-      <Form form={form} onSubmit={save} errorFields={errorFields}>
+      <Form form={form} onSubmit={submit} errorFields={errorFields}>
         {move === 'transfer' ? (
           <>
             <OrgUnitField name="org_unit_id" label={t('hrm.employee.org_unit')} required product="hrm" permission="hrm.employee.edit" />
@@ -154,6 +164,7 @@ export function MoveModal({ employee: e, move, onClose, onSaved }: { employee: E
         )}
         <FormActions submitLabel={t(`hrm.employee.${move}`)} onCancel={onClose} cancelLabel={t('hrm.common.cancel')} />
       </Form>
+      {dialog}
     </FormModal>
   )
 }

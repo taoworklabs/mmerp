@@ -1,6 +1,6 @@
 import { Button, Stack } from '@mantine/core'
 import { IconPlusMinus } from '@tabler/icons-react'
-import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { useTranslation } from 'react-i18next'
@@ -13,16 +13,14 @@ import { notifySuccess } from '@/shared/ui/notify'
 import { FormModal, TabActions } from '@/shared/ui/page'
 import { ContentSkeleton, EmptyState, ErrorState } from '@/shared/ui/states'
 import { icon } from '@/shared/ui/theme'
+import { useLeaveBalances } from '../hooks/useEmployeeRecords'
 import { hrmKeys } from '../keys'
 
 // BalancesTab: an employee's remaining leave by year; leave admins grant and adjust it, with a reason.
 export function BalancesTab({ employee }: { employee: Employee }) {
   const { t } = useTranslation()
   const [adjusting, setAdjusting] = useState(false)
-  const list = useQuery({
-    queryKey: hrmKeys.balances.employee(employee.id),
-    queryFn: async () => (await unwrap(api.GET('/hrm/employees/{id}/leave-balances', { params: { path: { id: employee.id } } }))) ?? [],
-  })
+  const list = useLeaveBalances(employee)
   const canAdjust = employee.allowed_actions.includes('adjust_leave_balance')
   const columns: Column<LeaveBalance>[] = [
     { key: 'year', header: t('hrm.balance.year'), role: 'title', kind: 'date', render: (b) => String(b.year) },

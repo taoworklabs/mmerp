@@ -16,7 +16,11 @@ export type PageHeaderProps = {
   description?: ReactNode
   // Shown left of the title, e.g. a person's avatar.
   leading?: ReactNode
+  // Right of the title: the record's status badge.
+  status?: ReactNode
   actions?: ReactNode
+  // Under the title, over the tabs: the record's key facts (KeyFacts).
+  summary?: ReactNode
   // A Tabs.List (inside a Tabs around the page) that sits on the header's rule.
   tabs?: ReactNode
   // No rule under the header: the content draws its own frame.
@@ -24,6 +28,9 @@ export type PageHeaderProps = {
   // One record's page (DetailPage, DocumentPage): the breadcrumb ends with the page itself and a
   // back button leads the title.
   withBack?: boolean
+  // The breadcrumb ends with the page itself, without the back button: a record page whose
+  // breadcrumb already leads back.
+  current?: boolean
 }
 
 // pageFrame is the padding around a page, shared with the page-level skeleton.
@@ -54,7 +61,7 @@ export function Page({ children, className, centered, ...header }: PageHeaderPro
   )
 }
 
-function PageHeader({ title, breadcrumbs, description, leading, actions, tabs, plain, withBack }: PageHeaderProps) {
+function PageHeader({ title, breadcrumbs, description, leading, status, actions, summary, tabs, plain, withBack, current }: PageHeaderProps) {
   const parent = breadcrumbs?.at(-1)
   return (
     <Stack gap="xs" className={classes.header} data-tabs={tabs ? true : undefined} data-plain={plain || undefined}>
@@ -65,7 +72,7 @@ function PageHeader({ title, breadcrumbs, description, leading, actions, tabs, p
               {c.label}
             </Anchor>
           ))}
-          {withBack && (
+          {(withBack || current) && (
             <Text size="sm" fw={500} aria-current="page" truncate>
               {title}
             </Text>
@@ -78,9 +85,12 @@ function PageHeader({ title, breadcrumbs, description, leading, actions, tabs, p
           {withBack && parent && <BackButton to={parent.to} />}
           {leading}
           <Stack gap={0} miw={0}>
-            <Title order={1} lineClamp={1}>
-              {title}
-            </Title>
+            <Group gap="sm" wrap="nowrap" miw={0}>
+              <Title order={1} lineClamp={1}>
+                {title}
+              </Title>
+              {status}
+            </Group>
             {description && (
               <Text size="sm" c="dimmed" component="div">
                 {description}
@@ -90,6 +100,7 @@ function PageHeader({ title, breadcrumbs, description, leading, actions, tabs, p
         </Group>
         {actions}
       </Flex>
+      {summary}
       {tabs && <div className={classes.tabs}>{tabs}</div>}
     </Stack>
   )

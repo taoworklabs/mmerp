@@ -1,4 +1,4 @@
-import { Button, Group } from '@mantine/core'
+import { Button, Grid, Menu, Stack } from '@mantine/core'
 import { IconArrowsExchange, IconUserOff } from '@tabler/icons-react'
 import { useQuery } from '@tanstack/react-query'
 import { useState } from 'react'
@@ -9,13 +9,14 @@ import { useInvalidateRecord } from '@/shared/area'
 import { ActivityFeed, useAttachmentSection } from '@/shared/document'
 import { PersonAvatar } from '@/shared/ui/avatar'
 import { notifySuccess } from '@/shared/ui/notify'
-import { DetailPage, DetailTabs, Panel } from '@/shared/ui/page'
+import { DetailTabs, Panel, RecordPage } from '@/shared/ui/page'
 import { icon } from '@/shared/ui/theme'
 import { BalancesTab } from '../components/BalancesTab'
 import { ContractsTab } from '../components/ContractsTab'
 import { DependentsTab } from '../components/DependentsTab'
 import { EmployeeProfile, MoveModal, type Move } from '../components/EmployeeProfile'
 import { EmployeeStatus } from '../components/EmployeeStatus'
+import { EmployeeSummary } from '../components/EmployeeSummary'
 import { loaded } from '@/shared/ui/loaded'
 import { employeeDocType, hrmKeys } from '../keys'
 
@@ -45,43 +46,45 @@ export function EmployeePage() {
     { value: attachments.key, label: attachments.title, content: attachments.content },
   ]
   return (
-    <DetailPage
+    <RecordPage
       title={e.full_name}
       breadcrumbs={[{ label: t('hrm.employees.title'), to: '/hrm/employees' }]}
       leading={<PersonAvatar name={e.full_name} size="lg" />}
-      description={
-        <Group gap="xs" component="span">
-          <span>{e.code}</span>
-          <span aria-hidden>·</span>
-          <span>{e.org_unit_name}</span>
-          <EmployeeStatus status={e.status} />
-        </Group>
-      }
+      status={<EmployeeStatus status={e.status} />}
+      description={[e.code, e.org_unit_name, e.user_login].filter(Boolean).join(' · ')}
+      summary={<EmployeeSummary employee={e} onTransfer={() => setMove('transfer')} balancesTab="balances" />}
       actions={
         canEdit && (
-          <>
-            <Button variant="default" leftSection={<IconArrowsExchange {...icon.button} />} onClick={() => setMove('transfer')}>
-              {t('hrm.employee.transfer')}
-            </Button>
-            {!e.termination_date && (
-              <Button variant="default" leftSection={<IconUserOff {...icon.button} />} onClick={() => setMove('terminate')}>
-                {t('hrm.employee.terminate')}
-              </Button>
-            )}
-          </>
+          <Button variant="default" leftSection={<IconArrowsExchange {...icon.button} />} onClick={() => setMove('transfer')}>
+            {t('hrm.employee.transfer')}
+          </Button>
         )
       }
-      side={
-        <>
-          <DetailTabs tabs={tabs} />
-          <Panel title={t('shared.document.tab.activity')}>
-            <ActivityFeed docType={employeeDocType} id={e.id} />
-          </Panel>
-        </>
+      more={
+        canEdit &&
+        !e.termination_date && (
+          <Menu.Item color="danger" leftSection={<IconUserOff {...icon.text} />} onClick={() => setMove('terminate')}>
+            {t('hrm.employee.terminate')}
+          </Menu.Item>
+        )
       }
     >
-      <EmployeeProfile key={e.id} employee={e} onSaved={saved} />
+      <Grid gap="xl">
+        <Grid.Col span={{ base: 12, md: 7 }}>
+          <Stack gap="md">
+            <EmployeeProfile key={e.id} employee={e} onSaved={saved} />
+          </Stack>
+        </Grid.Col>
+        <Grid.Col span={{ base: 12, md: 5 }}>
+          <Stack gap="md">
+            <DetailTabs tabs={tabs} />
+            <Panel title={t('shared.document.tab.activity')}>
+              <ActivityFeed docType={employeeDocType} id={e.id} />
+            </Panel>
+          </Stack>
+        </Grid.Col>
+      </Grid>
       {move && <MoveModal employee={e} move={move} onClose={() => setMove(null)} onSaved={saved} />}
-    </DetailPage>
+    </RecordPage>
   )
 }
