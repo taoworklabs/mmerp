@@ -1,4 +1,4 @@
-import { Button } from '@mantine/core'
+import { Button, Group } from '@mantine/core'
 import { IconPencil, type Icon as TablerIcon } from '@tabler/icons-react'
 import { useRef, useState, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -10,15 +10,17 @@ type Props = {
   icon?: TablerIcon
   // Shows Edit; false while the user may not edit.
   editable?: boolean
+  // Before Edit on the title line: what else the card offers (show all its masked values).
+  actions?: ReactNode
   // The group's form, given how to close it (Cancel, or after saving): fields and FormActions with onCancel.
   edit: (close: () => void) => ReactNode
-  // The read view: label–value pairs.
-  children: ReactNode
+  // The read view: label–value pairs; as a function, given how to open the form (an empty value's "+ Add").
+  children: ReactNode | ((open: () => void) => ReactNode)
 }
 
 // EditablePanel is one group of a record's values in a card: read as label–value pairs, and on
 // Edit the same card holds the group's form, with Save and Cancel, until it is saved or cancelled.
-export function EditablePanel({ title, icon: Icon, editable, edit, children }: Props) {
+export function EditablePanel({ title, icon: Icon, editable, actions, edit, children }: Props) {
   const { t } = useTranslation()
   const [editing, setEditing] = useState(false)
   const button = useRef<HTMLButtonElement>(null)
@@ -37,15 +39,19 @@ export function EditablePanel({ title, icon: Icon, editable, edit, children }: P
       title={title}
       icon={Icon}
       actions={
-        editable &&
         !editing && (
-          <Button ref={button} variant="subtle" leftSection={<IconPencil {...icon.button} />} onClick={open} aria-label={t('shared.inline.edit', { label: title })}>
-            {t('shared.section.edit')}
-          </Button>
+          <Group gap="xs" wrap="nowrap">
+            {actions}
+            {editable && (
+              <Button ref={button} variant="subtle" leftSection={<IconPencil {...icon.button} />} onClick={open} aria-label={t('shared.inline.edit', { label: title })}>
+                {t('shared.section.edit')}
+              </Button>
+            )}
+          </Group>
         )
       }
     >
-      <div ref={body}>{editing ? edit(close) : children}</div>
+      <div ref={body}>{editing ? edit(close) : typeof children === 'function' ? children(open) : children}</div>
     </Panel>
   )
 }

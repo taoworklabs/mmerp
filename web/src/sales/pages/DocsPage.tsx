@@ -1,18 +1,16 @@
-import { Button, Group } from '@mantine/core'
+import { Button } from '@mantine/core'
 import { IconPlus } from '@tabler/icons-react'
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router'
-import { api, unwrap, type DocListItem, type DocSort } from '@/shared/api/sales'
-import { DocumentStatus, DocumentStatusFilter, type DocStatus } from '@/shared/document'
-import { formatDate, formatNumber } from '@/shared/i18n'
-import { type Column } from '@/shared/ui/DataTable'
+import { api, unwrap, type DocSort } from '@/shared/api/sales'
+import { DocumentStatusFilter, type DocStatus } from '@/shared/document'
 import { SearchInput } from '@/shared/ui/form'
 import { ListPage } from '@/shared/ui/page'
 import { useListView } from '@/shared/ui/ListView'
 import { icon } from '@/shared/ui/theme'
 import { useListParams } from '@/shared/url/listParams'
-import { DocProgress } from '../components/DocProgress'
+import { useDocColumns } from '../components/docColumns'
 import { useDocActions } from '../hooks/useSales'
 import { docTypeOf, pathOf, salesKeys, type Kind } from '../keys'
 
@@ -47,28 +45,7 @@ export function DocsPage({ kind: docKind }: { kind: Kind }) {
     placeholderData: keepPreviousData,
   })
 
-  const columns: Column<DocListItem>[] = [
-    { key: 'number', header: t('sales.doc.number'), role: 'title', kind: 'code', sortable: true, render: (d) => d.number },
-    { key: 'customer', header: t('sales.doc.customer'), role: 'meta', render: (d) => d.customer_name },
-    { key: 'date', header: t(`sales.${docKind}.date`), role: 'meta', kind: 'date', sortable: true, render: (d) => formatDate(d.date) },
-    ...(docKind === 'quote'
-      ? [{ key: 'valid_until', header: t('sales.quote.valid_until'), role: 'hidden' as const, kind: 'date' as const, render: (d: DocListItem) => formatDate(d.valid_until) }]
-      : []),
-    { key: 'org_unit', header: t('sales.doc.org_unit'), role: 'hidden', render: (d) => d.org_unit_name },
-    { key: 'total', header: t('sales.doc.total_vnd'), role: 'meta', kind: 'number', sortable: true, render: (d) => formatNumber(d.total) },
-    {
-      key: 'status',
-      header: t('sales.doc.status'),
-      role: 'status',
-      kind: 'status',
-      render: (d) => (
-        <Group gap="xs" wrap="nowrap">
-          <DocumentStatus docType={docType} status={d.status} />
-          <DocProgress doc={d} />
-        </Group>
-      ),
-    },
-  ]
+  const columns = useDocColumns(docKind)
   const view = useListView(`sales.${pathOf(docKind)}`, columns)
 
   return (

@@ -139,7 +139,7 @@
   "shared.devui.avoid_page": "a more specific template fits; every other template is built on Page.",
   "shared.devui.use_list": "listing documents or master data to find, filter and open; a small configuration list edits each item in a FormModal.",
   "shared.devui.avoid_list": "viewing or editing one record: a record has its own page, the side panel only previews.",
-  "shared.devui.use_record": "one record without a lifecycle: an employee, a customer, a user; viewed and edited on the same page.",
+  "shared.devui.use_record": "one record without a lifecycle: an employee, a customer, a user; key facts in the header, each part a full-width tab, the Overview tab to read and edit each group of values.",
   "shared.devui.avoid_record": "the record has a number, a date and a draft, pending, posted lifecycle: use DocumentPage.",
   "shared.devui.use_document": "viewing and editing one document, from draft to posted or cancelled, with its approval.",
   "shared.devui.avoid_document": "the record has no lifecycle: use DetailPage; never split off a separate edit page.",
@@ -535,5 +535,16 @@
   "shared.approval.submitted_for": "Sent by {{name}} for {{subject}} at {{at}}",
   "shared.approval.later": "Not yet",
   "shared.document.confirm.withdraw": "Withdraw {{number}} to draft? The running approval stops; sending it again starts from step 1.",
-  "shared.attachments.drop_hint": "Drop files here or click to choose"
+  "shared.attachments.drop_hint": "Drop files here or click to choose",
+  "shared.field.add": "+ Add",
+  "shared.field.add_label": "Add {{label}}",
+  "shared.field.missing": "Not filled in",
+  "shared.record.overview": "Overview",
+  "shared.record.see_all": "See all",
+  "shared.sensitive.masked_tail": "Hidden, ending in {{tail}}",
+  "shared.sensitive.show_all": "Show all",
+  "shared.sensitive.hide_all": "Hide all",
+  "shared.activity.day_count_one": "{{count}} event",
+  "shared.activity.day_count_other": "{{count}} events",
+  "shared.record.recent_activity": "Recent activity"
 }

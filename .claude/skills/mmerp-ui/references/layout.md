@@ -34,8 +34,8 @@ One-line description: what the list holds, or the record's key facts
 ```
 
 - Exactly one primary button per page, rightmost. Up to three buttons in total; beyond that the rest go into `MoreActions place="page"` (`actions.md`).
-- `DetailPage` may add an avatar or icon (`leading`) left of the title; its key facts are the description, joined by "·", with the status badge. A `fullWidth` `DocumentPage` and a `ListPage` with view `tabs` (the org tree: tree, table) set their tabs on the header's rule (`Page` `tabs`: the rule is the tab line, never a second one).
-- On one record's page (`DetailPage`, and `DocumentPage` built on it, which pass `withBack` to `Page`) the breadcrumb ends with the page's own title (weight 500, not a link) and a round back button (←) leads the title: back in history to the list as the user left it, or to the last crumb when opened directly. Areas pass only the crumbs above.
+- `RecordPage` and `DocumentPage` may add an avatar or icon (`leading`) left of the title; the status badge sits beside the title (`status`), the key facts under it as the description, joined by "·". A `RecordPage`, a `fullWidth` `DocumentPage` and a `ListPage` with view `tabs` (the org tree: tree, table) set their tabs on the header's rule (`Page` `tabs`: the rule is the tab line, never a second one).
+- On one record's or document's page the breadcrumb ends with the page's own title (weight 500, not a link). A `DocumentPage` (built on `DetailPage`, which passes `withBack` to `Page`) also has a round back button (←) leading the title: back in history to the list as the user left it, or to the last crumb when opened directly. A `RecordPage` (`current`) has none. Areas pass only the crumbs above.
 - Below 768px the actions wrap under the title at full width.
 
 ## Widths
@@ -44,7 +44,7 @@ One-line description: what the list holds, or the record's key facts
 | --- | --- |
 | Lists, wide documents (`fullWidth`), reports | Full width of the content area |
 | Form pages (`FormSection`, `Page centered`) | At most 1200px (`--mmerp-content-width`), the header centred with the content so both share a left edge |
-| A record's or document's page (`DetailPage`, `DocumentPage`) | At most 1440px (`--mmerp-detail-width`), header included; main and side column about 62/38, one column below 1024px |
+| A record's or document's page (`RecordPage`, `DocumentPage`) | At most 1440px (`--mmerp-detail-width`), header included; main and side column about 62/38, one column below 1024px |
 | Inbox list | 360px (`--mmerp-side-width`) |
 | Side panel (`SidePanel`), side-column content shown as a tab | 480px (`--mmerp-aside-width`, `readingWidth`) |
 | Modal (`FormModal`) | 440px (`md`), 620px with `wide` (`lg`), fullscreen below 1024px |
@@ -59,7 +59,7 @@ Pick the type first; the template follows.
 | --- | --- | --- |
 | Many documents or master-data records | List | `ListPage` |
 | One document (number, status, lifecycle) | Document detail | `DocumentPage` |
-| One master-data record | Record detail | `DetailPage` |
+| One master-data record | Record detail with tabs | `RecordPage` |
 | A form that creates a record or document | Create page | `Page` + `Form` |
 | A short create/edit form (≤ 6 fields) | Create/edit modal | `FormModal` on its list |
 | Small configuration lists | Settings | `ListPage` + `FormModal` |
@@ -88,25 +88,28 @@ With rows selected, the filter bar row becomes `BulkBar`: `☑ 12 selected  [Act
 
 ### Record detail
 
+Every record without a lifecycle (an employee, a customer, a user) uses `RecordPage`.
+
 ```
 Employees › Nguyễn Văn An
-← (NA) Nguyễn Văn An                              [Secondary] [Primary] [⋯]
-       NV0001 · Kế toán · [Active]
-┌ main column ~62% ──────────────────────┐ ┌ side column ~38% ──────────────┐
-│ ▣ Main details                  ✎ Sửa │ │ [Contracts] [Leave] [Files]    │
-│ Label        value                     │ │                 [action]       │
-│ Label        value                     │ │ DataTable as cards             │
-└────────────────────────────────────────┘ └────────────────────────────────┘
-┌ ▣ Personal and contact          ✎ Sửa ┐ ┌ Activity ──────────────────────┐
-│ Label        value                     │ │ (comment, timeline)            │
-└────────────────────────────────────────┘ └────────────────────────────────┘
-          body and header centred at 1440px, one left edge
+(NA) Nguyễn Văn An [Active]                                   [Secondary] [⋯]
+     NV0001 · Kế toán · an.nguyen
+Manager        Tenure        Contract type        Leave left 2026
++ Add          4 years       Open-ended           12 days
+Overview | Contracts (2) | Leave | Dependants | Files (1) | Activity
+┌ ~1.6 ───────────────────────────────────┐ ┌ ~1 ──────────────────────────┐
+│ ▣ Main details                  ✎ Sửa │   Current contract    See all
+│ Label            Label                 │  ──────────────────────────────
+│ value            value                 │   Leave 2026          See all
+└────────────────────────────────────────┘  ──────────────────────────────
+                                              Recent activity     See all
 ```
 
-- `DetailPage`: header (back, title, key facts joined by "·", status badge; actions on the right, the rest in `more`, a "…" menu), `banner` over both columns, the main column (`children`) and the side column (`side`), each a stack of cards (`Panel`: title, optional icon and actions). The cards' label–value pairs share one label width (11rem) down the page.
-- A group of the record's values is an `EditablePanel`: read as `FieldList` pairs, never inputs, and shows every value its form edits, those also in the header (name, code, unit) included. "Sửa", when the user may edit, turns that card alone into the group's form (`FormFields`, two fields to a row; `FormActions` with `onCancel`: Hủy, Lưu) in place, back once saved or cancelled. No `FormModal` for a group. A single value saved on its own (a user's email) may stay an `InlineEditField`.
-- The side column: the record's own lists in one card (`DetailTabs`: the first tab open by default, the tab on the URL, replacing the history entry; a tab's buttons in `TabActions`; tables as `DataTable` `cards`), then "Hoạt động" (`ActivityFeed`) in a `Panel` of its own, never a tab.
-- Below 1024px: one column, the side column under the main one, the actions in a bar fixed to the bottom (`narrowActions`).
+- Header: breadcrumb ending with the page, no back button; status beside the title (`status`); key facts as a line under it; `KeyFacts` (`summary`) under that. A destructive action sits in `more`, in red, and confirms.
+- Tabs on the header's rule, the whole width, the open tab on `?tab=` (replaced; the first tab is the bare URL); counts in labels once known. Tables in tabs are full `DataTable`s, not cards. "Hoạt động" (Activity) is the `ActivityFeed` with its filter; this is the one place the activity is a tab.
+- Overview: `RecordColumns`, about 1.6/1, one column below 1024px with the right one under. Left: `EditablePanel` cards, pairs `FieldList stacked`, one to a row below 768px. Right: digests as `Panel plain`, unframed, parted by rules, never cards.
+- Below 1024px the actions stay in the header (wrapping under the title below 768px); `KeyFacts` go two to a row below 768px; the tab line scrolls sideways.
+- A group of values is an `EditablePanel`: "Sửa", when the user may edit, turns that card alone into the group's form (`FormFields`, two fields to a row; `FormActions` with `onCancel`: Hủy, Lưu) in place, back once saved or cancelled. No `FormModal` for a group. A single value saved on its own (a user's email) may stay an `InlineEditField`.
 - People link to their profile (`EmployeeLink` in HRM); a phone is a `tel:` link, an email a `mailto:` link.
 
 ### Document detail
@@ -122,12 +125,12 @@ Leave › NP-0012
 └────────────────────────────────────────┘ └────────────────────────────────┘
 ```
 
-- `DocumentPage` builds on `DetailPage`. Header: number, the person it is for (a link to their profile), key facts, `DocumentStatus`; the actor's "Từ chối" and "Duyệt" (`ApprovalDecision`) when they decide the current step, then `DocumentActions` ("Rút lại" asks first).
-- Main column: the document's values as `EditablePanel` cards (leave, overtime, contract); "Sửa" shows while `allowed_actions` has `edit` (a draft) and edits that card in place.
-- Side column: `ApprovalPanel` with `decideElsewhere` (the buttons are in the header) and `subject` ("gửi thay cho …" when sent for someone else); it lists every step ("Đã duyệt", "Đang chờ", "Chưa tới", "Từ chối"). Then `sections` (attachments), then the activity. The inbox keeps its own sticky Approve / Reject bar.
+- `DocumentPage` builds on `DetailPage`. Header: number with `DocumentStatus` beside it (`status`), the person it is for (a link to their profile) and key facts under it; the actor's "Từ chối" and "Duyệt" (`ApprovalDecision`) when they decide the current step, then `DocumentActions` ("Rút lại" asks first).
+- Main column: the document's values as `EditablePanel` cards (leave, overtime, contract), pairs `FieldList stacked`; "Sửa" shows while `allowed_actions` has `edit` (a draft) and edits that card in place. An empty value is a `MissingValue` ("+ Bổ sung") only while the draft may be edited, "—" once decided.
+- Side column, unframed (`Panel plain`, parted by rules): `ApprovalPanel` with `decideElsewhere` (the buttons are in the header) and `subject` ("gửi thay cho …" when sent for someone else); it lists every step ("Đã duyệt", "Đang chờ", "Chưa tới", "Từ chối"). Then `sections` (attachments), then the activity. The inbox keeps its own sticky Approve / Reject bar.
 - A document with a wide table (payroll, timesheet, quotation, order) sets `fullWidth`: no side column at any size, it shows its form (editable with `edit`, read-only otherwise) and actions stay in the header; from 1024px approval, sections and activity gather in one "Activity" tab next to "Details", two columns at the content width (approval and sections on the left, the activity feed on the right); below 1024px one tab per part.
 - Below 1024px (not `fullWidth`): one column, the side cards under the main ones, actions in a bar fixed to the bottom.
-- **Activity is one standard everywhere:** documents and records show the same `ActivityFeed`, a card of its own: the comment box (one line until focused), a filter (all, comments, changes, reads), then one timeline newest first under day headings, each line the time of day in a column, a 20px bullet (the person's avatar for plain doings and comments; a coloured icon for a status reached, a decision, a creation or a sensitive read) and one sentence: who in weight 600, the doing in `dimmed`, what to in weight 600. One changed field reads in the sentence (old struck out → new); a comment's text, or more fields, go in a sunken well under it. There is no separate discussion or history panel; old `?tab=discussion|history` links open the activity.
+- **Activity is one standard everywhere:** documents and records show the same `ActivityFeed`, a card of its own: the comment box (one line until focused), a filter (all, comments, changes, reads), then one timeline newest first under day headings (each opens and closes its day; the day's lines indented under it), each line the time of day in a column, a 20px bullet (the person's avatar for plain doings and comments; a coloured icon for a status reached, a decision, a creation or a sensitive read) and one sentence: who in weight 600, the doing in `dimmed`, what to in weight 600. One changed field reads in the sentence (old struck out → new); a comment's text, or more fields, go in a sunken well under it. There is no separate discussion or history panel; old `?tab=discussion|history` links open the activity.
 
 ### Create page
 

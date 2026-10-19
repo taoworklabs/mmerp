@@ -25,7 +25,7 @@ Sources of truth in code:
 
 ## UX principles
 
-1. **A record has one page.** Lists lead to it; a side panel only previews; viewing and editing are the same page (`DetailPage`): each group of values is a card edited in place, with its own Save.
+1. **A record has one page.** Lists lead to it; a side panel only previews; viewing and editing are the same page (`RecordPage` for a record, `DocumentPage` for a document): each group of values is a card edited in place, with its own Save, showing every value its form edits.
 2. **One primary action per place**, named by its outcome; the rest are secondary or behind "…".
 3. **Ask before what cannot be undone; offer Undo for what can.** Lifecycle actions confirm and never undo; reversible side-effect-free changes apply at once with Undo.
 4. **Errors stay next to their cause**; successes toast; nothing fails silently.

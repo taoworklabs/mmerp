@@ -35,5 +35,7 @@ export const salesKeys = {
     lists: (k: Kind) => ['sales', k, 'list'] as const,
     list: (k: Kind, q: DocQuery) => ['sales', k, 'list', q] as const,
     detail: (k: Kind, id: number) => ['sales', k, 'detail', id] as const,
+    // Under lists, so whatever refreshes the lists refreshes it too.
+    customer: (k: Kind, customer: number) => ['sales', k, 'list', 'customer', customer] as const,
   },
 }

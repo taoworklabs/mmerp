@@ -131,5 +131,10 @@
   "sales.items.retire": "Ngừng bán",
   "sales.items.reactivate": "Bán lại",
   "sales.items.retired_done": "Đã ngừng bán {{name}}.",
-  "sales.items.reactivated_done": "Đã bán lại {{name}}."
+  "sales.items.reactivated_done": "Đã bán lại {{name}}.",
+  "sales.customer.latest_quote": "Báo giá gần đây",
+  "sales.customer.latest_order": "Đơn bán gần đây",
+  "sales.customer.doc_line": "{{date}} · {{total}} đ",
+  "sales.quotes.title_count": "Báo giá ({{count}})",
+  "sales.orders.title_count": "Đơn bán hàng ({{count}})"
 }

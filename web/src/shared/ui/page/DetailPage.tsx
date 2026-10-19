@@ -1,7 +1,6 @@
-import { Group, Paper, Stack, Tabs } from '@mantine/core'
+import { Group, Stack } from '@mantine/core'
 import { useMediaQuery } from '@mantine/hooks'
 import type { ReactNode } from 'react'
-import { useSearchParams } from 'react-router'
 import { MoreActions } from '../MoreActions'
 import classes from './DetailPage.module.css'
 import { Page, type PageHeaderProps } from './Page'
@@ -18,10 +17,10 @@ type Props = Omit<PageHeaderProps, 'tabs' | 'withBack' | 'plain'> & {
   children: ReactNode
 }
 
-// DetailPage: one record or document. Header with back, title, key facts and status, actions on
-// the right; then the main column (the record's values, in Panels) and a side column at about
-// 60/40, one column below 1024px with the side column under the main one. Header and columns
-// share one width and left edge.
+// DetailPage: the frame of a document's page (DocumentPage). Header with back, title and status,
+// key facts, actions on the right; then the main column (the values, in cards) and a side column at
+// about 60/40 of plain Panels parted by rules, one column below 1024px with the side column under
+// the main one. Header and columns share one width and left edge.
 export function DetailPage({ more, banner, side, narrowActions, actions, children, ...header }: Props) {
   const wide = useMediaQuery('(min-width: 64em)', true)
   // Rendered in one place only, so each action exists once on the page.
@@ -39,7 +38,7 @@ export function DetailPage({ more, banner, side, narrowActions, actions, childre
         <Stack gap="md" miw={0}>
           {children}
         </Stack>
-        <Stack gap="md" miw={0}>
+        <Stack gap={0} miw={0} className={classes.side}>
           {side}
         </Stack>
       </div>
@@ -51,50 +50,4 @@ export function DetailPage({ more, banner, side, narrowActions, actions, childre
       )}
     </Page>
   )
-}
-
-export type DetailTab = { value: string; label: string; content: ReactNode }
-
-// DetailTabs is the record's own lists (contracts, dependants, roles…) as tabs in one card of the
-// side column, the first open by default. The open tab is on the URL.
-export function DetailTabs({ tabs }: { tabs: DetailTab[] }) {
-  const [search, setSearch] = useSearchParams()
-  const first = tabs[0]?.value ?? ''
-  const asked = search.get('tab')
-  const tab = tabs.some((x) => x.value === asked) ? (asked as string) : first
-  return (
-    <Paper withBorder p="md">
-      <Tabs
-        value={tab}
-        onChange={(v) => {
-          const next = new URLSearchParams(search)
-          if (!v || v === first) next.delete('tab')
-          else next.set('tab', v)
-          // Replaced, not pushed: Back leaves the record rather than walking back through its tabs.
-          setSearch(next, { replace: true })
-        }}
-        keepMounted={false}
-      >
-        <Stack gap="md">
-          <Tabs.List>
-            {tabs.map((x) => (
-              <Tabs.Tab key={x.value} value={x.value}>
-                {x.label}
-              </Tabs.Tab>
-            ))}
-          </Tabs.List>
-          {tabs.map((x) => (
-            <Tabs.Panel key={x.value} value={x.value}>
-              {x.content}
-            </Tabs.Panel>
-          ))}
-        </Stack>
-      </Tabs>
-    </Paper>
-  )
-}
-
-// TabActions holds a tab's actions, on the right like the page's own.
-export function TabActions({ children }: { children: ReactNode }) {
-  return <Group justify="flex-end">{children}</Group>
 }

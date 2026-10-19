@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next'
 import type { Leave, LeaveListItem } from '@/shared/api/hrm'
 import { DocumentStatus } from '@/shared/document'
 import { formatDate, formatDecimal } from '@/shared/i18n'
-import { FieldList } from '@/shared/ui/FieldList'
+import { FieldList, MissingValue, type FieldRow } from '@/shared/ui/FieldList'
 import { EditablePanel } from '@/shared/ui/form'
 import { Panel } from '@/shared/ui/page'
 import { leaveDocType } from '../keys'
@@ -29,18 +29,23 @@ export function LeaveDetails({ leave: l, deducts }: { leave: Leave; deducts: boo
     const after = formatDecimal(String((halves(l.balance) - halves(l.days)) / 2))
     balance = waiting ? t('hrm.leave.balance_after', { left, after }) : t('hrm.leave.balance_left', { left })
   }
+  const canEdit = l.allowed_actions.includes('edit')
   return (
     // Keyed by version: a save or a reload after a conflict starts from the saved data, closed.
-    <EditablePanel key={l.version} title={t('hrm.leave.section')} icon={IconCalendarEvent} editable={l.allowed_actions.includes('edit')} edit={(close) => <LeaveForm leave={l} onClose={close} />}>
-      <FieldList
-        rows={[
-          [t('hrm.leave.type'), l.leave_type_name],
-          [t('hrm.leave.period'), period],
-          [t('hrm.leave.days'), t('hrm.leave.days_value', { days: formatDecimal(l.days) })],
-          ...(balance ? [[t('hrm.leave.balance'), balance] as [string, string]] : []),
-          [t('hrm.leave.reason'), l.reason || '—'],
-        ]}
-      />
+    <EditablePanel key={l.version} title={t('hrm.leave.section')} icon={IconCalendarEvent} editable={canEdit} edit={(close) => <LeaveForm leave={l} onClose={close} />}>
+      {(open) => (
+        <FieldList
+          stacked
+          rows={[
+            [t('hrm.leave.type'), l.leave_type_name],
+            [t('hrm.leave.period'), period],
+            [t('hrm.leave.days'), t('hrm.leave.days_value', { days: formatDecimal(l.days) })],
+            ...(balance ? [[t('hrm.leave.balance'), balance] as FieldRow] : []),
+            // A draft offers to fill an empty value in; a decided request just has none.
+            [t('hrm.leave.reason'), l.reason || (canEdit ? <MissingValue label={t('hrm.leave.reason')} onAdd={open} /> : '—'), 'wide'],
+          ]}
+        />
+      )}
     </EditablePanel>
   )
 }
@@ -51,7 +56,9 @@ export function LeaveImpact({ overlapping }: { overlapping: LeaveListItem[] | un
   return (
     <Panel title={t('hrm.leave.impact')} icon={IconUsers}>
       <FieldList
+        stacked
         rows={[
+          // A list of people and dates: the whole width of the card.
           [
             t('hrm.leave.overlapping'),
             overlapping === undefined ? (
@@ -71,6 +78,7 @@ export function LeaveImpact({ overlapping }: { overlapping: LeaveListItem[] | un
                 ))}
               </Stack>
             ),
+            'wide',
           ],
           [t('hrm.leave.handover'), '—'],
         ]}

@@ -148,4 +148,13 @@ test('customer and item, a quotation approved by the manager, printed, then orde
   await staff.goto(quoteUrl)
   await expect(staff.getByText('Đã lên đơn')).toBeVisible()
   await expect(staff.getByRole('button', { name: 'Tạo đơn bán hàng' })).toHaveCount(0)
+
+  // The customer's page counts both and lists each in its tab.
+  await staff.goto(customerUrl)
+  await expect(staff.getByRole('tab', { name: 'Báo giá (1)' })).toBeVisible()
+  await expect(staff.getByRole('region', { name: 'Đơn bán gần đây' }).getByRole('link', { name: /^DH-\d{4}-/ })).toBeVisible()
+  await staff.getByRole('tab', { name: 'Báo giá (1)' }).click()
+  await expect(staff).toHaveURL(/tab=quotes/)
+  await staff.getByRole('table', { name: 'Báo giá' }).getByRole('link', { name: /^BG-\d{4}-/ }).click()
+  await expect(staff).toHaveURL(quoteUrl)
 })

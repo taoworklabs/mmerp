@@ -436,8 +436,6 @@
   "hrm.contract.saved": "Đã lưu hợp đồng.",
   "hrm.timesheet.saved": "Đã lưu bảng công.",
   "hrm.contracts.back": "Về danh sách hợp đồng",
-  "hrm.employee.job_title": "Chức danh",
-  "hrm.employee.work_location": "Nơi làm việc",
   "hrm.employee.contract_type": "Loại hợp đồng hiện tại",
   "hrm.employee.tenure_years_one": "{{count}} năm",
   "hrm.employee.tenure_years_other": "{{count}} năm",
@@ -456,5 +454,16 @@
   "hrm.leave.impact": "Ảnh hưởng",
   "hrm.leave.overlapping": "Cùng phòng nghỉ trùng",
   "hrm.leave.overlapping_none": "Không ai trong phòng nghỉ trùng thời gian.",
-  "hrm.leave.handover": "Người nhận bàn giao"
+  "hrm.leave.handover": "Người nhận bàn giao",
+  "hrm.employee.tenure": "Thâm niên",
+  "hrm.employee.leave_left": "Phép còn lại {{year}}",
+  "hrm.employee.terminate_confirm": "Cho {{name}} nghỉ việc, ngày làm việc cuối cùng {{date}}? Từ hôm sau nhân viên ở trạng thái đã nghỉ việc.",
+  "hrm.employee.tab.contracts_count": "Hợp đồng ({{count}})",
+  "hrm.employee.tab.leave": "Nghỉ phép",
+  "hrm.employee.age_one": "{{count}} tuổi",
+  "hrm.employee.age_other": "{{count}} tuổi",
+  "hrm.employee.current_contract": "Hợp đồng hiện tại",
+  "hrm.employee.contract_since": "{{type}} · từ {{date}}",
+  "hrm.employee.no_current_contract": "Không có hợp đồng đang hiệu lực.",
+  "hrm.employee.leave_year": "Quỹ phép {{year}}"
 }

@@ -67,7 +67,7 @@ function DocumentLayout({ actions, error, approval, activity, sections = [], ful
         narrowActions={actions}
         banner={banner}
         side={side.map((p) => (
-          <Panel key={p.key} title={p.title}>
+          <Panel key={p.key} plain title={p.title}>
             {p.content}
           </Panel>
         ))}

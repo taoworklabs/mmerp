@@ -139,7 +139,7 @@
   "shared.devui.avoid_page": "đã có khuôn hợp hơn; mọi khuôn khác đều dựng trên Page.",
   "shared.devui.use_list": "liệt kê chứng từ hoặc dữ liệu gốc để tìm, lọc và mở; danh mục cấu hình nhỏ thì sửa từng mục trong FormModal.",
   "shared.devui.avoid_list": "xem hoặc sửa một bản ghi: bản ghi có trang riêng, bảng bên chỉ để xem nhanh.",
-  "shared.devui.use_record": "một bản ghi không có vòng đời: nhân viên, khách hàng, người dùng; xem và sửa trên cùng một trang.",
+  "shared.devui.use_record": "một bản ghi không có vòng đời: nhân viên, khách hàng, người dùng; tóm tắt ở header, mỗi phần một tab toàn chiều rộng, tab Tổng quan để xem và sửa từng nhóm giá trị.",
   "shared.devui.avoid_record": "bản ghi có số, ngày và trạng thái nháp, chờ duyệt, đã ghi sổ: dùng DocumentPage.",
   "shared.devui.use_document": "xem và sửa một chứng từ, từ nháp đến đã ghi sổ hoặc đã hủy, cùng luồng duyệt.",
   "shared.devui.avoid_document": "bản ghi không có vòng đời: dùng DetailPage; không tách một trang sửa riêng.",
@@ -535,5 +535,16 @@
   "shared.approval.submitted_for": "{{name}} gửi thay cho {{subject}} lúc {{at}}",
   "shared.approval.later": "Chưa tới",
   "shared.document.confirm.withdraw": "Rút {{number}} về nháp? Lượt duyệt đang chạy dừng lại; gửi lại thì duyệt từ bước 1.",
-  "shared.attachments.drop_hint": "Kéo thả file vào đây hoặc bấm để chọn"
+  "shared.attachments.drop_hint": "Kéo thả file vào đây hoặc bấm để chọn",
+  "shared.field.add": "+ Bổ sung",
+  "shared.field.add_label": "Bổ sung {{label}}",
+  "shared.field.missing": "Chưa cập nhật",
+  "shared.record.overview": "Tổng quan",
+  "shared.record.see_all": "Xem tất cả",
+  "shared.sensitive.masked_tail": "Đã ẩn, kết thúc bằng {{tail}}",
+  "shared.sensitive.show_all": "Hiện tất cả",
+  "shared.sensitive.hide_all": "Ẩn tất cả",
+  "shared.activity.day_count_one": "{{count}} mục",
+  "shared.activity.day_count_other": "{{count}} mục",
+  "shared.record.recent_activity": "Hoạt động gần đây"
 }

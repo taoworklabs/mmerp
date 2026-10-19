@@ -80,7 +80,7 @@ test('HR grants the start-of-year leave balance through the UI', async ({ page }
   await dialog.getByRole('textbox', { name: /^Số ngày cộng thêm/ }).fill('12')
   await dialog.getByRole('textbox', { name: /^Lý do/ }).fill('Cấp phép năm 2026')
   await dialog.getByRole('button', { name: 'Lưu điều chỉnh' }).click()
-  await expect(page.getByRole('list', { name: 'Quỹ phép' }).getByRole('listitem').filter({ hasText: /2026[\s\S]*12/ })).toBeVisible()
+  await expect(page.getByRole('table', { name: 'Quỹ phép' }).getByRole('row').filter({ hasText: /2026[\s\S]*12/ })).toBeVisible()
 })
 
 test('an employee sends, withdraws and sends again; the manager approves one request and rejects another', async ({ browser }) => {
@@ -142,8 +142,8 @@ test('two tabs editing the same draft: the second save gets the reload dialog', 
 test('approving from the inbox refreshes the leave balance on the HRM screen', async ({ page, baseURL }) => {
   await sendViaApi(baseURL!, login.e3, '07', '2')
   await signInAs(page, login.b, `/hrm/employees/${ids.e3}?tab=balances`)
-  const balances = page.getByRole('list', { name: 'Quỹ phép' })
-  await expect(balances.getByRole('listitem').filter({ hasText: /2026[\s\S]*12/ })).toBeVisible()
+  const balances = page.getByRole('table', { name: 'Quỹ phép' })
+  await expect(balances.getByRole('row').filter({ hasText: /2026[\s\S]*12/ })).toBeVisible()
 
   await page.getByRole('link', { name: /Hộp duyệt/ }).click()
   await page.getByRole('button', { name: new RegExp(`NP-2026-.*`) }).first().click()
@@ -153,7 +153,7 @@ test('approving from the inbox refreshes the leave balance on the HRM screen', a
   // Back in the app, without reloading: the balance is already fresh.
   await expect(page.getByRole('heading', { name: 'Hộp duyệt' })).toBeVisible()
   await page.goBack()
-  await expect(balances.getByRole('listitem').filter({ hasText: /2026[\s\S]*10/ })).toBeVisible()
+  await expect(balances.getByRole('row').filter({ hasText: /2026[\s\S]*10/ })).toBeVisible()
 })
 
 test('at 375px an employee sends a request and the manager approves it', async ({ browser }) => {

@@ -6,7 +6,7 @@ Forms use React Hook Form through `@/shared/ui/form`: `Form`, `FormSection`, `Fo
 
 | The form | Where |
 | --- | --- |
-| Is the record itself (a document, an employee, a customer) | A page: `Page` + `Form` to create; a record or document is then read and edited on its own `DetailPage` |
+| Is the record itself (a document, an employee, a customer) | A page: `Page` + `Form` to create; a record is then read and edited on its own `RecordPage`, a document on its `DocumentPage` |
 | One group of a record's or document's values (an employee's personal details, a leave request), on its page | In its `EditablePanel` card, in place, whatever the number of fields: `Form` → `FormFields` → `FormActions onCancel`; a master-data group saves the whole record. Never a `FormModal` |
 | Needs at most 6 fields, and the result is worked on its own page or lives in a list (timesheet period, payroll period, item, user, a setting) | `FormModal` on the list |
 | Configuration with more than 6 fields or tables of its own (approval rules, mail server) | A page |

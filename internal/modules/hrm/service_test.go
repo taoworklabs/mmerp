@@ -277,14 +277,15 @@ func TestSensitiveFields(t *testing.T) {
 	}
 
 	e, _ := f.hrm.Employee(hrA, id)
-	if !e.Sensitive.NationalID || e.Sensitive.TaxCode || slices.Contains(e.AllowedActions, "view_sensitive") {
-		t.Fatalf("hr_a sees %+v %v", e.Sensitive, e.AllowedActions)
+	if !e.Sensitive.NationalID || e.Sensitive.TaxCode || slices.Contains(e.AllowedActions, "view_sensitive") || e.SensitiveTail.NationalID != nil {
+		t.Fatalf("hr_a sees %+v %+v %v", e.Sensitive, e.SensitiveTail, e.AllowedActions)
 	}
 	if _, err := f.hrm.RevealSensitive(hrA, id, "national_id"); !errors.Is(err, platform.ErrForbidden) {
 		t.Fatalf("hr_a reveals: %v", err)
 	}
-	if e, _ := f.hrm.Employee(sens, id); !slices.Contains(e.AllowedActions, "view_sensitive") {
-		t.Fatalf("sens actions = %v", e.AllowedActions)
+	// The last four digits come with the detail, unaudited: the view count below stays at the two reveals.
+	if e, _ := f.hrm.Employee(sens, id); !slices.Contains(e.AllowedActions, "view_sensitive") || e.SensitiveTail.NationalID == nil || *e.SensitiveTail.NationalID != "6789" || e.SensitiveTail.TaxCode != nil {
+		t.Fatalf("sens actions = %v, tails = %+v", e.AllowedActions, e.SensitiveTail)
 	}
 	v, err := f.hrm.RevealSensitive(sens, id, "national_id")
 	if err != nil || v == nil || *v != "079123456789" {

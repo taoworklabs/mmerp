@@ -55,6 +55,8 @@ test('a sensitive field is masked, shown on request, and cleared when the permis
   const field = 'Số CCCD hoặc hộ chiếu'
   await expect(page.getByText('••••••').first()).toBeVisible()
   await expect(page.getByText(nationalId)).toHaveCount(0)
+  // The last four digits come masked from the API, the rest never reaches the page unasked.
+  await expect(page.getByText('Đã ẩn, kết thúc bằng 6789')).toBeAttached()
   // Shown as text in the profile, not as an input: viewing is not editing.
   await page.getByRole('button', { name: `Hiện ${field}` }).click()
   await expect(page.getByText(nationalId)).toBeVisible()
@@ -82,6 +84,20 @@ test('a sensitive field is masked, shown on request, and cleared when the permis
 
   // Restore for the other tests.
   await created(admin.post(`/api/users/${ids.hrA}/roles`, { data: { product: 'hrm', role: 'sensitive_viewer', org_unit_id: ids.a } }))
+})
+
+test('show all reveals every sensitive value, each an audited read, and hide all masks them again', async ({ page }) => {
+  await signInAs(page, hrA, `/hrm/employees/${ids.ea}`)
+  const card = page.getByRole('region', { name: 'Thông tin nhạy cảm' })
+  const reads: string[] = []
+  page.on('request', (r) => r.url().includes('/sensitive/') && reads.push(r.url()))
+  await card.getByRole('button', { name: 'Hiện tất cả' }).click()
+  await expect(card.getByText(nationalId)).toBeVisible()
+  // One audited call per field holding a value (only the ID here), none for the empty ones.
+  expect(reads).toEqual([expect.stringContaining(`/api/hrm/employees/${ids.ea}/sensitive/national_id`)])
+  await card.getByRole('button', { name: 'Ẩn tất cả' }).click()
+  await expect(card.getByText(nationalId)).toHaveCount(0)
+  await expect(card.getByRole('button', { name: 'Hiện tất cả' })).toBeVisible()
 })
 
 test('filters, sort and page live on the URL and Back restores each step', async ({ page }) => {
@@ -158,8 +174,11 @@ test('an administrator builds the tree and grants a role from the admin screens'
   await page.getByRole('dialog').getByRole('combobox', { name: 'Vai trò' }).click()
   await page.getByRole('option', { name: 'Xem hồ sơ nhân viên' }).click()
   await page.getByRole('dialog').getByRole('button', { name: 'Cấp vai trò' }).click()
-  await expect(page.getByRole('list', { name: 'Vai trò' }).getByText('Xem hồ sơ nhân viên')).toBeVisible()
-  await expect(page.getByRole('list', { name: 'Vai trò' }).getByText('Toàn công ty')).toBeVisible()
+  // Granted from the header, the role shows in the overview's digest and in its tab.
+  await expect(page.getByRole('region', { name: 'Vai trò' }).getByText('Xem hồ sơ nhân viên')).toBeVisible()
+  await expect(page.getByRole('region', { name: 'Vai trò' }).getByText('Toàn công ty')).toBeVisible()
+  await page.getByRole('tab', { name: 'Vai trò (1)' }).click()
+  await expect(page.getByRole('table', { name: 'Vai trò' }).getByText('Xem hồ sơ nhân viên')).toBeVisible()
 })
 
 test('HR creates an employee with a sensitive field, edits it and adds a dependent', async ({ page }) => {
@@ -190,7 +209,7 @@ test('HR creates an employee with a sensitive field, edits it and adds a depende
   await main.getByRole('button', { name: 'Lưu' }).click()
   await expect(page.getByRole('heading', { name: 'Lê Văn Đổi' })).toBeVisible()
   await expect(main.getByRole('textbox', { name: 'Họ tên' })).toHaveCount(0)
-  await expect(main.getByText('Lê Văn Đổi')).toBeVisible()
+  await expect(main.getByText(`Phòng A ${run}`)).toBeVisible()
 
   await page.getByRole('tab', { name: 'Người phụ thuộc' }).click()
   await expect(page).toHaveURL(/tab=dependents/)
@@ -203,7 +222,63 @@ test('HR creates an employee with a sensitive field, edits it and adds a depende
   await dialog.getByRole('button', { name: 'Giảm trừ từ tháng' }).click()
   await page.getByRole('button', { name: 'Th01' }).click()
   await dialog.getByRole('button', { name: 'Thêm', exact: true }).click()
-  await expect(page.getByRole('list', { name: 'Người phụ thuộc' }).getByText('Lê Bé')).toBeVisible()
+  await expect(page.getByRole('table', { name: 'Người phụ thuộc' }).getByText('Lê Bé')).toBeVisible()
+})
+
+test('the employee page tabs live on the URL and survive a reload', async ({ page }) => {
+  await signInAs(page, hrA, `/hrm/employees/${ids.ea}`)
+  await expect(page.getByRole('tab', { name: 'Tổng quan' })).toHaveAttribute('aria-selected', 'true')
+  await page.getByRole('tab', { name: 'Người phụ thuộc' }).click()
+  await expect(page).toHaveURL(new RegExp(`/hrm/employees/${ids.ea}\\?tab=dependents$`))
+  await page.reload()
+  await expect(page.getByRole('tab', { name: 'Người phụ thuộc' })).toHaveAttribute('aria-selected', 'true')
+  await expect(page.getByRole('button', { name: 'Thêm người phụ thuộc' })).toBeVisible()
+  // The first tab is the bare URL.
+  await page.getByRole('tab', { name: 'Tổng quan' }).click()
+  await expect(page).toHaveURL(new RegExp(`/hrm/employees/${ids.ea}$`))
+  // Links to the activity card it replaced open the activity tab.
+  await page.goto(`/hrm/employees/${ids.ea}?tab=discussion`)
+  await expect(page.getByRole('tab', { name: 'Hoạt động' })).toHaveAttribute('aria-selected', 'true')
+  await expect(page.getByRole('radiogroup', { name: 'Lọc hoạt động' })).toBeVisible()
+})
+
+test('recent activity on the overview leaves reads out; the activity tab keeps them', async ({ page }) => {
+  await signInAs(page, hrA, `/hrm/employees/${ids.ea}`)
+  await page.getByRole('button', { name: 'Hiện Số CCCD hoặc hộ chiếu' }).click()
+  await expect(page.getByText(nationalId)).toBeVisible()
+  await page.reload()
+  const recent = page.getByRole('region', { name: 'Hoạt động gần đây' })
+  await expect(recent.getByLabel('Bình luận', { exact: true })).toBeVisible()
+  await expect(recent.getByRole('radiogroup', { name: 'Lọc hoạt động' })).toHaveCount(0)
+  await expect(recent.getByText('xem thông tin nhạy cảm')).toHaveCount(0)
+  await recent.getByRole('link', { name: 'Xem tất cả' }).click()
+  await expect(page).toHaveURL(/tab=activity/)
+  await expect(page.getByText('xem thông tin nhạy cảm').first()).toBeVisible()
+})
+
+test('terminating asks for the last day, then confirms before saving', async ({ page, baseURL }) => {
+  const api = await signedInApi(baseURL!)
+  const id = await created(api.post('/api/hrm/employees', { data: employee(`T${run}`, ids.a) }))
+  const terminationDate = async () => (await (await api.get(`/api/hrm/employees/${id}`)).json()).termination_date
+  await signInAs(page, hrA, `/hrm/employees/${id}`)
+  // Not a button beside Transfer: it sits in the "…" menu.
+  await expect(page.getByRole('button', { name: 'Điều chuyển' })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Cho nghỉ việc' })).toHaveCount(0)
+  await page.getByRole('button', { name: 'Thao tác khác' }).click()
+  await page.getByRole('menuitem', { name: 'Cho nghỉ việc' }).click()
+  const form = page.getByRole('dialog', { name: `Cho Nhân viên T${run} nghỉ việc` })
+  await form.getByRole('textbox', { name: 'Ngày nghỉ việc' }).fill('31/12/2026')
+  await form.getByRole('button', { name: 'Cho nghỉ việc' }).click()
+  const confirm = page.getByRole('dialog', { name: 'Cho nghỉ việc', exact: true })
+  await expect(confirm).toContainText('31/12/2026')
+  // Backing out saves nothing.
+  await confirm.getByRole('button', { name: 'Quay lại' }).click()
+  await expect(confirm).toHaveCount(0)
+  expect(await terminationDate()).toBeNull()
+  await form.getByRole('button', { name: 'Cho nghỉ việc' }).click()
+  await confirm.getByRole('button', { name: 'Cho nghỉ việc' }).click()
+  await expect(page.getByText('Đã lưu hồ sơ nhân viên.')).toBeVisible()
+  expect(await terminationDate()).toBe('2026-12-31')
 })
 
 test('leaving a record asks only when something was edited', async ({ page }) => {

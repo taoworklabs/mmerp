@@ -6,10 +6,10 @@ import { WithSampleSections } from '@/shared/document/samples'
 import { formatMonth, formatNumber } from '@/shared/i18n'
 import { PersonAvatar } from '@/shared/ui/avatar'
 import { DataTable } from '@/shared/ui/DataTable'
-import { FieldList } from '@/shared/ui/FieldList'
+import { FieldList, MissingValue } from '@/shared/ui/FieldList'
+import { KeyFacts } from '@/shared/ui/KeyFacts'
 import { EditablePanel, MonthFilter, OrgUnitFilter, SearchInput, SensitiveValue } from '@/shared/ui/form'
-import { DetailPage, DetailTabs, DocumentPage, InboxList, InboxPage, InboxRow, ListPage, Page, Panel, TabActions } from '@/shared/ui/page'
-import { EmptyState } from '@/shared/ui/states'
+import { DocumentPage, InboxList, InboxPage, InboxRow, ListPage, Page, Panel, RecordColumns, RecordPage, TabActions } from '@/shared/ui/page'
 import { StatusBadge } from '@/shared/ui/StatusBadge'
 import { useListParams } from '@/shared/url/listParams'
 import { orgUnits } from './api'
@@ -110,69 +110,70 @@ export function ListTemplate() {
   )
 }
 
-export function DetailTemplate() {
+export function RecordTemplate() {
   const { t } = useTranslation()
-  const h = useHeader('DetailPage')
+  const h = useHeader('RecordPage')
   return (
     <WithSampleSections>
       {(_, activity) => (
-        <DetailPage
+        <RecordPage
           title={h.title}
           breadcrumbs={h.breadcrumbs}
           leading={<PersonAvatar name="Nguyễn Văn An" size="lg" />}
-          side={
-            <>
-              <DetailTabs
-                tabs={[
-                  { value: 'one', label: `${t('shared.devui.tab')} 1`, content: <Sample /> },
-                  {
-                    value: 'two',
-                    label: `${t('shared.devui.tab')} 2`,
-                    content: (
-                      <Stack gap="md">
-                        <TabActions>
-                          <Button>{t('shared.devui.primary')}</Button>
-                        </TabActions>
-                        <EmptyState title={t('shared.devui.empty')} />
-                      </Stack>
-                    ),
-                  },
-                ]}
-              />
-              <Panel title={t('shared.document.tab.activity')}>{activity}</Panel>
-            </>
+          status={<StatusBadge tone="positive">{t('shared.devui.status_positive')}</StatusBadge>}
+          description="NV0019 · Kế toán"
+          summary={
+            <KeyFacts
+              facts={[
+                ['Quản lý trực tiếp', <MissingValue key="m" label="Quản lý trực tiếp" onAdd={() => {}} />],
+                ['Thâm niên', '4 năm 2 tháng'],
+                ['Loại hợp đồng', 'Không xác định thời hạn'],
+                ['Phép còn lại', <MissingValue key="l" label="Phép còn lại" />],
+              ]}
+            />
           }
-        >
-          {/* One group edited in place, one that only reads, with a masked value. */}
-          <EditablePanel
-            title={t('shared.devui.section')}
-            icon={IconUsersGroup}
-            editable
-            edit={(close) => (
-              <Group justify="flex-end">
-                <Button variant="default" onClick={close}>
-                  {t('shared.devui.secondary')}
-                </Button>
-              </Group>
-            )}
-          >
-            <FieldList
-              rows={[
-                ['Mã nhân viên', 'NV0019'],
-                ['Phòng ban', 'Kế toán'],
-                ['Trạng thái', <StatusBadge key="s" tone="positive">{t('shared.devui.status_positive')}</StatusBadge>],
-              ]}
-            />
-          </EditablePanel>
-          <Panel title={t('shared.devui.section_hint')}>
-            <FieldList
-              rows={[
-                ['Ngày sinh', '02/11/1988'],
-                ['Số CCCD', <SensitiveValue key="m" label="Số CCCD" present canView reveal={async () => '001088000123'} />],
-              ]}
-            />
-          </Panel>
-        </DetailPage>
+          actions={<Button variant="default">{t('shared.devui.secondary')}</Button>}
+          tabs={[
+            {
+              value: 'overview',
+              label: t('shared.record.overview'),
+              content: (
+                <RecordColumns
+                  main={
+                    <EditablePanel title={t('shared.devui.section')} icon={IconUsersGroup} editable edit={(close) => <Button variant="default" onClick={close}>{t('shared.devui.secondary')}</Button>}>
+                      {(open) => (
+                        <FieldList
+                          stacked
+                          rows={[
+                            ['Phòng ban', 'Kế toán'],
+                            ['Ngày vào làm', '05/08/2022'],
+                            ['Số CCCD', <SensitiveValue key="m" label="Số CCCD" present canView tail="0123" reveal={async () => '001088000123'} />],
+                            ['Email', <MissingValue key="e" label="Email" onAdd={open} />],
+                            ['Địa chỉ', '4 phố số 1, Đống Đa, Hà Nội', 'wide'],
+                          ]}
+                        />
+                      )}
+                    </EditablePanel>
+                  }
+                  side={<Panel plain title={t('shared.document.tab.activity')}>{activity}</Panel>}
+                />
+              ),
+            },
+            {
+              value: 'list',
+              label: `${t('shared.devui.tab')} (3)`,
+              content: (
+                <Stack gap="md">
+                  <TabActions>
+                    <Button>{t('shared.devui.primary')}</Button>
+                  </TabActions>
+                  <Sample />
+                </Stack>
+              ),
+            },
+            { value: 'activity', label: t('shared.document.tab.activity'), content: activity },
+          ]}
+        />
       )}
     </WithSampleSections>
   )
