@@ -11,11 +11,12 @@ import { errorText } from '@/shared/i18n'
 import { PersonAvatar } from '@/shared/ui/avatar'
 import { DataTable, type Column } from '@/shared/ui/DataTable'
 import { Form, FormActions, OrgUnitField, SelectField } from '@/shared/ui/form'
-import { FieldList } from '@/shared/ui/FieldList'
+import { FieldList, MissingValue } from '@/shared/ui/FieldList'
+import { KeyFacts } from '@/shared/ui/KeyFacts'
 import { InlineEditField } from '@/shared/ui/InlineEditField'
 import { useConfirm } from '@/shared/ui/confirm'
 import { notifySuccess } from '@/shared/ui/notify'
-import { DetailPage, DetailTabs, FormModal, Panel, TabActions } from '@/shared/ui/page'
+import { FormModal, Panel, RecordColumns, RecordPage, SeeAll } from '@/shared/ui/page'
 import { ContentSkeleton, EmptyState, ErrorState, NotFoundPage, PageSkeleton } from '@/shared/ui/states'
 import { icon } from '@/shared/ui/theme'
 import { coreKeys } from '../keys'
@@ -23,21 +24,83 @@ import { coreKeys } from '../keys'
 export function UserPage() {
   const { t } = useTranslation()
   const id = Number(useParams().id)
+  const [granting, setGranting] = useState(false)
   const user = useQuery({ queryKey: coreKeys.users.detail(id), queryFn: () => unwrap(api.GET('/users/{id}', { params: { path: { id } } })) })
+  const grants = useGrants(id)
 
   if (user.isPending) return <PageSkeleton />
   if (user.error instanceof ApiError && user.error.status === 404) return <NotFoundPage back={{ to: '/admin/users', label: t('core.user.back') }} />
   if (user.isError) return <ErrorState message={errorText(t, user.error)} onRetry={() => void user.refetch()} />
+  const u = user.data
+  const count = grants.data?.length
   return (
-    <DetailPage
-      title={user.data.name}
-      description={user.data.login}
-      leading={<PersonAvatar name={user.data.name} size="lg" />}
+    <RecordPage
+      title={u.name}
+      description={u.login}
+      leading={<PersonAvatar name={u.name} size="lg" />}
       breadcrumbs={[{ label: t('core.user.title'), to: '/admin/users' }]}
-      side={<DetailTabs tabs={[{ value: 'roles', label: t('core.user.roles'), content: <RolesTab userId={id} /> }]} />}
+      summary={
+        <KeyFacts
+          facts={[
+            [t('core.user.login'), u.login],
+            [t('core.user.email'), u.email || <MissingValue label={t('core.user.email')} />],
+            [t('core.user.roles'), count === undefined ? '…' : count],
+          ]}
+        />
+      }
+      actions={
+        <Button variant="default" leftSection={<IconPlus {...icon.button} />} onClick={() => setGranting(true)}>
+          {t('core.user.grant')}
+        </Button>
+      }
+      tabs={[
+        {
+          value: 'overview',
+          label: t('shared.record.overview'),
+          content: <RecordColumns main={<UserProfile userId={id} login={u.login} name={u.name} email={u.email} />} side={<RolesDigest userId={id} />} />,
+        },
+        { value: 'roles', label: count ? t('core.user.roles_count', { count }) : t('core.user.roles'), content: <RolesTab userId={id} /> },
+      ]}
     >
-      <UserProfile userId={id} login={user.data.login} name={user.data.name} email={user.data.email} />
-    </DetailPage>
+      {granting && <GrantModal userId={id} onClose={() => setGranting(false)} />}
+    </RecordPage>
+  )
+}
+
+function useGrants(userId: number) {
+  return useQuery({
+    queryKey: coreKeys.users.roles(userId),
+    queryFn: async () => (await unwrap(api.GET('/users/{id}/roles', { params: { path: { id: userId } } }))) ?? [],
+  })
+}
+
+// RolesDigest is the overview's right column: the user's first roles, leading to the tab of them all.
+function RolesDigest({ userId }: { userId: number }) {
+  const { t } = useTranslation()
+  const grants = useGrants(userId)
+  return (
+    <Panel plain title={t('core.user.roles')} actions={<SeeAll tab="roles" />}>
+      {grants.isPending ? (
+        <ContentSkeleton />
+      ) : grants.isError ? (
+        <ErrorState message={errorText(t, grants.error)} onRetry={() => void grants.refetch()} />
+      ) : grants.data.length === 0 ? (
+        <Text size="sm" c="dimmed">
+          {t('core.user.no_roles')}
+        </Text>
+      ) : (
+        <Stack gap="sm">
+          {grants.data.slice(0, 5).map((g) => (
+            <Stack key={g.id} gap={0}>
+              <Text fw={600}>{roleLabel(t, g.product, g.role)}</Text>
+              <Text size="sm" c="dimmed">
+                {g.org_unit_name ?? t('core.user.tenant_wide')}
+              </Text>
+            </Stack>
+          ))}
+        </Stack>
+      )}
+    </Panel>
   )
 }
 
@@ -47,12 +110,8 @@ const roleLabel = (t: TFunction, product: string, role: string) => t(`${product}
 function RolesTab({ userId }: { userId: number }) {
   const { t } = useTranslation()
   const qc = useQueryClient()
-  const [granting, setGranting] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const grants = useQuery({
-    queryKey: coreKeys.users.roles(userId),
-    queryFn: async () => (await unwrap(api.GET('/users/{id}/roles', { params: { path: { id: userId } } }))) ?? [],
-  })
+  const grants = useGrants(userId)
 
   const [ask, dialog] = useConfirm()
 
@@ -83,7 +142,6 @@ function RolesTab({ userId }: { userId: number }) {
     body = (
       <DataTable
         label={t('core.user.roles')}
-        cards
         columns={columns}
         rows={grants.data}
         rowKey={(g) => g.id}
@@ -97,14 +155,8 @@ function RolesTab({ userId }: { userId: number }) {
 
   return (
     <Stack gap="md">
-      <TabActions>
-        <Button leftSection={<IconPlus {...icon.button} />} onClick={() => setGranting(true)}>
-          {t('core.user.grant')}
-        </Button>
-      </TabActions>
       {error && <ErrorState message={error} />}
       {body}
-      {granting && <GrantModal userId={userId} onClose={() => setGranting(false)} />}
       {dialog}
     </Stack>
   )
@@ -158,6 +210,7 @@ function UserProfile({ userId, login, name, email }: { userId: number; login: st
     <>
       <Panel title={t('core.user.account')} icon={IconUserCircle}>
         <FieldList
+          stacked
           rows={[
             [t('core.user.login'), login],
             [t('core.user.name'), name],

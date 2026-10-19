@@ -112,5 +112,6 @@
   "core.mail.section.login_hint": "Tài khoản mmerp dùng để gửi thư; để trống nếu máy chủ không yêu cầu.",
   "core.mail.section.sender": "Thư gửi đi",
   "core.mail.section.sender_hint": "Người gửi hiện trên thư và địa chỉ mà liên kết trong thư mở tới.",
-  "core.user.email_invalid": "Email không hợp lệ."
+  "core.user.email_invalid": "Email không hợp lệ.",
+  "core.user.roles_count": "Vai trò ({{count}})"
 }

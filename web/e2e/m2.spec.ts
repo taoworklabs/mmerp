@@ -174,8 +174,11 @@ test('an administrator builds the tree and grants a role from the admin screens'
   await page.getByRole('dialog').getByRole('combobox', { name: 'Vai trò' }).click()
   await page.getByRole('option', { name: 'Xem hồ sơ nhân viên' }).click()
   await page.getByRole('dialog').getByRole('button', { name: 'Cấp vai trò' }).click()
-  await expect(page.getByRole('list', { name: 'Vai trò' }).getByText('Xem hồ sơ nhân viên')).toBeVisible()
-  await expect(page.getByRole('list', { name: 'Vai trò' }).getByText('Toàn công ty')).toBeVisible()
+  // Granted from the header, the role shows in the overview's digest and in its tab.
+  await expect(page.getByRole('region', { name: 'Vai trò' }).getByText('Xem hồ sơ nhân viên')).toBeVisible()
+  await expect(page.getByRole('region', { name: 'Vai trò' }).getByText('Toàn công ty')).toBeVisible()
+  await page.getByRole('tab', { name: 'Vai trò (1)' }).click()
+  await expect(page.getByRole('table', { name: 'Vai trò' }).getByText('Xem hồ sơ nhân viên')).toBeVisible()
 })
 
 test('HR creates an employee with a sensitive field, edits it and adds a dependent', async ({ page }) => {
