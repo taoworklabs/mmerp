@@ -481,6 +481,9 @@ func TestOneVotePerStep(t *testing.T) {
 	d, err = f.send("1", "a")
 	f.check(err)
 	f.check(f.appr.Approve(f.as("c2"), *d.ApprovalTicket, 1))
+	if items := f.inbox("c1"); len(items) != 1 || items[0].Step != 2 {
+		t.Fatalf("c1 inbox while both parallel steps are open: %+v", items)
+	}
 	f.check(f.appr.Approve(f.as("c1"), *d.ApprovalTicket, 2))
 	f.check(f.appr.Approve(f.as("c1"), *d.ApprovalTicket, 3))
 	if st := f.status(d); st != record.Posted {
@@ -587,7 +590,7 @@ func TestReassignReplacesOneVoter(t *testing.T) {
 	d, err := f.send("1", "a")
 	f.check(err)
 	id := *d.ApprovalTicket
-	if code(f.appr.Reassign(f.as("hr"), id, 1, f.users["c2"], "c1")) != "approval_already_voted" {
+	if code(f.appr.Reassign(f.as("hr"), id, 1, f.users["c2"], "c1")) != "approval_already_approver" {
 		t.Fatal("reassigned to a voter of the step")
 	}
 	if code(f.appr.Reassign(f.as("hr"), id, 1, f.users["c3"], "big_boss")) != "not_found" {

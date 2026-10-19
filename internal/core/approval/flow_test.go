@@ -328,8 +328,21 @@ func TestCheckFlowReasons(t *testing.T) {
 			reason:    "invalid_condition",
 		},
 		{
+			name:      "invalid condition empty value",
+			flow:      Flow{{Split: &Split{Mode: ChooseOne, Branches: []Branch{{Condition: amountCond(OpGT, ""), Body: Flow{step(1)}}}}}},
+			fieldKind: numberField,
+			path:      "1.branches.1",
+			reason:    "invalid_condition",
+		},
+		{
 			name:   "approvals exceed users",
 			flow:   Flow{userStep(2, 1)},
+			path:   "1",
+			reason: "approvals_exceed_users",
+		},
+		{
+			name:   "approvals exceed distinct users: a duplicate id does not count twice",
+			flow:   Flow{userStep(2, 5, 5)},
 			path:   "1",
 			reason: "approvals_exceed_users",
 		},

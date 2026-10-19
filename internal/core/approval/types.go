@@ -135,6 +135,8 @@ var (
 	ErrNoApprover = &platform.Error{Status: http.StatusUnprocessableEntity, Code: "no_approver"}
 	// Each voter votes once per step; a voter who voted can no longer be reassigned.
 	ErrAlreadyVoted = &platform.Error{Status: http.StatusConflict, Code: "approval_already_voted"}
+	// Reassigning to someone already a voter on the step would double them up.
+	ErrAlreadyApprover = &platform.Error{Status: http.StatusConflict, Code: "approval_already_approver"}
 	// Nobody approves their own submission, not even through reassignment.
 	ErrSelfApproval = &platform.Error{Status: http.StatusUnprocessableEntity, Code: "self_approval"}
 	// A reassigned approver must be able to view the document, or the step could never move.

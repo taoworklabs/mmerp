@@ -403,7 +403,7 @@ func (s *Service) Reassign(ctx context.Context, id int64, step int32, from int64
 			return platform.ErrNotFound
 		}
 		if slices.Contains(st.Approvers, user) {
-			return ErrAlreadyVoted
+			return ErrAlreadyApprover
 		}
 		if voted, err := q.HasVoted(ctx, store.HasVotedParams{InstanceID: id, Position: step, UserID: from}); err != nil || voted {
 			return platform.OrErr(err, ErrAlreadyVoted)

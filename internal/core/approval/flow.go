@@ -53,7 +53,7 @@ type Expr struct {
 	Any   []Expr `json:"any,omitempty"`
 	Field string `json:"field,omitempty"`
 	Op    Op     `json:"op,omitempty" enum:"gt,gte,eq,within"`
-	Value string `json:"value,omitempty" maxLength:"30"`
+	Value string `json:"value,omitempty" minLength:"1" maxLength:"30"`
 }
 
 // Plan is a resolved flow: a leaf (Step > 0), a sequence or a parallel group.
@@ -208,7 +208,8 @@ func (c *flowChecker) checkStep(st StepDef) string {
 		if approvals == 0 {
 			approvals = 1
 		}
-		if int(approvals) > len(st.Approver.UserIDs) {
+		// startStep deduplicates user_ids before counting voters, so the check must too.
+		if int(approvals) > len(slices.Compact(slices.Sorted(slices.Values(st.Approver.UserIDs)))) {
 			return "approvals_exceed_users"
 		}
 	case ByModule:
@@ -255,6 +256,9 @@ func (c *flowChecker) checkExpr(e Expr) string {
 		c.leaves++
 		if c.leaves > maxFlowLeaves {
 			return "too_large"
+		}
+		if e.Value == "" {
+			return "invalid_condition"
 		}
 		kind, ok := c.fieldKind(e.Field)
 		if !ok {

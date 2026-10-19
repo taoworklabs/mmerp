@@ -28,7 +28,7 @@ This records the shape of approval flows at decision level for the whole upgrade
 - **Rejection.** Rejecting any step rejects the whole instance: the other, still-open branches are cancelled. For `post`, the document returns to `draft`, as today. For any other gated action (part 4), rejection unlocks the document and leaves its status unchanged.
 
 - **Later parts, decided now:**
-  - *Part 4*: rules are keyed by (document type, action); every write action can be gated, and the document is locked — no write of any kind, including a dependent write from another document — while a gated action waits. Reading (`view`, `print`, `export`) is never gated.
+  - *Part 4*: rules are keyed by (document type, action); every write action can be gated, and the document is locked — no write of any kind, including a dependent write from another document — while a gated action waits. Reading (`view`, `view_files`, `print`, `export`) is never gated.
   - *Part 3*: line fields usable in conditions are declared by the record type, the same way header approval fields are declared today.
   - *Part 5*: delegation is one hop (a delegate's own delegation is not followed); one person casts at most one vote per step, whether as a member or as a delegate.
   - *Part 6*: a step may have a due time in wall-clock hours; passing it without a decision notifies the step's pending approvers and the submitter, once, with no automatic approval, rejection or reassignment.

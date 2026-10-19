@@ -59,15 +59,20 @@ SELECT EXISTS (SELECT 1 FROM approval.step_votes WHERE instance_id = $1 AND posi
 UPDATE approval.instances SET status = $2 WHERE id = $1 AND status = 'open';
 
 -- name: Inbox :many
--- Open steps waiting for @actor's vote.
-SELECT i.id, i.doc_type, i.doc_id, s.position AS step, i.submitted_at, u.name AS submitted_by_name, d.number, d.date
-FROM approval.instances i
-JOIN approval.instance_steps s ON s.instance_id = i.id
+-- One row per instance: the lowest open step waiting for @actor's vote. An actor
+-- in two open parallel steps of the same instance sees it once, not twice.
+SELECT i.id, i.doc_type, i.doc_id, s.step, i.submitted_at, u.name AS submitted_by_name, d.number, d.date
+FROM (
+    SELECT DISTINCT ON (s.instance_id) s.instance_id, s.position AS step
+    FROM approval.instance_steps s
+    WHERE s.status = 'open' AND s.approvers @> ARRAY[@actor::bigint]
+      AND NOT EXISTS (SELECT 1 FROM approval.step_votes v WHERE v.instance_id = s.instance_id AND v.position = s.position AND v.user_id = @actor)
+    ORDER BY s.instance_id, s.position
+) s
+JOIN approval.instances i ON i.id = s.instance_id AND i.status = 'open'
 JOIN record.documents d ON d.id = i.doc_id
 JOIN iam.users u ON u.id = i.submitted_by
-WHERE i.status = 'open' AND s.status = 'open' AND s.approvers @> ARRAY[@actor::bigint]
-  AND NOT EXISTS (SELECT 1 FROM approval.step_votes v WHERE v.instance_id = s.instance_id AND v.position = s.position AND v.user_id = @actor)
-ORDER BY i.submitted_at, i.id, s.position;
+ORDER BY i.submitted_at, i.id;
 
 -- name: LatestInstance :one
 SELECT i.*, u.name AS submitted_by_name FROM approval.instances i JOIN iam.users u ON u.id = i.submitted_by
