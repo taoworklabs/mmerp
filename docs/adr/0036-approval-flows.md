@@ -35,6 +35,26 @@ This records the shape of approval flows at decision level for the whole upgrade
 
 - **Migration.** Existing rules migrate into flows: each rule becomes a chain of approval steps, with each step's condition becoming a choose-one split with an empty otherwise, so nothing configured today is lost.
 
+## Holding a document for an action
+
+Part 4: approval on every write action, not only `post`.
+
+- `post` keeps today's `pending_approval` status: the document's row and `version` change, as before.
+- Any other gated action — `cancel`, or a module's own document action (e.g. Sales `create_order`) — is an **approval request** that holds the document without changing its row or its `version`. The hold is the open approval instance itself; `record` reads it through the gate. Why: holding, withdrawing and rejecting then write no document at all, and completing a module action writes only that action's own document.
+- At most one open request per document: a partial unique index enforces it.
+- While a document is held:
+  - `Edit`, `Touch`, `Delete`, `Transition`, `Request` and `LockToDepend` all refuse with `awaiting_approval`;
+  - `Lock`, used by core modules that only read a document's state, and `LockOpen`, used by attachments and discussion, still work;
+  - `allowed_actions` keeps only `print` and `export`.
+- Completion: `approval` calls `record.CompleteAction(ctx, ref, ticket)` before closing the instance. `record` re-locks the document and checks that the hold still matches (the ticket, and `version` equal to the one recorded when the request opened) and the period lock. It then runs the action as the submitter:
+  - `cancel` re-checks `Can(cancel)` and applies the transition;
+  - a module action calls the document type's `ModuleActions[name]`, which re-runs its own checks.
+
+  A failing re-check is a normal error: full rollback, and the request stays open.
+- Rejecting or withdrawing a request closes the instance only, writing no document. The submitter withdraws through `POST /approvals/{id}/withdraw`.
+- Moving the period lock is refused while any document in the newly locked days is held, the same as for a document `pending_approval` to `post`. `record` asks the gate (`HeldInPeriod`) for the list.
+- Rules are keyed by `(doc_type, action)`. The HTTP API takes `?action=` and defaults to `post`.
+
 ## Rejected alternatives
 
 - **Odoo Studio's levels only** (a fixed ladder of approvers per level): cannot express amount tiers without duplicating the whole ladder once per tier.

@@ -35,7 +35,9 @@ A term used by two products must have the same meaning, or the two must use diff
 - **Dependency**: something a module requires from another product (`deps.go`). Never a no-op.
 - **Hook**: an optional reaction of another module (`hooks.go`). May be a no-op.
 - **Approval field** (vi: "Trường duyệt"): a field a document type declares for use in approval conditions (e.g. `days`, `leave_type`).
-- **Approval instance** (vi: "Lần duyệt"): one submission of a document for approval, with its own id and submitted `version`. Withdrawal or rejection closes the instance; resubmitting creates a new one.
+- **Approval instance** (vi: "Lần duyệt"): one open vote on an action — `post`, `cancel`, or a module's own action — with its own id and the document's `version` when it opened. Withdrawal or rejection closes the instance; resubmitting, or requesting the action again, opens a new one.
+- **Approval request** (vi: "Yêu cầu duyệt"): an approval instance for an action other than `post`. It holds the document without changing its row or `version`; completing it runs the action itself, instead of a status transition.
+- **Held document** (vi: "Chứng từ đang chờ duyệt yêu cầu"): a document with an open approval request. No write on it succeeds, including a dependent write from another document; `allowed_actions` keeps only `print` and `export`.
 - **System job** (vi: "Job hệ thống"): a job type listed explicitly in code, run as the system actor. **User job** (vi: "Job thay người dùng"): every other job; runs with the requester's permissions, re-checked when it executes.
 - **My background jobs** (vi: "Việc chạy nền của tôi"): the list of user jobs the user requested, with status, error rows and result file. Each user sees only their own jobs. Administrators can also see system jobs, without the job parameters.
 - **Import** (vi: "Lần nhập"): one load of an Excel file into a data type (`hrm.timesheet`, `hrm.leave_balance`), run as a user job. All or nothing: if one row fails, no row is written, and the import reports each failing row with its reason.

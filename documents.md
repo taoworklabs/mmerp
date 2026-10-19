@@ -99,7 +99,7 @@ The lock date is always read from the row just locked in step 1, never earlier. 
 
 A document's legal entity cannot change after `Create`, so each operation locks exactly one row in step 1.
 
-A module (core or product) whose write depends on a document's state, without changing that document, calls `record.Lock(ctx, ref)`: this function takes the step 1 and step 2 locks and returns the document, with no further checks, so the caller first checks the actor may view it. For example, `approval` calls it before locking its row in `approval.instances`, and Sales locks a quotation before returning its live order or making one. A change to a document's header goes through `Edit`; a change to a draft's child rows only goes through `Touch`, which takes the same locks, checks as `Edit` and increases `version` ([ADR-0034](./docs/adr/0034-record-types-declare-permissions.md)).
+A module (core or product) whose write depends on a document's state, without changing that document, calls `record.Lock(ctx, ref)`: this function takes the step 1 and step 2 locks and returns the document, with no further checks, so the caller first checks the actor may view it. For example, `approval` calls it before locking its row in `approval.instances`, and Sales locks a quotation before returning its live order or making one. A change to a document's header goes through `Edit`; a change to a draft's child rows only goes through `Touch`, which takes the same locks, checks as `Edit` and increases `version` ([ADR-0034](./docs/adr/0034-record-types-declare-permissions.md)). A write that depends on another document and must not proceed while that document awaits approval calls `record.LockToDepend(ctx, ref)` instead: the same locks as `Lock`, but refused with `awaiting_approval` while `ref` is held (for example, creating an order from a quotation that waits for `cancel`).
 
 **Each transaction writes exactly one document.** Bulk operations (approving many requests, importing many documents) are jobs that process one document at a time, one transaction per document. As a result, a transaction never locks two rows at the same step, and no lock-ordering convention between documents is needed.
 
@@ -121,6 +121,8 @@ A module (core or product) whose write depends on a document's state, without ch
 3. Write the new status, increase `version`, write the audit log.
 4. Call the document type's `OnTransition`, in the same transaction. The module does its work here (deducting stock, writing business lines…). An error in `OnTransition` rolls back the whole transition; this is intended.
 
+Step 2 only moves the document to `pending_approval` for `post`: submitting is the sole action that changes status while approval is pending. Any other gated action — `cancel`, or a module's own document action — does not change status or `version` at all; instead it **holds** the document (below).
+
 Because of the row lock and the `version` check, if two requests post the same document, only one of them runs `OnTransition`. The other gets a conflict error.
 
 **The approval gate** is an interface defined by `record` in its `hooks.go`; `approval` is the adapter, and `internal/app` wires them. `record` does not import `approval`.
@@ -139,6 +141,14 @@ Each submission is a separate **approval instance**, with an id:
   After an error of the second kind, the approver can approve again once the conditions are met, or reject; the submitter can withdraw to edit.
 - Each step-level approval action in `approval` also checks that the approval instance is still open. A late approval action on an old submission is rejected, even when the document is waiting for approval on a new submission.
 
+**Holding a document for an action other than `post`.** A module calls `record.Request(ctx, ref, action, params)` inside its own transaction, after its own checks and before running the action. The gate's `Hold` method resolves the rule for `(doc_type, action)` and, if one applies, opens an approval instance recording the action, its params and the document's current `version`, the same way `Submit` does for `post`; `Request` then returns `held = true` and the caller stops without writing its own tables. At most one request is open per document at a time, backed by a partial unique index on `approval.instances`, so a second request on an already-held document fails with `awaiting_approval`.
+
+While a document is held, every write refuses with `awaiting_approval`: `Edit`, `Touch`, `Delete`, `Transition`, `Request` itself, and `LockToDepend` for a dependent write from another document. `Lock` and `LockOpen` (used by attachments and discussion) still work, so a held document stays readable and discussable, like a `pending_approval` one. `allowed_actions` on a held document keeps only `print` and `export`.
+
+Completion runs the action instead of a status transition. When the last step of a held request is approved, `approval` calls `record.CompleteAction(ctx, ref, ticket)`, in the same transaction as the decision. `record` locks in the usual order, asks the gate's `HeldBy` to confirm the ticket and the document's current `version` still match the hold, checks the period lock, then runs the action as the submitter: `cancel` re-checks `Can(cancel)` and applies the transition; a module action calls the document type's `ModuleActions[name]`, which re-runs its own checks. A failing re-check is handled exactly like a failing `CompleteApproval`: full rollback, the request stays open, and the approver can reject or the submitter can withdraw.
+
+Rejecting or withdrawing such a request closes the instance only, writing no document. The submitter withdraws through `POST /approvals/{id}/withdraw`. Rules for actions other than `post` are keyed by `(doc_type, action)`, the same as `post`; the HTTP API for configuring and listing them takes `?action=`, defaulting to `post`.
+
 **Period lock:** each legal entity has a lock date. Documents dated on or before the lock date cannot be created, edited, deleted or transitioned. The period lock applies even when the tenant does not use the accounting product.
 
 Moving the lock date: `record` takes `FOR UPDATE` on the legal entity's row, checks for documents pending approval (below), then writes the new date, all in one transaction. `FOR UPDATE` must wait for every transaction holding `FOR SHARE` on that row, and blocks new transactions until it commits. Consequences:
@@ -148,7 +158,7 @@ Moving the lock date: `record` takes `FOR UPDATE` on the legal entity's row, che
 
 There is no `BeforeLock(legal_entity, date)` hook yet for other modules to refuse a period lock; this hook is added together with `accounting` (see Posting).
 
-**No period lock while documents are pending approval.** `record` itself refuses to move the lock date if the part of the period about to be locked still contains `pending_approval` documents, and lists them. If the lock were allowed, these documents would be stuck: they could not finish approval because the period is locked, and could not be withdrawn because withdrawing is a write in a locked period. This check runs while holding `FOR UPDATE` on the legal entity's row, so no document can move to `pending_approval` in that period between the check and the commit.
+**No period lock while documents are pending approval, or held by a request.** `record` itself refuses to move the lock date if the part of the period about to be locked still contains `pending_approval` documents, or documents held by an open request for any other action (the gate's `HeldInPeriod`), and lists them. If the lock were allowed, these documents would be stuck: they could not finish approval or complete a held action because the period is locked, and could not be withdrawn either, because withdrawing is itself a write in a locked period. This check runs while holding `FOR UPDATE` on the legal entity's row, so no document can move to `pending_approval`, or become held, in that period between the check and the commit.
 
 **Approvers by module** (`Approvers`):
 
