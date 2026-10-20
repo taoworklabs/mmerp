@@ -9,6 +9,7 @@ import { fieldId, rowLabel, useOrgUnits } from '@/shared/ui/form'
 import { newSplit, newStep, type CondValues, type ElementValues, type FlowValues, type RuleValues } from '../flowForm'
 import { flowProblems } from '../flowProblems'
 import { approverText, condText, stepDetail, type ValueLabel } from '../flowText'
+import { icon } from '@/shared/ui/theme'
 import { documentKeys } from '../keys'
 import { useFlowEditor } from './editor'
 import c from './FlowDiagram.module.css'
@@ -167,7 +168,7 @@ function Edge({ list, at, depth, root }: { list: string; at: number; depth: numb
             aria-invalid={root && issueAt('flow.root') ? true : undefined}
             aria-label={t('shared.rule.add_here')}
           >
-            <IconPlus size={root ? 18 : 12} aria-hidden />
+            <IconPlus {...(root ? icon.button : icon.text)} aria-hidden />
           </UnstyledButton>
         </Menu.Target>
         <Menu.Dropdown>

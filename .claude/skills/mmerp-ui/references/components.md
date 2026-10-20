@@ -14,7 +14,7 @@ Areas take from `@mantine/core` only the layout and text primitives `Anchor`, `B
 | Danger text | `variant="subtle" color="danger"` | Every destructive action that asks first: Delete draft, Cancel document, Revoke |
 | Danger outline | `variant="outline" color="danger"` | Only Reject (`ApprovalDecision`, the inbox's `ApprovalPanel`), paired with Approve |
 | Subtle | `variant="subtle"` | Low-emphasis action in content: Add row, Change approver; `color="gray"` for the way out beside a primary button (Cancel, "Quay lại") |
-| Light | `variant="light"` | Adding to a form from inside it, with `IconPlus`: "Add line" under lines (`LinesTable`), "Add step" (approval rule), "Add sensitive details"; the selected state of a toggle-like button (header icons on their own page) |
+| Light | `variant="light"` | Adding to a form from inside it, with `IconPlus`: "Add line" under lines (`LinesTable`), "Add case" / "Add branch" in an approval rule's split panel (steps are inserted with the diagram's ⊕), "Add sensitive details"; the selected state of a toggle-like button (header icons on their own page) |
 
 Every button has the one size, the default `sm` (30px), with `icon.button` (18px), wherever it sits: page header, tabs, section headers, the side column, footers, among content. Never set `size` on a button; a less important action is quieter in style, not smaller.
 

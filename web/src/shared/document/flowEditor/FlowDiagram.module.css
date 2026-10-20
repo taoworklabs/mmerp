@@ -39,8 +39,8 @@
 }
 
 .plus {
-  width: 20px;
-  height: 20px;
+  width: 24px;
+  height: 24px;
   border-radius: 50%;
   border: 1px solid var(--mantine-color-primary-3);
   background: var(--mmerp-elevation-surface);
@@ -80,8 +80,8 @@
 }
 
 .node[aria-pressed='true'] {
-  outline: 2px solid var(--mantine-color-primary-6);
-  outline-offset: 1px;
+  background: var(--mantine-color-primary-0);
+  border-color: var(--mantine-color-primary-6);
 }
 
 .node[aria-invalid='true'] {
@@ -207,7 +207,7 @@
   color: var(--mantine-color-gray-7);
 }
 
-/* The editor: the diagram, and beside it from md up the panel of what is selected. */
+/* The editor: the diagram, and beside it from lg up the panel of what is selected. */
 .workspace {
   display: flex;
   gap: var(--mantine-spacing-md);
@@ -220,7 +220,7 @@
 }
 
 .side {
-  width: var(--mmerp-aside-width);
+  width: var(--mmerp-side-width);
   flex: none;
   position: sticky;
   top: var(--mantine-spacing-md);

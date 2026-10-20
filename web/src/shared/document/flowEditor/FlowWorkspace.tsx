@@ -11,7 +11,8 @@ import c from './FlowDiagram.module.css'
 export function FlowWorkspace() {
   const { t } = useTranslation()
   const theme = useMantineTheme()
-  const wide = useMediaQuery(`(min-width: ${theme.breakpoints.md})`, true)
+  // Beside the diagram only where both fit (lg, 1280px); below that it slides up over it.
+  const wide = useMediaQuery(`(min-width: ${theme.breakpoints.lg})`, true)
   const { selected, select } = useFlowEditor()
   return (
     <div className={c.workspace}>
