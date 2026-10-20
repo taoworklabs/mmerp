@@ -10,6 +10,11 @@ export const coreKeys = {
     roles: (id: number) => ['core', 'users', id, 'roles'] as const,
   },
   roles: documentKeys.roles,
+  delegations: {
+    list: () => ['core', 'delegations'] as const,
+    meta: () => ['core', 'delegations', 'meta'] as const,
+    users: () => ['core', 'delegations', 'users'] as const,
+  },
   periodLocks: () => ['core', 'period-locks'] as const,
   codeSeries: () => ['core', 'code-series'] as const,
   settings: (legalEntity: number) => ['core', 'settings', legalEntity] as const,

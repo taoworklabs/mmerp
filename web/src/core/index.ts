@@ -28,6 +28,8 @@ export const core: AreaManifest = {
 export const HomePage = lazy(() => import('./pages/HomePage'))
 // At the root, not under /admin: every user has an inbox. Its strings are in meta.
 export const InboxPage = lazy(() => import('./pages/InboxPage'))
+// At the root as well: every user may delegate their approvals. Its strings are in meta.
+export const DelegationsPage = lazy(() => import('./pages/DelegationsPage'))
 // At the root as well: every user follows their own background jobs. Its strings are in meta.
 export const JobsPage = lazy(() => import('./pages/JobsPage'))
 // At the root as well: every user has notifications. Its strings are in meta.

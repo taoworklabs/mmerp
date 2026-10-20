@@ -46,7 +46,7 @@ const approval: ApprovalInstance = {
       approvals: 1,
       rejections: 1,
       fallback: false,
-      voters: [{ id: 2, name: 'Trần Thị Bình', decision: 'approved', reason: null, decided_at: '2026-03-09T09:05:00Z' }],
+      voters: [{ id: 2, name: 'Trần Thị Bình', decision: 'approved', cast_by_name: null, reason: null, decided_at: '2026-03-09T09:05:00Z' }],
       allowed_actions: [],
     },
     {
@@ -56,8 +56,8 @@ const approval: ApprovalInstance = {
       rejections: 1,
       fallback: false,
       voters: [
-        { id: 3, name: 'Nguyễn Thị Lan', decision: 'approved', reason: null, decided_at: '2026-03-09T10:40:00Z' },
-        { id: 4, name: 'Lê Văn Cường', decision: null, reason: null, decided_at: null },
+        { id: 3, name: 'Nguyễn Thị Lan', cast_by_name: 'Phạm Minh Đức', decision: 'approved', reason: null, decided_at: '2026-03-09T10:40:00Z' },
+        { id: 4, name: 'Lê Văn Cường', decision: null, cast_by_name: null, reason: null, decided_at: null },
       ],
       allowed_actions: ['approve', 'reject'],
     },
@@ -67,7 +67,7 @@ const approval: ApprovalInstance = {
       approvals: 1,
       rejections: 1,
       fallback: false,
-      voters: [{ id: 4, name: 'Lê Văn Cường', decision: null, reason: null, decided_at: null }],
+      voters: [{ id: 4, name: 'Lê Văn Cường', decision: null, cast_by_name: null, reason: null, decided_at: null }],
       allowed_actions: ['approve', 'reject'],
     },
   ],

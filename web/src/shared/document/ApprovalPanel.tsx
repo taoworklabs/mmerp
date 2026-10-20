@@ -347,7 +347,7 @@ function StepBody({ step, onReassign, busy, decision }: { step: ApprovalStep; on
       {step.voters.map((v) => (
         <Stack key={v.id} gap={0}>
           <Text size="sm">
-            {v.name}
+            {v.cast_by_name ? t('shared.approval.cast_by', { cast_by: v.cast_by_name, name: v.name }) : v.name}
             {v.decision && (
               <Text span size="sm" c={v.decision === 'approved' ? 'success' : 'danger'}>
                 {` · ${t(`shared.approval.decision.${v.decision}`)}`}
