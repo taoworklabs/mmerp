@@ -89,7 +89,8 @@ export function OrgUnitField({
   permission,
   clearable,
   readOnly,
-}: Scope & { name: string; label: string; required?: boolean; clearable?: boolean; readOnly?: boolean }) {
+  error,
+}: Scope & { name: string; label: string; required?: boolean; clearable?: boolean; readOnly?: boolean; error?: string }) {
   const { t } = useTranslation()
   const { control } = useFormContext()
   const { field, fieldState } = useController({ name, control, rules: { required: required ? t('shared.form.required') : false } })
@@ -107,7 +108,7 @@ export function OrgUnitField({
       ref={field.ref}
       label={label}
       withAsterisk={required}
-      error={fieldState.error?.message}
+      error={fieldState.error?.message ?? error}
       value={field.value ?? null}
       onChange={field.onChange}
       onBlur={field.onBlur}
@@ -115,7 +116,7 @@ export function OrgUnitField({
       clearable={clearable}
       readOnly={readOnly}
       wrapperProps={{ 'data-readonly': readOnly || undefined }}
-      comboboxProps={belowError(fieldState.error?.message)}
+      comboboxProps={belowError(fieldState.error?.message ?? error)}
     />
   )
 }

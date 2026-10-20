@@ -29,7 +29,7 @@ Run every item against the change before calling it done. An item that does not 
 - [ ] A record's own lists are full-width `RecordPage` tabs (first tab the overview, the tab on the URL; the tab body in `TabContent`; full `DataTable`s, not cards); its overview's right column is unframed digests, and a document's side column is unframed too.
 - [ ] On a document page, Approve / Reject are in the header (`ApprovalDecision`) and `ApprovalPanel` gets `decideElsewhere`; "Rút lại" confirms.
 - [ ] People link to their profile (`EmployeeLink`); a phone is `tel:`, an email `mailto:`.
-- [ ] A document with a wide table (editable lines, grid, payroll) uses `fullWidth`; form pages rely on the 1200px cap and detail pages on the 1440px one, not their own width.
+- [ ] A document with a wide table (editable lines, grid, payroll) uses `fullWidth`, and the approval rule editor takes the whole width; form pages rely on the 1200px cap and detail pages on the 1440px one, not their own width.
 - [ ] Breadcrumb points to the record's own list.
 
 ## Tables (`tables.md`)

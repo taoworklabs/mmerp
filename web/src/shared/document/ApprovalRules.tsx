@@ -1,17 +1,17 @@
-import { Button } from '@mantine/core'
-import { IconTrash } from '@tabler/icons-react'
+import { Button, Group } from '@mantine/core'
+import { IconSettings, IconTrash } from '@tabler/icons-react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import type { TFunction } from 'i18next'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { useTranslation } from 'react-i18next'
 import { Route, Routes, useNavigate, useParams } from 'react-router'
-import { api, unwrap, type Role, type RuleInput, type TypeRule } from '@/shared/api/core'
+import { api, unwrap, type Role, type TypeRule } from '@/shared/api/core'
 import { ApiError } from '@/shared/api/error'
 import { errorText } from '@/shared/i18n'
 import { DataTable, type Column } from '@/shared/ui/DataTable'
 import { useConfirm } from '@/shared/ui/confirm'
-import { DecimalField, fieldId, Form, FormActions, FormRow, FormSection, SelectField, type Option } from '@/shared/ui/form'
+import { fieldId, Form, FormActions, type Option } from '@/shared/ui/form'
 import { Notice } from '@/shared/ui/Notice'
 import { notifySuccess } from '@/shared/ui/notify'
 import { ListPage, Page } from '@/shared/ui/page'
@@ -19,8 +19,10 @@ import { ContentSkeleton, EmptyState, ErrorState, NotFoundPage, PageSkeleton } f
 import { icon } from '@/shared/ui/theme'
 import { actionLabel } from './ApprovalPanel'
 import { documentKeys } from './keys'
-import { FlowBlock } from './flowEditor/FlowBlock'
-import { flowSummary, formPathOf, fromFlowValues, newStep, splitRole, toFlowValues, type FlowValues } from './flowForm'
+import { FlowEditor } from './flowEditor/editor'
+import { FlowWorkspace } from './flowEditor/FlowWorkspace'
+import { flowSummary, formPathOf, toRuleInput, toRuleValues, type RuleValues, type Selection } from './flowForm'
+import { problemsResolver } from './flowProblems'
 
 type Props = { product: string; basePath: string } // basePath: where the area mounts this, e.g. /hrm/approval-rules
 
@@ -88,24 +90,7 @@ function RuleList({ product, basePath }: Props) {
   )
 }
 
-type Values = { flow: FlowValues; max_levels: string; fallback: string | null }
-
 const roleValue = (r: Role) => `${r.product}.${r.role}`
-
-function toValues(r: TypeRule): Values {
-  if (!r.rule) return { flow: [newStep(r.module_approvers)], max_levels: '3', fallback: null }
-  return { flow: toFlowValues(r.rule.flow), max_levels: String(r.rule.max_levels), fallback: `${r.rule.fallback_product}.${r.rule.fallback_role}` }
-}
-
-function toInput(v: Values): RuleInput {
-  const fallback = splitRole(v.fallback ?? '')
-  return {
-    flow: fromFlowValues(v.flow),
-    max_levels: Number(v.max_levels),
-    fallback_product: fallback.product,
-    fallback_role: fallback.role,
-  }
-}
 
 // RuleEditor edits the rule of one document type's action: its approval flow, plus the fallback role.
 function RuleEditor({ product, basePath }: Props) {
@@ -134,7 +119,9 @@ function RuleForm({ rule, basePath, roles, userOptions }: { rule: TypeRule; base
   const [ask, confirm] = useConfirm()
   // A failed delete, shown at the top of the page until the next attempt.
   const [error, setError] = useState<string | null>(null)
-  const form = useForm<Values>({ mode: 'onBlur', defaultValues: toValues(rule) })
+  const [selected, select] = useState<Selection>(null)
+  const resolver = useMemo(() => problemsResolver(t), [t])
+  const form = useForm<RuleValues>({ mode: 'onBlur', defaultValues: toRuleValues(rule), resolver })
   const name = ruleLabel(t, rule)
   const params = { path: { doc_type: rule.doc_type }, query: { action: rule.action } }
   const allowed = rule.allowed_actions
@@ -143,29 +130,27 @@ function RuleForm({ rule, basePath, roles, userOptions }: { rule: TypeRule; base
   const roleOptions: Option[] = roles.map((r) => ({ value: roleValue(r), label: t(`${r.product}.role.${r.role}`, { defaultValue: roleValue(r) }) }))
   const ctx = { rule, roleOptions, userOptions, readOnly }
 
-  // The server's complaint about one element goes away once the user edits, not only on the next submit.
-  const issue = useRef<string | null>(null)
+  // After a failed save, every edit rechecks the whole rule, so the count to fix and the red boxes
+  // follow; the server's complaint goes with the first edit too.
   useEffect(() => {
     const sub = form.watch(() => {
-      if (!issue.current) return
-      form.clearErrors(issue.current as never)
-      issue.current = null
+      if (form.formState.submitCount > 0) void form.trigger()
     })
     return () => sub.unsubscribe()
   }, [form])
 
-  async function save(v: Values): Promise<void | false> {
+  async function save(v: RuleValues): Promise<void | false> {
     try {
-      await unwrap(api.PUT('/approval-rules/{doc_type}', { params, body: toInput(v) }))
+      await unwrap(api.PUT('/approval-rules/{doc_type}', { params, body: toRuleInput(v) }))
     } catch (err) {
       if (!(err instanceof ApiError) || err.code !== 'invalid_rule') throw err
       const path = String(err.params.path ?? '')
       const message = t(`shared.rule.reason.${String(err.params.reason)}`, { defaultValue: errorText(t, err) })
       // The only rule-level complaint is about the fallback role.
-      const at = path ? `${formPathOf(path)}.issue` : 'fallback'
-      issue.current = path ? at : null
+      const at = path ? `${formPathOf(path)}.issue` : 'settings'
       form.setError(at as never, { message })
-      requestAnimationFrame(() => document.getElementById(fieldId(path ? formPathOf(path) : at))?.scrollIntoView({ block: 'center' }))
+      select(path ? formPathOf(path) : 'settings')
+      requestAnimationFrame(() => document.getElementById(fieldId(at))?.scrollIntoView({ block: 'center', inline: 'center' }))
       return false
     }
     await qc.invalidateQueries({ queryKey: documentKeys.approvalRules() })
@@ -187,33 +172,33 @@ function RuleForm({ rule, basePath, roles, userOptions }: { rule: TypeRule; base
 
   return (
     <Page
-      centered
       title={name}
       breadcrumbs={[{ label: t('shared.rule.title'), to: basePath }]}
       actions={
-        rule.rule &&
-        allowed.includes('delete') && (
-          <Button variant="subtle" color="danger" leftSection={<IconTrash {...icon.button} />} onClick={() => void remove()}>
-            {t('shared.rule.delete')}
+        <Group gap="sm">
+          {/* Owns the settings' error name, so "next field to fix" can land here and open them. */}
+          <Button
+            id={fieldId('settings')}
+            variant="default"
+            leftSection={<IconSettings {...icon.button} />}
+            onClick={() => select('settings')}
+            onFocus={() => form.getFieldState('settings' as never).error && select('settings')}
+          >
+            {t('shared.rule.settings')}
           </Button>
-        )
+          {rule.rule && allowed.includes('delete') && (
+            <Button variant="subtle" color="danger" leftSection={<IconTrash {...icon.button} />} onClick={() => void remove()}>
+              {t('shared.rule.delete')}
+            </Button>
+          )}
+        </Group>
       }
     >
-      {error && (
-        <Notice tone="danger">
-          {error}
-        </Notice>
-      )}
+      {error && <Notice tone="danger">{error}</Notice>}
       <Form form={form} onSubmit={save}>
-        <FormSection title={t('shared.rule.flow_section')} description={t('shared.rule.flow_hint')} wide>
-          <FormRow>
-            <FlowBlock path="flow" ctx={ctx} depth={0} />
-          </FormRow>
-        </FormSection>
-        <FormSection title={t('shared.rule.fallback_section')} description={t('shared.rule.fallback_hint')}>
-          <SelectField name="fallback" label={t('shared.rule.fallback')} required readOnly={readOnly} data={roleOptions} />
-          <DecimalField name="max_levels" label={t('shared.rule.max_levels')} description={t('shared.rule.max_levels_hint')} required readOnly={readOnly} scale={0} min={1} />
-        </FormSection>
+        <FlowEditor ctx={ctx} selected={selected} select={select}>
+          <FlowWorkspace />
+        </FlowEditor>
         {!readOnly && <FormActions submitLabel={t('shared.rule.save')} />}
       </Form>
       {confirm}

@@ -325,7 +325,7 @@ test.describe('overtime', () => {
 
   test('the rule editor names day kinds in the user language', async ({ browser }) => {
     const page = await as(browser, admin.login, '/hrm/approval-rules/hrm.overtime_request')
-    await expect(page.getByRole('combobox', { name: 'Giá trị' })).toHaveValue('Ngày lễ')
+    await expect(page.getByRole('main').getByRole('button', { name: /Ngày lễ/ }).first()).toBeVisible()
   })
 
   test('at 375px an employee files overtime and the manager approves it', async ({ browser }) => {
