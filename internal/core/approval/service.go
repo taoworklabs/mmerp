@@ -296,6 +296,16 @@ func kindOf(t record.Type, field string) (record.FieldKind, bool) {
 // act locks in the shared order (the document's locks, then the instance) and
 // checks the instance and step are open; step 0 acts on the instance alone. A stale
 // instance is closed and the close committed before ErrApprovalStale is returned.
+// current reports whether inst still matches its document. A post moves the document to
+// pending_approval; any other request holds it at the version it was asked on.
+func current(inst store.ApprovalInstance, d record.Doc) bool {
+	if d.Version != inst.Version {
+		return false
+	}
+	return inst.Action != string(record.Post) ||
+		d.Status == record.PendingApproval && d.ApprovalTicket != nil && *d.ApprovalTicket == inst.ID
+}
+
 func (s *Service) act(ctx context.Context, id int64, step int32, fn func(ctx context.Context, inst store.ApprovalInstance, st store.ApprovalInstanceStep, d record.Doc) error) error {
 	stale := false
 	err := platform.InTx(ctx, func(ctx context.Context) error {
@@ -337,13 +347,7 @@ func (s *Service) act(ctx context.Context, id int64, step int32, fn func(ctx con
 		if t, _ := s.d.Record.TypeOf(ref.Type); platform.ProductGate(ctx, t.Product, platform.ClassWrite) != nil {
 			return platform.ProductGate(ctx, t.Product, platform.ClassWrite)
 		}
-		// A post moves the document to pending_approval; any other request holds it at
-		// the version it was asked on.
-		current := d.Version == inst.Version
-		if inst.Action == string(record.Post) {
-			current = current && d.Status == record.PendingApproval && d.ApprovalTicket != nil && *d.ApprovalTicket == id
-		}
-		if !current {
+		if !current(inst, d) {
 			stale = true
 			if err := q.CancelOpenSteps(ctx, id); err != nil {
 				return err

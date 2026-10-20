@@ -38,10 +38,11 @@ var periodic = []*river.PeriodicJob{river.NewPeriodicJob(river.PeriodicInterval(
 // NotifyOverdue tells the pending approvers (with their delegates) and the submitter of
 // every open step past its due time, once per step, each step in its own transaction.
 // It returns how many steps it announced.
+// ponytail: a step whose notice keeps failing stops each run at it; mark it told on error if one ever does.
 func (s *Service) NotifyOverdue(ctx context.Context) (int, error) {
 	n := 0
 	for {
-		found := false
+		found, told := false, false
 		err := platform.InTx(ctx, func(ctx context.Context) error {
 			q := store.New(platform.DBFrom(ctx))
 			st, err := q.ClaimOverdue(ctx)
@@ -52,40 +53,51 @@ func (s *Service) NotifyOverdue(ctx context.Context) (int, error) {
 				return err
 			}
 			found = true
-			return s.announceOverdue(ctx, st)
+			told, err = s.announceOverdue(ctx, st)
+			return err
 		})
 		if err != nil || !found {
 			return n, err
 		}
-		n++
+		if told {
+			n++
+		}
 	}
 }
 
-func (s *Service) announceOverdue(ctx context.Context, st store.ClaimOverdueRow) error {
+// announceOverdue tells who is waited on that st is overdue; a submission whose document
+// moved on is stale and tells nobody, though its claim stays so it is not looked at again.
+func (s *Service) announceOverdue(ctx context.Context, st store.ClaimOverdueRow) (bool, error) {
 	q := store.New(platform.DBFrom(ctx))
 	inst, err := q.GetInstance(ctx, st.InstanceID)
 	if err != nil {
-		return err
+		return false, err
 	}
 	d, err := s.d.Record.Get(ctx, record.Ref{Type: inst.DocType, ID: inst.DocID})
+	if errors.Is(err, platform.ErrNotFound) {
+		return false, nil
+	}
 	if err != nil {
-		return err
+		return false, err
+	}
+	if !current(inst, d) {
+		return false, nil
 	}
 	votes, err := q.CastVotes(ctx, store.CastVotesParams{InstanceID: st.InstanceID, Position: st.Position})
 	if err != nil {
-		return err
+		return false, err
 	}
 	pending := slices.DeleteFunc(slices.Clone(st.Approvers), func(id int64) bool {
 		return slices.ContainsFunc(votes, func(v store.CastVotesRow) bool { return v.UserID == id })
 	})
 	excluded, err := s.excluded(ctx, inst, d.Ref)
 	if err != nil {
-		return err
+		return false, err
 	}
 	if len(pending) > 0 {
 		if err := s.requestVotes(ctx, notification.ApprovalOverdue, d, excluded, pending); err != nil {
-			return err
+			return false, err
 		}
 	}
-	return s.d.Notification.Send(ctx, notification.ApprovalOverdue, d.Ref, []int64{inst.SubmittedBy})
+	return true, s.d.Notification.Send(ctx, notification.ApprovalOverdue, d.Ref, []int64{inst.SubmittedBy})
 }

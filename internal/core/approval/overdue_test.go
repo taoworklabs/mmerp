@@ -24,9 +24,10 @@ func (f *fixture) lapse(d record.Doc) {
 	f.check(err)
 }
 
+// overdue runs the job as the system does: no actor.
 func (f *fixture) overdue() int {
 	f.t.Helper()
-	n, err := f.appr.NotifyOverdue(f.admin)
+	n, err := f.appr.NotifyOverdue(f.core.Ctx)
 	f.check(err)
 	return n
 }
@@ -81,7 +82,7 @@ func TestOverdueNotifiesOnce(t *testing.T) {
 	counts := make([]int, 2)
 	for i := range counts {
 		wg.Go(func() {
-			n, err := f.appr.NotifyOverdue(f.admin)
+			n, err := f.appr.NotifyOverdue(f.core.Ctx)
 			if err != nil {
 				t.Error(err)
 			}
@@ -115,6 +116,20 @@ func TestOverdueIgnoresDecidedSteps(t *testing.T) {
 
 	if n := f.overdue(); n != 0 {
 		t.Fatalf("notified %d decided steps", n)
+	}
+}
+
+func TestOverdueSkipsStaleInstances(t *testing.T) {
+	f := newFixture(t)
+	f.rule(due(f.user("boss"), 1))
+	d, err := f.send("1", "a")
+	f.check(err)
+	f.lapse(d)
+	// The document moved on without anyone acting on the submission yet.
+	_, err = platform.DBFrom(f.admin).Exec(f.admin, `UPDATE record.documents SET version = version + 1 WHERE id = $1`, d.ID)
+	f.check(err)
+	if n := f.overdue(); n != 0 || f.told("boss", d) != 0 || f.told("submitter", d) != 0 {
+		t.Fatalf("announced %d; boss %d, submitter %d", n, f.told("boss", d), f.told("submitter", d))
 	}
 }
 
