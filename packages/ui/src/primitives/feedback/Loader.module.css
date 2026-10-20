@@ -4,7 +4,8 @@
   border-radius: 50%;
   border: 2px solid var(--mmerp-color-gray-2);
   border-top-color: var(--mmerp-color-primary-6);
-  animation: mmerp-loader-spin var(--mmerp-motion-duration) linear infinite;
+  /* A loop, not a transition: the 200ms motion cap doesn't apply (R10); a calm one-turn-per-800ms spin. */
+  animation: mmerp-loader-spin 800ms linear infinite;
 }
 
 .root[data-size='xs'] {
