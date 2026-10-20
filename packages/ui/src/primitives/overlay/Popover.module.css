@@ -1,0 +1,17 @@
+.popup {
+  box-sizing: border-box;
+  padding: var(--mmerp-space-md);
+  border-radius: var(--mmerp-radius-lg);
+  box-shadow: var(--mmerp-shadow-md);
+  background: var(--mmerp-color-elevation-surface);
+  outline: 0;
+  transition:
+    transform var(--mmerp-motion-duration) ease,
+    opacity var(--mmerp-motion-duration) ease;
+}
+
+.popup[data-starting-style],
+.popup[data-ending-style] {
+  opacity: 0;
+  transform: scale(0.98);
+}
