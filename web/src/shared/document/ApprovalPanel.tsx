@@ -1,5 +1,5 @@
-import { Alert, Badge, Button, Group, Stack, Text, Timeline } from '@mantine/core'
-import { IconAlertCircle, IconArrowBackUp, IconCheck, IconUserShare, IconX, type Icon as TablerIcon } from '@tabler/icons-react'
+import { Badge, Button, Group, Stack, Text, Timeline } from '@mantine/core'
+import { IconArrowBackUp, IconCheck, IconUserShare, IconX, type Icon as TablerIcon } from '@tabler/icons-react'
 import { useQuery } from '@tanstack/react-query'
 import type { TFunction } from 'i18next'
 import { useState, type ReactNode } from 'react'
@@ -11,6 +11,7 @@ import { useMe } from '@/shared/auth/me'
 import { errorText, formatDateTime } from '@/shared/i18n'
 import { useConfirm } from '@/shared/ui/confirm'
 import { Form, FormActions, SelectField, TextField } from '@/shared/ui/form'
+import { Notice } from '@/shared/ui/Notice'
 import { notifySuccess } from '@/shared/ui/notify'
 import { FormModal } from '@/shared/ui/page'
 import { ContentSkeleton, ErrorState } from '@/shared/ui/states'
@@ -270,9 +271,9 @@ function Instance({ docType, id, inst, onDone, sticky, subject, decideElsewhere 
       </Timeline>
       {inst.status !== 'open' && <Text size="sm">{t(`shared.approval.status.${inst.status}`)}</Text>}
       {d.error && (
-        <Alert color="danger" icon={<IconAlertCircle {...icon.button} />} role="alert">
+        <Notice tone="danger">
           {d.error}
-        </Alert>
+        </Notice>
       )}
       {!decideElsewhere && only && (
         // In the narrow side column the pair splits the width; as a sticky bar it sits on the right.

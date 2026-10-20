@@ -1,5 +1,5 @@
-import { Alert, Button, Group, Text, ThemeIcon, Tooltip } from '@mantine/core'
-import { IconAlertCircle, IconAlertTriangle, IconAt, IconBell, IconChecks, IconCircleCheck, IconCircleX, IconClockExclamation, IconHourglassHigh, type Icon as TablerIcon } from '@tabler/icons-react'
+import { Button, Group, Text, Tooltip } from '@mantine/core'
+import { IconAlertTriangle, IconAt, IconBell, IconChecks, IconCircleCheck, IconCircleX, IconClockExclamation, IconHourglassHigh, type Icon as TablerIcon } from '@tabler/icons-react'
 import { useInfiniteQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Fragment, useState } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -8,8 +8,9 @@ import { api, unwrap, type Notification } from '@/shared/api/core'
 import { useRecordLinks } from '@/shared/area'
 import { useMe } from '@/shared/auth/me'
 import { errorText, formatAgo, formatDateTime } from '@/shared/i18n'
-import { InboxGroup, InboxList, InboxRow, ListPage } from '@/shared/ui/page'
-import { ContentSkeleton, EmptyState, ErrorState } from '@/shared/ui/states'
+import { InboxGroup, InboxIcon, InboxList, InboxRow, ListPage } from '@/shared/ui/page'
+import { QueryView } from '@/shared/ui/QueryView'
+import { EmptyState, ErrorState } from '@/shared/ui/states'
 import { icon } from '@/shared/ui/theme'
 import { notificationKeys } from '../notificationKeys'
 
@@ -82,56 +83,55 @@ export default function NotificationsPage() {
   const dayLabel = (day: string) => (day === today ? t('core.notifications.today') : day === yesterday ? t('core.notifications.yesterday') : day)
 
   const items = list.data?.pages.flatMap((p) => p.items) ?? []
-  let body
-  if (list.isPending) body = <ContentSkeleton />
-  else if (list.isError) body = <ErrorState message={errorText(t, list.error)} onRetry={() => void list.refetch()} />
-  else if (items.length === 0) body = <EmptyState title={t('core.notifications.empty')} description={t('core.notifications.empty_description')} />
-  else
-    body = (
-      <>
-        <InboxList label={t('core.notifications.title')} framed>
-          {items.map((n, i) => {
-            const { Icon, color } = kindLooks[n.kind] ?? productLook
-            const day = dayOf(n.created_at)
-            return (
-              <Fragment key={n.id}>
-                {(i === 0 || dayOf(items[i - 1]!.created_at) !== day) && <InboxGroup label={dayLabel(day)} />}
-                <InboxRow
-                  active={false}
-                  unread={!n.read}
-                  onClick={() => void open(n)}
-                  icon={
-                    <ThemeIcon variant="light" color={color} size={36} radius={1000} aria-hidden>
-                      <Icon {...icon.button} />
-                    </ThemeIcon>
-                  }
-                  label={
-                    <Text size="sm" fw="inherit">
-                      {t(kindLabelKey(n.kind))}
-                    </Text>
-                  }
-                  description={describe(n)}
-                  aside={
-                    <Tooltip label={formatDateTime(n.created_at, me.timezone)}>
-                      <Text size="xs" c="dimmed">
-                        {formatAgo(n.created_at, me.timezone)}
+  const body = (
+    <QueryView
+      query={list}
+      select={() => items}
+      empty={<EmptyState title={t('core.notifications.empty')} description={t('core.notifications.empty_description')} />}
+    >
+      {(items) => (
+        <>
+          <InboxList label={t('core.notifications.title')} framed>
+            {items.map((n, i) => {
+              const { Icon, color } = kindLooks[n.kind] ?? productLook
+              const day = dayOf(n.created_at)
+              return (
+                <Fragment key={n.id}>
+                  {(i === 0 || dayOf(items[i - 1]!.created_at) !== day) && <InboxGroup label={dayLabel(day)} />}
+                  <InboxRow
+                    active={false}
+                    unread={!n.read}
+                    onClick={() => void open(n)}
+                    icon={<InboxIcon icon={Icon} color={color} />}
+                    label={
+                      <Text size="sm" fw="inherit">
+                        {t(kindLabelKey(n.kind))}
                       </Text>
-                    </Tooltip>
-                  }
-                />
-              </Fragment>
-            )
-          })}
-        </InboxList>
-        {list.hasNextPage && (
-          <Group justify="center">
-            <Button variant="default" loading={list.isFetchingNextPage} onClick={() => void list.fetchNextPage()}>
-              {t('core.notifications.more')}
-            </Button>
-          </Group>
-        )}
-      </>
-    )
+                    }
+                    description={describe(n)}
+                    aside={
+                      <Tooltip label={formatDateTime(n.created_at, me.timezone)}>
+                        <Text size="xs" c="dimmed">
+                          {formatAgo(n.created_at, me.timezone)}
+                        </Text>
+                      </Tooltip>
+                    }
+                  />
+                </Fragment>
+              )
+            })}
+          </InboxList>
+          {list.hasNextPage && (
+            <Group justify="center">
+              <Button variant="default" loading={list.isFetchingNextPage} onClick={() => void list.fetchNextPage()}>
+                {t('core.notifications.more')}
+              </Button>
+            </Group>
+          )}
+        </>
+      )}
+    </QueryView>
+  )
 
   return (
     <ListPage
@@ -143,11 +143,7 @@ export default function NotificationsPage() {
         </Button>
       }
     >
-      {error && (
-        <Alert color="danger" icon={<IconAlertCircle {...icon.button} />} role="alert">
-          {error}
-        </Alert>
-      )}
+      {error && <ErrorState message={error} />}
       {body}
     </ListPage>
   )

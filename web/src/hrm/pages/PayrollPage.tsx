@@ -1,5 +1,5 @@
-import { Alert, Button, Group, Loader, Stack, Text } from '@mantine/core'
-import { IconAlertTriangle, IconCalculator, IconPrinter } from '@tabler/icons-react'
+import { Button, Loader, Stack, Text } from '@mantine/core'
+import { IconCalculator, IconPrinter } from '@tabler/icons-react'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useParams, useSearchParams } from 'react-router'
@@ -8,6 +8,7 @@ import { DocumentScreen, useDocumentMutation } from '@/shared/document'
 import { errorText, formatDateTime, formatMonth } from '@/shared/i18n'
 import { ExportButton, finished, jobError, useJobStatus } from '@/shared/jobs'
 import { useMe } from '@/shared/auth/me'
+import { Notice } from '@/shared/ui/Notice'
 import { FormModal } from '@/shared/ui/page'
 import { icon } from '@/shared/ui/theme'
 import { AdjustmentsSection } from '../components/AdjustmentsSection'
@@ -106,35 +107,30 @@ function PayrollState({ payroll: p, computing, failed }: { payroll: Payroll; com
   const me = useMe()
   if (computing)
     return (
-      <Alert color="info" aria-live="polite">
-        <Group gap="sm">
-          <Loader size="sm" />
-          <Text size="sm">{t('hrm.payroll.computing')}</Text>
-        </Group>
-      </Alert>
+      <Notice tone="info" icon={<Loader size="sm" />} announce="polite">
+        {t('hrm.payroll.computing')}
+      </Notice>
     )
   const warned = (p.lines ?? []).filter((l) => l.warnings.length > 0)
   return (
     <>
       {failed && (
-        <Alert color="danger" icon={<IconAlertTriangle {...icon.button} />} role="alert" title={t('hrm.payroll.compute_failed')}>
+        <Notice tone="danger" title={t('hrm.payroll.compute_failed')}>
           {failed}
-        </Alert>
+        </Notice>
       )}
       {!p.computed_at && !failed && (
-        <Alert color="warning" icon={<IconAlertTriangle {...icon.button} />}>
-          {t('hrm.payroll.not_computed')}
-        </Alert>
+        <Notice tone="warning">{t('hrm.payroll.not_computed')}</Notice>
       )}
       {p.sources_changed && (
-        <Alert color="warning" icon={<IconAlertTriangle {...icon.button} />} role="alert" title={t('hrm.payroll.sources_changed')}>
+        <Notice tone="warning" announce="alert" title={t('hrm.payroll.sources_changed')}>
           {t('hrm.payroll.sources_changed_hint')}
-        </Alert>
+        </Notice>
       )}
       {warned.length > 0 && (
-        <Alert color="warning" icon={<IconAlertTriangle {...icon.button} />} title={t('hrm.payroll.warnings')}>
+        <Notice tone="warning" title={t('hrm.payroll.warnings')}>
           {warned.map((l) => `${l.employee_code} · ${l.employee_name}: ${l.warnings.map((w) => t(`hrm.payroll.warning.${w}`)).join(', ')}`).join('; ')}
-        </Alert>
+        </Notice>
       )}
       {p.computed_at && (
         <Text size="sm" c="dimmed">

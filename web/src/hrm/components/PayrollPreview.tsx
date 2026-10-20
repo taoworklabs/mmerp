@@ -1,9 +1,7 @@
-import { Alert } from '@mantine/core'
-import { IconAlertTriangle } from '@tabler/icons-react'
 import { useTranslation } from 'react-i18next'
 import { DocumentPreview } from '@/shared/document'
 import { formatMoney, formatMonth, formatNumber } from '@/shared/i18n'
-import { icon } from '@/shared/ui/theme'
+import { Notice } from '@/shared/ui/Notice'
 import { usePayroll } from '../hooks/usePayroll'
 import { payrollDocType } from '../keys'
 
@@ -17,9 +15,7 @@ export default function PayrollPreview({ id }: { id: number }) {
       query={usePayroll(id)}
       notice={(p) =>
         p.sources_changed && (
-          <Alert color="warning" icon={<IconAlertTriangle {...icon.button} />}>
-            {t('hrm.payroll.sources_changed')}
-          </Alert>
+          <Notice tone="warning">{t('hrm.payroll.sources_changed')}</Notice>
         )
       }
       rows={(p) => {

@@ -1,6 +1,6 @@
-import { Box, Button, Flex, Group, NavLink, Stack, Text, VisuallyHidden } from '@mantine/core'
+import { Box, Button, Flex, Group, NavLink, Stack, Text, ThemeIcon, VisuallyHidden, type MantineColor } from '@mantine/core'
 import { useMediaQuery } from '@mantine/hooks'
-import { IconArrowLeft } from '@tabler/icons-react'
+import { IconArrowLeft, type Icon as TablerIcon } from '@tabler/icons-react'
 import type { ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { icon } from '../theme'
@@ -70,6 +70,15 @@ export function InboxGroup({ label }: { label: string }) {
     <Text component="li" size="xs" fw={600} c="dimmed" className={classes.group}>
       {label}
     </Text>
+  )
+}
+
+// InboxIcon is the kind of an InboxRow's item: its icon tinted in the kind's colour, in a circle.
+export function InboxIcon({ icon: Icon, color }: { icon: TablerIcon; color: MantineColor }) {
+  return (
+    <ThemeIcon variant="light" color={color} size={36} radius={1000} aria-hidden>
+      <Icon {...icon.button} />
+    </ThemeIcon>
   )
 }
 

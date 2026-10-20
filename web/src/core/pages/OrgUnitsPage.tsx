@@ -1,4 +1,4 @@
-import { Button, Menu } from '@mantine/core'
+import { Button } from '@mantine/core'
 import { IconPencil, IconPlus } from '@tabler/icons-react'
 import { useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
@@ -7,6 +7,7 @@ import { useTranslation } from 'react-i18next'
 import { api, unwrap, type OrgUnit, type OrgUnitInput } from '@/shared/api/core'
 import { OrgTree, useOrgView } from '@/shared/org'
 import { Form, FormActions, OrgUnitField, SelectField, TextField } from '@/shared/ui/form'
+import { MenuAction } from '@/shared/ui/MenuAction'
 import { notifySuccess } from '@/shared/ui/notify'
 import { FormModal, ListPage } from '@/shared/ui/page'
 import { icon } from '@/shared/ui/theme'
@@ -37,9 +38,9 @@ export function OrgUnitsPage() {
         view={view}
         emptyDescription={t('core.org.empty_description')}
         menu={(unit) => (
-          <Menu.Item leftSection={<IconPencil {...icon.text} />} onClick={() => setEditing(unit)}>
+          <MenuAction icon={IconPencil} onClick={() => setEditing(unit)}>
             {t('core.org.edit')}
-          </Menu.Item>
+          </MenuAction>
         )}
       />
       {editing && <OrgUnitModal unit={editing === 'new' ? null : editing} onClose={() => setEditing(null)} />}

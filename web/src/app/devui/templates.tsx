@@ -1,6 +1,7 @@
-import { Button, Group, Stack, Text } from '@mantine/core'
-import { IconUsersGroup } from '@tabler/icons-react'
+import { Button, Group, PasswordInput, Stack, Text, TextInput } from '@mantine/core'
+import { IconAlertTriangle, IconAt, IconCircleCheck, IconHourglassHigh, IconUsersGroup } from '@tabler/icons-react'
 import { useTranslation } from 'react-i18next'
+import { Fragment, type ReactNode } from 'react'
 import { useSearchParams } from 'react-router'
 import { WithSampleSections } from '@/shared/document/samples'
 import { formatMonth, formatNumber } from '@/shared/i18n'
@@ -9,11 +10,11 @@ import { DataTable } from '@/shared/ui/DataTable'
 import { FieldList, MissingValue } from '@/shared/ui/FieldList'
 import { KeyFacts } from '@/shared/ui/KeyFacts'
 import { EditablePanel, MonthFilter, OrgUnitFilter, SearchInput, SensitiveValue } from '@/shared/ui/form'
-import { DocumentPage, InboxList, InboxPage, InboxRow, ListPage, Page, Panel, RecordColumns, RecordPage, TabActions } from '@/shared/ui/page'
+import { AuthPage, DocumentPage, InboxGroup, InboxIcon, InboxList, InboxPage, InboxRow, ListPage, Page, Panel, RecordColumns, RecordPage, SeeAll, TabContent } from '@/shared/ui/page'
 import { StatusBadge } from '@/shared/ui/StatusBadge'
 import { useListParams } from '@/shared/url/listParams'
 import { orgUnits } from './api'
-import { type Row, rows } from './Demo'
+import { Case, type Row, rows } from './Demo'
 
 // The body every template shows, so the templates differ only in their frame.
 function Sample({ rows: data = rows }: { rows?: Row[] }) {
@@ -38,12 +39,60 @@ function useHeader(title: string) {
   return { title, breadcrumbs: [{ label: t('shared.devui.title'), to: '/dev/ui' }], action: <Button>{t('shared.devui.primary')}</Button> }
 }
 
+const crumbs = [
+  { label: 'Nhân sự', to: '/dev/ui/templates/page' },
+  { label: 'Nhân viên', to: '/dev/ui/templates/page' },
+]
+
+const facts: [string, ReactNode][] = [
+  ['Quản lý trực tiếp', 'Trần Thị Bình'],
+  ['Thâm niên', '4 năm 2 tháng'],
+  ['Loại hợp đồng', 'Không xác định thời hạn'],
+  ['Phép còn lại', '8,5 ngày'],
+]
+
+// Every header frames the same stand-in content, so the cases differ only in the header.
+function Body() {
+  const { t } = useTranslation()
+  return (
+    <Text size="sm" c="dimmed">
+      {t('shared.devui.page_content')}
+    </Text>
+  )
+}
+
+// PageTemplate is the frame itself, so its body shows the headers it draws for the other templates.
 export function PageTemplate() {
   const { t } = useTranslation()
   const h = useHeader('Page')
   return (
     <Page title={h.title} description={t('shared.devui.description')} breadcrumbs={h.breadcrumbs} actions={h.action}>
-      <Sample />
+      <Stack gap="xl">
+        <Case label={t('shared.devui.case_header_list')}>
+          <Page title="Nhân viên" breadcrumbs={crumbs.slice(0, 1)} description={t('shared.devui.description')} actions={<Button>{t('shared.devui.primary')}</Button>}>
+            <Body />
+          </Page>
+        </Case>
+        <Case label={t('shared.devui.case_header_record')}>
+          <Page
+            title="Nguyễn Văn An"
+            breadcrumbs={crumbs}
+            current
+            leading={<PersonAvatar name="Nguyễn Văn An" size="lg" />}
+            status={<StatusBadge tone="positive">{t('shared.devui.status_positive')}</StatusBadge>}
+            description="NV0019 · Kế toán"
+            summary={<KeyFacts facts={facts} />}
+            actions={<Button variant="default">{t('shared.devui.secondary')}</Button>}
+          >
+            <Body />
+          </Page>
+        </Case>
+        <Case label={t('shared.devui.case_header_back')}>
+          <Page title="NP-2026-00001" breadcrumbs={crumbs} withBack actions={<Button>{t('shared.devui.primary')}</Button>}>
+            <Body />
+          </Page>
+        </Case>
+      </Stack>
     </Page>
   )
 }
@@ -155,7 +204,11 @@ export function RecordTemplate() {
                       )}
                     </EditablePanel>
                   }
-                  side={<Panel plain title={t('shared.document.tab.activity')}>{activity}</Panel>}
+                  side={
+                    <Panel plain title={t('shared.document.tab.activity')} actions={<SeeAll tab="activity" />}>
+                      {activity}
+                    </Panel>
+                  }
                 />
               ),
             },
@@ -163,12 +216,9 @@ export function RecordTemplate() {
               value: 'list',
               label: `${t('shared.devui.tab')} (3)`,
               content: (
-                <Stack gap="md">
-                  <TabActions>
-                    <Button>{t('shared.devui.primary')}</Button>
-                  </TabActions>
+                <TabContent actions={<Button>{t('shared.devui.primary')}</Button>}>
                   <Sample />
-                </Stack>
+                </TabContent>
               ),
             },
             { value: 'activity', label: t('shared.document.tab.activity'), content: activity },
@@ -199,6 +249,14 @@ export function DocumentTemplate() {
   )
 }
 
+// The kinds a feed mixes, each with its tinted icon, as the notifications page shows them.
+const inboxLooks = [
+  { Icon: IconHourglassHigh, color: 'warning' },
+  { Icon: IconCircleCheck, color: 'success' },
+  { Icon: IconAt, color: 'info' },
+  { Icon: IconAlertTriangle, color: 'danger' },
+]
+
 export function InboxTemplate() {
   const { t } = useTranslation()
   const [search, setSearch] = useSearchParams()
@@ -208,29 +266,50 @@ export function InboxTemplate() {
       title="InboxPage"
       list={
         <InboxList label={t('shared.devui.list')}>
-          {rows.map((r, i) => (
-            <InboxRow
-              key={r.id}
-              active={item === String(r.id)}
-              unread={i === 0}
-              onClick={() => setSearch({ item: String(r.id) })}
-              label={
-                <Group justify="space-between" wrap="nowrap">
-                  <Text size="sm" fw="inherit">
-                    {r.code}
-                  </Text>
-                  <Text size="xs" c="dimmed">
-                    {t('shared.devui.ago')}
-                  </Text>
-                </Group>
-              }
-              description={r.name}
-            />
-          ))}
+          {rows.map((r, i) => {
+            const look = inboxLooks[i % inboxLooks.length]!
+            return (
+              <Fragment key={r.id}>
+                {i === 0 && <InboxGroup label={t('shared.devui.today')} />}
+                {i === 2 && <InboxGroup label={t('shared.devui.yesterday')} />}
+                <InboxRow
+                  active={item === String(r.id)}
+                  unread={i === 0}
+                  onClick={() => setSearch({ item: String(r.id) })}
+                  icon={<InboxIcon icon={look.Icon} color={look.color} />}
+                  label={
+                    <Group justify="space-between" wrap="nowrap">
+                      <Text size="sm" fw="inherit">
+                        {r.code}
+                      </Text>
+                      <Text size="xs" c="dimmed">
+                        {t('shared.devui.ago')}
+                      </Text>
+                    </Group>
+                  }
+                  description={r.name}
+                />
+              </Fragment>
+            )
+          })}
         </InboxList>
       }
       detail={item ? <Sample /> : null}
       onBack={() => setSearch({})}
     />
+  )
+}
+
+// AuthTemplate copies the sign-in form, the one screen outside the app shell.
+export function AuthTemplate() {
+  const { t } = useTranslation()
+  return (
+    <AuthPage title="AuthPage">
+      <Stack gap="md">
+        <TextInput label={t('core.login.login')} autoComplete="off" required />
+        <PasswordInput label={t('core.login.password')} autoComplete="off" required />
+        <Button>{t('core.login.submit')}</Button>
+      </Stack>
+    </AuthPage>
   )
 }

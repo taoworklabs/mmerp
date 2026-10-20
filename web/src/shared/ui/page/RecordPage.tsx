@@ -3,6 +3,7 @@ import type { ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link, useSearchParams } from 'react-router'
 import { MoreActions } from '../MoreActions'
+import { Notice } from '../Notice'
 import { Page, type PageHeaderProps } from './Page'
 import classes from './RecordPage.module.css'
 
@@ -99,7 +100,14 @@ export function SeeAll({ tab }: { tab: string }) {
   )
 }
 
-// TabActions holds a tab's actions, on the right like the page's own.
-export function TabActions({ children }: { children: ReactNode }) {
-  return <Group justify="flex-end">{children}</Group>
+// TabContent is the body of a tab holding a list: its actions on the right like the page's own,
+// the failure of the last action, then the list (and the tab's dialogs).
+export function TabContent({ actions, error, children }: { actions?: ReactNode; error?: string | null; children: ReactNode }) {
+  return (
+    <Stack gap="md">
+      {actions && <Group justify="flex-end">{actions}</Group>}
+      {error && <Notice tone="danger">{error}</Notice>}
+      {children}
+    </Stack>
+  )
 }

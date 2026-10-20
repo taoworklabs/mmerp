@@ -73,13 +73,13 @@ Every choice below must satisfy these three constraints:
 | Backend tests | Go's `testing` + real Postgres | Each test gets a database created from a migrated template (`CREATE DATABASE … TEMPLATE`). Never mock the database |
 | Contract tests | `recordtest` | Mandatory for every document type ([documents.md](./documents.md#guarantees)) |
 | Backend lint | golangci-lint + `depguard` + `forbidigo` | Layering and isolation rules ([backend.md](./backend.md#isolation)) |
-| Frontend lint | [dependency-cruiser](https://github.com/sverweij/dependency-cruiser) + ESLint (`@eslint/js`, `typescript-eslint`, `eslint-plugin-i18next`, `globals` for browser and Node globals; `style` banned with the built-in `no-restricted-syntax`) + TypeScript strict | dependency-cruiser checks area boundaries on the resolved dependency graph: it catches relative paths, aliases, re-exports and dynamic imports. The configuration is verified by `web/lint-fixtures` ([frontend.md](./frontend.md#isolation)) |
+| Frontend lint | [dependency-cruiser](https://github.com/sverweij/dependency-cruiser) + ESLint (`@eslint/js`, `typescript-eslint`, `eslint-plugin-i18next`, `globals` for browser and Node globals; `style` banned with the built-in `no-restricted-syntax`) + TypeScript strict | dependency-cruiser checks area boundaries on the resolved dependency graph: it catches relative paths, aliases, re-exports and dynamic imports. Both configurations are verified by `web/lint-fixtures` ([frontend.md](./frontend.md#isolation)) |
 | Frontend tests | Vitest | Logic does not live in components; no snapshot tests |
 | Frontend–API end-to-end tests | Playwright, run against the real backend and Postgres | Only for flows where a bug has serious consequences: sign-in and per-unit permissions (users do not see data outside their scope); submitting, withdrawing, approving and rejecting requests; timesheet import from Excel; `version` conflicts when two tabs edit at once. Not used to test individual screens. Runs only in CI and on dev machines, not in the image |
 
 ## Development tools
 
-Everything goes through `make`; the full list (`gen`, `lint`, `test`, `e2e`, `db`, `dev`, `reset-db`, `seed`, `image`, `smoke`) is in the command table of `CLAUDE.md`. `make lint` covers golangci-lint, `tsc`, ESLint, the colour-literal scan ([ui.md](./ui.md#enforcement)), dependency-cruiser (must report no errors on `web/src`; must report every violation on `web/lint-fixtures`), the translation key check, and the `queries.sql` scan.
+Everything goes through `make`; the full list (`gen`, `lint`, `test`, `e2e`, `db`, `dev`, `reset-db`, `seed`, `image`, `smoke`) is in the command table of `CLAUDE.md`. `make lint` covers golangci-lint, `tsc`, ESLint, the colour-literal scan ([ui.md](./ui.md#enforcement)), dependency-cruiser and ESLint (no errors on `web/src`; every planted violation on `web/lint-fixtures`), the translation key check, and the `queries.sql` scan.
 
 CI runs `make gen` and fails if the generated code differs from the committed code.
 

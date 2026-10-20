@@ -4,13 +4,13 @@ import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { useTranslation } from 'react-i18next'
 import { api, unwrap, type CodeSeries } from '@/shared/api/core'
-import { errorText } from '@/shared/i18n'
 import { DataTable, type Column } from '@/shared/ui/DataTable'
 import { FieldList } from '@/shared/ui/FieldList'
 import { Form, FormActions, TextField } from '@/shared/ui/form'
 import { notifySuccess } from '@/shared/ui/notify'
 import { FormModal, ListPage } from '@/shared/ui/page'
-import { ContentSkeleton, EmptyState, ErrorState } from '@/shared/ui/states'
+import { QueryView } from '@/shared/ui/QueryView'
+import { EmptyState } from '@/shared/ui/states'
 import { coreKeys } from '../keys'
 
 // CodeSeriesPage: the prefix of each catalogue's issued codes. Changing it keeps the count.
@@ -22,21 +22,20 @@ export function CodeSeriesPage() {
     { key: 'name', header: t('core.code_series.name'), role: 'title', render: (s) => t(`${s.code}.code_series`) },
     { key: 'prefix', header: t('core.code_series.prefix'), role: 'meta', kind: 'code', render: (s) => s.prefix || t('core.code_series.no_prefix') },
   ]
-  let body
-  if (series.isPending) body = <ContentSkeleton />
-  else if (series.isError) body = <ErrorState message={errorText(t, series.error)} onRetry={() => void series.refetch()} />
-  else if (series.data.length === 0) body = <EmptyState title={t('core.code_series.empty')} />
-  else
-    body = (
-      <DataTable
-        label={t('core.code_series.title')}
-        columns={columns}
-        rows={series.data}
-        rowKey={(s) => s.code}
-        // One action per row: the row itself opens it.
-        onRowClick={(s) => setEditing(s)}
-      />
-    )
+  const body = (
+    <QueryView query={series} empty={<EmptyState title={t('core.code_series.empty')} />}>
+      {(data) => (
+        <DataTable
+          label={t('core.code_series.title')}
+          columns={columns}
+          rows={data}
+          rowKey={(s) => s.code}
+          // One action per row: the row itself opens it.
+          onRowClick={(s) => setEditing(s)}
+        />
+      )}
+    </QueryView>
+  )
   return (
     <ListPage title={t('core.code_series.title')} description={t('core.code_series.description')}>
       {body}

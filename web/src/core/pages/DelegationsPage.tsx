@@ -1,5 +1,5 @@
-import { Alert, Button, Menu } from '@mantine/core'
-import { IconAlertCircle, IconPlus, IconTrash } from '@tabler/icons-react'
+import { Button } from '@mantine/core'
+import { IconPlus, IconTrash } from '@tabler/icons-react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
 import { useForm, type Path } from 'react-hook-form'
@@ -10,6 +10,8 @@ import { errorText, formatDate, today } from '@/shared/i18n'
 import { type Column } from '@/shared/ui/DataTable'
 import { useConfirm } from '@/shared/ui/confirm'
 import { DateField, Form, FormActions, SelectField } from '@/shared/ui/form'
+import { MenuAction } from '@/shared/ui/MenuAction'
+import { Notice } from '@/shared/ui/Notice'
 import { notifySuccess } from '@/shared/ui/notify'
 import { FormModal, ListPage } from '@/shared/ui/page'
 import { StatusBadge } from '@/shared/ui/StatusBadge'
@@ -87,9 +89,9 @@ export default function DelegationsPage() {
           rowKey: (d) => d.id,
           menu: (d) =>
             d.allowed_actions.includes('delete') ? (
-              <Menu.Item color="danger" leftSection={<IconTrash {...icon.text} />} onClick={() => void remove(d)}>
+              <MenuAction icon={IconTrash} danger onClick={() => void remove(d)}>
                 {t('core.delegations.delete')}
-              </Menu.Item>
+              </MenuAction>
             ) : null,
         },
         empty: { title: t('core.delegations.empty'), description: t('core.delegations.empty_description') },
@@ -97,9 +99,7 @@ export default function DelegationsPage() {
       }}
     >
       {error && (
-        <Alert color="danger" icon={<IconAlertCircle {...icon.button} />} role="alert">
-          {error}
-        </Alert>
+        <Notice tone="danger">{error}</Notice>
       )}
       {creating && <CreateModal manageAll={manageAll} onClose={() => setCreating(false)} />}
       {dialog}
@@ -148,9 +148,7 @@ function CreateModal({ manageAll, onClose }: { manageAll: boolean; onClose: () =
         <DateField name="starts_on" label={t('core.delegations.starts_on')} required />
         <DateField name="ends_on" label={t('core.delegations.ends_on')} required />
         {users.isError && (
-          <Alert color="danger" icon={<IconAlertCircle {...icon.button} />} role="alert">
-            {errorText(t, users.error)}
-          </Alert>
+          <Notice tone="danger">{errorText(t, users.error)}</Notice>
         )}
         <FormActions submitLabel={t('core.delegations.create')} onCancel={onClose} cancelLabel={t('core.delegations.cancel')} />
       </Form>

@@ -1,10 +1,11 @@
-import { Alert, Button, Group, Menu, Stack, Text } from '@mantine/core'
-import { IconAlertCircle, IconChevronDown, IconPlus } from '@tabler/icons-react'
+import { Box, Button, Group, Menu, Stack, Text } from '@mantine/core'
+import { IconChevronDown, IconPlus } from '@tabler/icons-react'
 import { get, useFieldArray, useFormContext, useFormState } from 'react-hook-form'
 import { useTranslation } from 'react-i18next'
 import type { TypeRule } from '@/shared/api/core'
 import { fieldId, type Option } from '@/shared/ui/form'
 import { MoreActions } from '@/shared/ui/MoreActions'
+import { Notice } from '@/shared/ui/Notice'
 import { icon } from '@/shared/ui/theme'
 import { newSplit, newStep, type ElementValues } from '../flowForm'
 import { SplitCard } from './SplitCard'
@@ -35,9 +36,10 @@ export function FlowBlock({ path, ctx, depth }: { path: string; ctx: EditorCtx; 
   return (
     <Stack gap="sm">
       {rootError && (
-        <Alert id={fieldId(`${path}.root`)} tabIndex={-1} color="danger" icon={<IconAlertCircle {...icon.button} />} role="alert">
-          {rootError}
-        </Alert>
+        // Focusable, so a refused save can move the reader to it.
+        <Box id={fieldId(`${path}.root`)} tabIndex={-1}>
+          <Notice tone="danger">{rootError}</Notice>
+        </Box>
       )}
       {fields.length === 0 && (
         <Text size="sm" c="dimmed">
@@ -104,8 +106,8 @@ export function IssueAlert({ path }: { path: string }) {
   const issue: string | undefined = get(errors, `${path}.issue`)?.message
   if (!issue) return null
   return (
-    <Alert id={fieldId(`${path}.issue`)} tabIndex={-1} color="danger" icon={<IconAlertCircle {...icon.button} />} role="alert">
-      {issue}
-    </Alert>
+    <Box id={fieldId(`${path}.issue`)} tabIndex={-1}>
+      <Notice tone="danger">{issue}</Notice>
+    </Box>
   )
 }

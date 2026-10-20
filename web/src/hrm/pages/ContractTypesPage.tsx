@@ -6,12 +6,12 @@ import { useForm } from 'react-hook-form'
 import { useTranslation } from 'react-i18next'
 import { useProductOn } from '@/shared/auth/me'
 import { api, unwrap, type ContractType, type ContractTypeInput } from '@/shared/api/hrm'
-import { errorText } from '@/shared/i18n'
 import { DataTable, type Column } from '@/shared/ui/DataTable'
 import { CheckboxField, Form, FormActions, TextField } from '@/shared/ui/form'
 import { notifySuccess } from '@/shared/ui/notify'
 import { FormModal, ListPage } from '@/shared/ui/page'
-import { ContentSkeleton, EmptyState, ErrorState } from '@/shared/ui/states'
+import { QueryView } from '@/shared/ui/QueryView'
+import { EmptyState } from '@/shared/ui/states'
 import { StatusBadge } from '@/shared/ui/StatusBadge'
 import { icon } from '@/shared/ui/theme'
 import { useContractTypes } from '../hooks/useContract'
@@ -35,21 +35,20 @@ export function ContractTypesPage() {
       render: (x) => <StatusBadge tone={x.active ? 'positive' : 'neutral'}>{t(x.active ? 'hrm.contract_type.in_use' : 'hrm.contract_type.retired')}</StatusBadge>,
     },
   ]
-  let body
-  if (types.isPending) body = <ContentSkeleton />
-  else if (types.isError) body = <ErrorState message={errorText(t, types.error)} onRetry={() => void types.refetch()} />
-  else if (types.data.length === 0) body = <EmptyState title={t('hrm.contract_type.empty')} description={t('hrm.contract_type.empty_description')} />
-  else
-    body = (
-      <DataTable
-        label={t('hrm.contract_type.title')}
-        columns={columns}
-        rows={types.data}
-        rowKey={(x) => x.id}
-        // One action per row: the row itself opens it.
-        onRowClick={writable ? (x) => setEditing(x) : undefined}
-      />
-    )
+  const body = (
+    <QueryView query={types} empty={<EmptyState title={t('hrm.contract_type.empty')} description={t('hrm.contract_type.empty_description')} />}>
+      {(data) => (
+        <DataTable
+          label={t('hrm.contract_type.title')}
+          columns={columns}
+          rows={data}
+          rowKey={(x) => x.id}
+          // One action per row: the row itself opens it.
+          onRowClick={writable ? (x) => setEditing(x) : undefined}
+        />
+      )}
+    </QueryView>
+  )
   return (
     <ListPage
       title={t('hrm.contract_type.title')}

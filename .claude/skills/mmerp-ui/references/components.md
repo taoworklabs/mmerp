@@ -2,7 +2,7 @@
 
 What exists, how to use it, and how to build a new one. Imports are from `@/shared/ui/…` and `@/shared/document`. Every component here is on `/dev/ui` in each of its states.
 
-Areas never import Mantine's `Table`, `Modal`, `Badge`, `Notification`, `NumberInput`, `@mantine/dates` or `@mantine/notifications`: ESLint points to the `shared/ui` replacement. Other Mantine primitives (`Button`, `ActionIcon`, `Select`, `Alert`, `Menu`, `Tabs`, `Tooltip`, `Stack`, `Group`, `Text`, `Title`) are used directly, with the variants below.
+Areas take from `@mantine/core` only the layout and text primitives `Anchor`, `Button`, `Divider`, `Group`, `List`, `Loader`, `Skeleton`, `Stack`, `Text`, `Tooltip` (ESLint allowlist), and nothing from `@mantine/dates` or `@mantine/notifications`; everything else comes from `shared/ui`. When a screen needs something more, add it to `shared/ui` (and to the allowlist only if it is a plain primitive). `shared/ui` itself builds on any Mantine component, with the variants below.
 
 ## Button
 
@@ -54,11 +54,11 @@ Where each one goes, and how many per place: `actions.md`.
 
 ## More actions
 
-`MoreActions` (`@/shared/ui/MoreActions`) is the "…" menu: children are `Menu.Item`s. `place="row"` (default) is quiet, for a table row's `menu`; `place="page"` is outlined and 30px, for page actions beyond three. Renders nothing without children.
+`MoreActions` (`@/shared/ui/MoreActions`) is the "…" menu: children are `MenuAction`s (`@/shared/ui/MenuAction`: `icon`, `danger` for an action that loses something, `onClick`). `place="row"` (default) is quiet, for a table row's `menu`; `place="page"` is outlined and 30px, for page actions beyond three. Renders nothing without children.
 
 ```tsx
 <MoreActions place="page">
-  <Menu.Item leftSection={<IconShoppingCart {...icon.text} />} onClick={createOrder}>{t('sales.quote.create_order')}</Menu.Item>
+  <MenuAction icon={IconShoppingCart} onClick={createOrder}>{t('sales.quote.create_order')}</MenuAction>
 </MoreActions>
 ```
 
@@ -79,7 +79,7 @@ Where each one goes, and how many per place: `actions.md`.
 | `DocumentStatus` (`shared/document`) | A document's `draft` / `pending_approval` / `posted` / `cancelled`. Colours are fixed: neutral, warning, success, danger. A document type may rename the label (`<doc_type>.status.<status>`), never recolour it |
 | `StatusBadge tone=…` (`shared/ui/StatusBadge`) | A catalog record's state or a module's own progress: `positive`, `neutral`, `info`, `warning`, `negative` |
 
-Both render a tinted badge: 20px tall, 12px text, weight 500, radius 4, sentence case, no dot, no icon. The label always names the state. Module progress (delivery, payment, ordered) uses `neutral` or `info`, so the four document colours keep their meaning; the area wraps it in its own small component (e.g. `sales/components/DocProgress.tsx`).
+Both render a tinted badge: 20px tall, 12px text, weight 500, radius 4, sentence case, no dot, no icon. The label always names the state. The badge is a `span`, so it may sit inside a sentence (the activity feed's "moved to Pending"). Module progress (delivery, payment, ordered) uses `neutral` or `info`, so the four document colours keep their meaning; the area wraps it in its own small component (e.g. `sales/components/DocProgress.tsx`).
 
 A document list filters by status with `DocumentStatusFilter` (`shared/document`). Any other status label outside the badge comes from `useStatusLabel()` (`shared/document`): `label(docType, status)`, with the same `docType` the area passes to `DocumentStatus` (its record type, e.g. `docTypeOf(kind)` in sales).
 
@@ -87,9 +87,14 @@ A document list filters by status with `DocumentStatusFilter` (`shared/document`
 <StatusBadge tone={active ? 'positive' : 'neutral'}>{t(active ? 'sales.customer.status.active' : 'sales.customer.status.inactive')}</StatusBadge>
 ```
 
-## Alert (banner)
+## Notice (banner)
 
-Mantine `Alert`, default (tinted) variant, `color` by meaning, always with an icon at `icon.button`. Use for a document-level error (`role="alert"`), a warning about the data on screen, or the read-only notice (`ReadOnlyBanner`). It sits at the top of the region it is about.
+`Notice` (`@/shared/ui/Notice`): `tone` (`info`, `success`, `warning`, `danger`, `discovery`) picks the colour and the icon; `title` optional. Use for a warning about the data on screen, the result of a job, or the read-only notice (`ReadOnlyBanner`). It sits at the top of the region it is about. `danger` is announced (`role="alert"`); `announce="alert"` or `"polite"` makes another tone heard; `icon` replaces the tone's icon only for progress (a `Loader`). An error message alone is `ErrorState` (a `Notice` in `danger`, with Retry when given `onRetry`).
+
+```tsx
+{error && <ErrorState message={error} />}
+<Notice tone="warning" title={t('hrm.payroll.warnings')}>{list}</Notice>
+```
 
 ## Fields (`shared/ui/form`)
 
@@ -143,7 +148,7 @@ To switch between views of one feed (an activity feed's All · Comments · Chang
 | `BulkBar` | "N selected", the bulk actions (children), Clear selection |
 | `SidePanel` + `usePeek` | Read-only preview of a list row on the right, 480px, not modal, with "Open full page"; the open id on the URL (`?peek=`) |
 | `Panel` (`shared/ui/page`) | A card: 1px border, radius 6, 16px padding, `title` (600), optional `icon` and `actions` on its line; `plain` drops the frame, for the side column of a `RecordPage` overview or a `DocumentPage`, where rules part the panels |
-| `TabActions` | A `RecordPage` tab's buttons, right-aligned at its top |
+| `TabContent` | The body of a `RecordPage` tab holding a list: `actions` right-aligned at its top, `error` (the last action's failure) under them, then the list and the tab's dialogs |
 | `ActivityFeed` (`shared/document`) | A record's or document's comments and audit log in one timeline: comment box, filter (All · Comments · Changes · Views), days as uppercase headings with a rule, each a button (chevron, `aria-expanded`) that closes its day to "· N mục" and opens it again, the day's lines indented under its label; each line the time of day (3rem column), a 20px bullet (avatar for plain doings and comments; a coloured round icon for a status reached, a decision, a creation, a sensitive read) and a sentence (who 600, doing `dimmed`, what 600); a comment or two or more changed fields in a sunken well, tied to the bullet by a thread; consecutive reads fold; 30 lines, then "Show more". Passed as `activity` to `DocumentPage`; on a `RecordPage` it is the "Hoạt động" tab, and `recent={5}` gives the overview's digest (comments and changes, no filter); the comment box is one line until focused; never build a separate history or discussion panel |
 | `DocumentScreen` (`shared/document`) | A document's whole page on `DocumentPage`: `list` (breadcrumb, where a deleted draft leaves for), header `facts` joined by "·", `DocumentStatus`, `badges`, `ApprovalDecision`, the page's own buttons (`extraActions`, given the banner's `onError`), `DocumentActions` (print from `printLabel`/`printKind`), `ApprovalPanel decideElsewhere` (`subject`), attachments (`attachments`) and `ActivityFeed`. A detail page passes only its fields and form |
 | `DocumentPreview` (`shared/document`) | An area's read-only preview of a document (inbox, side panel): loading and error states, `DocumentStatus`, an optional `notice`, then `rows` as a `FieldList`; a falsy row is left out |
@@ -164,14 +169,16 @@ To switch between views of one feed (an activity feed's All · Comments · Chang
 | `FormModal` | A form of at most 6 fields (create on a list, a settings row, a separate action like transfer); never a group of a record's values, which edits in its card: 440px, one column (`wide`: 620px, for long text or a table), a header band (title 20/24 weight 650) under a rule, padding 24px at the sides and 16px above and below, radius 6, fullscreen below 1024px |
 | `ModalFooter` | A modal's buttons, right-aligned in a band across the modal under a rule; every modal's buttons sit in it: `FormActions` in a modal, `useConfirm`, and modals with their own buttons |
 | `useConfirm` | Before deleting, cancelling a posted document, rejecting; the confirm button repeats the verb; `danger: true` for destructive steps |
+| `useAction` | A region's own action: `run(fn, { confirm, success })` asks first (`useConfirm`), keeps the failure as `error` for the region (`TabContent`'s `error`, or an `ErrorState` at the top), toasts `success`; render `dialog` once |
 | `notifySuccess` | After a save: bottom right, closes after 3 seconds |
-| `notifyUndo(message, undoLabel, onUndo)` | A reversible action that already took effect, with Undo, 5 seconds (`actions.md`) |
+| `notifyUndo(message, undoLabel, onUndo)` | A reversible action that already took effect, with Undo, 5 seconds (`actions.md`); its body is `UndoMessage`, which `/dev/ui` also shows at rest |
 | `notifyError` | A background job failed: stays until closed. Errors of the current action go next to their cause, not here |
+| `QueryView` | A region fed by one query: `ContentSkeleton` while loading, `ErrorState` with Retry, `empty` when there is nothing, else `children(data)`. `select` shapes the data first (sort, flatten pages, filter); `noResults` shows when a filter empties a non-empty result; `notFound` answers a 404 |
 | `EmptyState`, `ErrorState`, `PageSkeleton`, `ContentSkeleton`, `ForbiddenPage`, `NotFoundPage`, `ReadOnlyBanner` | The states of a region (see `patterns.md`). `EmptyState`'s icon is a 24px glyph (`icon.empty`) in a 48px neutral circle; pass another Tabler icon with `icon` |
 | `Menu` | Secondary actions behind "…"; radius 8, overlay shadow |
 | `Tooltip` | Name of an icon-only control; radius 4 |
 | `Tabs` | Tabs of a `RecordPage`, a `fullWidth` `DocumentPage` and the view tabs of a `ListPage` (`tabs`); the selected tab lives in the URL |
-| `InboxList`, `InboxGroup`, `InboxRow` | A feed: `InboxList` (`framed`: one frame, rows ruled apart, scrolling inside itself in a list page), `InboxGroup` (a sticky group heading on the sunken tone, e.g. a day), `InboxRow` (`icon` leads, `aside` ends, an 8px dot while unread) |
+| `InboxList`, `InboxGroup`, `InboxRow` | A feed: `InboxList` (`framed`: one frame, rows ruled apart, scrolling inside itself in a list page), `InboxGroup` (a sticky group heading on the sunken tone, e.g. a day), `InboxRow` (`icon` leads, `aside` ends, an 8px dot while unread), `InboxIcon` (the item kind's icon, tinted in a circle, for `InboxRow`'s `icon`) |
 
 ## Building a new component
 
@@ -180,7 +187,7 @@ To switch between views of one feed (an activity feed's All · Comments · Chang
 3. Build it on Mantine primitives and theme tokens. Styling that props cannot express goes in a CSS module next to it, using only `var(--mantine-…)` and `var(--mmerp-…)` variables; a size specific to the component is allowed there with a one-line comment saying why.
 4. Pick the variant, size, radius and colour from the tables above and in `tokens.md`; a new look needs a new row here first, agreed before code.
 5. Cover every state it can be in: loading, empty, error, disabled, selected, focus, read-only; keyboard reachable, `aria-label` on icon-only controls.
-6. Add it to `/dev/ui` (`app/devui`, one sidebar entry per component) in each state, and add a row to this file.
+6. Add it to `/dev/ui` (`app/devui`): an `mmerp` entry in `catalogue.ts` (name, import `source`, `related`) and a `DocPage` showing its example and each state as a labelled `Case`, or a `Case` in the page of the family it belongs to; its one-line `about_`, `use_` and `avoid_` texts go in both locales (`catalogue.test.ts` checks them). Add a row to this file.
 
 ```tsx
 // shared/ui/Example.tsx
