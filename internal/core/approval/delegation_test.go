@@ -380,6 +380,37 @@ func TestManagerCannotDelegateToThemself(t *testing.T) {
 	}
 }
 
+func TestDelegatedSeatWithoutViewIsSkipped(t *testing.T) {
+	f := newFixture(t)
+	f.rule(f.user("boss"))
+	f.delegate("boss", "big_boss", 0, 1)
+	d, err := f.send("1", "a")
+	f.check(err)
+	f.denied[f.users["boss"]] = record.View // boss loses view after the step has started
+	if acts := f.panel("big_boss", d).Steps[0].AllowedActions; len(acts) != 0 {
+		t.Fatalf("big_boss actions %v", acts)
+	}
+	if code(f.appr.Approve(f.as("big_boss"), *d.ApprovalTicket, 1)) != "forbidden" {
+		t.Fatal("voted a seat whose holder could no longer view the document")
+	}
+}
+
+func TestDelegateSkipsAnExcludedSeat(t *testing.T) {
+	f := newFixture(t)
+	f.rule(f.by(2, 1, "c1", "c2"))
+	f.delegate("c1", "big_boss", 0, 1)
+	f.delegate("c2", "big_boss", 0, 1)
+	d, err := f.send("1", "a")
+	f.check(err)
+	f.subjects = []int64{f.users["c1"]} // c1's seat is now excluded; c2's still isn't
+	f.check(f.appr.Approve(f.as("big_boss"), *d.ApprovalTicket, 1))
+	v := f.panel("submitter", d).Steps[0].Voters
+	i := slices.IndexFunc(v, func(x approval.StepVoter) bool { return x.Name == "c2" })
+	if i < 0 || v[i].Decision == nil || *v[i].Decision != "approved" || v[i].CastByName == nil || *v[i].CastByName != "big_boss" {
+		t.Fatalf("voters %+v, want the vote on c2's seat", v)
+	}
+}
+
 func TestExcludedSeatCannotBeDelegated(t *testing.T) {
 	f := newFixture(t)
 	f.rule(f.user("boss"))

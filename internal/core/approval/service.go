@@ -454,16 +454,18 @@ func (s *Service) Withdraw(ctx context.Context, id int64) error {
 func (s *Service) vote(ctx context.Context, inst store.ApprovalInstance, st store.ApprovalInstanceStep, decision string, reason *string) (string, error) {
 	q := store.New(platform.DBFrom(ctx))
 	actor, _ := platform.ActorFrom(ctx)
-	seat, onBehalfOf, err := s.seatFor(ctx, st, actor)
+	// Approvers were fixed when the step started; who the document is about may have changed
+	// since. seatFor already skips a seat whose holder is now excluded, in favour of another
+	// pending one; this catches the actor's own exclusion, which no other seat works around.
+	excluded, err := s.excluded(ctx, inst, record.Ref{Type: inst.DocType, ID: inst.DocID})
 	if err != nil {
 		return "", err
 	}
-	// Approvers were fixed when the step started; who the document is about may have changed
-	// since. A delegate is checked as themself, not as the absent approver.
-	if excluded, err := s.excluded(ctx, inst, record.Ref{Type: inst.DocType, ID: inst.DocID}); err != nil {
+	seat, onBehalfOf, err := s.seatFor(ctx, record.Ref{Type: inst.DocType, ID: inst.DocID}, st, actor, excluded)
+	if err != nil {
 		return "", err
-	} else if slices.Contains(excluded, actor) || onBehalfOf != nil && slices.Contains(excluded, seat) {
-		// Nor may an excluded seat holder hand their vote to someone else.
+	}
+	if slices.Contains(excluded, actor) {
 		return "", ErrSelfApproval
 	}
 	var castBy *int64
@@ -499,10 +501,13 @@ func (s *Service) vote(ctx context.Context, inst store.ApprovalInstance, st stor
 	return status, q.SetStepStatus(ctx, store.SetStepStatusParams{InstanceID: inst.ID, Position: st.Position, Status: status})
 }
 
-// seatFor picks the seat the actor votes in step: their own while pending, else the first
-// pending seat, in approver order, of a voter whose active delegation names the actor.
-// Delegations are read at vote time and never chained, so a delegate's own delegate gets nothing.
-func (s *Service) seatFor(ctx context.Context, st store.ApprovalInstanceStep, actor int64) (int64, *int64, error) {
+// seatFor picks the seat the actor votes in step: their own while pending and not excluded,
+// else the first pending seat, in approver order, of a voter whose active delegation names
+// the actor, who isn't excluded and can still view the document. Delegations are read at
+// vote time and never chained, so a delegate's own delegate gets nothing. A seat that would
+// have matched but for exclusion yields ErrSelfApproval rather than ErrForbidden, so a
+// delegate who could have had a seat gets the same error voting it directly would.
+func (s *Service) seatFor(ctx context.Context, ref record.Ref, st store.ApprovalInstanceStep, actor int64, excluded []int64) (int64, *int64, error) {
 	q := store.New(platform.DBFrom(ctx))
 	votes, err := q.CastVotes(ctx, store.CastVotesParams{InstanceID: st.InstanceID, Position: st.Position})
 	if err != nil {
@@ -515,9 +520,12 @@ func (s *Service) seatFor(ctx context.Context, st store.ApprovalInstanceStep, ac
 		}
 		voted[v.UserID] = true
 	}
-	member := slices.Contains(st.Approvers, actor)
+	member, blocked := slices.Contains(st.Approvers, actor), false
 	if member && !voted[actor] {
-		return actor, nil, nil
+		if !slices.Contains(excluded, actor) {
+			return actor, nil, nil
+		}
+		blocked = true
 	}
 	today, err := s.d.Setting.Today(ctx)
 	if err != nil {
@@ -528,14 +536,27 @@ func (s *Service) seatFor(ctx context.Context, st store.ApprovalInstanceStep, ac
 		return 0, nil, err
 	}
 	for _, a := range st.Approvers {
-		if !voted[a] && slices.Contains(from, a) {
+		if voted[a] || !slices.Contains(from, a) {
+			continue
+		}
+		if slices.Contains(excluded, a) {
+			blocked = true
+			continue
+		}
+		if ok, err := s.d.Record.Can(s.d.IAM.AsUser(ctx, a), ref.Type, ref.ID, record.View); err != nil {
+			return 0, nil, err
+		} else if ok {
 			return a, &a, nil
 		}
 	}
-	if member { // their seat was voted by their own delegate
+	switch {
+	case member && voted[actor]: // their seat was voted by their own delegate
 		return 0, nil, ErrAlreadyVoted
+	case blocked:
+		return 0, nil, ErrSelfApproval
+	default:
+		return 0, nil, platform.ErrForbidden
 	}
-	return 0, nil, platform.ErrForbidden
 }
 
 // Reassign replaces voter from, who has not voted, with the user login; the step's
@@ -618,7 +639,8 @@ func (s *Service) Inbox(ctx context.Context) ([]InboxItem, error) {
 	if err != nil {
 		return nil, err
 	}
-	rows, err := store.New(platform.DBFrom(ctx)).Inbox(ctx, store.InboxParams{Actor: actor, Today: today})
+	q := store.New(platform.DBFrom(ctx))
+	rows, err := q.Inbox(ctx, store.InboxParams{Actor: actor, Today: today})
 	if err != nil {
 		return nil, err
 	}
@@ -629,13 +651,23 @@ func (s *Service) Inbox(ctx context.Context) ([]InboxItem, error) {
 		} else if !ok {
 			continue
 		}
-		// Own seats left out the excluded when the step started; a delegate is checked here.
+		// Own seats left out the excluded when the step started; a delegate is checked here,
+		// through the same seat choice vote and the panel use, so an excluded delegator never
+		// hides a seat another delegator could still fill.
 		if r.OnBehalfOf.Valid {
-			excluded, err := s.excluded(ctx, store.ApprovalInstance{SubmittedBy: r.SubmittedBy}, record.Ref{Type: r.DocType, ID: r.DocID})
+			ref := record.Ref{Type: r.DocType, ID: r.DocID}
+			excluded, err := s.excluded(ctx, store.ApprovalInstance{SubmittedBy: r.SubmittedBy}, ref)
 			if err != nil {
 				return nil, err
 			}
-			if slices.Contains(excluded, actor) || slices.Contains(excluded, r.OnBehalfOf.Int64) {
+			if slices.Contains(excluded, actor) {
+				continue
+			}
+			st, err := q.GetStep(ctx, store.GetStepParams{InstanceID: r.ID, Position: r.Step})
+			if err != nil {
+				return nil, err
+			}
+			if _, _, err := s.seatFor(ctx, ref, st, actor, excluded); err != nil {
 				continue
 			}
 		}
@@ -712,11 +744,11 @@ func (s *Service) DocumentInstance(ctx context.Context, ref record.Ref) (*Instan
 			v.Voters = append(v.Voters, sv)
 		}
 		if writable && r.Status == "open" {
-			seat, onBehalfOf, err := s.seatFor(ctx, store.ApprovalInstanceStep{InstanceID: inst.ID, Position: r.Position, Approvers: r.Approvers}, actor)
-			if err != nil && !errors.Is(err, platform.ErrForbidden) && !errors.Is(err, ErrAlreadyVoted) {
+			_, _, err := s.seatFor(ctx, ref, store.ApprovalInstanceStep{InstanceID: inst.ID, Position: r.Position, Approvers: r.Approvers}, actor, excluded)
+			if err != nil && !errors.Is(err, platform.ErrForbidden) && !errors.Is(err, ErrAlreadyVoted) && !errors.Is(err, ErrSelfApproval) {
 				return nil, err
 			}
-			if err == nil && !slices.Contains(excluded, actor) && (onBehalfOf == nil || !slices.Contains(excluded, seat)) {
+			if err == nil && !slices.Contains(excluded, actor) {
 				v.AllowedActions = append(v.AllowedActions, "approve", "reject")
 			}
 			if fallback {
