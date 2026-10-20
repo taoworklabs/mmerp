@@ -145,16 +145,12 @@
   "shared.devui.case_error": "Could not load: ErrorState with Retry",
   "shared.devui.case_not_found": "Link to nothing (404): NotFoundPage",
   "shared.devui.case_forbidden": "Not allowed (403): ForbiddenPage",
-  "shared.devui.query_view": "Query region",
-  "shared.devui.query_view_hint": "QueryView picks what a region fed by one query shows. Switch the state to see each one; a screen never writes these branches by hand.",
   "shared.devui.query_loading": "Loading",
   "shared.devui.query_error": "Error",
   "shared.devui.query_empty": "Empty",
   "shared.devui.query_no_results": "Filtered out",
   "shared.devui.query_not_found": "404",
   "shared.devui.query_data": "Data",
-  "shared.devui.use_action": "Region action",
-  "shared.devui.use_action_hint": "useAction runs one action of a region: asks first when it cannot be undone, keeps a failure next to the region, toasts a success.",
   "shared.devui.use_action_region": "The region's list or content sits here.",
   "shared.devui.send_test": "Send test",
   "shared.devui.toast_test_sent": "Test message sent.",
@@ -748,5 +744,7 @@
   "shared.devui.case_create_modal": "Creating a small item in a dialog",
   "shared.devui.case_edit_in_place": "Editing a group of values in place",
   "shared.devui.dont_confirm_undoable": "Asking to confirm something undoable: apply it and offer Undo.",
-  "shared.devui.built_from": "Built from:"
+  "shared.devui.built_from": "Built from:",
+  "shared.devui.yes": "Yes",
+  "shared.devui.edit_in_place_see": "Each group of a record's values is an EditablePanel, edited in place with its own Save."
 }
