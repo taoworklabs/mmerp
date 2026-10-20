@@ -1,5 +1,5 @@
 import { expect, test, type APIRequestContext, type Browser, type Page } from '@playwright/test'
-import { created, createUser, employee, password, signedInApi, runId } from './api'
+import { created, createUser, employee, password, signedInApi, runId, toFlow } from './api'
 import { admin } from './helpers'
 
 // One run: department Q with manager M; employees E, E2 and E3 report to M. HR users of Q: hr
@@ -40,13 +40,13 @@ test.beforeAll(async ({ baseURL }) => {
   const open = await created(api.post('/api/hrm/contract-types', { data: { name: kinds.open, fixed_term: false, active: true } }))
   const fixed = await created(api.post('/api/hrm/contract-types', { data: { name: kinds.fixed, fixed_term: true, active: true } }))
   for (const [type, steps] of [
-    ['hrm.contract', [{ approver: { kind: 'user', user_id: dirId } }]],
+    ['hrm.contract', [{ approver: { kind: 'user', user_ids: [dirId] } }]],
     [
       'hrm.overtime_request',
-      [{ approver: { kind: 'module' } }, { condition: { field: 'day_kind', op: 'eq', value: 'holiday' }, approver: { kind: 'user', user_id: dirId } }],
+      [{ approver: { kind: 'module' } }, { condition: { field: 'day_kind', op: 'eq', value: 'holiday' }, approver: { kind: 'user', user_ids: [dirId] } }],
     ],
   ] as const) {
-    const rule = await api.put(`/api/approval-rules/${type}`, { data: { steps, max_levels: 3, fallback_product: 'hrm', fallback_role: 'hr' } })
+    const rule = await api.put(`/api/approval-rules/${type}`, { data: { flow: toFlow(steps), max_levels: 3, fallback_product: 'hrm', fallback_role: 'hr' } })
     expect(rule.status(), await rule.text()).toBe(204)
   }
   ids = { q, m, e, e2, e3, open, fixed }
@@ -86,7 +86,7 @@ async function contractViaApi(employeeId: number, kind: number, start: string, e
   )
   if (!send) return id
   const res = await api.post(`/api/documents/hrm.contract/${id}/transitions`, { data: { to: 'posted', version: 1 } })
-  expect(res.status(), await res.text()).toBe(204)
+  expect(res.status(), await res.text()).toBe(200)
   await approveAsDir(id)
   return id
 }
@@ -195,7 +195,7 @@ test.describe('contracts', () => {
     const h = await created(api.post('/api/hrm/employees', { data: employee(`M4H${run}`, ids.q, { manager_id: ids.m }) }))
     await contractViaApi(h, ids.open, '2024-01-01', null)
     const second = await contractViaApi(h, ids.fixed, '2026-03-01', '2026-08-31', false)
-    expect((await api.post(`/api/documents/hrm.contract/${second}/transitions`, { data: { to: 'posted', version: 1 } })).status()).toBe(204)
+    expect((await api.post(`/api/documents/hrm.contract/${second}/transitions`, { data: { to: 'posted', version: 1 } })).status()).toBe(200)
     const d = await as(browser, login.dir, `/hrm/contracts/${second}`)
     await d.getByRole('button', { name: 'Duyệt', exact: true }).click()
     await expect(d.getByText(/Nhân viên đã có hợp đồng có hiệu lực trùng thời hạn này/)).toBeVisible()

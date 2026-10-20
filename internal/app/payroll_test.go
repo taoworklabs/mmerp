@@ -24,7 +24,7 @@ func (f *jobsFixture) payrollSetup() *client {
 	for _, e := range []int64{f.e1, f.e2} {
 		id := f.id(c, "/api/hrm/contracts", fmt.Sprintf(`{"employee_id":%d,"contract_type_id":%d,"start_date":"2026-01-01","end_date":null,
 			"terms":{"salary":22000000,"lines":[]}}`, e, kind))
-		f.ok(c, "POST", fmt.Sprintf("/api/documents/hrm.contract/%d/transitions", id), `{"to":"posted","version":1}`, 204)
+		f.ok(c, "POST", fmt.Sprintf("/api/documents/hrm.contract/%d/transitions", id), `{"to":"posted","version":1}`, 200)
 	}
 	return c
 }
@@ -90,14 +90,14 @@ func TestPayrollSampleFlow(t *testing.T) {
 	f := newJobsFixture(t)
 	f.work([]string{"hrm"})
 	f.wait(f.hr, f.upload(f.hr, "hrm.timesheet", f.params(), march()...))
-	f.ok(f.hr, "POST", fmt.Sprintf("/api/documents/hrm.timesheet/%d/transitions", f.timesheet), `{"to":"posted","version":2}`, 204)
+	f.ok(f.hr, "POST", fmt.Sprintf("/api/documents/hrm.timesheet/%d/transitions", f.timesheet), `{"to":"posted","version":2}`, 200)
 	f.approveAll(204)
 	pay := f.payrollSetup()
 	f.ok(f.admin, "PUT", "/api/approval-rules/hrm.overtime_request",
-		`{"steps":[{"approver":{"kind":"role","product":"hrm","role":"hr"}}],"max_levels":3,"fallback_product":"hrm","fallback_role":"hr"}`, 204)
+		`{"flow":[{"step":{"approver":{"kind":"role","product":"hrm","role":"hr"},"approvals":1,"rejections":1}}],"max_levels":3,"fallback_product":"hrm","fallback_role":"hr"}`, 204)
 	overtime := func(date string) int64 {
 		id := f.id(f.hr, "/api/hrm/overtimes", fmt.Sprintf(`{"employee_id":%d,"date":%q,"day_kind":"weekday","day_hours":"2","night_hours":"0","reason":null}`, f.e1, date))
-		f.ok(f.hr, "POST", fmt.Sprintf("/api/documents/hrm.overtime_request/%d/transitions", id), `{"to":"posted","version":1}`, 204)
+		f.ok(f.hr, "POST", fmt.Sprintf("/api/documents/hrm.overtime_request/%d/transitions", id), `{"to":"posted","version":1}`, 200)
 		return id
 	}
 
@@ -124,7 +124,7 @@ func TestPayrollSampleFlow(t *testing.T) {
 	if told := notifications(pay).Items; len(told) == 0 || told[0].Kind != "job_completed" || told[0].JobID == nil || *told[0].JobID != queued.JobID {
 		t.Fatalf("pay told %+v", told)
 	}
-	f.ok(pay, "POST", fmt.Sprintf("/api/documents/hrm.payroll/%d/transitions", id), fmt.Sprintf(`{"to":"posted","version":%d}`, f.payroll(pay, id).Version), 204)
+	f.ok(pay, "POST", fmt.Sprintf("/api/documents/hrm.payroll/%d/transitions", id), fmt.Sprintf(`{"to":"posted","version":%d}`, f.payroll(pay, id).Version), 200)
 	var lines, others int
 	if err := f.pool.QueryRow(t.Context(), `SELECT count(*) FROM posting.lines WHERE doc_id = $1 AND voided_at IS NULL`, id).Scan(&lines); err != nil {
 		t.Fatal(err)
@@ -142,7 +142,7 @@ func TestPayrollSampleFlow(t *testing.T) {
 	}
 	// 12': nor can March be locked while it waits.
 	wantCode(t, f.admin.do("PUT", fmt.Sprintf("/api/period-locks/%d", f.legalEntity()), `{"locked_until":"2026-03-31"}`), 409, "period_has_pending_documents")
-	f.ok(f.hr, "POST", fmt.Sprintf("/api/documents/hrm.overtime_request/%d/transitions", late), `{"to":"draft","version":1}`, 204)
+	f.ok(f.hr, "POST", fmt.Sprintf("/api/documents/hrm.overtime_request/%d/transitions", late), `{"to":"draft","version":1}`, 200)
 	f.ok(f.admin, "PUT", fmt.Sprintf("/api/period-locks/%d", f.legalEntity()), `{"locked_until":"2026-03-31"}`, 204)
 	// 13: the timesheet cannot be cancelled.
 	wantCode(t, f.hr.do("POST", fmt.Sprintf("/api/documents/hrm.timesheet/%d/transitions", f.timesheet), `{"to":"cancelled","version":3}`), 409, "period_locked")

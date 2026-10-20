@@ -187,7 +187,7 @@ func TestLeaveAttachments(t *testing.T) {
 	wantCode(t, c.do("GET", "/api/attachments/999999", ""), 404, "not_found")
 
 	// Posted: the lock date does not hold attachments back.
-	ok(c, "POST", docPath+"/transitions", `{"to":"posted","version":1}`, 204)
+	ok(c, "POST", docPath+"/transitions", `{"to":"posted","version":1}`, 200)
 	ok(c, "PUT", fmt.Sprintf("/api/period-locks/%d", company), `{"locked_until":"2026-03-31"}`, 204)
 	if rec := upload(c, files, "sau-khoa.pdf", pdf); rec.Code != 204 {
 		t.Fatalf("upload in a locked period = %d %s", rec.Code, rec.Body)
@@ -207,7 +207,7 @@ func TestLeaveAttachments(t *testing.T) {
 	wantCode(t, upload(off, files, "x.pdf", pdf), 403, "product_not_enabled")
 
 	// Cancelled: still read, no more added.
-	ok(c, "POST", docPath+"/transitions", `{"to":"cancelled","version":2}`, 204)
+	ok(c, "POST", docPath+"/transitions", `{"to":"cancelled","version":2}`, 200)
 	if l := listAttachments(c, files); len(l.Items) != 3 || len(l.AllowedActions) != 0 {
 		t.Fatalf("cancelled = %+v", l)
 	}
@@ -307,8 +307,8 @@ func TestRemoveLeaveAttachments(t *testing.T) {
 	}
 	wantCode(t, off.do("DELETE", fmt.Sprintf("/api/attachments/%d", staffFile), ""), 403, "product_not_enabled")
 
-	ok(admin, "POST", docPath+"/transitions", `{"to":"posted","version":1}`, 204)
-	ok(admin, "POST", docPath+"/transitions", `{"to":"cancelled","version":2}`, 204)
+	ok(admin, "POST", docPath+"/transitions", `{"to":"posted","version":1}`, 200)
+	ok(admin, "POST", docPath+"/transitions", `{"to":"cancelled","version":2}`, 200)
 	if l := listAttachments(staffC, files); len(l.Items) != 1 || len(l.Items[0].AllowedActions) != 0 {
 		t.Fatalf("cancelled = %+v", l)
 	}

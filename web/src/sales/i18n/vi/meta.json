@@ -17,6 +17,7 @@
   "sales.quote.status.posted": "Đã duyệt",
   "sales.order.status.posted": "Đã xác nhận",
   "sales.doc.max_discount": "Chiết khấu cao nhất (%)",
+  "sales.doc.items": "Mặt hàng",
   "sales.preview.customer": "Khách hàng",
   "sales.preview.date": "Ngày",
   "sales.preview.valid_until": "Hiệu lực đến",
@@ -38,5 +39,6 @@
   "sales.error.order_delivery_before_date": "Ngày giao không được trước ngày đơn hàng.",
   "sales.error.quote_expired": "Báo giá đã hết hiệu lực nên không tạo được đơn hàng. Lập báo giá mới hoặc tạo đơn trực tiếp.",
   "sales.error.quote_not_posted": "Chỉ báo giá đã duyệt mới tạo được đơn hàng.",
-  "sales.error.quote_has_order": "Báo giá đã có đơn hàng. Hủy đơn hàng trước khi hủy báo giá."
+  "sales.error.quote_has_order": "Báo giá đã có đơn hàng. Hủy đơn hàng trước khi hủy báo giá.",
+  "sales.action.create_order": "Tạo đơn bán hàng"
 }

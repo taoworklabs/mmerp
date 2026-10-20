@@ -55,7 +55,8 @@ export function DocPage({ kind }: { kind: Kind }) {
   )
 }
 
-// CreateOrderButton makes an order from the quotation and opens it.
+// CreateOrderButton makes an order from the quotation and opens it; when a rule makes that wait
+// for approval, it stays on the quotation.
 function CreateOrderButton({ quote, onError }: { quote: Doc; onError: (message: string | null) => void }) {
   const { t } = useTranslation()
   const navigate = useNavigate()
@@ -65,8 +66,9 @@ function CreateOrderButton({ quote, onError }: { quote: Doc; onError: (message: 
     setOrdering(true)
     onError(null)
     try {
-      const { id: order } = await unwrap(api.POST('/sales/quotes/{id}/order', { params: { path: { id: quote.id } } }))
+      const { id: order, held } = await unwrap(api.POST('/sales/quotes/{id}/order', { params: { path: { id: quote.id } } }))
       await invalidate(quoteDocType, quote.id)
+      if (held) return notifySuccess(t('shared.document.sent_for_approval', { number: quote.number }))
       notifySuccess(t('sales.quote.ordered'))
       navigate(`/sales/orders/${order}`)
     } catch (err) {

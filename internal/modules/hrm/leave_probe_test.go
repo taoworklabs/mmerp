@@ -35,7 +35,11 @@ func (f *leaveFixture) steps(id int64) string {
 	}
 	out := ""
 	for _, s := range inst.Steps {
-		out += fmt.Sprintf("[step %d approvers=%v fallback=%v]", s.Position, s.ApproverNames, s.Fallback)
+		var names []string
+		for _, v := range s.Voters {
+			names = append(names, v.Name)
+		}
+		out += fmt.Sprintf("[step %d approvers=%v fallback=%v]", s.Position, names, s.Fallback)
 	}
 	return fmt.Sprintf("%s %s", inst.Status, out)
 }
@@ -56,7 +60,7 @@ func TestProbeNP10UnpaidBalance(t *testing.T) {
 
 	// Cancelling it must not hand back days it never took.
 	l := f.leave(id)
-	err := f.rec.Transition(f.hr, record.Ref{Type: "hrm.leave_request", ID: id}, l.Version, record.Cancelled)
+	_, err := f.rec.Transition(f.hr, record.Ref{Type: "hrm.leave_request", ID: id}, l.Version, record.Cancelled)
 	t.Logf("NP-10 cancelling it: %v → balance %s", err, f.balance())
 }
 

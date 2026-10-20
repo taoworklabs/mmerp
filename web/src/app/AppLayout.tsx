@@ -26,9 +26,9 @@ export function AppLayout({ areas }: { areas: AreaManifest[] }) {
   const me = useMe()
   const { pathname } = useLocation()
   const area = areas.find((a) => inArea(a, pathname))
-  // Notifications, inbox and jobs open inside the current area; from home, at the root.
+  // Notifications, inbox, delegations and jobs open inside the current area; from home, at the root.
   const own = (page: string) => (area ? join(area.basePath, page) : `/${page}`)
-  const onOwn = ['notifications', 'inbox', 'jobs'].some((page) => pathname === own(page))
+  const onOwn = ['notifications', 'inbox', 'delegations', 'jobs'].some((page) => pathname === own(page))
   // Home has no sidebar.
   const nav = area ? area.nav.filter((item) => can(me, item.permission)) : []
   const [drawer, { toggle: toggleDrawer, close: closeDrawer }] = useDisclosure()

@@ -53,7 +53,7 @@ func newJobsFixture(t *testing.T) *jobsFixture {
 	f.e1, f.e2 = employee("E1", f.p, "2026-01-05"), employee("E2", f.p, "2026-03-10")
 	employee("E3", q, "2026-01-05")
 	f.ok(f.admin, "PUT", "/api/approval-rules/hrm.timesheet",
-		`{"steps":[{"approver":{"kind":"role","product":"hrm","role":"hr"}}],"max_levels":3,"fallback_product":"hrm","fallback_role":"hr"}`, 204)
+		`{"flow":[{"step":{"approver":{"kind":"role","product":"hrm","role":"hr"},"approvals":1,"rejections":1}}],"max_levels":3,"fallback_product":"hrm","fallback_role":"hr"}`, 204)
 	f.timesheet = f.id(f.hr, "/api/hrm/timesheets", fmt.Sprintf(`{"org_unit_id":%d,"month":"2026-03"}`, f.p))
 	return f
 }
@@ -247,7 +247,7 @@ func TestTimesheetImportSampleFlow(t *testing.T) {
 	}
 
 	// Draft → pending → approved by head → posted.
-	f.ok(f.hr, "POST", fmt.Sprintf("/api/documents/hrm.timesheet/%d/transitions", f.timesheet), `{"to":"posted","version":3}`, 204)
+	f.ok(f.hr, "POST", fmt.Sprintf("/api/documents/hrm.timesheet/%d/transitions", f.timesheet), `{"to":"posted","version":3}`, 200)
 	var inbox struct {
 		Items []struct {
 			InstanceID int64 `json:"instance_id"`

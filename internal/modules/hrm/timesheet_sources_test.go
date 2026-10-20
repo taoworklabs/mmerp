@@ -66,7 +66,7 @@ func TestCancelledOvertimeLeavesThePayroll(t *testing.T) {
 	if _, amount := f.paidDays(f.payroll("2026-04")); amount != 375_000 {
 		t.Fatalf("posted: overtime %d, want 2h × 125,000 × 150%%", amount)
 	}
-	f.check(f.rec.Transition(f.pay, record.Ref{Type: "hrm.overtime_request", ID: id}, 2, record.Cancelled))
+	f.check(errOf(f.rec.Transition(f.pay, record.Ref{Type: "hrm.overtime_request", ID: id}, 2, record.Cancelled)))
 	if _, amount := f.paidDays(f.payroll("2026-04")); amount != 0 {
 		t.Fatalf("cancelled: overtime %d, want 0", amount)
 	}

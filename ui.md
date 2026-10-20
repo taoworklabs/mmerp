@@ -197,6 +197,7 @@ Use the fields of `shared/ui/form`, already wired to React Hook Form.
 | Money | `MoneyField` | Integer, with thousands separators, no decimals for VND |
 | Fractional quantity | `DecimalField` | Number of decimals declared by the field (e.g. workdays: 1) |
 | Pick one from a list | `SelectField` | Has a search box when there are more than 7 options. Lists only valid options: what cannot be chosen is not shown. The selected option only gets a background, no check mark. The dropdown opens below the field's error message, never covering it |
+| Pick several from a list | `MultiSelectField` | Wired to a `string[]`; same look as `SelectField` (search past 7 options, no check mark); `max` caps the selection |
 | Org unit | `OrgUnitField` | Tree; shows only the units within the user's permission scope |
 | Legal entity | `LegalEntityField` | Only the legal entities within the user's permission scope; the only one is picked already |
 | A business record (employee, customer, item) | The area's picker on `RemoteSelectField` | Searched on the server, a page of 20; label `code · name`; keeps its value's label when a search does not return it |
@@ -219,7 +220,7 @@ What `shared/ui` already has (see also `/dev/ui`), to use before building your o
 - States (`states.tsx`): `EmptyState`, `ErrorState`, `PageSkeleton`, `ContentSkeleton`, `ForbiddenPage`, `NotFoundPage`, `ReadOnlyBanner`; `QueryView` picks among them for a region fed by one query; `Notice` is a banner whose tone sets colour and icon.
 - Menus: `MoreActions` holds `MenuAction`s (icon at text size, `danger` for an action that loses something).
 - Display: `DataTable`, `FieldList`, `StatusBadge`, `CellGrid` (grid of inputs along two axes, like a timesheet), `TileGrid`/`StatTile`/`LinkTile`, `OrgUnitName`, `PersonName`/`PersonAvatar`.
-- Forms (`shared/ui/form`): `Form`, `FormSection`, `InputRow`, `FormActions`, `FormFields`, `EditablePanel`; fields `TextField`, `PasswordField`, `CheckboxField`, `DateField`, `MonthField`, `FileField`, `SelectField`, `DecimalField`, `MoneyField`, `SensitiveField`, `SensitiveValue`, `OrgUnitField`, `LegalEntityField`, `RemoteSelectField`; filters `SearchInput`, `FilterChip`, `OrgUnitFilter`, `LegalEntityFilter`, `MonthFilter`, `YearFilter`.
+- Forms (`shared/ui/form`): `Form`, `FormSection`, `InputRow`, `FormActions`, `FormFields`, `EditablePanel`; fields `TextField`, `PasswordField`, `CheckboxField`, `DateField`, `MonthField`, `FileField`, `SelectField`, `MultiSelectField`, `DecimalField`, `MoneyField`, `SensitiveField`, `SensitiveValue`, `OrgUnitField`, `LegalEntityField`, `RemoteSelectField`; filters `SearchInput`, `FilterChip`, `OrgUnitFilter`, `LegalEntityFilter`, `MonthFilter`, `YearFilter`.
 - Outside `shared/ui`: `useListParams` (`shared/url`: filters, sort, page in the URL, and the `filterBar` a filter bar binds its chips to), `ExportButton`/`ImportDialog` (`shared/jobs`), `OrgTree` (`shared/org`).
 
 - Area components are **assembled from `shared/ui` primitives** and follow exactly the rules of this document: no custom colours, no inline `style`, no page-level layout of their own.

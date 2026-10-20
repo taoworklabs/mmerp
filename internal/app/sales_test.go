@@ -54,7 +54,7 @@ func (f *salesFixture) moveQuote(to string) {
 	f.t.Helper()
 	var d struct{ Version int32 }
 	_ = json.Unmarshal(f.ok(f.staffA, "GET", fmt.Sprintf("/api/sales/quotes/%d", f.quote), "", 200), &d)
-	f.ok(f.staffA, "POST", fmt.Sprintf("/api/documents/sales.quote/%d/transitions", f.quote), fmt.Sprintf(`{"to":%q,"version":%d}`, to, d.Version), 204)
+	f.ok(f.staffA, "POST", fmt.Sprintf("/api/documents/sales.quote/%d/transitions", f.quote), fmt.Sprintf(`{"to":%q,"version":%d}`, to, d.Version), 200)
 }
 
 // A posted quotation prints the same after its customer and the seller are edited; team B

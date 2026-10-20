@@ -1,5 +1,5 @@
 import { expect, test, type APIRequestContext, type Browser, type Page } from '@playwright/test'
-import { created, createUser, employee, password, signedInApi, runId } from './api'
+import { created, createUser, employee, password, signedInApi, runId, toFlow } from './api'
 import { signedIn } from './helpers'
 
 // One run: department P with M5E01, M5E02 and M5E03 (who joins on 16/03), the codes the
@@ -32,7 +32,7 @@ test.beforeAll(async ({ baseURL }) => {
   await createUser(api, login.hr, [{ role: 'hrm.hr', unit: p }])
   const dir = await createUser(api, login.dir, [{ role: 'hrm.hr', unit: null }])
   const rule = await api.put('/api/approval-rules/hrm.timesheet', {
-    data: { steps: [{ approver: { kind: 'user', user_id: dir } }], max_levels: 3, fallback_product: 'hrm', fallback_role: 'hr' },
+    data: { flow: toFlow([{ approver: { kind: 'user', user_ids: [dir] } }]), max_levels: 3, fallback_product: 'hrm', fallback_role: 'hr' },
   })
   expect(rule.status(), await rule.text()).toBe(204)
 })

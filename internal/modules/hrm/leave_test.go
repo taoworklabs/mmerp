@@ -82,14 +82,20 @@ func (f *leaveFixture) check(err error) {
 }
 
 func (f *leaveFixture) send(ctx context.Context, id int64) error {
-	return f.rec.Transition(ctx, record.Ref{Type: "hrm.leave_request", ID: id}, f.leave(id).Version, record.Posted)
+	return errOf(f.rec.Transition(ctx, record.Ref{Type: "hrm.leave_request", ID: id}, f.leave(id).Version, record.Posted))
 }
 
 // ruleManager makes every leave request need the direct manager's approval.
 func (f *leaveFixture) ruleManager() {
 	f.t.Helper()
-	f.check(f.appr.SaveRule(f.admin, "hrm.leave_request", approval.RuleInput{
-		Steps: []approval.Step{{Approver: approval.Approver{Kind: "module"}}}, MaxLevels: 3, FallbackProduct: "hrm", FallbackRole: "hr",
+	f.ruleFor(record.Post)
+}
+
+// ruleFor routes action on leave requests to the employee's manager.
+func (f *leaveFixture) ruleFor(action record.Action) {
+	f.t.Helper()
+	f.check(f.appr.SaveRule(f.admin, "hrm.leave_request", action, approval.RuleInput{
+		Flow: approval.Flow{{Step: &approval.StepDef{Approver: approval.Approver{Kind: "module"}}}}, MaxLevels: 3, FallbackProduct: "hrm", FallbackRole: "hr",
 	}))
 }
 
@@ -99,6 +105,9 @@ func errCode(err error) string {
 	}
 	return ""
 }
+
+// errOf drops Transition's held result where only the error matters.
+func errOf(_ bool, err error) error { return err }
 
 func wantErr(t *testing.T, err error, code string) {
 	t.Helper()
@@ -113,8 +122,8 @@ func TestLeaveSampleFlow(t *testing.T) {
 	// Two approvers for the department: the head and the deputy.
 	f.ctxFor("head", "hr@A")
 	f.ctxFor("deputy", "hr@A")
-	f.check(f.appr.SaveRule(f.admin, "hrm.leave_request", approval.RuleInput{
-		Steps: []approval.Step{{Approver: approval.Approver{Kind: "role", Product: "hrm", Role: "hr"}}}, MaxLevels: 3, FallbackProduct: "hrm", FallbackRole: "hr",
+	f.check(f.appr.SaveRule(f.admin, "hrm.leave_request", record.Post, approval.RuleInput{
+		Flow: approval.Flow{{Step: &approval.StepDef{Approver: approval.Approver{Kind: "role", Product: "hrm", Role: "hr"}}}}, MaxLevels: 3, FallbackProduct: "hrm", FallbackRole: "hr",
 	}))
 	head, deputy := f.loginCtx("head"), f.loginCtx("deputy")
 	f.grant("12")
@@ -145,7 +154,7 @@ func TestLeaveSampleFlow(t *testing.T) {
 	wantErr(t, f.hrm.UpdateLeave(f.e, id, hrm.LeaveUpdate{Version: 2, LeaveFields: f.fields("2026-03-10", "2026-03-11", "2")}), "document_not_editable")
 	ticket1 := f.ticket(id)
 	// 4. E withdraws, edits to 5 days, sends again.
-	f.check(f.rec.Transition(f.e, record.Ref{Type: "hrm.leave_request", ID: id}, 2, record.Draft))
+	f.check(errOf(f.rec.Transition(f.e, record.Ref{Type: "hrm.leave_request", ID: id}, 2, record.Draft)))
 	f.check(f.hrm.UpdateLeave(f.e, id, hrm.LeaveUpdate{Version: 3, LeaveFields: f.fields("2026-03-10", "2026-03-16", "5")}))
 	f.check(f.send(f.e, id))
 	if l := f.leave(id); l.Version != 4 {
@@ -180,7 +189,7 @@ func TestLeaveSampleFlow(t *testing.T) {
 	// The lock wins: the cancel waits, then reads the new lock date.
 	f.check(platform.InTx(f.admin, func(ctx context.Context) error {
 		f.check(f.rec.SetPeriodLock(ctx, f.c, str("2026-03-31")))
-		wg.Go(func() { cancelled = f.rec.Transition(f.hr, ref, 5, record.Cancelled) })
+		wg.Go(func() { _, cancelled = f.rec.Transition(f.hr, ref, 5, record.Cancelled) })
 		pgtest.AwaitLockWait(t, f.pool)
 		return nil
 	}))
@@ -190,7 +199,7 @@ func TestLeaveSampleFlow(t *testing.T) {
 	// The cancel wins: the lock waits for it and then succeeds.
 	var locked error
 	f.check(platform.InTx(f.hr, func(ctx context.Context) error {
-		f.check(f.rec.Transition(ctx, ref, 5, record.Cancelled))
+		f.check(errOf(f.rec.Transition(ctx, ref, 5, record.Cancelled)))
 		wg.Go(func() { locked = f.rec.SetPeriodLock(f.admin, f.c, str("2026-03-31")) })
 		pgtest.AwaitLockWait(t, f.pool)
 		return nil
@@ -229,7 +238,7 @@ func TestPendingLeaveBlocksPeriodLock(t *testing.T) {
 	if len(docs) != 1 || docs[0]["id"] != id {
 		t.Fatalf("listed %v", docs)
 	}
-	f.check(f.rec.Transition(f.e, record.Ref{Type: "hrm.leave_request", ID: id}, f.leave(id).Version, record.Draft))
+	f.check(errOf(f.rec.Transition(f.e, record.Ref{Type: "hrm.leave_request", ID: id}, f.leave(id).Version, record.Draft)))
 	f.check(f.rec.SetPeriodLock(f.admin, f.c, str("2026-03-31")))
 }
 
@@ -310,7 +319,7 @@ func TestLeavePermissions(t *testing.T) {
 	if acts := f.leave(id).AllowedActions; len(acts) != 0 {
 		t.Fatalf("HR pending actions %v", acts)
 	}
-	wantErr(t, f.rec.Transition(f.hr, record.Ref{Type: "hrm.leave_request", ID: id}, f.leave(id).Version, record.Draft), "forbidden")
+	wantErr(t, errOf(f.rec.Transition(f.hr, record.Ref{Type: "hrm.leave_request", ID: id}, f.leave(id).Version, record.Draft)), "forbidden")
 	f.check(f.appr.Approve(f.m, f.ticket(id), 1))
 	if l, _ := f.hrm.Leave(f.e, id); len(l.AllowedActions) != 0 {
 		t.Fatalf("E cannot cancel an approved request: %v", l.AllowedActions)
@@ -355,7 +364,7 @@ func TestLeaveRecordContract(t *testing.T) {
 				return f.hrm.UpdateLeave(ctx, r.ID, hrm.LeaveUpdate{Version: version, LeaveFields: f.fields(date, date, "1")})
 			},
 			Get:             func(ctx context.Context, r record.Ref) (any, error) { return f.hrm.Leave(ctx, r.ID) },
-			RequireApproval: func(*testing.T) { f.ruleManager() },
+			RequireApproval: func(_ *testing.T, action record.Action) { f.ruleFor(action) },
 			Approve:         func(instance int64) error { return f.appr.Approve(f.m, instance, 1) },
 			Reject:          func(instance int64) error { return f.appr.Reject(f.m, instance, 1, "không") },
 			// The leave type comes to need a supporting file.
@@ -393,13 +402,15 @@ func TestTheEmployeeNeverApprovesTheirOwnLeave(t *testing.T) {
 	f.check(err)
 	must(t)(f.iam.GrantRole(f.admin, eID, "hrm", "hr", &f.a))
 	f.ctxFor("head", "hr@A")
-	f.check(f.appr.SaveRule(f.admin, "hrm.leave_request", approval.RuleInput{
-		Steps: []approval.Step{{Approver: approval.Approver{Kind: "role", Product: "hrm", Role: "hr"}}}, MaxLevels: 3, FallbackProduct: "hrm", FallbackRole: "hr",
+	f.check(f.appr.SaveRule(f.admin, "hrm.leave_request", record.Post, approval.RuleInput{
+		Flow: approval.Flow{{Step: &approval.StepDef{Approver: approval.Approver{Kind: "role", Product: "hrm", Role: "hr"}}}}, MaxLevels: 3, FallbackProduct: "hrm", FallbackRole: "hr",
 	}))
 	id := must(t)(f.hrm.CreateLeave(f.hr, hrm.NewLeave{EmployeeID: &f.emp, LeaveFields: f.fields("2026-03-10", "2026-03-10", "1")}))
 	f.check(f.send(f.hr, id))
 	wantErr(t, f.appr.Approve(f.e, f.ticket(id), 1), "forbidden")
-	wantErr(t, f.appr.Reassign(f.hr, f.ticket(id), 1, "e"), "self_approval")
+	hrID, err := f.iam.UserIDByLogin(f.admin, "hr")
+	f.check(err)
+	wantErr(t, f.appr.Reassign(f.hr, f.ticket(id), 1, hrID, "e"), "self_approval")
 	// Linking head's account to E after the step started does not let head approve E's leave.
 	e := employee("E", f.a)
 	e.UserLogin = str("head")
@@ -477,7 +488,7 @@ func TestCancelRefundsWhatWasDeducted(t *testing.T) {
 		t.Fatalf("after approval %s", f.balance())
 	}
 	must(t)(f.hrm.SaveLeaveType(f.hr, f.annual, hrm.LeaveTypeInput{Name: "Phép năm", DeductsBalance: false, Active: true}))
-	f.check(f.rec.Transition(f.hr, record.Ref{Type: "hrm.leave_request", ID: id}, f.leave(id).Version, record.Cancelled))
+	f.check(errOf(f.rec.Transition(f.hr, record.Ref{Type: "hrm.leave_request", ID: id}, f.leave(id).Version, record.Cancelled)))
 	if f.balance() != "12" {
 		t.Fatalf("after cancel %s", f.balance())
 	}

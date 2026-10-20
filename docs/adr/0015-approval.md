@@ -1,6 +1,6 @@
 # 0015. Module `approval`: rules, approval instances, approval inbox
 
-Status: accepted · 2026-10-05
+Status: accepted · 2026-10-05 · rules and instances superseded by ADR-0036
 
 ## Context
 

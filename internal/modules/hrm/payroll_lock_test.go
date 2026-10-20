@@ -41,7 +41,7 @@ func TestLeaveAcrossTwoMonthsHitsAClosedPeriod(t *testing.T) {
 	f.check(f.send(f.e, may))
 	f.check(f.appr.Approve(f.m, f.ticket(may), 1))
 	f.closePeriod("2026-05-01", "2026-05-31", may)
-	wantErr(t, f.rec.Transition(f.hr, record.Ref{Type: "hrm.leave_request", ID: may}, f.leave(may).Version, record.Cancelled), "payroll_period_closed")
+	wantErr(t, errOf(f.rec.Transition(f.hr, record.Ref{Type: "hrm.leave_request", ID: may}, f.leave(may).Version, record.Cancelled)), "payroll_period_closed")
 }
 
 func errParams(err error) map[string]any {

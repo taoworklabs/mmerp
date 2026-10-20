@@ -8,6 +8,8 @@
   "notification.email.approval_approved.body": "Một chứng từ bạn gửi trên mmerp đã được duyệt.",
   "notification.email.approval_rejected.subject": "Chứng từ của bạn bị từ chối",
   "notification.email.approval_rejected.body": "Một chứng từ bạn gửi trên mmerp bị từ chối. Mở mmerp để xem lý do.",
+  "notification.email.approval_overdue.subject": "Một chứng từ đã quá hạn duyệt",
+  "notification.email.approval_overdue.body": "Một bước duyệt trên mmerp đã quá thời hạn. Mở mmerp để xem.",
   "notification.email.mentioned.subject": "Bạn được nhắc tên trên mmerp",
   "notification.email.mentioned.body": "Có người nhắc tên bạn trong một trao đổi trên mmerp."
 }

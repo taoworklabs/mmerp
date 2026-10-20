@@ -31,22 +31,28 @@ type instanceOutput struct {
 type approveInput struct {
 	ID   int64 `path:"id"`
 	Body struct {
-		Step int32 `json:"step"`
+		Step int32 `json:"step" minimum:"1"`
 	}
 }
 
 type rejectInput struct {
 	ID   int64 `path:"id"`
 	Body struct {
-		Step   int32  `json:"step"`
+		Step   int32  `json:"step" minimum:"1"`
 		Reason string `json:"reason" minLength:"1" maxLength:"1000"`
 	}
+}
+
+type instanceInput struct {
+	ID int64 `path:"id"`
 }
 
 type reassignInput struct {
 	ID   int64 `path:"id"`
 	Body struct {
-		Step  int32  `json:"step"`
+		Step int32 `json:"step" minimum:"1"`
+		// The voter replaced; one who already voted cannot be.
+		From  int64  `json:"from"`
 		Login string `json:"login" minLength:"1" maxLength:"200"`
 	}
 }
@@ -61,11 +67,39 @@ type usersOutput struct{ Body []ApproverUser }
 
 type docTypeInput struct {
 	DocType string `path:"doc_type"`
+	Action  string `query:"action" default:"post" doc:"post, cancel, or a module action of the type"`
 }
+
+type fieldOptionsInput struct {
+	DocType string  `path:"doc_type"`
+	Key     string  `path:"key"`
+	Q       string  `query:"q" maxLength:"100"`
+	IDs     []int64 `query:"ids" maxItems:"100" doc:"Name these ids instead of searching"`
+}
+
+type fieldOptionsOutput struct{ Body []record.FieldOption }
 
 type saveRuleInput struct {
 	DocType string `path:"doc_type"`
+	Action  string `query:"action" default:"post" doc:"post, cancel, or a module action of the type"`
 	Body    RuleInput
+}
+
+type delegationsOutput struct{ Body []Delegation }
+
+type createDelegationInput struct{ Body DelegationInput }
+
+type createDelegationOutput struct {
+	Body struct {
+		ID int64 `json:"id"`
+	}
+}
+
+type delegationsMetaOutput struct {
+	Body struct {
+		// The actor manages everyone's delegations, not only their own.
+		ManageAll bool `json:"manage_all"`
+	}
 }
 
 func registerHandlers(api huma.API, s *Service) {
@@ -94,9 +128,13 @@ func registerHandlers(api huma.API, s *Service) {
 		func(ctx context.Context, in *rejectInput) (*struct{}, error) {
 			return nil, s.Reject(ctx, in.ID, in.Body.Step, in.Body.Reason)
 		})
+	huma.Register(api, huma.Operation{OperationID: "withdraw-approval", Method: http.MethodPost, Path: "/approvals/{id}/withdraw", DefaultStatus: http.StatusNoContent},
+		func(ctx context.Context, in *instanceInput) (*struct{}, error) {
+			return nil, s.Withdraw(ctx, in.ID)
+		})
 	huma.Register(api, huma.Operation{OperationID: "reassign", Method: http.MethodPost, Path: "/approvals/{id}/reassign", DefaultStatus: http.StatusNoContent},
 		func(ctx context.Context, in *reassignInput) (*struct{}, error) {
-			return nil, s.Reassign(ctx, in.ID, in.Body.Step, in.Body.Login)
+			return nil, s.Reassign(ctx, in.ID, in.Body.Step, in.Body.From, in.Body.Login)
 		})
 	huma.Register(api, huma.Operation{OperationID: "list-approval-rules", Method: http.MethodGet, Path: "/approval-rules"},
 		func(ctx context.Context, in *rulesInput) (*rulesOutput, error) {
@@ -108,12 +146,46 @@ func registerHandlers(api huma.API, s *Service) {
 			u, err := s.Users(ctx)
 			return &usersOutput{Body: u}, err
 		})
+	huma.Register(api, huma.Operation{OperationID: "list-approval-field-options", Method: http.MethodGet, Path: "/approval-rules/{doc_type}/fields/{key}/options"},
+		func(ctx context.Context, in *fieldOptionsInput) (*fieldOptionsOutput, error) {
+			o, err := s.FieldOptions(ctx, in.DocType, in.Key, in.Q, in.IDs)
+			return &fieldOptionsOutput{Body: o}, err
+		})
 	huma.Register(api, huma.Operation{OperationID: "save-approval-rule", Method: http.MethodPut, Path: "/approval-rules/{doc_type}", DefaultStatus: http.StatusNoContent},
 		func(ctx context.Context, in *saveRuleInput) (*struct{}, error) {
-			return nil, s.SaveRule(ctx, in.DocType, in.Body)
+			return nil, s.SaveRule(ctx, in.DocType, record.Action(in.Action), in.Body)
 		})
 	huma.Register(api, huma.Operation{OperationID: "delete-approval-rule", Method: http.MethodDelete, Path: "/approval-rules/{doc_type}", DefaultStatus: http.StatusNoContent},
 		func(ctx context.Context, in *docTypeInput) (*struct{}, error) {
-			return nil, s.DeleteRule(ctx, in.DocType)
+			return nil, s.DeleteRule(ctx, in.DocType, record.Action(in.Action))
+		})
+	huma.Register(api, huma.Operation{OperationID: "list-approval-delegations", Method: http.MethodGet, Path: "/approval-delegations"},
+		func(ctx context.Context, _ *struct{}) (*delegationsOutput, error) {
+			d, err := s.Delegations(ctx)
+			return &delegationsOutput{Body: d}, err
+		})
+	huma.Register(api, huma.Operation{OperationID: "list-approval-delegation-users", Method: http.MethodGet, Path: "/approval-delegations/users",
+		Description: "Every account, to pick a delegate from. Logins are empty unless the caller manages everyone's delegations."},
+		func(ctx context.Context, _ *struct{}) (*usersOutput, error) {
+			u, err := s.DelegateUsers(ctx)
+			return &usersOutput{Body: u}, err
+		})
+	huma.Register(api, huma.Operation{OperationID: "get-approval-delegations-meta", Method: http.MethodGet, Path: "/approval-delegations/meta"},
+		func(ctx context.Context, _ *struct{}) (*delegationsMetaOutput, error) {
+			all, err := s.CanManageAllDelegations(ctx)
+			out := &delegationsMetaOutput{}
+			out.Body.ManageAll = all
+			return out, err
+		})
+	huma.Register(api, huma.Operation{OperationID: "create-approval-delegation", Method: http.MethodPost, Path: "/approval-delegations", DefaultStatus: http.StatusCreated},
+		func(ctx context.Context, in *createDelegationInput) (*createDelegationOutput, error) {
+			id, err := s.CreateDelegation(ctx, in.Body)
+			out := &createDelegationOutput{}
+			out.Body.ID = id
+			return out, err
+		})
+	huma.Register(api, huma.Operation{OperationID: "delete-approval-delegation", Method: http.MethodDelete, Path: "/approval-delegations/{id}", DefaultStatus: http.StatusNoContent},
+		func(ctx context.Context, in *instanceInput) (*struct{}, error) {
+			return nil, s.DeleteDelegation(ctx, in.ID)
 		})
 }

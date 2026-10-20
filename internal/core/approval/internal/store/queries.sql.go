@@ -11,6 +11,72 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const cancelOpenSteps = `-- name: CancelOpenSteps :exec
+UPDATE approval.instance_steps SET status = 'cancelled' WHERE instance_id = $1 AND status IN ('open', 'waiting')
+`
+
+func (q *Queries) CancelOpenSteps(ctx context.Context, instanceID int64) error {
+	_, err := q.db.Exec(ctx, cancelOpenSteps, instanceID)
+	return err
+}
+
+const castVotes = `-- name: CastVotes :many
+SELECT user_id, cast_by FROM approval.step_votes WHERE instance_id = $1 AND position = $2
+`
+
+type CastVotesParams struct {
+	InstanceID int64
+	Position   int32
+}
+
+type CastVotesRow struct {
+	UserID int64
+	CastBy pgtype.Int8
+}
+
+func (q *Queries) CastVotes(ctx context.Context, arg CastVotesParams) ([]CastVotesRow, error) {
+	rows, err := q.db.Query(ctx, castVotes, arg.InstanceID, arg.Position)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []CastVotesRow
+	for rows.Next() {
+		var i CastVotesRow
+		if err := rows.Scan(&i.UserID, &i.CastBy); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const claimOverdue = `-- name: ClaimOverdue :one
+UPDATE approval.instance_steps SET overdue_notified_at = now()
+WHERE (instance_id, position) = (
+    SELECT s.instance_id, s.position FROM approval.instance_steps s JOIN approval.instances i ON i.id = s.instance_id
+    WHERE s.status = 'open' AND i.status = 'open' AND s.overdue_notified_at IS NULL AND s.due_at < now()
+    ORDER BY s.due_at LIMIT 1 FOR UPDATE OF s SKIP LOCKED)
+RETURNING instance_id, position, approvers
+`
+
+type ClaimOverdueRow struct {
+	InstanceID int64
+	Position   int32
+	Approvers  []int64
+}
+
+// Marks one overdue open step as told and returns it; SKIP LOCKED lets concurrent runs share the work.
+func (q *Queries) ClaimOverdue(ctx context.Context) (ClaimOverdueRow, error) {
+	row := q.db.QueryRow(ctx, claimOverdue)
+	var i ClaimOverdueRow
+	err := row.Scan(&i.InstanceID, &i.Position, &i.Approvers)
+	return i, err
+}
+
 const closeInstance = `-- name: CloseInstance :exec
 UPDATE approval.instances SET status = $2 WHERE id = $1 AND status = 'open'
 `
@@ -25,41 +91,113 @@ func (q *Queries) CloseInstance(ctx context.Context, arg CloseInstanceParams) er
 	return err
 }
 
-const decide = `-- name: Decide :exec
-UPDATE approval.instance_steps SET decided_by = $1, decision = $2, reason = $3, decided_at = now()
-WHERE instance_id = $4 AND position = $5
+const delegatesOf = `-- name: DelegatesOf :many
+SELECT DISTINCT delegate_id FROM approval.delegations
+WHERE user_id = ANY($1::bigint[]) AND starts_on <= $2 AND ends_on >= $2
 `
 
-type DecideParams struct {
-	DecidedBy  pgtype.Int8
-	Decision   pgtype.Text
-	Reason     pgtype.Text
-	InstanceID int64
-	Position   int32
+type DelegatesOfParams struct {
+	Users []int64
+	Today pgtype.Date
 }
 
-func (q *Queries) Decide(ctx context.Context, arg DecideParams) error {
-	_, err := q.db.Exec(ctx, decide,
-		arg.DecidedBy,
-		arg.Decision,
-		arg.Reason,
-		arg.InstanceID,
-		arg.Position,
-	)
+// Who holds an active delegation from one of @users on @today.
+func (q *Queries) DelegatesOf(ctx context.Context, arg DelegatesOfParams) ([]int64, error) {
+	rows, err := q.db.Query(ctx, delegatesOf, arg.Users, arg.Today)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []int64
+	for rows.Next() {
+		var delegate_id int64
+		if err := rows.Scan(&delegate_id); err != nil {
+			return nil, err
+		}
+		items = append(items, delegate_id)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const delegatorsOf = `-- name: DelegatorsOf :many
+SELECT user_id FROM approval.delegations
+WHERE delegate_id = $1 AND user_id = ANY($2::bigint[]) AND starts_on <= $3 AND ends_on >= $3
+`
+
+type DelegatorsOfParams struct {
+	Delegate int64
+	Users    []int64
+	Today    pgtype.Date
+}
+
+// Which of @users have an active delegation to @delegate on @today; one hop only.
+func (q *Queries) DelegatorsOf(ctx context.Context, arg DelegatorsOfParams) ([]int64, error) {
+	rows, err := q.db.Query(ctx, delegatorsOf, arg.Delegate, arg.Users, arg.Today)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []int64
+	for rows.Next() {
+		var user_id int64
+		if err := rows.Scan(&user_id); err != nil {
+			return nil, err
+		}
+		items = append(items, user_id)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const deleteDelegation = `-- name: DeleteDelegation :exec
+DELETE FROM approval.delegations WHERE id = $1
+`
+
+func (q *Queries) DeleteDelegation(ctx context.Context, id int64) error {
+	_, err := q.db.Exec(ctx, deleteDelegation, id)
 	return err
 }
 
 const deleteRule = `-- name: DeleteRule :exec
-DELETE FROM approval.rules WHERE doc_type = $1
+DELETE FROM approval.rules WHERE doc_type = $1 AND action = $2
 `
 
-func (q *Queries) DeleteRule(ctx context.Context, docType string) error {
-	_, err := q.db.Exec(ctx, deleteRule, docType)
+type DeleteRuleParams struct {
+	DocType string
+	Action  string
+}
+
+func (q *Queries) DeleteRule(ctx context.Context, arg DeleteRuleParams) error {
+	_, err := q.db.Exec(ctx, deleteRule, arg.DocType, arg.Action)
 	return err
 }
 
+const getDelegation = `-- name: GetDelegation :one
+SELECT id, user_id, delegate_id, starts_on, ends_on, created_by, created_at FROM approval.delegations WHERE id = $1
+`
+
+func (q *Queries) GetDelegation(ctx context.Context, id int64) (ApprovalDelegation, error) {
+	row := q.db.QueryRow(ctx, getDelegation, id)
+	var i ApprovalDelegation
+	err := row.Scan(
+		&i.ID,
+		&i.UserID,
+		&i.DelegateID,
+		&i.StartsOn,
+		&i.EndsOn,
+		&i.CreatedBy,
+		&i.CreatedAt,
+	)
+	return i, err
+}
+
 const getInstance = `-- name: GetInstance :one
-SELECT id, doc_type, doc_id, version, submitted_by, submitted_at, status, current_step, max_levels, fallback_product, fallback_role FROM approval.instances WHERE id = $1
+SELECT id, doc_type, doc_id, version, submitted_by, submitted_at, status, max_levels, fallback_product, fallback_role, plan, action, params FROM approval.instances WHERE id = $1
 `
 
 func (q *Queries) GetInstance(ctx context.Context, id int64) (ApprovalInstance, error) {
@@ -73,33 +211,41 @@ func (q *Queries) GetInstance(ctx context.Context, id int64) (ApprovalInstance, 
 		&i.SubmittedBy,
 		&i.SubmittedAt,
 		&i.Status,
-		&i.CurrentStep,
 		&i.MaxLevels,
 		&i.FallbackProduct,
 		&i.FallbackRole,
+		&i.Plan,
+		&i.Action,
+		&i.Params,
 	)
 	return i, err
 }
 
 const getRule = `-- name: GetRule :one
-SELECT doc_type, steps, max_levels, fallback_product, fallback_role FROM approval.rules WHERE doc_type = $1
+SELECT doc_type, max_levels, fallback_product, fallback_role, flow, action FROM approval.rules WHERE doc_type = $1 AND action = $2
 `
 
-func (q *Queries) GetRule(ctx context.Context, docType string) (ApprovalRule, error) {
-	row := q.db.QueryRow(ctx, getRule, docType)
+type GetRuleParams struct {
+	DocType string
+	Action  string
+}
+
+func (q *Queries) GetRule(ctx context.Context, arg GetRuleParams) (ApprovalRule, error) {
+	row := q.db.QueryRow(ctx, getRule, arg.DocType, arg.Action)
 	var i ApprovalRule
 	err := row.Scan(
 		&i.DocType,
-		&i.Steps,
 		&i.MaxLevels,
 		&i.FallbackProduct,
 		&i.FallbackRole,
+		&i.Flow,
+		&i.Action,
 	)
 	return i, err
 }
 
 const getStep = `-- name: GetStep :one
-SELECT instance_id, position, approver, approvers, fallback, decided_by, decision, reason, decided_at FROM approval.instance_steps WHERE instance_id = $1 AND position = $2
+SELECT instance_id, position, approver, approvers, fallback, approvals, rejections, status, due_hours, due_at, overdue_notified_at FROM approval.instance_steps WHERE instance_id = $1 AND position = $2
 `
 
 type GetStepParams struct {
@@ -116,52 +262,95 @@ func (q *Queries) GetStep(ctx context.Context, arg GetStepParams) (ApprovalInsta
 		&i.Approver,
 		&i.Approvers,
 		&i.Fallback,
-		&i.DecidedBy,
-		&i.Decision,
-		&i.Reason,
-		&i.DecidedAt,
+		&i.Approvals,
+		&i.Rejections,
+		&i.Status,
+		&i.DueHours,
+		&i.DueAt,
+		&i.OverdueNotifiedAt,
 	)
 	return i, err
 }
 
-const inbox = `-- name: Inbox :many
-SELECT i.id, i.doc_type, i.doc_id, i.current_step, i.submitted_at, u.name AS submitted_by_name, d.number, d.date
-FROM approval.instances i
-JOIN approval.instance_steps s ON s.instance_id = i.id AND s.position = i.current_step
-JOIN record.documents d ON d.id = i.doc_id
-JOIN iam.users u ON u.id = i.submitted_by
-WHERE i.status = 'open' AND s.decision IS NULL AND s.approvers @> ARRAY[$1::bigint]
-ORDER BY i.submitted_at, i.id
+const hasVoted = `-- name: HasVoted :one
+SELECT EXISTS (SELECT 1 FROM approval.step_votes WHERE instance_id = $1 AND position = $2 AND user_id = $3)
 `
 
-type InboxRow struct {
-	ID              int64
-	DocType         string
-	DocID           int64
-	CurrentStep     int32
-	SubmittedAt     pgtype.Timestamptz
-	SubmittedByName string
-	Number          string
-	Date            pgtype.Date
+type HasVotedParams struct {
+	InstanceID int64
+	Position   int32
+	UserID     int64
 }
 
-// Open instances waiting for @actor at their current step.
-func (q *Queries) Inbox(ctx context.Context, actor int64) ([]InboxRow, error) {
-	rows, err := q.db.Query(ctx, inbox, actor)
+func (q *Queries) HasVoted(ctx context.Context, arg HasVotedParams) (bool, error) {
+	row := q.db.QueryRow(ctx, hasVoted, arg.InstanceID, arg.Position, arg.UserID)
+	var exists bool
+	err := row.Scan(&exists)
+	return exists, err
+}
+
+const heldBy = `-- name: HeldBy :one
+SELECT id, doc_type, doc_id, version, submitted_by, submitted_at, status, max_levels, fallback_product, fallback_role, plan, action, params FROM approval.instances WHERE doc_type = $1 AND doc_id = $2 AND status = 'open' AND action <> 'post'
+`
+
+type HeldByParams struct {
+	DocType string
+	DocID   int64
+}
+
+// The open request holding a document for an action other than post.
+func (q *Queries) HeldBy(ctx context.Context, arg HeldByParams) (ApprovalInstance, error) {
+	row := q.db.QueryRow(ctx, heldBy, arg.DocType, arg.DocID)
+	var i ApprovalInstance
+	err := row.Scan(
+		&i.ID,
+		&i.DocType,
+		&i.DocID,
+		&i.Version,
+		&i.SubmittedBy,
+		&i.SubmittedAt,
+		&i.Status,
+		&i.MaxLevels,
+		&i.FallbackProduct,
+		&i.FallbackRole,
+		&i.Plan,
+		&i.Action,
+		&i.Params,
+	)
+	return i, err
+}
+
+const heldInPeriod = `-- name: HeldInPeriod :many
+SELECT d.doc_type, d.id, d.number, d.date
+FROM approval.instances i JOIN record.documents d ON d.id = i.doc_id AND d.doc_type = i.doc_type
+WHERE i.status = 'open' AND i.action <> 'post' AND d.legal_entity_id = $1 AND d.date <= $2
+ORDER BY d.date, d.id
+`
+
+type HeldInPeriodParams struct {
+	LegalEntityID int64
+	Date          pgtype.Date
+}
+
+type HeldInPeriodRow struct {
+	DocType string
+	ID      int64
+	Number  string
+	Date    pgtype.Date
+}
+
+func (q *Queries) HeldInPeriod(ctx context.Context, arg HeldInPeriodParams) ([]HeldInPeriodRow, error) {
+	rows, err := q.db.Query(ctx, heldInPeriod, arg.LegalEntityID, arg.Date)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []InboxRow
+	var items []HeldInPeriodRow
 	for rows.Next() {
-		var i InboxRow
+		var i HeldInPeriodRow
 		if err := rows.Scan(
-			&i.ID,
 			&i.DocType,
-			&i.DocID,
-			&i.CurrentStep,
-			&i.SubmittedAt,
-			&i.SubmittedByName,
+			&i.ID,
 			&i.Number,
 			&i.Date,
 		); err != nil {
@@ -175,9 +364,123 @@ func (q *Queries) Inbox(ctx context.Context, actor int64) ([]InboxRow, error) {
 	return items, nil
 }
 
+const inbox = `-- name: Inbox :many
+SELECT i.id, i.doc_type, i.doc_id, i.action, s.step, i.submitted_at, i.submitted_by, u.name AS submitted_by_name, d.number, d.date,
+       b.id AS on_behalf_of, b.name AS on_behalf_of_name
+FROM (
+    SELECT DISTINCT ON (s.instance_id) s.instance_id, s.position AS step,
+           CASE WHEN NOT s.own THEN s.delegated END AS on_behalf_of
+    FROM (
+        SELECT s.instance_id, s.position,
+               s.approvers @> ARRAY[$1::bigint] AND NOT EXISTS (
+                   SELECT 1 FROM approval.step_votes v WHERE v.instance_id = s.instance_id AND v.position = s.position AND v.user_id = $1) AS own,
+               (SELECT p.id FROM unnest(s.approvers) WITH ORDINALITY AS p(id, n)
+                JOIN approval.delegations g ON g.user_id = p.id AND g.delegate_id = $1 AND g.starts_on <= $2 AND g.ends_on >= $2
+                WHERE NOT EXISTS (SELECT 1 FROM approval.step_votes v WHERE v.instance_id = s.instance_id AND v.position = s.position AND v.user_id = p.id)
+                ORDER BY p.n LIMIT 1) AS delegated
+        FROM approval.instance_steps s
+        WHERE s.status = 'open'
+          -- Served by the open steps' approvers index.
+          AND s.approvers && (ARRAY[$1::bigint] || ARRAY(SELECT g.user_id FROM approval.delegations g
+                                                            WHERE g.delegate_id = $1 AND g.starts_on <= $2 AND g.ends_on >= $2))
+          AND NOT EXISTS (SELECT 1 FROM approval.step_votes v
+                          WHERE v.instance_id = s.instance_id AND v.position = s.position AND coalesce(v.cast_by, v.user_id) = $1)
+    ) s
+    WHERE s.own OR s.delegated IS NOT NULL
+    ORDER BY s.instance_id, s.position
+) s
+JOIN approval.instances i ON i.id = s.instance_id AND i.status = 'open'
+JOIN record.documents d ON d.id = i.doc_id
+JOIN iam.users u ON u.id = i.submitted_by
+LEFT JOIN iam.users b ON b.id = s.on_behalf_of
+ORDER BY i.submitted_at, i.id
+`
+
+type InboxParams struct {
+	Actor int64
+	Today pgtype.Date
+}
+
+type InboxRow struct {
+	ID              int64
+	DocType         string
+	DocID           int64
+	Action          string
+	Step            int32
+	SubmittedAt     pgtype.Timestamptz
+	SubmittedBy     int64
+	SubmittedByName string
+	Number          string
+	Date            pgtype.Date
+	OnBehalfOf      pgtype.Int8
+	OnBehalfOfName  pgtype.Text
+}
+
+// One row per instance: the lowest open step where @actor has their own pending seat,
+// or a pending seat delegated to them, and has cast nothing yet. An actor in two open
+// parallel steps of the same instance sees it once, not twice.
+func (q *Queries) Inbox(ctx context.Context, arg InboxParams) ([]InboxRow, error) {
+	rows, err := q.db.Query(ctx, inbox, arg.Actor, arg.Today)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []InboxRow
+	for rows.Next() {
+		var i InboxRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.DocType,
+			&i.DocID,
+			&i.Action,
+			&i.Step,
+			&i.SubmittedAt,
+			&i.SubmittedBy,
+			&i.SubmittedByName,
+			&i.Number,
+			&i.Date,
+			&i.OnBehalfOf,
+			&i.OnBehalfOfName,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const insertDelegation = `-- name: InsertDelegation :one
+INSERT INTO approval.delegations (user_id, delegate_id, starts_on, ends_on, created_by)
+VALUES ($1, $2, $3, $4, $5) RETURNING id
+`
+
+type InsertDelegationParams struct {
+	UserID     int64
+	DelegateID int64
+	StartsOn   pgtype.Date
+	EndsOn     pgtype.Date
+	CreatedBy  int64
+}
+
+func (q *Queries) InsertDelegation(ctx context.Context, arg InsertDelegationParams) (int64, error) {
+	row := q.db.QueryRow(ctx, insertDelegation,
+		arg.UserID,
+		arg.DelegateID,
+		arg.StartsOn,
+		arg.EndsOn,
+		arg.CreatedBy,
+	)
+	var id int64
+	err := row.Scan(&id)
+	return id, err
+}
+
 const insertInstance = `-- name: InsertInstance :one
-INSERT INTO approval.instances (doc_type, doc_id, version, submitted_by, status, current_step, max_levels, fallback_product, fallback_role)
-VALUES ($1, $2, $3, $4, 'open', 1, $5, $6, $7) RETURNING id
+INSERT INTO approval.instances (doc_type, doc_id, version, submitted_by, status, plan, max_levels, fallback_product, fallback_role, action, params)
+VALUES ($1, $2, $3, $4, 'open', $5, $6, $7, $8, $9, $10) RETURNING id
 `
 
 type InsertInstanceParams struct {
@@ -185,9 +488,12 @@ type InsertInstanceParams struct {
 	DocID           int64
 	Version         int32
 	SubmittedBy     int64
+	Plan            []byte
 	MaxLevels       int32
 	FallbackProduct string
 	FallbackRole    string
+	Action          string
+	Params          []byte
 }
 
 func (q *Queries) InsertInstance(ctx context.Context, arg InsertInstanceParams) (int64, error) {
@@ -196,9 +502,12 @@ func (q *Queries) InsertInstance(ctx context.Context, arg InsertInstanceParams) 
 		arg.DocID,
 		arg.Version,
 		arg.SubmittedBy,
+		arg.Plan,
 		arg.MaxLevels,
 		arg.FallbackProduct,
 		arg.FallbackRole,
+		arg.Action,
+		arg.Params,
 	)
 	var id int64
 	err := row.Scan(&id)
@@ -206,22 +515,58 @@ func (q *Queries) InsertInstance(ctx context.Context, arg InsertInstanceParams) 
 }
 
 const insertStep = `-- name: InsertStep :exec
-INSERT INTO approval.instance_steps (instance_id, position, approver) VALUES ($1, $2, $3)
+INSERT INTO approval.instance_steps (instance_id, position, approver, approvals, rejections, due_hours, status)
+VALUES ($1, $2, $3, $4, $5, $6, 'waiting')
 `
 
 type InsertStepParams struct {
 	InstanceID int64
 	Position   int32
 	Approver   []byte
+	Approvals  int32
+	Rejections int32
+	DueHours   pgtype.Int4
 }
 
 func (q *Queries) InsertStep(ctx context.Context, arg InsertStepParams) error {
-	_, err := q.db.Exec(ctx, insertStep, arg.InstanceID, arg.Position, arg.Approver)
+	_, err := q.db.Exec(ctx, insertStep,
+		arg.InstanceID,
+		arg.Position,
+		arg.Approver,
+		arg.Approvals,
+		arg.Rejections,
+		arg.DueHours,
+	)
+	return err
+}
+
+const insertVote = `-- name: InsertVote :exec
+INSERT INTO approval.step_votes (instance_id, position, user_id, cast_by, decision, reason) VALUES ($1, $2, $3, $4, $5, $6)
+`
+
+type InsertVoteParams struct {
+	InstanceID int64
+	Position   int32
+	UserID     int64
+	CastBy     pgtype.Int8
+	Decision   string
+	Reason     pgtype.Text
+}
+
+func (q *Queries) InsertVote(ctx context.Context, arg InsertVoteParams) error {
+	_, err := q.db.Exec(ctx, insertVote,
+		arg.InstanceID,
+		arg.Position,
+		arg.UserID,
+		arg.CastBy,
+		arg.Decision,
+		arg.Reason,
+	)
 	return err
 }
 
 const latestInstance = `-- name: LatestInstance :one
-SELECT i.id, i.doc_type, i.doc_id, i.version, i.submitted_by, i.submitted_at, i.status, i.current_step, i.max_levels, i.fallback_product, i.fallback_role, u.name AS submitted_by_name FROM approval.instances i JOIN iam.users u ON u.id = i.submitted_by
+SELECT i.id, i.doc_type, i.doc_id, i.version, i.submitted_by, i.submitted_at, i.status, i.max_levels, i.fallback_product, i.fallback_role, i.plan, i.action, i.params, u.name AS submitted_by_name FROM approval.instances i JOIN iam.users u ON u.id = i.submitted_by
 WHERE i.doc_type = $1 AND i.doc_id = $2 ORDER BY i.id DESC LIMIT 1
 `
 
@@ -238,10 +583,12 @@ type LatestInstanceRow struct {
 	SubmittedBy     int64
 	SubmittedAt     pgtype.Timestamptz
 	Status          string
-	CurrentStep     int32
 	MaxLevels       int32
 	FallbackProduct string
 	FallbackRole    string
+	Plan            []byte
+	Action          string
+	Params          []byte
 	SubmittedByName string
 }
 
@@ -256,17 +603,71 @@ func (q *Queries) LatestInstance(ctx context.Context, arg LatestInstanceParams) 
 		&i.SubmittedBy,
 		&i.SubmittedAt,
 		&i.Status,
-		&i.CurrentStep,
 		&i.MaxLevels,
 		&i.FallbackProduct,
 		&i.FallbackRole,
+		&i.Plan,
+		&i.Action,
+		&i.Params,
 		&i.SubmittedByName,
 	)
 	return i, err
 }
 
+const listDelegations = `-- name: ListDelegations :many
+SELECT d.id, d.user_id, u.name AS user_name, d.delegate_id, g.name AS delegate_name, d.starts_on, d.ends_on
+FROM approval.delegations d JOIN iam.users u ON u.id = d.user_id JOIN iam.users g ON g.id = d.delegate_id
+WHERE d.ends_on >= $1 AND ($2::bool OR d.user_id = $3)
+ORDER BY d.starts_on, d.id
+`
+
+type ListDelegationsParams struct {
+	Today    pgtype.Date
+	Everyone bool
+	Actor    int64
+}
+
+type ListDelegationsRow struct {
+	ID           int64
+	UserID       int64
+	UserName     string
+	DelegateID   int64
+	DelegateName string
+	StartsOn     pgtype.Date
+	EndsOn       pgtype.Date
+}
+
+// Not yet ended; everyone's when @everyone, else @actor's own.
+func (q *Queries) ListDelegations(ctx context.Context, arg ListDelegationsParams) ([]ListDelegationsRow, error) {
+	rows, err := q.db.Query(ctx, listDelegations, arg.Today, arg.Everyone, arg.Actor)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListDelegationsRow
+	for rows.Next() {
+		var i ListDelegationsRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.UserID,
+			&i.UserName,
+			&i.DelegateID,
+			&i.DelegateName,
+			&i.StartsOn,
+			&i.EndsOn,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listRules = `-- name: ListRules :many
-SELECT doc_type, steps, max_levels, fallback_product, fallback_role FROM approval.rules ORDER BY doc_type
+SELECT doc_type, max_levels, fallback_product, fallback_role, flow, action FROM approval.rules ORDER BY doc_type, action
 `
 
 func (q *Queries) ListRules(ctx context.Context) ([]ApprovalRule, error) {
@@ -280,10 +681,11 @@ func (q *Queries) ListRules(ctx context.Context) ([]ApprovalRule, error) {
 		var i ApprovalRule
 		if err := rows.Scan(
 			&i.DocType,
-			&i.Steps,
 			&i.MaxLevels,
 			&i.FallbackProduct,
 			&i.FallbackRole,
+			&i.Flow,
+			&i.Action,
 		); err != nil {
 			return nil, err
 		}
@@ -305,7 +707,7 @@ type ListUsersRow struct {
 	Name  string
 }
 
-// Who a rule may name as approver.
+// Who a rule may name as approver, or a delegation may name.
 func (q *Queries) ListUsers(ctx context.Context) ([]ListUsersRow, error) {
 	rows, err := q.db.Query(ctx, listUsers)
 	if err != nil {
@@ -326,8 +728,18 @@ func (q *Queries) ListUsers(ctx context.Context) ([]ListUsersRow, error) {
 	return items, nil
 }
 
+const lockDelegations = `-- name: LockDelegations :exec
+SELECT pg_advisory_xact_lock(hashtextextended('approval.delegation', $1::bigint))
+`
+
+// Serialises creates for one user, so two overlapping rows can't both pass the check.
+func (q *Queries) LockDelegations(ctx context.Context, userID int64) error {
+	_, err := q.db.Exec(ctx, lockDelegations, userID)
+	return err
+}
+
 const lockInstance = `-- name: LockInstance :one
-SELECT id, doc_type, doc_id, version, submitted_by, submitted_at, status, current_step, max_levels, fallback_product, fallback_role FROM approval.instances WHERE id = $1 FOR UPDATE
+SELECT id, doc_type, doc_id, version, submitted_by, submitted_at, status, max_levels, fallback_product, fallback_role, plan, action, params FROM approval.instances WHERE id = $1 FOR UPDATE
 `
 
 func (q *Queries) LockInstance(ctx context.Context, id int64) (ApprovalInstance, error) {
@@ -341,22 +753,43 @@ func (q *Queries) LockInstance(ctx context.Context, id int64) (ApprovalInstance,
 		&i.SubmittedBy,
 		&i.SubmittedAt,
 		&i.Status,
-		&i.CurrentStep,
 		&i.MaxLevels,
 		&i.FallbackProduct,
 		&i.FallbackRole,
+		&i.Plan,
+		&i.Action,
+		&i.Params,
 	)
 	return i, err
 }
 
+const overlappingDelegation = `-- name: OverlappingDelegation :one
+SELECT id FROM approval.delegations
+WHERE user_id = $1 AND starts_on <= $2 AND ends_on >= $3 ORDER BY id LIMIT 1
+`
+
+type OverlappingDelegationParams struct {
+	UserID   int64
+	EndsOn   pgtype.Date
+	StartsOn pgtype.Date
+}
+
+func (q *Queries) OverlappingDelegation(ctx context.Context, arg OverlappingDelegationParams) (int64, error) {
+	row := q.db.QueryRow(ctx, overlappingDelegation, arg.UserID, arg.EndsOn, arg.StartsOn)
+	var id int64
+	err := row.Scan(&id)
+	return id, err
+}
+
 const saveRule = `-- name: SaveRule :exec
-INSERT INTO approval.rules (doc_type, steps, max_levels, fallback_product, fallback_role) VALUES ($1, $2, $3, $4, $5)
-ON CONFLICT (doc_type) DO UPDATE SET steps = $2, max_levels = $3, fallback_product = $4, fallback_role = $5
+INSERT INTO approval.rules (doc_type, action, flow, max_levels, fallback_product, fallback_role) VALUES ($1, $2, $3, $4, $5, $6)
+ON CONFLICT (doc_type, action) DO UPDATE SET flow = $3, max_levels = $4, fallback_product = $5, fallback_role = $6
 `
 
 type SaveRuleParams struct {
 	DocType         string
-	Steps           []byte
+	Action          string
+	Flow            []byte
 	MaxLevels       int32
 	FallbackProduct string
 	FallbackRole    string
@@ -365,7 +798,8 @@ type SaveRuleParams struct {
 func (q *Queries) SaveRule(ctx context.Context, arg SaveRuleParams) error {
 	_, err := q.db.Exec(ctx, saveRule,
 		arg.DocType,
-		arg.Steps,
+		arg.Action,
+		arg.Flow,
 		arg.MaxLevels,
 		arg.FallbackProduct,
 		arg.FallbackRole,
@@ -373,22 +807,40 @@ func (q *Queries) SaveRule(ctx context.Context, arg SaveRuleParams) error {
 	return err
 }
 
-const setCurrentStep = `-- name: SetCurrentStep :exec
-UPDATE approval.instances SET current_step = $2 WHERE id = $1
+const setApprovers = `-- name: SetApprovers :exec
+UPDATE approval.instance_steps SET approvers = $1 WHERE instance_id = $2 AND position = $3
 `
 
-type SetCurrentStepParams struct {
-	ID          int64
-	CurrentStep int32
+type SetApproversParams struct {
+	Approvers  []int64
+	InstanceID int64
+	Position   int32
 }
 
-func (q *Queries) SetCurrentStep(ctx context.Context, arg SetCurrentStepParams) error {
-	_, err := q.db.Exec(ctx, setCurrentStep, arg.ID, arg.CurrentStep)
+func (q *Queries) SetApprovers(ctx context.Context, arg SetApproversParams) error {
+	_, err := q.db.Exec(ctx, setApprovers, arg.Approvers, arg.InstanceID, arg.Position)
+	return err
+}
+
+const setStepStatus = `-- name: SetStepStatus :exec
+UPDATE approval.instance_steps SET status = $3 WHERE instance_id = $1 AND position = $2
+`
+
+type SetStepStatusParams struct {
+	InstanceID int64
+	Position   int32
+	Status     string
+}
+
+func (q *Queries) SetStepStatus(ctx context.Context, arg SetStepStatusParams) error {
+	_, err := q.db.Exec(ctx, setStepStatus, arg.InstanceID, arg.Position, arg.Status)
 	return err
 }
 
 const startStep = `-- name: StartStep :exec
-UPDATE approval.instance_steps SET approvers = $1, fallback = $2 WHERE instance_id = $3 AND position = $4
+UPDATE approval.instance_steps SET approvers = $1, fallback = $2, status = 'open',
+    due_at = now() + due_hours * interval '1 hour'
+WHERE instance_id = $3 AND position = $4
 `
 
 type StartStepParams struct {
@@ -408,35 +860,83 @@ func (q *Queries) StartStep(ctx context.Context, arg StartStepParams) error {
 	return err
 }
 
-const stepCount = `-- name: StepCount :one
-SELECT count(*) FROM approval.instance_steps WHERE instance_id = $1
+const stepStatuses = `-- name: StepStatuses :many
+SELECT position, status FROM approval.instance_steps WHERE instance_id = $1 ORDER BY position
 `
 
-func (q *Queries) StepCount(ctx context.Context, instanceID int64) (int64, error) {
-	row := q.db.QueryRow(ctx, stepCount, instanceID)
-	var count int64
-	err := row.Scan(&count)
-	return count, err
+type StepStatusesRow struct {
+	Position int32
+	Status   string
+}
+
+func (q *Queries) StepStatuses(ctx context.Context, instanceID int64) ([]StepStatusesRow, error) {
+	rows, err := q.db.Query(ctx, stepStatuses, instanceID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []StepStatusesRow
+	for rows.Next() {
+		var i StepStatusesRow
+		if err := rows.Scan(&i.Position, &i.Status); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const stepVotes = `-- name: StepVotes :one
+SELECT count(*) FILTER (WHERE decision = 'approved')::int AS approved,
+       count(*) FILTER (WHERE decision = 'rejected')::int AS rejected
+FROM approval.step_votes WHERE instance_id = $1 AND position = $2
+`
+
+type StepVotesParams struct {
+	InstanceID int64
+	Position   int32
+}
+
+type StepVotesRow struct {
+	Approved int32
+	Rejected int32
+}
+
+func (q *Queries) StepVotes(ctx context.Context, arg StepVotesParams) (StepVotesRow, error) {
+	row := q.db.QueryRow(ctx, stepVotes, arg.InstanceID, arg.Position)
+	var i StepVotesRow
+	err := row.Scan(&i.Approved, &i.Rejected)
+	return i, err
 }
 
 const steps = `-- name: Steps :many
-SELECT s.position, s.approvers, s.fallback, s.decision, s.reason, s.decided_at, d.name AS decided_by_name,
-       (SELECT coalesce(array_agg(a.name ORDER BY a.name), '{}')::text[] FROM iam.users a WHERE a.id = ANY(s.approvers)) AS approver_names
-FROM approval.instance_steps s LEFT JOIN iam.users d ON d.id = s.decided_by
+SELECT s.position, s.status, s.approvals, s.rejections, s.fallback, s.approvers, s.due_at, coalesce(s.due_at < now(), false)::boolean AS past_due,
+       (SELECT coalesce(jsonb_agg(jsonb_build_object('id', a.id, 'name', a.name, 'decision', v.decision, 'reason', v.reason, 'decided_at', v.decided_at,
+                                                     'cast_by_name', c.name)
+                                  ORDER BY a.name, a.id), '[]')
+        FROM iam.users a LEFT JOIN approval.step_votes v ON v.instance_id = s.instance_id AND v.position = s.position AND v.user_id = a.id
+        LEFT JOIN iam.users c ON c.id = v.cast_by
+        WHERE a.id = ANY(s.approvers))::jsonb AS voters
+FROM approval.instance_steps s
 WHERE s.instance_id = $1 ORDER BY s.position
 `
 
 type StepsRow struct {
-	Position      int32
-	Approvers     []int64
-	Fallback      bool
-	Decision      pgtype.Text
-	Reason        pgtype.Text
-	DecidedAt     pgtype.Timestamptz
-	DecidedByName pgtype.Text
-	ApproverNames []string
+	Position   int32
+	Status     string
+	Approvals  int32
+	Rejections int32
+	Fallback   bool
+	Approvers  []int64
+	DueAt      pgtype.Timestamptz
+	PastDue    bool
+	Voters     []byte
 }
 
+// Each step with its voters: who may vote and how each voted, by name.
 func (q *Queries) Steps(ctx context.Context, instanceID int64) ([]StepsRow, error) {
 	rows, err := q.db.Query(ctx, steps, instanceID)
 	if err != nil {
@@ -448,13 +948,14 @@ func (q *Queries) Steps(ctx context.Context, instanceID int64) ([]StepsRow, erro
 		var i StepsRow
 		if err := rows.Scan(
 			&i.Position,
-			&i.Approvers,
+			&i.Status,
+			&i.Approvals,
+			&i.Rejections,
 			&i.Fallback,
-			&i.Decision,
-			&i.Reason,
-			&i.DecidedAt,
-			&i.DecidedByName,
-			&i.ApproverNames,
+			&i.Approvers,
+			&i.DueAt,
+			&i.PastDue,
+			&i.Voters,
 		); err != nil {
 			return nil, err
 		}
@@ -464,6 +965,22 @@ func (q *Queries) Steps(ctx context.Context, instanceID int64) ([]StepsRow, erro
 		return nil, err
 	}
 	return items, nil
+}
+
+const usersExist = `-- name: UsersExist :one
+SELECT count(*) = 2 FROM iam.users WHERE id IN ($1::bigint, $2::bigint)
+`
+
+type UsersExistParams struct {
+	UserID     int64
+	DelegateID int64
+}
+
+func (q *Queries) UsersExist(ctx context.Context, arg UsersExistParams) (bool, error) {
+	row := q.db.QueryRow(ctx, usersExist, arg.UserID, arg.DelegateID)
+	var column_1 bool
+	err := row.Scan(&column_1)
+	return column_1, err
 }
 
 const within = `-- name: Within :one

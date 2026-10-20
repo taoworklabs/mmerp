@@ -23,6 +23,12 @@ type transitionInput struct {
 	}
 }
 
+type transitionOutput struct {
+	Body struct {
+		Held bool `json:"held" doc:"The cancel awaits approval; the document is unchanged until then"`
+	}
+}
+
 type deleteInput struct {
 	Type    string `path:"type"`
 	ID      int64  `path:"id"`
@@ -41,12 +47,15 @@ type setPeriodLockInput struct {
 }
 
 func registerHandlers(api huma.API, s *Service) {
-	huma.Register(api, huma.Operation{OperationID: "transition-document", Method: http.MethodPost, Path: "/documents/{type}/{id}/transitions", DefaultStatus: http.StatusNoContent},
-		func(ctx context.Context, in *transitionInput) (*struct{}, error) {
+	huma.Register(api, huma.Operation{OperationID: "transition-document", Method: http.MethodPost, Path: "/documents/{type}/{id}/transitions"},
+		func(ctx context.Context, in *transitionInput) (*transitionOutput, error) {
 			if _, ok := s.types[in.Type]; !ok {
 				return nil, platform.ErrNotFound
 			}
-			return nil, s.Transition(ctx, Ref{in.Type, in.ID}, in.Body.Version, Status(in.Body.To))
+			held, err := s.Transition(ctx, Ref{in.Type, in.ID}, in.Body.Version, Status(in.Body.To))
+			out := &transitionOutput{}
+			out.Body.Held = held
+			return out, err
 		})
 	huma.Register(api, huma.Operation{OperationID: "delete-document", Method: http.MethodDelete, Path: "/documents/{type}/{id}", DefaultStatus: http.StatusNoContent},
 		func(ctx context.Context, in *deleteInput) (*struct{}, error) {

@@ -8,6 +8,16 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+type ApprovalDelegation struct {
+	ID         int64
+	UserID     int64
+	DelegateID int64
+	StartsOn   pgtype.Date
+	EndsOn     pgtype.Date
+	CreatedBy  int64
+	CreatedAt  pgtype.Timestamptz
+}
+
 type ApprovalInstance struct {
 	ID              int64
 	DocType         string
@@ -16,28 +26,33 @@ type ApprovalInstance struct {
 	SubmittedBy     int64
 	SubmittedAt     pgtype.Timestamptz
 	Status          string
-	CurrentStep     int32
 	MaxLevels       int32
 	FallbackProduct string
 	FallbackRole    string
+	Plan            []byte
+	Action          string
+	Params          []byte
 }
 
 type ApprovalInstanceStep struct {
-	InstanceID int64
-	Position   int32
-	Approver   []byte
-	Approvers  []int64
-	Fallback   bool
-	DecidedBy  pgtype.Int8
-	Decision   pgtype.Text
-	Reason     pgtype.Text
-	DecidedAt  pgtype.Timestamptz
+	InstanceID        int64
+	Position          int32
+	Approver          []byte
+	Approvers         []int64
+	Fallback          bool
+	Approvals         int32
+	Rejections        int32
+	Status            string
+	DueHours          pgtype.Int4
+	DueAt             pgtype.Timestamptz
+	OverdueNotifiedAt pgtype.Timestamptz
 }
 
 type ApprovalRule struct {
 	DocType         string
-	Steps           []byte
 	MaxLevels       int32
 	FallbackProduct string
 	FallbackRole    string
+	Flow            []byte
+	Action          string
 }

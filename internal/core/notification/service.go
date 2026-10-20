@@ -43,7 +43,7 @@ func NewService(d Deps) *Service {
 		panic(err)
 	}
 	// A job's requester is waiting in the app: job kinds are not emailed.
-	return &Service{d: d, kinds: map[Kind]bool{ApprovalRequested: true, ApprovalApproved: true, ApprovalRejected: true,
+	return &Service{d: d, kinds: map[Kind]bool{ApprovalRequested: true, ApprovalApproved: true, ApprovalRejected: true, ApprovalOverdue: true,
 		Mentioned: true, JobCompleted: false, JobFailed: false}}
 }
 

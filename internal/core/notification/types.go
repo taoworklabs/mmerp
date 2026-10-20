@@ -9,6 +9,7 @@ const (
 	ApprovalRequested Kind = "approval_requested"
 	ApprovalApproved  Kind = "approval_approved"
 	ApprovalRejected  Kind = "approval_rejected"
+	ApprovalOverdue   Kind = "approval_overdue"
 	Mentioned         Kind = "mentioned"
 	JobCompleted      Kind = "job_completed"
 	JobFailed         Kind = "job_failed"
@@ -29,7 +30,7 @@ const pageSize = 50
 // only there while the caller may view the record.
 type Notification struct {
 	ID         int64   `json:"id"`
-	Kind       string  `json:"kind" doc:"A core kind (approval_requested, approval_approved, approval_rejected, mentioned, job_completed, job_failed) or a product's own, <product>.<name>"`
+	Kind       string  `json:"kind" doc:"A core kind (approval_requested, approval_approved, approval_rejected, approval_overdue, mentioned, job_completed, job_failed) or a product's own, <product>.<name>"`
 	RecordType *string `json:"record_type" doc:"e.g. hrm.leave_request; null for a job"`
 	RecordID   *int64  `json:"record_id"`
 	Label      *string `json:"label" doc:"The document number; null for a catalogue"`

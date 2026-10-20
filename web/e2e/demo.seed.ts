@@ -1,5 +1,5 @@
 import { expect, test, type APIRequestContext, type APIResponse } from '@playwright/test'
-import { created, signedInApi } from './api'
+import { created, signedInApi, toFlow } from './api'
 
 // The Demo demo company, built from an empty database (make reset-db) through the API:
 // org chart, accounts and roles, employees with sensitive data and dependents, leave types and
@@ -322,9 +322,9 @@ test('seed the Demo demo company', async ({ baseURL }) => {
 
   // Approval rules: heads decide leave and overtime, the deputy director long leave, holiday
   // overtime and timesheets, the director contracts and payrolls.
-  const rule = (type: DocType, steps: unknown[]) =>
-    ok(admin.put(`/api/approval-rules/${type}`, { data: { steps, max_levels: 3, fallback_product: 'hrm', fallback_role: 'hr' } }), `rule ${type}`)
-  const user = (login: string) => ({ kind: 'user', user_id: userIds[login] })
+  const rule = (type: DocType, steps: { approver: unknown; condition?: unknown }[]) =>
+    ok(admin.put(`/api/approval-rules/${type}`, { data: { flow: toFlow(steps), max_levels: 3, fallback_product: 'hrm', fallback_role: 'hr' } }), `rule ${type}`)
+  const user = (login: string) => ({ kind: 'user', user_ids: [userIds[login]] })
   await rule('hrm.leave_request', [{ approver: { kind: 'module' } }, { condition: { field: 'days', op: 'gt', value: '3' }, approver: user('pgd.nhansu') }])
   await rule('hrm.overtime_request', [{ approver: { kind: 'module' } }, { condition: { field: 'day_kind', op: 'eq', value: 'holiday' }, approver: user('pgd.nhansu') }])
   await rule('hrm.contract', [{ approver: user('giamdoc') }])

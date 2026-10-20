@@ -1,4 +1,4 @@
-import { Checkbox, FileInput, NumberInput, PasswordInput, Select, Textarea, TextInput } from '@mantine/core'
+import { Checkbox, FileInput, MultiSelect, NumberInput, PasswordInput, Select, Textarea, TextInput } from '@mantine/core'
 import { DateInput, MonthPickerInput } from '@mantine/dates'
 import { IconCalendar, IconFileSpreadsheet } from '@tabler/icons-react'
 import { useController, useFormContext, type RegisterOptions } from 'react-hook-form'
@@ -198,6 +198,27 @@ export function SelectField(props: Base & { data: Option[]; clearable?: boolean;
   )
 }
 
+// MultiSelectField holds several values from a list (e.g. several approvers); like SelectField
+// but wired to a string[], with no check mark and a search box past 7 options.
+export function MultiSelectField(props: Base & { data: Option[]; max?: number; searchable?: boolean }) {
+  const { field, common } = useField(props)
+  return (
+    <MultiSelect
+      {...common}
+      description={props.bare ? undefined : props.description}
+      readOnly={props.readOnly}
+      data={props.data}
+      value={field.value ?? []}
+      onChange={field.onChange}
+      maxValues={props.max}
+      searchable={props.searchable ?? props.data.length > 7}
+      withCheckIcon={false}
+      nothingFoundMessage="—"
+      comboboxProps={belowError(common.error)}
+    />
+  )
+}
+
 // DecimalField holds a fractional quantity as a decimal string (e.g. "2.5"), never a float
 // sent to the API; `scale` is the number of decimals the field allows.
 export function DecimalField(props: Base & { scale: number; step?: number; min?: number; allowNegative?: boolean }) {
@@ -264,8 +285,8 @@ export function MoneyField(props: Base & { min?: number }) {
 
 // IntegerField holds a whole number (a port, a year, a count of levels) without digit grouping,
 // so 8080 and 2026 read as typed.
-export function IntegerField(props: Base & { min?: number; max?: number }) {
-  const { field, common } = useField(props)
+export function IntegerField(props: Base & { min?: number; max?: number; rules?: RegisterOptions }) {
+  const { field, common } = useField(props, props.rules)
   return (
     <NumberInput
       {...common}

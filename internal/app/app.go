@@ -80,7 +80,7 @@ func Modules() []platform.Module {
 	ids.SetTreeHook(rec)
 	ids.SetDataProducts(rec)
 	ntf := notification.NewService(notification.Deps{Record: rec, IAM: ids, Audit: audit.NewService(), Setting: set})
-	appr := approval.NewService(approval.Deps{IAM: ids, Record: rec, Audit: audit.NewService(), Notification: ntf})
+	appr := approval.NewService(approval.Deps{IAM: ids, Record: rec, Audit: audit.NewService(), Notification: ntf, Setting: set})
 	rec.SetApprovalGate(appr)
 	dio := dataio.NewService(dataio.Deps{IAM: ids, Audit: audit.NewService(), Record: rec})
 	prn := printing.NewService(printing.Deps{Record: rec, Audit: audit.NewService(), DataIO: dio, IAM: ids})

@@ -26,6 +26,7 @@ import {
   MoneyField,
   MonthField,
   MonthFilter,
+  MultiSelectField,
   OrgUnitField,
   OrgUnitFilter,
   PasswordField,
@@ -75,7 +76,7 @@ export function FormDoc() {
   const { t } = useTranslation()
   // A card's fields edited in place: no section title, two to a row.
   const pair = useForm({ defaultValues: { name: 'Nguyễn Văn An', code: 'NV001', date: null, salary: undefined } })
-  const form = useForm({ defaultValues: { code: '', password: '', unit: null, entity: null, person: '3', date: null, month: '2026-03', file: null, choice: null, masked: undefined, open: undefined, denied: undefined, days: '2.5', flag: true } })
+  const form = useForm({ defaultValues: { code: '', password: '', unit: null, entity: null, person: '3', date: null, month: '2026-03', file: null, choice: null, many: ['a'], masked: undefined, open: undefined, denied: undefined, days: '2.5', flag: true } })
   return (
     <DocPage
       path="mmerp/form"
@@ -112,6 +113,16 @@ export function FormDoc() {
                   data={[
                     { value: 'a', label: 'A' },
                     { value: 'b', label: 'B' },
+                  ]}
+                />
+                <MultiSelectField
+                  name="many"
+                  label={t('shared.devui.multi_choice')}
+                  searchable
+                  data={[
+                    { value: 'a', label: 'A' },
+                    { value: 'b', label: 'B' },
+                    { value: 'c', label: 'C' },
                   ]}
                 />
                 <DecimalField name="days" label={t('shared.devui.decimal')} scale={1} step={0.5} />

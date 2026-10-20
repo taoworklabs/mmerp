@@ -1,5 +1,5 @@
 import { expect, test, type Browser, type Page } from '@playwright/test'
-import { created, createUser, employee, password, signedInApi, runId } from './api'
+import { created, createUser, employee, password, signedInApi, runId, toFlow } from './api'
 import { signedIn } from './helpers'
 
 // Covers the parts of notifications and the approval inbox the other specs leave out: the
@@ -26,7 +26,7 @@ test.beforeAll(async ({ baseURL }) => {
   const boss = await created(api.post('/api/hrm/employees', { data: employee(`TBB${run}`, dept, { user_login: login.boss }) }))
   await created(api.post('/api/hrm/employees', { data: employee(`TBS${run}`, dept, { user_login: login.staff, manager_id: boss }) }))
   const rule = await api.put('/api/approval-rules/hrm.leave_request', {
-    data: { steps: [{ approver: { kind: 'module' } }], max_levels: 3, fallback_product: 'hrm', fallback_role: 'hr' },
+    data: { flow: toFlow([{ approver: { kind: 'module' } }]), max_levels: 3, fallback_product: 'hrm', fallback_role: 'hr' },
   })
   expect(rule.status(), await rule.text()).toBe(204)
   const type = await created(api.post('/api/hrm/leave-types', { data: { name: `Nghỉ TB ${run}`, deducts_balance: false, paid: true, active: true } }))
@@ -112,7 +112,7 @@ test('TB-04 the API refusal when approving a withdrawn request', async ({ baseUR
 
   const doc = await (await asStaff.get(`/api/hrm/leaves/${id}`)).json()
   const sent = await asStaff.post(`/api/documents/hrm.leave_request/${id}/transitions`, { data: { to: 'posted', version: doc.version } })
-  expect(sent.status(), await sent.text()).toBe(204)
+  expect(sent.status(), await sent.text()).toBe(200)
 
   const asBoss = await signedInApi(baseURL!, login.boss, password)
   const inbox = await (await asBoss.get('/api/approvals/inbox')).json()
@@ -121,7 +121,7 @@ test('TB-04 the API refusal when approving a withdrawn request', async ({ baseUR
 
   const after = await (await asStaff.get(`/api/hrm/leaves/${id}`)).json()
   const pulled = await asStaff.post(`/api/documents/hrm.leave_request/${id}/transitions`, { data: { to: 'draft', version: after.version } })
-  expect(pulled.status(), await pulled.text()).toBe(204)
+  expect(pulled.status(), await pulled.text()).toBe(200)
 
   // The approver acts on the instance and step they saw before the withdrawal.
   const res = await asBoss.post(`/api/approvals/${item.instance_id}/approve`, { data: { step: item.step } })
@@ -140,7 +140,7 @@ test('TB-04 the same refusal seen from the document page', async ({ browser, bas
   const asStaff = await signedInApi(baseURL!, login.staff, password)
   const id = await created(asStaff.post('/api/hrm/leaves', { data: { leave_type_id: type, start_date: '2026-08-17', end_date: '2026-08-17', days: '1', reason: null } }))
   const doc = await (await asStaff.get(`/api/hrm/leaves/${id}`)).json()
-  expect((await asStaff.post(`/api/documents/hrm.leave_request/${id}/transitions`, { data: { to: 'posted', version: doc.version } })).status()).toBe(204)
+  expect((await asStaff.post(`/api/documents/hrm.leave_request/${id}/transitions`, { data: { to: 'posted', version: doc.version } })).status()).toBe(200)
 
   const boss = await as(browser, login.boss, `/hrm/leaves/${id}`)
   const approve = boss.getByRole('button', { name: 'Duyệt', exact: true })
@@ -148,7 +148,7 @@ test('TB-04 the same refusal seen from the document page', async ({ browser, bas
 
   // Withdraw through the API so the approver's page is untouched until they click.
   const now = await (await asStaff.get(`/api/hrm/leaves/${id}`)).json()
-  expect((await asStaff.post(`/api/documents/hrm.leave_request/${id}/transitions`, { data: { to: 'draft', version: now.version } })).status()).toBe(204)
+  expect((await asStaff.post(`/api/documents/hrm.leave_request/${id}/transitions`, { data: { to: 'draft', version: now.version } })).status()).toBe(200)
 
   await approve.click()
   await expect(boss.getByText('Người gửi đã rút lại lần duyệt này.')).toBeVisible()

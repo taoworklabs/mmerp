@@ -60,11 +60,11 @@ func (f *contractFixture) contract(id int64) hrm.Contract {
 }
 
 func (f *contractFixture) post(id int64) error {
-	return f.rec.Transition(f.pay, record.Ref{Type: "hrm.contract", ID: id}, f.contract(id).Version, record.Posted)
+	return errOf(f.rec.Transition(f.pay, record.Ref{Type: "hrm.contract", ID: id}, f.contract(id).Version, record.Posted))
 }
 
 func (f *contractFixture) cancel(id int64) error {
-	return f.rec.Transition(f.pay, record.Ref{Type: "hrm.contract", ID: id}, f.contract(id).Version, record.Cancelled)
+	return errOf(f.rec.Transition(f.pay, record.Ref{Type: "hrm.contract", ID: id}, f.contract(id).Version, record.Cancelled))
 }
 
 func optionalStr(s string) *string {
@@ -88,9 +88,9 @@ func TestContractRecordContract(t *testing.T) {
 			Edit: func(ctx context.Context, r record.Ref, version int32, date string) error {
 				return f.hrm.UpdateContract(ctx, r.ID, hrm.ContractUpdate{Version: version, ContractFields: hrm.ContractFields{ContractTypeID: f.kind, StartDate: date, Terms: terms(10_000_000)}})
 			},
-			RequireApproval: func(*testing.T) {
-				f.check(f.appr.SaveRule(f.admin, "hrm.contract", approval.RuleInput{
-					Steps: []approval.Step{{Approver: approval.Approver{Kind: "role", Product: "hrm", Role: "hr"}}}, MaxLevels: 1, FallbackProduct: "hrm", FallbackRole: "hr",
+			RequireApproval: func(_ *testing.T, action record.Action) {
+				f.check(f.appr.SaveRule(f.admin, "hrm.contract", action, approval.RuleInput{
+					Flow: approval.Flow{{Step: &approval.StepDef{Approver: approval.Approver{Kind: "role", Product: "hrm", Role: "hr"}}}}, MaxLevels: 1, FallbackProduct: "hrm", FallbackRole: "hr",
 				}))
 			},
 			Approve:      func(instance int64) error { return f.appr.Approve(f.head, instance, 1) },
@@ -211,16 +211,16 @@ func TestContractPermissions(t *testing.T) {
 	_, err = f.hrm.CreateContract(f.m, hrm.NewContract{EmployeeID: f.emp, ContractFields: hrm.ContractFields{ContractTypeID: f.kind, StartDate: "2027-01-01", Terms: terms(1)}})
 	wantErr(t, err, "not_found")
 	// HR sends a contract without seeing its terms, and takes it back the same way.
-	f.check(f.appr.SaveRule(f.admin, "hrm.contract", approval.RuleInput{
-		Steps: []approval.Step{{Approver: approval.Approver{Kind: "role", Product: "hrm", Role: "hr"}}}, MaxLevels: 1, FallbackProduct: "hrm", FallbackRole: "hr",
+	f.check(f.appr.SaveRule(f.admin, "hrm.contract", record.Post, approval.RuleInput{
+		Flow: approval.Flow{{Step: &approval.StepDef{Approver: approval.Approver{Kind: "role", Product: "hrm", Role: "hr"}}}}, MaxLevels: 1, FallbackProduct: "hrm", FallbackRole: "hr",
 	}))
 	ref := record.Ref{Type: "hrm.contract", ID: id}
-	f.check(f.rec.Transition(f.hr, ref, 1, record.Posted))
+	f.check(errOf(f.rec.Transition(f.hr, ref, 1, record.Posted)))
 	sent, err := f.hrm.Contract(f.hr, id)
 	if err != nil || !equal(sent.AllowedActions, "withdraw") {
 		t.Fatalf("hr after sending: %+v %v", sent.AllowedActions, err)
 	}
-	f.check(f.rec.Transition(f.hr, ref, sent.Version, record.Draft))
+	f.check(errOf(f.rec.Transition(f.hr, ref, sent.Version, record.Draft)))
 	// With payroll every read of the terms is audited, and the contract may be printed.
 	before := f.auditCount("hrm.contract_terms_viewed")
 	if c := f.contract(id); c.Terms == nil || c.Terms.Salary != 10_000_000 || !equal(c.AllowedActions, "edit", "delete", "submit", "print") {
@@ -292,6 +292,27 @@ func TestAddAppendixAction(t *testing.T) {
 }
 
 // A fixed-term kind needs an end date and a kind without a term refuses one; appendices have none.
+// While an original waits for its cancel to be approved, no appendix is added to it or posted.
+func TestAppendixOnHeldContract(t *testing.T) {
+	f := newContractFixture(t)
+	orig := must(t)(f.original("2026-01-01", "", 10_000_000))
+	f.check(f.post(orig))
+	draft := must(t)(f.appendix(orig, "2026-03-01", 11_000_000))
+	f.check(f.appr.SaveRule(f.admin, "hrm.contract", record.Cancel, approval.RuleInput{
+		Flow: approval.Flow{{Step: &approval.StepDef{Approver: approval.Approver{Kind: "role", Product: "hrm", Role: "hr"}}}}, MaxLevels: 1, FallbackProduct: "hrm", FallbackRole: "hr",
+	}))
+	f.check(f.cancel(orig))
+	if c := f.contract(orig); c.Status != "posted" {
+		t.Fatalf("cancel not held: %s", c.Status)
+	}
+	if _, err := f.appendix(orig, "2026-04-01", 12_000_000); errCode(err) != "awaiting_approval" {
+		t.Fatalf("appendix on a held contract: %v", err)
+	}
+	if code := errCode(f.post(draft)); code != "awaiting_approval" {
+		t.Fatalf("posting an appendix of a held contract: %q", code)
+	}
+}
+
 func TestEndDateFollowsTheKind(t *testing.T) {
 	f := newContractFixture(t)
 	_, err := f.hrm.CreateContract(f.pay, hrm.NewContract{EmployeeID: f.emp, ContractFields: hrm.ContractFields{ContractTypeID: f.fixed, StartDate: "2026-01-01", Terms: terms(1)}})
@@ -384,7 +405,7 @@ func TestOverlappingContractsPostedAtOnce(t *testing.T) {
 	var second error
 	var wg sync.WaitGroup
 	f.check(platform.InTx(f.pay, func(ctx context.Context) error {
-		f.check(f.rec.Transition(ctx, record.Ref{Type: "hrm.contract", ID: a}, 1, record.Posted))
+		f.check(errOf(f.rec.Transition(ctx, record.Ref{Type: "hrm.contract", ID: a}, 1, record.Posted)))
 		wg.Go(func() { second = f.post(b) })
 		pgtest.AwaitLockWait(t, f.pool)
 		return nil

@@ -40,14 +40,15 @@ export function DocumentActions({ docType, id, version, number, actions, listPat
   const unsaved = useUnsaved()
   const navigate = useNavigate()
 
-  async function act(action: string, call: (version: number) => Promise<unknown>) {
+  // A call answers held when an approval rule makes its action wait for approval instead.
+  async function act(action: string, call: (version: number) => Promise<{ held?: boolean } | void>) {
     // Moving on would reload the form at the new version and drop what is not saved yet.
     if (unsaved && (action === 'submit' || action === 'withdraw')) return onError(t('shared.document.save_first'))
     onError(null)
     setBusy(true)
     try {
-      await run(call)
-      notifySuccess(t(`shared.document.done.${action}`, { number }))
+      const out = await run(call)
+      notifySuccess(out?.held ? t('shared.document.sent_for_approval', { number }) : t(`shared.document.done.${action}`, { number }))
     } catch (err) {
       onError(errorText(t, err))
     } finally {
@@ -64,7 +65,7 @@ export function DocumentActions({ docType, id, version, number, actions, listPat
     navigate(listPath, { replace: true })
   }
 
-  const destructive = async (action: 'cancel' | 'delete', call: (v: number) => Promise<unknown>) => {
+  const destructive = async (action: 'cancel' | 'delete', call: (v: number) => Promise<{ held?: boolean } | void>) => {
     const label = t(`shared.document.action.${action}`)
     if (await ask({ title: label, message: t(`shared.document.confirm.${action}`, { number }), confirmLabel: label, danger: true })) await act(action, call)
   }

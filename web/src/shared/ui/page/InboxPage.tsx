@@ -7,7 +7,7 @@ import { icon } from '../theme'
 import classes from './InboxPage.module.css'
 import { Page, type PageHeaderProps } from './Page'
 
-type Props = Omit<PageHeaderProps, 'actions' | 'leading'> & {
+type Props = Omit<PageHeaderProps, 'leading'> & {
   list: ReactNode
   // The selected item's preview and approval panel; null when nothing is selected.
   detail: ReactNode | null

@@ -8,6 +8,8 @@
   "notification.email.approval_approved.body": "A document you sent in mmerp was approved.",
   "notification.email.approval_rejected.subject": "Your document was rejected",
   "notification.email.approval_rejected.body": "A document you sent in mmerp was rejected. Open mmerp to read why.",
+  "notification.email.approval_overdue.subject": "A document is overdue for approval",
+  "notification.email.approval_overdue.body": "An approval step in mmerp is past its due time. Open mmerp to see it.",
   "notification.email.mentioned.subject": "You were mentioned in mmerp",
   "notification.email.mentioned.body": "Someone mentioned you in a discussion in mmerp."
 }

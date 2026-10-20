@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test'
-import { created, createUser, password, signedInApi, runId } from './api'
+import { created, createUser, password, signedInApi, runId, toFlow } from './api'
 import { signedIn } from './helpers'
 
 // One run: a company with a department, an HR user scoped to that department, and an HRM
@@ -16,7 +16,7 @@ test.beforeAll(async ({ baseURL }) => {
   await createUser(api, hr, [{ role: 'hrm.hr', unit }])
   await createUser(api, rules, [{ role: 'hrm.approval_admin', unit: null }])
   const rule = await api.put('/api/approval-rules/hrm.leave_request', {
-    data: { steps: [{ approver: { kind: 'module' } }], max_levels: 3, fallback_product: 'hrm', fallback_role: 'hr' },
+    data: { flow: toFlow([{ approver: { kind: 'module' } }]), max_levels: 3, fallback_product: 'hrm', fallback_role: 'hr' },
   })
   expect(rule.status(), await rule.text()).toBe(204)
 })
@@ -54,10 +54,11 @@ test('an HRM approval rule administrator edits HRM rules inside HRM', async ({ p
   await nav.getByRole('link', { name: 'Quy tắc duyệt' }).click()
   await expect(page).toHaveURL(/\/hrm\/approval-rules$/)
   const table = page.getByRole('table', { name: 'Quy tắc duyệt' })
-  await expect(table.getByRole('link', { name: 'Đơn nghỉ phép' })).toBeVisible()
-  await expect(table.getByRole('link')).toHaveCount(5)
+  await expect(table.getByRole('link', { name: 'Đơn nghỉ phép · Gửi duyệt' })).toBeVisible()
+  // Five document types, each with a post and a cancel rule.
+  await expect(table.getByRole('link')).toHaveCount(10)
 
-  await table.getByRole('link', { name: 'Đơn nghỉ phép' }).click()
+  await table.getByRole('link', { name: 'Đơn nghỉ phép · Gửi duyệt' }).click()
   await expect(page).toHaveURL(/\/hrm\/approval-rules\/hrm\.leave_request$/)
   await page.getByRole('textbox', { name: /Số cấp quản lý tối đa/ }).fill('4')
   await page.getByRole('button', { name: 'Lưu' }).click()

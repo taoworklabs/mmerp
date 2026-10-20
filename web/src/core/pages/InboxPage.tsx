@@ -1,5 +1,5 @@
-import { Anchor, Divider, Group, Stack, Text, Tooltip } from '@mantine/core'
-import { IconExternalLink } from '@tabler/icons-react'
+import { Anchor, Button, Divider, Group, Stack, Text, Tooltip } from '@mantine/core'
+import { IconExternalLink, IconUserShare } from '@tabler/icons-react'
 import { useQuery } from '@tanstack/react-query'
 import { useRef } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -7,7 +7,7 @@ import { Link, useLocation, useNavigate, useSearchParams } from 'react-router'
 import { api, unwrap, type InboxItem } from '@/shared/api/core'
 import { RecordPreview, useRecordLink } from '@/shared/area'
 import { useMe } from '@/shared/auth/me'
-import { ApprovalPanel, documentKeys } from '@/shared/document'
+import { actionLabel, ApprovalPanel, documentKeys } from '@/shared/document'
 import { errorText, formatAgo, formatDateTime } from '@/shared/i18n'
 import { InboxList, InboxRow, InboxPage as Template } from '@/shared/ui/page'
 import { ContentSkeleton, EmptyState, ErrorState } from '@/shared/ui/states'
@@ -65,14 +65,31 @@ export default function InboxPage() {
                 </Tooltip>
               </Group>
             }
-            description={`${t(`${i.doc_type}.name`, { defaultValue: i.doc_type })} · ${i.submitted_by_name}`}
+            description={[
+              t(`${i.doc_type}.name`, { defaultValue: i.doc_type }),
+              ...(i.action === 'post' ? [] : [actionLabel(t, i.doc_type, i.action)]),
+              i.submitted_by_name,
+              ...(i.on_behalf_of_name ? [t('core.inbox.on_behalf', { name: i.on_behalf_of_name })] : []),
+            ].join(' · ')}
           />
         ))}
       </InboxList>
     )
 
   return (
-    <Template title={t('core.inbox.title')} description={t('core.inbox.description')} list={list} detail={item ? <Detail item={item} onDone={advance} /> : null} onBack={back} />
+    <Template
+      title={t('core.inbox.title')}
+      description={t('core.inbox.description')}
+      actions={
+        // Relative, so inside an area the page keeps that area's menu.
+        <Button component={Link} to="../delegations" relative="path" variant="default" leftSection={<IconUserShare {...icon.button} />}>
+          {t('core.delegations.title')}
+        </Button>
+      }
+      list={list}
+      detail={item ? <Detail item={item} onDone={advance} /> : null}
+      onBack={back}
+    />
   )
 }
 

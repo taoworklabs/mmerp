@@ -69,11 +69,11 @@ func TestLeaveAPI(t *testing.T) {
 	}
 
 	// The only possible approver is the submitter: refused, never auto-approved.
-	ok("PUT", "/api/approval-rules/hrm.leave_request", `{"steps":[{"approver":{"kind":"module"}}],"max_levels":3,"fallback_product":"hrm","fallback_role":"hr"}`, 204)
+	ok("PUT", "/api/approval-rules/hrm.leave_request", `{"flow":[{"step":{"approver":{"kind":"module"},"approvals":1,"rejections":1}}],"max_levels":3,"fallback_product":"hrm","fallback_role":"hr"}`, 204)
 	wantCode(t, c.do("POST", docPath+"/transitions", `{"to":"posted","version":1}`), 422, "no_approver")
 	ok("DELETE", "/api/approval-rules/hrm.leave_request", "", 204)
 
-	ok("POST", docPath+"/transitions", `{"to":"posted","version":1}`, 204)
+	ok("POST", docPath+"/transitions", `{"to":"posted","version":1}`, 200)
 	if l := get(c, path); l.Status != "posted" || *l.Balance != "10.5" || !slices.Equal(l.AllowedActions, []string{"cancel"}) {
 		t.Fatalf("posted = %+v", l)
 	}

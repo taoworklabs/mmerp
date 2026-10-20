@@ -1,5 +1,5 @@
 import { expect, test, type APIRequestContext, type Page } from '@playwright/test'
-import { created, createUser, employee, password, signedInApi, runId } from './api'
+import { created, createUser, employee, password, signedInApi, runId, toFlow } from './api'
 import { admin } from './helpers'
 
 // One run: department P with manager M and employees E and E2 (both reporting to M), E3
@@ -26,7 +26,7 @@ test.beforeAll(async ({ baseURL }) => {
     expect(res.status()).toBe(204)
   }
   const rule = await api.put('/api/approval-rules/hrm.leave_request', {
-    data: { steps: [{ approver: { kind: 'module' } }], max_levels: 3, fallback_product: 'hrm', fallback_role: 'hr' },
+    data: { flow: toFlow([{ approver: { kind: 'module' } }]), max_levels: 3, fallback_product: 'hrm', fallback_role: 'hr' },
   })
   expect(rule.status(), await rule.text()).toBe(204)
   ids = { e, e2, e3, annual }
@@ -65,7 +65,7 @@ async function sendViaApi(baseURL: string, user: string, month: string, days: st
     as.post('/api/hrm/leaves', { data: { leave_type_id: ids.annual, start_date: `2026-${month}-10`, end_date: `2026-${month}-14`, days, reason: null } }),
   )
   const res = await as.post(`/api/documents/hrm.leave_request/${id}/transitions`, { data: { to: 'posted', version: 1 } })
-  expect(res.status(), await res.text()).toBe(204)
+  expect(res.status(), await res.text()).toBe(200)
   return id
 }
 

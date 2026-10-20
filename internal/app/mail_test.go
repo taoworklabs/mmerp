@@ -246,7 +246,7 @@ func TestNotificationEmails(t *testing.T) {
 	}
 	number := f.get(f.hr).Number
 
-	f.ok(f.hr, "POST", fmt.Sprintf("/api/documents/hrm.timesheet/%d/transitions", f.timesheet), `{"to":"posted","version":1}`, 204)
+	f.ok(f.hr, "POST", fmt.Sprintf("/api/documents/hrm.timesheet/%d/transitions", f.timesheet), `{"to":"posted","version":1}`, 200)
 	f.systemJob("notification.email", "completed")
 	mails := smtp.received()
 	if len(mails) != 1 || mails[0].to[0] != "head@example.com" || !strings.Contains(mails[0].data, "waiting for your approval") ||

@@ -5,6 +5,7 @@ import (
 	"github.com/taoworklabs/mmerp/internal/core/iam"
 	"github.com/taoworklabs/mmerp/internal/core/notification"
 	"github.com/taoworklabs/mmerp/internal/core/record"
+	"github.com/taoworklabs/mmerp/internal/core/setting"
 )
 
 type Deps struct {
@@ -12,4 +13,5 @@ type Deps struct {
 	Record       *record.Service
 	Audit        *audit.Service
 	Notification *notification.Service
+	Setting      *setting.Service
 }

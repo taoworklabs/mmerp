@@ -84,6 +84,7 @@
           },
           "step": {
             "format": "int32",
+            "minimum": 1,
             "type": "integer"
           }
         },
@@ -110,9 +111,16 @@
           "role": {
             "type": "string"
           },
-          "user_id": {
-            "format": "int64",
-            "type": "integer"
+          "user_ids": {
+            "items": {
+              "format": "int64",
+              "type": "integer"
+            },
+            "maxItems": 20,
+            "type": [
+              "array",
+              "null"
+            ]
           }
         },
         "required": [
@@ -307,6 +315,24 @@
         ],
         "type": "object"
       },
+      "Branch": {
+        "additionalProperties": false,
+        "properties": {
+          "body": {
+            "items": {
+              "$ref": "#/components/schemas/Element"
+            },
+            "type": "array"
+          },
+          "condition": {
+            "$ref": "#/components/schemas/Expr"
+          }
+        },
+        "required": [
+          "body"
+        ],
+        "type": "object"
+      },
       "CodeSeries": {
         "additionalProperties": false,
         "properties": {
@@ -381,35 +407,6 @@
         },
         "required": [
           "version"
-        ],
-        "type": "object"
-      },
-      "Condition": {
-        "additionalProperties": false,
-        "properties": {
-          "field": {
-            "minLength": 1,
-            "type": "string"
-          },
-          "op": {
-            "enum": [
-              "gt",
-              "gte",
-              "eq",
-              "within"
-            ],
-            "type": "string"
-          },
-          "value": {
-            "maxLength": 30,
-            "minLength": 1,
-            "type": "string"
-          }
-        },
-        "required": [
-          "field",
-          "op",
-          "value"
         ],
         "type": "object"
       },
@@ -780,6 +777,28 @@
           "start_date",
           "end_date",
           "terms"
+        ],
+        "type": "object"
+      },
+      "CreateDelegationOutputBody": {
+        "additionalProperties": false,
+        "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "/api/schemas/CreateDelegationOutputBody.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
+          "id": {
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id"
         ],
         "type": "object"
       },
@@ -1156,6 +1175,116 @@
           "org_unit_name",
           "active",
           "payment_terms"
+        ],
+        "type": "object"
+      },
+      "Delegation": {
+        "additionalProperties": false,
+        "properties": {
+          "active": {
+            "type": "boolean"
+          },
+          "allowed_actions": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "delegate_id": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "delegate_name": {
+            "type": "string"
+          },
+          "ends_on": {
+            "format": "date",
+            "type": "string"
+          },
+          "id": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "starts_on": {
+            "format": "date",
+            "type": "string"
+          },
+          "user_id": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "user_name": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "user_id",
+          "user_name",
+          "delegate_id",
+          "delegate_name",
+          "starts_on",
+          "ends_on",
+          "active",
+          "allowed_actions"
+        ],
+        "type": "object"
+      },
+      "DelegationInput": {
+        "additionalProperties": false,
+        "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "/api/schemas/DelegationInput.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
+          "delegate_id": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "ends_on": {
+            "format": "date",
+            "type": "string"
+          },
+          "starts_on": {
+            "format": "date",
+            "type": "string"
+          },
+          "user_id": {
+            "description": "Whose seats; omitted means the actor's own",
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "delegate_id",
+          "starts_on",
+          "ends_on"
+        ],
+        "type": "object"
+      },
+      "DelegationsMetaOutputBody": {
+        "additionalProperties": false,
+        "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "/api/schemas/DelegationsMetaOutputBody.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
+          "manage_all": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "manage_all"
         ],
         "type": "object"
       },
@@ -1700,6 +1829,18 @@
         ],
         "type": "object"
       },
+      "Element": {
+        "additionalProperties": false,
+        "properties": {
+          "split": {
+            "$ref": "#/components/schemas/Split"
+          },
+          "step": {
+            "$ref": "#/components/schemas/StepDef"
+          }
+        },
+        "type": "object"
+      },
       "EmailInputBody": {
         "additionalProperties": false,
         "properties": {
@@ -2124,6 +2265,48 @@
         ],
         "type": "object"
       },
+      "Expr": {
+        "additionalProperties": false,
+        "properties": {
+          "all": {
+            "items": {
+              "$ref": "#/components/schemas/Expr"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "any": {
+            "items": {
+              "$ref": "#/components/schemas/Expr"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "field": {
+            "type": "string"
+          },
+          "op": {
+            "enum": [
+              "gt",
+              "gte",
+              "eq",
+              "within",
+              "has"
+            ],
+            "type": "string"
+          },
+          "value": {
+            "maxLength": 30,
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
       "Field": {
         "additionalProperties": false,
         "properties": {
@@ -2134,7 +2317,8 @@
             "enum": [
               "number",
               "choice",
-              "org_unit"
+              "org_unit",
+              "set"
             ],
             "type": "string"
           },
@@ -2156,13 +2340,38 @@
               "array",
               "null"
             ]
+          },
+          "searchable": {
+            "type": "boolean"
           }
         },
         "required": [
           "key",
           "kind",
           "label",
-          "ops"
+          "ops",
+          "searchable"
+        ],
+        "type": "object"
+      },
+      "FieldOption": {
+        "additionalProperties": false,
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "id": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "name": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "code",
+          "name"
         ],
         "type": "object"
       },
@@ -2314,6 +2523,9 @@
       "InboxItem": {
         "additionalProperties": false,
         "properties": {
+          "action": {
+            "type": "string"
+          },
           "date": {
             "format": "date",
             "type": "string"
@@ -2332,6 +2544,12 @@
           "number": {
             "type": "string"
           },
+          "on_behalf_of_name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
           "step": {
             "format": "int32",
             "type": "integer"
@@ -2348,11 +2566,13 @@
           "instance_id",
           "doc_type",
           "doc_id",
+          "action",
           "number",
           "date",
           "step",
           "submitted_by_name",
-          "submitted_at"
+          "submitted_at",
+          "on_behalf_of_name"
         ],
         "type": "object"
       },
@@ -2383,19 +2603,21 @@
       "Instance": {
         "additionalProperties": false,
         "properties": {
+          "action": {
+            "type": "string"
+          },
           "allowed_actions": {
             "items": {
               "type": "string"
             },
             "type": "array"
           },
-          "current_step": {
-            "format": "int32",
-            "type": "integer"
-          },
           "id": {
             "format": "int64",
             "type": "integer"
+          },
+          "plan": {
+            "$ref": "#/components/schemas/Plan"
           },
           "status": {
             "enum": [
@@ -2423,10 +2645,11 @@
         },
         "required": [
           "id",
+          "action",
           "status",
-          "current_step",
           "submitted_by_name",
           "submitted_at",
+          "plan",
           "steps",
           "allowed_actions"
         ],
@@ -4223,7 +4446,7 @@
             ]
           },
           "kind": {
-            "description": "A core kind (approval_requested, approval_approved, approval_rejected, mentioned, job_completed, job_failed) or a product's own, \u003cproduct\u003e.\u003cname\u003e",
+            "description": "A core kind (approval_requested, approval_approved, approval_rejected, approval_overdue, mentioned, job_completed, job_failed) or a product's own, \u003cproduct\u003e.\u003cname\u003e",
             "type": "string"
           },
           "label": {
@@ -4277,6 +4500,35 @@
         "required": [
           "value",
           "label"
+        ],
+        "type": "object"
+      },
+      "OrderFromQuoteOutputBody": {
+        "additionalProperties": false,
+        "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "/api/schemas/OrderFromQuoteOutputBody.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
+          "held": {
+            "type": "boolean"
+          },
+          "id": {
+            "format": "int64",
+            "type": [
+              "integer",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "held"
         ],
         "type": "object"
       },
@@ -5280,6 +5532,34 @@
         ],
         "type": "object"
       },
+      "Plan": {
+        "additionalProperties": false,
+        "properties": {
+          "par": {
+            "items": {
+              "$ref": "#/components/schemas/Plan"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "seq": {
+            "items": {
+              "$ref": "#/components/schemas/Plan"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "step": {
+            "format": "int32",
+            "type": "integer"
+          }
+        },
+        "type": "object"
+      },
       "PrintBlock": {
         "additionalProperties": false,
         "properties": {
@@ -5424,6 +5704,10 @@
             "readOnly": true,
             "type": "string"
           },
+          "from": {
+            "format": "int64",
+            "type": "integer"
+          },
           "login": {
             "maxLength": 200,
             "minLength": 1,
@@ -5431,11 +5715,13 @@
           },
           "step": {
             "format": "int32",
+            "minimum": 1,
             "type": "integer"
           }
         },
         "required": [
           "step",
+          "from",
           "login"
         ],
         "type": "object"
@@ -5459,6 +5745,7 @@
           },
           "step": {
             "format": "int32",
+            "minimum": 1,
             "type": "integer"
           }
         },
@@ -5535,24 +5822,23 @@
             "minLength": 1,
             "type": "string"
           },
+          "flow": {
+            "items": {
+              "$ref": "#/components/schemas/Element"
+            },
+            "minItems": 1,
+            "type": "array"
+          },
           "max_levels": {
             "default": 3,
             "format": "int32",
             "maximum": 10,
             "minimum": 1,
             "type": "integer"
-          },
-          "steps": {
-            "items": {
-              "$ref": "#/components/schemas/Step"
-            },
-            "maxItems": 10,
-            "minItems": 1,
-            "type": "array"
           }
         },
         "required": [
-          "steps",
+          "flow",
           "max_levels",
           "fallback_product",
           "fallback_role"
@@ -5772,14 +6058,66 @@
         ],
         "type": "object"
       },
-      "Step": {
+      "Split": {
         "additionalProperties": false,
         "properties": {
+          "branches": {
+            "items": {
+              "$ref": "#/components/schemas/Branch"
+            },
+            "maxItems": 10,
+            "minItems": 1,
+            "type": "array"
+          },
+          "mode": {
+            "enum": [
+              "one",
+              "all"
+            ],
+            "type": "string"
+          },
+          "otherwise": {
+            "items": {
+              "$ref": "#/components/schemas/Element"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "mode",
+          "branches"
+        ],
+        "type": "object"
+      },
+      "StepDef": {
+        "additionalProperties": false,
+        "properties": {
+          "approvals": {
+            "default": 1,
+            "format": "int32",
+            "maximum": 20,
+            "minimum": 1,
+            "type": "integer"
+          },
           "approver": {
             "$ref": "#/components/schemas/Approver"
           },
-          "condition": {
-            "$ref": "#/components/schemas/Condition"
+          "due_hours": {
+            "description": "Hours after the step opens before its approvers and the submitter are told it is overdue",
+            "format": "int32",
+            "maximum": 720,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "rejections": {
+            "default": 1,
+            "format": "int32",
+            "maximum": 20,
+            "minimum": 1,
+            "type": "integer"
           }
         },
         "required": [
@@ -5790,20 +6128,78 @@
       "StepView": {
         "additionalProperties": false,
         "properties": {
-          "approver_names": {
+          "allowed_actions": {
             "items": {
               "type": "string"
             },
             "type": "array"
           },
-          "decided_at": {
+          "approvals": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "due_at": {
             "format": "date-time",
             "type": [
               "string",
               "null"
             ]
           },
-          "decided_by_name": {
+          "fallback": {
+            "type": "boolean"
+          },
+          "overdue": {
+            "type": "boolean"
+          },
+          "position": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "rejections": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "status": {
+            "enum": [
+              "waiting",
+              "open",
+              "approved",
+              "rejected",
+              "cancelled"
+            ],
+            "type": "string"
+          },
+          "voters": {
+            "items": {
+              "$ref": "#/components/schemas/StepVoter"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "position",
+          "status",
+          "approvals",
+          "rejections",
+          "fallback",
+          "due_at",
+          "overdue",
+          "voters",
+          "allowed_actions"
+        ],
+        "type": "object"
+      },
+      "StepVoter": {
+        "additionalProperties": false,
+        "properties": {
+          "cast_by_name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "decided_at": {
+            "format": "date-time",
             "type": [
               "string",
               "null"
@@ -5819,12 +6215,12 @@
               "null"
             ]
           },
-          "fallback": {
-            "type": "boolean"
-          },
-          "position": {
-            "format": "int32",
+          "id": {
+            "format": "int64",
             "type": "integer"
+          },
+          "name": {
+            "type": "string"
           },
           "reason": {
             "type": [
@@ -5834,13 +6230,12 @@
           }
         },
         "required": [
-          "position",
-          "approver_names",
-          "fallback",
+          "id",
+          "name",
           "decision",
-          "decided_by_name",
           "reason",
-          "decided_at"
+          "decided_at",
+          "cast_by_name"
         ],
         "type": "object"
       },
@@ -6167,9 +6562,34 @@
         ],
         "type": "object"
       },
+      "TransitionOutputBody": {
+        "additionalProperties": false,
+        "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "/api/schemas/TransitionOutputBody.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
+          "held": {
+            "description": "The cancel awaits approval; the document is unchanged until then",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "held"
+        ],
+        "type": "object"
+      },
       "TypeRule": {
         "additionalProperties": false,
         "properties": {
+          "action": {
+            "type": "string"
+          },
           "allowed_actions": {
             "items": {
               "type": "string"
@@ -6197,6 +6617,7 @@
         },
         "required": [
           "doc_type",
+          "action",
           "product",
           "fields",
           "module_approvers",
@@ -6383,6 +6804,186 @@
   },
   "openapi": "3.1.0",
   "paths": {
+    "/approval-delegations": {
+      "get": {
+        "operationId": "list-approval-delegations",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/Delegation"
+                  },
+                  "type": [
+                    "array",
+                    "null"
+                  ]
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "tags": [
+          "core",
+          "core"
+        ]
+      },
+      "post": {
+        "operationId": "create-approval-delegation",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DelegationInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreateDelegationOutputBody"
+                }
+              }
+            },
+            "description": "Created"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "tags": [
+          "core",
+          "core"
+        ]
+      }
+    },
+    "/approval-delegations/meta": {
+      "get": {
+        "operationId": "get-approval-delegations-meta",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DelegationsMetaOutputBody"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "tags": [
+          "core",
+          "core"
+        ]
+      }
+    },
+    "/approval-delegations/users": {
+      "get": {
+        "description": "Every account, to pick a delegate from. Logins are empty unless the caller manages everyone's delegations.",
+        "operationId": "list-approval-delegation-users",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/ApproverUser"
+                  },
+                  "type": [
+                    "array",
+                    "null"
+                  ]
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "tags": [
+          "core",
+          "core"
+        ]
+      }
+    },
+    "/approval-delegations/{id}": {
+      "delete": {
+        "operationId": "delete-approval-delegation",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "tags": [
+          "core",
+          "core"
+        ]
+      }
+    },
     "/approval-rules": {
       "get": {
         "operationId": "list-approval-rules",
@@ -6480,6 +7081,17 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "description": "post, cancel, or a module action of the type",
+            "explode": false,
+            "in": "query",
+            "name": "action",
+            "schema": {
+              "default": "post",
+              "description": "post, cancel, or a module action of the type",
+              "type": "string"
+            }
           }
         ],
         "responses": {
@@ -6512,6 +7124,17 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "description": "post, cancel, or a module action of the type",
+            "explode": false,
+            "in": "query",
+            "name": "action",
+            "schema": {
+              "default": "post",
+              "description": "post, cancel, or a module action of the type",
+              "type": "string"
+            }
           }
         ],
         "requestBody": {
@@ -6527,6 +7150,88 @@
         "responses": {
           "204": {
             "description": "No Content"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "tags": [
+          "core",
+          "core"
+        ]
+      }
+    },
+    "/approval-rules/{doc_type}/fields/{key}/options": {
+      "get": {
+        "operationId": "list-approval-field-options",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "doc_type",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "key",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "explode": false,
+            "in": "query",
+            "name": "q",
+            "schema": {
+              "maxLength": 100,
+              "type": "string"
+            }
+          },
+          {
+            "description": "Name these ids instead of searching",
+            "explode": false,
+            "in": "query",
+            "name": "ids",
+            "schema": {
+              "description": "Name these ids instead of searching",
+              "items": {
+                "format": "int64",
+                "type": "integer"
+              },
+              "maxItems": 100,
+              "type": [
+                "array",
+                "null"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/FieldOption"
+                  },
+                  "type": [
+                    "array",
+                    "null"
+                  ]
+                }
+              }
+            },
+            "description": "OK"
           },
           "default": {
             "content": {
@@ -6690,6 +7395,41 @@
           },
           "required": true
         },
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "tags": [
+          "core",
+          "core"
+        ]
+      }
+    },
+    "/approvals/{id}/withdraw": {
+      "post": {
+        "operationId": "withdraw-approval",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          }
+        ],
         "responses": {
           "204": {
             "description": "No Content"
@@ -7182,8 +7922,15 @@
           "required": true
         },
         "responses": {
-          "204": {
-            "description": "No Content"
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TransitionOutputBody"
+                }
+              }
+            },
+            "description": "OK"
           },
           "default": {
             "content": {
@@ -12449,7 +13196,7 @@
     },
     "/sales/quotes/{id}/order": {
       "post": {
-        "description": "While an order from the quotation is not cancelled, returns that order instead of making another.",
+        "description": "While an order from the quotation is not cancelled, returns that order instead of making another. When an approval rule holds the quotation, answers held with no id.",
         "operationId": "create-order-from-quote",
         "parameters": [
           {
@@ -12463,15 +13210,15 @@
           }
         ],
         "responses": {
-          "201": {
+          "200": {
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/CreatedOutputBody"
+                  "$ref": "#/components/schemas/OrderFromQuoteOutputBody"
                 }
               }
             },
-            "description": "Created"
+            "description": "OK"
           },
           "default": {
             "content": {

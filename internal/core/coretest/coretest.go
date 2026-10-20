@@ -56,7 +56,7 @@ func New(t *testing.T, products ...string) *Core {
 	ids.SetTreeHook(rec)
 	ids.SetDataProducts(rec)
 	ntf := notification.NewService(notification.Deps{Record: rec, IAM: ids, Audit: aud, Setting: set})
-	appr := approval.NewService(approval.Deps{IAM: ids, Record: rec, Audit: aud, Notification: ntf})
+	appr := approval.NewService(approval.Deps{IAM: ids, Record: rec, Audit: aud, Notification: ntf, Setting: set})
 	rec.SetApprovalGate(appr)
 	dio := dataio.NewService(dataio.Deps{IAM: ids, Audit: aud, Record: rec})
 	c := &Core{

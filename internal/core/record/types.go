@@ -2,7 +2,13 @@ package record
 
 import (
 	"context"
+	"encoding/json"
 	"net/http"
+	"slices"
+	"strconv"
+	"strings"
+
+	"github.com/jackc/pgx/v5/pgtype"
 
 	"github.com/taoworklabs/mmerp/internal/platform"
 )
@@ -125,6 +131,9 @@ type Type struct {
 	// Subjects returns the users a document is about (e.g. the employee on leave);
 	// like its submitter, they never approve it.
 	Subjects func(ctx context.Context, id int64) ([]int64, error)
+	// ModuleActions are the module's own document actions an approval rule may hold,
+	// run by CompleteAction once approved.
+	ModuleActions map[Action]ModuleAction
 
 	// Catalog types only. HasData reports whether the product holds any such record, so a
 	// disabled product with master data but no document stays readable.
@@ -137,6 +146,7 @@ const (
 	Number  FieldKind = "number"   // decimal string, e.g. "2.5"
 	Choice  FieldKind = "choice"   // one of Options
 	OrgUnit FieldKind = "org_unit" // org unit id
+	Set     FieldKind = "set"      // distinct ids the lines reference, canonical "3,17,42"
 )
 
 // Field is an approval field: a typed value approval rules may test.
@@ -145,6 +155,43 @@ type Field struct {
 	Kind    FieldKind
 	Label   string // i18n key
 	Options func(ctx context.Context) ([]Option, error)
+	// Set fields only, both required: Search finds up to 20 matches of q, Labels names saved ids.
+	Search func(ctx context.Context, q string) ([]FieldOption, error)
+	Labels func(ctx context.Context, ids []int64) ([]FieldOption, error)
+}
+
+// FieldOption is one catalogue entry a set field may hold.
+type FieldOption struct {
+	ID   int64  `json:"id"`
+	Code string `json:"code"`
+	Name string `json:"name"`
+}
+
+// SetValue writes ids as a set field's canonical value.
+func SetValue(ids []int64) string {
+	ids = slices.Compact(slices.Sorted(slices.Values(ids)))
+	parts := make([]string, len(ids))
+	for i, id := range ids {
+		parts[i] = strconv.FormatInt(id, 10)
+	}
+	return strings.Join(parts, ",")
+}
+
+// ParseSet reads a set field's canonical value; false when v is not canonical
+// (a positive id list, strictly ascending), so nothing else is ever stored.
+func ParseSet(v string) ([]int64, bool) {
+	if v == "" {
+		return nil, true
+	}
+	var ids []int64
+	for p := range strings.SplitSeq(v, ",") {
+		id, err := strconv.ParseInt(p, 10, 64)
+		if err != nil || id <= 0 || p[0] == '0' || p[0] == '+' || (len(ids) > 0 && id <= ids[len(ids)-1]) {
+			return nil, false
+		}
+		ids = append(ids, id)
+	}
+	return ids, true
 }
 
 // Option is one value of a choice field; Label is shown as is.
@@ -185,6 +232,26 @@ type Doc struct {
 	Reused bool
 }
 
+// ModuleAction runs a module's own document action; it re-checks what it needs.
+type ModuleAction func(ctx context.Context, d Doc, params json.RawMessage) error
+
+// Hold is the open approval request holding a document for an action other than post.
+type Hold struct {
+	Ticket      int64
+	Action      Action
+	Params      json.RawMessage
+	SubmittedBy int64
+	Version     int32 // the document's version when requested
+}
+
+// HeldDoc is a document held by a request, as a period lock lists it.
+type HeldDoc struct {
+	DocType string
+	ID      int64
+	Number  string
+	Date    pgtype.Date
+}
+
 type PeriodLock struct {
 	LegalEntityID   int64   `json:"legal_entity_id"`
 	LegalEntityName string  `json:"legal_entity_name"`
@@ -208,6 +275,10 @@ var (
 	ErrRequestReused       = &platform.Error{Status: http.StatusConflict, Code: "request_id_reused"}
 	// The approval instance no longer matches the document: withdrawn, resubmitted or already decided.
 	ErrApprovalStale = &platform.Error{Status: http.StatusConflict, Code: "approval_stale"}
+	// An open approval request holds the document; nothing else may change it meanwhile.
+	ErrAwaitingApproval = &platform.Error{Status: http.StatusConflict, Code: "awaiting_approval"}
+	// The submitter's own re-check failed on completion; distinct from the approver's own forbidden.
+	ErrSubmitterForbidden = &platform.Error{Status: http.StatusConflict, Code: "submitter_forbidden"}
 )
 
 func errPeriodLocked(lockedUntil string) error {

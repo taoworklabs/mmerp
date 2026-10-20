@@ -47,9 +47,9 @@ func TestOvertimeRecordContract(t *testing.T) {
 			},
 			Get:    func(ctx context.Context, r record.Ref) (any, error) { return f.hrm.Overtime(ctx, r.ID) },
 			Reject: func(instance int64) error { return f.appr.Reject(f.m, instance, 1, "không") },
-			RequireApproval: func(*testing.T) {
-				f.check(f.appr.SaveRule(f.admin, "hrm.overtime_request", approval.RuleInput{
-					Steps: []approval.Step{{Approver: approval.Approver{Kind: "module"}}}, MaxLevels: 3, FallbackProduct: "hrm", FallbackRole: "hr",
+			RequireApproval: func(_ *testing.T, action record.Action) {
+				f.check(f.appr.SaveRule(f.admin, "hrm.overtime_request", action, approval.RuleInput{
+					Flow: approval.Flow{{Step: &approval.StepDef{Approver: approval.Approver{Kind: "module"}}}}, MaxLevels: 3, FallbackProduct: "hrm", FallbackRole: "hr",
 				}))
 			},
 			Approve:      func(instance int64) error { return f.appr.Approve(f.m, instance, 1) },
@@ -73,9 +73,9 @@ func TestOvertime(t *testing.T) {
 		t.Fatalf("header %+v", d)
 	}
 	f.closePeriod("2026-04-01", "2026-04-30", id)
-	f.check(f.rec.Transition(f.e, record.Ref{Type: "hrm.overtime_request", ID: id}, d.Version, record.Posted))
+	f.check(errOf(f.rec.Transition(f.e, record.Ref{Type: "hrm.overtime_request", ID: id}, d.Version, record.Posted)))
 	april := must(t)(f.hrm.CreateOvertime(f.e, hrm.NewOvertime{OvertimeFields: overtime("2026-04-01", "2", "0")}))
-	wantErr(t, f.rec.Transition(f.e, record.Ref{Type: "hrm.overtime_request", ID: april}, 1, record.Posted), "payroll_period_closed")
+	wantErr(t, errOf(f.rec.Transition(f.e, record.Ref{Type: "hrm.overtime_request", ID: april}, 1, record.Posted)), "payroll_period_closed")
 
 	// The manager sees E's request read-only; someone else does not see it.
 	if o, err := f.hrm.Overtime(f.m, id); err != nil || o.DayHours != "2" || o.NightHours != "1.5" || len(o.AllowedActions) != 0 {
@@ -170,7 +170,7 @@ func TestDayKindFollowsTheCalendar(t *testing.T) {
 	// Right when saved, wrong by the time it is sent: 29/04 became a holiday meanwhile.
 	late := must(t)(create("2026-04-29", "weekday"))
 	f.check(f.hrm.SaveHoliday(pay, f.c, hrm.Holiday{Date: "2026-04-29", Name: "Nghỉ bù"}))
-	wantErr(t, f.rec.Transition(f.e, record.Ref{Type: "hrm.overtime_request", ID: late}, 1, record.Posted), "overtime_day_kind_mismatch")
+	wantErr(t, errOf(f.rec.Transition(f.e, record.Ref{Type: "hrm.overtime_request", ID: late}, 1, record.Posted)), "overtime_day_kind_mismatch")
 }
 
 // Someone who may not create for an employee learns nothing about them: whether the id

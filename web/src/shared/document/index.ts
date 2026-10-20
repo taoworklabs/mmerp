@@ -1,6 +1,6 @@
 export { ActivityFeed } from './ActivityFeed'
 export { ApprovalRules } from './ApprovalRules'
-export { ApprovalDecision, ApprovalPanel } from './ApprovalPanel'
+export { actionLabel, ApprovalDecision, ApprovalPanel } from './ApprovalPanel'
 export { useAttachmentSection } from './AttachmentPanel'
 export { CreatePage } from './CreatePage'
 export { DocumentActions } from './DocumentActions'

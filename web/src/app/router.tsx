@@ -1,7 +1,7 @@
 import { lazy, type ComponentType } from 'react'
 import { createBrowserRouter, Navigate, type RouteObject } from 'react-router'
 import i18n from 'i18next'
-import { HomePage, InboxPage, JobsPage, nextFromLocation, NotificationsPage } from '@/core'
+import { DelegationsPage, HomePage, InboxPage, JobsPage, nextFromLocation, NotificationsPage } from '@/core'
 import type { AreaManifest } from '@/shared/area'
 import { addTranslations, type Locale } from '@/shared/i18n'
 import { NotFoundPage } from '@/shared/ui/states'
@@ -24,6 +24,7 @@ function areaRoute(area: AreaManifest): RouteObject | null {
 // Every user's own pages: at the root from home, and inside each area so its menu stays.
 const own: RouteObject[] = [
   { path: 'inbox', Component: InboxPage },
+  { path: 'delegations', Component: DelegationsPage },
   { path: 'jobs', Component: JobsPage },
   { path: 'notifications', Component: NotificationsPage },
 ]

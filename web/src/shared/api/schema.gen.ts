@@ -4,6 +4,71 @@
  */
 
 export interface paths {
+    "/approval-delegations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["list-approval-delegations"];
+        put?: never;
+        post: operations["create-approval-delegation"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/approval-delegations/meta": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["get-approval-delegations-meta"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/approval-delegations/users": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Every account, to pick a delegate from. Logins are empty unless the caller manages everyone's delegations. */
+        get: operations["list-approval-delegation-users"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/approval-delegations/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete: operations["delete-approval-delegation"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/approval-rules": {
         parameters: {
             query?: never;
@@ -47,6 +112,22 @@ export interface paths {
         put: operations["save-approval-rule"];
         post?: never;
         delete: operations["delete-approval-rule"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/approval-rules/{doc_type}/fields/{key}/options": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["list-approval-field-options"];
+        put?: never;
+        post?: never;
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -110,6 +191,22 @@ export interface paths {
         get?: never;
         put?: never;
         post: operations["reject"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/approvals/{id}/withdraw": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["withdraw-approval"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1472,7 +1569,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** @description While an order from the quotation is not cancelled, returns that order instead of making another. */
+        /** @description While an order from the quotation is not cancelled, returns that order instead of making another. When an approval rule holds the quotation, answers held with no id. */
         post: operations["create-order-from-quote"];
         delete?: never;
         options?: never;
@@ -1609,8 +1706,7 @@ export interface components {
             kind: "role" | "user" | "module";
             product?: string;
             role?: string;
-            /** Format: int64 */
-            user_id?: number;
+            user_ids?: number[] | null;
         };
         ApproverUser: {
             /** Format: int64 */
@@ -1671,6 +1767,10 @@ export interface components {
             /** @description Every block of the template */
             blocks: components["schemas"]["BlockText"][];
         };
+        Branch: {
+            body: components["schemas"]["Element"][];
+            condition?: components["schemas"]["Expr"];
+        };
         CodeSeries: {
             allowed_actions: string[];
             /** @description Translated as <code>.code_series */
@@ -1696,12 +1796,6 @@ export interface components {
             readonly $schema?: string;
             /** Format: int32 */
             version: number;
-        };
-        Condition: {
-            field: string;
-            /** @enum {string} */
-            op: "gt" | "gte" | "eq" | "within";
-            value: string;
         };
         Contract: {
             /**
@@ -1821,6 +1915,16 @@ export interface components {
             /** Format: int32 */
             version: number;
         };
+        CreateDelegationOutputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example /api/schemas/CreateDelegationOutputBody.json
+             */
+            readonly $schema?: string;
+            /** Format: int64 */
+            id: number;
+        };
         CreateUserInputBody: {
             /**
              * Format: uri
@@ -1923,6 +2027,50 @@ export interface components {
             payment_terms: string | null;
             phone: string | null;
             tax_code: string | null;
+        };
+        Delegation: {
+            active: boolean;
+            allowed_actions: string[];
+            /** Format: int64 */
+            delegate_id: number;
+            delegate_name: string;
+            /** Format: date */
+            ends_on: string;
+            /** Format: int64 */
+            id: number;
+            /** Format: date */
+            starts_on: string;
+            /** Format: int64 */
+            user_id: number;
+            user_name: string;
+        };
+        DelegationInput: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example /api/schemas/DelegationInput.json
+             */
+            readonly $schema?: string;
+            /** Format: int64 */
+            delegate_id: number;
+            /** Format: date */
+            ends_on: string;
+            /** Format: date */
+            starts_on: string;
+            /**
+             * Format: int64
+             * @description Whose seats; omitted means the actor's own
+             */
+            user_id?: number;
+        };
+        DelegationsMetaOutputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example /api/schemas/DelegationsMetaOutputBody.json
+             */
+            readonly $schema?: string;
+            manage_all: boolean;
         };
         Dependent: {
             /** Format: date */
@@ -2079,6 +2227,10 @@ export interface components {
             /** Format: int32 */
             version: number;
         };
+        Element: {
+            split?: components["schemas"]["Split"];
+            step?: components["schemas"]["StepDef"];
+        };
         EmailInputBody: {
             /**
              * Format: uri
@@ -2204,14 +2356,29 @@ export interface components {
                 [key: string]: unknown;
             };
         };
+        Expr: {
+            all?: components["schemas"]["Expr"][] | null;
+            any?: components["schemas"]["Expr"][] | null;
+            field?: string;
+            /** @enum {string} */
+            op?: "gt" | "gte" | "eq" | "within" | "has";
+            value?: string;
+        };
         Field: {
             key: string;
             /** @enum {string} */
-            kind: "number" | "choice" | "org_unit";
+            kind: "number" | "choice" | "org_unit" | "set";
             /** @description i18n key */
             label: string;
             ops: string[];
             options?: components["schemas"]["Option"][] | null;
+            searchable: boolean;
+        };
+        FieldOption: {
+            code: string;
+            /** Format: int64 */
+            id: number;
+            name: string;
         };
         Grant: {
             /** Format: int64 */
@@ -2260,6 +2427,7 @@ export interface components {
             name: string;
         };
         InboxItem: {
+            action: string;
             /** Format: date */
             date: string;
             /** Format: int64 */
@@ -2268,6 +2436,7 @@ export interface components {
             /** Format: int64 */
             instance_id: number;
             number: string;
+            on_behalf_of_name: string | null;
             /** Format: int32 */
             step: number;
             /** Format: date-time */
@@ -2284,11 +2453,11 @@ export interface components {
             items: components["schemas"]["InboxItem"][];
         };
         Instance: {
+            action: string;
             allowed_actions: string[];
-            /** Format: int32 */
-            current_step: number;
             /** Format: int64 */
             id: number;
+            plan: components["schemas"]["Plan"];
             /** @enum {string} */
             status: "open" | "approved" | "rejected" | "withdrawn" | "stale";
             steps: components["schemas"]["StepView"][];
@@ -2906,7 +3075,7 @@ export interface components {
             id: number;
             /** Format: int64 */
             job_id: number | null;
-            /** @description A core kind (approval_requested, approval_approved, approval_rejected, mentioned, job_completed, job_failed) or a product's own, <product>.<name> */
+            /** @description A core kind (approval_requested, approval_approved, approval_rejected, approval_overdue, mentioned, job_completed, job_failed) or a product's own, <product>.<name> */
             kind: string;
             /** @description The document number; null for a catalogue */
             label: string | null;
@@ -2919,6 +3088,17 @@ export interface components {
         Option: {
             label: string;
             value: string;
+        };
+        OrderFromQuoteOutputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example /api/schemas/OrderFromQuoteOutputBody.json
+             */
+            readonly $schema?: string;
+            held: boolean;
+            /** Format: int64 */
+            id: number | null;
         };
         OrgUnit: {
             address?: string;
@@ -3292,6 +3472,12 @@ export interface components {
             /** Format: date */
             locked_until: string | null;
         };
+        Plan: {
+            par?: components["schemas"]["Plan"][] | null;
+            seq?: components["schemas"]["Plan"][] | null;
+            /** Format: int32 */
+            step?: number;
+        };
         PrintBlock: {
             en: string;
             key: string;
@@ -3338,6 +3524,8 @@ export interface components {
              * @example /api/schemas/ReassignInputBody.json
              */
             readonly $schema?: string;
+            /** Format: int64 */
+            from: number;
             login: string;
             /** Format: int32 */
             step: number;
@@ -3373,12 +3561,12 @@ export interface components {
             readonly $schema?: string;
             fallback_product: string;
             fallback_role: string;
+            flow: components["schemas"]["Element"][];
             /**
              * Format: int32
              * @default 3
              */
             max_levels: number;
-            steps: components["schemas"]["Step"][];
         };
         SelfServiceActions: {
             /**
@@ -3448,20 +3636,55 @@ export interface components {
             /** @description 0 to 10 characters, no whitespace */
             prefix: string;
         };
-        Step: {
+        Split: {
+            branches: components["schemas"]["Branch"][];
+            /** @enum {string} */
+            mode: "one" | "all";
+            otherwise?: components["schemas"]["Element"][] | null;
+        };
+        StepDef: {
+            /**
+             * Format: int32
+             * @default 1
+             */
+            approvals: number;
             approver: components["schemas"]["Approver"];
-            condition?: components["schemas"]["Condition"];
+            /**
+             * Format: int32
+             * @description Hours after the step opens before its approvers and the submitter are told it is overdue
+             */
+            due_hours?: number;
+            /**
+             * Format: int32
+             * @default 1
+             */
+            rejections: number;
         };
         StepView: {
-            approver_names: string[];
+            allowed_actions: string[];
+            /** Format: int32 */
+            approvals: number;
             /** Format: date-time */
-            decided_at: string | null;
-            decided_by_name: string | null;
-            /** @enum {string|null} */
-            decision: "approved" | "rejected" | null;
+            due_at: string | null;
             fallback: boolean;
+            overdue: boolean;
             /** Format: int32 */
             position: number;
+            /** Format: int32 */
+            rejections: number;
+            /** @enum {string} */
+            status: "waiting" | "open" | "approved" | "rejected" | "cancelled";
+            voters: components["schemas"]["StepVoter"][];
+        };
+        StepVoter: {
+            cast_by_name: string | null;
+            /** Format: date-time */
+            decided_at: string | null;
+            /** @enum {string|null} */
+            decision: "approved" | "rejected" | null;
+            /** Format: int64 */
+            id: number;
+            name: string;
             reason: string | null;
         };
         Timesheet: {
@@ -3569,7 +3792,18 @@ export interface components {
             /** Format: int32 */
             version: number;
         };
+        TransitionOutputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example /api/schemas/TransitionOutputBody.json
+             */
+            readonly $schema?: string;
+            /** @description The cancel awaits approval; the document is unchanged until then */
+            held: boolean;
+        };
         TypeRule: {
+            action: string;
             allowed_actions: string[];
             doc_type: string;
             fields: components["schemas"]["Field"][];
@@ -3645,6 +3879,155 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+    "list-approval-delegations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Delegation"][] | null;
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "create-approval-delegation": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DelegationInput"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CreateDelegationOutputBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "get-approval-delegations-meta": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DelegationsMetaOutputBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "list-approval-delegation-users": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApproverUser"][] | null;
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "delete-approval-delegation": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
     "list-approval-rules": {
         parameters: {
             query?: {
@@ -3708,7 +4091,10 @@ export interface operations {
     };
     "save-approval-rule": {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description post, cancel, or a module action of the type */
+                action?: string;
+            };
             header?: never;
             path: {
                 doc_type: string;
@@ -3741,7 +4127,10 @@ export interface operations {
     };
     "delete-approval-rule": {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description post, cancel, or a module action of the type */
+                action?: string;
+            };
             header?: never;
             path: {
                 doc_type: string;
@@ -3756,6 +4145,42 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "list-approval-field-options": {
+        parameters: {
+            query?: {
+                q?: string;
+                /** @description Name these ids instead of searching */
+                ids?: number[] | null;
+            };
+            header?: never;
+            path: {
+                doc_type: string;
+                key: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FieldOption"][] | null;
+                };
             };
             /** @description Error */
             default: {
@@ -3877,6 +4302,35 @@ export interface operations {
                 "application/json": components["schemas"]["RejectInputBody"];
             };
         };
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "withdraw-approval": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
         responses: {
             /** @description No Content */
             204: {
@@ -4214,12 +4668,14 @@ export interface operations {
             };
         };
         responses: {
-            /** @description No Content */
-            204: {
+            /** @description OK */
+            200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["TransitionOutputBody"];
+                };
             };
             /** @description Error */
             default: {
@@ -7623,13 +8079,13 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Created */
-            201: {
+            /** @description OK */
+            200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["CreatedOutputBody"];
+                    "application/json": components["schemas"]["OrderFromQuoteOutputBody"];
                 };
             };
             /** @description Error */
