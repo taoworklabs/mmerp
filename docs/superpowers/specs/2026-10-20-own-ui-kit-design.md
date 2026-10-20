@@ -43,9 +43,9 @@ Mantine is replaced, not wrapped. A thin wrapper over Mantine would keep the dep
 
 ## Constraints
 
-- Frontend stack rules from `techstack.md` stay: React 19, Vite, React Hook Form, TanStack Query, Tabler icons, dayjs. Base UI is the one new runtime dependency, plus `clsx` if the builder wants it (it is optional; template strings also work).
+- Frontend stack rules from `techstack.md` stay: React 19, Vite, React Hook Form, TanStack Query, Tabler icons, dayjs. Base UI is the one new runtime dependency of the package; class names are joined by a one-line helper, not `clsx`, and date arithmetic uses the native `Date` (UTC), not dayjs.
 - `make lint`, `make test`, `make e2e` and `make image` stay green after every ticket, not only at the end.
-- **Phase 1 must not touch `web/`, the Dockerfile or the Makefile**, and in CI only adds one job (see Phases). Phase 2 wires them: the Docker web stage then also copies `packages/ui` before `pnpm install`.
+- **Phase 1 must not touch `web/`, the Dockerfile or the Makefile**, and in CI only adds one workflow (see Phases). Phase 2 wires them: the Docker web stage then also copies `packages/ui` before `pnpm install`.
 - A hard-to-reverse decision needs its ADR before code: ADR-0037 is part of this change and supersedes the "Mantine" part of ADR-0008.
 - Tests: Vitest covers the hooks and the date parsing. Playwright e2e is the end-to-end proof that real screens still work. Primitives get no snapshot tests.
 - **E2E specs keep their steps and their assertions on outcomes.** A ticket may change a selector only when the DOM shape changes but the user does the same thing. Behaviour may not change to fit Base UI: a select you can type into today (searchable `Select`, `OrgUnitField`, `RemoteSelectField`) stays typeable, so it is built on Base UI `combobox`, not `select`.
@@ -171,8 +171,8 @@ The planted fixtures in `web/lint-fixtures` and their `expected.json` get a case
 The package is finished before anything in the app changes. Ongoing work in `web/` is not affected.
 
 - Everything lives under `packages/ui`: its own `package.json` and lockfile, `tsconfig`, Vitest, ESLint config (including `i18next/no-literal-string` and a ban on `@mantine/*`), and a colour-literal check limited to tokens and primitive CSS modules.
-- **Nothing outside `packages/ui` changes, except one added CI job.** `web/` (its `package.json`, lockfile, `eslint .`, `tsc`, Vitest, dependency-cruiser), the Dockerfile, the Makefile and the existing CI jobs stay as they are. `make lint/test/e2e/image` never see the package.
-- **CI job `ui`** in `.github/workflows/ci.yml`, run only when a change touches `packages/ui/**` (paths filter), working in `packages/ui`: `pnpm install --frozen-lockfile`; `tsc`; ESLint; the colour-literal check; regenerate `tokens.css` and fail on diff; Vitest unit tests; Storybook story tests in Chromium (a11y and `play` functions); `storybook build`. (owner, 2026-10-20)
+- **Nothing outside `packages/ui` changes, except one added CI workflow.** `web/` (its `package.json`, lockfile, `eslint .`, `tsc`, Vitest, dependency-cruiser), the Dockerfile, the Makefile and the existing CI jobs stay as they are. `make lint/test/e2e/image` never see the package.
+- **CI workflow `.github/workflows/ui.yml`** (its own file, because GitHub filters paths per workflow, not per job; `ci.yml` stays untouched), run only when a push touches `packages/ui/**` or the workflow itself, working in `packages/ui`: `pnpm install --frozen-lockfile`; `tsc`; ESLint; the colour-literal check; regenerate `tokens.css` and fail on diff; Vitest unit tests; Storybook story tests in Chromium (a11y and `play` functions); `storybook build`. (owner, 2026-10-20)
 - **Primitives are viewed and tested in Storybook** (`pnpm storybook` in `packages/ui`), not on `/dev/ui`. (owner, 2026-10-20)
   - One story file per primitive, one story per variant and state, plus a page showing the tokens.
   - `@storybook/addon-a11y` checks every story; a violation fails the story's test.
@@ -224,7 +224,6 @@ Each ticket ends with the `mmerp-ui` checklist on the screens it touched and a m
 ## Left to the builder
 
 - Compound API shape per primitive (Base UI part names or a Mantine-like shape), as long as call sites in `shared/ui` stay readable.
-- Whether to add `clsx`.
 - Exact token variable names beyond the pattern above, and whether `index.ts` also exposes subpaths.
 - Splitting a ticket further if it grows too large to review.
 - Which Mantine components turn out to be unnecessary once their `shared/ui` user is rebuilt.
