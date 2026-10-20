@@ -1,4 +1,4 @@
-import type { Flow, FlowCondition, FlowElement } from '@/shared/api/core'
+import type { Flow, FlowCondition, FlowElement, RuleInput, TypeRule } from '@/shared/api/core'
 
 // One row of a condition group: a nested group, or a leaf (field/op/value).
 export type CondValues = { mode: 'all' | 'any'; rows: CondRow[] }
@@ -22,6 +22,9 @@ export type FlowValues = ElementValues[]
 type StepDef = NonNullable<FlowElement['step']>
 type SplitDef = NonNullable<FlowElement['split']>
 type BranchDef = SplitDef['branches'][number]
+
+// The whole rule form: the flow, plus the fallback role ("product.role") and the level limit.
+export type RuleValues = { flow: FlowValues; max_levels: string; fallback: string | null }
 
 // splitRole parses a "product.role" select value.
 export const splitRole = (v: string) => {
@@ -166,4 +169,45 @@ export function flowSummary(flow: Flow): { steps: number; branched: boolean } {
   }
   walk(flow)
   return { steps, branched }
+}
+
+// toRuleValues opens a type's rule in the form; a type without one starts from an empty flow.
+export function toRuleValues(r: TypeRule): RuleValues {
+  if (!r.rule) return { flow: [], max_levels: '3', fallback: null }
+  return { flow: toFlowValues(r.rule.flow), max_levels: String(r.rule.max_levels), fallback: `${r.rule.fallback_product}.${r.rule.fallback_role}` }
+}
+
+export function toRuleInput(v: RuleValues): RuleInput {
+  const fallback = splitRole(v.fallback ?? '')
+  return { flow: fromFlowValues(v.flow), max_levels: Number(v.max_levels), fallback_product: fallback.product, fallback_role: fallback.role }
+}
+
+// A selection in the editor: an element's path ("flow.1.branches.0.body.0"), a branch's
+// ("flow.1.branches.0"), an otherwise list's ("flow.1.otherwise"), or "settings".
+export type Selection = string | null
+
+// parentOf splits an item's path into its list's path and its index: "flow.2" → ["flow", 2].
+export function parentOf(path: string): [string, number] {
+  const at = path.lastIndexOf('.')
+  return [path.slice(0, at), Number(path.slice(at + 1))]
+}
+
+// selectionKind names what a selection points at, or null once it no longer exists.
+export function selectionKind(sel: string, v: RuleValues): 'settings' | 'branch' | 'otherwise' | 'step' | 'split' | null {
+  if (sel === 'settings') return 'settings'
+  let node: unknown = v
+  for (const part of sel.split('.')) {
+    if (node === null || typeof node !== 'object') return null
+    node = (node as Record<string, unknown>)[part]
+  }
+  return kindAt(sel, node)
+}
+
+// kindAt names what a selection points at, given the value at its path (undefined once it is gone).
+export function kindAt(sel: string, value: unknown): 'settings' | 'branch' | 'otherwise' | 'step' | 'split' | null {
+  if (sel === 'settings') return 'settings'
+  if (value === undefined || value === null) return null
+  if (sel.endsWith('.otherwise')) return 'otherwise'
+  if (/\.branches\.\d+$/.test(sel)) return 'branch'
+  return (value as ElementValues).type === 'step' ? 'step' : 'split'
 }

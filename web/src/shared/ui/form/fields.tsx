@@ -15,13 +15,14 @@ function separators(language: string) {
 // bare drops the visible label (kept as aria-label) and the description, for a field in a table
 // cell under a column header that already names it. short takes a third of a FormSection row
 // instead of half, for a value that is short whatever it holds (a date, a choice, a phone number).
-type Base = { name: string; label: string; required?: boolean; description?: string; readOnly?: boolean; bare?: boolean; short?: boolean }
+// error shows a message the form's own validation does not hold (a check made over the whole form).
+type Base = { name: string; label: string; required?: boolean; description?: string; readOnly?: boolean; bare?: boolean; short?: boolean; error?: string }
 
 // Long text spans the whole row of a FormSection grid.
 const wideStyle = { gridColumn: '1 / -1' }
 
 // Every field: label above, * when required, error under the input, checked on blur and submit.
-function useField({ name, label, required, bare, short, readOnly }: Base, rules: RegisterOptions = {}) {
+function useField({ name, label, required, bare, short, readOnly, error }: Base, rules: RegisterOptions = {}) {
   const { t } = useTranslation()
   const { control } = useFormContext()
   const { field, fieldState } = useController({
@@ -39,7 +40,7 @@ function useField({ name, label, required, bare, short, readOnly }: Base, rules:
       withAsterisk: required,
       // A select that cannot be typed into is a readonly input too; this says the field itself is read-only.
       wrapperProps: { 'data-readonly': readOnly || undefined },
-      error: fieldState.error?.message,
+      error: fieldState.error?.message ?? error,
       onBlur: field.onBlur,
       ref: field.ref,
     },

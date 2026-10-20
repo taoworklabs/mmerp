@@ -59,13 +59,17 @@ async function as(browser: Browser, user: string, path: string) {
 test('an administrator gives a step a due time and it stays after reload', async ({ browser }) => {
   await putRule()
   const page = await as(browser, admin.login, url)
-  const due = page.getByRole('textbox', { name: /^Thời hạn \(giờ\)/ })
+  await page.getByRole('main').getByRole('button', { name: 'Bước duyệt: Quản lý trực tiếp' }).click()
+  const due = page.getByRole('complementary').getByRole('textbox', { name: /^Hạn duyệt \(giờ\)/ })
   await expect(due).toHaveValue('')
   await due.fill('24')
   await page.getByRole('button', { name: 'Lưu' }).click()
   await expect(page.getByText('Đã lưu quy tắc duyệt.')).toBeVisible()
   await page.reload()
-  await expect(page.getByRole('textbox', { name: /^Thời hạn \(giờ\)/ })).toHaveValue('24')
+  // The box reads the due time without opening it.
+  await page.getByRole('main').getByRole('button', { name: 'Bước duyệt: Quản lý trực tiếp' }).click()
+  await expect(page.getByRole('main').getByText('hạn 24 giờ')).toBeVisible()
+  await expect(page.getByRole('complementary').getByRole('textbox', { name: /^Hạn duyệt \(giờ\)/ })).toHaveValue('24')
   const rules = (await (await api.get('/api/approval-rules?product=hrm')).json()) as { doc_type: string; action: string; rule: { flow: unknown[] } | null }[]
   expect(rules.find((r) => r.doc_type === 'hrm.leave_request' && r.action === 'post')?.rule?.flow).toEqual([moduleStep(24)])
 })
