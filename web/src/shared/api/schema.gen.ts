@@ -3075,7 +3075,7 @@ export interface components {
             id: number;
             /** Format: int64 */
             job_id: number | null;
-            /** @description A core kind (approval_requested, approval_approved, approval_rejected, mentioned, job_completed, job_failed) or a product's own, <product>.<name> */
+            /** @description A core kind (approval_requested, approval_approved, approval_rejected, approval_overdue, mentioned, job_completed, job_failed) or a product's own, <product>.<name> */
             kind: string;
             /** @description The document number; null for a catalogue */
             label: string | null;
@@ -3651,6 +3651,11 @@ export interface components {
             approver: components["schemas"]["Approver"];
             /**
              * Format: int32
+             * @description Hours after the step opens before its approvers and the submitter are told it is overdue
+             */
+            due_hours?: number;
+            /**
+             * Format: int32
              * @default 1
              */
             rejections: number;
@@ -3659,7 +3664,10 @@ export interface components {
             allowed_actions: string[];
             /** Format: int32 */
             approvals: number;
+            /** Format: date-time */
+            due_at: string | null;
             fallback: boolean;
+            overdue: boolean;
             /** Format: int32 */
             position: number;
             /** Format: int32 */

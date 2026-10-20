@@ -4446,7 +4446,7 @@
             ]
           },
           "kind": {
-            "description": "A core kind (approval_requested, approval_approved, approval_rejected, mentioned, job_completed, job_failed) or a product's own, \u003cproduct\u003e.\u003cname\u003e",
+            "description": "A core kind (approval_requested, approval_approved, approval_rejected, approval_overdue, mentioned, job_completed, job_failed) or a product's own, \u003cproduct\u003e.\u003cname\u003e",
             "type": "string"
           },
           "label": {
@@ -6105,6 +6105,13 @@
           "approver": {
             "$ref": "#/components/schemas/Approver"
           },
+          "due_hours": {
+            "description": "Hours after the step opens before its approvers and the submitter are told it is overdue",
+            "format": "int32",
+            "maximum": 720,
+            "minimum": 1,
+            "type": "integer"
+          },
           "rejections": {
             "default": 1,
             "format": "int32",
@@ -6131,7 +6138,17 @@
             "format": "int32",
             "type": "integer"
           },
+          "due_at": {
+            "format": "date-time",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
           "fallback": {
+            "type": "boolean"
+          },
+          "overdue": {
             "type": "boolean"
           },
           "position": {
@@ -6165,6 +6182,8 @@
           "approvals",
           "rejections",
           "fallback",
+          "due_at",
+          "overdue",
           "voters",
           "allowed_actions"
         ],

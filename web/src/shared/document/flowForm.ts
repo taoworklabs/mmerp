@@ -12,6 +12,7 @@ export type ElementValues = {
   users: string[]
   approvals: string
   rejections: string
+  dueHours: string // empty for no due time
   branches: BranchValues[]
   otherwise: ElementValues[]
 }
@@ -29,7 +30,7 @@ export const splitRole = (v: string) => {
 }
 
 export function newStep(moduleApprovers: boolean): ElementValues {
-  return { type: 'step', kind: moduleApprovers ? 'module' : 'role', role: null, users: [], approvals: '1', rejections: '1', branches: [], otherwise: [] }
+  return { type: 'step', kind: moduleApprovers ? 'module' : 'role', role: null, users: [], approvals: '1', rejections: '1', dueHours: '', branches: [], otherwise: [] }
 }
 
 export function newSplit(type: 'one' | 'all', moduleApprovers: boolean): ElementValues {
@@ -40,6 +41,7 @@ export function newSplit(type: 'one' | 'all', moduleApprovers: boolean): Element
     users: [],
     approvals: '1',
     rejections: '1',
+    dueHours: '',
     branches: [{ cond: { mode: 'all', rows: [] }, body: [newStep(moduleApprovers)] }],
     otherwise: [],
   }
@@ -91,6 +93,7 @@ function elementToValues(e: FlowElement): ElementValues {
       users: a.kind === 'user' ? (a.user_ids ?? []).map(String) : [],
       approvals: String(e.step.approvals || 1),
       rejections: String(e.step.rejections || 1),
+      dueHours: e.step.due_hours ? String(e.step.due_hours) : '',
       branches: [],
       otherwise: [],
     }
@@ -103,6 +106,7 @@ function elementToValues(e: FlowElement): ElementValues {
     users: [],
     approvals: '1',
     rejections: '1',
+    dueHours: '',
     branches: sp.branches.map(branchToValues),
     otherwise: (sp.otherwise ?? []).map(elementToValues),
   }
@@ -113,7 +117,11 @@ function branchToValues(b: BranchDef): BranchValues {
 }
 
 function valuesToElement(v: ElementValues): FlowElement {
-  if (v.type === 'step') return { step: { approver: approverOf(v), approvals: Number(v.approvals), rejections: Number(v.rejections) } }
+  if (v.type === 'step') {
+    const step: StepDef = { approver: approverOf(v), approvals: Number(v.approvals), rejections: Number(v.rejections) }
+    if (v.dueHours) step.due_hours = Number(v.dueHours)
+    return { step }
+  }
   const split: SplitDef = { mode: v.type, branches: v.branches.map(branchToElement) }
   if (v.type === 'one' && v.otherwise.length) split.otherwise = v.otherwise.map(valuesToElement)
   return { split }

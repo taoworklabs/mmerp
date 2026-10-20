@@ -11,7 +11,11 @@ const maxCount = 20
 
 type Props = { path: string; ctx: EditorCtx; onMove: (by: -1 | 1) => void; onRemove: () => void; first: boolean; last: boolean }
 
-// StepCard edits one approval step: who approves, and how many approvals or rejections decide it.
+// maxDueHours is the server's limit on a step's due time, 30 days.
+const maxDueHours = 720
+
+// StepCard edits one approval step: who approves, how many approvals or rejections decide it,
+// and an optional due time after which approvers and the submitter are told.
 export function StepCard({ path, ctx, onMove, onRemove, first, last }: Props) {
   const { t } = useTranslation()
   const { getFieldState, setValue, trigger } = useFormContext()
@@ -65,6 +69,18 @@ export function StepCard({ path, ctx, onMove, onRemove, first, last }: Props) {
               }}
             />
             <IntegerField readOnly={readOnly} name={`${path}.rejections`} label={t('shared.rule.rejections')} required min={1} max={maxCount} rules={range} />
+            <IntegerField
+              readOnly={readOnly}
+              name={`${path}.dueHours`}
+              label={t('shared.rule.due_hours')}
+              description={t('shared.rule.due_hours_hint')}
+              min={1}
+              max={maxDueHours}
+              rules={{
+                min: { value: 1, message: t('shared.rule.due_range') },
+                max: { value: maxDueHours, message: t('shared.rule.due_range') },
+              }}
+            />
           </SimpleGrid>
         </Stack>
       </Panel>

@@ -338,7 +338,13 @@ function StepBody({ step, onReassign, busy, decision }: { step: ApprovalStep; on
           {t('shared.approval.step', { n: step.position })}
         </Text>
         <Badge color={stepLook[step.status].color}>{t(`shared.approval.step_status.${step.status}`)}</Badge>
+        {step.overdue && <Badge color="danger">{t('shared.approval.overdue')}</Badge>}
       </Group>
+      {step.due_at && step.status === 'open' && (
+        <Text size="xs" c="dimmed">
+          {t('shared.approval.due', { at: formatDateTime(step.due_at, me.timezone) })}
+        </Text>
+      )}
       {step.approvals > 1 && (
         <Text size="xs" c="dimmed">
           {t('shared.approval.count', { n: approved, m: step.approvals })}

@@ -42,8 +42,18 @@ describe('toFlowValues / fromFlowValues', () => {
   })
 
   it('drops fields of other approver kinds', () => {
-    const v: ElementValues = { type: 'step', kind: 'role', role: 'hrm.hr', users: ['5'], approvals: '1', rejections: '1', branches: [], otherwise: [] }
+    const v: ElementValues = { type: 'step', kind: 'role', role: 'hrm.hr', users: ['5'], approvals: '1', rejections: '1', dueHours: '', branches: [], otherwise: [] }
     expect(fromFlowValues([v])).toEqual([{ step: { approver: { kind: 'role', product: 'hrm', role: 'hr' }, approvals: 1, rejections: 1 } }])
+  })
+
+  it('round-trips due hours', () => {
+    const flow: Flow = [{ step: { approver: { kind: 'module' }, approvals: 1, rejections: 1, due_hours: 24 } }]
+    expect(toFlowValues(flow)[0]?.dueHours).toBe('24')
+    expect(fromFlowValues(toFlowValues(flow))).toEqual(flow)
+  })
+
+  it('no due hours stays absent', () => {
+    expect(fromFlowValues([newStep(true)])).toEqual([{ step: { approver: { kind: 'module' }, approvals: 1, rejections: 1 } }])
   })
 
   it('parallel drops otherwise', () => {
@@ -54,6 +64,7 @@ describe('toFlowValues / fromFlowValues', () => {
       users: [],
       approvals: '1',
       rejections: '1',
+      dueHours: '',
       branches: [{ cond: { mode: 'all', rows: [] }, body: [newStep(true)] }],
       otherwise: [newStep(true)],
     }
@@ -73,6 +84,7 @@ describe('toFlowValues / fromFlowValues', () => {
       users: [],
       approvals: '1',
       rejections: '1',
+      dueHours: '',
       branches: [
         {
           cond: { mode: 'all', rows: [{ group: null, field: 'days', op: 'gt', value: '3' }, { group: { mode: 'all', rows: [] }, field: null, op: null, value: '' }] },
@@ -93,6 +105,7 @@ describe('toFlowValues / fromFlowValues', () => {
       users: [],
       approvals: '1',
       rejections: '1',
+      dueHours: '',
       branches: [{ cond: { mode: 'all', rows: [{ group: { mode: 'all', rows: [] }, field: null, op: null, value: '' }] }, body: [newStep(true)] }],
       otherwise: [],
     }
@@ -108,6 +121,7 @@ describe('toFlowValues / fromFlowValues', () => {
       users: [],
       approvals: '1',
       rejections: '1',
+      dueHours: '',
       branches: [{ cond: { mode: 'any', rows: [{ group: null, field: 'days', op: 'gt', value: '3' }] }, body: [newStep(true)] }],
       otherwise: [],
     }
