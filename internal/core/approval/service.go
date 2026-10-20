@@ -200,18 +200,30 @@ func (s *Service) startStep(ctx context.Context, inst store.ApprovalInstance, d 
 	if err := q.StartStep(ctx, store.StartStepParams{InstanceID: inst.ID, Position: pos, Approvers: users, Fallback: fallback}); err != nil {
 		return err
 	}
+	return s.requestVotes(ctx, d, excluded, users)
+}
+
+// requestVotes tells users, and their active delegates who could vote, that a step waits for them.
+func (s *Service) requestVotes(ctx context.Context, d record.Doc, excluded, users []int64) error {
 	today, err := s.d.Setting.Today(ctx)
 	if err != nil {
 		return err
 	}
-	delegates, err := q.DelegatesOf(ctx, store.DelegatesOfParams{Users: users, Today: today})
+	delegates, err := store.New(platform.DBFrom(ctx)).DelegatesOf(ctx, store.DelegatesOfParams{Users: users, Today: today})
 	if err != nil {
 		return err
 	}
-	if delegates = others(delegates); failed != nil {
-		return failed
+	told := slices.Clone(users)
+	for _, id := range delegates {
+		if slices.Contains(excluded, id) || slices.Contains(told, id) {
+			continue
+		}
+		if ok, err := s.d.Record.Can(s.d.IAM.AsUser(ctx, id), d.Type, d.ID, record.View); err != nil {
+			return err
+		} else if ok {
+			told = append(told, id)
+		}
 	}
-	told := slices.Compact(slices.Sorted(slices.Values(slices.Concat(users, delegates))))
 	return s.d.Notification.Send(ctx, notification.ApprovalRequested, d.Ref, told)
 }
 
@@ -450,7 +462,8 @@ func (s *Service) vote(ctx context.Context, inst store.ApprovalInstance, st stor
 	// since. A delegate is checked as themself, not as the absent approver.
 	if excluded, err := s.excluded(ctx, inst, record.Ref{Type: inst.DocType, ID: inst.DocID}); err != nil {
 		return "", err
-	} else if slices.Contains(excluded, actor) {
+	} else if slices.Contains(excluded, actor) || onBehalfOf != nil && slices.Contains(excluded, seat) {
+		// Nor may an excluded seat holder hand their vote to someone else.
 		return "", ErrSelfApproval
 	}
 	var castBy *int64
@@ -536,9 +549,11 @@ func (s *Service) Reassign(ctx context.Context, id int64, step int32, from int64
 		if err != nil {
 			return err
 		}
-		if excluded, err := s.excluded(ctx, inst, d.Ref); err != nil {
+		excluded, err := s.excluded(ctx, inst, d.Ref)
+		if err != nil {
 			return err
-		} else if slices.Contains(excluded, user) {
+		}
+		if slices.Contains(excluded, user) {
 			return ErrSelfApproval
 		}
 		if ok, err := s.d.Record.Can(s.d.IAM.AsUser(ctx, user), d.Type, d.ID, record.View); err != nil || !ok {
@@ -552,6 +567,16 @@ func (s *Service) Reassign(ctx context.Context, id int64, step int32, from int64
 		if slices.Contains(st.Approvers, user) {
 			return ErrAlreadyApprover
 		}
+		// Someone who already voted here as a delegate could never use the seat.
+		votes, err := q.CastVotes(ctx, store.CastVotesParams{InstanceID: id, Position: step})
+		if err != nil {
+			return err
+		}
+		if slices.ContainsFunc(votes, func(v store.CastVotesRow) bool {
+			return v.CastBy.Valid && v.CastBy.Int64 == user || !v.CastBy.Valid && v.UserID == user
+		}) {
+			return ErrAlreadyVoted
+		}
 		if voted, err := q.HasVoted(ctx, store.HasVotedParams{InstanceID: id, Position: step, UserID: from}); err != nil || voted {
 			return platform.OrErr(err, ErrAlreadyVoted)
 		}
@@ -559,7 +584,7 @@ func (s *Service) Reassign(ctx context.Context, id int64, step int32, from int64
 		if err := q.SetApprovers(ctx, store.SetApproversParams{InstanceID: id, Position: step, Approvers: st.Approvers}); err != nil {
 			return err
 		}
-		if err := s.d.Notification.Send(ctx, notification.ApprovalRequested, d.Ref, []int64{user}); err != nil {
+		if err := s.requestVotes(ctx, d, excluded, []int64{user}); err != nil {
 			return err
 		}
 		return s.d.Audit.RecordFor(ctx, "approval.reassigned", audit.Ref{Type: inst.DocType, ID: inst.DocID},
@@ -605,12 +630,12 @@ func (s *Service) Inbox(ctx context.Context) ([]InboxItem, error) {
 			continue
 		}
 		// Own seats left out the excluded when the step started; a delegate is checked here.
-		if r.OnBehalfOfName.Valid {
+		if r.OnBehalfOf.Valid {
 			excluded, err := s.excluded(ctx, store.ApprovalInstance{SubmittedBy: r.SubmittedBy}, record.Ref{Type: r.DocType, ID: r.DocID})
 			if err != nil {
 				return nil, err
 			}
-			if slices.Contains(excluded, actor) {
+			if slices.Contains(excluded, actor) || slices.Contains(excluded, r.OnBehalfOf.Int64) {
 				continue
 			}
 		}
@@ -651,7 +676,7 @@ func (s *Service) DocumentInstance(ctx context.Context, ref record.Ref) (*Instan
 	if writable && actor == inst.SubmittedBy && inst.Action != string(record.Post) {
 		out.AllowedActions = append(out.AllowedActions, "withdraw")
 	}
-	fallback, excluded := false, false
+	fallback, excluded := false, []int64(nil)
 	if writable {
 		d, err := s.d.Record.Get(ctx, ref)
 		if err != nil {
@@ -660,11 +685,9 @@ func (s *Service) DocumentInstance(ctx context.Context, ref record.Ref) (*Instan
 		if fallback, err = s.isFallback(ctx, store.ApprovalInstance{FallbackProduct: inst.FallbackProduct, FallbackRole: inst.FallbackRole}, d); err != nil {
 			return nil, err
 		}
-		ids, err := s.excluded(ctx, store.ApprovalInstance{SubmittedBy: inst.SubmittedBy}, ref)
-		if err != nil {
+		if excluded, err = s.excluded(ctx, store.ApprovalInstance{SubmittedBy: inst.SubmittedBy}, ref); err != nil {
 			return nil, err
 		}
-		excluded = slices.Contains(ids, actor)
 	}
 	for _, r := range rows {
 		var voters []struct {
@@ -689,11 +712,11 @@ func (s *Service) DocumentInstance(ctx context.Context, ref record.Ref) (*Instan
 			v.Voters = append(v.Voters, sv)
 		}
 		if writable && r.Status == "open" {
-			_, _, err := s.seatFor(ctx, store.ApprovalInstanceStep{InstanceID: inst.ID, Position: r.Position, Approvers: r.Approvers}, actor)
+			seat, onBehalfOf, err := s.seatFor(ctx, store.ApprovalInstanceStep{InstanceID: inst.ID, Position: r.Position, Approvers: r.Approvers}, actor)
 			if err != nil && !errors.Is(err, platform.ErrForbidden) && !errors.Is(err, ErrAlreadyVoted) {
 				return nil, err
 			}
-			if err == nil && !excluded {
+			if err == nil && !slices.Contains(excluded, actor) && (onBehalfOf == nil || !slices.Contains(excluded, seat)) {
 				v.AllowedActions = append(v.AllowedActions, "approve", "reject")
 			}
 			if fallback {

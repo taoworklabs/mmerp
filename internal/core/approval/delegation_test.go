@@ -321,3 +321,63 @@ func TestDelegateIsNotified(t *testing.T) {
 		t.Fatal("the delegate's delegate was told")
 	}
 }
+
+func TestReassignToOneWhoVotedAsDelegate(t *testing.T) {
+	f := newFixture(t)
+	f.rule(f.by(2, 1, "c1", "c2"))
+	f.delegate("c1", "big_boss", 0, 1)
+	d, err := f.send("1", "a")
+	f.check(err)
+	f.check(f.appr.Approve(f.as("big_boss"), *d.ApprovalTicket, 1))
+	if code(f.appr.Reassign(f.as("hr"), *d.ApprovalTicket, 1, f.users["c2"], "big_boss")) != "approval_already_voted" {
+		t.Fatal("reassigned a seat to one who already voted in the step")
+	}
+}
+
+func TestReassignTellsTheDelegate(t *testing.T) {
+	f := newFixture(t)
+	f.rule(f.user("boss"))
+	d, err := f.send("1", "a")
+	f.check(err)
+	f.delegate("c1", "c2", 0, 1)
+	f.check(f.appr.Reassign(f.as("hr"), *d.ApprovalTicket, 1, f.users["boss"], "c1"))
+	page, err := f.core.Notification.List(f.as("c2"), nil)
+	f.check(err)
+	if !slices.ContainsFunc(page.Items, func(n notification.Notification) bool {
+		return n.Kind == "approval_requested" && n.RecordID != nil && *n.RecordID == d.ID
+	}) {
+		t.Fatal("the new voter's delegate was not told")
+	}
+}
+
+func TestManagerCannotDelegateToThemself(t *testing.T) {
+	f := newFixture(t)
+	admin, err := f.ids.UserIDByLogin(f.admin, "admin")
+	f.check(err)
+	in := f.delegation("boss", "boss", 0, 1)
+	in.DelegateID = admin
+	if _, err := f.appr.CreateDelegation(f.admin, in); reasonOf(err) != "creator" {
+		t.Fatalf("admin as boss's delegate: got %v", err)
+	}
+	if _, err := f.appr.CreateDelegation(f.admin, f.delegation("boss", "big_boss", 0, 1)); err != nil {
+		t.Fatalf("admin for boss: %v", err)
+	}
+}
+
+func TestExcludedSeatCannotBeDelegated(t *testing.T) {
+	f := newFixture(t)
+	f.rule(f.user("boss"))
+	f.delegate("boss", "big_boss", 0, 1)
+	d, err := f.send("1", "a")
+	f.check(err)
+	f.subjects = []int64{f.users["boss"]} // the document is now about boss
+	if acts := f.panel("big_boss", d).Steps[0].AllowedActions; len(acts) != 0 {
+		t.Fatalf("big_boss actions %v", acts)
+	}
+	if items := f.inbox("big_boss"); len(items) != 0 {
+		t.Fatalf("big_boss inbox %+v", items)
+	}
+	if code(f.appr.Approve(f.as("big_boss"), *d.ApprovalTicket, 1)) != "self_approval" {
+		t.Fatal("voted the seat of the one the document is about")
+	}
+}

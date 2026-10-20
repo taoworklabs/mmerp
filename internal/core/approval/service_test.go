@@ -32,6 +32,7 @@ type fixture struct {
 	managers map[int][]int64         // level → what the type's Approvers returns
 	denied   map[int64]record.Action // a user the grant refuses one action
 	stamps   []stamp                 // each run of test.doc's stamp action
+	subjects []int64                 // who test.doc is about
 }
 
 type stamp struct {
@@ -82,6 +83,7 @@ func newFixture(t *testing.T) *fixture {
 					return out, nil
 				}}},
 		Approvers: func(_ context.Context, _ record.Ref, level int) ([]int64, error) { return f.managers[level], nil },
+		Subjects:  func(context.Context, int64) ([]int64, error) { return f.subjects, nil },
 	})
 	// A type of another product, for rules a product's administrator may not touch.
 	f.ids.RegisterRoles("other", map[string][]string{"member": {"other.doc.edit"}})

@@ -86,7 +86,7 @@ UPDATE approval.instances SET status = $2 WHERE id = $1 AND status = 'open';
 -- or a pending seat delegated to them, and has cast nothing yet. An actor in two open
 -- parallel steps of the same instance sees it once, not twice.
 SELECT i.id, i.doc_type, i.doc_id, i.action, s.step, i.submitted_at, i.submitted_by, u.name AS submitted_by_name, d.number, d.date,
-       b.name AS on_behalf_of_name
+       b.id AS on_behalf_of, b.name AS on_behalf_of_name
 FROM (
     SELECT DISTINCT ON (s.instance_id) s.instance_id, s.position AS step,
            CASE WHEN NOT s.own THEN s.delegated END AS on_behalf_of
@@ -100,6 +100,9 @@ FROM (
                 ORDER BY p.n LIMIT 1) AS delegated
         FROM approval.instance_steps s
         WHERE s.status = 'open'
+          -- Served by the open steps' approvers index.
+          AND s.approvers && (ARRAY[@actor::bigint] || ARRAY(SELECT g.user_id FROM approval.delegations g
+                                                            WHERE g.delegate_id = @actor AND g.starts_on <= @today AND g.ends_on >= @today))
           AND NOT EXISTS (SELECT 1 FROM approval.step_votes v
                           WHERE v.instance_id = s.instance_id AND v.position = s.position AND coalesce(v.cast_by, v.user_id) = @actor)
     ) s

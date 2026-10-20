@@ -52,6 +52,10 @@ func (s *Service) CreateDelegation(ctx context.Context, in DelegationInput) (int
 		if err := s.d.IAM.RequireCore(ctx, iam.PermManageApproval); err != nil {
 			return 0, err
 		}
+		// A manager naming themself could vote anyone's open seats at once.
+		if in.DelegateID == actor {
+			return 0, ErrInvalidDelegation("creator")
+		}
 		user = *in.UserID
 	}
 	if in.DelegateID == user {
