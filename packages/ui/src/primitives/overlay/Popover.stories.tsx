@@ -1,6 +1,8 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
-import { expect, userEvent, within } from 'storybook/test'
+import { useRef, useState } from 'react'
+import { expect, userEvent, waitFor, within } from 'storybook/test'
 import { Button } from '../input/Button.tsx'
+import { TextInput } from '../input/TextInput.tsx'
 import { Popover } from './Popover.tsx'
 
 const meta: Meta = {
@@ -57,4 +59,47 @@ export const TargetWidth: Story = {
       </Popover.Root>
     </div>
   ),
+}
+
+// DateInput's own route: a controlled Root with no Trigger, anchored to the input itself via
+// `anchor`, so the input stays a plain text input — never a toggle button — and keeps focus.
+function AnchoredDemo() {
+  const inputRef = useRef<HTMLInputElement>(null)
+  const [open, setOpen] = useState(false)
+  return (
+    <>
+      <TextInput
+        ref={inputRef}
+        label="Date"
+        placeholder="Pick a date"
+        onFocus={() => setOpen(true)}
+        onKeyDown={(event) => {
+          if (event.key === 'ArrowDown') setOpen(true)
+        }}
+      />
+      <Popover.Root open={open} onOpenChange={setOpen}>
+        <Popover.Popup anchor={inputRef} initialFocus={false} finalFocus={false} aria-label="Date picker">
+          Calendar placeholder
+        </Popover.Popup>
+      </Popover.Root>
+    </>
+  )
+}
+
+export const AnchoredToInput: Story = {
+  render: () => <AnchoredDemo />,
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    const input = canvas.getByRole('textbox', { name: 'Date' })
+
+    await userEvent.click(input)
+    const body = within(canvasElement.ownerDocument.body)
+    await waitFor(() => expect(body.getByText('Calendar placeholder')).toBeInTheDocument())
+    expect(input).toHaveFocus()
+    // Proves the input was never wrapped by a Trigger (which would merge type="button" onto it).
+    expect((input as HTMLInputElement).type).toBe('text')
+
+    await userEvent.keyboard('{Escape}')
+    await waitFor(() => expect(body.queryByText('Calendar placeholder')).not.toBeInTheDocument())
+  },
 }

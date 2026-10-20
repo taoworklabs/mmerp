@@ -11,24 +11,21 @@ export default meta
 
 type Story = StoryObj
 
-export const Default: Story = {
-  render: () => {
-    const onRename = fn()
-    const onDelete = fn()
-    return (
-      <Menu.Root>
-        <Menu.Trigger render={<Button>Open menu</Button>} />
-        <Menu.Popup>
-          <Menu.Item onClick={onRename}>Rename</Menu.Item>
-          <Menu.Item>Archive</Menu.Item>
-          <Menu.Item color="danger" onClick={onDelete}>
-            Delete
-          </Menu.Item>
-        </Menu.Popup>
-      </Menu.Root>
-    )
-  },
-  play: async ({ canvasElement }) => {
+export const Default: StoryObj<{ onRename(): void; onDelete(): void }> = {
+  args: { onRename: fn(), onDelete: fn() },
+  render: (args) => (
+    <Menu.Root>
+      <Menu.Trigger render={<Button>Open menu</Button>} />
+      <Menu.Popup>
+        <Menu.Item onClick={args.onRename}>Rename</Menu.Item>
+        <Menu.Item>Archive</Menu.Item>
+        <Menu.Item color="danger" onClick={args.onDelete}>
+          Delete
+        </Menu.Item>
+      </Menu.Popup>
+    </Menu.Root>
+  ),
+  play: async ({ canvasElement, args }) => {
     const canvas = within(canvasElement)
     const trigger = canvas.getByRole('button', { name: 'Open menu' })
     trigger.focus()
@@ -42,7 +39,12 @@ export const Default: Story = {
     const archive = body.getByRole('menuitem', { name: 'Archive' })
     expect(archive).toHaveAttribute('data-highlighted', '')
 
+    await userEvent.keyboard('{ArrowDown}')
+    const deleteItem = body.getByRole('menuitem', { name: 'Delete' })
+    expect(deleteItem).toHaveAttribute('data-highlighted', '')
+
     await userEvent.keyboard('{Enter}')
+    expect(args.onDelete).toHaveBeenCalledTimes(1)
     // The popup unmounts only once its own closing transition finishes.
     await waitFor(() => expect(body.queryByRole('menu')).not.toBeInTheDocument())
   },
