@@ -264,19 +264,14 @@ export function QueryViewDoc() {
       path="mmerp/query-view"
       example={
         <Case>
-          <StaticQuery state="empty" />
+          <StaticQuery state="data" />
         </Case>
       }
-      variants={
-        <>
-          <Case label={t('shared.devui.query_loading')}>
-            <StaticQuery state="loading" />
-          </Case>
-          <Case label={t('shared.devui.query_data')}>
-            <StaticQuery state="data" />
-          </Case>
-        </>
-      }
+      variants={(['loading', 'empty', 'error'] as const).map((state) => (
+        <Case key={state} label={t(`shared.devui.query_${state}`)}>
+          <StaticQuery state={state} />
+        </Case>
+      ))}
       code={code.queryView}
     />
   )
@@ -343,7 +338,31 @@ export function UseConfirmDoc() {
           {dialog}
         </Case>
       }
-      doDont={<DoDont good={<Text size="sm">{t('shared.devui.do_confirm_verb')}</Text>} bad={<Text size="sm">{t('shared.devui.dont_confirm_yes')}</Text>} />}
+      doDont={
+        <DoDont
+          good={
+            <Group justify="flex-end">
+              <Button variant="subtle" color="gray">
+                {t('shared.form.cancel')}
+              </Button>
+              <Button color="danger">{t('shared.devui.danger')}</Button>
+            </Group>
+          }
+          bad={
+            <>
+              <Group justify="flex-end">
+                <Button variant="subtle" color="gray">
+                  {t('shared.form.cancel')}
+                </Button>
+                <Button color="danger">{t('shared.devui.yes')}</Button>
+              </Group>
+              <Text size="sm" c="dimmed">
+                {t('shared.devui.dont_confirm_yes')}
+              </Text>
+            </>
+          }
+        />
+      }
       code={code.useConfirm}
     />
   )

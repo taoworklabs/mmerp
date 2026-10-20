@@ -1,14 +1,13 @@
 import { describe, expect, it } from 'vitest'
 import eslintConfig from '../../../eslint.config.js?raw'
 import viJson from '../../shared/i18n/locales/vi.json'
-import { type Entry, entries, layers } from './catalogue'
+import { type Entry, entries, entryByPath, key, layers, splitNames } from './catalogue'
 
 const all = entries as readonly Entry[]
 const vi = viJson as Record<string, string>
 // The catalogue's own sources, to check the links inside its pages.
 const pages = import.meta.glob<string>('./*.tsx', { query: '?raw', import: 'default', eager: true })
 const shared = import.meta.glob<string>('../../shared/**/*.{ts,tsx}', { query: '?raw', import: 'default', eager: true })
-const key = (e: Entry) => e.path.slice(e.path.indexOf('/') + 1).replaceAll('-', '_')
 const byName = (a: string, b: string) => a.localeCompare(b, undefined, { sensitivity: 'base' })
 
 describe('devui catalogue', () => {
@@ -68,6 +67,25 @@ describe('devui catalogue', () => {
     const texts = Object.entries(vi).filter(([k]) => /^shared\.devui\.(about|use|avoid)_/.test(k))
     const unknown = texts.flatMap(([k, v]) => [...v.matchAll(/\b[A-Z]\w*Page\b/g)].filter((m) => !known.has(m[0])).map((m) => `${k}: ${m[0]}`))
     expect(unknown).toEqual([])
+  })
+
+  it('i18n stems are unique across layers', () => {
+    const stems = all.map(key)
+    expect(stems.filter((s, i) => stems.indexOf(s) !== i)).toEqual([])
+  })
+
+  it('splitNames turns catalogued component names into entries', () => {
+    expect(splitNames('entering lines: use LinesTable; a grid: use CellGrid.')).toEqual([
+      'entering lines: use ',
+      entryByPath('mmerp/lines-table'),
+      '; a grid: use ',
+      entryByPath('mmerp/cell-grid'),
+      '.',
+    ])
+  })
+
+  it('splitNames leaves names inside longer words alone', () => {
+    expect(splitNames('use FormSection or EditablePanel')).toEqual(['use FormSection or ', entryByPath('mmerp/editable-panel')])
   })
 
   it('related points at real entries', () => {

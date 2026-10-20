@@ -1,7 +1,7 @@
 import { Button, Group, PasswordInput, Stack, Text, TextInput } from '@mantine/core'
 import { IconAlertTriangle, IconAt, IconCircleCheck, IconHourglassHigh, IconUsersGroup } from '@tabler/icons-react'
 import { useTranslation } from 'react-i18next'
-import { Fragment, type ReactNode } from 'react'
+import { Fragment } from 'react'
 import { useSearchParams } from 'react-router'
 import { WithSampleSections } from '@/shared/document/samples'
 import { formatMonth, formatNumber } from '@/shared/i18n'
@@ -14,7 +14,7 @@ import { AuthPage, DocumentPage, InboxGroup, InboxIcon, InboxList, InboxPage, In
 import { StatusBadge } from '@/shared/ui/StatusBadge'
 import { useListParams } from '@/shared/url/listParams'
 import { orgUnits } from './api'
-import { Case, type Row, rows } from './Demo'
+import { Case, type Row, rows, facts } from './Demo'
 
 // The body every template shows, so the templates differ only in their frame.
 function Sample({ rows: data = rows }: { rows?: Row[] }) {
@@ -42,13 +42,6 @@ function useHeader(title: string) {
 const crumbs = [
   { label: 'Nhân sự', to: '/dev/ui/templates/page' },
   { label: 'Nhân viên', to: '/dev/ui/templates/page' },
-]
-
-const facts: [string, ReactNode][] = [
-  ['Quản lý trực tiếp', 'Trần Thị Bình'],
-  ['Thâm niên', '4 năm 2 tháng'],
-  ['Loại hợp đồng', 'Không xác định thời hạn'],
-  ['Phép còn lại', '8,5 ngày'],
 ]
 
 // Every header frames the same stand-in content, so the cases differ only in the header.

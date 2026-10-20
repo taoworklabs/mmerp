@@ -82,67 +82,67 @@ export function FormDoc() {
       path="mmerp/form"
       example={
         <Case label={t('shared.devui.case_form_fields')}>
-        <Form form={pair} onSubmit={async () => {}}>
-          <FormFields>
-            <TextField name="name" label={t('shared.devui.name')} required />
-            <TextField name="code" label={t('shared.devui.code')} />
-            <DateField name="date" label={t('shared.devui.date')} />
-            <MoneyField name="salary" label={t('shared.devui.money')} />
-          </FormFields>
-        </Form>
-      </Case>
+          <Form form={pair} onSubmit={async () => {}}>
+            <FormFields>
+              <TextField name="name" label={t('shared.devui.name')} required />
+              <TextField name="code" label={t('shared.devui.code')} />
+              <DateField name="date" label={t('shared.devui.date')} />
+              <MoneyField name="salary" label={t('shared.devui.money')} />
+            </FormFields>
+          </Form>
+        </Case>
       }
       variants={
         <>
           <Case label={t('shared.devui.case_form_section')}>
-        <Form form={form} onSubmit={async () => {}}>
-          <FormSection title={t('shared.devui.form')} description={t('shared.devui.hint')}>
-            <TextField name="code" label={t('shared.devui.code')} required description={t('shared.devui.hint')} />
-            <CodeField name="issued_code" label={t('shared.devui.code')} existing={false} />
-            <PasswordField name="password" label={t('shared.devui.password')} />
-            <OrgUnitField name="unit" label={t('shared.devui.org_unit')} clearable />
-            <LegalEntityField name="entity" label={t('shared.devui.legal_entity')} required />
-            <RemoteSelectField name="person" label={t('shared.devui.remote')} queryKey={(q) => ['devui', 'people', q]} search={searchPeople} current={people[2]} />
-            <FileField name="file" label={t('shared.devui.file')} accept=".xlsx" description={t('shared.devui.hint')} />
-            <DateField name="date" label={t('shared.devui.date')} clearable short />
-            <MonthField name="month" label={t('shared.devui.month')} short />
-            <SelectField
-              name="choice"
-              label={t('shared.devui.choice')}
-              short
-              data={[
-                { value: 'a', label: 'A' },
-                { value: 'b', label: 'B' },
-              ]}
-            />
-            <MultiSelectField
-              name="many"
-              label={t('shared.devui.multi_choice')}
-              searchable
-              data={[
-                { value: 'a', label: 'A' },
-                { value: 'b', label: 'B' },
-                { value: 'c', label: 'C' },
-              ]}
-            />
-            <DecimalField name="days" label={t('shared.devui.decimal')} scale={1} step={0.5} />
-            <MoneyField name="salary" label={t('shared.devui.money')} />
-            <InputRow>
-              <CheckboxField name="beside" label={t('shared.devui.checkbox')} />
-            </InputRow>
-            <CheckboxField name="flag" label={t('shared.devui.checkbox')} description={t('shared.devui.hint')} />
-            <FormRow>
-              <Text size="sm" c="dimmed">
-                {t('shared.devui.hint')}
-              </Text>
-            </FormRow>
-            <SensitiveField name="masked" label={t('shared.devui.sensitive')} present canView canEdit reveal={async () => '079123456789'} />
-            <SensitiveField name="open" label={t('shared.devui.sensitive')} present={false} canView canEdit reveal={async () => null} />
-            <SensitiveField name="denied" label={t('shared.devui.sensitive')} present canView={false} canEdit={false} reveal={async () => null} />
-          </FormSection>
-          <FormActions submitLabel={t('shared.devui.primary')} />
-        </Form>
-      </Case>
+            <Form form={form} onSubmit={async () => {}}>
+              <FormSection title={t('shared.devui.form')} description={t('shared.devui.hint')}>
+                <TextField name="code" label={t('shared.devui.code')} required description={t('shared.devui.hint')} />
+                <CodeField name="issued_code" label={t('shared.devui.code')} existing={false} />
+                <PasswordField name="password" label={t('shared.devui.password')} />
+                <OrgUnitField name="unit" label={t('shared.devui.org_unit')} clearable />
+                <LegalEntityField name="entity" label={t('shared.devui.legal_entity')} required />
+                <RemoteSelectField name="person" label={t('shared.devui.remote')} queryKey={(q) => ['devui', 'people', q]} search={searchPeople} current={people[2]} />
+                <FileField name="file" label={t('shared.devui.file')} accept=".xlsx" description={t('shared.devui.hint')} />
+                <DateField name="date" label={t('shared.devui.date')} clearable short />
+                <MonthField name="month" label={t('shared.devui.month')} short />
+                <SelectField
+                  name="choice"
+                  label={t('shared.devui.choice')}
+                  short
+                  data={[
+                    { value: 'a', label: 'A' },
+                    { value: 'b', label: 'B' },
+                  ]}
+                />
+                <MultiSelectField
+                  name="many"
+                  label={t('shared.devui.multi_choice')}
+                  searchable
+                  data={[
+                    { value: 'a', label: 'A' },
+                    { value: 'b', label: 'B' },
+                    { value: 'c', label: 'C' },
+                  ]}
+                />
+                <DecimalField name="days" label={t('shared.devui.decimal')} scale={1} step={0.5} />
+                <MoneyField name="salary" label={t('shared.devui.money')} />
+                <InputRow>
+                  <CheckboxField name="beside" label={t('shared.devui.checkbox')} />
+                </InputRow>
+                <CheckboxField name="flag" label={t('shared.devui.checkbox')} description={t('shared.devui.hint')} />
+                <FormRow>
+                  <Text size="sm" c="dimmed">
+                    {t('shared.devui.hint')}
+                  </Text>
+                </FormRow>
+                <SensitiveField name="masked" label={t('shared.devui.sensitive')} present canView canEdit reveal={async () => '079123456789'} />
+                <SensitiveField name="open" label={t('shared.devui.sensitive')} present={false} canView canEdit reveal={async () => null} />
+                <SensitiveField name="denied" label={t('shared.devui.sensitive')} present canView={false} canEdit={false} reveal={async () => null} />
+              </FormSection>
+              <FormActions submitLabel={t('shared.devui.primary')} />
+            </Form>
+          </Case>
         </>
       }
       code={code.form}
@@ -170,37 +170,37 @@ export function FiltersDoc() {
       path="mmerp/filters"
       example={
         <Case label={t('shared.devui.case_search')}>
-        <Group gap="xs">
-          <SearchInput label={t('shared.devui.name')} value={q} onSearch={setQ} />
-        </Group>
-      </Case>
+          <Group gap="xs">
+            <SearchInput label={t('shared.devui.name')} value={q} onSearch={setQ} />
+          </Group>
+        </Case>
       }
       variants={
         <>
           <Case label={t('shared.devui.case_filter_chip')}>
-        <Group gap="xs">
-          <FilterChip label={t('shared.devui.choice')} icon={IconCircleDot} data={choices} value={null} onChange={() => {}} searchable />
-          <FilterChip label={t('shared.devui.choice')} icon={IconCircleDot} data={choices} value={choice} onChange={setChoice} />
-          <FilterChip label={t('shared.devui.choice')} icon={IconCircleDot} data={choices} value="long" onChange={() => {}} />
-        </Group>
-      </Case>
+            <Group gap="xs">
+              <FilterChip label={t('shared.devui.choice')} icon={IconCircleDot} data={choices} value={null} onChange={() => {}} searchable />
+              <FilterChip label={t('shared.devui.choice')} icon={IconCircleDot} data={choices} value={choice} onChange={setChoice} />
+              <FilterChip label={t('shared.devui.choice')} icon={IconCircleDot} data={choices} value="long" onChange={() => {}} />
+            </Group>
+          </Case>
           <Case label={t('shared.devui.case_filter_status')}>
-        <Group gap="xs">
-          <DocumentStatusFilter docType="shared" value={status} onChange={setStatus} />
-        </Group>
-      </Case>
+            <Group gap="xs">
+              <DocumentStatusFilter docType="shared" value={status} onChange={setStatus} />
+            </Group>
+          </Case>
           <Case label={t('shared.devui.case_filter_org')}>
-        <Group gap="xs">
-          <OrgUnitFilter label={t('shared.devui.org_unit')} value={unit} onChange={setUnit} />
-          <LegalEntityFilter label={t('shared.devui.legal_entity')} options={entities.options} value={entities.chosen} onChange={setEntity} />
-        </Group>
-      </Case>
+            <Group gap="xs">
+              <OrgUnitFilter label={t('shared.devui.org_unit')} value={unit} onChange={setUnit} />
+              <LegalEntityFilter label={t('shared.devui.legal_entity')} options={entities.options} value={entities.chosen} onChange={setEntity} />
+            </Group>
+          </Case>
           <Case label={t('shared.devui.case_filter_period')}>
-        <Group gap="xs">
-          <YearFilter label={t('shared.devui.year')} value={year} years={[2025, 2026, 2027]} onChange={setYear} />
-          <MonthFilter label={t('shared.devui.month')} value={month} onChange={setMonth} />
-        </Group>
-      </Case>
+            <Group gap="xs">
+              <YearFilter label={t('shared.devui.year')} value={year} years={[2025, 2026, 2027]} onChange={setYear} />
+              <MonthFilter label={t('shared.devui.month')} value={month} onChange={setMonth} />
+            </Group>
+          </Case>
         </>
       }
       code={code.filters}
@@ -216,22 +216,22 @@ export function InlineEditFieldDoc() {
       path="mmerp/inline-edit-field"
       example={
         <Case label={t('shared.devui.case_inline_edit')}>
-        <InlineEditField
-          label={t('shared.devui.name')}
-          value={name}
-          validate={(v) => (v ? null : t('shared.form.required'))}
-          onSave={async (v) => {
-            await new Promise((r) => setTimeout(r, 400))
-            setName(v)
-          }}
-        />
-      </Case>
+          <InlineEditField
+            label={t('shared.devui.name')}
+            value={name}
+            validate={(v) => (v ? null : t('shared.form.required'))}
+            onSave={async (v) => {
+              await new Promise((r) => setTimeout(r, 400))
+              setName(v)
+            }}
+          />
+        </Case>
       }
       variants={
         <>
           <Case label={t('shared.devui.case_inline_read_only')}>
-        <InlineEditField label={t('shared.devui.code')} value="KH001" readOnly onSave={async () => {}} />
-      </Case>
+            <InlineEditField label={t('shared.devui.code')} value="KH001" readOnly onSave={async () => {}} />
+          </Case>
         </>
       }
       code={code.inline}
@@ -247,30 +247,30 @@ export function LinesTableDoc() {
       path="mmerp/lines-table"
       example={
         <Case label={t('shared.devui.case_lines_edit')}>
-        <Form form={form} onSubmit={async () => {}}>
-          <FormSection title={t('shared.devui.form')}>
-            <IntegerField name="levels" label={t('shared.devui.levels')} min={1} max={5} />
-            <FormRow>
-              <LinesTable
-                name="lines"
-                label={t('shared.devui.lines')}
-                columns={[
-                  { key: 'description', header: t('shared.devui.name'), required: true, cell: (i, bare) => <TextField name={`lines.${i}.description`} label={`${t('shared.devui.name')} (${i + 1})`} bare={bare} required /> },
-                  { key: 'quantity', header: t('shared.devui.quantity'), numeric: true, width: 110, cell: (i, bare) => <DecimalField name={`lines.${i}.quantity`} label={`${t('shared.devui.quantity')} (${i + 1})`} bare={bare} scale={3} min={0} /> },
-                  { key: 'unit_price', header: t('shared.devui.amount'), numeric: true, width: 140, cell: (i, bare) => <MoneyField name={`lines.${i}.unit_price`} label={`${t('shared.devui.amount')} (${i + 1})`} bare={bare} /> },
-                ]}
-                newLine={() => ({ description: '', quantity: '1', unit_price: 0 })}
-                addLabel={t('shared.devui.add')}
-                lineLabel={(n) => `# ${n}`}
-                removeLabel={(n) => `${t('shared.devui.remove')} ${n}`}
-                minLines={1}
-                footer={<LinesTotals note={t('shared.devui.totals_note')} rows={[[t('shared.devui.subtotal'), formatNumber(3000000)], [t('shared.devui.grand_total'), formatNumber(3240000)]]} />}
-              />
-            </FormRow>
-          </FormSection>
-          <FormActions submitLabel={t('shared.devui.primary')} />
-        </Form>
-      </Case>
+          <Form form={form} onSubmit={async () => {}}>
+            <FormSection title={t('shared.devui.form')}>
+              <IntegerField name="levels" label={t('shared.devui.levels')} min={1} max={5} />
+              <FormRow>
+                <LinesTable
+                  name="lines"
+                  label={t('shared.devui.lines')}
+                  columns={[
+                    { key: 'description', header: t('shared.devui.name'), required: true, cell: (i, bare) => <TextField name={`lines.${i}.description`} label={`${t('shared.devui.name')} (${i + 1})`} bare={bare} required /> },
+                    { key: 'quantity', header: t('shared.devui.quantity'), numeric: true, width: 110, cell: (i, bare) => <DecimalField name={`lines.${i}.quantity`} label={`${t('shared.devui.quantity')} (${i + 1})`} bare={bare} scale={3} min={0} /> },
+                    { key: 'unit_price', header: t('shared.devui.amount'), numeric: true, width: 140, cell: (i, bare) => <MoneyField name={`lines.${i}.unit_price`} label={`${t('shared.devui.amount')} (${i + 1})`} bare={bare} /> },
+                  ]}
+                  newLine={() => ({ description: '', quantity: '1', unit_price: 0 })}
+                  addLabel={t('shared.devui.add')}
+                  lineLabel={(n) => `# ${n}`}
+                  removeLabel={(n) => `${t('shared.devui.remove')} ${n}`}
+                  minLines={1}
+                  footer={<LinesTotals note={t('shared.devui.totals_note')} rows={[[t('shared.devui.subtotal'), formatNumber(3000000)], [t('shared.devui.grand_total'), formatNumber(3240000)]]} />}
+                />
+              </FormRow>
+            </FormSection>
+            <FormActions submitLabel={t('shared.devui.primary')} />
+          </Form>
+        </Case>
       }
       variants={
         <>
@@ -290,7 +290,7 @@ export function LinesTableDoc() {
               lineLabel={(n) => `# ${n}`}
               footer={<LinesTotals rows={[[t('shared.devui.subtotal'), formatNumber(3000000)], [t('shared.devui.grand_total'), formatNumber(3240000)]]} />}
             />
-      </Case>
+          </Case>
         </>
       }
       code={code.lines}

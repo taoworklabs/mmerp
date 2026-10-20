@@ -1,5 +1,5 @@
 import { Button, Group, SegmentedControl, Stack, Text } from '@mantine/core'
-import { IconCircleDot, IconDownload, IconTrash, IconUsersGroup } from '@tabler/icons-react'
+import { IconCircleDot, IconDownload, IconTrash } from '@tabler/icons-react'
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { useTranslation } from 'react-i18next'
@@ -9,8 +9,8 @@ import { sample, SampleDocument } from '@/shared/document/samples'
 import { formatNumber } from '@/shared/i18n'
 import { BulkBar } from '@/shared/ui/BulkBar'
 import { type Column, DataTable } from '@/shared/ui/DataTable'
-import { FieldList, MissingValue } from '@/shared/ui/FieldList'
-import { EditablePanel, FilterChip, Form, FormActions, FormFields, FormSection, MoneyField, SearchInput, TextField } from '@/shared/ui/form'
+import { FieldList } from '@/shared/ui/FieldList'
+import { FilterChip, Form, FormActions, FormSection, MoneyField, SearchInput, TextField } from '@/shared/ui/form'
 import { useListView } from '@/shared/ui/ListView'
 import { MenuAction } from '@/shared/ui/MenuAction'
 import { MoreActions } from '@/shared/ui/MoreActions'
@@ -22,7 +22,7 @@ import { EmptyState } from '@/shared/ui/states'
 import { useAction } from '@/shared/ui/useAction'
 import { fakeQuery, type QueryCase, queryStates } from './actions'
 import { Case, rows, type Row } from './Demo'
-import { DocPage, DoDont } from './DocPage'
+import { DocPage, DoDont, Linked } from './DocPage'
 
 function useColumns(): Column<Row>[] {
   const { t } = useTranslation()
@@ -82,7 +82,6 @@ export function CreateEditPattern() {
   const { t } = useTranslation()
   const [opened, setOpened] = useState(false)
   const create = useForm({ defaultValues: { name: '', salary: undefined } })
-  const edit = useForm({ defaultValues: { department: 'Kế toán', email: '' } })
   return (
     <DocPage
       path="patterns/create-edit"
@@ -103,30 +102,9 @@ export function CreateEditPattern() {
             </FormModal>
           </Case>
           <Case label={t('shared.devui.case_edit_in_place')}>
-            <EditablePanel
-              title={t('shared.devui.section_staff')}
-              icon={IconUsersGroup}
-              editable
-              edit={(close) => (
-                <Form form={edit} onSubmit={async () => close()}>
-                  <FormFields>
-                    <TextField name="department" label="Phòng ban" />
-                    <TextField name="email" label="Email" />
-                  </FormFields>
-                  <FormActions submitLabel={t('shared.devui.save')} onCancel={close} cancelLabel={t('shared.form.cancel')} />
-                </Form>
-              )}
-            >
-              {(open) => (
-                <FieldList
-                  stacked
-                  rows={[
-                    ['Phòng ban', 'Kế toán'],
-                    ['Email', <MissingValue key="e" label="Email" onAdd={open} />],
-                  ]}
-                />
-              )}
-            </EditablePanel>
+            <Text size="sm">
+              <Linked text={t('shared.devui.edit_in_place_see')} />
+            </Text>
           </Case>
         </>
       }

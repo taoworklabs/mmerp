@@ -10,6 +10,7 @@ import { type Column, DataTable } from '@/shared/ui/DataTable'
 import { FieldList } from '@/shared/ui/FieldList'
 import { KeyFacts } from '@/shared/ui/KeyFacts'
 import { useListView } from '@/shared/ui/ListView'
+import { MenuAction } from '@/shared/ui/MenuAction'
 import { MoreActions } from '@/shared/ui/MoreActions'
 import { OrgUnitName } from '@/shared/ui/OrgUnitName'
 import { Panel } from '@/shared/ui/page'
@@ -18,7 +19,7 @@ import { StatusBadge } from '@/shared/ui/StatusBadge'
 import { icon } from '@/shared/ui/theme'
 import { LinkTile, StatTile, TileGrid } from '@/shared/ui/Tile'
 import { TreeList } from '@/shared/ui/TreeList'
-import { Case, rows, type Row } from './Demo'
+import { Case, rows, type Row, facts } from './Demo'
 import { DocPage, DoDont } from './DocPage'
 
 function useColumns(sortable = false): Column<Row>[] {
@@ -48,13 +49,6 @@ import { PersonName } from '@/shared/ui/avatar'   // avatar and name together`,
   section: `<Section title description? actions?>{content}</Section>`,
   panel: `<Panel title icon? actions? plain?>{content}</Panel>`,
 }
-
-const facts: [string, ReactNode][] = [
-  ['Quản lý trực tiếp', 'Trần Thị Bình'],
-  ['Thâm niên', '4 năm 2 tháng'],
-  ['Loại hợp đồng', 'Không xác định thời hạn'],
-  ['Phép còn lại', '8,5 ngày'],
-]
 
 const values: [string, ReactNode][] = [
   ['Phòng ban', 'Kế toán'],
@@ -345,7 +339,9 @@ export function SectionDoc() {
                   {t('shared.devui.add')}
                 </Button>
                 <MoreActions place="page">
-                  <Menu.Item leftSection={<IconDownload {...icon.text} />}>{t('shared.devui.export')}</Menu.Item>
+                  <MenuAction icon={IconDownload} onClick={() => {}}>
+                    {t('shared.devui.export')}
+                  </MenuAction>
                 </MoreActions>
               </>
             }

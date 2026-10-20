@@ -11,8 +11,8 @@ import { icon } from '@/shared/ui/theme'
 import classes from '../AppLayout.module.css'
 import { offline } from './api'
 import devui from './DevUi.module.css'
-import { type Entry, entries, entryByPath, layers, type Path } from './catalogue'
-import { key, useEntryTitle } from './DocPage'
+import { type Entry, entries, entryByPath, key, layers, type Path } from './catalogue'
+import { Linked, useEntryTitle } from './DocPage'
 import { Overview } from './start'
 import { ApprovalPanelDoc, ActivityFeedDoc, AttachmentPanelDoc, DocumentPreviewDoc, DocumentStatusDoc } from './documents'
 import { BulkBarDoc, MoreActionsDoc, NoticeDoc, NotifyDoc, QueryViewDoc, SidePanelDoc, StatesDoc, UseActionDoc, UseConfirmDoc } from './actions'
@@ -105,7 +105,7 @@ function TemplateNote({ entry }: { entry: Entry }) {
     <Stack gap="xxxs" px="md" py="xs" className={devui.usage}>
       <Text size="sm">{t(`shared.devui.about_${k}`)}</Text>
       {line(t('shared.devui.use_when'), t(`shared.devui.use_${k}`))}
-      {line(t('shared.devui.avoid_when'), t(`shared.devui.avoid_${k}`))}
+      {line(t('shared.devui.avoid_when'), <Linked text={t(`shared.devui.avoid_${k}`)} />)}
       {entry.related &&
         line(
           t('shared.devui.built_from'),
