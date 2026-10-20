@@ -1,7 +1,7 @@
 .root {
   background: var(--mmerp-color-gray-1);
   border-radius: var(--mmerp-radius-sm);
-  /* A loop, not a transition: the 200ms motion cap doesn't apply (R10); a calm 1.5s pulse. */
+  /* A loop, not a transition: the 200ms motion cap doesn't apply; a calm 1.5s pulse. */
   animation: mmerp-skeleton-pulse 1.5s ease-in-out infinite alternate;
 }
 

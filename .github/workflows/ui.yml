@@ -2,6 +2,8 @@ name: UI kit
 on:
   push:
     paths: ['packages/ui/**', '.github/workflows/ui.yml']
+  pull_request:
+    paths: ['packages/ui/**', '.github/workflows/ui.yml']
   workflow_dispatch:
 concurrency:
   group: ui-${{ github.ref }}
