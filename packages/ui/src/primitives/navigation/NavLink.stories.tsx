@@ -1,0 +1,67 @@
+import type { Meta, StoryObj } from '@storybook/react-vite'
+import { expect, userEvent, within } from 'storybook/test'
+import { NavLink } from './NavLink.tsx'
+
+const meta: Meta<typeof NavLink> = {
+  title: 'Navigation/NavLink',
+  component: NavLink,
+}
+
+export default meta
+
+type Story = StoryObj<typeof NavLink>
+
+export const Default: Story = {
+  args: { label: 'Dashboard', href: '#' },
+}
+
+export const Active: Story = {
+  args: { label: 'Dashboard', href: '#', active: true },
+  play: async ({ canvasElement }) => {
+    const link = within(canvasElement).getByRole('link', { name: 'Dashboard' })
+    const probe = document.createElement('div')
+    probe.style.backgroundColor = 'var(--mmerp-color-primary-light)'
+    canvasElement.appendChild(probe)
+    expect(getComputedStyle(link).backgroundColor).toBe(getComputedStyle(probe).backgroundColor)
+    probe.remove()
+  },
+}
+
+export const WithSections: Story = {
+  args: { label: 'Settings', description: 'Workspace preferences', href: '#', leftSection: '⚙', rightSection: '3' },
+}
+
+export const Long: Story = {
+  args: { label: 'A very long navigation label that should truncate instead of widening the navbar', href: '#' },
+  render: (args) => (
+    <div style={{ width: 200 }}>
+      <NavLink {...args} />
+    </div>
+  ),
+  play: async ({ canvasElement }) => {
+    const link = within(canvasElement).getByRole('link')
+    const label = within(link).getByText(/A very long/)
+    expect(label.scrollWidth).toBeGreaterThan(label.clientWidth)
+    expect(link.getBoundingClientRect().width).toBe(200)
+  },
+}
+
+export const Nested: Story = {
+  args: {
+    label: 'Products',
+    children: (
+      <>
+        <NavLink label="Items" href="#items" />
+        <NavLink label="Categories" href="#categories" />
+      </>
+    ),
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    expect(canvas.queryByRole('link', { name: 'Items' })).not.toBeInTheDocument()
+
+    await userEvent.click(canvas.getByRole('button', { name: 'Products' }))
+    expect(canvas.getByRole('link', { name: 'Items' })).toBeVisible()
+    expect(canvas.getByRole('link', { name: 'Categories' })).toBeVisible()
+  },
+}

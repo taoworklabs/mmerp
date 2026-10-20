@@ -1,0 +1,23 @@
+.root {
+}
+
+.list {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.item {
+  display: flex;
+  align-items: center;
+  gap: var(--mmerp-space-xxs);
+  font-size: var(--mmerp-font-size-sm);
+  color: var(--mmerp-color-text);
+}
+
+.separator {
+  color: var(--mmerp-color-dimmed);
+}
