@@ -178,7 +178,9 @@ test('an unfinished condition is refused before saving and Save leads to it', as
   await expect(page.getByRole('alert').filter({ hasText: 'Còn 1 trường cần sửa' })).toBeVisible()
   await page.getByRole('button', { name: 'Đến trường tiếp theo' }).click()
   await expect(chip).toHaveAttribute('aria-pressed', 'true')
-  await expect(panel(page).getByRole('alert')).toHaveText('Điều kiện không hợp lệ. Kiểm tra trường, phép so sánh và giá trị.')
+  // Shown under the value it lacks, not again on top of the panel.
+  await expect(panel(page).getByRole('textbox', { name: /^Giá trị/ }).last()).toHaveAttribute('aria-invalid', 'true')
+  await expect(panel(page).getByText('Điều kiện không hợp lệ. Kiểm tra trường, phép so sánh và giá trị.')).toHaveCount(1)
   expect(puts).toBe(0)
 })
 
@@ -320,4 +322,75 @@ test('every kind of box shows when it is selected', async ({ browser }) => {
     await other.click()
     await expect(other).toHaveCSS('background-color', selected)
   }
+})
+
+test('a problem shows under the field that fixes it', async ({ browser }) => {
+  await putBuilt()
+  const page = await as(browser, admin.login, url)
+  await insert(main(page), page, -1, 'Bước duyệt')
+  await pick(panel(page), page, 'Ai duyệt', 'Người có vai trò, tại đơn vị của chứng từ')
+  await page.getByRole('button', { name: 'Lưu' }).click()
+  const role = panel(page).getByRole('combobox', { name: 'Vai trò' })
+  await expect(role).toHaveAttribute('aria-invalid', 'true')
+  await expect(panel(page).getByText('Chưa chọn vai trò.')).toHaveCount(1)
+})
+
+test('after an insert, focus goes to the new element’s first field', async ({ browser }) => {
+  await putBuilt()
+  const page = await as(browser, admin.login, url)
+  await insert(main(page), page, 0, 'Bước duyệt')
+  await expect(panel(page).getByRole('combobox', { name: 'Ai duyệt' })).toBeFocused()
+})
+
+test('the + is a full-size target', async ({ browser }) => {
+  await putBuilt()
+  const page = await as(browser, admin.login, url)
+  const plus = await main(page).getByRole('button', { name: 'Thêm vào đây' }).first().boundingBox()
+  expect(plus!.width).toBeGreaterThanOrEqual(30)
+  expect(plus!.height).toBeGreaterThanOrEqual(30)
+})
+
+test('discarding changes resets the open panel', async ({ browser }) => {
+  await putBuilt()
+  const page = await as(browser, admin.login, url)
+  await box(branchOf(page, 'Còn lại'), 'Bước duyệt: Quản lý trực tiếp').click()
+  const advanced = panel(page).getByRole('button', { name: 'Nâng cao' })
+  await advanced.click()
+  await expect(advanced).toHaveAttribute('aria-expanded', 'true')
+  await panel(page).getByRole('textbox', { name: /^Hạn duyệt \(giờ\)/ }).fill('8')
+  await page.getByRole('button', { name: 'Bỏ thay đổi' }).click()
+  await page.getByRole('dialog').getByRole('button', { name: 'Bỏ thay đổi' }).click()
+  await expect(panel(page).getByRole('textbox', { name: /^Hạn duyệt \(giờ\)/ })).toHaveValue('')
+  await expect(panel(page).getByRole('button', { name: 'Nâng cao' })).toHaveAttribute('aria-expanded', 'false')
+})
+
+test('the manager kind says whose manager approves', async ({ browser }) => {
+  await putBuilt()
+  const page = await as(browser, admin.login, url)
+  await box(branchOf(page, 'Còn lại'), 'Bước duyệt: Quản lý trực tiếp').click()
+  await expect(panel(page).getByText('Quản lý trực tiếp của nhân viên trên đơn; nếu đó chính là người gửi thì lên cấp trên.')).toBeVisible()
+})
+
+test('a refused save names a step deep inside nested splits', async ({ browser }) => {
+  await putBuilt()
+  const page = await as(browser, admin.login, url)
+  await page.route(/\/api\/approval-rules\/hrm\.leave_request(\?|$)/, (route) =>
+    route.request().method() === 'PUT'
+      ? route.fulfill({ status: 422, contentType: 'application/json', body: JSON.stringify({ code: 'invalid_rule', params: { path: '1.branches.1.body.1.branches.2.body.1', reason: 'unknown_role' } }) })
+      : route.continue(),
+  )
+  await page.getByRole('button', { name: 'Cài đặt chung' }).click()
+  await panel(page).getByRole('textbox', { name: /^Khi quản lý trực tiếp lại chính là người gửi/ }).fill('4')
+  await page.getByRole('button', { name: 'Lưu' }).click()
+  const b = box(main(page), `Bước duyệt: ${login.b}`)
+  await expect(b).toHaveAttribute('aria-pressed', 'true')
+  await expect(b).toHaveAttribute('aria-invalid', 'true')
+})
+
+test('a disabled product with no rule says so without offering +', async ({ browser }) => {
+  await api.delete('/api/approval-rules/hrm.leave_request')
+  const page = await (await browser.newContext()).newPage()
+  await signedIn(page, `http://localhost:8091${url}`)
+  await expect(main(page).getByText('Chưa có ai duyệt: đơn có hiệu lực ngay khi gửi.')).toBeVisible()
+  await expect(main(page).getByText(/Bấm dấu \+/)).toHaveCount(0)
 })

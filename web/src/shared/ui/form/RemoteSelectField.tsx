@@ -33,6 +33,7 @@ export function RemoteSelectField<T extends RemoteRow>({
   readOnly,
   required,
   bare,
+  error,
   onPicked,
 }: {
   name: string
@@ -44,6 +45,7 @@ export function RemoteSelectField<T extends RemoteRow>({
   readOnly?: boolean
   required?: boolean
   bare?: boolean
+  error?: string
   onPicked?: (row: T) => void
 }) {
   const [text, setText] = useState('')
@@ -61,6 +63,7 @@ export function RemoteSelectField<T extends RemoteRow>({
       required={required}
       readOnly={readOnly}
       bare={bare}
+      error={error}
       // Select puts the chosen option's label into the search box; that is not a search.
       onSearch={(s) => setText(options.some((o) => o.label === s) ? '' : s)}
       onChange={(v) => {

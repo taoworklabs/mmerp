@@ -9,7 +9,7 @@ import { DecimalField, OrgUnitField, RemoteSelectField, SelectField } from '@/sh
 import { icon } from '@/shared/ui/theme'
 import type { CondRow } from '../flowForm'
 import { documentKeys } from '../keys'
-import type { EditorCtx } from './editor'
+import { useFieldProblem, type EditorCtx } from './editor'
 
 // Groups nest at most this deep, so a condition stays readable.
 const maxGroupDepth = 3
@@ -110,7 +110,8 @@ function Leaf({ path, ctx }: { path: string; ctx: EditorCtx }) {
   const key: string | null = useWatch({ name: `${path}.field` })
   const { readOnly, rule } = ctx
   const field = rule.fields.find((f) => f.key === key)
-  const value = { readOnly, name: `${path}.value`, label: t('shared.rule.value'), required: true }
+  const problems = { field: useFieldProblem(`${path}.field`, true), op: useFieldProblem(`${path}.op`, true), value: useFieldProblem(`${path}.value`, true) }
+  const value = { readOnly, name: `${path}.value`, label: t('shared.rule.value'), required: true, error: problems.value }
   return (
     // The panel is narrow: the field on its own row, the comparison and the value under it.
     <Stack flex={1} miw={0} gap="xs">
@@ -119,6 +120,7 @@ function Leaf({ path, ctx }: { path: string; ctx: EditorCtx }) {
         name={`${path}.field`}
         label={t('shared.rule.field')}
         required
+        error={problems.field}
         data={rule.fields.map((f) => ({ value: f.key, label: t(f.label, { defaultValue: f.key }) }))}
         onChange={(k) => {
           const ops = rule.fields.find((f) => f.key === k)?.ops ?? []
@@ -128,7 +130,7 @@ function Leaf({ path, ctx }: { path: string; ctx: EditorCtx }) {
       />
       {field && (
         <SimpleGrid cols={2} spacing="xs">
-          <SelectField readOnly={readOnly} name={`${path}.op`} label={t('shared.rule.op')} required data={field.ops.map((o) => ({ value: o, label: t(`shared.rule.op.${o}`) }))} />
+          <SelectField readOnly={readOnly} name={`${path}.op`} label={t('shared.rule.op')} required error={problems.op} data={field.ops.map((o) => ({ value: o, label: t(`shared.rule.op.${o}`) }))} />
           {field.kind === 'choice' && <SelectField {...value} data={field.options ?? []} />}
           {field.kind === 'number' && <DecimalField {...value} scale={2} />}
           {field.kind === 'org_unit' && <OrgUnitField {...value} />}
@@ -141,7 +143,7 @@ function Leaf({ path, ctx }: { path: string; ctx: EditorCtx }) {
 
 // SearchedValue picks one value of a field whose options are searched on the server; the saved
 // value's label is fetched once, so the condition reads in full before any search.
-function SearchedValue({ docType, field, ...props }: { docType: string; field: string; name: string; label: string; readOnly: boolean; required: boolean }) {
+function SearchedValue({ docType, field, ...props }: { docType: string; field: string; name: string; label: string; readOnly: boolean; required: boolean; error?: string }) {
   const { getValues } = useFormContext()
   const [saved] = useState(() => Number(getValues(props.name)) || 0)
   const params = { path: { doc_type: docType, key: field } }

@@ -1,6 +1,6 @@
 import { Menu, Text, UnstyledButton } from '@mantine/core'
 import { IconPlus } from '@tabler/icons-react'
-import { useQueries } from '@tanstack/react-query'
+import { keepPreviousData, useQueries } from '@tanstack/react-query'
 import { createContext, Fragment, useContext, type ReactNode } from 'react'
 import { get, useFormState, useWatch } from 'react-hook-form'
 import { useTranslation } from 'react-i18next'
@@ -54,14 +54,18 @@ function useValueLabel(values: RuleValues): ValueLabel {
     queries: wanted.map(({ key, ids }) => ({
       queryKey: documentKeys.approvalFieldOptions(docType, key, { ids }),
       queryFn: async () => (await unwrap(api.GET('/approval-rules/{doc_type}/fields/{key}/options', { params: { path: { doc_type: docType, key }, query: { ids } } }))) ?? [],
+      // A new id keeps the names already known on screen while the new list loads.
+      placeholderData: keepPreviousData,
     })),
   })
   return (field, value) => {
     if (field.kind === 'org_unit') return units.find((u) => String(u.id) === value)?.name
     if (!field.searchable) return undefined
-    const at = wanted.findIndex((w) => w.key === field.key)
-    const row = found[at]?.data?.find((r) => String(r.id) === value)
-    return row ? rowLabel(row) : '…'
+    const query = found[wanted.findIndex((w) => w.key === field.key)]
+    const row = query?.data?.find((r) => String(r.id) === value)
+    if (row) return rowLabel(row)
+    // Unloadable reads as the id itself, apart from "…", which marks an unfinished condition.
+    return query?.isPending || query?.isPlaceholderData ? '…' : `#${value}`
   }
 }
 
@@ -69,7 +73,7 @@ function useValueLabel(values: RuleValues): ValueLabel {
 // with a problem is red as soon as the problem exists; a ⊕ on every connector inserts there.
 export function FlowDiagram() {
   const { t } = useTranslation()
-  const { select } = useFlowEditor()
+  const { ctx, select } = useFlowEditor()
   const values = useWatch() as RuleValues
   const { errors } = useFormState()
   const problems = new Map(flowProblems(values).map((p) => [p.at, p.code]))
@@ -100,7 +104,7 @@ export function FlowDiagram() {
           </div>
           {empty && (
             <Text size="sm" c="dimmed" mt="md">
-              {t('shared.rule.empty_hint')}
+              {t(ctx.readOnly ? 'shared.rule.empty_readonly' : 'shared.rule.empty_hint')}
             </Text>
           )}
         </div>
@@ -159,7 +163,8 @@ function Edge({ list, at, depth, root }: { list: string; at: number; depth: numb
   return (
     <div className={c.edge}>
       <div className={c.line} />
-      <Menu position="right-start">
+      {/* The new element's panel takes the focus, not this + again. */}
+      <Menu position="right-start" returnFocus={false}>
         <Menu.Target>
           <UnstyledButton
             className={c.plus}

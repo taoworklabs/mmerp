@@ -844,6 +844,8 @@
   "shared.rule.reason.flow_required": "Thêm ít nhất một bước.",
   "shared.rule.reason.fallback_required": "Chưa chọn người nhận khi không tìm được người duyệt.",
   "shared.rule.reason.max_levels_range": "Số cấp phải từ 1 đến 10.",
+  "shared.rule.empty_readonly": "Chưa có ai duyệt: đơn có hiệu lực ngay khi gửi.",
+  "shared.rule.panel_hint_readonly": "Bấm vào một ô trên sơ đồ để xem chi tiết.",
   "shared.approval.request.cancel": "Yêu cầu hủy chứng từ",
   "shared.approval.request.module": "Yêu cầu duyệt: {{action}}",
   "shared.approval.withdraw": "Rút yêu cầu",

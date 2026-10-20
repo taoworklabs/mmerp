@@ -39,8 +39,8 @@
 }
 
 .plus {
-  width: 24px;
-  height: 24px;
+  width: 30px;
+  height: 30px;
   border-radius: 50%;
   border: 1px solid var(--mantine-color-primary-3);
   background: var(--mmerp-elevation-surface);
@@ -59,8 +59,8 @@
 }
 
 .plus[data-big] {
-  width: 32px;
-  height: 32px;
+  width: 36px;
+  height: 36px;
   opacity: 1;
 }
 

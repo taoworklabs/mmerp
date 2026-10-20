@@ -200,8 +200,14 @@ export function selectionKind(sel: string, v: RuleValues): 'settings' | 'branch'
     if (node === null || typeof node !== 'object') return null
     node = (node as Record<string, unknown>)[part]
   }
-  if (node === undefined || node === null) return null
+  return kindAt(sel, node)
+}
+
+// kindAt names what a selection points at, given the value at its path (undefined once it is gone).
+export function kindAt(sel: string, value: unknown): 'settings' | 'branch' | 'otherwise' | 'step' | 'split' | null {
+  if (sel === 'settings') return 'settings'
+  if (value === undefined || value === null) return null
   if (sel.endsWith('.otherwise')) return 'otherwise'
   if (/\.branches\.\d+$/.test(sel)) return 'branch'
-  return (node as ElementValues).type === 'step' ? 'step' : 'split'
+  return (value as ElementValues).type === 'step' ? 'step' : 'split'
 }

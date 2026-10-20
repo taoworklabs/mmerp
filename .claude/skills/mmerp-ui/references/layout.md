@@ -42,7 +42,7 @@ One-line description: what the list holds, or the record's key facts
 
 | Region | Width |
 | --- | --- |
-| Lists, wide documents (`fullWidth`), reports, the approval rule editor (diagram and side panel) | Full width of the content area |
+| Lists, wide documents (`fullWidth`), reports, the approval rule editor (diagram and side panel; below 1280px the panel is a drawer, its own small-screen layout) | Full width of the content area |
 | Form pages (`FormSection`, `Page centered`) | At most 1200px (`--mmerp-content-width`), the header centred with the content so both share a left edge |
 | A record's or document's page (`RecordPage`, `DocumentPage`) | At most 1440px (`--mmerp-detail-width`), header included; main and side column about 62/38, one column below 1024px |
 | Inbox list | 360px (`--mmerp-side-width`) |

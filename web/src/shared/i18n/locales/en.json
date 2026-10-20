@@ -844,6 +844,8 @@
   "shared.rule.reason.flow_required": "Add at least one step.",
   "shared.rule.reason.fallback_required": "Choose who receives it when no approver is found.",
   "shared.rule.reason.max_levels_range": "Levels must be 1 to 10.",
+  "shared.rule.empty_readonly": "Nobody approves: the document takes effect as soon as it is sent.",
+  "shared.rule.panel_hint_readonly": "Click a box on the diagram to see its details.",
   "shared.approval.request.cancel": "Request to cancel the document",
   "shared.approval.request.module": "Approval request: {{action}}",
   "shared.approval.withdraw": "Withdraw request",

@@ -118,3 +118,11 @@ test('a quote selling the special item goes to the manager', async ({ browser })
   const plain = await sent(ids.plain)
   expect(plain.status).toBe('posted')
 })
+
+test('a searched value that cannot be loaded reads as its id, not as unfinished', async ({ browser }) => {
+  // The rule the first test saved is still in place.
+  const page = await as(browser, admin.login, '/sales/approval-rules/sales.quote')
+  await page.route(/\/api\/approval-rules\/sales\.quote\/fields\/items\/options/, (route) => route.fulfill({ status: 500, contentType: 'application/json', body: '{"code":"internal"}' }))
+  await page.reload()
+  await expect(page.getByRole('main').getByRole('button', { name: `Trường hợp 1: Nếu Mặt hàng có #${ids.special}` })).toBeVisible()
+})
