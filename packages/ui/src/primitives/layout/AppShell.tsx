@@ -37,7 +37,7 @@ export function AppShell({
     <div className={cx(styles.root, className)} style={vars} data-mobile={isMobile ? '' : undefined} {...props}>
       {header && <header className={styles.header}>{header}</header>}
       {navbar && (
-        <nav className={styles.navbar} data-opened={navbarOpened ? '' : undefined}>
+        <nav className={styles.navbar} data-opened={navbarOpened ? '' : undefined} inert={isMobile && !navbarOpened}>
           {navbar}
         </nav>
       )}

@@ -39,10 +39,13 @@ export const OffCanvasBelowBreakpoint: Story = {
     await page.viewport(800, 600)
     const navbar = canvas.getByText('Navbar content').closest('nav')!
     await waitFor(() => expect(navbar.getBoundingClientRect().right).toBeLessThanOrEqual(0.5))
+    // Off-screen but still in the tab order would trap keyboard users in an invisible menu.
+    await expect(navbar).toHaveAttribute('inert')
 
     const toggle = canvas.getByRole('button', { name: 'Toggle navigation' })
     await userEvent.click(toggle)
     await waitFor(() => expect(navbar.getBoundingClientRect().left).toBeGreaterThanOrEqual(-0.5))
+    await expect(navbar).not.toHaveAttribute('inert')
 
     // Close it again so the desktop assertion below checks the breakpoint itself, not a flag left over from mobile.
     await userEvent.click(toggle)
@@ -50,5 +53,6 @@ export const OffCanvasBelowBreakpoint: Story = {
 
     await page.viewport(1280, 800)
     await waitFor(() => expect(navbar.getBoundingClientRect().left).toBeGreaterThanOrEqual(-0.5))
+    await expect(navbar).not.toHaveAttribute('inert')
   },
 }
