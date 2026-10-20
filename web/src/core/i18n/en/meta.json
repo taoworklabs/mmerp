@@ -93,6 +93,7 @@
   "core.notifications.kind.approval_requested": "Waiting for your approval",
   "core.notifications.kind.approval_approved": "Approved",
   "core.notifications.kind.approval_rejected": "Rejected",
+  "core.notifications.kind.approval_overdue": "Overdue for approval",
   "core.notifications.kind.mentioned": "Mentioned you in a discussion",
   "core.notifications.kind.job_completed": "Background job finished",
   "core.notifications.kind.job_failed": "Background job failed",

@@ -93,6 +93,7 @@
   "core.notifications.kind.approval_requested": "Chờ bạn duyệt",
   "core.notifications.kind.approval_approved": "Đã được duyệt",
   "core.notifications.kind.approval_rejected": "Bị từ chối",
+  "core.notifications.kind.approval_overdue": "Quá hạn duyệt",
   "core.notifications.kind.mentioned": "Nhắc tên bạn trong trao đổi",
   "core.notifications.kind.job_completed": "Việc chạy nền đã xong",
   "core.notifications.kind.job_failed": "Việc chạy nền thất bại",

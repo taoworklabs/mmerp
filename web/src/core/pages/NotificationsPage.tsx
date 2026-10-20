@@ -1,5 +1,5 @@
 import { Alert, Button, Group, Text, ThemeIcon, Tooltip } from '@mantine/core'
-import { IconAlertCircle, IconAlertTriangle, IconAt, IconBell, IconChecks, IconCircleCheck, IconCircleX, IconHourglassHigh, type Icon as TablerIcon } from '@tabler/icons-react'
+import { IconAlertCircle, IconAlertTriangle, IconAt, IconBell, IconChecks, IconCircleCheck, IconCircleX, IconClockExclamation, IconHourglassHigh, type Icon as TablerIcon } from '@tabler/icons-react'
 import { useInfiniteQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Fragment, useState } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -13,12 +13,13 @@ import { ContentSkeleton, EmptyState, ErrorState } from '@/shared/ui/states'
 import { icon } from '@/shared/ui/theme'
 import { notificationKeys } from '../notificationKeys'
 
-// Each core kind has its icon, in the colour of what it says: waiting, done, refused, a mention.
+// Each core kind has its icon, in the colour of what it says: waiting, done, refused, overdue, a mention.
 // A product's own kind (<product>.<name>) gets the plain bell and its label from the product's area.
 const kindLooks: Record<string, { Icon: TablerIcon; color: string } | undefined> = {
   approval_requested: { Icon: IconHourglassHigh, color: 'warning' },
   approval_approved: { Icon: IconCircleCheck, color: 'success' },
   approval_rejected: { Icon: IconCircleX, color: 'danger' },
+  approval_overdue: { Icon: IconClockExclamation, color: 'danger' },
   mentioned: { Icon: IconAt, color: 'info' },
   job_completed: { Icon: IconChecks, color: 'success' },
   job_failed: { Icon: IconAlertTriangle, color: 'danger' },
