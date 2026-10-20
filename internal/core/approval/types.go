@@ -125,8 +125,11 @@ type StepView struct {
 	Approvals  int32  `json:"approvals"`
 	Rejections int32  `json:"rejections"`
 	// The step went to the fallback role because nobody else could approve it.
-	Fallback bool        `json:"fallback"`
-	Voters   []StepVoter `json:"voters" nullable:"false"` // empty while waiting
+	Fallback bool `json:"fallback"`
+	// When the step's approvers are told it is overdue; null without a due time.
+	DueAt   *string     `json:"due_at" format:"date-time"`
+	Overdue bool        `json:"overdue"`
+	Voters  []StepVoter `json:"voters" nullable:"false"` // empty while waiting
 	// approve, reject (the actor may vote), reassign (fallback role holder).
 	AllowedActions []string `json:"allowed_actions" nullable:"false"`
 }

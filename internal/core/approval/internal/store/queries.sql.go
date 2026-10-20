@@ -54,6 +54,29 @@ func (q *Queries) CastVotes(ctx context.Context, arg CastVotesParams) ([]CastVot
 	return items, nil
 }
 
+const claimOverdue = `-- name: ClaimOverdue :one
+UPDATE approval.instance_steps SET overdue_notified_at = now()
+WHERE (instance_id, position) = (
+    SELECT s.instance_id, s.position FROM approval.instance_steps s JOIN approval.instances i ON i.id = s.instance_id
+    WHERE s.status = 'open' AND i.status = 'open' AND s.overdue_notified_at IS NULL AND s.due_at < now()
+    ORDER BY s.due_at LIMIT 1 FOR UPDATE OF s SKIP LOCKED)
+RETURNING instance_id, position, approvers
+`
+
+type ClaimOverdueRow struct {
+	InstanceID int64
+	Position   int32
+	Approvers  []int64
+}
+
+// Marks one overdue open step as told and returns it; SKIP LOCKED lets concurrent runs share the work.
+func (q *Queries) ClaimOverdue(ctx context.Context) (ClaimOverdueRow, error) {
+	row := q.db.QueryRow(ctx, claimOverdue)
+	var i ClaimOverdueRow
+	err := row.Scan(&i.InstanceID, &i.Position, &i.Approvers)
+	return i, err
+}
+
 const closeInstance = `-- name: CloseInstance :exec
 UPDATE approval.instances SET status = $2 WHERE id = $1 AND status = 'open'
 `
@@ -222,7 +245,7 @@ func (q *Queries) GetRule(ctx context.Context, arg GetRuleParams) (ApprovalRule,
 }
 
 const getStep = `-- name: GetStep :one
-SELECT instance_id, position, approver, approvers, fallback, approvals, rejections, status FROM approval.instance_steps WHERE instance_id = $1 AND position = $2
+SELECT instance_id, position, approver, approvers, fallback, approvals, rejections, status, due_hours, due_at, overdue_notified_at FROM approval.instance_steps WHERE instance_id = $1 AND position = $2
 `
 
 type GetStepParams struct {
@@ -242,6 +265,9 @@ func (q *Queries) GetStep(ctx context.Context, arg GetStepParams) (ApprovalInsta
 		&i.Approvals,
 		&i.Rejections,
 		&i.Status,
+		&i.DueHours,
+		&i.DueAt,
+		&i.OverdueNotifiedAt,
 	)
 	return i, err
 }
@@ -489,8 +515,8 @@ func (q *Queries) InsertInstance(ctx context.Context, arg InsertInstanceParams) 
 }
 
 const insertStep = `-- name: InsertStep :exec
-INSERT INTO approval.instance_steps (instance_id, position, approver, approvals, rejections, status)
-VALUES ($1, $2, $3, $4, $5, 'waiting')
+INSERT INTO approval.instance_steps (instance_id, position, approver, approvals, rejections, due_hours, status)
+VALUES ($1, $2, $3, $4, $5, $6, 'waiting')
 `
 
 type InsertStepParams struct {
@@ -499,6 +525,7 @@ type InsertStepParams struct {
 	Approver   []byte
 	Approvals  int32
 	Rejections int32
+	DueHours   pgtype.Int4
 }
 
 func (q *Queries) InsertStep(ctx context.Context, arg InsertStepParams) error {
@@ -508,6 +535,7 @@ func (q *Queries) InsertStep(ctx context.Context, arg InsertStepParams) error {
 		arg.Approver,
 		arg.Approvals,
 		arg.Rejections,
+		arg.DueHours,
 	)
 	return err
 }
@@ -810,7 +838,8 @@ func (q *Queries) SetStepStatus(ctx context.Context, arg SetStepStatusParams) er
 }
 
 const startStep = `-- name: StartStep :exec
-UPDATE approval.instance_steps SET approvers = $1, fallback = $2, status = 'open'
+UPDATE approval.instance_steps SET approvers = $1, fallback = $2, status = 'open',
+    due_at = now() + due_hours * interval '1 hour'
 WHERE instance_id = $3 AND position = $4
 `
 
@@ -884,7 +913,7 @@ func (q *Queries) StepVotes(ctx context.Context, arg StepVotesParams) (StepVotes
 }
 
 const steps = `-- name: Steps :many
-SELECT s.position, s.status, s.approvals, s.rejections, s.fallback, s.approvers,
+SELECT s.position, s.status, s.approvals, s.rejections, s.fallback, s.approvers, s.due_at, coalesce(s.due_at < now(), false)::boolean AS past_due,
        (SELECT coalesce(jsonb_agg(jsonb_build_object('id', a.id, 'name', a.name, 'decision', v.decision, 'reason', v.reason, 'decided_at', v.decided_at,
                                                      'cast_by_name', c.name)
                                   ORDER BY a.name, a.id), '[]')
@@ -902,6 +931,8 @@ type StepsRow struct {
 	Rejections int32
 	Fallback   bool
 	Approvers  []int64
+	DueAt      pgtype.Timestamptz
+	PastDue    bool
 	Voters     []byte
 }
 
@@ -922,6 +953,8 @@ func (q *Queries) Steps(ctx context.Context, instanceID int64) ([]StepsRow, erro
 			&i.Rejections,
 			&i.Fallback,
 			&i.Approvers,
+			&i.DueAt,
+			&i.PastDue,
 			&i.Voters,
 		); err != nil {
 			return nil, err

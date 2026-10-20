@@ -26,12 +26,22 @@ WHERE i.status = 'open' AND i.action <> 'post' AND d.legal_entity_id = $1 AND d.
 ORDER BY d.date, d.id;
 
 -- name: InsertStep :exec
-INSERT INTO approval.instance_steps (instance_id, position, approver, approvals, rejections, status)
-VALUES ($1, $2, $3, $4, $5, 'waiting');
+INSERT INTO approval.instance_steps (instance_id, position, approver, approvals, rejections, due_hours, status)
+VALUES ($1, $2, $3, $4, $5, $6, 'waiting');
 
 -- name: StartStep :exec
-UPDATE approval.instance_steps SET approvers = @approvers, fallback = @fallback, status = 'open'
+UPDATE approval.instance_steps SET approvers = @approvers, fallback = @fallback, status = 'open',
+    due_at = now() + due_hours * interval '1 hour'
 WHERE instance_id = @instance_id AND position = @position;
+
+-- name: ClaimOverdue :one
+-- Marks one overdue open step as told and returns it; SKIP LOCKED lets concurrent runs share the work.
+UPDATE approval.instance_steps SET overdue_notified_at = now()
+WHERE (instance_id, position) = (
+    SELECT s.instance_id, s.position FROM approval.instance_steps s JOIN approval.instances i ON i.id = s.instance_id
+    WHERE s.status = 'open' AND i.status = 'open' AND s.overdue_notified_at IS NULL AND s.due_at < now()
+    ORDER BY s.due_at LIMIT 1 FOR UPDATE OF s SKIP LOCKED)
+RETURNING instance_id, position, approvers;
 
 -- name: SetApprovers :exec
 UPDATE approval.instance_steps SET approvers = @approvers WHERE instance_id = @instance_id AND position = @position;
@@ -121,7 +131,7 @@ WHERE i.doc_type = $1 AND i.doc_id = $2 ORDER BY i.id DESC LIMIT 1;
 
 -- name: Steps :many
 -- Each step with its voters: who may vote and how each voted, by name.
-SELECT s.position, s.status, s.approvals, s.rejections, s.fallback, s.approvers,
+SELECT s.position, s.status, s.approvals, s.rejections, s.fallback, s.approvers, s.due_at, coalesce(s.due_at < now(), false)::boolean AS past_due,
        (SELECT coalesce(jsonb_agg(jsonb_build_object('id', a.id, 'name', a.name, 'decision', v.decision, 'reason', v.reason, 'decided_at', v.decided_at,
                                                      'cast_by_name', c.name)
                                   ORDER BY a.name, a.id), '[]')

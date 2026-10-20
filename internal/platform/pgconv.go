@@ -31,6 +31,13 @@ func Int8Ptr(v pgtype.Int8) *int64 {
 	return &v.Int64
 }
 
+func NullInt4(p *int32) pgtype.Int4 {
+	if p == nil {
+		return pgtype.Int4{}
+	}
+	return pgtype.Int4{Int32: *p, Valid: true}
+}
+
 func NullInt8(p *int64) pgtype.Int8 {
 	if p == nil {
 		return pgtype.Int8{}

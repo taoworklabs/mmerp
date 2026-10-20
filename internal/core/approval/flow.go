@@ -22,6 +22,7 @@ type StepDef struct {
 	Approver   Approver `json:"approver"`
 	Approvals  int32    `json:"approvals" required:"false" minimum:"1" maximum:"20" default:"1"`
 	Rejections int32    `json:"rejections" required:"false" minimum:"1" maximum:"20" default:"1"`
+	DueHours   *int32   `json:"due_hours,omitempty" required:"false" minimum:"1" maximum:"720" doc:"Hours after the step opens before its approvers and the submitter are told it is overdue"`
 }
 
 // SplitMode says whether a split picks one branch or runs every holding branch.
@@ -195,6 +196,9 @@ func (c *flowChecker) checkSplit(sp Split, splitPath string, depth int) (string,
 }
 
 func (c *flowChecker) checkStep(st StepDef) string {
+	if st.DueHours != nil && (*st.DueHours < 1 || *st.DueHours > 720) {
+		return "invalid_due"
+	}
 	switch st.Approver.Kind {
 	case ByRole:
 		if !c.roleExists(st.Approver.Product, st.Approver.Role) {

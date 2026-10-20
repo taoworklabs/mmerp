@@ -101,7 +101,7 @@ func (s *Service) open(ctx context.Context, d record.Doc, action record.Action, 
 			return 0, false, err
 		}
 		if err := q.InsertStep(ctx, store.InsertStepParams{InstanceID: id, Position: int32(i + 1), Approver: raw,
-			Approvals: st.Approvals, Rejections: st.Rejections}); err != nil {
+			Approvals: st.Approvals, Rejections: st.Rejections, DueHours: platform.NullInt4(st.DueHours)}); err != nil {
 			return 0, false, err
 		}
 	}
@@ -200,11 +200,11 @@ func (s *Service) startStep(ctx context.Context, inst store.ApprovalInstance, d 
 	if err := q.StartStep(ctx, store.StartStepParams{InstanceID: inst.ID, Position: pos, Approvers: users, Fallback: fallback}); err != nil {
 		return err
 	}
-	return s.requestVotes(ctx, d, excluded, users)
+	return s.requestVotes(ctx, notification.ApprovalRequested, d, excluded, users)
 }
 
 // requestVotes tells users, and their active delegates who could vote, that a step waits for them.
-func (s *Service) requestVotes(ctx context.Context, d record.Doc, excluded, users []int64) error {
+func (s *Service) requestVotes(ctx context.Context, kind notification.Kind, d record.Doc, excluded, users []int64) error {
 	today, err := s.d.Setting.Today(ctx)
 	if err != nil {
 		return err
@@ -224,7 +224,7 @@ func (s *Service) requestVotes(ctx context.Context, d record.Doc, excluded, user
 			told = append(told, id)
 		}
 	}
-	return s.d.Notification.Send(ctx, notification.ApprovalRequested, d.Ref, told)
+	return s.d.Notification.Send(ctx, kind, d.Ref, told)
 }
 
 // holds evaluates one condition leaf for d; a leaf that cannot be evaluated
@@ -605,7 +605,7 @@ func (s *Service) Reassign(ctx context.Context, id int64, step int32, from int64
 		if err := q.SetApprovers(ctx, store.SetApproversParams{InstanceID: id, Position: step, Approvers: st.Approvers}); err != nil {
 			return err
 		}
-		if err := s.requestVotes(ctx, d, excluded, []int64{user}); err != nil {
+		if err := s.requestVotes(ctx, notification.ApprovalRequested, d, excluded, []int64{user}); err != nil {
 			return err
 		}
 		return s.d.Audit.RecordFor(ctx, "approval.reassigned", audit.Ref{Type: inst.DocType, ID: inst.DocID},
@@ -734,7 +734,11 @@ func (s *Service) DocumentInstance(ctx context.Context, ref record.Ref) (*Instan
 			return nil, err
 		}
 		v := StepView{Position: r.Position, Status: r.Status, Approvals: r.Approvals, Rejections: r.Rejections, Fallback: r.Fallback,
-			Voters: []StepVoter{}, AllowedActions: []string{}}
+			Overdue: r.Status == "open" && r.PastDue, Voters: []StepVoter{}, AllowedActions: []string{}}
+		if r.DueAt.Valid {
+			at := r.DueAt.Time.Format(time.RFC3339)
+			v.DueAt = &at
+		}
 		for _, x := range voters {
 			sv := StepVoter{ID: x.ID, Name: x.Name, Decision: x.Decision, Reason: x.Reason, CastByName: x.CastByName}
 			if x.DecidedAt != nil {

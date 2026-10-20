@@ -35,14 +35,17 @@ type ApprovalInstance struct {
 }
 
 type ApprovalInstanceStep struct {
-	InstanceID int64
-	Position   int32
-	Approver   []byte
-	Approvers  []int64
-	Fallback   bool
-	Approvals  int32
-	Rejections int32
-	Status     string
+	InstanceID        int64
+	Position          int32
+	Approver          []byte
+	Approvers         []int64
+	Fallback          bool
+	Approvals         int32
+	Rejections        int32
+	Status            string
+	DueHours          pgtype.Int4
+	DueAt             pgtype.Timestamptz
+	OverdueNotifiedAt pgtype.Timestamptz
 }
 
 type ApprovalRule struct {
