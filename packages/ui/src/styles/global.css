@@ -1,0 +1,25 @@
+/* Zero-specificity so a primitive's own module class (e.g. Button xs) wins when it differs. */
+:where([data-mmerp-control]:not([data-mmerp-control='multiline'])) {
+  height: var(--mmerp-control-height);
+}
+
+:focus-visible {
+  outline: 2px solid var(--mmerp-color-primary-6);
+  outline-offset: 2px;
+}
+
+@media (max-width: 63.99em) {
+  :where([data-mmerp-control]) {
+    min-height: var(--mmerp-touch-target);
+    min-width: var(--mmerp-touch-target);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  ::before,
+  ::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
