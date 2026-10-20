@@ -3,10 +3,14 @@ import { page } from 'vitest/browser'
 import { describe, expect, it } from 'vitest'
 import { Button } from '../primitives/input/Button.tsx'
 import { ActionIcon } from '../primitives/input/ActionIcon.tsx'
+import { Combobox } from '../primitives/input/Combobox.tsx'
 import { FileInput } from '../primitives/input/FileInput.tsx'
 import { NumberInput } from '../primitives/input/NumberInput.tsx'
+import { Select } from '../primitives/input/Select.tsx'
 import { TextInput } from '../primitives/input/TextInput.tsx'
 import './index.css'
+
+const sampleData = [{ value: 'a', label: 'A' }]
 
 describe('touch target', () => {
   it('reaches 44x44 below the drawer breakpoint, and keeps its own height at desktop sizes', async () => {
@@ -15,10 +19,12 @@ describe('touch target', () => {
         <Button>Default</Button>
         <ActionIcon aria-label="x">x</ActionIcon>
         <Button size="xs">Small</Button>
+        <Select label="Pick" data={sampleData} value={null} onChange={() => {}} style={{ width: 120 }} />
+        <Combobox label="Search" data={sampleData} value={null} onChange={() => {}} nothingFound="None" style={{ width: 120 }} />
       </>,
     )
     const controls = Array.from(container.querySelectorAll<HTMLElement>('[data-mmerp-control]'))
-    expect(controls).toHaveLength(3)
+    expect(controls).toHaveLength(5)
 
     await page.viewport(800, 600)
     for (const control of controls) {
@@ -39,10 +45,11 @@ describe('touch target', () => {
         <TextInput label="Name" />
         <NumberInput label="Quantity" value={5} onChange={() => {}} />
         <FileInput label="Attachment" value={null} onChange={() => {}} clearLabel="Clear" />
+        <Combobox label="Search" data={sampleData} value={null} onChange={() => {}} nothingFound="None" />
       </>,
     )
     const boxes = Array.from(container.querySelectorAll<HTMLElement>('[data-mmerp-control]'))
-    expect(boxes).toHaveLength(3)
+    expect(boxes).toHaveLength(4)
 
     await page.viewport(800, 600)
     for (const box of boxes) {
