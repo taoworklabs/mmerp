@@ -40,8 +40,13 @@ export const OffCanvasBelowBreakpoint: Story = {
     const navbar = canvas.getByText('Navbar content').closest('nav')!
     await waitFor(() => expect(navbar.getBoundingClientRect().right).toBeLessThanOrEqual(0.5))
 
-    await userEvent.click(canvas.getByRole('button', { name: 'Toggle navigation' }))
+    const toggle = canvas.getByRole('button', { name: 'Toggle navigation' })
+    await userEvent.click(toggle)
     await waitFor(() => expect(navbar.getBoundingClientRect().left).toBeGreaterThanOrEqual(-0.5))
+
+    // Close it again so the desktop assertion below checks the breakpoint itself, not a flag left over from mobile.
+    await userEvent.click(toggle)
+    await waitFor(() => expect(navbar.getBoundingClientRect().right).toBeLessThanOrEqual(0.5))
 
     await page.viewport(1280, 800)
     await waitFor(() => expect(navbar.getBoundingClientRect().left).toBeGreaterThanOrEqual(-0.5))
