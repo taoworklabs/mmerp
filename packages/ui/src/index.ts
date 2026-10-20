@@ -59,3 +59,8 @@ export { TableOfContents, type TableOfContentsProps, type TableOfContentsItem } 
 export { AppShell, type AppShellProps } from './primitives/layout/AppShell.tsx'
 export { Table, type TableProps } from './primitives/data-display/Table.tsx'
 export { Timeline, type TimelineProps, type TimelineItemProps } from './primitives/data-display/Timeline.tsx'
+export { monthGrid, addDays, addMonths, type CalendarLocale, type FirstDayOfWeek } from './primitives/dates/calendarGrid.ts'
+export { Calendar, type CalendarProps } from './primitives/dates/Calendar.tsx'
+export { MonthPicker, type MonthPickerProps } from './primitives/dates/MonthPicker.tsx'
+export { DateInput, type DateInputProps } from './primitives/dates/DateInput.tsx'
+export { MonthPickerInput, type MonthPickerInputProps } from './primitives/dates/MonthPickerInput.tsx'

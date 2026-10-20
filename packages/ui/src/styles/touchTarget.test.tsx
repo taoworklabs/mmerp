@@ -1,6 +1,8 @@
 import { render } from 'vitest-browser-react'
 import { page } from 'vitest/browser'
 import { describe, expect, it } from 'vitest'
+import { DateInput } from '../primitives/dates/DateInput.tsx'
+import { MonthPickerInput } from '../primitives/dates/MonthPickerInput.tsx'
 import { Button } from '../primitives/input/Button.tsx'
 import { ActionIcon } from '../primitives/input/ActionIcon.tsx'
 import { Combobox } from '../primitives/input/Combobox.tsx'
@@ -11,6 +13,7 @@ import { TextInput } from '../primitives/input/TextInput.tsx'
 import './index.css'
 
 const sampleData = [{ value: 'a', label: 'A' }]
+const sampleLocale = { weekdays: ['S', 'M', 'T', 'W', 'T', 'F', 'S'], months: Array.from({ length: 12 }, (_, i) => `M${i + 1}`) }
 
 describe('touch target', () => {
   it('reaches 44x44 below the drawer breakpoint, and keeps its own height at desktop sizes', async () => {
@@ -47,10 +50,27 @@ describe('touch target', () => {
         <NumberInput label="Quantity" value={5} onChange={() => {}} />
         <FileInput label="Attachment" value={null} onChange={() => {}} clearLabel="Clear" />
         <Combobox label="Search" data={sampleData} value={null} onChange={() => {}} nothingFound="None" />
+        <DateInput
+          label="Date"
+          value={null}
+          onChange={() => {}}
+          parse={() => null}
+          format={(iso) => iso}
+          locale={sampleLocale}
+          labels={{ previousMonth: 'Previous', nextMonth: 'Next' }}
+        />
+        <MonthPickerInput
+          label="Month"
+          value={null}
+          onChange={() => {}}
+          format={(month) => month}
+          locale={sampleLocale}
+          labels={{ previousYear: 'Previous', nextYear: 'Next' }}
+        />
       </>,
     )
     const boxes = Array.from(container.querySelectorAll<HTMLElement>('[data-mmerp-control]'))
-    expect(boxes).toHaveLength(4)
+    expect(boxes).toHaveLength(6)
 
     await page.viewport(800, 600)
     for (const box of boxes) {
