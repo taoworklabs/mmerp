@@ -1,0 +1,19 @@
+.root {
+  background: var(--mmerp-color-gray-1);
+  border-radius: var(--mmerp-radius-sm);
+  animation: mmerp-skeleton-pulse var(--mmerp-motion-duration) ease-in-out infinite alternate;
+}
+
+.root[data-circle] {
+  border-radius: 50%;
+}
+
+@keyframes mmerp-skeleton-pulse {
+  from {
+    opacity: 1;
+  }
+
+  to {
+    opacity: 0.4;
+  }
+}
