@@ -10,10 +10,14 @@ DATABASE_URL ?= postgres://mmerp:mmerp@localhost:5433/mmerp?sslmode=disable
 # Dev-only key, also used by e2e; never use it for real data.
 export ENCRYPTION_KEYS ?= 1:bW1lcnAgZGV2IGtleSAtIG5ldmVyIHByb2R1Y3Rpb24=
 
-.PHONY: gen lint test e2e dev ui-dev image smoke db reset-db seed
+.PHONY: gen lint test e2e dev ui-dev storybook image smoke db reset-db seed
 
 web/node_modules: web/package.json web/pnpm-lock.yaml
 	pnpm -C web install --frozen-lockfile
+	@touch $@
+
+packages/ui/node_modules: packages/ui/package.json packages/ui/pnpm-lock.yaml
+	pnpm -C packages/ui install --frozen-lockfile
 	@touch $@
 
 gen: web/node_modules
@@ -56,6 +60,10 @@ dev: db web/node_modules
 # Only the Vite dev server, on the component catalogue (/dev/ui); no backend or Postgres.
 ui-dev: web/node_modules
 	pnpm -C web dev --open /dev/ui
+
+# Storybook of the @mmerp/ui primitives (packages/ui), on :6006; no backend or Postgres.
+storybook: packages/ui/node_modules
+	pnpm -C packages/ui storybook
 
 image:
 	docker build --build-arg VERSION=$(VERSION) -t $(IMAGE) .
