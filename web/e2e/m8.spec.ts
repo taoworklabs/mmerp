@@ -60,7 +60,8 @@ test('an HRM approval rule administrator edits HRM rules inside HRM', async ({ p
 
   await table.getByRole('link', { name: 'Đơn nghỉ phép · Gửi duyệt' }).click()
   await expect(page).toHaveURL(/\/hrm\/approval-rules\/hrm\.leave_request$/)
-  await page.getByRole('textbox', { name: /Số cấp quản lý tối đa/ }).fill('4')
+  await page.getByRole('button', { name: 'Cài đặt chung' }).click()
+  await page.getByRole('complementary').getByRole('textbox', { name: /^Khi quản lý trực tiếp lại chính là người gửi/ }).fill('4')
   await page.getByRole('button', { name: 'Lưu' }).click()
   await expect(page.getByText('Đã lưu quy tắc duyệt.')).toBeVisible()
   await expect(page).toHaveURL(/\/hrm\//)

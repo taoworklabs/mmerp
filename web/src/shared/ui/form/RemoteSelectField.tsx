@@ -7,7 +7,7 @@ export type RemoteRow = { id: number; code: string; name: string }
 
 // One label per record everywhere in the select; a label that changes makes Select rewrite
 // its search text, which re-queries and flickers.
-const rowLabel = (r: RemoteRow) => (r.code ? `${r.code} · ${r.name}` : r.name)
+export const rowLabel = (r: RemoteRow) => (r.code ? `${r.code} · ${r.name}` : r.name)
 
 // remoteOptions lists the found rows, with the kept ones (the chosen value) first when the
 // search did not return them, so the field never loses the label of its value.

@@ -79,22 +79,23 @@ async function sent(item: number) {
 test('a quote selling the special item goes to the manager', async ({ browser }) => {
   await api.delete('/api/approval-rules/sales.quote')
   const page = await as(browser, admin.login, '/sales/approval-rules/sales.quote')
-  const form = page.getByRole('main')
-  // A choose-one split replaces the single step the editor starts with.
-  await form.getByRole('button', { name: 'Thêm', exact: true }).last().click()
-  await page.getByRole('menuitem', { name: 'Rẽ nhánh chọn một' }).click()
-  await form.getByRole('region', { name: 'Bước duyệt' }).first().getByRole('button', { name: 'Thao tác khác' }).click()
-  await page.getByRole('menuitem', { name: 'Xóa bước' }).click()
+  const main = page.getByRole('main')
+  const panel = page.getByRole('complementary')
+  // A choose-one split: its first case holds a step, its otherwise nothing.
+  await main.getByRole('button', { name: 'Thêm vào đây' }).first().click()
+  await page.getByRole('menuitem', { name: /^Tùy trường hợp/ }).click()
 
-  const branch = form.getByRole('region', { name: 'Rẽ nhánh chọn một' }).getByRole('region', { name: 'Nhánh 1' })
-  await branch.getByRole('button', { name: 'Thêm điều kiện' }).click()
-  await pick(branch, page, 'Trường', 'Mặt hàng')
+  await main.getByRole('button', { name: /^Trường hợp 1/ }).click()
+  await panel.getByRole('button', { name: 'Thêm điều kiện' }).click()
+  await pick(panel, page, 'Trường', 'Mặt hàng')
   // The only comparison of a set field is filled in.
-  await expect(branch.getByRole('combobox', { name: 'So sánh' })).toHaveValue('Có')
-  await branch.getByRole('combobox', { name: /^Giá trị/ }).fill('TH-')
+  await expect(panel.getByRole('combobox', { name: 'So sánh' })).toHaveValue('Có')
+  await panel.getByRole('combobox', { name: /^Giá trị/ }).fill('TH-')
   await page.getByRole('option', { name: `${special.code} · ${special.name}`, exact: true }).click()
-  await pick(branch, page, 'Vai trò', 'Quản lý bán hàng')
-  await pick(form, page, 'Vai trò dự phòng', 'Quản lý bán hàng')
+  await main.getByRole('group', { name: /^Trường hợp 1/ }).getByRole('button', { name: /^Bước duyệt/ }).click()
+  await pick(panel, page, 'Vai trò', 'Quản lý bán hàng')
+  await page.getByRole('button', { name: 'Cài đặt chung' }).click()
+  await pick(panel, page, 'Không tìm được người duyệt thì chuyển cho', 'Quản lý bán hàng')
   await page.getByRole('button', { name: 'Lưu' }).click()
   await expect(page.getByText('Đã lưu quy tắc duyệt.')).toBeVisible()
 
@@ -102,9 +103,12 @@ test('a quote selling the special item goes to the manager', async ({ browser })
   const flow = rules.find((r) => r.doc_type === 'sales.quote' && r.action === 'post')?.rule?.flow
   expect(JSON.stringify(flow)).toMatch(new RegExp(`"field":"items","op":"has","value":"${ids.special}"`))
 
-  // The saved item reads in full before any search.
+  // The saved item reads in full before any search, on the diagram and in the panel.
   await page.reload()
-  await expect(branch.getByRole('combobox', { name: /^Giá trị/ })).toHaveValue(`${special.code} · ${special.name}`)
+  const chip = main.getByRole('button', { name: `Trường hợp 1: Nếu Mặt hàng có ${special.code} · ${special.name}` })
+  await expect(chip).toBeVisible()
+  await chip.click()
+  await expect(panel.getByRole('combobox', { name: /^Giá trị/ })).toHaveValue(`${special.code} · ${special.name}`)
 
   const held = await sent(ids.special)
   expect(held.status).toBe('pending_approval')

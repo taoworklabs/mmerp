@@ -1,0 +1,229 @@
+/* The approval flow as a diagram: lanes top to bottom, splits as columns joined above and below. */
+.frame {
+  overflow: auto;
+  min-height: 24rem;
+  max-height: calc(100dvh - 15rem);
+  padding: var(--mantine-spacing-lg);
+  border: 1px solid var(--mantine-color-default-border);
+  border-radius: var(--mantine-radius-md);
+  background-color: var(--mmerp-elevation-surface-sunken);
+  background-image: radial-gradient(var(--mantine-color-gray-3) 1px, transparent 1px);
+  background-size: 16px 16px;
+}
+
+.lane {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: max-content;
+  min-width: 100%;
+}
+
+.edge {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.line {
+  width: 2px;
+  height: 10px;
+  background: var(--mantine-color-gray-4);
+}
+
+.fill {
+  flex: 1;
+  width: 2px;
+  min-height: 10px;
+  background: var(--mantine-color-gray-4);
+}
+
+.plus {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 1px solid var(--mantine-color-primary-3);
+  background: var(--mmerp-elevation-surface);
+  color: var(--mantine-color-primary-6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.6;
+}
+
+.plus:hover,
+.plus:focus-visible,
+.plus[data-expanded] {
+  opacity: 1;
+  background: var(--mantine-color-primary-0);
+}
+
+.plus[data-big] {
+  width: 32px;
+  height: 32px;
+  opacity: 1;
+}
+
+.node {
+  min-width: 180px;
+  max-width: 240px;
+  padding: var(--mantine-spacing-xs) var(--mantine-spacing-sm);
+  border: 1px solid var(--mantine-color-default-border);
+  border-radius: var(--mantine-radius-md);
+  background: var(--mmerp-elevation-surface);
+  text-align: center;
+  position: relative;
+}
+
+.node:hover {
+  border-color: var(--mantine-color-primary-4);
+}
+
+.node[aria-pressed='true'] {
+  outline: 2px solid var(--mantine-color-primary-6);
+  outline-offset: 1px;
+}
+
+.node[aria-invalid='true'] {
+  border-color: var(--mantine-color-danger-5);
+  background: var(--mantine-color-danger-0);
+}
+
+.terminal {
+  composes: node;
+  cursor: default;
+}
+
+.start {
+  composes: terminal;
+  background: var(--mantine-color-primary-0);
+  border-color: var(--mantine-color-primary-2);
+}
+
+.end {
+  composes: terminal;
+  background: var(--mantine-color-success-0);
+  border-color: var(--mantine-color-success-2);
+}
+
+.skip {
+  composes: terminal;
+  border-style: dashed;
+  color: var(--mantine-color-dimmed);
+  background: transparent;
+  min-width: 140px;
+}
+
+.pill {
+  composes: node;
+  min-width: 140px;
+  border-radius: 999px;
+  font-weight: 600;
+  background: var(--mantine-color-warning-0);
+  border-color: var(--mantine-color-warning-3);
+}
+
+.pill[data-mode='all'] {
+  background: var(--mantine-color-discovery-0);
+  border-color: var(--mantine-color-discovery-3);
+}
+
+.split {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.branches {
+  display: flex;
+  align-items: stretch;
+}
+
+.branch {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding-inline: var(--mantine-spacing-sm);
+}
+
+/* The horizontal bar joining the branches, above and below them; it stops at the outer branches' centres. */
+.join {
+  position: relative;
+  align-self: stretch;
+  height: 12px;
+}
+
+.join::before {
+  content: '';
+  position: absolute;
+  left: calc(-1 * var(--mantine-spacing-sm));
+  right: calc(-1 * var(--mantine-spacing-sm));
+  border-top: 2px solid var(--mantine-color-gray-4);
+}
+
+.join[data-at='top']::before {
+  top: 0;
+}
+
+.join[data-at='bottom']::before {
+  bottom: 0;
+}
+
+.branch:first-child > .join::before {
+  left: 50%;
+}
+
+.branch:last-child > .join::before {
+  right: 50%;
+}
+
+.branch:only-child > .join::before {
+  display: none;
+}
+
+.join::after {
+  content: '';
+  position: absolute;
+  left: calc(50% - 1px);
+  top: 0;
+  bottom: 0;
+  border-left: 2px solid var(--mantine-color-gray-4);
+}
+
+.cond {
+  composes: node;
+  min-width: 0;
+  max-width: 220px;
+  padding: 2px var(--mantine-spacing-xs);
+  font-size: var(--mantine-font-size-xs);
+  background: var(--mantine-color-warning-0);
+  border-color: var(--mantine-color-warning-2);
+  color: var(--mantine-color-warning-9);
+}
+
+.cond[data-quiet] {
+  background: var(--mantine-color-gray-1);
+  border-color: var(--mantine-color-gray-3);
+  color: var(--mantine-color-gray-7);
+}
+
+/* The editor: the diagram, and beside it from md up the panel of what is selected. */
+.workspace {
+  display: flex;
+  gap: var(--mantine-spacing-md);
+  align-items: flex-start;
+}
+
+.workspace > .frame {
+  flex: 1;
+  min-width: 0;
+}
+
+.side {
+  width: var(--mmerp-aside-width);
+  flex: none;
+  position: sticky;
+  top: var(--mantine-spacing-md);
+  max-height: calc(100dvh - 15rem);
+  overflow: auto;
+}

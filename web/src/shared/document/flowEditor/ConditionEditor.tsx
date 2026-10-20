@@ -9,7 +9,7 @@ import { DecimalField, OrgUnitField, RemoteSelectField, SelectField } from '@/sh
 import { icon } from '@/shared/ui/theme'
 import type { CondRow } from '../flowForm'
 import { documentKeys } from '../keys'
-import type { EditorCtx } from './FlowBlock'
+import type { EditorCtx } from './editor'
 
 // Groups nest at most this deep, so a condition stays readable.
 const maxGroupDepth = 3
@@ -112,7 +112,8 @@ function Leaf({ path, ctx }: { path: string; ctx: EditorCtx }) {
   const field = rule.fields.find((f) => f.key === key)
   const value = { readOnly, name: `${path}.value`, label: t('shared.rule.value'), required: true }
   return (
-    <SimpleGrid flex={1} miw={0} cols={{ base: 1, sm: 3 }} spacing="md">
+    // The panel is narrow: the field on its own row, the comparison and the value under it.
+    <Stack flex={1} miw={0} gap="xs">
       <SelectField
         readOnly={readOnly}
         name={`${path}.field`}
@@ -126,15 +127,15 @@ function Leaf({ path, ctx }: { path: string; ctx: EditorCtx }) {
         }}
       />
       {field && (
-        <>
+        <SimpleGrid cols={2} spacing="xs">
           <SelectField readOnly={readOnly} name={`${path}.op`} label={t('shared.rule.op')} required data={field.ops.map((o) => ({ value: o, label: t(`shared.rule.op.${o}`) }))} />
           {field.kind === 'choice' && <SelectField {...value} data={field.options ?? []} />}
           {field.kind === 'number' && <DecimalField {...value} scale={2} />}
           {field.kind === 'org_unit' && <OrgUnitField {...value} />}
           {field.searchable && <SearchedValue key={field.key} {...value} docType={rule.doc_type} field={field.key} />}
-        </>
+        </SimpleGrid>
       )}
-    </SimpleGrid>
+    </Stack>
   )
 }
 
