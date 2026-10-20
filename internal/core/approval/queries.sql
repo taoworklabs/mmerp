@@ -55,7 +55,20 @@ SELECT * FROM approval.instance_steps WHERE instance_id = $1 AND position = $2;
 SELECT position, status FROM approval.instance_steps WHERE instance_id = $1 ORDER BY position;
 
 -- name: InsertVote :exec
-INSERT INTO approval.step_votes (instance_id, position, user_id, decision, reason) VALUES ($1, $2, $3, $4, $5);
+INSERT INTO approval.step_votes (instance_id, position, user_id, cast_by, decision, reason) VALUES ($1, $2, $3, $4, $5, $6);
+
+-- name: CastVotes :many
+SELECT user_id, cast_by FROM approval.step_votes WHERE instance_id = $1 AND position = $2;
+
+-- name: DelegatorsOf :many
+-- Which of @users have an active delegation to @delegate on @today; one hop only.
+SELECT user_id FROM approval.delegations
+WHERE delegate_id = @delegate AND user_id = ANY(@users::bigint[]) AND starts_on <= @today AND ends_on >= @today;
+
+-- name: DelegatesOf :many
+-- Who holds an active delegation from one of @users on @today.
+SELECT DISTINCT delegate_id FROM approval.delegations
+WHERE user_id = ANY(@users::bigint[]) AND starts_on <= @today AND ends_on >= @today;
 
 -- name: StepVotes :one
 SELECT count(*) FILTER (WHERE decision = 'approved')::int AS approved,
@@ -69,19 +82,34 @@ SELECT EXISTS (SELECT 1 FROM approval.step_votes WHERE instance_id = $1 AND posi
 UPDATE approval.instances SET status = $2 WHERE id = $1 AND status = 'open';
 
 -- name: Inbox :many
--- One row per instance: the lowest open step waiting for @actor's vote. An actor
--- in two open parallel steps of the same instance sees it once, not twice.
-SELECT i.id, i.doc_type, i.doc_id, i.action, s.step, i.submitted_at, u.name AS submitted_by_name, d.number, d.date
+-- One row per instance: the lowest open step where @actor has their own pending seat,
+-- or a pending seat delegated to them, and has cast nothing yet. An actor in two open
+-- parallel steps of the same instance sees it once, not twice.
+SELECT i.id, i.doc_type, i.doc_id, i.action, s.step, i.submitted_at, i.submitted_by, u.name AS submitted_by_name, d.number, d.date,
+       b.name AS on_behalf_of_name
 FROM (
-    SELECT DISTINCT ON (s.instance_id) s.instance_id, s.position AS step
-    FROM approval.instance_steps s
-    WHERE s.status = 'open' AND s.approvers @> ARRAY[@actor::bigint]
-      AND NOT EXISTS (SELECT 1 FROM approval.step_votes v WHERE v.instance_id = s.instance_id AND v.position = s.position AND v.user_id = @actor)
+    SELECT DISTINCT ON (s.instance_id) s.instance_id, s.position AS step,
+           CASE WHEN NOT s.own THEN s.delegated END AS on_behalf_of
+    FROM (
+        SELECT s.instance_id, s.position,
+               s.approvers @> ARRAY[@actor::bigint] AND NOT EXISTS (
+                   SELECT 1 FROM approval.step_votes v WHERE v.instance_id = s.instance_id AND v.position = s.position AND v.user_id = @actor) AS own,
+               (SELECT p.id FROM unnest(s.approvers) WITH ORDINALITY AS p(id, n)
+                JOIN approval.delegations g ON g.user_id = p.id AND g.delegate_id = @actor AND g.starts_on <= @today AND g.ends_on >= @today
+                WHERE NOT EXISTS (SELECT 1 FROM approval.step_votes v WHERE v.instance_id = s.instance_id AND v.position = s.position AND v.user_id = p.id)
+                ORDER BY p.n LIMIT 1) AS delegated
+        FROM approval.instance_steps s
+        WHERE s.status = 'open'
+          AND NOT EXISTS (SELECT 1 FROM approval.step_votes v
+                          WHERE v.instance_id = s.instance_id AND v.position = s.position AND coalesce(v.cast_by, v.user_id) = @actor)
+    ) s
+    WHERE s.own OR s.delegated IS NOT NULL
     ORDER BY s.instance_id, s.position
 ) s
 JOIN approval.instances i ON i.id = s.instance_id AND i.status = 'open'
 JOIN record.documents d ON d.id = i.doc_id
 JOIN iam.users u ON u.id = i.submitted_by
+LEFT JOIN iam.users b ON b.id = s.on_behalf_of
 ORDER BY i.submitted_at, i.id;
 
 -- name: LatestInstance :one
@@ -91,9 +119,11 @@ WHERE i.doc_type = $1 AND i.doc_id = $2 ORDER BY i.id DESC LIMIT 1;
 -- name: Steps :many
 -- Each step with its voters: who may vote and how each voted, by name.
 SELECT s.position, s.status, s.approvals, s.rejections, s.fallback, s.approvers,
-       (SELECT coalesce(jsonb_agg(jsonb_build_object('id', a.id, 'name', a.name, 'decision', v.decision, 'reason', v.reason, 'decided_at', v.decided_at)
+       (SELECT coalesce(jsonb_agg(jsonb_build_object('id', a.id, 'name', a.name, 'decision', v.decision, 'reason', v.reason, 'decided_at', v.decided_at,
+                                                     'cast_by_name', c.name)
                                   ORDER BY a.name, a.id), '[]')
         FROM iam.users a LEFT JOIN approval.step_votes v ON v.instance_id = s.instance_id AND v.position = s.position AND v.user_id = a.id
+        LEFT JOIN iam.users c ON c.id = v.cast_by
         WHERE a.id = ANY(s.approvers))::jsonb AS voters
 FROM approval.instance_steps s
 WHERE s.instance_id = $1 ORDER BY s.position;

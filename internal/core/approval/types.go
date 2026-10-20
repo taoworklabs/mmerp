@@ -104,6 +104,8 @@ type InboxItem struct {
 	Step            int32  `json:"step"`
 	SubmittedByName string `json:"submitted_by_name"`
 	SubmittedAt     string `json:"submitted_at" format:"date-time"`
+	// Whose seat the actor would vote, when they have none of their own pending in the step.
+	OnBehalfOfName *string `json:"on_behalf_of_name"`
 }
 
 // StepVoter is one who may vote on a step, with their vote once cast.
@@ -113,6 +115,8 @@ type StepVoter struct {
 	Decision  *string `json:"decision" enum:"approved,rejected"`
 	Reason    *string `json:"reason"`
 	DecidedAt *string `json:"decided_at" format:"date-time"`
+	// The delegate who cast the vote for this voter, if not the voter themself.
+	CastByName *string `json:"cast_by_name"`
 }
 
 type StepView struct {

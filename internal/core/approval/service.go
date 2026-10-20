@@ -200,7 +200,19 @@ func (s *Service) startStep(ctx context.Context, inst store.ApprovalInstance, d 
 	if err := q.StartStep(ctx, store.StartStepParams{InstanceID: inst.ID, Position: pos, Approvers: users, Fallback: fallback}); err != nil {
 		return err
 	}
-	return s.d.Notification.Send(ctx, notification.ApprovalRequested, d.Ref, users)
+	today, err := s.d.Setting.Today(ctx)
+	if err != nil {
+		return err
+	}
+	delegates, err := q.DelegatesOf(ctx, store.DelegatesOfParams{Users: users, Today: today})
+	if err != nil {
+		return err
+	}
+	if delegates = others(delegates); failed != nil {
+		return failed
+	}
+	told := slices.Compact(slices.Sorted(slices.Values(slices.Concat(users, delegates))))
+	return s.d.Notification.Send(ctx, notification.ApprovalRequested, d.Ref, told)
 }
 
 // holds evaluates one condition leaf for d; a leaf that cannot be evaluated
@@ -430,25 +442,31 @@ func (s *Service) Withdraw(ctx context.Context, id int64) error {
 func (s *Service) vote(ctx context.Context, inst store.ApprovalInstance, st store.ApprovalInstanceStep, decision string, reason *string) (string, error) {
 	q := store.New(platform.DBFrom(ctx))
 	actor, _ := platform.ActorFrom(ctx)
-	if !slices.Contains(st.Approvers, actor) {
-		return "", platform.ErrForbidden
+	seat, onBehalfOf, err := s.seatFor(ctx, st, actor)
+	if err != nil {
+		return "", err
 	}
-	// Approvers were fixed when the step started; who the document is about may have changed since.
+	// Approvers were fixed when the step started; who the document is about may have changed
+	// since. A delegate is checked as themself, not as the absent approver.
 	if excluded, err := s.excluded(ctx, inst, record.Ref{Type: inst.DocType, ID: inst.DocID}); err != nil {
 		return "", err
 	} else if slices.Contains(excluded, actor) {
 		return "", ErrSelfApproval
 	}
-	err := q.InsertVote(ctx, store.InsertVoteParams{InstanceID: inst.ID, Position: st.Position, UserID: actor,
-		Decision: decision, Reason: platform.NullText(reason)})
-	if platform.Violates(err, "step_votes_pkey") {
+	var castBy *int64
+	params := map[string]any{"instance": inst.ID, "step": st.Position, "reason": reason}
+	if onBehalfOf != nil {
+		castBy, params["on_behalf_of"] = &actor, seat
+	}
+	err = q.InsertVote(ctx, store.InsertVoteParams{InstanceID: inst.ID, Position: st.Position, UserID: seat,
+		CastBy: platform.NullInt8(castBy), Decision: decision, Reason: platform.NullText(reason)})
+	if platform.Violates(err, "step_votes_pkey") || platform.Violates(err, "step_votes_one_per_person_idx") {
 		return "", ErrAlreadyVoted
 	}
 	if err != nil {
 		return "", err
 	}
-	if err := s.d.Audit.RecordFor(ctx, "approval."+decision, audit.Ref{Type: inst.DocType, ID: inst.DocID},
-		map[string]any{"instance": inst.ID, "step": st.Position, "reason": reason}); err != nil {
+	if err := s.d.Audit.RecordFor(ctx, "approval."+decision, audit.Ref{Type: inst.DocType, ID: inst.DocID}, params); err != nil {
 		return "", err
 	}
 	c, err := q.StepVotes(ctx, store.StepVotesParams{InstanceID: inst.ID, Position: st.Position})
@@ -466,6 +484,45 @@ func (s *Service) vote(ctx context.Context, inst store.ApprovalInstance, st stor
 		return "", nil
 	}
 	return status, q.SetStepStatus(ctx, store.SetStepStatusParams{InstanceID: inst.ID, Position: st.Position, Status: status})
+}
+
+// seatFor picks the seat the actor votes in step: their own while pending, else the first
+// pending seat, in approver order, of a voter whose active delegation names the actor.
+// Delegations are read at vote time and never chained, so a delegate's own delegate gets nothing.
+func (s *Service) seatFor(ctx context.Context, st store.ApprovalInstanceStep, actor int64) (int64, *int64, error) {
+	q := store.New(platform.DBFrom(ctx))
+	votes, err := q.CastVotes(ctx, store.CastVotesParams{InstanceID: st.InstanceID, Position: st.Position})
+	if err != nil {
+		return 0, nil, err
+	}
+	voted := map[int64]bool{}
+	for _, v := range votes {
+		if v.CastBy.Valid && v.CastBy.Int64 == actor || !v.CastBy.Valid && v.UserID == actor {
+			return 0, nil, ErrAlreadyVoted
+		}
+		voted[v.UserID] = true
+	}
+	member := slices.Contains(st.Approvers, actor)
+	if member && !voted[actor] {
+		return actor, nil, nil
+	}
+	today, err := s.d.Setting.Today(ctx)
+	if err != nil {
+		return 0, nil, err
+	}
+	from, err := q.DelegatorsOf(ctx, store.DelegatorsOfParams{Delegate: actor, Users: st.Approvers, Today: today})
+	if err != nil {
+		return 0, nil, err
+	}
+	for _, a := range st.Approvers {
+		if !voted[a] && slices.Contains(from, a) {
+			return a, &a, nil
+		}
+	}
+	if member { // their seat was voted by their own delegate
+		return 0, nil, ErrAlreadyVoted
+	}
+	return 0, nil, platform.ErrForbidden
 }
 
 // Reassign replaces voter from, who has not voted, with the user login; the step's
@@ -532,7 +589,11 @@ func (s *Service) isFallback(ctx context.Context, inst store.ApprovalInstance, d
 // Inbox lists the instances waiting for the actor, among documents they may view.
 func (s *Service) Inbox(ctx context.Context) ([]InboxItem, error) {
 	actor, _ := platform.ActorFrom(ctx)
-	rows, err := store.New(platform.DBFrom(ctx)).Inbox(ctx, actor)
+	today, err := s.d.Setting.Today(ctx)
+	if err != nil {
+		return nil, err
+	}
+	rows, err := store.New(platform.DBFrom(ctx)).Inbox(ctx, store.InboxParams{Actor: actor, Today: today})
 	if err != nil {
 		return nil, err
 	}
@@ -543,9 +604,20 @@ func (s *Service) Inbox(ctx context.Context) ([]InboxItem, error) {
 		} else if !ok {
 			continue
 		}
+		// Own seats left out the excluded when the step started; a delegate is checked here.
+		if r.OnBehalfOfName.Valid {
+			excluded, err := s.excluded(ctx, store.ApprovalInstance{SubmittedBy: r.SubmittedBy}, record.Ref{Type: r.DocType, ID: r.DocID})
+			if err != nil {
+				return nil, err
+			}
+			if slices.Contains(excluded, actor) {
+				continue
+			}
+		}
 		out = append(out, InboxItem{
 			InstanceID: r.ID, DocType: r.DocType, DocID: r.DocID, Action: r.Action, Number: r.Number, Date: r.Date.Time.Format(time.DateOnly),
 			Step: r.Step, SubmittedByName: r.SubmittedByName, SubmittedAt: r.SubmittedAt.Time.Format(time.RFC3339),
+			OnBehalfOfName: platform.TextPtr(r.OnBehalfOfName),
 		})
 	}
 	return out, nil
@@ -579,7 +651,7 @@ func (s *Service) DocumentInstance(ctx context.Context, ref record.Ref) (*Instan
 	if writable && actor == inst.SubmittedBy && inst.Action != string(record.Post) {
 		out.AllowedActions = append(out.AllowedActions, "withdraw")
 	}
-	fallback := false
+	fallback, excluded := false, false
 	if writable {
 		d, err := s.d.Record.Get(ctx, ref)
 		if err != nil {
@@ -588,32 +660,40 @@ func (s *Service) DocumentInstance(ctx context.Context, ref record.Ref) (*Instan
 		if fallback, err = s.isFallback(ctx, store.ApprovalInstance{FallbackProduct: inst.FallbackProduct, FallbackRole: inst.FallbackRole}, d); err != nil {
 			return nil, err
 		}
+		ids, err := s.excluded(ctx, store.ApprovalInstance{SubmittedBy: inst.SubmittedBy}, ref)
+		if err != nil {
+			return nil, err
+		}
+		excluded = slices.Contains(ids, actor)
 	}
 	for _, r := range rows {
 		var voters []struct {
-			ID        int64      `json:"id"`
-			Name      string     `json:"name"`
-			Decision  *string    `json:"decision"`
-			Reason    *string    `json:"reason"`
-			DecidedAt *time.Time `json:"decided_at"`
+			ID         int64      `json:"id"`
+			Name       string     `json:"name"`
+			Decision   *string    `json:"decision"`
+			Reason     *string    `json:"reason"`
+			DecidedAt  *time.Time `json:"decided_at"`
+			CastByName *string    `json:"cast_by_name"`
 		}
 		if err := json.Unmarshal(r.Voters, &voters); err != nil {
 			return nil, err
 		}
 		v := StepView{Position: r.Position, Status: r.Status, Approvals: r.Approvals, Rejections: r.Rejections, Fallback: r.Fallback,
 			Voters: []StepVoter{}, AllowedActions: []string{}}
-		canVote := false
 		for _, x := range voters {
-			sv := StepVoter{ID: x.ID, Name: x.Name, Decision: x.Decision, Reason: x.Reason}
+			sv := StepVoter{ID: x.ID, Name: x.Name, Decision: x.Decision, Reason: x.Reason, CastByName: x.CastByName}
 			if x.DecidedAt != nil {
 				at := x.DecidedAt.Format(time.RFC3339)
 				sv.DecidedAt = &at
 			}
-			canVote = canVote || x.ID == actor && x.Decision == nil
 			v.Voters = append(v.Voters, sv)
 		}
 		if writable && r.Status == "open" {
-			if canVote {
+			_, _, err := s.seatFor(ctx, store.ApprovalInstanceStep{InstanceID: inst.ID, Position: r.Position, Approvers: r.Approvers}, actor)
+			if err != nil && !errors.Is(err, platform.ErrForbidden) && !errors.Is(err, ErrAlreadyVoted) {
+				return nil, err
+			}
+			if err == nil && !excluded {
 				v.AllowedActions = append(v.AllowedActions, "approve", "reject")
 			}
 			if fallback {

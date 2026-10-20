@@ -20,6 +20,40 @@ func (q *Queries) CancelOpenSteps(ctx context.Context, instanceID int64) error {
 	return err
 }
 
+const castVotes = `-- name: CastVotes :many
+SELECT user_id, cast_by FROM approval.step_votes WHERE instance_id = $1 AND position = $2
+`
+
+type CastVotesParams struct {
+	InstanceID int64
+	Position   int32
+}
+
+type CastVotesRow struct {
+	UserID int64
+	CastBy pgtype.Int8
+}
+
+func (q *Queries) CastVotes(ctx context.Context, arg CastVotesParams) ([]CastVotesRow, error) {
+	rows, err := q.db.Query(ctx, castVotes, arg.InstanceID, arg.Position)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []CastVotesRow
+	for rows.Next() {
+		var i CastVotesRow
+		if err := rows.Scan(&i.UserID, &i.CastBy); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const closeInstance = `-- name: CloseInstance :exec
 UPDATE approval.instances SET status = $2 WHERE id = $1 AND status = 'open'
 `
@@ -32,6 +66,69 @@ type CloseInstanceParams struct {
 func (q *Queries) CloseInstance(ctx context.Context, arg CloseInstanceParams) error {
 	_, err := q.db.Exec(ctx, closeInstance, arg.ID, arg.Status)
 	return err
+}
+
+const delegatesOf = `-- name: DelegatesOf :many
+SELECT DISTINCT delegate_id FROM approval.delegations
+WHERE user_id = ANY($1::bigint[]) AND starts_on <= $2 AND ends_on >= $2
+`
+
+type DelegatesOfParams struct {
+	Users []int64
+	Today pgtype.Date
+}
+
+// Who holds an active delegation from one of @users on @today.
+func (q *Queries) DelegatesOf(ctx context.Context, arg DelegatesOfParams) ([]int64, error) {
+	rows, err := q.db.Query(ctx, delegatesOf, arg.Users, arg.Today)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []int64
+	for rows.Next() {
+		var delegate_id int64
+		if err := rows.Scan(&delegate_id); err != nil {
+			return nil, err
+		}
+		items = append(items, delegate_id)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const delegatorsOf = `-- name: DelegatorsOf :many
+SELECT user_id FROM approval.delegations
+WHERE delegate_id = $1 AND user_id = ANY($2::bigint[]) AND starts_on <= $3 AND ends_on >= $3
+`
+
+type DelegatorsOfParams struct {
+	Delegate int64
+	Users    []int64
+	Today    pgtype.Date
+}
+
+// Which of @users have an active delegation to @delegate on @today; one hop only.
+func (q *Queries) DelegatorsOf(ctx context.Context, arg DelegatorsOfParams) ([]int64, error) {
+	rows, err := q.db.Query(ctx, delegatorsOf, arg.Delegate, arg.Users, arg.Today)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []int64
+	for rows.Next() {
+		var user_id int64
+		if err := rows.Scan(&user_id); err != nil {
+			return nil, err
+		}
+		items = append(items, user_id)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const deleteDelegation = `-- name: DeleteDelegation :exec
@@ -242,19 +339,38 @@ func (q *Queries) HeldInPeriod(ctx context.Context, arg HeldInPeriodParams) ([]H
 }
 
 const inbox = `-- name: Inbox :many
-SELECT i.id, i.doc_type, i.doc_id, i.action, s.step, i.submitted_at, u.name AS submitted_by_name, d.number, d.date
+SELECT i.id, i.doc_type, i.doc_id, i.action, s.step, i.submitted_at, i.submitted_by, u.name AS submitted_by_name, d.number, d.date,
+       b.name AS on_behalf_of_name
 FROM (
-    SELECT DISTINCT ON (s.instance_id) s.instance_id, s.position AS step
-    FROM approval.instance_steps s
-    WHERE s.status = 'open' AND s.approvers @> ARRAY[$1::bigint]
-      AND NOT EXISTS (SELECT 1 FROM approval.step_votes v WHERE v.instance_id = s.instance_id AND v.position = s.position AND v.user_id = $1)
+    SELECT DISTINCT ON (s.instance_id) s.instance_id, s.position AS step,
+           CASE WHEN NOT s.own THEN s.delegated END AS on_behalf_of
+    FROM (
+        SELECT s.instance_id, s.position,
+               s.approvers @> ARRAY[$1::bigint] AND NOT EXISTS (
+                   SELECT 1 FROM approval.step_votes v WHERE v.instance_id = s.instance_id AND v.position = s.position AND v.user_id = $1) AS own,
+               (SELECT p.id FROM unnest(s.approvers) WITH ORDINALITY AS p(id, n)
+                JOIN approval.delegations g ON g.user_id = p.id AND g.delegate_id = $1 AND g.starts_on <= $2 AND g.ends_on >= $2
+                WHERE NOT EXISTS (SELECT 1 FROM approval.step_votes v WHERE v.instance_id = s.instance_id AND v.position = s.position AND v.user_id = p.id)
+                ORDER BY p.n LIMIT 1) AS delegated
+        FROM approval.instance_steps s
+        WHERE s.status = 'open'
+          AND NOT EXISTS (SELECT 1 FROM approval.step_votes v
+                          WHERE v.instance_id = s.instance_id AND v.position = s.position AND coalesce(v.cast_by, v.user_id) = $1)
+    ) s
+    WHERE s.own OR s.delegated IS NOT NULL
     ORDER BY s.instance_id, s.position
 ) s
 JOIN approval.instances i ON i.id = s.instance_id AND i.status = 'open'
 JOIN record.documents d ON d.id = i.doc_id
 JOIN iam.users u ON u.id = i.submitted_by
+LEFT JOIN iam.users b ON b.id = s.on_behalf_of
 ORDER BY i.submitted_at, i.id
 `
+
+type InboxParams struct {
+	Actor int64
+	Today pgtype.Date
+}
 
 type InboxRow struct {
 	ID              int64
@@ -263,15 +379,18 @@ type InboxRow struct {
 	Action          string
 	Step            int32
 	SubmittedAt     pgtype.Timestamptz
+	SubmittedBy     int64
 	SubmittedByName string
 	Number          string
 	Date            pgtype.Date
+	OnBehalfOfName  pgtype.Text
 }
 
-// One row per instance: the lowest open step waiting for @actor's vote. An actor
-// in two open parallel steps of the same instance sees it once, not twice.
-func (q *Queries) Inbox(ctx context.Context, actor int64) ([]InboxRow, error) {
-	rows, err := q.db.Query(ctx, inbox, actor)
+// One row per instance: the lowest open step where @actor has their own pending seat,
+// or a pending seat delegated to them, and has cast nothing yet. An actor in two open
+// parallel steps of the same instance sees it once, not twice.
+func (q *Queries) Inbox(ctx context.Context, arg InboxParams) ([]InboxRow, error) {
+	rows, err := q.db.Query(ctx, inbox, arg.Actor, arg.Today)
 	if err != nil {
 		return nil, err
 	}
@@ -286,9 +405,11 @@ func (q *Queries) Inbox(ctx context.Context, actor int64) ([]InboxRow, error) {
 			&i.Action,
 			&i.Step,
 			&i.SubmittedAt,
+			&i.SubmittedBy,
 			&i.SubmittedByName,
 			&i.Number,
 			&i.Date,
+			&i.OnBehalfOfName,
 		); err != nil {
 			return nil, err
 		}
@@ -387,13 +508,14 @@ func (q *Queries) InsertStep(ctx context.Context, arg InsertStepParams) error {
 }
 
 const insertVote = `-- name: InsertVote :exec
-INSERT INTO approval.step_votes (instance_id, position, user_id, decision, reason) VALUES ($1, $2, $3, $4, $5)
+INSERT INTO approval.step_votes (instance_id, position, user_id, cast_by, decision, reason) VALUES ($1, $2, $3, $4, $5, $6)
 `
 
 type InsertVoteParams struct {
 	InstanceID int64
 	Position   int32
 	UserID     int64
+	CastBy     pgtype.Int8
 	Decision   string
 	Reason     pgtype.Text
 }
@@ -403,6 +525,7 @@ func (q *Queries) InsertVote(ctx context.Context, arg InsertVoteParams) error {
 		arg.InstanceID,
 		arg.Position,
 		arg.UserID,
+		arg.CastBy,
 		arg.Decision,
 		arg.Reason,
 	)
@@ -757,9 +880,11 @@ func (q *Queries) StepVotes(ctx context.Context, arg StepVotesParams) (StepVotes
 
 const steps = `-- name: Steps :many
 SELECT s.position, s.status, s.approvals, s.rejections, s.fallback, s.approvers,
-       (SELECT coalesce(jsonb_agg(jsonb_build_object('id', a.id, 'name', a.name, 'decision', v.decision, 'reason', v.reason, 'decided_at', v.decided_at)
+       (SELECT coalesce(jsonb_agg(jsonb_build_object('id', a.id, 'name', a.name, 'decision', v.decision, 'reason', v.reason, 'decided_at', v.decided_at,
+                                                     'cast_by_name', c.name)
                                   ORDER BY a.name, a.id), '[]')
         FROM iam.users a LEFT JOIN approval.step_votes v ON v.instance_id = s.instance_id AND v.position = s.position AND v.user_id = a.id
+        LEFT JOIN iam.users c ON c.id = v.cast_by
         WHERE a.id = ANY(s.approvers))::jsonb AS voters
 FROM approval.instance_steps s
 WHERE s.instance_id = $1 ORDER BY s.position

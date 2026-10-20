@@ -9,6 +9,8 @@ import (
 	"time"
 
 	"github.com/taoworklabs/mmerp/internal/core/approval"
+	"github.com/taoworklabs/mmerp/internal/core/notification"
+	"github.com/taoworklabs/mmerp/internal/core/record"
 	"github.com/taoworklabs/mmerp/internal/platform"
 	"github.com/taoworklabs/mmerp/internal/platform/pgtest"
 )
@@ -157,5 +159,165 @@ func TestDelegationsMeta(t *testing.T) {
 	}
 	if got, err := f.appr.CanManageAllDelegations(f.admin); err != nil || !got {
 		t.Errorf("admin: %v %v", got, err)
+	}
+}
+
+// delegate records user → delegate from today+from to today+to, as user.
+func (f *fixture) delegate(user, delegate string, from, to int) {
+	f.t.Helper()
+	_, err := f.appr.CreateDelegation(f.as(user), f.delegation(user, delegate, from, to))
+	f.check(err)
+}
+
+func TestDelegateApproves(t *testing.T) {
+	f := newFixture(t)
+	f.rule(f.user("boss"))
+	f.delegate("boss", "big_boss", 0, 3)
+	d, err := f.send("1", "a")
+	f.check(err)
+	items := f.inbox("big_boss")
+	if len(items) != 1 || items[0].OnBehalfOfName == nil || *items[0].OnBehalfOfName != "boss" {
+		t.Fatalf("big_boss inbox %+v", items)
+	}
+	if acts := f.panel("big_boss", d).Steps[0].AllowedActions; !slices.Equal(acts, []string{"approve", "reject"}) {
+		t.Fatalf("big_boss actions %v", acts)
+	}
+	f.check(f.appr.Approve(f.as("big_boss"), *d.ApprovalTicket, 1))
+	if st := f.status(d); st != record.Posted {
+		t.Fatalf("status %s", st)
+	}
+	v := f.panel("submitter", d).Steps[0].Voters
+	if len(v) != 1 || v[0].Name != "boss" || v[0].Decision == nil || *v[0].Decision != "approved" || v[0].CastByName == nil || *v[0].CastByName != "big_boss" {
+		t.Fatalf("voters %+v", v)
+	}
+}
+
+func TestDelegationDeclaredWhileWaiting(t *testing.T) {
+	f := newFixture(t)
+	f.rule(f.user("boss"))
+	d, err := f.send("1", "a")
+	f.check(err)
+	f.delegate("boss", "big_boss", 0, 0)
+	f.check(f.appr.Approve(f.as("big_boss"), *d.ApprovalTicket, 1))
+	if st := f.status(d); st != record.Posted {
+		t.Fatalf("status %s", st)
+	}
+}
+
+func TestDelegateVotesOncePerStep(t *testing.T) {
+	f := newFixture(t)
+	f.rule(f.by(2, 1, "c1", "c2"))
+	f.delegate("c2", "c1", 0, 1)
+	d, err := f.send("1", "a")
+	f.check(err)
+	if items := f.inbox("c1"); len(items) != 1 || items[0].OnBehalfOfName != nil {
+		t.Fatalf("c1 inbox %+v, want their own seat", items)
+	}
+	f.check(f.appr.Approve(f.as("c1"), *d.ApprovalTicket, 1))
+	if code(f.appr.Approve(f.as("c1"), *d.ApprovalTicket, 1)) != "approval_already_voted" {
+		t.Fatal("c1 voted twice")
+	}
+	if s := f.panel("c1", d).Steps[0]; s.Status != "open" || len(s.AllowedActions) != 0 {
+		t.Fatalf("step %+v", s)
+	}
+	if items := f.inbox("c1"); len(items) != 0 {
+		t.Fatalf("c1 inbox after voting %+v", items)
+	}
+	f.check(f.appr.Approve(f.as("c2"), *d.ApprovalTicket, 1))
+	if st := f.status(d); st != record.Posted {
+		t.Fatalf("status %s", st)
+	}
+}
+
+func TestDelegateWhoSubmittedCannotVote(t *testing.T) {
+	f := newFixture(t)
+	f.rule(f.user("boss"))
+	f.delegate("boss", "submitter", 0, 1)
+	d, err := f.send("1", "a")
+	f.check(err)
+	if acts := f.panel("submitter", d).Steps[0].AllowedActions; len(acts) != 0 {
+		t.Fatalf("submitter actions %v", acts)
+	}
+	if items := f.inbox("submitter"); len(items) != 0 {
+		t.Fatalf("submitter inbox %+v", items)
+	}
+	if code(f.appr.Approve(f.as("submitter"), *d.ApprovalTicket, 1)) != "self_approval" {
+		t.Fatal("the submitter approved as a delegate")
+	}
+	f.check(f.appr.Approve(f.as("boss"), *d.ApprovalTicket, 1))
+}
+
+func TestDelegateWhoCannotViewCannotVote(t *testing.T) {
+	f := newFixture(t)
+	f.rule(f.user("boss"))
+	f.delegate("boss", "outsider", 0, 1)
+	d, err := f.send("1", "a")
+	f.check(err)
+	if _, err := f.appr.DocumentInstance(f.as("outsider"), d.Ref); code(err) != "not_found" {
+		t.Fatalf("outsider panel: %v", err)
+	}
+	if items := f.inbox("outsider"); len(items) != 0 {
+		t.Fatalf("outsider inbox %+v", items)
+	}
+	if code(f.appr.Approve(f.as("outsider"), *d.ApprovalTicket, 1)) != "not_found" {
+		t.Fatal("outsider approved")
+	}
+}
+
+func TestDelegationOnlyWhileActive(t *testing.T) {
+	f := newFixture(t)
+	f.rule(f.user("boss"))
+	// Ended yesterday: past ones can't be created, so written directly.
+	_, err := f.core.Pool.Exec(f.admin, `INSERT INTO approval.delegations (user_id, delegate_id, starts_on, ends_on, created_by)
+		VALUES ($1, $2, $3, $4, $1)`, f.users["boss"], f.users["big_boss"], f.day(-3), f.day(-1))
+	f.check(err)
+	f.delegate("boss", "big_boss", 1, 3)
+	d, err := f.send("1", "a")
+	f.check(err)
+	if items := f.inbox("big_boss"); len(items) != 0 {
+		t.Fatalf("big_boss inbox %+v", items)
+	}
+	if acts := f.panel("big_boss", d).Steps[0].AllowedActions; len(acts) != 0 {
+		t.Fatalf("big_boss actions %v", acts)
+	}
+	if code(f.appr.Approve(f.as("big_boss"), *d.ApprovalTicket, 1)) != "forbidden" {
+		t.Fatal("an inactive delegation voted")
+	}
+}
+
+func TestDelegationIsOneHop(t *testing.T) {
+	f := newFixture(t)
+	f.rule(f.user("boss"))
+	f.delegate("boss", "big_boss", 0, 1)
+	f.delegate("big_boss", "hr", 0, 1)
+	d, err := f.send("1", "a")
+	f.check(err)
+	if items := f.inbox("hr"); len(items) != 0 {
+		t.Fatalf("hr inbox %+v", items)
+	}
+	if code(f.appr.Approve(f.as("hr"), *d.ApprovalTicket, 1)) != "forbidden" {
+		t.Fatal("hr voted through two delegations")
+	}
+}
+
+func TestDelegateIsNotified(t *testing.T) {
+	f := newFixture(t)
+	f.rule(f.user("boss"))
+	f.delegate("boss", "big_boss", 0, 1)
+	f.delegate("big_boss", "hr", 0, 1) // not followed
+	d, err := f.send("1", "a")
+	f.check(err)
+	requested := func(login string) bool {
+		page, err := f.core.Notification.List(f.as(login), nil)
+		f.check(err)
+		return slices.ContainsFunc(page.Items, func(n notification.Notification) bool {
+			return n.Kind == "approval_requested" && n.RecordID != nil && *n.RecordID == d.ID
+		})
+	}
+	if !requested("big_boss") {
+		t.Fatal("the delegate was not told")
+	}
+	if requested("hr") {
+		t.Fatal("the delegate's delegate was told")
 	}
 }
