@@ -164,7 +164,8 @@ func registerHandlers(api huma.API, s *Service) {
 			d, err := s.Delegations(ctx)
 			return &delegationsOutput{Body: d}, err
 		})
-	huma.Register(api, huma.Operation{OperationID: "list-approval-delegation-users", Method: http.MethodGet, Path: "/approval-delegations/users"},
+	huma.Register(api, huma.Operation{OperationID: "list-approval-delegation-users", Method: http.MethodGet, Path: "/approval-delegations/users",
+		Description: "Every account, to pick a delegate from. Logins are empty unless the caller manages everyone's delegations."},
 		func(ctx context.Context, _ *struct{}) (*usersOutput, error) {
 			u, err := s.DelegateUsers(ctx)
 			return &usersOutput{Body: u}, err

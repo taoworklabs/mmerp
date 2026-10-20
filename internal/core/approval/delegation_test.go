@@ -39,8 +39,15 @@ func TestAnyUserListsDelegateUsers(t *testing.T) {
 	f := newFixture(t)
 	users, err := f.appr.DelegateUsers(f.as("outsider"))
 	f.check(err)
-	if !slices.ContainsFunc(users, func(u approval.ApproverUser) bool { return u.Login == "boss" && u.ID == f.users["boss"] }) {
-		t.Fatalf("users %+v", users)
+	// Ordinary users get names, not logins, which are sign-in identifiers.
+	if !slices.ContainsFunc(users, func(u approval.ApproverUser) bool { return u.ID == f.users["boss"] && u.Name == "boss" }) ||
+		slices.ContainsFunc(users, func(u approval.ApproverUser) bool { return u.Login != "" }) {
+		t.Fatalf("outsider users %+v", users)
+	}
+	users, err = f.appr.DelegateUsers(f.admin)
+	f.check(err)
+	if !slices.ContainsFunc(users, func(u approval.ApproverUser) bool { return u.ID == f.users["boss"] && u.Login == "boss" }) {
+		t.Fatalf("admin users %+v", users)
 	}
 }
 

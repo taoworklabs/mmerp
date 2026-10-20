@@ -43,6 +43,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
+        /** @description Every account, to pick a delegate from. Logins are empty unless the caller manages everyone's delegations. */
         get: operations["list-approval-delegation-users"];
         put?: never;
         post?: never;

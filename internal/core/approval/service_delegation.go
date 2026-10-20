@@ -12,12 +12,20 @@ import (
 	"github.com/taoworklabs/mmerp/internal/platform"
 )
 
-// DelegateUsers lists the accounts a delegate, or whom a delegation is for, can be picked from; any user may read it.
+// DelegateUsers lists the accounts a delegate, or whom a delegation is for, can be picked from; any
+// user may read it. Logins are sign-in identifiers, so only delegation managers see them.
 func (s *Service) DelegateUsers(ctx context.Context) ([]ApproverUser, error) {
+	all, err := s.CanManageAllDelegations(ctx)
+	if err != nil {
+		return nil, err
+	}
 	rows, err := store.New(platform.DBFrom(ctx)).ListUsers(ctx)
 	out := make([]ApproverUser, len(rows))
 	for i, r := range rows {
 		out[i] = ApproverUser(r)
+		if !all {
+			out[i].Login = ""
+		}
 	}
 	return out, err
 }

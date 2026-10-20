@@ -6894,6 +6894,7 @@
     },
     "/approval-delegations/users": {
       "get": {
+        "description": "Every account, to pick a delegate from. Logins are empty unless the caller manages everyone's delegations.",
         "operationId": "list-approval-delegation-users",
         "responses": {
           "200": {
