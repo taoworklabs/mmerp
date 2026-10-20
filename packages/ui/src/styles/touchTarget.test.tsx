@@ -1,7 +1,9 @@
 import { render } from 'vitest-browser-react'
 import { page } from 'vitest/browser'
 import { describe, expect, it } from 'vitest'
+import { Calendar } from '../primitives/dates/Calendar.tsx'
 import { DateInput } from '../primitives/dates/DateInput.tsx'
+import { MonthPicker } from '../primitives/dates/MonthPicker.tsx'
 import { MonthPickerInput } from '../primitives/dates/MonthPickerInput.tsx'
 import { Button } from '../primitives/input/Button.tsx'
 import { ActionIcon } from '../primitives/input/ActionIcon.tsx'
@@ -85,5 +87,27 @@ describe('touch target', () => {
       expect(innerRect.top).toBeGreaterThanOrEqual(boxRect.top - 0.5)
       expect(innerRect.bottom).toBeLessThanOrEqual(boxRect.bottom + 0.5)
     }
+  })
+
+  it('grows calendar day and month cells to the touch target below the drawer breakpoint', async () => {
+    const { container } = await render(
+      <>
+        <Calendar value={null} onChange={() => {}} today="2026-10-20" locale={sampleLocale} labels={{ previousMonth: 'Previous', nextMonth: 'Next' }} />
+        <MonthPicker value="2026-10" onChange={() => {}} locale={sampleLocale} labels={{ previousYear: 'Previous', nextYear: 'Next' }} />
+      </>,
+    )
+    const [day, month] = Array.from(container.querySelectorAll<HTMLElement>('[role="grid"]')).map((grid) => grid.querySelector<HTMLElement>('button[role="gridcell"]')!)
+
+    await page.viewport(800, 600)
+    for (const cell of [day!, month!]) {
+      const rect = cell.getBoundingClientRect()
+      expect(rect.height).toBeGreaterThanOrEqual(44)
+      expect(rect.width).toBeGreaterThanOrEqual(44)
+    }
+
+    await page.viewport(1280, 800)
+    expect(day!.getBoundingClientRect().height).toBe(32)
+    expect(day!.getBoundingClientRect().width).toBe(32)
+    expect(month!.getBoundingClientRect().height).toBe(32)
   })
 })

@@ -82,3 +82,15 @@ button.cell[aria-selected='true']:hover {
 .months .cell {
   width: 72px;
 }
+
+/* Small screens: every cell reaches the touch target; weekday columns follow the cell width. */
+@media (max-width: 63.99em) {
+  .cell {
+    width: var(--mmerp-touch-target);
+    height: var(--mmerp-touch-target);
+  }
+
+  .months .cell {
+    width: 72px;
+  }
+}
