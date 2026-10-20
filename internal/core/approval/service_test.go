@@ -24,6 +24,7 @@ type fixture struct {
 	ids      *iam.Service
 	rec      *record.Service
 	appr     *approval.Service
+	core     *coretest.Core
 	admin    context.Context
 	unit     int64
 	users    map[string]int64
@@ -45,7 +46,7 @@ type stamp struct {
 func newFixture(t *testing.T) *fixture {
 	core := coretest.New(t, "test", "other")
 	ctx := core.Ctx
-	f := &fixture{t: t, ids: core.IAM, rec: core.Record, appr: core.Approval, admin: core.Admin, users: map[string]int64{}, managers: map[int][]int64{}, denied: map[int64]record.Action{}}
+	f := &fixture{t: t, ids: core.IAM, rec: core.Record, appr: core.Approval, core: core, admin: core.Admin, users: map[string]int64{}, managers: map[int][]int64{}, denied: map[int64]record.Action{}}
 	f.ids.RegisterRoles("test", map[string][]string{"hr": {"test.doc.view"}, "approval_admin": {"test.approval.manage"}}, "approval_admin")
 	f.rec.Register(record.Type{
 		Code: "test.doc", Product: "test", Kind: record.Document, NumberPrefix: "T",

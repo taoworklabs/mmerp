@@ -34,6 +34,15 @@ func (q *Queries) CloseInstance(ctx context.Context, arg CloseInstanceParams) er
 	return err
 }
 
+const deleteDelegation = `-- name: DeleteDelegation :exec
+DELETE FROM approval.delegations WHERE id = $1
+`
+
+func (q *Queries) DeleteDelegation(ctx context.Context, id int64) error {
+	_, err := q.db.Exec(ctx, deleteDelegation, id)
+	return err
+}
+
 const deleteRule = `-- name: DeleteRule :exec
 DELETE FROM approval.rules WHERE doc_type = $1 AND action = $2
 `
@@ -46,6 +55,25 @@ type DeleteRuleParams struct {
 func (q *Queries) DeleteRule(ctx context.Context, arg DeleteRuleParams) error {
 	_, err := q.db.Exec(ctx, deleteRule, arg.DocType, arg.Action)
 	return err
+}
+
+const getDelegation = `-- name: GetDelegation :one
+SELECT id, user_id, delegate_id, starts_on, ends_on, created_by, created_at FROM approval.delegations WHERE id = $1
+`
+
+func (q *Queries) GetDelegation(ctx context.Context, id int64) (ApprovalDelegation, error) {
+	row := q.db.QueryRow(ctx, getDelegation, id)
+	var i ApprovalDelegation
+	err := row.Scan(
+		&i.ID,
+		&i.UserID,
+		&i.DelegateID,
+		&i.StartsOn,
+		&i.EndsOn,
+		&i.CreatedBy,
+		&i.CreatedAt,
+	)
+	return i, err
 }
 
 const getInstance = `-- name: GetInstance :one
@@ -272,6 +300,32 @@ func (q *Queries) Inbox(ctx context.Context, actor int64) ([]InboxRow, error) {
 	return items, nil
 }
 
+const insertDelegation = `-- name: InsertDelegation :one
+INSERT INTO approval.delegations (user_id, delegate_id, starts_on, ends_on, created_by)
+VALUES ($1, $2, $3, $4, $5) RETURNING id
+`
+
+type InsertDelegationParams struct {
+	UserID     int64
+	DelegateID int64
+	StartsOn   pgtype.Date
+	EndsOn     pgtype.Date
+	CreatedBy  int64
+}
+
+func (q *Queries) InsertDelegation(ctx context.Context, arg InsertDelegationParams) (int64, error) {
+	row := q.db.QueryRow(ctx, insertDelegation,
+		arg.UserID,
+		arg.DelegateID,
+		arg.StartsOn,
+		arg.EndsOn,
+		arg.CreatedBy,
+	)
+	var id int64
+	err := row.Scan(&id)
+	return id, err
+}
+
 const insertInstance = `-- name: InsertInstance :one
 INSERT INTO approval.instances (doc_type, doc_id, version, submitted_by, status, plan, max_levels, fallback_product, fallback_role, action, params)
 VALUES ($1, $2, $3, $4, 'open', $5, $6, $7, $8, $9, $10) RETURNING id
@@ -404,6 +458,58 @@ func (q *Queries) LatestInstance(ctx context.Context, arg LatestInstanceParams) 
 	return i, err
 }
 
+const listDelegations = `-- name: ListDelegations :many
+SELECT d.id, d.user_id, u.name AS user_name, d.delegate_id, g.name AS delegate_name, d.starts_on, d.ends_on
+FROM approval.delegations d JOIN iam.users u ON u.id = d.user_id JOIN iam.users g ON g.id = d.delegate_id
+WHERE d.ends_on >= $1 AND ($2::bool OR d.user_id = $3)
+ORDER BY d.starts_on, d.id
+`
+
+type ListDelegationsParams struct {
+	Today    pgtype.Date
+	Everyone bool
+	Actor    int64
+}
+
+type ListDelegationsRow struct {
+	ID           int64
+	UserID       int64
+	UserName     string
+	DelegateID   int64
+	DelegateName string
+	StartsOn     pgtype.Date
+	EndsOn       pgtype.Date
+}
+
+// Not yet ended; everyone's when @everyone, else @actor's own.
+func (q *Queries) ListDelegations(ctx context.Context, arg ListDelegationsParams) ([]ListDelegationsRow, error) {
+	rows, err := q.db.Query(ctx, listDelegations, arg.Today, arg.Everyone, arg.Actor)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListDelegationsRow
+	for rows.Next() {
+		var i ListDelegationsRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.UserID,
+			&i.UserName,
+			&i.DelegateID,
+			&i.DelegateName,
+			&i.StartsOn,
+			&i.EndsOn,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listRules = `-- name: ListRules :many
 SELECT doc_type, max_levels, fallback_product, fallback_role, flow, action FROM approval.rules ORDER BY doc_type, action
 `
@@ -466,6 +572,16 @@ func (q *Queries) ListUsers(ctx context.Context) ([]ListUsersRow, error) {
 	return items, nil
 }
 
+const lockDelegations = `-- name: LockDelegations :exec
+SELECT pg_advisory_xact_lock(hashtextextended('approval.delegation', $1::bigint))
+`
+
+// Serialises creates for one user, so two overlapping rows can't both pass the check.
+func (q *Queries) LockDelegations(ctx context.Context, userID int64) error {
+	_, err := q.db.Exec(ctx, lockDelegations, userID)
+	return err
+}
+
 const lockInstance = `-- name: LockInstance :one
 SELECT id, doc_type, doc_id, version, submitted_by, submitted_at, status, max_levels, fallback_product, fallback_role, plan, action, params FROM approval.instances WHERE id = $1 FOR UPDATE
 `
@@ -489,6 +605,24 @@ func (q *Queries) LockInstance(ctx context.Context, id int64) (ApprovalInstance,
 		&i.Params,
 	)
 	return i, err
+}
+
+const overlappingDelegation = `-- name: OverlappingDelegation :one
+SELECT id FROM approval.delegations
+WHERE user_id = $1 AND starts_on <= $2 AND ends_on >= $3 ORDER BY id LIMIT 1
+`
+
+type OverlappingDelegationParams struct {
+	UserID   int64
+	EndsOn   pgtype.Date
+	StartsOn pgtype.Date
+}
+
+func (q *Queries) OverlappingDelegation(ctx context.Context, arg OverlappingDelegationParams) (int64, error) {
+	row := q.db.QueryRow(ctx, overlappingDelegation, arg.UserID, arg.EndsOn, arg.StartsOn)
+	var id int64
+	err := row.Scan(&id)
+	return id, err
 }
 
 const saveRule = `-- name: SaveRule :exec
@@ -668,6 +802,22 @@ func (q *Queries) Steps(ctx context.Context, instanceID int64) ([]StepsRow, erro
 		return nil, err
 	}
 	return items, nil
+}
+
+const usersExist = `-- name: UsersExist :one
+SELECT count(*) = 2 FROM iam.users WHERE id IN ($1::bigint, $2::bigint)
+`
+
+type UsersExistParams struct {
+	UserID     int64
+	DelegateID int64
+}
+
+func (q *Queries) UsersExist(ctx context.Context, arg UsersExistParams) (bool, error) {
+	row := q.db.QueryRow(ctx, usersExist, arg.UserID, arg.DelegateID)
+	var column_1 bool
+	err := row.Scan(&column_1)
+	return column_1, err
 }
 
 const within = `-- name: Within :one

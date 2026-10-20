@@ -8,6 +8,16 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+type ApprovalDelegation struct {
+	ID         int64
+	UserID     int64
+	DelegateID int64
+	StartsOn   pgtype.Date
+	EndsOn     pgtype.Date
+	CreatedBy  int64
+	CreatedAt  pgtype.Timestamptz
+}
+
 type ApprovalInstance struct {
 	ID              int64
 	DocType         string

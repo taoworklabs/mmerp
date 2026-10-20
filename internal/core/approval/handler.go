@@ -85,6 +85,23 @@ type saveRuleInput struct {
 	Body    RuleInput
 }
 
+type delegationsOutput struct{ Body []Delegation }
+
+type createDelegationInput struct{ Body DelegationInput }
+
+type createDelegationOutput struct {
+	Body struct {
+		ID int64 `json:"id"`
+	}
+}
+
+type delegationsMetaOutput struct {
+	Body struct {
+		// The actor manages everyone's delegations, not only their own.
+		ManageAll bool `json:"manage_all"`
+	}
+}
+
 func registerHandlers(api huma.API, s *Service) {
 	huma.Register(api, huma.Operation{OperationID: "get-inbox", Method: http.MethodGet, Path: "/approvals/inbox"},
 		func(ctx context.Context, _ *struct{}) (*inboxOutput, error) {
@@ -141,5 +158,28 @@ func registerHandlers(api huma.API, s *Service) {
 	huma.Register(api, huma.Operation{OperationID: "delete-approval-rule", Method: http.MethodDelete, Path: "/approval-rules/{doc_type}", DefaultStatus: http.StatusNoContent},
 		func(ctx context.Context, in *docTypeInput) (*struct{}, error) {
 			return nil, s.DeleteRule(ctx, in.DocType, record.Action(in.Action))
+		})
+	huma.Register(api, huma.Operation{OperationID: "list-approval-delegations", Method: http.MethodGet, Path: "/approval-delegations"},
+		func(ctx context.Context, _ *struct{}) (*delegationsOutput, error) {
+			d, err := s.Delegations(ctx)
+			return &delegationsOutput{Body: d}, err
+		})
+	huma.Register(api, huma.Operation{OperationID: "get-approval-delegations-meta", Method: http.MethodGet, Path: "/approval-delegations/meta"},
+		func(ctx context.Context, _ *struct{}) (*delegationsMetaOutput, error) {
+			all, err := s.CanManageAllDelegations(ctx)
+			out := &delegationsMetaOutput{}
+			out.Body.ManageAll = all
+			return out, err
+		})
+	huma.Register(api, huma.Operation{OperationID: "create-approval-delegation", Method: http.MethodPost, Path: "/approval-delegations", DefaultStatus: http.StatusCreated},
+		func(ctx context.Context, in *createDelegationInput) (*createDelegationOutput, error) {
+			id, err := s.CreateDelegation(ctx, in.Body)
+			out := &createDelegationOutput{}
+			out.Body.ID = id
+			return out, err
+		})
+	huma.Register(api, huma.Operation{OperationID: "delete-approval-delegation", Method: http.MethodDelete, Path: "/approval-delegations/{id}", DefaultStatus: http.StatusNoContent},
+		func(ctx context.Context, in *instanceInput) (*struct{}, error) {
+			return nil, s.DeleteDelegation(ctx, in.ID)
 		})
 }

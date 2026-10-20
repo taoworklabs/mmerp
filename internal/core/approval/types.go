@@ -141,6 +141,27 @@ type Instance struct {
 	AllowedActions []string `json:"allowed_actions" nullable:"false"`
 }
 
+// Delegation lets a delegate vote for a user in approval steps while it lasts.
+type Delegation struct {
+	ID           int64  `json:"id"`
+	UserID       int64  `json:"user_id"`
+	UserName     string `json:"user_name"`
+	DelegateID   int64  `json:"delegate_id"`
+	DelegateName string `json:"delegate_name"`
+	StartsOn     string `json:"starts_on" format:"date"`
+	EndsOn       string `json:"ends_on" format:"date"`
+	Active       bool   `json:"active"` // today falls within it
+	// delete, for its user and for core.approval.manage holders.
+	AllowedActions []string `json:"allowed_actions" nullable:"false"`
+}
+
+type DelegationInput struct {
+	UserID     *int64 `json:"user_id,omitempty" doc:"Whose seats; omitted means the actor's own"`
+	DelegateID int64  `json:"delegate_id"`
+	StartsOn   string `json:"starts_on" format:"date"`
+	EndsOn     string `json:"ends_on" format:"date"`
+}
+
 var (
 	// The instance is no longer open, or its current step is not the one acted on.
 	ErrClosed     = &platform.Error{Status: http.StatusConflict, Code: "approval_closed"}
@@ -163,4 +184,9 @@ func errNoApprover(step int32) error {
 // errInvalidRule names the offending flow element by path ("" for the rule itself).
 func errInvalidRule(path, reason string) error {
 	return &platform.Error{Status: http.StatusUnprocessableEntity, Code: "invalid_rule", Params: map[string]any{"path": path, "reason": reason}}
+}
+
+// ErrInvalidDelegation says why a delegation was refused: self, dates, past or overlap.
+func ErrInvalidDelegation(reason string) *platform.Error {
+	return &platform.Error{Status: http.StatusUnprocessableEntity, Code: "invalid_delegation", Params: map[string]any{"reason": reason}}
 }
