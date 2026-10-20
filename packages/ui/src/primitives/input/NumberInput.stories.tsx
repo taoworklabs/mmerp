@@ -55,6 +55,14 @@ export const Required: Story = {
 export const Error: Story = {
   args: { value: null, error: 'Quantity must be positive' },
   render: (args) => <Controlled {...args} />,
+  play: async ({ canvasElement }) => {
+    const input = within(canvasElement).getByRole('textbox', { name: 'Quantity' })
+    expect(input).toHaveAttribute('aria-invalid', 'true')
+    const describedBy = input.getAttribute('aria-describedby')
+    expect(describedBy).toBeTruthy()
+    const errorText = canvasElement.querySelector(`#${describedBy}`)
+    expect(errorText).toHaveTextContent('Quantity must be positive')
+  },
 }
 
 export const Disabled: Story = {

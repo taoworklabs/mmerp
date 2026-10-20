@@ -50,6 +50,22 @@ export const Required: Story = {
 export const Error: Story = {
   args: { value: null, error: 'A file is required' },
   render: (args) => <Controlled {...args} />,
+  play: async ({ canvasElement }) => {
+    const trigger = within(canvasElement).getByRole('button', { name: 'Attachment' })
+    expect(trigger).toHaveAttribute('aria-invalid', 'true')
+    const describedBy = trigger.getAttribute('aria-describedby')
+    expect(describedBy).toBeTruthy()
+    const errorText = canvasElement.querySelector(`#${describedBy}`)
+    expect(errorText).toHaveTextContent('A file is required')
+  },
+}
+
+export const WithAriaLabel: Story = {
+  args: { value: null, label: undefined, 'aria-label': 'Attachment file' },
+  render: (args) => <Controlled {...args} />,
+  play: async ({ canvasElement }) => {
+    expect(within(canvasElement).getByRole('button', { name: 'Attachment file' })).toBeInTheDocument()
+  },
 }
 
 export const Disabled: Story = {

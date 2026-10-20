@@ -1,5 +1,7 @@
 import { NumberField } from '@base-ui/react/number-field'
 import type * as React from 'react'
+import { useId } from 'react'
+import { cx } from '../../internal/cx.ts'
 import { Field, type FieldProps } from './Field.tsx'
 import styles from './NumberInput.module.css'
 
@@ -32,8 +34,22 @@ export function NumberInput({
   className,
   ...props
 }: NumberInputProps) {
+  // NumberField.Input never registers description ids with Field, so the describedby link is wired by hand.
+  const descriptionId = useId()
+  const errorId = useId()
+  const describedBy = cx(description !== undefined && descriptionId, error !== undefined && errorId) || undefined
   return (
-    <Field label={label} description={description} error={error} required={required} disabled={disabled} readOnly={readOnly} className={className}>
+    <Field
+      label={label}
+      description={description}
+      error={error}
+      required={required}
+      disabled={disabled}
+      readOnly={readOnly}
+      className={className}
+      descriptionId={descriptionId}
+      errorId={errorId}
+    >
       {/* No Increment/Decrement parts rendered: arrow-key stepping on the input is Base UI's native behaviour. */}
       <NumberField.Root
         value={value}
@@ -46,11 +62,17 @@ export function NumberInput({
         disabled={disabled}
         readOnly={readOnly}
         className={styles.wrapper}
+        data-mmerp-control=""
         data-error={error ? '' : undefined}
         data-disabled={disabled ? '' : undefined}
         {...props}
       >
-        <NumberField.Input data-mmerp-control="" placeholder={placeholder} className={styles.input} />
+        <NumberField.Input
+          placeholder={placeholder}
+          className={styles.input}
+          aria-describedby={describedBy}
+          aria-invalid={error ? true : undefined}
+        />
       </NumberField.Root>
     </Field>
   )

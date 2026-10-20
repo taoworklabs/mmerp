@@ -14,6 +14,10 @@ export interface FieldProps {
 
 interface FieldComponentProps extends FieldProps, Omit<React.ComponentPropsWithRef<'div'>, 'children'> {
   children: React.ReactNode
+  // Lets a control that Base UI doesn't auto-wire (NumberField.Input, a custom trigger) point its
+  // own `aria-describedby` at these, instead of the id Base UI would otherwise generate internally.
+  descriptionId?: string
+  errorId?: string
 }
 
 export function Field({
@@ -25,6 +29,8 @@ export function Field({
   readOnly,
   className,
   children,
+  descriptionId,
+  errorId,
   ...props
 }: FieldComponentProps) {
   return (
@@ -46,10 +52,14 @@ export function Field({
         </BaseField.Label>
       )}
       {children}
-      {description !== undefined && <BaseField.Description className={styles.description}>{description}</BaseField.Description>}
+      {description !== undefined && (
+        <BaseField.Description id={descriptionId} className={styles.description}>
+          {description}
+        </BaseField.Description>
+      )}
       {error !== undefined && (
         // `match` forces the message to render from our own `error` prop instead of native validity.
-        <BaseField.Error match className={styles.error}>
+        <BaseField.Error id={errorId} match className={styles.error}>
           {error}
         </BaseField.Error>
       )}

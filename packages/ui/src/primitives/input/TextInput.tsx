@@ -23,10 +23,14 @@ export function TextInput({
 }: TextInputProps) {
   return (
     <Field label={label} description={description} error={error} required={required} disabled={disabled} readOnly={readOnly} className={className}>
-      <div className={styles.wrapper} data-error={error ? '' : undefined} data-disabled={disabled ? '' : undefined}>
+      <div
+        className={styles.wrapper}
+        data-mmerp-control=""
+        data-error={error ? '' : undefined}
+        data-disabled={disabled ? '' : undefined}
+      >
         {leftSection && <span className={styles.section}>{leftSection}</span>}
         <BaseInput
-          data-mmerp-control=""
           disabled={disabled}
           readOnly={readOnly}
           className={styles.input}

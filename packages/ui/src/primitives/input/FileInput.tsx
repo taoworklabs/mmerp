@@ -1,12 +1,12 @@
 import type * as React from 'react'
-import { useRef } from 'react'
+import { useId, useRef } from 'react'
 import { cx } from '../../internal/cx.ts'
 import { VisuallyHidden } from '../layout/VisuallyHidden.tsx'
 import { ActionIcon } from './ActionIcon.tsx'
 import { Field, type FieldProps } from './Field.tsx'
 import styles from './FileInput.module.css'
 
-export interface FileInputProps extends FieldProps, Omit<React.ComponentPropsWithRef<'div'>, 'children' | 'onChange' | 'value'> {
+export interface FileInputProps extends FieldProps, Omit<React.ComponentPropsWithRef<'button'>, 'children' | 'onChange' | 'value' | 'type'> {
   value: File | null
   onChange(file: File | null): void
   accept?: string
@@ -27,25 +27,46 @@ export function FileInput({
   placeholder,
   clearLabel,
   className,
+  onClick,
   ...props
 }: FileInputProps) {
   const inputRef = useRef<HTMLInputElement>(null)
   const visibleText = value ? value.name : placeholder
+  // The trigger isn't a Field control, so Base UI never links it to the description/error text itself.
+  const descriptionId = useId()
+  const errorId = useId()
+  const describedBy = cx(description !== undefined && descriptionId, error !== undefined && errorId) || undefined
+  const hasOwnName = props['aria-label'] !== undefined || props['aria-labelledby'] !== undefined
   return (
-    <Field label={label} description={description} error={error} required={required} disabled={disabled} readOnly={readOnly} className={className}>
-      <div className={styles.wrapper} data-error={error ? '' : undefined} data-disabled={disabled ? '' : undefined} {...props}>
+    <Field
+      label={label}
+      description={description}
+      error={error}
+      required={required}
+      disabled={disabled}
+      readOnly={readOnly}
+      className={className}
+      descriptionId={descriptionId}
+      errorId={errorId}
+    >
+      <div className={styles.wrapper} data-mmerp-control="" data-error={error ? '' : undefined} data-disabled={disabled ? '' : undefined}>
         <button
+          {...props}
           type="button"
-          data-mmerp-control=""
           className={styles.trigger}
           disabled={disabled || readOnly}
-          onClick={() => inputRef.current?.click()}
+          aria-describedby={describedBy}
+          aria-invalid={error ? true : undefined}
+          onClick={(event) => {
+            onClick?.(event)
+            inputRef.current?.click()
+          }}
         >
-          {/* No visible text yet: fall back to the field's own label so the trigger still names itself. */}
+          {/* No visible text and no caller-supplied name: fall back to the field's own label. */}
           {visibleText ? (
             <span className={cx(styles.fileName, !value && styles.placeholder)}>{visibleText}</span>
           ) : (
-            label !== undefined && <VisuallyHidden>{label}</VisuallyHidden>
+            !hasOwnName && label !== undefined && <VisuallyHidden>{label}</VisuallyHidden>
           )}
         </button>
         {value && (
