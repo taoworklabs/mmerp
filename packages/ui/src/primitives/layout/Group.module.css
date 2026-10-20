@@ -1,0 +1,13 @@
+.root {
+  display: flex;
+  flex-direction: row;
+  column-gap: var(--mmerp-gap);
+}
+
+.root[data-wrap] {
+  flex-wrap: wrap;
+}
+
+.root[data-grow] > * {
+  flex: 1 1 0%;
+}

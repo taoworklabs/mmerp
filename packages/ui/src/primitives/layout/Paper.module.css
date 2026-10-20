@@ -1,0 +1,17 @@
+.root {
+  background-color: var(--mmerp-color-elevation-surface);
+  border-radius: var(--mmerp-radius-md);
+  padding: var(--mmerp-padding);
+}
+
+.root[data-with-border] {
+  border: 1px solid var(--mmerp-color-border);
+}
+
+.root[data-shadow='xs'] {
+  box-shadow: var(--mmerp-shadow-xs);
+}
+
+.root[data-shadow='sm'] {
+  box-shadow: var(--mmerp-shadow-sm);
+}
