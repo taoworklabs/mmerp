@@ -1,6 +1,7 @@
 import { Dialog as BaseDialog } from '@base-ui/react/dialog'
 import type * as React from 'react'
 import { cx } from '../../internal/cx.ts'
+import { CloseIcon } from '../../internal/icons.tsx'
 import { ActionIcon } from '../input/ActionIcon.tsx'
 import styles from './Dialog.module.css'
 
@@ -16,14 +17,6 @@ export interface DialogProps extends Omit<React.ComponentPropsWithRef<'div'>, 'c
   closeLabel: string
   withCloseButton?: boolean
   children: React.ReactNode
-}
-
-function CloseIcon() {
-  return (
-    <svg width="12" height="12" viewBox="0 0 10 10" aria-hidden="true">
-      <path d="M1 1 9 9M9 1 1 9" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
-    </svg>
-  )
 }
 
 export function Dialog({
@@ -53,7 +46,7 @@ export function Dialog({
             <BaseDialog.Title className={styles.title}>{title}</BaseDialog.Title>
             {withCloseButton && (
               <ActionIcon variant="subtle" color="gray" aria-label={closeLabel} onClick={onClose}>
-                <CloseIcon />
+                <CloseIcon size={12} />
               </ActionIcon>
             )}
           </div>

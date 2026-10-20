@@ -1,13 +1,13 @@
 import type * as React from 'react'
 import { useId, useRef, useState } from 'react'
+import { ClearButton } from '../../internal/ClearButton.tsx'
 import { cx } from '../../internal/cx.ts'
+import { mergeRefs } from '../../internal/mergeRefs.ts'
 import { VisuallyHidden } from '../layout/VisuallyHidden.tsx'
-import { ActionIcon } from '../input/ActionIcon.tsx'
 import { Field, type FieldProps } from '../input/Field.tsx'
 import textInputStyles from '../input/TextInput.module.css'
 import { Popover } from '../overlay/Popover.tsx'
 import type { CalendarLocale } from './calendarGrid.ts'
-import { ClearIcon } from './DateInput.tsx'
 import { MonthPicker } from './MonthPicker.tsx'
 import styles from './MonthPickerInput.module.css'
 
@@ -44,9 +44,11 @@ export function MonthPickerInput({
   clearable,
   clearLabel,
   className,
+  ref,
   ...props
 }: MonthPickerInputProps) {
   const boxRef = useRef<HTMLDivElement>(null)
+  const triggerRef = useRef<HTMLButtonElement>(null)
   const pickerRef = useRef<HTMLDivElement>(null)
   const [open, setOpen] = useState(false)
   // The trigger isn't a Field control, so Base UI never links it to the description/error text itself.
@@ -72,6 +74,7 @@ export function MonthPickerInput({
         <Popover.Root open={open && interactive} onOpenChange={setOpen}>
           <Popover.Trigger
             {...props}
+            ref={mergeRefs(triggerRef, ref)}
             className={styles.trigger}
             disabled={!interactive}
             aria-describedby={describedBy}
@@ -101,10 +104,8 @@ export function MonthPickerInput({
             />
           </Popover.Popup>
         </Popover.Root>
-        {clearable && value !== null && interactive && (
-          <ActionIcon variant="subtle" color="gray" size="xs" aria-label={clearLabel} onClick={() => onChange(null)}>
-            <ClearIcon />
-          </ActionIcon>
+        {clearable && value !== null && (
+          <ClearButton label={clearLabel} onClear={() => onChange(null)} focusTarget={triggerRef} disabled={disabled} readOnly={readOnly} />
         )}
       </div>
     </Field>

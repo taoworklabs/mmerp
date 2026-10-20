@@ -69,13 +69,19 @@ export const WithAriaLabel: Story = {
 }
 
 export const Disabled: Story = {
-  args: { value: null, disabled: true },
+  args: { value: new File(['content'], 'report.pdf', { type: 'application/pdf' }), disabled: true },
   render: (args) => <Controlled {...args} />,
+  play: async ({ canvasElement }) => {
+    expect(within(canvasElement).queryByRole('button', { name: 'Clear' })).not.toBeInTheDocument()
+  },
 }
 
 export const ReadOnly: Story = {
-  args: { value: null, readOnly: true },
+  args: { value: new File(['content'], 'report.pdf', { type: 'application/pdf' }), readOnly: true },
   render: (args) => <Controlled {...args} />,
+  play: async ({ canvasElement }) => {
+    expect(within(canvasElement).queryByRole('button', { name: 'Clear' })).not.toBeInTheDocument()
+  },
 }
 
 export const Filled: Story = {
@@ -89,7 +95,7 @@ export const Filled: Story = {
 export const UploadAndClear: Story = {
   args: { value: null },
   render: (args) => <Controlled {...args} />,
-  play: async ({ canvasElement }) => {
+  play: async ({ canvasElement, args }) => {
     const file = new File(['content'], 'photo.png', { type: 'image/png' })
     const input = canvasElement.querySelector<HTMLInputElement>('input[type="file"]')
     if (!input) throw new TypeError('file input not found')
@@ -99,5 +105,10 @@ export const UploadAndClear: Story = {
     const clear = within(canvasElement).getByRole('button', { name: 'Clear' })
     await userEvent.click(clear)
     expect(within(canvasElement).queryByText('photo.png')).not.toBeInTheDocument()
+    expect(within(canvasElement).getByRole('button', { name: 'Attachment' })).toHaveFocus()
+
+    // The same file again must still register as a change.
+    await userEvent.upload(input, file)
+    expect(args.onChange).toHaveBeenLastCalledWith(file)
   },
 }

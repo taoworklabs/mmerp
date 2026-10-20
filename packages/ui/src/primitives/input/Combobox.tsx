@@ -1,7 +1,9 @@
 import { Combobox as BaseCombobox } from '@base-ui/react/combobox'
 import type * as React from 'react'
-import { useEffect, useId, useState } from 'react'
+import { useId, useRef, useState } from 'react'
+import { ClearButton } from '../../internal/ClearButton.tsx'
 import { cx } from '../../internal/cx.ts'
+import { mergeRefs } from '../../internal/mergeRefs.ts'
 import { Loader } from '../feedback/Loader.tsx'
 import { Field, type FieldProps } from './Field.tsx'
 import { matchesQuery } from './matchesQuery.ts'
@@ -29,14 +31,6 @@ function defaultFilter(item: SelectItem, query: string) {
   return matchesQuery(item.label, query)
 }
 
-function ClearIcon() {
-  return (
-    <svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true">
-      <path d="M1 1 9 9M9 1 1 9" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
-    </svg>
-  )
-}
-
 export function Combobox({
   label,
   description,
@@ -59,16 +53,20 @@ export function Combobox({
   style,
   onKeyDown,
   onBlur,
+  ref,
   ...props
 }: ComboboxProps) {
+  const inputRef = useRef<HTMLInputElement>(null)
   const selectedLabel = data.find((item) => item.value === value)?.label ?? ''
   const [query, setQuery] = useState(selectedLabel)
-
-  // The current value's label is the source of truth for the text whenever selection settles
-  // (a fresh value from outside, or our own revert-on-escape/blur below).
-  useEffect(() => {
+  const [open, setOpen] = useState(false)
+  const [synced, setSynced] = useState({ value, label: selectedLabel })
+  // The text follows the value's label when the value changes, or when the label does while the
+  // user isn't searching: remote results that drop the selected item must not wipe typed text.
+  if (value !== synced.value || (!open && selectedLabel !== synced.label)) {
+    setSynced({ value, label: selectedLabel })
     setQuery(selectedLabel)
-  }, [selectedLabel])
+  }
 
   const descriptionId = useId()
   const errorId = useId()
@@ -99,6 +97,7 @@ export function Combobox({
         // Base UI can't resolve a plain string value back to its label on its own; this is
         // what it uses internally to restore the input text once the popup closes.
         itemToStringLabel={(itemValue) => data.find((item) => item.value === itemValue)?.label ?? ''}
+        onOpenChange={(next) => setOpen(next)}
         disabled={disabled}
         readOnly={readOnly}
       >
@@ -129,16 +128,25 @@ export function Combobox({
               setQuery(selectedLabel)
             }}
             {...props}
+            ref={mergeRefs(inputRef, ref)}
           />
           {loading && (
             <span className={textInputStyles.section} aria-hidden="true">
               <Loader size="xs" label="" />
             </span>
           )}
-          {clearable && (
-            <BaseCombobox.Clear className={textInputStyles.section} aria-label={clearLabel}>
-              <ClearIcon />
-            </BaseCombobox.Clear>
+          {clearable && value !== null && (
+            <ClearButton
+              label={clearLabel}
+              onClear={() => {
+                setQuery('')
+                onSearchChange?.('')
+                onChange(null)
+              }}
+              focusTarget={inputRef}
+              disabled={disabled}
+              readOnly={readOnly}
+            />
           )}
         </BaseCombobox.InputGroup>
         <BaseCombobox.Portal>

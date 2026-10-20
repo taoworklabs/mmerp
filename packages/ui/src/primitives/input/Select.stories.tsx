@@ -47,13 +47,19 @@ export const WithValue: Story = {
 }
 
 export const Disabled: Story = {
-  args: { value: 'a', disabled: true },
+  args: { value: 'a', disabled: true, clearable: true, clearLabel: 'Clear selection' },
   render: (args) => <Controlled {...args} />,
+  play: async ({ canvasElement }) => {
+    expect(within(canvasElement).queryByRole('button', { name: 'Clear selection' })).not.toBeInTheDocument()
+  },
 }
 
 export const ReadOnly: Story = {
-  args: { value: 'a', readOnly: true },
+  args: { value: 'a', readOnly: true, clearable: true, clearLabel: 'Clear selection' },
   render: (args) => <Controlled {...args} />,
+  play: async ({ canvasElement }) => {
+    expect(within(canvasElement).queryByRole('button', { name: 'Clear selection' })).not.toBeInTheDocument()
+  },
 }
 
 export const Error: Story = {
@@ -82,6 +88,8 @@ export const Clearable: Story = {
     await userEvent.click(clearButton)
     expect(args.onChange).toHaveBeenCalledWith(null)
     expect(trigger).toHaveAttribute('aria-expanded', 'false')
+    // The button vanishes with the value; focus must not fall back to the page.
+    expect(trigger).toHaveFocus()
   },
 }
 

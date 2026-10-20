@@ -45,13 +45,19 @@ export const WithValue: Story = {
 }
 
 export const Disabled: Story = {
-  args: { value: 'a', disabled: true },
+  args: { value: 'a', disabled: true, clearable: true, clearLabel: 'Clear selection' },
   render: (args) => <Controlled {...args} />,
+  play: async ({ canvasElement }) => {
+    expect(within(canvasElement).queryByRole('button', { name: 'Clear selection' })).not.toBeInTheDocument()
+  },
 }
 
 export const ReadOnly: Story = {
-  args: { value: 'a', readOnly: true },
+  args: { value: 'a', readOnly: true, clearable: true, clearLabel: 'Clear selection' },
   render: (args) => <Controlled {...args} />,
+  play: async ({ canvasElement }) => {
+    expect(within(canvasElement).queryByRole('button', { name: 'Clear selection' })).not.toBeInTheDocument()
+  },
 }
 
 export const Error: Story = {
@@ -62,6 +68,45 @@ export const Error: Story = {
 export const Clearable: Story = {
   args: { value: 'a', clearable: true, clearLabel: 'Clear selection' },
   render: (args) => <Controlled {...args} />,
+  play: async ({ canvasElement, args }) => {
+    const canvas = within(canvasElement)
+    const input = canvas.getByRole('combobox', { name: 'Assignee' })
+    const clear = canvas.getByRole('button', { name: 'Clear selection' })
+    // A control, so it grows to the touch target on small screens.
+    expect(clear).toHaveAttribute('data-mmerp-control')
+    await userEvent.click(clear)
+    expect(args.onChange).toHaveBeenCalledWith(null)
+    expect(input).toHaveValue('')
+    expect(input).toHaveFocus()
+  },
+}
+
+// Remote search: the caller swaps `data` for the results, which may not contain the current value.
+function RemoteResults(props: ComboboxProps) {
+  const [value, setValue] = useState(props.value)
+  const [items, setItems] = useState(props.data)
+  return (
+    <Combobox
+      {...props}
+      data={items}
+      value={value}
+      onChange={setValue}
+      onSearchChange={(query) => setItems(query === 'ng' ? data.filter((item) => item.value !== 'a') : data)}
+    />
+  )
+}
+
+export const RemoteResultsDropSelection: Story = {
+  args: { value: 'a' },
+  render: (args) => <RemoteResults {...args} />,
+  play: async ({ canvasElement }) => {
+    const input = within(canvasElement).getByRole('combobox', { name: 'Assignee' })
+    expect(input).toHaveValue('Nguyễn Văn A')
+    // Replace the selected label by typing over it, as a user starting a new search would.
+    await userEvent.tripleClick(input)
+    await userEvent.keyboard('ng')
+    expect(input).toHaveValue('ng')
+  },
 }
 
 export const TypingMatches: Story = {

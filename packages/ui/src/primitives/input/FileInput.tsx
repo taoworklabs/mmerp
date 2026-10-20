@@ -1,8 +1,9 @@
 import type * as React from 'react'
 import { useId, useRef } from 'react'
+import { ClearButton } from '../../internal/ClearButton.tsx'
 import { cx } from '../../internal/cx.ts'
+import { mergeRefs } from '../../internal/mergeRefs.ts'
 import { VisuallyHidden } from '../layout/VisuallyHidden.tsx'
-import { ActionIcon } from './ActionIcon.tsx'
 import { Field, type FieldProps } from './Field.tsx'
 import styles from './FileInput.module.css'
 
@@ -28,9 +29,11 @@ export function FileInput({
   clearLabel,
   className,
   onClick,
+  ref,
   ...props
 }: FileInputProps) {
   const inputRef = useRef<HTMLInputElement>(null)
+  const triggerRef = useRef<HTMLButtonElement>(null)
   const visibleText = value ? value.name : placeholder
   // The trigger isn't a Field control, so Base UI never links it to the description/error text itself.
   const descriptionId = useId()
@@ -52,6 +55,7 @@ export function FileInput({
       <div className={styles.wrapper} data-mmerp-control="" data-error={error ? '' : undefined} data-disabled={disabled ? '' : undefined}>
         <button
           {...props}
+          ref={mergeRefs(triggerRef, ref)}
           type="button"
           className={styles.trigger}
           disabled={disabled || readOnly}
@@ -69,20 +73,18 @@ export function FileInput({
             !hasOwnName && label !== undefined && <VisuallyHidden>{label}</VisuallyHidden>
           )}
         </button>
-        {value && (
-          <ActionIcon variant="subtle" color="gray" size="xs" disabled={disabled} aria-label={clearLabel} onClick={() => onChange(null)}>
-            <svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true">
-              <path d="M1 1 9 9M9 1 1 9" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
-            </svg>
-          </ActionIcon>
-        )}
+        {value && <ClearButton label={clearLabel} onClear={() => onChange(null)} focusTarget={triggerRef} disabled={disabled} readOnly={readOnly} />}
         <input
           ref={inputRef}
           type="file"
           accept={accept}
           disabled={disabled || readOnly}
           className={styles.hiddenInput}
-          onChange={(event) => onChange(event.target.files?.[0] ?? null)}
+          onChange={(event) => {
+            onChange(event.target.files?.[0] ?? null)
+            // An emptied input fires change again when the same file is picked after a clear.
+            event.target.value = ''
+          }}
         />
       </div>
     </Field>

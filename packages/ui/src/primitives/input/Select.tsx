@@ -1,8 +1,9 @@
 import { Select as BaseSelect } from '@base-ui/react/select'
 import type * as React from 'react'
-import { useId } from 'react'
+import { useId, useRef } from 'react'
+import { ClearButton } from '../../internal/ClearButton.tsx'
 import { cx } from '../../internal/cx.ts'
-import { ActionIcon } from './ActionIcon.tsx'
+import { mergeRefs } from '../../internal/mergeRefs.ts'
 import { Field, type FieldProps } from './Field.tsx'
 import optionStyles from './options.module.css'
 import textInputStyles from './TextInput.module.css'
@@ -52,14 +53,6 @@ function ChevronIcon() {
   )
 }
 
-function ClearIcon() {
-  return (
-    <svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true">
-      <path d="M1 1 9 9M9 1 1 9" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
-    </svg>
-  )
-}
-
 export function Select({
   label,
   description,
@@ -75,8 +68,10 @@ export function Select({
   clearLabel,
   className,
   style,
+  ref,
   ...props
 }: SelectProps) {
+  const triggerRef = useRef<HTMLButtonElement>(null)
   // The trigger isn't a Field control, so Base UI never links it to the description/error text itself.
   const descriptionId = useId()
   const errorId = useId()
@@ -98,6 +93,7 @@ export function Select({
       <div className={textInputStyles.wrapper} data-mmerp-control="" data-error={error ? '' : undefined} data-disabled={disabled ? '' : undefined}>
         <BaseSelect.Root<string> items={data} value={value} onValueChange={onChange} disabled={disabled} readOnly={readOnly}>
           <BaseSelect.Trigger
+            ref={mergeRefs(triggerRef, ref)}
             className={textInputStyles.input}
             style={{ ...triggerStyle, ...style }}
             aria-describedby={describedBy}
@@ -125,9 +121,7 @@ export function Select({
           </BaseSelect.Portal>
         </BaseSelect.Root>
         {clearable && value !== null && (
-          <ActionIcon variant="subtle" color="gray" size="xs" aria-label={clearLabel} onClick={() => onChange(null)}>
-            <ClearIcon />
-          </ActionIcon>
+          <ClearButton label={clearLabel} onClear={() => onChange(null)} focusTarget={triggerRef} disabled={disabled} readOnly={readOnly} />
         )}
       </div>
     </Field>

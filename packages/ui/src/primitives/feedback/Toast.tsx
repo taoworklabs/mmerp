@@ -4,6 +4,7 @@ import type { StyleVars } from '../../internal/style.ts'
 import { ActionIcon } from '../input/ActionIcon.tsx'
 import { Button } from '../input/Button.tsx'
 import styles from './Toast.module.css'
+import { CloseIcon } from '../../internal/icons.tsx'
 
 export type ToastColor = 'success' | 'danger' | 'info' | 'warning'
 
@@ -41,14 +42,6 @@ export interface ToasterProps {
   closeLabel: string
 }
 
-function CloseIcon() {
-  return (
-    <svg width="12" height="12" viewBox="0 0 10 10" aria-hidden="true">
-      <path d="M1 1 9 9M9 1 1 9" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
-    </svg>
-  )
-}
-
 function ToastList({ closeLabel }: { closeLabel: string }) {
   const { toasts, close } = BaseToast.useToastManager<ToastData>()
   return toasts.map((item) => {
@@ -78,7 +71,7 @@ function ToastList({ closeLabel }: { closeLabel: string }) {
           </Button>
         )}
         <ActionIcon variant="subtle" color="gray" aria-label={closeLabel} onClick={() => close(item.id)}>
-          <CloseIcon />
+          <CloseIcon size={12} />
         </ActionIcon>
       </BaseToast.Root>
     )

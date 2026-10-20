@@ -1,6 +1,7 @@
 import { Drawer as BaseDrawer } from '@base-ui/react/drawer'
 import type * as React from 'react'
 import { cx } from '../../internal/cx.ts'
+import { CloseIcon } from '../../internal/icons.tsx'
 import { ActionIcon } from '../input/ActionIcon.tsx'
 import styles from './Drawer.module.css'
 
@@ -14,14 +15,6 @@ export interface DrawerProps extends Omit<React.ComponentPropsWithRef<'div'>, 'c
   size?: number | string
   closeLabel: string
   children: React.ReactNode
-}
-
-function CloseIcon() {
-  return (
-    <svg width="12" height="12" viewBox="0 0 10 10" aria-hidden="true">
-      <path d="M1 1 9 9M9 1 1 9" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
-    </svg>
-  )
 }
 
 export function Drawer({
@@ -57,7 +50,7 @@ export function Drawer({
             <div className={styles.header}>
               <BaseDrawer.Title className={styles.title}>{title}</BaseDrawer.Title>
               <ActionIcon variant="subtle" color="gray" aria-label={closeLabel} onClick={onClose}>
-                <CloseIcon />
+                <CloseIcon size={12} />
               </ActionIcon>
             </div>
             <div className={styles.body}>{children}</div>

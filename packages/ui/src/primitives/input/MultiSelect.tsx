@@ -2,6 +2,7 @@ import { Combobox as BaseCombobox } from '@base-ui/react/combobox'
 import type * as React from 'react'
 import { useId } from 'react'
 import { cx } from '../../internal/cx.ts'
+import { CloseIcon } from '../../internal/icons.tsx'
 import { Field, type FieldProps } from './Field.tsx'
 import { matchesQuery } from './matchesQuery.ts'
 import optionStyles from './options.module.css'
@@ -19,14 +20,6 @@ export interface MultiSelectProps extends FieldProps, Omit<React.ComponentPropsW
 
 function filterByLabel(item: SelectItem, query: string) {
   return matchesQuery(item.label, query)
-}
-
-function ClearIcon() {
-  return (
-    <svg width="8" height="8" viewBox="0 0 10 10" aria-hidden="true">
-      <path d="M1 1 9 9M9 1 1 9" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
-    </svg>
-  )
 }
 
 const wrapperStyle: React.CSSProperties = {
@@ -106,7 +99,7 @@ export function MultiSelect({
                 <BaseCombobox.Chip key={itemValue} style={chipStyle} aria-readonly={undefined}>
                   {item.label}
                   <BaseCombobox.ChipRemove aria-label={removeLabel(item.label)}>
-                    <ClearIcon />
+                    <CloseIcon size={8} />
                   </BaseCombobox.ChipRemove>
                 </BaseCombobox.Chip>
               )

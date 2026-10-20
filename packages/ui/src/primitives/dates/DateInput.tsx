@@ -1,6 +1,7 @@
 import type * as React from 'react'
 import { useRef, useState } from 'react'
-import { ActionIcon } from '../input/ActionIcon.tsx'
+import { ClearButton } from '../../internal/ClearButton.tsx'
+import { mergeRefs } from '../../internal/mergeRefs.ts'
 import type { FieldProps } from '../input/Field.tsx'
 import { TextInput } from '../input/TextInput.tsx'
 import { Popover } from '../overlay/Popover.tsx'
@@ -23,14 +24,6 @@ export type DateInputProps = FieldProps &
     placeholder?: string
     leftSection?: React.ReactNode
   }
-
-export function ClearIcon() {
-  return (
-    <svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true">
-      <path d="M1 1 9 9M9 1 1 9" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
-    </svg>
-  )
-}
 
 export function DateInput({
   value,
@@ -89,17 +82,11 @@ export function DateInput({
     setText(shown)
   }
 
-  const setRefs = (node: HTMLInputElement | null) => {
-    inputRef.current = node
-    if (typeof ref === 'function') ref(node)
-    else if (ref) ref.current = node
-  }
-
   return (
     <>
       <TextInput
         {...props}
-        ref={setRefs}
+        ref={mergeRefs(inputRef, ref)}
         value={text}
         disabled={disabled}
         readOnly={readOnly}
@@ -123,22 +110,18 @@ export function DateInput({
           commit()
         }}
         rightSection={
+          // Gated here too: an element, even one rendering nothing, would leave an empty section box.
           clearable &&
           value !== null &&
           interactive && (
-            <ActionIcon
-              variant="subtle"
-              color="gray"
-              size="xs"
-              aria-label={clearLabel}
-              onClick={() => {
+            <ClearButton
+              label={clearLabel}
+              onClear={() => {
                 setText('')
                 onChange(null)
-                inputRef.current?.focus()
               }}
-            >
-              <ClearIcon />
-            </ActionIcon>
+              focusTarget={inputRef}
+            />
           )
         }
       />

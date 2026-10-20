@@ -86,6 +86,7 @@ export const Clearable: Story = {
     await userEvent.click(canvas.getByRole('button', { name: 'Xóa' }))
     expect(args.onChange).toHaveBeenCalledWith(null)
     expect(canvas.getByRole('button', { name: /Kỳ lương/ })).toHaveTextContent('mm/yyyy')
+    expect(canvas.getByRole('button', { name: /Kỳ lương/ })).toHaveFocus()
   },
 }
 
