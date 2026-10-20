@@ -168,6 +168,8 @@ The planted fixtures in `web/lint-fixtures` and their `expected.json` get a case
 
 ### Phase 1: build `@mmerp/ui` in isolation (owner's choice, 2026-10-20)
 
+Phase 1 built on 2026-10-20; see packages/ui.
+
 The package is finished before anything in the app changes. Ongoing work in `web/` is not affected.
 
 - Everything lives under `packages/ui`: its own `package.json` and lockfile, `tsconfig`, Vitest, ESLint config (including `i18next/no-literal-string` and a ban on `@mantine/*`), and a colour-literal check limited to tokens and primitive CSS modules.
