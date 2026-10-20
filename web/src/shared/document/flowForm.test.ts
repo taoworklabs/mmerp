@@ -1,6 +1,6 @@
-import type { Flow } from '@/shared/api/core'
+import type { Flow, TypeRule } from '@/shared/api/core'
 import { describe, expect, it } from 'vitest'
-import { flowSummary, formPathOf, fromFlowValues, newSplit, newStep, toFlowValues, type ElementValues } from './flowForm'
+import { flowSummary, formPathOf, fromFlowValues, newSplit, newStep, parentOf, selectionKind, toFlowValues, toRuleInput, toRuleValues, type ElementValues } from './flowForm'
 
 const nested: Flow = [
   { step: { approver: { kind: 'user', user_ids: [3, 4] }, approvals: 2, rejections: 1 } },
@@ -143,5 +143,44 @@ describe('flowSummary', () => {
   it('summarises flows', () => {
     expect(flowSummary(nested)).toEqual({ steps: 4, branched: true })
     expect(flowSummary([{ step: { approver: { kind: 'module' }, approvals: 1, rejections: 1 } }])).toEqual({ steps: 1, branched: false })
+  })
+})
+
+const typeRule: TypeRule = {
+  action: 'post',
+  allowed_actions: ['save'],
+  doc_type: 'hrm.leave_request',
+  fields: [],
+  module_approvers: true,
+  product: 'hrm',
+  rule: { flow: nested, max_levels: 3, fallback_product: 'hrm', fallback_role: 'hr' },
+}
+
+describe('rule values', () => {
+  it('a type without a rule opens with an empty flow', () => {
+    expect(toRuleValues({ ...typeRule, rule: undefined })).toEqual({ flow: [], max_levels: '3', fallback: null })
+  })
+
+  it('round-trips a rule through values', () => {
+    expect(toRuleInput(toRuleValues(typeRule))).toEqual(typeRule.rule)
+  })
+})
+
+describe('selectionKind', () => {
+  it('names what a selection points at', () => {
+    const v = toRuleValues(typeRule)
+    expect(selectionKind('flow.0', v)).toBe('step')
+    expect(selectionKind('flow.1', v)).toBe('split')
+    expect(selectionKind('flow.1.branches.0', v)).toBe('branch')
+    expect(selectionKind('flow.1.otherwise', v)).toBe('otherwise')
+    expect(selectionKind('flow.1.branches.0.body.0.branches.1.body.0', v)).toBe('step')
+    expect(selectionKind('settings', v)).toBe('settings')
+    expect(selectionKind('flow.9', v)).toBeNull()
+    expect(selectionKind('flow.1.branches.4', v)).toBeNull()
+  })
+
+  it('splits a path into its array and index', () => {
+    expect(parentOf('flow.1.branches.0')).toEqual(['flow.1.branches', 0])
+    expect(parentOf('flow.2')).toEqual(['flow', 2])
   })
 })

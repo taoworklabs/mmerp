@@ -6,7 +6,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { useTranslation } from 'react-i18next'
 import { Route, Routes, useNavigate, useParams } from 'react-router'
-import { api, unwrap, type Role, type RuleInput, type TypeRule } from '@/shared/api/core'
+import { api, unwrap, type Role, type TypeRule } from '@/shared/api/core'
 import { ApiError } from '@/shared/api/error'
 import { errorText } from '@/shared/i18n'
 import { DataTable, type Column } from '@/shared/ui/DataTable'
@@ -20,7 +20,7 @@ import { icon } from '@/shared/ui/theme'
 import { actionLabel } from './ApprovalPanel'
 import { documentKeys } from './keys'
 import { FlowBlock } from './flowEditor/FlowBlock'
-import { flowSummary, formPathOf, fromFlowValues, newStep, splitRole, toFlowValues, type FlowValues } from './flowForm'
+import { flowSummary, formPathOf, toRuleInput, toRuleValues, type RuleValues } from './flowForm'
 
 type Props = { product: string; basePath: string } // basePath: where the area mounts this, e.g. /hrm/approval-rules
 
@@ -88,24 +88,7 @@ function RuleList({ product, basePath }: Props) {
   )
 }
 
-type Values = { flow: FlowValues; max_levels: string; fallback: string | null }
-
 const roleValue = (r: Role) => `${r.product}.${r.role}`
-
-function toValues(r: TypeRule): Values {
-  if (!r.rule) return { flow: [newStep(r.module_approvers)], max_levels: '3', fallback: null }
-  return { flow: toFlowValues(r.rule.flow), max_levels: String(r.rule.max_levels), fallback: `${r.rule.fallback_product}.${r.rule.fallback_role}` }
-}
-
-function toInput(v: Values): RuleInput {
-  const fallback = splitRole(v.fallback ?? '')
-  return {
-    flow: fromFlowValues(v.flow),
-    max_levels: Number(v.max_levels),
-    fallback_product: fallback.product,
-    fallback_role: fallback.role,
-  }
-}
 
 // RuleEditor edits the rule of one document type's action: its approval flow, plus the fallback role.
 function RuleEditor({ product, basePath }: Props) {
@@ -134,7 +117,7 @@ function RuleForm({ rule, basePath, roles, userOptions }: { rule: TypeRule; base
   const [ask, confirm] = useConfirm()
   // A failed delete, shown at the top of the page until the next attempt.
   const [error, setError] = useState<string | null>(null)
-  const form = useForm<Values>({ mode: 'onBlur', defaultValues: toValues(rule) })
+  const form = useForm<RuleValues>({ mode: 'onBlur', defaultValues: toRuleValues(rule) })
   const name = ruleLabel(t, rule)
   const params = { path: { doc_type: rule.doc_type }, query: { action: rule.action } }
   const allowed = rule.allowed_actions
@@ -154,9 +137,9 @@ function RuleForm({ rule, basePath, roles, userOptions }: { rule: TypeRule; base
     return () => sub.unsubscribe()
   }, [form])
 
-  async function save(v: Values): Promise<void | false> {
+  async function save(v: RuleValues): Promise<void | false> {
     try {
-      await unwrap(api.PUT('/approval-rules/{doc_type}', { params, body: toInput(v) }))
+      await unwrap(api.PUT('/approval-rules/{doc_type}', { params, body: toRuleInput(v) }))
     } catch (err) {
       if (!(err instanceof ApiError) || err.code !== 'invalid_rule') throw err
       const path = String(err.params.path ?? '')
