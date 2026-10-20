@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
-import { expect, userEvent, within } from 'storybook/test'
+import { expect, userEvent, waitFor, within } from 'storybook/test'
 import { Tabs } from './Tabs.tsx'
 
 const meta: Meta<typeof Tabs> = {
@@ -43,7 +43,8 @@ export const ArrowRightSelectsNextTab: Story = {
     expect(settings).toHaveAttribute('data-active', '')
 
     expect(canvas.getByText('Settings content')).toBeVisible()
-    expect(canvas.queryByText('Profile content')).not.toBeInTheDocument()
+    // The outgoing panel unmounts only after its exit phase.
+    await waitFor(() => expect(canvas.queryByText('Profile content')).not.toBeInTheDocument())
     expect(canvas.queryByText('Billing content')).not.toBeInTheDocument()
   },
 }
