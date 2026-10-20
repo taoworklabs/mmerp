@@ -53,7 +53,8 @@ function StepPanel({ path }: { path: string }) {
   const { getValues, setValue } = useFormContext()
   const kind: string | null = useWatch({ name: `${path}.kind` })
   const users: string[] = useWatch({ name: `${path}.users` }) ?? []
-  const [advanced, setAdvanced] = useState(() => getValues(`${path}.rejections`) !== '1')
+  const approvals: unknown = useWatch({ name: `${path}.approvals` })
+  const [advanced, setAdvanced] = useState(() => String(getValues(`${path}.rejections`)) !== '1')
   const { first, last } = useSiblings(path)
   const { readOnly, rule } = ctx
   const kinds = [...(rule.module_approvers ? ['module'] : []), 'role', 'user']
@@ -75,8 +76,8 @@ function StepPanel({ path }: { path: string }) {
         />
         {kind === 'role' && <SelectField readOnly={readOnly} name={`${path}.role`} label={t('shared.rule.role')} required data={ctx.roleOptions} />}
         {kind === 'user' && <MultiSelectField readOnly={readOnly} name={`${path}.users`} label={t('shared.rule.user')} required searchable max={maxUsers} data={ctx.userOptions} />}
-        {/* One chosen user approves alone; anyone else may need several approvals. */}
-        {(kind !== 'user' || users.length > 1) && <IntegerField readOnly={readOnly} name={`${path}.approvals`} label={t('shared.rule.approvals')} required min={1} max={20} />}
+        {/* One chosen user approves alone, unless the count still asks for more and must be fixed. */}
+        {(kind !== 'user' || users.length > 1 || String(approvals) !== '1') && <IntegerField readOnly={readOnly} name={`${path}.approvals`} label={t('shared.rule.approvals')} required min={1} max={20} />}
         <IntegerField readOnly={readOnly} name={`${path}.dueHours`} label={t('shared.rule.due_hours')} description={t('shared.rule.due_hours_hint')} min={1} max={maxDueHours} />
         <Anchor component="button" type="button" size="sm" onClick={() => setAdvanced((v) => !v)} aria-expanded={advanced}>
           <Group gap="xxs" wrap="nowrap">

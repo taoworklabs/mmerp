@@ -183,7 +183,7 @@ function Edge({ list, at, depth, root }: { list: string; at: number; depth: numb
 }
 
 // Box is one selectable thing on the diagram. It owns its element's error name as its id, so the
-// form's "next field to fix" lands on it, and focusing it selects it.
+// form's "next field to fix" lands on it, and focusing it then selects it.
 function Box({ path, at, label, className, children, ...rest }: { path: string; at: string; label: string; className?: string; children: ReactNode; 'data-mode'?: string; 'data-quiet'?: boolean }) {
   const { selected, select } = useFlowEditor()
   const issue = useLook().issueAt(at)
@@ -195,7 +195,9 @@ function Box({ path, at, label, className, children, ...rest }: { path: string; 
       aria-pressed={selected === path}
       aria-invalid={issue ? true : undefined}
       onClick={() => select(path)}
-      onFocus={() => select(path)}
+      // Tabbing past a box leaves the selection alone; only "next field to fix" lands on a box
+      // with a problem, and that one opens.
+      onFocus={() => issue && select(path)}
       {...rest}
     >
       {children}

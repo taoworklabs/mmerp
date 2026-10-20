@@ -182,7 +182,7 @@ function RuleForm({ rule, basePath, roles, userOptions }: { rule: TypeRule; base
             variant="default"
             leftSection={<IconSettings {...icon.button} />}
             onClick={() => select('settings')}
-            onFocus={() => select('settings')}
+            onFocus={() => form.getFieldState('settings' as never).error && select('settings')}
           >
             {t('shared.rule.settings')}
           </Button>

@@ -35,6 +35,13 @@ describe('flowProblems', () => {
     ])
   })
 
+  it('a cleared due time or count, left as null by its field, reads as empty or wrong', () => {
+    const cleared = { ...newStep(true), dueHours: null as unknown as string }
+    expect(flowProblems({ ...ok, flow: [cleared] })).toEqual([])
+    const noCount = { ...newStep(true), approvals: null as unknown as string }
+    expect(flowProblems({ ...ok, flow: [noCount] })).toEqual([{ at: 'flow.0.issue', code: 'count_range' }])
+  })
+
   it('a user step with nobody chosen', () => {
     expect(flowProblems({ ...ok, flow: [{ ...newStep(false), kind: 'user', users: [] }] })).toEqual([{ at: 'flow.0.issue', code: 'missing_user' }])
   })

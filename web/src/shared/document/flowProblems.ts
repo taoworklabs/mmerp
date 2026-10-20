@@ -22,14 +22,16 @@ const maxCount = 20
 const maxDueHours = 720
 const maxLevels = 10
 
-const inRange = (v: string, min: number, max: number) => /^\d+$/.test(v) && Number(v) >= min && Number(v) <= max
+// Number fields hold a number, or null once cleared, although the form types them as strings.
+const blank = (v: unknown) => v === null || v === undefined || v === ''
+const inRange = (v: unknown, min: number, max: number) => !blank(v) && /^\d+$/.test(String(v)) && Number(v) >= min && Number(v) <= max
 
 function stepProblem(el: ElementValues): ProblemCode | null {
   if (el.kind === 'role' && !el.role) return 'missing_role'
   if (el.kind === 'user' && el.users.length === 0) return 'missing_user'
   if (el.kind === 'user' && Number(el.approvals) > el.users.length) return 'approvals_exceed_users'
   if (!inRange(el.approvals, 1, maxCount) || !inRange(el.rejections, 1, maxCount)) return 'count_range'
-  if (el.dueHours !== '' && !inRange(el.dueHours, 1, maxDueHours)) return 'invalid_due'
+  if (!blank(el.dueHours) && !inRange(el.dueHours, 1, maxDueHours)) return 'invalid_due'
   return null
 }
 

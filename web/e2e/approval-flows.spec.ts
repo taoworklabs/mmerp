@@ -253,3 +253,71 @@ test('a disabled product shows the flow read-only', async ({ browser }) => {
   await expect(panel(page).getByRole('combobox', { name: 'Ai duyệt' })).toHaveAttribute('readonly', '')
   await expect(panel(page).getByRole('button', { name: 'Xóa bước' })).toHaveCount(0)
 })
+
+test('below 1280px the panel slides up, closes for good, and the rule saves', async ({ browser }) => {
+  await putBuilt()
+  const page = await (await browser.newContext({ viewport: { width: 1100, height: 800 } })).newPage()
+  await signedIn(page, url)
+  await box(branchOf(page, 'Còn lại'), 'Bước duyệt: Quản lý trực tiếp').click()
+  const drawer = page.getByRole('dialog', { name: 'Sửa quy trình' })
+  await drawer.getByRole('textbox', { name: /^Hạn duyệt \(giờ\)/ }).fill('8')
+  await page.keyboard.press('Escape')
+  await expect(drawer).toBeHidden()
+  // Focus coming back to the box must not open it again.
+  await page.waitForTimeout(500)
+  await expect(drawer).toBeHidden()
+  await page.getByRole('button', { name: 'Lưu' }).click()
+  await expect(page.getByText('Đã lưu quy tắc duyệt.')).toBeVisible()
+})
+
+test('tabbing through the diagram leaves the selection alone', async ({ browser }) => {
+  await putBuilt()
+  const page = await as(browser, admin.login, url)
+  const pill = box(main(page), 'Cùng lúc')
+  await pill.click()
+  for (let i = 0; i < 4; i++) await page.keyboard.press('Tab')
+  await expect(pill).toHaveAttribute('aria-pressed', 'true')
+  await expect(panel(page).getByRole('button', { name: 'Thêm nhánh' })).toBeVisible()
+})
+
+test('clearing a due time saves as no due time', async ({ browser }) => {
+  await putBuilt()
+  const page = await as(browser, admin.login, url)
+  const step = box(branchOf(page, 'Còn lại'), 'Bước duyệt: Quản lý trực tiếp')
+  await step.click()
+  const due = panel(page).getByRole('textbox', { name: /^Hạn duyệt \(giờ\)/ })
+  await due.fill('8')
+  await due.fill('')
+  await expect(step).not.toHaveAttribute('aria-invalid', 'true')
+  await page.getByRole('button', { name: 'Cài đặt chung' }).click()
+  await panel(page).getByRole('textbox', { name: /^Khi quản lý trực tiếp lại chính là người gửi/ }).fill('4')
+  await page.getByRole('button', { name: 'Lưu' }).click()
+  await expect(page.getByText('Đã lưu quy tắc duyệt.')).toBeVisible()
+})
+
+test('a step cut down to one user keeps its approvals field while it asks for more', async ({ browser }) => {
+  await putBuilt()
+  const page = await as(browser, admin.login, url)
+  await box(branchOf(page, 'Còn lại'), 'Bước duyệt: Quản lý trực tiếp').click()
+  await panel(page).getByRole('textbox', { name: /^Cần bao nhiêu người đồng ý/ }).fill('2')
+  await pick(panel(page), page, 'Ai duyệt', 'Những người cụ thể')
+  await panel(page).getByRole('combobox', { name: 'Người duyệt' }).fill(login.a)
+  await page.getByRole('option', { name: `${login.a} (${login.a})` }).click()
+  await page.keyboard.press('Escape')
+  const step = box(branchOf(page, 'Còn lại'), `Bước duyệt: ${login.a}`)
+  await expect(step).toHaveAttribute('aria-invalid', 'true')
+  await panel(page).getByRole('textbox', { name: /^Cần bao nhiêu người đồng ý/ }).fill('1')
+  await expect(step).not.toHaveAttribute('aria-invalid', 'true')
+})
+
+test('every kind of box shows when it is selected', async ({ browser }) => {
+  await putBuilt()
+  const page = await as(browser, admin.login, url)
+  const step = box(branchOf(page, 'Còn lại'), 'Bước duyệt: Quản lý trực tiếp')
+  await step.click()
+  const selected = await step.evaluate((el) => getComputedStyle(el).backgroundColor)
+  for (const other of [box(main(page), 'Cùng lúc'), box(main(page), 'Còn lại')]) {
+    await other.click()
+    await expect(other).toHaveCSS('background-color', selected)
+  }
+})

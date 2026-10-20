@@ -79,15 +79,6 @@
   border-color: var(--mantine-color-primary-4);
 }
 
-.node[aria-pressed='true'] {
-  background: var(--mantine-color-primary-0);
-  border-color: var(--mantine-color-primary-6);
-}
-
-.node[aria-invalid='true'] {
-  border-color: var(--mantine-color-danger-5);
-  background: var(--mantine-color-danger-0);
-}
 
 .terminal {
   composes: node;
@@ -205,6 +196,17 @@
   background: var(--mantine-color-gray-1);
   border-color: var(--mantine-color-gray-3);
   color: var(--mantine-color-gray-7);
+}
+
+/* Selected and invalid come last, so they win over a box's own tone (split kinds, quiet chips). */
+.node[aria-pressed='true'] {
+  background: var(--mantine-color-primary-0);
+  border-color: var(--mantine-color-primary-6);
+}
+
+.node[aria-invalid='true'] {
+  border-color: var(--mantine-color-danger-5);
+  background: var(--mantine-color-danger-0);
 }
 
 /* The editor: the diagram, and beside it from lg up the panel of what is selected. */
