@@ -42,6 +42,7 @@
   "core.delegations.created": "Delegation created.",
   "core.delegations.delete": "Delete delegation",
   "core.delegations.delete_confirm": "Delete the delegation to {{name}} from {{from}} to {{to}}? They will no longer approve in that place.",
+  "core.delegations.delete_confirm_of": "Delete the delegation of {{user}} to {{name}} from {{from}} to {{to}}? {{name}} will no longer approve in their place.",
   "core.delegations.deleted": "Delegation deleted.",
   "core.delegations.reason.self": "Must differ from the delegating user.",
   "core.delegations.reason.creator": "Cannot name yourself as someone else's delegate.",

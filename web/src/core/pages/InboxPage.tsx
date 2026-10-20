@@ -86,7 +86,10 @@ export default function InboxPage() {
           {t('core.delegations.title')}
         </Button>
       }
-      list={list} detail={item ? <Detail item={item} onDone={advance} /> : null} onBack={back} />
+      list={list}
+      detail={item ? <Detail item={item} onDone={advance} /> : null}
+      onBack={back}
+    />
   )
 }
 

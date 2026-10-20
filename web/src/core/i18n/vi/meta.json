@@ -42,6 +42,7 @@
   "core.delegations.created": "Đã tạo ủy quyền.",
   "core.delegations.delete": "Xóa ủy quyền",
   "core.delegations.delete_confirm": "Xóa ủy quyền cho {{name}} từ {{from}} đến {{to}}? Người này sẽ không duyệt thay được nữa.",
+  "core.delegations.delete_confirm_of": "Xóa ủy quyền của {{user}} cho {{name}} từ {{from}} đến {{to}}? {{name}} sẽ không duyệt thay được nữa.",
   "core.delegations.deleted": "Đã xóa ủy quyền.",
   "core.delegations.reason.self": "Phải khác người ủy quyền.",
   "core.delegations.reason.creator": "Không tự nhận ủy quyền thay người khác.",

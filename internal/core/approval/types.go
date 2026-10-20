@@ -190,7 +190,7 @@ func errInvalidRule(path, reason string) error {
 	return &platform.Error{Status: http.StatusUnprocessableEntity, Code: "invalid_rule", Params: map[string]any{"path": path, "reason": reason}}
 }
 
-// ErrInvalidDelegation says why a delegation was refused: self, dates, past or overlap.
+// ErrInvalidDelegation says why a delegation was refused: self, dates, past, overlap or creator.
 func ErrInvalidDelegation(reason string) *platform.Error {
 	return &platform.Error{Status: http.StatusUnprocessableEntity, Code: "invalid_delegation", Params: map[string]any{"reason": reason}}
 }

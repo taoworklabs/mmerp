@@ -11,9 +11,16 @@ let api: APIRequestContext
 let original: unknown = null
 let leaveType: number
 
-const inDays = (n: number) => {
-  const d = new Date(Date.now() + n * 86_400_000)
-  return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`
+// Dates are the tenant's, not the runner's: near midnight the two differ by a day.
+const tenantToday = () => new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Ho_Chi_Minh' }).format(new Date())
+const addDays = (iso: string, n: number) => new Date(Date.parse(`${iso}T00:00:00Z`) + n * 86_400_000).toISOString().slice(0, 10)
+const vn = (iso: string) => iso.split('-').reverse().join('/')
+const inDays = (n: number) => vn(addDays(tenantToday(), n))
+// workdayAhead is the first Monday to Friday at least n days after the tenant's today.
+const workdayAhead = (n: number) => {
+  let d = addDays(tenantToday(), n)
+  while ([0, 6].includes(new Date(`${d}T00:00:00Z`).getUTCDay())) d = addDays(d, 1)
+  return d
 }
 
 test.beforeAll(async ({ baseURL }) => {
@@ -69,7 +76,8 @@ test('an absent manager’s delegate approves a leave request', async ({ browser
 
   // The employee sends a leave request.
   const asE = await signedInApi(baseURL!, login.e, password)
-  const leave = await created(asE.post('/api/hrm/leaves', { data: { leave_type_id: leaveType, start_date: '2026-11-16', end_date: '2026-11-16', days: '1', reason: null } }))
+  const day = workdayAhead(5)
+  const leave = await created(asE.post('/api/hrm/leaves', { data: { leave_type_id: leaveType, start_date: day, end_date: day, days: '1', reason: null } }))
   const sent = await asE.post(`/api/documents/hrm.leave_request/${leave}/transitions`, { data: { to: 'posted', version: 1 } })
   expect(sent.status(), await sent.text()).toBe(200)
 
@@ -80,10 +88,8 @@ test('an absent manager’s delegate approves a leave request', async ({ browser
   await c.getByRole('button', { name: 'Duyệt', exact: true }).click()
   await expect(c.getByText('Đã duyệt.')).toBeVisible()
 
-  // The panel says who voted, in whose place.
+  // The panel, in the leave page's side column, says who voted and in whose place.
   const e = await as(browser, login.e, `/hrm/leaves/${leave}`)
-  const activity = e.getByRole('tab', { name: 'Hoạt động' })
-  if (await activity.isVisible()) await activity.click()
   await expect(e.getByText(`${login.colleague} thay ${login.manager}`)).toBeVisible()
 })
 
@@ -113,6 +119,12 @@ test('an administrator creates a delegation for another user', async ({ browser 
   await expect(page.getByText('Đã tạo ủy quyền.')).toBeVisible()
   const row = page.getByRole('row', { name: new RegExp(`${login.other}.*${login.e}.*Sắp tới`) })
   await expect(row).toBeVisible()
+
+  // A manager's confirm names whose delegation it is; cancelled here, the other user deletes it.
+  await row.getByRole('button', { name: 'Thao tác khác' }).click()
+  await page.getByRole('menuitem', { name: 'Xóa ủy quyền' }).click()
+  await expect(page.getByRole('dialog').getByText(`Xóa ủy quyền của ${login.other} cho ${login.e}`)).toBeVisible()
+  await page.getByRole('dialog').getByRole('button', { name: 'Quay lại' }).click()
 
   // The other user sees it as their own, and may take it back.
   const other = await as(browser, login.other, '/delegations')

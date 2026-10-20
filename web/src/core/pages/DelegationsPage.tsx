@@ -35,7 +35,13 @@ export default function DelegationsPage() {
   async function remove(d: Delegation) {
     const ok = await ask({
       title: t('core.delegations.delete'),
-      message: t('core.delegations.delete_confirm', { name: d.delegate_name, from: formatDate(d.starts_on), to: formatDate(d.ends_on) }),
+      // A manager may delete anyone's, so the message names whose it is.
+      message: t(manageAll ? 'core.delegations.delete_confirm_of' : 'core.delegations.delete_confirm', {
+        user: d.user_name,
+        name: d.delegate_name,
+        from: formatDate(d.starts_on),
+        to: formatDate(d.ends_on),
+      }),
       confirmLabel: t('core.delegations.delete'),
       danger: true,
     })
