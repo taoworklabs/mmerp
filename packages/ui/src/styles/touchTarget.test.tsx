@@ -19,12 +19,13 @@ describe('touch target', () => {
         <Button>Default</Button>
         <ActionIcon aria-label="x">x</ActionIcon>
         <Button size="xs">Small</Button>
-        <Select label="Pick" data={sampleData} value={null} onChange={() => {}} style={{ width: 120 }} />
+        <Select label="Pick" data={sampleData} value="a" onChange={() => {}} clearable clearLabel="Clear" />
         <Combobox label="Search" data={sampleData} value={null} onChange={() => {}} nothingFound="None" style={{ width: 120 }} />
       </>,
     )
     const controls = Array.from(container.querySelectorAll<HTMLElement>('[data-mmerp-control]'))
-    expect(controls).toHaveLength(5)
+    // Select's own box, plus its clear button (an ActionIcon, a control in its own right).
+    expect(controls).toHaveLength(6)
 
     await page.viewport(800, 600)
     for (const control of controls) {

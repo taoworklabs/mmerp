@@ -1,5 +1,7 @@
 import { Select as BaseSelect } from '@base-ui/react/select'
 import type * as React from 'react'
+import { useId } from 'react'
+import { cx } from '../../internal/cx.ts'
 import { ActionIcon } from './ActionIcon.tsx'
 import { Field, type FieldProps } from './Field.tsx'
 import optionStyles from './options.module.css'
@@ -21,6 +23,17 @@ export type SelectProps = FieldProps &
     onChange(value: string | null): void
     placeholder?: string
   }
+
+// Basis `auto` (not the `.input` class's `0%`) so an explicit width from an ancestor still
+// shrinks the trigger instead of the flex algorithm ignoring it.
+const triggerStyle: React.CSSProperties = {
+  display: 'flex',
+  alignItems: 'center',
+  flex: '1 1 auto',
+  minWidth: 0,
+  padding: 0,
+  textAlign: 'start',
+}
 
 const valueStyle: React.CSSProperties = {
   flex: '1 1 auto',
@@ -64,50 +77,58 @@ export function Select({
   style,
   ...props
 }: SelectProps) {
+  // The trigger isn't a Field control, so Base UI never links it to the description/error text itself.
+  const descriptionId = useId()
+  const errorId = useId()
+  const describedBy = cx(description !== undefined && descriptionId, error !== undefined && errorId) || undefined
   return (
-    <Field label={label} description={description} error={error} required={required} disabled={disabled} readOnly={readOnly} className={className}>
-      <BaseSelect.Root<string> items={data} value={value} onValueChange={onChange} disabled={disabled} readOnly={readOnly}>
-        <BaseSelect.Trigger
-          data-mmerp-control=""
-          data-error={error ? '' : undefined}
-          data-disabled={disabled ? '' : undefined}
-          className={textInputStyles.wrapper}
-          style={style}
-          {...props}
-        >
-          <BaseSelect.Value placeholder={placeholder} style={valueStyle} />
-          {clearable && value !== null && (
-            <ActionIcon
-              variant="subtle"
-              color="gray"
-              size="xs"
-              aria-label={clearLabel}
-              onClick={(event) => {
-                event.stopPropagation()
-                onChange(null)
-              }}
-            >
-              <ClearIcon />
-            </ActionIcon>
-          )}
-          <BaseSelect.Icon className={textInputStyles.section}>
-            <ChevronIcon />
-          </BaseSelect.Icon>
-        </BaseSelect.Trigger>
-        <BaseSelect.Portal>
-          <BaseSelect.Positioner sideOffset={4}>
-            <BaseSelect.Popup className={optionStyles.popup}>
-              <BaseSelect.List>
-                {data.map((item) => (
-                  <BaseSelect.Item key={item.value} value={item.value} disabled={item.disabled} className={optionStyles.option}>
-                    {item.label}
-                  </BaseSelect.Item>
-                ))}
-              </BaseSelect.List>
-            </BaseSelect.Popup>
-          </BaseSelect.Positioner>
-        </BaseSelect.Portal>
-      </BaseSelect.Root>
+    <Field
+      label={label}
+      description={description}
+      error={error}
+      required={required}
+      disabled={disabled}
+      readOnly={readOnly}
+      className={className}
+      descriptionId={descriptionId}
+      errorId={errorId}
+    >
+      {/* The visible control box: the trigger (and the clear button, when clearable) are siblings
+          inside it, never nested — a <button> cannot contain another interactive descendant. */}
+      <div className={textInputStyles.wrapper} data-mmerp-control="" data-error={error ? '' : undefined} data-disabled={disabled ? '' : undefined}>
+        <BaseSelect.Root<string> items={data} value={value} onValueChange={onChange} disabled={disabled} readOnly={readOnly}>
+          <BaseSelect.Trigger
+            className={textInputStyles.input}
+            style={{ ...triggerStyle, ...style }}
+            aria-describedby={describedBy}
+            aria-invalid={error ? true : undefined}
+            {...props}
+          >
+            <BaseSelect.Value placeholder={placeholder} style={valueStyle} />
+            <BaseSelect.Icon className={textInputStyles.section}>
+              <ChevronIcon />
+            </BaseSelect.Icon>
+          </BaseSelect.Trigger>
+          <BaseSelect.Portal>
+            <BaseSelect.Positioner sideOffset={4}>
+              <BaseSelect.Popup className={optionStyles.popup}>
+                <BaseSelect.List>
+                  {data.map((item) => (
+                    <BaseSelect.Item key={item.value} value={item.value} disabled={item.disabled} className={optionStyles.option}>
+                      {item.label}
+                    </BaseSelect.Item>
+                  ))}
+                </BaseSelect.List>
+              </BaseSelect.Popup>
+            </BaseSelect.Positioner>
+          </BaseSelect.Portal>
+        </BaseSelect.Root>
+        {clearable && value !== null && (
+          <ActionIcon variant="subtle" color="gray" size="xs" aria-label={clearLabel} onClick={() => onChange(null)}>
+            <ClearIcon />
+          </ActionIcon>
+        )}
+      </div>
     </Field>
   )
 }
