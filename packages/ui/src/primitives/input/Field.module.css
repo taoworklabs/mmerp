@@ -1,0 +1,29 @@
+.root {
+  display: flex;
+  flex-direction: column;
+}
+
+.label {
+  display: block;
+  font-size: var(--mmerp-font-size-xs);
+  font-weight: var(--mmerp-font-weight-semibold);
+  color: var(--mmerp-color-dimmed);
+  margin-bottom: var(--mmerp-space-xxs);
+}
+
+.required {
+  color: var(--mmerp-color-error);
+  margin-left: var(--mmerp-space-xxs);
+}
+
+.description {
+  margin: var(--mmerp-space-xxs) 0 0;
+  font-size: var(--mmerp-font-size-xs);
+  color: var(--mmerp-color-dimmed);
+}
+
+.error {
+  margin: var(--mmerp-space-xxs) 0 0;
+  font-size: var(--mmerp-font-size-xs);
+  color: var(--mmerp-color-error);
+}
