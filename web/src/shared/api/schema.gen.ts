@@ -4,6 +4,70 @@
  */
 
 export interface paths {
+    "/approval-delegations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["list-approval-delegations"];
+        put?: never;
+        post: operations["create-approval-delegation"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/approval-delegations/meta": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["get-approval-delegations-meta"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/approval-delegations/users": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["list-approval-delegation-users"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/approval-delegations/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete: operations["delete-approval-delegation"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/approval-rules": {
         parameters: {
             query?: never;
@@ -1850,6 +1914,16 @@ export interface components {
             /** Format: int32 */
             version: number;
         };
+        CreateDelegationOutputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example /api/schemas/CreateDelegationOutputBody.json
+             */
+            readonly $schema?: string;
+            /** Format: int64 */
+            id: number;
+        };
         CreateUserInputBody: {
             /**
              * Format: uri
@@ -1952,6 +2026,50 @@ export interface components {
             payment_terms: string | null;
             phone: string | null;
             tax_code: string | null;
+        };
+        Delegation: {
+            active: boolean;
+            allowed_actions: string[];
+            /** Format: int64 */
+            delegate_id: number;
+            delegate_name: string;
+            /** Format: date */
+            ends_on: string;
+            /** Format: int64 */
+            id: number;
+            /** Format: date */
+            starts_on: string;
+            /** Format: int64 */
+            user_id: number;
+            user_name: string;
+        };
+        DelegationInput: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example /api/schemas/DelegationInput.json
+             */
+            readonly $schema?: string;
+            /** Format: int64 */
+            delegate_id: number;
+            /** Format: date */
+            ends_on: string;
+            /** Format: date */
+            starts_on: string;
+            /**
+             * Format: int64
+             * @description Whose seats; omitted means the actor's own
+             */
+            user_id?: number;
+        };
+        DelegationsMetaOutputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example /api/schemas/DelegationsMetaOutputBody.json
+             */
+            readonly $schema?: string;
+            manage_all: boolean;
         };
         Dependent: {
             /** Format: date */
@@ -2317,6 +2435,7 @@ export interface components {
             /** Format: int64 */
             instance_id: number;
             number: string;
+            on_behalf_of_name: string | null;
             /** Format: int32 */
             step: number;
             /** Format: date-time */
@@ -3549,6 +3668,7 @@ export interface components {
             voters: components["schemas"]["StepVoter"][];
         };
         StepVoter: {
+            cast_by_name: string | null;
             /** Format: date-time */
             decided_at: string | null;
             /** @enum {string|null} */
@@ -3750,6 +3870,155 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+    "list-approval-delegations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Delegation"][] | null;
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "create-approval-delegation": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DelegationInput"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CreateDelegationOutputBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "get-approval-delegations-meta": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DelegationsMetaOutputBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "list-approval-delegation-users": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApproverUser"][] | null;
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "delete-approval-delegation": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
     "list-approval-rules": {
         parameters: {
             query?: {

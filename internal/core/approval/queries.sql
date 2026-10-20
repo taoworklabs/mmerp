@@ -141,7 +141,7 @@ WITH RECURSIVE up AS (
 SELECT EXISTS (SELECT 1 FROM up WHERE up.id = @ancestor::bigint);
 
 -- name: ListUsers :many
--- Who a rule may name as approver.
+-- Who a rule may name as approver, or a delegation may name.
 SELECT id, login, name FROM iam.users ORDER BY lower(login);
 
 -- name: LockDelegations :exec

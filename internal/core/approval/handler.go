@@ -164,6 +164,11 @@ func registerHandlers(api huma.API, s *Service) {
 			d, err := s.Delegations(ctx)
 			return &delegationsOutput{Body: d}, err
 		})
+	huma.Register(api, huma.Operation{OperationID: "list-approval-delegation-users", Method: http.MethodGet, Path: "/approval-delegations/users"},
+		func(ctx context.Context, _ *struct{}) (*usersOutput, error) {
+			u, err := s.DelegateUsers(ctx)
+			return &usersOutput{Body: u}, err
+		})
 	huma.Register(api, huma.Operation{OperationID: "get-approval-delegations-meta", Method: http.MethodGet, Path: "/approval-delegations/meta"},
 		func(ctx context.Context, _ *struct{}) (*delegationsMetaOutput, error) {
 			all, err := s.CanManageAllDelegations(ctx)

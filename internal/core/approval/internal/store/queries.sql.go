@@ -679,7 +679,7 @@ type ListUsersRow struct {
 	Name  string
 }
 
-// Who a rule may name as approver.
+// Who a rule may name as approver, or a delegation may name.
 func (q *Queries) ListUsers(ctx context.Context) ([]ListUsersRow, error) {
 	rows, err := q.db.Query(ctx, listUsers)
 	if err != nil {

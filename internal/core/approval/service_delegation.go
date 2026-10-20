@@ -12,6 +12,16 @@ import (
 	"github.com/taoworklabs/mmerp/internal/platform"
 )
 
+// DelegateUsers lists the accounts a delegate, or whom a delegation is for, can be picked from; any user may read it.
+func (s *Service) DelegateUsers(ctx context.Context) ([]ApproverUser, error) {
+	rows, err := store.New(platform.DBFrom(ctx)).ListUsers(ctx)
+	out := make([]ApproverUser, len(rows))
+	for i, r := range rows {
+		out[i] = ApproverUser(r)
+	}
+	return out, err
+}
+
 // CanManageAllDelegations says whether the actor manages everyone's delegations, not only their own.
 func (s *Service) CanManageAllDelegations(ctx context.Context) (bool, error) {
 	err := s.d.IAM.RequireCore(ctx, iam.PermManageApproval)

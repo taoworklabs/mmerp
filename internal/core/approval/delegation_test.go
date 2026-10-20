@@ -35,6 +35,15 @@ func reasonOf(err error) any {
 	return nil
 }
 
+func TestAnyUserListsDelegateUsers(t *testing.T) {
+	f := newFixture(t)
+	users, err := f.appr.DelegateUsers(f.as("outsider"))
+	f.check(err)
+	if !slices.ContainsFunc(users, func(u approval.ApproverUser) bool { return u.Login == "boss" && u.ID == f.users["boss"] }) {
+		t.Fatalf("users %+v", users)
+	}
+}
+
 func TestCreateOwnDelegation(t *testing.T) {
 	f := newFixture(t)
 	id, err := f.appr.CreateDelegation(f.as("boss"), approval.DelegationInput{DelegateID: f.users["big_boss"], StartsOn: f.day(0), EndsOn: f.day(7)})
