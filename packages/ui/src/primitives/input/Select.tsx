@@ -102,6 +102,7 @@ export function Select({
             style={{ ...triggerStyle, ...style }}
             aria-describedby={describedBy}
             aria-invalid={error ? true : undefined}
+            aria-required={required || undefined}
             {...props}
           >
             <BaseSelect.Value placeholder={placeholder} style={valueStyle} />

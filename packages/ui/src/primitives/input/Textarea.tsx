@@ -46,6 +46,7 @@ export function Textarea({
         data-autosize={autosize ? '' : undefined}
         disabled={disabled}
         readOnly={readOnly}
+        aria-required={required || undefined}
         className={styles.root}
         style={vars}
         {...props}

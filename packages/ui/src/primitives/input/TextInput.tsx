@@ -33,6 +33,7 @@ export function TextInput({
         <BaseInput
           disabled={disabled}
           readOnly={readOnly}
+          aria-required={required || undefined}
           className={styles.input}
           style={style}
           {...props}

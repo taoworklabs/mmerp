@@ -5,7 +5,7 @@ import { cx } from '../../internal/cx.ts'
 import { Field, type FieldProps } from './Field.tsx'
 import styles from './NumberInput.module.css'
 
-export interface NumberInputProps extends FieldProps, Omit<React.ComponentPropsWithRef<'div'>, 'children' | 'onChange' | 'value' | 'defaultValue'> {
+export interface NumberInputProps extends FieldProps, Omit<React.ComponentPropsWithRef<'input'>, 'onChange' | 'value' | 'defaultValue' | 'size' | 'min' | 'max' | 'step' | 'type'> {
   value: number | null
   onChange(value: number | null): void
   min?: number
@@ -65,13 +65,14 @@ export function NumberInput({
         data-mmerp-control=""
         data-error={error ? '' : undefined}
         data-disabled={disabled ? '' : undefined}
-        {...props}
       >
         <NumberField.Input
           placeholder={placeholder}
           className={styles.input}
           aria-describedby={describedBy}
           aria-invalid={error ? true : undefined}
+          aria-required={required || undefined}
+          {...props}
         />
       </NumberField.Root>
     </Field>

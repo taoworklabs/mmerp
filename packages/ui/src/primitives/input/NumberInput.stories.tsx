@@ -50,6 +50,9 @@ export const WithDescription: Story = {
 export const Required: Story = {
   args: { value: null, required: true },
   render: (args) => <Controlled {...args} />,
+  play: async ({ canvasElement }) => {
+    expect(within(canvasElement).getByRole('textbox', { name: 'Quantity' })).toHaveAttribute('aria-required', 'true')
+  },
 }
 
 export const Error: Story = {
@@ -88,5 +91,13 @@ export const Stepping: Story = {
     await userEvent.clear(input)
     await userEvent.keyboard('{Tab}')
     expect(args.onChange).toHaveBeenCalledWith(null)
+  },
+}
+
+export const AriaLabelOnly: Story = {
+  args: { value: null, label: undefined, 'aria-label': 'Amount' },
+  render: (args) => <Controlled {...args} />,
+  play: async ({ canvasElement }) => {
+    expect(within(canvasElement).getByRole('textbox', { name: 'Amount' })).toBeInTheDocument()
   },
 }

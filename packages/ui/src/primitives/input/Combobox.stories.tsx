@@ -110,3 +110,11 @@ export const KeyboardSelect: Story = {
     expect(args.onChange).toHaveBeenCalledWith('b')
   },
 }
+
+export const Required: Story = {
+  args: { value: null, required: true },
+  render: (args) => <Controlled {...args} />,
+  play: async ({ canvasElement }) => {
+    expect(within(canvasElement).getByRole('combobox', { name: 'Assignee' })).toHaveAttribute('aria-required', 'true')
+  },
+}

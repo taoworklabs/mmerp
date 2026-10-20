@@ -90,3 +90,11 @@ export const RemoveChip: Story = {
     expect(args.onChange).toHaveBeenCalledWith(['b'])
   },
 }
+
+export const Required: Story = {
+  args: { value: [], required: true },
+  render: (args) => <Controlled {...args} />,
+  play: async ({ canvasElement }) => {
+    expect(within(canvasElement).getByRole('combobox', { name: 'Reviewers' })).toHaveAttribute('aria-required', 'true')
+  },
+}

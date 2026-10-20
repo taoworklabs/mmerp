@@ -156,3 +156,11 @@ export const LeftSection: Story = {
   args: { value: null, leftSection: <IconCalendar size={14} /> },
   render: (args) => <Controlled {...args} />,
 }
+
+export const Required: Story = {
+  args: { value: null, required: true },
+  render: (args) => <Controlled {...args} />,
+  play: async ({ canvasElement }) => {
+    expect(within(canvasElement).getByRole('textbox', { name: 'Ngày hiệu lực' })).toHaveAttribute('aria-required', 'true')
+  },
+}

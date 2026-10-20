@@ -28,6 +28,9 @@ export const WithDescription: Story = {
 
 export const Required: Story = {
   args: { required: true },
+  play: async ({ canvasElement }) => {
+    expect(within(canvasElement).getByRole('textbox', { name: 'Notes' })).toHaveAttribute('aria-required', 'true')
+  },
 }
 
 export const Error: Story = {

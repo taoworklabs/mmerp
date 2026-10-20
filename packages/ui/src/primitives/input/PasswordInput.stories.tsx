@@ -33,6 +33,9 @@ export const WithDescription: Story = {
 
 export const Required: Story = {
   args: { required: true },
+  play: async ({ canvasElement }) => {
+    expect(canvasElement.querySelector('input')).toHaveAttribute('aria-required', 'true')
+  },
 }
 
 export const Error: Story = {

@@ -114,6 +114,7 @@ export function Combobox({
             style={style}
             aria-describedby={describedBy}
             aria-invalid={error ? true : undefined}
+            aria-required={required || undefined}
             onKeyDown={(event) => {
               onKeyDown?.(event)
               // Base UI only closes the popup on Escape; restoring the label is ours to do.

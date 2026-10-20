@@ -118,6 +118,7 @@ export function MultiSelect({
             style={{ ...style, flex: '1 1 auto', minWidth: '4ch' }}
             aria-describedby={describedBy}
             aria-invalid={error ? true : undefined}
+            aria-required={required || undefined}
             {...props}
           />
         </BaseCombobox.InputGroup>

@@ -88,3 +88,8 @@ export const Clearable: Story = {
     expect(canvas.getByRole('button', { name: /Kỳ lương/ })).toHaveTextContent('mm/yyyy')
   },
 }
+
+export const Required: Story = {
+  args: { value: null, required: true },
+  render: (args) => <Controlled {...args} />,
+}
