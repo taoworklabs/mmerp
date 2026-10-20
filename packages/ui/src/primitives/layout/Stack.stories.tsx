@@ -63,3 +63,21 @@ export const Justify: Story = {
     </Stack>
   ),
 }
+
+export const Render: Story = {
+  args: {
+    render: <ul />,
+    gap: 'md',
+    children: (
+      <>
+        <li>First</li>
+        <li>Second</li>
+      </>
+    ),
+  },
+  play: async ({ canvasElement }) => {
+    const stack = within(canvasElement).getByText('First').parentElement as HTMLElement
+    expect(stack.tagName).toBe('UL')
+    expect(getComputedStyle(stack).rowGap).toBe('16px')
+  },
+}

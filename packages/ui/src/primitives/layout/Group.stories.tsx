@@ -72,3 +72,21 @@ export const Grow: Story = {
     </Group>
   ),
 }
+
+export const Render: Story = {
+  args: {
+    render: <ul />,
+    gap: 'md',
+    children: (
+      <>
+        <li>First</li>
+        <li>Second</li>
+      </>
+    ),
+  },
+  play: async ({ canvasElement }) => {
+    const group = within(canvasElement).getByText('First').parentElement as HTMLElement
+    expect(group.tagName).toBe('UL')
+    expect(getComputedStyle(group).columnGap).toBe('16px')
+  },
+}
