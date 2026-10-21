@@ -1,0 +1,15 @@
+.root {
+  text-decoration: none;
+}
+
+.root[data-underline='always'] {
+  text-decoration: underline;
+}
+
+.root[data-underline='never'] {
+  text-decoration: none;
+}
+
+.root[data-underline='hover']:hover {
+  text-decoration: underline;
+}

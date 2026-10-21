@@ -1,0 +1,31 @@
+.root {
+  display: inline-block;
+  flex-shrink: 0;
+  border-radius: 50%;
+  border: 2px solid var(--mmerp-color-gray-2);
+  border-top-color: var(--mmerp-color-primary-6);
+  /* A loop, not a transition: the 200ms motion cap doesn't apply; a calm one-turn-per-800ms spin. */
+  animation: mmerp-loader-spin 800ms linear infinite;
+}
+
+.root[data-size='xs'] {
+  width: 14px;
+  height: 14px;
+}
+
+.root[data-size='sm'] {
+  width: 18px;
+  height: 18px;
+}
+
+.root[data-size='md'] {
+  width: 24px;
+  height: 24px;
+  border-width: 3px;
+}
+
+@keyframes mmerp-loader-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

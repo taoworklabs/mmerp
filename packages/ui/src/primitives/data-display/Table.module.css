@@ -1,0 +1,43 @@
+.root {
+  width: 100%;
+  border-collapse: collapse;
+  color: var(--mmerp-color-text);
+  font-family: var(--mmerp-font-family);
+  font-size: var(--mmerp-font-size-sm);
+}
+
+.thead {
+  background: var(--mmerp-color-table-header);
+}
+
+.root[data-sticky-header] .thead {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
+.tfoot {
+  border-top: 1px solid var(--mmerp-color-border);
+}
+
+.tr {
+  height: 40px;
+}
+
+.root[data-highlight-on-hover] .tbody .tr:hover {
+  background: var(--mmerp-color-elevation-surface-sunken);
+}
+
+.th,
+.td {
+  padding: 0 var(--mmerp-space-sm);
+  border-bottom: 1px solid var(--mmerp-color-border);
+  text-align: start;
+  vertical-align: middle;
+}
+
+.th {
+  color: var(--mmerp-color-dimmed);
+  font-size: var(--mmerp-font-size-xs);
+  font-weight: var(--mmerp-font-weight-semibold);
+}

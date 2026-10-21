@@ -1,0 +1,50 @@
+.root {
+  display: grid;
+  min-height: 100vh;
+  grid-template-columns: var(--mmerp-appshell-navbar-width) 1fr;
+  grid-template-rows: var(--mmerp-appshell-header-height) 1fr;
+  grid-template-areas:
+    'header header'
+    'navbar main';
+}
+
+.root[data-mobile] {
+  grid-template-columns: 1fr;
+  grid-template-areas:
+    'header'
+    'main';
+}
+
+.header {
+  grid-area: header;
+  background: var(--mmerp-color-elevation-surface);
+  border-bottom: 1px solid var(--mmerp-color-border);
+}
+
+.navbar {
+  grid-area: navbar;
+  overflow-y: auto;
+  background: var(--mmerp-color-elevation-surface);
+  border-right: 1px solid var(--mmerp-color-border);
+}
+
+.root[data-mobile] .navbar {
+  position: fixed;
+  z-index: 10;
+  top: var(--mmerp-appshell-header-height);
+  bottom: 0;
+  left: 0;
+  width: var(--mmerp-appshell-navbar-width);
+  transform: translateX(-100%);
+  transition: transform var(--mmerp-motion-duration) ease;
+}
+
+.root[data-mobile] .navbar[data-opened] {
+  transform: translateX(0);
+}
+
+.main {
+  grid-area: main;
+  min-width: 0;
+  overflow: auto;
+}

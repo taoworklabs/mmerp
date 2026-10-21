@@ -1,0 +1,20 @@
+*,
+::before,
+::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  position: relative;
+  font-family: var(--mmerp-font-family);
+  font-size: var(--mmerp-font-size-sm);
+  line-height: var(--mmerp-line-height-sm);
+  color: var(--mmerp-color-text);
+  background: var(--mmerp-color-body);
+}
+
+/* Base UI portals (popovers, dialogs, menus) need a stacking context to escape into. */
+#root {
+  isolation: isolate;
+}

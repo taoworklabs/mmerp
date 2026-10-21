@@ -1,0 +1,36 @@
+.root {
+  position: relative;
+  overflow: hidden;
+}
+
+.viewport {
+  width: 100%;
+  height: 100%;
+  overscroll-behavior: contain;
+}
+
+.scrollbar {
+  display: flex;
+  touch-action: none;
+  padding: 2px;
+  background: transparent;
+}
+
+.scrollbar[data-orientation='vertical'] {
+  width: 8px;
+}
+
+.scrollbar[data-orientation='horizontal'] {
+  flex-direction: column;
+  height: 8px;
+}
+
+.thumb {
+  flex: 1;
+  border-radius: var(--mmerp-radius-sm);
+  background: var(--mmerp-color-gray-4);
+}
+
+.corner {
+  background: transparent;
+}

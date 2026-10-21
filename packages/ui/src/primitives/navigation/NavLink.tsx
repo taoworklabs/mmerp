@@ -1,0 +1,76 @@
+import { Collapsible } from '@base-ui/react/collapsible'
+import { useRender } from '@base-ui/react/use-render'
+import type * as React from 'react'
+import { cx } from '../../internal/cx.ts'
+import type { RenderProp } from '../../internal/render.ts'
+import styles from './NavLink.module.css'
+
+export interface NavLinkProps extends Omit<React.ComponentPropsWithRef<'a'>, 'children'> {
+  label: React.ReactNode
+  leftSection?: React.ReactNode
+  rightSection?: React.ReactNode
+  description?: React.ReactNode
+  active?: boolean
+  render?: RenderProp
+  children?: React.ReactNode
+  defaultOpened?: boolean
+}
+
+function ChevronIcon() {
+  return (
+    <svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true" className={styles.chevron}>
+      <path d="M2 4l3 3 3-3" stroke="currentColor" strokeWidth="1.4" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  )
+}
+
+export function NavLink({
+  label,
+  leftSection,
+  rightSection,
+  description,
+  active,
+  render,
+  children,
+  defaultOpened,
+  className,
+  ...props
+}: NavLinkProps) {
+  const body = (
+    <>
+      {leftSection && <span className={styles.section}>{leftSection}</span>}
+      <span className={styles.body}>
+        <span className={styles.label}>{label}</span>
+        {description && <span className={styles.description}>{description}</span>}
+      </span>
+      {rightSection && <span className={styles.section}>{rightSection}</span>}
+    </>
+  )
+
+  if (children) {
+    return (
+      <Collapsible.Root defaultOpen={defaultOpened} className={styles.group}>
+        <Collapsible.Trigger
+          className={cx(styles.root, className)}
+          data-active={active ? '' : undefined}
+          {...(props as React.ComponentPropsWithRef<'button'>)}
+        >
+          {body}
+          <ChevronIcon />
+        </Collapsible.Trigger>
+        <Collapsible.Panel className={styles.panel}>{children}</Collapsible.Panel>
+      </Collapsible.Root>
+    )
+  }
+
+  return useRender({
+    defaultTagName: 'a',
+    render,
+    props: {
+      className: cx(styles.root, className),
+      'data-active': active ? '' : undefined,
+      children: body,
+      ...props,
+    },
+  })
+}

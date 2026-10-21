@@ -1,0 +1,11 @@
+.root {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: var(--mmerp-theme-icon-size);
+  height: var(--mmerp-theme-icon-size);
+  border-radius: var(--mmerp-radius-md);
+  background: var(--mmerp-theme-icon-bg);
+  color: var(--mmerp-theme-icon-color);
+}

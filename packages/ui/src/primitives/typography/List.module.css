@@ -1,0 +1,8 @@
+.root {
+  margin: 0;
+  padding-inline-start: var(--mmerp-space-md);
+}
+
+.root > li + li {
+  margin-top: var(--mmerp-item-spacing);
+}

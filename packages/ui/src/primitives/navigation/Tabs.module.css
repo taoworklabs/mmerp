@@ -1,0 +1,35 @@
+.root {
+}
+
+.list {
+  display: flex;
+  border-bottom: 1px solid var(--mmerp-color-border);
+}
+
+.tab {
+  padding: var(--mmerp-space-xs) var(--mmerp-space-sm);
+  border: none;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  background: transparent;
+  color: var(--mmerp-color-dimmed);
+  font-family: var(--mmerp-font-family);
+  font-size: var(--mmerp-font-size-sm);
+  font-weight: var(--mmerp-font-weight-medium);
+  cursor: pointer;
+  transition: color var(--mmerp-motion-duration) ease, border-color var(--mmerp-motion-duration) ease;
+}
+
+.tab[data-active] {
+  color: var(--mmerp-color-text);
+  border-bottom-color: var(--mmerp-color-primary-6);
+}
+
+.tab[data-disabled] {
+  color: var(--mmerp-color-disabled);
+  cursor: not-allowed;
+}
+
+.panel {
+  padding-top: var(--mmerp-space-sm);
+}

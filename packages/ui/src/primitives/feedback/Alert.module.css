@@ -1,0 +1,21 @@
+.root {
+  display: flex;
+  gap: var(--mmerp-space-xs);
+  padding: var(--mmerp-space-sm);
+  border-radius: var(--mmerp-radius-md);
+  background: var(--mmerp-alert-bg);
+  color: var(--mmerp-alert-color);
+}
+
+.icon {
+  flex-shrink: 0;
+}
+
+.body {
+  min-width: 0;
+}
+
+.title {
+  font-weight: var(--mmerp-font-weight-medium);
+  margin-bottom: var(--mmerp-space-xxxs);
+}

@@ -1,0 +1,16 @@
+.root {
+  display: inline-flex;
+  align-items: center;
+  max-width: 100%;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  padding: 0 var(--mmerp-space-xs);
+  border-radius: var(--mmerp-radius-sm);
+  border: 1px solid var(--mmerp-badge-border);
+  background: var(--mmerp-badge-bg);
+  color: var(--mmerp-badge-color);
+  font-size: var(--mmerp-font-size-xs);
+  font-weight: var(--mmerp-font-weight-medium);
+  line-height: var(--mmerp-line-height-xs);
+}

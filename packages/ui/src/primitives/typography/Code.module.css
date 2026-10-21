@@ -1,0 +1,11 @@
+.root {
+  background-color: var(--mmerp-color-elevation-surface-sunken);
+  border-radius: var(--mmerp-radius-sm);
+  padding: 0 var(--mmerp-space-xxs);
+}
+
+.block {
+  display: block;
+  padding: var(--mmerp-space-sm);
+  overflow-x: auto;
+}
