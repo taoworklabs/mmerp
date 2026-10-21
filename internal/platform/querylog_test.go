@@ -155,6 +155,47 @@ func TestTracerUnnamed(t *testing.T) {
 	}
 }
 
+// TestTracerBatchLogsEachQueryOnce guards against pgx.BatchResults.Close
+// re-logging a batch's final error through TraceBatchEnd after the failing
+// query already logged it through TraceBatchQuery: a 2-query batch whose
+// second query fails must log exactly 2 records, not 3.
+func TestTracerBatchLogsEachQueryOnce(t *testing.T) {
+	c := &logCapture{}
+	pool := tracedPool(t, platform.NewQueryTracer(slog.New(c), 500*time.Millisecond))
+	ctx := platform.WithQueryName(t.Context(), "test.batch", "")
+
+	batch := &pgx.Batch{}
+	batch.Queue("SELECT 1")
+	batch.Queue("SELECT 1/0")
+
+	br := pool.SendBatch(ctx, batch)
+
+	var one int
+	if err := br.QueryRow().Scan(&one); err != nil {
+		t.Fatal(err)
+	}
+	var two int
+	if err := br.QueryRow().Scan(&two); err == nil {
+		t.Fatal("want an error from the division by zero")
+	}
+	// Close is where pgx.BatchResults re-reports the batch's final error through
+	// TraceBatchEnd; the bug only shows once this has run.
+	_ = br.Close()
+
+	got := c.all()
+	if len(got) != 2 {
+		t.Fatalf("records = %+v, want exactly 2", got)
+	}
+	if got[1].attrs["sqlstate"] != "22012" {
+		t.Errorf("sqlstate = %v, want 22012 (division_by_zero)", got[1].attrs["sqlstate"])
+	}
+}
+
+// The other half of the fix — a batch failing before any query reaches
+// TraceBatchQuery (e.g. while preparing it) — needs a protocol-level failure
+// pgtest's real Postgres doesn't give a cheap, deterministic way to provoke;
+// skipped rather than faked, since the database is never mocked.
+
 func TestTracerSQLState(t *testing.T) {
 	c := &logCapture{}
 	pool := tracedPool(t, platform.NewQueryTracer(slog.New(c), 500*time.Millisecond))

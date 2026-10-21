@@ -45,22 +45,36 @@ func (t *queryTracer) TraceQueryEnd(ctx context.Context, _ *pgx.Conn, data pgx.T
 	t.logQuery(ctx, data.CommandTag.RowsAffected(), data.Err)
 }
 
+// batchTracedKey marks, inside the ctx TraceBatchStart hands back, whether
+// TraceBatchQuery has already logged a query for this batch: pgx.BatchResults.Close
+// always calls TraceBatchEnd with the batch's final error, even when a failing
+// query already reached TraceBatchQuery, so TraceBatchEnd must not log twice.
+type batchTracedKey struct{}
+
 // TraceBatchStart marks when a pgx.Batch (page + count sent together) began, so
 // each query traced inside it can report a duration.
 func (t *queryTracer) TraceBatchStart(ctx context.Context, _ *pgx.Conn, _ pgx.TraceBatchStartData) context.Context {
-	return context.WithValue(ctx, queryStartKey{}, time.Now())
+	ctx = context.WithValue(ctx, queryStartKey{}, time.Now())
+	return context.WithValue(ctx, batchTracedKey{}, new(bool))
 }
 
 // TraceBatchQuery fires once per query inside the batch, so a batched page and
 // count each log their own record, by name and shape, never SQL or args.
 func (t *queryTracer) TraceBatchQuery(ctx context.Context, _ *pgx.Conn, data pgx.TraceBatchQueryData) {
+	if traced, ok := ctx.Value(batchTracedKey{}).(*bool); ok {
+		*traced = true
+	}
 	t.logQuery(ctx, data.CommandTag.RowsAffected(), data.Err)
 }
 
-// TraceBatchEnd only logs when the batch failed before any query in it was
-// traced (e.g. preparing it); per-query failures already went through TraceBatchQuery.
+// TraceBatchEnd only logs when the batch failed before any of its queries
+// reached TraceBatchQuery (e.g. while preparing it); a per-query failure was
+// already logged there.
 func (t *queryTracer) TraceBatchEnd(ctx context.Context, _ *pgx.Conn, data pgx.TraceBatchEndData) {
 	if data.Err == nil {
+		return
+	}
+	if traced, ok := ctx.Value(batchTracedKey{}).(*bool); ok && *traced {
 		return
 	}
 	t.logQuery(ctx, 0, data.Err)

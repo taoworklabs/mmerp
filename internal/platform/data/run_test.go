@@ -101,6 +101,41 @@ func TestRunPage(t *testing.T) {
 	}
 }
 
+// TestRunPageExactlyFull covers the boundary the short-page shortcut must not
+// swallow: a first page exactly as long as the limit is not "shorter than the
+// limit", so the count still has to run (as its own query, not batched, since
+// the page already went out alone).
+func TestRunPageExactlyFull(t *testing.T) {
+	c := &logCapture{}
+	pool := tracedPool(t, platform.NewQueryTracer(slog.New(c), 0))
+	seedRunFixture(t, pool)
+	ctx := platform.WithDB(t.Context(), pool)
+
+	l := runList()
+	got, err := l.Run(ctx, data.Query{Scope: data.GrantUnits([]int64{1}), Paging: runPaging(1, 10)})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	wantIDs := []int64{1, 4, 7, 10, 13, 16, 19, 22, 25, 28}
+	if len(got.Items) != len(wantIDs) {
+		t.Fatalf("len(Items) = %d, want %d (%+v)", len(got.Items), len(wantIDs), got.Items)
+	}
+	if got.Total != int64(len(wantIDs)) {
+		t.Fatalf("Total = %d, want %d (the true count)", got.Total, len(wantIDs))
+	}
+
+	var n int
+	for _, r := range c.all() {
+		if r.attrs["name"] == l.Name {
+			n++
+		}
+	}
+	if n != 2 {
+		t.Fatalf("logged %d queries named %q, want 2 (page and count, the count must still run)", n, l.Name)
+	}
+}
+
 func TestRunPagePastEnd(t *testing.T) {
 	pool := pgtest.New(t)
 	seedRunFixture(t, pool)
