@@ -50,7 +50,7 @@ func TestTighteningACapRefusesTheDraftOnApproval(t *testing.T) {
 // do not matter here, only that a row names the request.
 func (f *leaveFixture) attach(id int64) {
 	f.t.Helper()
-	_, err := f.pool.Exec(f.admin, `INSERT INTO attachment.files (doc_type, doc_id, file_id, name, size, content_type, uploaded_by)
+	_, err := f.system.Exec(f.admin, `INSERT INTO attachment.files (doc_type, doc_id, file_id, name, size, content_type, uploaded_by)
 		SELECT 'hrm.leave_request', $1, $2, 'giay-kham.pdf', 1, 'application/pdf', id FROM iam.users WHERE login = 'e'`, id, fmt.Sprint("f", id))
 	f.check(err)
 }
@@ -78,7 +78,7 @@ func TestApprovalNeedsTheAttachmentStillThere(t *testing.T) {
 	id := must(t)(f.hrm.CreateLeave(f.e, hrm.NewLeave{LeaveFields: f.leaveOf(sick, "2026-03-09", "2026-03-10", "2")}))
 	f.attach(id)
 	f.check(f.send(f.e, id))
-	if _, err := f.pool.Exec(f.admin, `DELETE FROM attachment.files WHERE doc_id = $1`, id); err != nil {
+	if _, err := f.system.Exec(f.admin, `DELETE FROM attachment.files WHERE doc_id = $1`, id); err != nil {
 		t.Fatal(err)
 	}
 	wantErr(t, f.appr.Approve(f.m, f.ticket(id), 1), "leave_attachment_required")

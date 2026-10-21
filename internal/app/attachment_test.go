@@ -321,7 +321,7 @@ func TestContractAttachmentsNeedSalaryView(t *testing.T) {
 	f := newJobsFixture(t)
 	pay := f.payrollSetup()
 	var contract int64
-	if err := f.pool.QueryRow(t.Context(), `SELECT min(id) FROM hrm.contracts`).Scan(&contract); err != nil {
+	if err := f.system.QueryRow(t.Context(), `SELECT min(id) FROM hrm.contracts`).Scan(&contract); err != nil {
 		t.Fatal(err)
 	}
 	files := fmt.Sprintf("/api/records/hrm.contract/%d/attachments", contract)

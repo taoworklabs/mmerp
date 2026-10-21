@@ -141,7 +141,7 @@ func TestPrintDraftContract(t *testing.T) {
 
 	// Audited on the contract, shown only to who may print it.
 	var printed int
-	if err := f.pool.QueryRow(t.Context(), `SELECT count(*) FROM audit.log WHERE action = 'printing.printed' AND doc_id = $1`, id).Scan(&printed); err != nil || printed != 2 {
+	if err := f.system.QueryRow(t.Context(), `SELECT count(*) FROM audit.log WHERE action = 'printing.printed' AND doc_id = $1`, id).Scan(&printed); err != nil || printed != 2 {
 		t.Fatalf("%d prints audited, %v", printed, err)
 	}
 	history := fmt.Sprintf("/api/documents/hrm.contract/%d/history", id)
@@ -176,7 +176,7 @@ func (f *jobsFixture) moveContract(c *client, id int64, to string) {
 // rename changes the full name of the employee coded code.
 func (f *jobsFixture) rename(code, name string) {
 	f.t.Helper()
-	if _, err := f.pool.Exec(f.t.Context(), `UPDATE hrm.employees SET full_name = $2 WHERE code = $1`, code, name); err != nil {
+	if _, err := f.system.Exec(f.t.Context(), `UPDATE hrm.employees SET full_name = $2 WHERE code = $1`, code, name); err != nil {
 		f.t.Fatal(err)
 	}
 }
@@ -216,10 +216,10 @@ func TestPrintContractPostedBeforePrinting(t *testing.T) {
 	pay := f.payrollSetup()
 	f.work([]string{"hrm"})
 	var id int64
-	if err := f.pool.QueryRow(t.Context(), `SELECT c.id FROM hrm.contracts c JOIN hrm.employees e ON e.id = c.employee_id WHERE e.code = 'E1'`).Scan(&id); err != nil {
+	if err := f.system.QueryRow(t.Context(), `SELECT c.id FROM hrm.contracts c JOIN hrm.employees e ON e.id = c.employee_id WHERE e.code = 'E1'`).Scan(&id); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := f.pool.Exec(t.Context(), `DELETE FROM printing.snapshots WHERE doc_id = $1`, id); err != nil {
+	if _, err := f.system.Exec(t.Context(), `DELETE FROM printing.snapshots WHERE doc_id = $1`, id); err != nil {
 		t.Fatal(err)
 	}
 	params := fmt.Sprintf(`{"id":%d}`, id)
@@ -310,7 +310,7 @@ func TestPrintPayslips(t *testing.T) {
 		t.Fatalf("unknown employee: %+v", j)
 	}
 	var parts string
-	if err := f.pool.QueryRow(t.Context(), `SELECT data->>'parts' FROM audit.log WHERE action = 'printing.printed' ORDER BY id DESC LIMIT 1`).Scan(&parts); err != nil || parts != fmt.Sprintf("[%d]", f.e2) {
+	if err := f.system.QueryRow(t.Context(), `SELECT data->>'parts' FROM audit.log WHERE action = 'printing.printed' ORDER BY id DESC LIMIT 1`).Scan(&parts); err != nil || parts != fmt.Sprintf("[%d]", f.e2) {
 		t.Fatalf("audited parts %q %v", parts, err)
 	}
 
@@ -332,12 +332,12 @@ func TestPrintPayslips(t *testing.T) {
 
 	// Posted: one snapshot per line, and payslips reprint the same after a rename.
 	var version int32
-	if err := f.pool.QueryRow(t.Context(), `SELECT version FROM record.documents WHERE id = $1`, id).Scan(&version); err != nil {
+	if err := f.system.QueryRow(t.Context(), `SELECT version FROM record.documents WHERE id = $1`, id).Scan(&version); err != nil {
 		t.Fatal(err)
 	}
 	f.ok(pay, "POST", fmt.Sprintf("/api/documents/hrm.payroll/%d/transitions", id), fmt.Sprintf(`{"to":"posted","version":%d}`, version), 200)
 	var snapshots int
-	if err := f.pool.QueryRow(t.Context(), `SELECT count(*) FROM printing.snapshots WHERE doc_type = 'hrm.payroll' AND doc_id = $1`, id).Scan(&snapshots); err != nil || snapshots != 2 {
+	if err := f.system.QueryRow(t.Context(), `SELECT count(*) FROM printing.snapshots WHERE doc_type = 'hrm.payroll' AND doc_id = $1`, id).Scan(&snapshots); err != nil || snapshots != 2 {
 		t.Fatalf("%d snapshots %v", snapshots, err)
 	}
 	posted := f.printed(pay, "hrm.payslip", params)
@@ -420,19 +420,19 @@ func TestPrintTextBlocks(t *testing.T) {
 	}
 	// E1's contract, posted before the change but never printed, takes the new text.
 	var e1 int64
-	if err := f.pool.QueryRow(t.Context(), `SELECT c.id FROM hrm.contracts c JOIN hrm.employees e ON e.id = c.employee_id WHERE e.code = 'E1'`).Scan(&e1); err != nil {
+	if err := f.system.QueryRow(t.Context(), `SELECT c.id FROM hrm.contracts c JOIN hrm.employees e ON e.id = c.employee_id WHERE e.code = 'E1'`).Scan(&e1); err != nil {
 		t.Fatal(err)
 	}
 	if p := f.printed(pay, "hrm.contract", fmt.Sprintf(`{"id":%d}`, e1)); !strings.Contains(p[0], "Điều khoản mới của C.") {
 		t.Fatalf("E1's contract: %q", p[0])
 	}
 	var saved int
-	if err := f.pool.QueryRow(t.Context(), `SELECT count(*) FROM audit.log WHERE action = 'printing.blocks_saved'`).Scan(&saved); err != nil || saved != 1 {
+	if err := f.system.QueryRow(t.Context(), `SELECT count(*) FROM audit.log WHERE action = 'printing.blocks_saved'`).Scan(&saved); err != nil || saved != 1 {
 		t.Fatalf("%d saves audited %v", saved, err)
 	}
 
 	// With HRM off, its templates read but take no change.
-	off := &client{t: t, h: app.New(env(t, f.pool, nil), app.Modules(), nil)}
+	off := &client{t: t, h: app.New(env(t, f.env.Pool, nil), app.Modules(), nil)}
 	off.cookie = off.do("POST", "/api/auth/login", `{"login":"admin","password":"correct horse"}`).Result().Cookies()[0]
 	f.ok(off, "GET", "/api/print-templates/hrm.contract", "", 200)
 	wantCode(t, off.do("PUT", "/api/print-templates/hrm.contract/blocks", blocks("x")), 403, "product_not_enabled")

@@ -23,7 +23,7 @@ import (
 // approves timesheets. Jobs are queued, and only worked once work is called.
 type jobsFixture struct {
 	t                 *testing.T
-	pool              *pgxpool.Pool
+	system            *pgxpool.Pool // writable, for the test's own reads and seeding; the app gets env.Pool
 	env               app.Env
 	admin, hr, head   *client
 	p, hrID, hrGrant  int64
@@ -36,9 +36,8 @@ func newJobsFixture(t *testing.T) *jobsFixture {
 	if err := app.CreateAdmin(t.Context(), pool, "admin", "Admin", "correct horse"); err != nil {
 		t.Fatal(err)
 	}
-	f := &jobsFixture{t: t, env: env(t, pool, []string{"hrm"})}
-	// Tests read and seed rows directly; the app itself writes through env.Pool.
-	f.pool = f.env.SystemPool
+	e := env(t, pool, []string{"hrm"})
+	f := &jobsFixture{t: t, system: e.SystemPool, env: e}
 	f.admin = f.login("admin")
 	c := f.id(f.admin, "/api/org-units", `{"parent_id":null,"kind":"company","name":"C"}`)
 	f.p = f.id(f.admin, "/api/org-units", fmt.Sprintf(`{"parent_id":%d,"kind":"department","name":"P"}`, c))
@@ -284,7 +283,7 @@ func TestTimesheetImportSampleFlow(t *testing.T) {
 	}
 
 	// Step 13: March closed by a posted payroll, the timesheet cannot be cancelled.
-	if _, err := f.pool.Exec(t.Context(), `INSERT INTO hrm.payroll_periods (legal_entity_id, period_start, period_end, posted_payroll_id)
+	if _, err := f.system.Exec(t.Context(), `INSERT INTO hrm.payroll_periods (legal_entity_id, period_start, period_end, posted_payroll_id)
 		SELECT legal_entity_id, '2026-03-01', '2026-03-31', id FROM record.documents WHERE id = $1`, f.timesheet); err != nil {
 		t.Fatal(err)
 	}
@@ -428,7 +427,7 @@ func TestSystemJobsForAdmin(t *testing.T) {
 		`INSERT INTO river_job (kind, args, state, attempt, max_attempts, metadata, finalized_at, queue, priority)
 		 VALUES ('dataio.cleanup', '{}', 'completed', 1, 25, '{}', now(), 'default', 1)`,
 	} {
-		if _, err := f.pool.Exec(t.Context(), q); err != nil {
+		if _, err := f.system.Exec(t.Context(), q); err != nil {
 			t.Fatal(err)
 		}
 	}
@@ -490,7 +489,7 @@ func TestJobNotifications(t *testing.T) {
 		t.Fatalf("hr: %+v", p.Items)
 	}
 	var n int
-	if err := f.pool.QueryRow(t.Context(), `SELECT count(*) FROM notification.notifications WHERE user_id <> $1`, f.hrID).Scan(&n); err != nil || n != 0 {
+	if err := f.system.QueryRow(t.Context(), `SELECT count(*) FROM notification.notifications WHERE user_id <> $1`, f.hrID).Scan(&n); err != nil || n != 0 {
 		t.Fatalf("%d others told %v", n, err)
 	}
 }

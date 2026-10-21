@@ -170,14 +170,14 @@ func TestMailServer(t *testing.T) {
 	}
 	wantCode(t, f.hr.do("GET", "/api/mail-server", ""), 403, "forbidden")
 	var plain int
-	if err := f.pool.QueryRow(t.Context(), `SELECT count(*) FROM notification.mail_server WHERE position('s3cret'::bytea IN password) > 0`).Scan(&plain); err != nil || plain != 0 {
+	if err := f.system.QueryRow(t.Context(), `SELECT count(*) FROM notification.mail_server WHERE position('s3cret'::bytea IN password) > 0`).Scan(&plain); err != nil || plain != 0 {
 		t.Fatalf("password in the clear: %d %v", plain, err)
 	}
-	if a := auditActions(t, f.pool); strings.Count(a, "notification.mail_server_saved") != 2 {
+	if a := auditActions(t, f.system); strings.Count(a, "notification.mail_server_saved") != 2 {
 		t.Fatalf("audit = %s", a)
 	}
 	var details string
-	_ = f.pool.QueryRow(t.Context(), `SELECT string_agg(details::text, ' ') FROM audit.log`).Scan(&details)
+	_ = f.system.QueryRow(t.Context(), `SELECT string_agg(details::text, ' ') FROM audit.log`).Scan(&details)
 	if strings.Contains(details, "s3cret") {
 		t.Fatalf("password audited: %s", details)
 	}
@@ -238,10 +238,10 @@ func TestNotificationEmails(t *testing.T) {
 	smtp := newSMTP(t)
 	f.ok(f.admin, "PUT", "/api/mail-server", mailServer(smtp.port, `"pw"`), 204)
 	var headID int64
-	_ = f.pool.QueryRow(t.Context(), `SELECT id FROM iam.users WHERE login = 'head'`).Scan(&headID)
+	_ = f.system.QueryRow(t.Context(), `SELECT id FROM iam.users WHERE login = 'head'`).Scan(&headID)
 	f.ok(f.admin, "PUT", fmt.Sprintf("/api/users/%d/email", headID), `{"email":"head@example.com"}`, 204)
 	// head has no language of their own: the tenant's applies.
-	if _, err := f.pool.Exec(t.Context(), `INSERT INTO setting.values (key, value) VALUES ('setting.locale', 'en')`); err != nil {
+	if _, err := f.system.Exec(t.Context(), `INSERT INTO setting.values (key, value) VALUES ('setting.locale', 'en')`); err != nil {
 		t.Fatal(err)
 	}
 	number := f.get(f.hr).Number
@@ -261,7 +261,7 @@ func TestNotificationEmails(t *testing.T) {
 		t.Fatalf("hr unread = %d", n)
 	}
 	var queued int
-	if err := f.pool.QueryRow(t.Context(), `SELECT count(*) FROM river_job WHERE kind = 'notification.email'`).Scan(&queued); err != nil || queued != 1 {
+	if err := f.system.QueryRow(t.Context(), `SELECT count(*) FROM river_job WHERE kind = 'notification.email'`).Scan(&queued); err != nil || queued != 1 {
 		t.Fatalf("%d email jobs %v", queued, err)
 	}
 

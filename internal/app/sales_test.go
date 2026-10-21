@@ -25,7 +25,8 @@ func newSalesFixture(t *testing.T, products []string) *salesFixture {
 	if err := app.CreateAdmin(t.Context(), pool, "admin", "Admin", "correct horse"); err != nil {
 		t.Fatal(err)
 	}
-	f := &salesFixture{jobsFixture: &jobsFixture{t: t, pool: pool, env: env(t, pool, products)}}
+	e := env(t, pool, products)
+	f := &salesFixture{jobsFixture: &jobsFixture{t: t, system: e.SystemPool, env: e}}
 	f.admin = f.login("admin")
 	f.company = f.id(f.admin, "/api/org-units", `{"parent_id":null,"kind":"company","name":"C","tax_code":"0100000001","legal_name":"Công ty TNHH C","address":"1 Tràng Tiền"}`)
 	f.a = f.id(f.admin, "/api/org-units", fmt.Sprintf(`{"parent_id":%d,"kind":"department","name":"Kinh doanh A"}`, f.company))
@@ -116,7 +117,8 @@ func TestSalesCatalogueIsData(t *testing.T) {
 	if err := app.CreateAdmin(t.Context(), pool, "admin", "Admin", "correct horse"); err != nil {
 		t.Fatal(err)
 	}
-	f := &jobsFixture{t: t, pool: pool, env: env(t, pool, []string{"sales"})}
+	e := env(t, pool, []string{"sales"})
+	f := &jobsFixture{t: t, system: e.SystemPool, env: e}
 	// Without a code, the item gets one issued.
 	f.id(f.login("admin"), "/api/sales/items", `{"name":"Bút bi","unit":"hộp","price":10005,"vat_rate":"8","active":true}`)
 	f.env = env(t, pool, nil)
@@ -131,7 +133,7 @@ func TestSalesCatalogueIsData(t *testing.T) {
 
 // newSalesFixtureOn signs staff of A in again on a server running with products.
 func newSalesFixtureOn(f *salesFixture, products []string) *client {
-	f.env = env(f.t, f.pool, products)
+	f.env = env(f.t, f.env.Pool, products)
 	return f.login("staff_a")
 }
 

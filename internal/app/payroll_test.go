@@ -32,7 +32,7 @@ func (f *jobsFixture) payrollSetup() *client {
 func (f *jobsFixture) legalEntity() int64 {
 	f.t.Helper()
 	var c int64
-	if err := f.pool.QueryRow(f.t.Context(), `SELECT id FROM iam.org_units WHERE kind = 'company'`).Scan(&c); err != nil {
+	if err := f.system.QueryRow(f.t.Context(), `SELECT id FROM iam.org_units WHERE kind = 'company'`).Scan(&c); err != nil {
 		f.t.Fatal(err)
 	}
 	return c
@@ -126,10 +126,10 @@ func TestPayrollSampleFlow(t *testing.T) {
 	}
 	f.ok(pay, "POST", fmt.Sprintf("/api/documents/hrm.payroll/%d/transitions", id), fmt.Sprintf(`{"to":"posted","version":%d}`, f.payroll(pay, id).Version), 200)
 	var lines, others int
-	if err := f.pool.QueryRow(t.Context(), `SELECT count(*) FROM posting.lines WHERE doc_id = $1 AND voided_at IS NULL`, id).Scan(&lines); err != nil {
+	if err := f.system.QueryRow(t.Context(), `SELECT count(*) FROM posting.lines WHERE doc_id = $1 AND voided_at IS NULL`, id).Scan(&lines); err != nil {
 		t.Fatal(err)
 	}
-	if err := f.pool.QueryRow(t.Context(), `SELECT count(*) FROM river_job WHERE kind NOT IN ('dataio.import', 'dataio.export', 'dataio.cleanup', 'attachment.cleanup', 'hrm.payroll_compute')`).Scan(&others); err != nil {
+	if err := f.system.QueryRow(t.Context(), `SELECT count(*) FROM river_job WHERE kind NOT IN ('dataio.import', 'dataio.export', 'dataio.cleanup', 'attachment.cleanup', 'hrm.payroll_compute')`).Scan(&others); err != nil {
 		t.Fatal(err)
 	}
 	if lines != 5 || others != 0 {
@@ -178,7 +178,7 @@ func TestPayrollJobsWithProductOff(t *testing.T) {
 	f := newJobsFixture(t)
 	pay := f.payrollSetup()
 	// No timesheet is needed when nobody is paid: drop the contracts.
-	if _, err := f.pool.Exec(t.Context(), `UPDATE record.documents SET status = 'cancelled' WHERE doc_type = 'hrm.contract'`); err != nil {
+	if _, err := f.system.Exec(t.Context(), `UPDATE record.documents SET status = 'cancelled' WHERE doc_type = 'hrm.contract'`); err != nil {
 		t.Fatal(err)
 	}
 	jobs, err := app.NewJobs(f.env, app.Modules())

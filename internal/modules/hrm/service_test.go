@@ -31,7 +31,7 @@ import (
 type fixture struct {
 	t      *testing.T
 	core   *coretest.Core
-	pool   platform.Conn
+	system platform.Conn // writable, for the test's own reads and seeding; services get core.Pool
 	iam    *iam.Service
 	rec    *record.Service
 	appr   *approval.Service
@@ -71,7 +71,7 @@ func newFixture(t *testing.T) *fixture {
 	ctx = platform.WithJobs(ctx, jobs)
 	admin := platform.WithJobs(core.Admin, jobs)
 	c := must(t)(ids.CreateOrgUnit(admin, iam.OrgUnitInput{Kind: "company", Name: "C"}))
-	f := &fixture{t: t, core: core, pool: pgtest.System(t, pool), iam: ids, rec: rec, appr: core.Approval, hrm: h, num: num, jobs: jobs, admin: admin, c: c}
+	f := &fixture{t: t, core: core, system: pgtest.System(t, pool), iam: ids, rec: rec, appr: core.Approval, hrm: h, num: num, jobs: jobs, admin: admin, c: c}
 	f.a = must(t)(ids.CreateOrgUnit(admin, iam.OrgUnitInput{ParentID: &c, Kind: "department", Name: "A"}))
 	f.b = must(t)(ids.CreateOrgUnit(admin, iam.OrgUnitInput{ParentID: &c, Kind: "department", Name: "B"}))
 	f.ctxFor = func(login string, grants ...string) context.Context {
@@ -257,19 +257,19 @@ func TestSensitiveFields(t *testing.T) {
 	}
 	id := must(t)(f.hrm.CreateEmployee(sens, in))
 	var createdFor int64
-	if err := f.pool.QueryRow(t.Context(), `SELECT doc_id FROM audit.log WHERE action = 'hrm.employee_created'`).Scan(&createdFor); err != nil || createdFor != id {
+	if err := f.system.QueryRow(t.Context(), `SELECT doc_id FROM audit.log WHERE action = 'hrm.employee_created'`).Scan(&createdFor); err != nil || createdFor != id {
 		t.Fatalf("creation audited for %d, want %d (%v)", createdFor, id, err)
 	}
 
 	var raw []byte
-	if err := f.pool.QueryRow(t.Context(), `SELECT national_id FROM hrm.employees WHERE id = $1`, id).Scan(&raw); err != nil {
+	if err := f.system.QueryRow(t.Context(), `SELECT national_id FROM hrm.employees WHERE id = $1`, id).Scan(&raw); err != nil {
 		t.Fatal(err)
 	}
 	if len(raw) == 0 || strings.Contains(string(raw), "079123456789") {
 		t.Fatalf("national_id stored as %q", raw)
 	}
 	var auditText string
-	if err := f.pool.QueryRow(t.Context(), `SELECT string_agg(data::text, ' ') FROM audit.log WHERE doc_type = 'hrm.employee'`).Scan(&auditText); err != nil {
+	if err := f.system.QueryRow(t.Context(), `SELECT string_agg(data::text, ' ') FROM audit.log WHERE doc_type = 'hrm.employee'`).Scan(&auditText); err != nil {
 		t.Fatal(err)
 	}
 	if strings.Contains(auditText, "079123456789") || !strings.Contains(auditText, "national_id") {
@@ -295,7 +295,7 @@ func TestSensitiveFields(t *testing.T) {
 		t.Fatalf("reveal empty = %v %v", v, err)
 	}
 	var views int
-	if err := f.pool.QueryRow(t.Context(), `SELECT count(*) FROM audit.log WHERE action = 'hrm.employee_sensitive_viewed' AND doc_id = $1`, id).Scan(&views); err != nil || views != 2 {
+	if err := f.system.QueryRow(t.Context(), `SELECT count(*) FROM audit.log WHERE action = 'hrm.employee_sensitive_viewed' AND doc_id = $1`, id).Scan(&views); err != nil || views != 2 {
 		t.Fatalf("view audits = %d %v", views, err)
 	}
 
@@ -410,7 +410,7 @@ func TestDependents(t *testing.T) {
 		t.Fatalf("delete twice: %v", err)
 	}
 	var stored string
-	_ = f.pool.QueryRow(t.Context(), `SELECT string_agg(data::text, ' ') FROM audit.log WHERE doc_type = 'hrm.employee'`).Scan(&stored)
+	_ = f.system.QueryRow(t.Context(), `SELECT string_agg(data::text, ' ') FROM audit.log WHERE doc_type = 'hrm.employee'`).Scan(&stored)
 	if strings.Contains(stored, "Con") {
 		t.Fatalf("dependent in clear in audit: %s", stored)
 	}
@@ -444,7 +444,7 @@ func TestRevealFailsWhenItsAuditFails(t *testing.T) {
 	in.Sensitive = &hrm.SensitiveValues{NationalID: str("079123456789")}
 	id := must(t)(f.hrm.CreateEmployee(sens, in))
 
-	if _, err := f.pool.Exec(t.Context(), `
+	if _, err := f.system.Exec(t.Context(), `
 		CREATE FUNCTION audit.refuse() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN RAISE EXCEPTION 'audit down'; END $$;
 		CREATE TRIGGER refuse BEFORE INSERT ON audit.log FOR EACH ROW EXECUTE FUNCTION audit.refuse();`); err != nil {
 		t.Fatal(err)
@@ -479,7 +479,7 @@ func TestManagerCycleFormedAtOnce(t *testing.T) {
 			return err
 		}
 		wg.Go(func() { second = f.hrm.UpdateEmployee(hr, c, managed("C", &d).EmployeeInput) })
-		pgtest.AwaitLockWait(t, f.pool)
+		pgtest.AwaitLockWait(t, f.system)
 		return nil
 	}); err != nil {
 		t.Fatal(err)
