@@ -17,6 +17,7 @@ web/node_modules: web/package.json web/pnpm-lock.yaml
 	@touch $@
 
 gen: web/node_modules
+	go build -o bin/sqlc-gen-data ./cmd/sqlc-gen-data
 	$(SQLC) generate
 	go run ./cmd/openapi > api/openapi.json
 	pnpm -C web gen

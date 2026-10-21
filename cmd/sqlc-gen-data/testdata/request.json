@@ -1,0 +1,89 @@
+{
+  "settings": {
+    "version": "2",
+    "engine": "postgresql",
+    "schema": ["migrations"],
+    "queries": ["internal/modules/hrm/queries.sql"],
+    "codegen": {"out": "internal/modules/hrm/internal/store", "plugin": "data"}
+  },
+  "queries": [
+    {
+      "text": "SELECT count(*) FROM hrm.employees",
+      "name": "CountEmployees",
+      "cmd": ":one",
+      "columns": [{"name": "count", "not_null": true}],
+      "filename": "queries.sql"
+    },
+    {
+      "text": "SELECT id, name FROM hrm.employees WHERE id = $1",
+      "name": "GetEmployee",
+      "cmd": ":one",
+      "columns": [{"name": "id", "not_null": true}, {"name": "name", "not_null": true}],
+      "params": [{"number": 1, "column": {"name": "id", "not_null": true}}],
+      "comments": [" Reads one employee."],
+      "filename": "queries.sql"
+    },
+    {
+      "text": "SELECT id FROM hrm.units",
+      "name": "ListUnits",
+      "cmd": ":many",
+      "columns": [{"name": "id", "not_null": true}],
+      "filename": "queries.sql"
+    },
+    {
+      "text": "SELECT id FROM hrm.employees WHERE unit_id = $1 AND active = $2",
+      "name": "ListEmployeesInUnit",
+      "cmd": ":many",
+      "columns": [{"name": "id", "not_null": true}],
+      "params": [
+        {"number": 1, "column": {"name": "unit_id", "not_null": true}},
+        {"number": 2, "column": {"name": "active", "not_null": true}}
+      ],
+      "filename": "queries.sql"
+    },
+    {
+      "text": "DELETE FROM hrm.drafts",
+      "name": "PurgeDrafts",
+      "cmd": ":exec",
+      "filename": "queries.sql"
+    },
+    {
+      "text": "UPDATE hrm.employees SET name = $2 WHERE id = $1",
+      "name": "RenameEmployee",
+      "cmd": ":exec",
+      "params": [
+        {"number": 1, "column": {"name": "id", "not_null": true}},
+        {"number": 2, "column": {"name": "name", "not_null": true}}
+      ],
+      "filename": "queries.sql"
+    },
+    {
+      "text": "DELETE FROM hrm.sessions",
+      "name": "ClearSessions",
+      "cmd": ":execrows",
+      "filename": "queries.sql"
+    },
+    {
+      "text": "DELETE FROM hrm.employees WHERE id = $1",
+      "name": "DeleteEmployee",
+      "cmd": ":execrows",
+      "params": [{"number": 1, "column": {"name": "id", "not_null": true}}],
+      "filename": "queries.sql"
+    },
+    {
+      "text": "SELECT e.id, e.name, u.name AS unit_name FROM hrm.employees e JOIN hrm.units u ON u.id = e.unit_id",
+      "name": "EmployeeList",
+      "cmd": ":many",
+      "columns": [
+        {"name": "id", "not_null": true},
+        {"name": "name", "not_null": true},
+        {"name": "unit_name", "not_null": true}
+      ],
+      "comments": [" data:base", " Base of the employee list."],
+      "filename": "queries.sql"
+    }
+  ],
+  "sqlc_version": "v1.30.0",
+  "plugin_options": "",
+  "global_options": ""
+}
