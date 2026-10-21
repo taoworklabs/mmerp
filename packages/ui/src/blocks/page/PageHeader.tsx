@@ -1,10 +1,10 @@
-import { cloneElement } from 'react'
 import type * as React from 'react'
 import { cx } from '../../internal/cx.ts'
-import { ArrowLeftIcon } from '../../internal/icons.tsx'
+import { ArrowLeftIcon, ChevronRightIcon } from '../../internal/icons.tsx'
 import { ActionIcon, type ActionIconProps } from '../../primitives/input/ActionIcon.tsx'
 import { Breadcrumbs } from '../../primitives/navigation/Breadcrumbs.tsx'
 import { Tooltip } from '../../primitives/overlay/Tooltip.tsx'
+import { Anchor } from '../../primitives/typography/Anchor.tsx'
 import { Text } from '../../primitives/typography/Text.tsx'
 import { Title } from '../../primitives/typography/Title.tsx'
 import { icon } from '../../tokens/tokens.ts'
@@ -56,8 +56,12 @@ function PageHeaderRoot({
   return (
     <div className={cx(styles.root, className)} data-plain={plain ? '' : undefined} data-tabs={tabs ? '' : undefined} {...props}>
       {breadcrumbs && breadcrumbs.length > 0 && (
-        <Breadcrumbs aria-label={breadcrumbsLabel} currentLast={Boolean(current)}>
-          {breadcrumbs.map((crumb, index) => cloneElement(crumb.render, { key: index }, crumb.label))}
+        <Breadcrumbs aria-label={breadcrumbsLabel} currentLast={Boolean(current)} separator={<ChevronRightIcon />}>
+          {breadcrumbs.map((crumb, index) => (
+            <Anchor key={index} tone="dimmed" render={crumb.render}>
+              {crumb.label}
+            </Anchor>
+          ))}
           {current && (
             <Text size="sm" weight={500} render={<span />}>
               {title}

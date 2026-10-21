@@ -31,36 +31,41 @@ export const List: Story = {
 
 export const Record: Story = {
   render: () => (
-    <Tabs defaultValue="overview">
-      <PageHeader
-        title="Nguyễn Văn A"
-        current
-        breadcrumbsLabel="Breadcrumb"
-        breadcrumbs={[{ label: 'Customers', render: <a href="#" /> }]}
-        back={
-          <PageHeader.BackButton
-            label="Back to customers"
-            onClick={() => {
-              /* history navigation is the caller's */
-            }}
-          />
-        }
-        leading={<Avatar alt="Nguyễn Văn A">NA</Avatar>}
-        status={<Badge color="success">Active</Badge>}
-        description="customer@example.com"
-        summary={
-          <Text size="sm" tone="dimmed">
-            Summary placeholder
-          </Text>
-        }
-        tabs={
-          <Tabs.List>
-            <Tabs.Tab value="overview">Overview</Tabs.Tab>
-            <Tabs.Tab value="orders">Orders</Tabs.Tab>
-          </Tabs.List>
-        }
-      />
-    </Tabs>
+    // Padded like it always is in the app (inside Page's own frame): flush against the
+    // viewport's own corner, headless Chromium's default pointer position reports a false
+    // :hover there, which would make the crumb assertion below flaky.
+    <div style={{ padding: 24 }}>
+      <Tabs defaultValue="overview">
+        <PageHeader
+          title="Nguyễn Văn A"
+          current
+          breadcrumbsLabel="Breadcrumb"
+          breadcrumbs={[{ label: 'Customers', render: <a href="#" /> }]}
+          back={
+            <PageHeader.BackButton
+              label="Back to customers"
+              onClick={() => {
+                /* history navigation is the caller's */
+              }}
+            />
+          }
+          leading={<Avatar alt="Nguyễn Văn A">NA</Avatar>}
+          status={<Badge color="success">Active</Badge>}
+          description="customer@example.com"
+          summary={
+            <Text size="sm" tone="dimmed">
+              Summary placeholder
+            </Text>
+          }
+          tabs={
+            <Tabs.List>
+              <Tabs.Tab value="overview">Overview</Tabs.Tab>
+              <Tabs.Tab value="orders">Orders</Tabs.Tab>
+            </Tabs.List>
+          }
+        />
+      </Tabs>
+    </div>
   ),
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
@@ -70,6 +75,17 @@ export const Record: Story = {
 
     const back = canvas.getByRole('button', { name: 'Back to customers' })
     expect(back).toBeInTheDocument()
+
+    // A crumb reads like dimmed text, not a default browser link: no underline until hovered,
+    // the dimmed token's colour rather than the primitive's own brand blue.
+    const crumb = canvas.getByRole('link', { name: 'Customers' })
+    expect(getComputedStyle(crumb).textDecorationLine).toBe('none')
+
+    const probe = document.createElement('div')
+    probe.style.color = 'var(--mmerp-color-dimmed)'
+    canvasElement.appendChild(probe)
+    expect(getComputedStyle(crumb).color).toBe(getComputedStyle(probe).color)
+    probe.remove()
   },
 }
 

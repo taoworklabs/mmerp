@@ -25,7 +25,7 @@ function ChevronIcon() {
   )
 }
 
-export function NavLink({
+function NavLinkRoot({
   label,
   leftSection,
   rightSection,
@@ -78,3 +78,13 @@ export function NavLink({
     },
   })
 }
+
+export type NavLinkGroupLabelProps = React.ComponentPropsWithRef<'p'>
+
+// GroupLabel heads a group of nav items: the caption a quiet nav group needs, indented to sit
+// above its links rather than flush with the nav's own edge.
+function GroupLabel({ className, ...props }: NavLinkGroupLabelProps) {
+  return <p className={cx(styles.groupLabel, className)} {...props} />
+}
+
+export const NavLink = Object.assign(NavLinkRoot, { GroupLabel })

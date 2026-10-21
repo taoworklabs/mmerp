@@ -96,3 +96,13 @@
 .panel {
   padding-left: var(--mmerp-space-md);
 }
+
+.groupLabel {
+  margin: 0;
+  margin-top: var(--mmerp-space-sm);
+  margin-bottom: var(--mmerp-space-xxs);
+  padding-inline: var(--mmerp-space-xs);
+  font-size: var(--mmerp-font-size-xs);
+  line-height: var(--mmerp-line-height-xs);
+  color: var(--mmerp-color-dimmed);
+}

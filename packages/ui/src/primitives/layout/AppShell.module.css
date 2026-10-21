@@ -17,15 +17,43 @@
 
 .header {
   grid-area: header;
+  display: flex;
+  align-items: center;
+  padding-inline: var(--mmerp-space-md);
   background: var(--mmerp-color-elevation-surface);
   border-bottom: 1px solid var(--mmerp-color-border);
 }
 
+/* The caller passes one element (often a Group with its own justify-content); it needs the
+   header's full width to actually space its own children apart. */
+.header > * {
+  flex: 1;
+  min-width: 0;
+}
+
 .navbar {
   grid-area: navbar;
-  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  padding: var(--mmerp-space-xs);
   background: var(--mmerp-color-elevation-surface);
   border-right: 1px solid var(--mmerp-color-border);
+}
+
+.navbarContent {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.navbarFooter {
+  flex: none;
+}
+
+/* Below the drawer breakpoint the footer's own chrome (a rail-collapse toggle) is meaningless:
+   the rail never applies there, the drawer is always full width. */
+.root[data-mobile] .navbarFooter {
+  display: none;
 }
 
 .root[data-mobile] .navbar {

@@ -52,7 +52,7 @@ export { Popover, type PopoverPopupProps, type PopoverSide, type PopoverAlign, t
 export { Menu, type MenuPopupProps, type MenuItemProps, type MenuSide, type MenuAlign } from './primitives/overlay/Menu.tsx'
 export { Tooltip, type TooltipProps, type TooltipSide } from './primitives/overlay/Tooltip.tsx'
 export { Tabs, type TabsProps, type TabsListProps, type TabsTabProps, type TabsPanelProps } from './primitives/navigation/Tabs.tsx'
-export { NavLink, type NavLinkProps } from './primitives/navigation/NavLink.tsx'
+export { NavLink, type NavLinkProps, type NavLinkGroupLabelProps } from './primitives/navigation/NavLink.tsx'
 export { Breadcrumbs, type BreadcrumbsProps } from './primitives/navigation/Breadcrumbs.tsx'
 export { Pagination, type PaginationProps, type PaginationLabels } from './primitives/navigation/Pagination.tsx'
 export { Burger, type BurgerProps } from './primitives/navigation/Burger.tsx'

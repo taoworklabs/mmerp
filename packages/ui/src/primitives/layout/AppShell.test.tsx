@@ -22,6 +22,24 @@ describe('AppShell', () => {
     await expect.poll(() => navbar.getBoundingClientRect().width).toBe(240)
   })
 
+  it('pins navbarFooter at the bottom of the navbar, hidden below the drawer breakpoint', async () => {
+    const { container } = await render(
+      <AppShell header={<div>Header</div>} navbar={<div>Navbar content</div>} navbarFooter={<button>Collapse</button>} navbarOpened>
+        <div>Content</div>
+      </AppShell>,
+    )
+    const footer = container.querySelector('button')!
+
+    // display:none lands on the footer's own wrapping div, not the button itself, so a bounding
+    // rect (collapsed by any hidden ancestor) is the reliable check, not the button's own display.
+    await page.viewport(1300, 800)
+    await expect.poll(() => footer.getBoundingClientRect().width).toBeGreaterThan(0)
+
+    // Below 64em the rail never applies, so the rail-collapse toggle it pins is meaningless there.
+    await page.viewport(800, 900)
+    await expect.poll(() => footer.getBoundingClientRect().width).toBe(0)
+  })
+
   it('lays main out as a full-height column, so a flex-filling child fills the window below the header', async () => {
     const { container } = await render(
       <AppShell header={<div>Header</div>}>

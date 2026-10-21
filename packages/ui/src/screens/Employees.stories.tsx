@@ -219,7 +219,7 @@ function Shell({ children }: { children: ReactNode }) {
         <Stack gap={0}>
           {groups.map((g) => (
             <Stack key={g ?? ''} gap={0} role="group" aria-label={g}>
-              {g && !narrow && <Text size="xs" tone="dimmed">{g}</Text>}
+              {g && !narrow && <NavLink.GroupLabel>{g}</NavLink.GroupLabel>}
               {nav
                 .filter((n) => n.group === g)
                 .map((n) => {
@@ -245,12 +245,14 @@ function Shell({ children }: { children: ReactNode }) {
                 })}
             </Stack>
           ))}
-          <Tooltip label={collapsed ? 'Mở rộng menu' : 'Thu gọn menu'} side="right">
-            <ActionIcon variant="subtle" color="gray" aria-label={collapsed ? 'Mở rộng menu' : 'Thu gọn menu'} onClick={() => setCollapsed(!collapsed)}>
-              {collapsed ? <IconLayoutSidebarLeftExpand {...icon.button} aria-hidden /> : <IconLayoutSidebarLeftCollapse {...icon.button} aria-hidden />}
-            </ActionIcon>
-          </Tooltip>
         </Stack>
+      }
+      navbarFooter={
+        <Tooltip label={collapsed ? 'Mở rộng menu' : 'Thu gọn menu'} side="right">
+          <ActionIcon variant="subtle" color="gray" aria-label={collapsed ? 'Mở rộng menu' : 'Thu gọn menu'} onClick={() => setCollapsed(!collapsed)}>
+            {collapsed ? <IconLayoutSidebarLeftExpand {...icon.button} aria-hidden /> : <IconLayoutSidebarLeftCollapse {...icon.button} aria-hidden />}
+          </ActionIcon>
+        </Tooltip>
       }
     >
       {children}
@@ -728,7 +730,7 @@ function NewScreen({ go }: { go: (route: Route) => void }) {
             )}
           </FormSection>
           <FormBar>
-            <Button variant="default" onClick={() => go({ page: 'list' })}>
+            <Button variant="subtle" color="gray" onClick={() => go({ page: 'list' })}>
               Hủy
             </Button>
             <Button type="submit">Thêm nhân viên</Button>

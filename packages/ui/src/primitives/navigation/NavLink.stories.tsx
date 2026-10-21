@@ -90,3 +90,23 @@ export const Nested: Story = {
     expect(canvas.getByRole('link', { name: 'Categories' })).toBeVisible()
   },
 }
+
+export const GroupLabel: Story = {
+  render: () => (
+    <div>
+      <NavLink.GroupLabel>Hồ sơ</NavLink.GroupLabel>
+      <NavLink label="Nhân viên" href="#" />
+    </div>
+  ),
+  play: async ({ canvasElement }) => {
+    const label = within(canvasElement).getByText('Hồ sơ')
+    // Indented like the links below it, not flush with the nav's own edge.
+    expect(getComputedStyle(label).paddingInlineStart).toBe('8px')
+
+    const probe = document.createElement('div')
+    probe.style.color = 'var(--mmerp-color-dimmed)'
+    canvasElement.appendChild(probe)
+    expect(getComputedStyle(label).color).toBe(getComputedStyle(probe).color)
+    probe.remove()
+  },
+}
