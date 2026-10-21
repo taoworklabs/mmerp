@@ -15,11 +15,12 @@ import (
 // including old files of other modules.
 func TestCleanup(t *testing.T) {
 	pool := pgtest.New(t)
+	sys := pgtest.System(t, pool)
 	root := platform.Files{Dir: t.TempDir()}
 	files := root.Sub("dataio")
 	ctx := platform.WithFiles(platform.WithDB(t.Context(), pool), root)
 	var owner int64
-	if err := pool.QueryRow(ctx, `INSERT INTO iam.users (login, name, password_hash) VALUES ('u', 'U', '') RETURNING id`).Scan(&owner); err != nil {
+	if err := sys.QueryRow(ctx, `INSERT INTO iam.users (login, name, password_hash) VALUES ('u', 'U', '') RETURNING id`).Scan(&owner); err != nil {
 		t.Fatal(err)
 	}
 	save := func() string {
@@ -39,7 +40,7 @@ func TestCleanup(t *testing.T) {
 		neighbours = append(neighbours, filepath.Join(other.Dir, id))
 	}
 	for id, expires := range map[string]string{expired: "now() - interval '1 minute'", live: "now() + interval '1 hour'"} {
-		if _, err := pool.Exec(ctx, `INSERT INTO dataio.files (id, name, owner_id, expires_at) VALUES ($1, 'f.xlsx', $2, `+expires+`)`, id, owner); err != nil {
+		if _, err := sys.Exec(ctx, `INSERT INTO dataio.files (id, name, owner_id, expires_at) VALUES ($1, 'f.xlsx', $2, `+expires+`)`, id, owner); err != nil {
 			t.Fatal(err)
 		}
 	}

@@ -12,8 +12,9 @@ import (
 )
 
 func TestRecordAndVoid(t *testing.T) {
-	ctx := platform.WithDB(t.Context(), pgtest.New(t))
-	db := platform.DBFrom(ctx)
+	pool := pgtest.New(t)
+	ctx := platform.WithDB(t.Context(), pool)
+	db := pgtest.System(t, pool)
 	var c, dept int64
 	if err := db.QueryRow(ctx, `INSERT INTO iam.org_units (kind, name) VALUES ('company', 'C') RETURNING id`).Scan(&c); err != nil {
 		t.Fatal(err)
@@ -29,6 +30,8 @@ func TestRecordAndVoid(t *testing.T) {
 		}
 		return record.Ref{Type: "hrm.payroll", ID: id}
 	}
+	// Record and Void run in their caller's transaction.
+	tx := func(fn func(context.Context) error) error { return platform.InTx(ctx, fn) }
 	var changed []record.Ref
 	s := posting.NewService(posting.Hooks{OnChanged: func(_ context.Context, ref record.Ref) error {
 		changed = append(changed, ref)
@@ -36,14 +39,14 @@ func TestRecordAndVoid(t *testing.T) {
 	}})
 	ref := document()
 	lines := []posting.Line{{Kind: posting.SalaryExpense, OrgUnitID: dept, Amount: 100}, {Kind: posting.PitPayable, OrgUnitID: c, Amount: -5}}
-	if err := s.Record(ctx, ref, lines); err != nil {
+	if err := tx(func(ctx context.Context) error { return s.Record(ctx, ref, lines) }); err != nil {
 		t.Fatal(err)
 	}
 	// A second recording would double the lines.
-	if err := s.Record(ctx, ref, lines); !errors.Is(err, posting.ErrAlreadyRecorded) {
+	if err := tx(func(ctx context.Context) error { return s.Record(ctx, ref, lines) }); !errors.Is(err, posting.ErrAlreadyRecorded) {
 		t.Fatalf("second record: %v", err)
 	}
-	if err := s.Void(ctx, ref); err != nil {
+	if err := tx(func(ctx context.Context) error { return s.Void(ctx, ref) }); err != nil {
 		t.Fatal(err)
 	}
 	var count, voided, sum, le int64
@@ -56,14 +59,15 @@ func TestRecordAndVoid(t *testing.T) {
 		t.Fatalf("lines %d voided %d sum %d le %d date %s, hook ran %d times", count, voided, sum, le, date, len(changed))
 	}
 	// Once voided, the document may be recorded again.
-	if err := s.Record(ctx, ref, lines); err != nil {
+	if err := tx(func(ctx context.Context) error { return s.Record(ctx, ref, lines) }); err != nil {
 		t.Fatal(err)
 	}
-	if err := s.Record(ctx, record.Ref{Type: "hrm.payroll", ID: -1}, lines); !errors.Is(err, platform.ErrNotFound) {
+	if err := tx(func(ctx context.Context) error { return s.Record(ctx, record.Ref{Type: "hrm.payroll", ID: -1}, lines) }); !errors.Is(err, platform.ErrNotFound) {
 		t.Fatalf("unknown document: %v", err)
 	}
 	// Without a hook (no accounting) both still work.
-	if err := posting.NewService(posting.Hooks{}).Record(ctx, document(), nil); err != nil {
+	bare := posting.NewService(posting.Hooks{})
+	if err := tx(func(ctx context.Context) error { return bare.Record(ctx, document(), nil) }); err != nil {
 		t.Fatal(err)
 	}
 }

@@ -145,27 +145,34 @@ func (s *Service) Unread(ctx context.Context) (int64, error) {
 // MarkRead marks one of the actor's notifications read; anyone else's does not exist.
 func (s *Service) MarkRead(ctx context.Context, id int64) error {
 	actor, _ := platform.ActorFrom(ctx)
-	n, err := store.New(platform.DBFrom(ctx)).MarkRead(ctx, store.MarkReadParams{ID: id, UserID: actor})
-	if err == nil && n == 0 {
-		return platform.ErrNotFound
-	}
-	return err
+	return platform.InTx(ctx, func(ctx context.Context) error {
+		n, err := store.New(platform.DBFrom(ctx)).MarkRead(ctx, store.MarkReadParams{ID: id, UserID: actor})
+		if err == nil && n == 0 {
+			return platform.ErrNotFound
+		}
+		return err
+	})
 }
 
 func (s *Service) MarkAllRead(ctx context.Context) error {
 	actor, _ := platform.ActorFrom(ctx)
-	return store.New(platform.DBFrom(ctx)).MarkAllRead(ctx, actor)
+	return platform.InTx(ctx, func(ctx context.Context) error {
+		return store.New(platform.DBFrom(ctx)).MarkAllRead(ctx, actor)
+	})
 }
 
 // JobEnded tells a requester that their job ended; it is the platform's job notifier. Unlike
-// Send it keeps the actor, who is the requester the job runs as.
+// Send it keeps the actor, who is the requester the job runs as. It joins the job's
+// completion transaction when there is one; a failed job has none.
 func JobEnded(ctx context.Context, jobID, requester int64, failed bool) error {
 	kind := JobCompleted
 	if failed {
 		kind = JobFailed
 	}
-	_, err := store.New(platform.DBFrom(ctx)).Insert(ctx, store.InsertParams{
-		Users: []int64{requester}, Kind: string(kind), JobID: pgtype.Int8{Int64: jobID, Valid: true},
+	return platform.InTx(ctx, func(ctx context.Context) error {
+		_, err := store.New(platform.DBFrom(ctx)).Insert(ctx, store.InsertParams{
+			Users: []int64{requester}, Kind: string(kind), JobID: pgtype.Int8{Int64: jobID, Valid: true},
+		})
+		return err
 	})
-	return err
 }

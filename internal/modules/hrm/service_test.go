@@ -60,7 +60,7 @@ func newFixture(t *testing.T) *fixture {
 		c = platform.WithJobNotifier(platform.WithKeyring(platform.WithProducts(platform.WithDB(c, pool), []string{"hrm"}), pgtest.Keyring()), notification.JobEnded)
 		return platform.WithJobs(c, jobs)
 	}
-	jobs, err := river.NewClient(riverpgxv5.New(pool), &river.Config{
+	jobs, err := river.NewClient(riverpgxv5.New(pgtest.System(t, pool)), &river.Config{
 		Queues: map[string]river.QueueConfig{river.QueueDefault: {MaxWorkers: 2}}, Workers: workers,
 		Logger:     slog.New(slog.NewTextHandler(io.Discard, nil)),
 		Middleware: []rivertype.Middleware{platform.JobMiddleware(base)},
@@ -71,7 +71,7 @@ func newFixture(t *testing.T) *fixture {
 	ctx = platform.WithJobs(ctx, jobs)
 	admin := platform.WithJobs(core.Admin, jobs)
 	c := must(t)(ids.CreateOrgUnit(admin, iam.OrgUnitInput{Kind: "company", Name: "C"}))
-	f := &fixture{t: t, core: core, pool: pool, iam: ids, rec: rec, appr: core.Approval, hrm: h, num: num, jobs: jobs, admin: admin, c: c}
+	f := &fixture{t: t, core: core, pool: pgtest.System(t, pool), iam: ids, rec: rec, appr: core.Approval, hrm: h, num: num, jobs: jobs, admin: admin, c: c}
 	f.a = must(t)(ids.CreateOrgUnit(admin, iam.OrgUnitInput{ParentID: &c, Kind: "department", Name: "A"}))
 	f.b = must(t)(ids.CreateOrgUnit(admin, iam.OrgUnitInput{ParentID: &c, Kind: "department", Name: "B"}))
 	f.ctxFor = func(login string, grants ...string) context.Context {

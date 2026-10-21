@@ -284,7 +284,7 @@ func TestDelegationOnlyWhileActive(t *testing.T) {
 	f := newFixture(t)
 	f.rule(f.user("boss"))
 	// Ended yesterday: past ones can't be created, so written directly.
-	_, err := f.core.Pool.Exec(f.admin, `INSERT INTO approval.delegations (user_id, delegate_id, starts_on, ends_on, created_by)
+	_, err := f.core.System.Exec(f.admin, `INSERT INTO approval.delegations (user_id, delegate_id, starts_on, ends_on, created_by)
 		VALUES ($1, $2, $3, $4, $1)`, f.users["boss"], f.users["big_boss"], f.day(-3), f.day(-1))
 	f.check(err)
 	f.delegate("boss", "big_boss", 1, 3)

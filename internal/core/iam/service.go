@@ -119,7 +119,10 @@ func (s *Service) Login(ctx context.Context, login, password string) (string, er
 }
 
 func (s *Service) loginFailed(ctx context.Context, login string) error {
-	if err := s.d.Audit.Record(ctx, "iam.login_failed", map[string]any{"login": login}); err != nil {
+	// Its own transaction: the attempt is recorded although the login fails.
+	if err := platform.InTx(ctx, func(ctx context.Context) error {
+		return s.d.Audit.Record(ctx, "iam.login_failed", map[string]any{"login": login})
+	}); err != nil {
 		return err
 	}
 	return ErrInvalidCredentials
@@ -191,7 +194,9 @@ func (s *Service) Me(ctx context.Context) (Me, error) {
 // SetLocale saves the actor's language.
 func (s *Service) SetLocale(ctx context.Context, locale string) error {
 	id, _ := platform.ActorFrom(ctx)
-	return store.New(platform.DBFrom(ctx)).SetLocale(ctx, store.SetLocaleParams{ID: id, Locale: pgtype.Text{String: locale, Valid: true}})
+	return platform.InTx(ctx, func(ctx context.Context) error {
+		return store.New(platform.DBFrom(ctx)).SetLocale(ctx, store.SetLocaleParams{ID: id, Locale: pgtype.Text{String: locale, Valid: true}})
+	})
 }
 
 // Users lists every account.

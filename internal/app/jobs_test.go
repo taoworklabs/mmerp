@@ -36,7 +36,9 @@ func newJobsFixture(t *testing.T) *jobsFixture {
 	if err := app.CreateAdmin(t.Context(), pool, "admin", "Admin", "correct horse"); err != nil {
 		t.Fatal(err)
 	}
-	f := &jobsFixture{t: t, pool: pool, env: env(t, pool, []string{"hrm"})}
+	f := &jobsFixture{t: t, env: env(t, pool, []string{"hrm"})}
+	// Tests read and seed rows directly; the app itself writes through env.Pool.
+	f.pool = f.env.SystemPool
 	f.admin = f.login("admin")
 	c := f.id(f.admin, "/api/org-units", `{"parent_id":null,"kind":"company","name":"C"}`)
 	f.p = f.id(f.admin, "/api/org-units", fmt.Sprintf(`{"parent_id":%d,"kind":"department","name":"P"}`, c))

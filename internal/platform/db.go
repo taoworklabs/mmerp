@@ -16,6 +16,32 @@ type Conn interface {
 	QueryRow(ctx context.Context, sql string, args ...any) pgx.Row
 }
 
+// PoolRole says what a pool may do outside a transaction.
+type PoolRole int
+
+const (
+	// AppPool sessions are read-only by default: only InTx can write, so a write
+	// that forgot it fails with 25006 instead of committing on its own.
+	AppPool PoolRole = iota
+	// SystemPool sessions are writable: migrations and River, which manage their own transactions.
+	SystemPool
+)
+
+// NewPool opens a pool for role; tracer may be nil.
+func NewPool(ctx context.Context, url string, role PoolRole, tracer pgx.QueryTracer) (*pgxpool.Pool, error) {
+	cfg, err := pgxpool.ParseConfig(url)
+	if err != nil {
+		return nil, err
+	}
+	if role == AppPool {
+		cfg.ConnConfig.RuntimeParams["default_transaction_read_only"] = "on"
+	}
+	if tracer != nil {
+		cfg.ConnConfig.Tracer = tracer
+	}
+	return pgxpool.NewWithConfig(ctx, cfg)
+}
+
 type poolKey struct{}
 type txKey struct{}
 
@@ -32,12 +58,13 @@ func DBFrom(ctx context.Context) Conn {
 	return mustPool(ctx)
 }
 
-// InTx runs fn in a transaction, joining the one already in ctx if present.
+// InTx runs fn in a transaction, joining the one already in ctx if present. It is the
+// only way to write on an AppPool.
 func InTx(ctx context.Context, fn func(ctx context.Context) error) error {
 	if txFrom(ctx) != nil {
 		return fn(ctx)
 	}
-	return pgx.BeginFunc(ctx, mustPool(ctx), func(tx pgx.Tx) error {
+	return pgx.BeginTxFunc(ctx, mustPool(ctx), pgx.TxOptions{AccessMode: pgx.ReadWrite}, func(tx pgx.Tx) error {
 		return fn(context.WithValue(ctx, txKey{}, tx))
 	})
 }

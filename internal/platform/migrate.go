@@ -20,7 +20,8 @@ const migrationLockKey = 7_346_201_001
 var migrationName = regexp.MustCompile(`^[0-9]{4}_[a-z]+_[a-z0-9_]+\.sql$`)
 
 // Migrate applies every missing migration in fsys, then River's, in one
-// transaction, so a failure leaves the schema at its previous version.
+// transaction, so a failure leaves the schema at its previous version. pool must be
+// a SystemPool: an AppPool's sessions are read-only.
 // ponytail: transaction-scoped lock; switch to a session lock when backup must run between locking and migrating.
 func Migrate(ctx context.Context, pool *pgxpool.Pool, fsys fs.FS) error {
 	entries, err := fs.ReadDir(fsys, ".")
