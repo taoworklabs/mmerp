@@ -73,6 +73,18 @@ export const Record: Story = {
   },
 }
 
+export const NewRecord: Story = {
+  args: {
+    title: 'New customer',
+    breadcrumbsLabel: 'Breadcrumb',
+    breadcrumbs: [{ label: 'Customers', render: <a href="#" /> }],
+  },
+  play: async ({ canvasElement }) => {
+    // The trail stops at the parent list; the page itself isn't shown yet, so nothing is "current".
+    expect(canvasElement.querySelectorAll('[aria-current]')).toHaveLength(0)
+  },
+}
+
 export const LongTitle: Story = {
   args: {
     title: 'x'.repeat(200),

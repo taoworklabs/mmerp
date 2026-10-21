@@ -16,25 +16,26 @@ export interface PageHeaderBreadcrumb {
   render: React.ReactElement
 }
 
-export interface PageHeaderProps extends Omit<React.ComponentPropsWithRef<'div'>, 'title'> {
-  title: string
-  // Where this page sits: links to the pages above it, the page itself excluded.
-  breadcrumbs?: PageHeaderBreadcrumb[]
-  breadcrumbsLabel?: string
-  // The breadcrumb ends with the page's own title.
-  current?: boolean
-  // The back control, built by the caller: history logic (where "back" goes) is theirs.
-  back?: React.ReactElement
-  leading?: React.ReactNode
-  status?: React.ReactNode
-  description?: React.ReactNode
-  actions?: React.ReactNode
-  summary?: React.ReactNode
-  // A Tabs.List (inside a Tabs around the page) that sits on the header's rule.
-  tabs?: React.ReactNode
-  // No rule under the header: the content draws its own frame.
-  plain?: boolean
-}
+// Either no breadcrumbs, or breadcrumbs with the nav's accessible name: never an unnamed landmark.
+type PageHeaderBreadcrumbsProps = { breadcrumbs?: undefined; breadcrumbsLabel?: undefined } | { breadcrumbs: PageHeaderBreadcrumb[]; breadcrumbsLabel: string }
+
+export type PageHeaderProps = Omit<React.ComponentPropsWithRef<'div'>, 'title'> &
+  PageHeaderBreadcrumbsProps & {
+    title: string
+    // The breadcrumb ends with the page's own title.
+    current?: boolean
+    // The back control, built by the caller: history logic (where "back" goes) is theirs.
+    back?: React.ReactElement
+    leading?: React.ReactNode
+    status?: React.ReactNode
+    description?: React.ReactNode
+    actions?: React.ReactNode
+    summary?: React.ReactNode
+    // A Tabs.List (inside a Tabs around the page) that sits on the header's rule.
+    tabs?: React.ReactNode
+    // No rule under the header: the content draws its own frame.
+    plain?: boolean
+  }
 
 function PageHeaderRoot({
   title,
@@ -55,7 +56,7 @@ function PageHeaderRoot({
   return (
     <div className={cx(styles.root, className)} data-plain={plain ? '' : undefined} data-tabs={tabs ? '' : undefined} {...props}>
       {breadcrumbs && breadcrumbs.length > 0 && (
-        <Breadcrumbs aria-label={breadcrumbsLabel ?? ''}>
+        <Breadcrumbs aria-label={breadcrumbsLabel} currentLast={Boolean(current)}>
           {breadcrumbs.map((crumb, index) => cloneElement(crumb.render, { key: index }, crumb.label))}
           {current && (
             <Text size="sm" weight={500} render={<span />}>
