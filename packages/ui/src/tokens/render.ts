@@ -27,9 +27,9 @@ function colorLines(): string[] {
   for (const [key, value] of Object.entries(tokens.color.semantic)) {
     lines.push(`--mmerp-color-${key}: ${value};`)
   }
-  for (const [name, hex] of Object.entries(tokens.color.decorative)) {
-    lines.push(`--mmerp-color-${name}-light: ${hex}1A;`)
-    lines.push(`--mmerp-color-${name}-light-color: ${hex};`)
+  for (const [name, { bg, text }] of Object.entries(tokens.color.decorative)) {
+    lines.push(`--mmerp-color-${name}-light: ${bg};`)
+    lines.push(`--mmerp-color-${name}-light-color: ${text};`)
   }
   return lines
 }

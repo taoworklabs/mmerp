@@ -1,4 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
+import type { DecorativeColor } from '../../tokens/tokens.ts'
+import { Group } from '../layout/Group.tsx'
 import { Avatar } from './Avatar.tsx'
 
 const meta: Meta<typeof Avatar> = {
@@ -19,4 +21,18 @@ export const Image: Story = {
 
 export const Initials: Story = {
   args: { alt: 'Nguyễn Văn A', children: 'NA' },
+}
+
+const decorativeColors: DecorativeColor[] = ['blue', 'teal', 'violet', 'orange', 'pink', 'cyan', 'grape', 'indigo']
+
+export const Decorative: Story = {
+  render: () => (
+    <Group>
+      {decorativeColors.map((color) => (
+        <Avatar key={color} alt={color} color={color}>
+          {color.slice(0, 2).toUpperCase()}
+        </Avatar>
+      ))}
+    </Group>
+  ),
 }
