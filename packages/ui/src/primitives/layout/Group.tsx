@@ -16,6 +16,8 @@ export interface GroupProps extends React.ComponentPropsWithRef<'div'> {
   justify?: GroupJustify
   wrap?: boolean
   grow?: boolean
+  shrink?: boolean
+  fill?: boolean
   render?: RenderProp
 }
 
@@ -33,7 +35,7 @@ const justifyContent: Record<GroupJustify, React.CSSProperties['justifyContent']
   'space-between': 'space-between',
 }
 
-export function Group({ gap = 'md', align = 'center', justify, wrap = true, grow, className, style, render, ...props }: GroupProps) {
+export function Group({ gap = 'md', align = 'center', justify, wrap = true, grow, shrink, fill, className, style, render, ...props }: GroupProps) {
   const vars: StyleVars = {
     ...style,
     '--mmerp-gap': spaceVar(gap, 'md'),
@@ -48,6 +50,8 @@ export function Group({ gap = 'md', align = 'center', justify, wrap = true, grow
       style: vars,
       'data-wrap': wrap ? '' : undefined,
       'data-grow': grow ? '' : undefined,
+      'data-shrink': shrink ? '' : undefined,
+      'data-fill': fill ? '' : undefined,
       ...props,
     },
   })

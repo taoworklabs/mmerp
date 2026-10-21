@@ -16,8 +16,8 @@ Mantine is replaced, not wrapped. A thin wrapper over Mantine would keep the dep
    - **tokens**: the values in today's `theme.ts` and `cssVariablesResolver` (colour ramps, type scale, spacing, radius, shadows, breakpoints, control heights, layout widths), written once in TypeScript and emitted as CSS custom properties `--mmerp-*`;
    - **primitives**: every Mantine component mmerp uses today, rebuilt on Base UI where Base UI has a matching part, and on plain HTML and CSS otherwise (see the inventory below);
    - **hooks**: the five `@mantine/hooks` mmerp uses (`useDisclosure`, `useMediaQuery`, `useDebouncedValue`, `useLocalStorage`, `useElementSize`).
-2. **`@mmerp/ui` knows nothing of mmerp.** It has no i18n, router, API client, React Hook Form or domain term, and no user-facing text. Labels, aria labels and messages come in as props. Everything that knows mmerp stays in `shared/ui`.
-3. **`shared/ui` keeps its role and its public API.** `DataTable`, `ListView`, the form fields, page templates, `confirm`, `notify`, `ModalFooter` and the rest are rebuilt on `@mmerp/ui`. Their props do not change unless a prop only passed a Mantine type through.
+2. **`@mmerp/ui` knows nothing of mmerp.** It has no i18n, router, API client, React Hook Form or domain term, and no user-facing text. Labels, aria labels and messages come in as props. Everything that knows mmerp stays in `shared/ui`. Amended 2026-10-21: see 2026-10-21-ui-kit-layout-blocks-design.md.
+3. **`shared/ui` keeps its role and its public API.** `DataTable`, `ListView`, the form fields, page templates, `confirm`, `notify`, `ModalFooter` and the rest are rebuilt on `@mmerp/ui`. Their props do not change unless a prop only passed a Mantine type through. Amended 2026-10-21: see 2026-10-21-ui-kit-layout-blocks-design.md.
 4. **Areas move from `@mantine/core` to `@mmerp/ui`**, under the same allowlist as today (`Anchor`, `Button`, `Divider`, `Group`, `List`, `Loader`, `Skeleton`, `Stack`, `Text`, `Tooltip`). Everything else still comes through `shared/ui`.
 5. **The package owns its design.** It starts from today's look and may then add, change or remove tokens and styling as its direction evolves; it does not follow `theme.ts`. The starting point is the values in `ui.md` and the `mmerp-ui` skill: 30px controls (40px in modals and form sections), 14/20 text, the 4px spacing scale, the radius per role, overlays as the only things with a shadow, the focus ring, the 44px touch target below 1024px, motion of 200ms at most that honours `prefers-reduced-motion`.
 6. **All four `@mantine/*` packages are removed from `package.json`**, together with the Mantine MCP server, the vendored `mantine-*` skills and every Mantine mention in the docs.
@@ -39,7 +39,7 @@ Mantine is replaced, not wrapped. A thin wrapper over Mantine would keep the dep
 - `@mmerp/ui` importing from `web/src`, using i18n, or holding Vietnamese or English text.
 - A colour, size or spacing literal outside the token file or a primitive's own CSS module.
 - Visible regressions on real screens: a 36px button, a menu without keyboard support, a modal that does not trap focus, a date field that no longer accepts `dd/mm/yyyy` typed by hand.
-- A second, parallel set of components: `shared/ui` re-exporting `@mmerp/ui` under new names, or primitives duplicating a `shared/ui` component.
+- A second, parallel set of components: `shared/ui` re-exporting `@mmerp/ui` under new names, or primitives duplicating a `shared/ui` component. Amended 2026-10-21: see 2026-10-21-ui-kit-layout-blocks-design.md.
 
 ## Constraints
 
@@ -212,7 +212,7 @@ Each ticket ends with the `mmerp-ui` checklist on the screens it touched and a m
 - Base UI is the primitive layer. Mantine is removed entirely, not wrapped. (owner's stated direction)
 - A separate package in the same repo, modelled on `twenty-ui`. (owner's stated direction)
 - No Tailwind. CSS modules plus CSS custom properties. (owner's stated direction, on the recommendation that Tailwind would add a dependency and erode the rule that areas carry no styling)
-- `@mmerp/ui` holds tokens and primitives only and knows nothing of mmerp. `shared/ui` is the presets layer. (my call, played back to the owner)
+- `@mmerp/ui` holds tokens and primitives only and knows nothing of mmerp. `shared/ui` is the presets layer. (my call, played back to the owner) Amended 2026-10-21: see 2026-10-21-ui-kit-layout-blocks-design.md.
 - Build the package first, in isolation, without affecting ongoing work; view and test it in Storybook (addons a11y and Vitest only) instead of `/dev/ui`. (owner's stated direction, 2026-10-20)
 - In phase 2, `/dev/ui` layer 3 links to the primitives' Storybook instead of repeating them; Storybook covers primitives, `/dev/ui` mmerp components, patterns and templates. (my call)
 - The package sits at `packages/ui` in the repo root, named `@mmerp/ui`, consumed from source with no build step; in phase 2 `web/` links to it. (my call: inside `web/`, `eslint .` would already pick it up, which breaks the no-impact rule)

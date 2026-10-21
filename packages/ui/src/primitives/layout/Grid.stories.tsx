@@ -47,3 +47,13 @@ export const ColSpanAuto: Story = {
     </Grid>
   ),
 }
+
+export const Responsive: Story = {
+  render: () => (
+    <Grid>
+      <Grid.Col span={{ base: 12, md: 4 }} data-testid="c">
+        Responsive
+      </Grid.Col>
+    </Grid>
+  ),
+}

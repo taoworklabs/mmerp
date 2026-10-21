@@ -11,6 +11,7 @@ export interface NavLinkProps extends Omit<React.ComponentPropsWithRef<'a'>, 'ch
   rightSection?: React.ReactNode
   description?: React.ReactNode
   active?: boolean
+  compact?: boolean
   render?: RenderProp
   children?: React.ReactNode
   defaultOpened?: boolean
@@ -24,12 +25,13 @@ function ChevronIcon() {
   )
 }
 
-export function NavLink({
+function NavLinkRoot({
   label,
   leftSection,
   rightSection,
   description,
   active,
+  compact,
   render,
   children,
   defaultOpened,
@@ -53,6 +55,7 @@ export function NavLink({
         <Collapsible.Trigger
           className={cx(styles.root, className)}
           data-active={active ? '' : undefined}
+          data-compact={compact ? '' : undefined}
           {...(props as React.ComponentPropsWithRef<'button'>)}
         >
           {body}
@@ -69,8 +72,19 @@ export function NavLink({
     props: {
       className: cx(styles.root, className),
       'data-active': active ? '' : undefined,
+      'data-compact': compact ? '' : undefined,
       children: body,
       ...props,
     },
   })
 }
+
+export type NavLinkGroupLabelProps = React.ComponentPropsWithRef<'p'>
+
+// GroupLabel heads a group of nav items: the caption a quiet nav group needs, indented to sit
+// above its links rather than flush with the nav's own edge.
+function GroupLabel({ className, ...props }: NavLinkGroupLabelProps) {
+  return <p className={cx(styles.groupLabel, className)} {...props} />
+}
+
+export const NavLink = Object.assign(NavLinkRoot, { GroupLabel })

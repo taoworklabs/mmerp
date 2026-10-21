@@ -43,3 +43,17 @@ export const CustomSeparator: Story = {
     </Breadcrumbs>
   ),
 }
+
+export const NotCurrentPage: Story = {
+  // A trail that stops short of the page itself (e.g. a new-record form): the last link is a
+  // parent, not the current page, so nothing in the trail should read as "current".
+  render: (args) => (
+    <Breadcrumbs {...args} currentLast={false}>
+      <Anchor href="#">Home</Anchor>
+      <Anchor href="#">Customers</Anchor>
+    </Breadcrumbs>
+  ),
+  play: async ({ canvasElement }) => {
+    expect(canvasElement.querySelectorAll('[aria-current]')).toHaveLength(0)
+  },
+}

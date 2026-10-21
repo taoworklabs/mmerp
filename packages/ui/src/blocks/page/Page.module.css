@@ -1,0 +1,50 @@
+.root {
+  display: flex;
+  flex-direction: column;
+  gap: var(--mmerp-space-lg);
+  padding-inline: var(--mmerp-space-md);
+  padding-block: var(--mmerp-space-lg);
+}
+
+@media (min-width: 64em) {
+  .root {
+    padding-inline: var(--mmerp-space-xl);
+  }
+}
+
+@media (min-width: 80em) {
+  .root {
+    padding-inline: var(--mmerp-space-xxl);
+  }
+}
+
+/* A fill page is one item of the AppShell main column, taking the window below the app header. */
+.fill {
+  flex: 1;
+  min-height: 0;
+}
+
+/* A record's or a form's page is centred at the width it stops at, its header too, so both share a left edge. */
+.inner {
+  display: flex;
+  flex-direction: column;
+  gap: var(--mmerp-space-lg);
+  width: 100%;
+  max-width: var(--mmerp-content-width);
+  margin-inline: auto;
+}
+
+.inner.detail {
+  max-width: var(--mmerp-detail-width);
+}
+
+/* The scrolling area of a fill page: everything above it (the header) stays put. */
+.content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--mmerp-space-lg);
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  scrollbar-width: thin;
+}

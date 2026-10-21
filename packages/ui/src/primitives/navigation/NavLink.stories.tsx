@@ -46,6 +46,31 @@ export const Long: Story = {
   },
 }
 
+export const Compact: Story = {
+  render: () => (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+      <NavLink label="Inactive" href="#inactive" leftSection="⚙" compact />
+      <NavLink label="Active" href="#active" leftSection="⚙" active compact />
+    </div>
+  ),
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    const [inactive, active] = canvas.getAllByRole('link')
+
+    expect(inactive!.getBoundingClientRect().height).toBe(32)
+    expect(active!.getBoundingClientRect().height).toBe(32)
+
+    const probe = document.createElement('div')
+    probe.style.color = 'var(--mmerp-color-dimmed)'
+    canvasElement.appendChild(probe)
+    const dimmed = getComputedStyle(probe).color
+    probe.remove()
+
+    expect(getComputedStyle(inactive!).color).toBe(dimmed)
+    expect(getComputedStyle(active!).color).not.toBe(dimmed)
+  },
+}
+
 export const Nested: Story = {
   args: {
     label: 'Products',
@@ -63,5 +88,25 @@ export const Nested: Story = {
     await userEvent.click(canvas.getByRole('button', { name: 'Products' }))
     expect(canvas.getByRole('link', { name: 'Items' })).toBeVisible()
     expect(canvas.getByRole('link', { name: 'Categories' })).toBeVisible()
+  },
+}
+
+export const GroupLabel: Story = {
+  render: () => (
+    <div>
+      <NavLink.GroupLabel>Hồ sơ</NavLink.GroupLabel>
+      <NavLink label="Nhân viên" href="#" />
+    </div>
+  ),
+  play: async ({ canvasElement }) => {
+    const label = within(canvasElement).getByText('Hồ sơ')
+    // Indented like the links below it, not flush with the nav's own edge.
+    expect(getComputedStyle(label).paddingInlineStart).toBe('8px')
+
+    const probe = document.createElement('div')
+    probe.style.color = 'var(--mmerp-color-dimmed)'
+    canvasElement.appendChild(probe)
+    expect(getComputedStyle(label).color).toBe(getComputedStyle(probe).color)
+    probe.remove()
   },
 }

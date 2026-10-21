@@ -32,6 +32,18 @@ export const tokens = {
       'input-border': '#0B120E33',
       'overlay-backdrop': '#1E1F2166',
     },
+    // Decorative: picked for distinctness in avatars/tags, never meaning. Each pair is tuned for AA text contrast.
+    decorative: {
+      blue: { bg: '#E7F5FF', text: '#1864AB' },
+      teal: { bg: '#E6FCF5', text: '#087F5B' },
+      violet: { bg: '#F3F0FF', text: '#5F3DC4' },
+      // Darkened from #D9480F (3.95:1, fails AA at Avatar's 12px text): #BF3F0D clears 4.5:1.
+      orange: { bg: '#FFF4E6', text: '#BF3F0D' },
+      pink: { bg: '#FFF0F6', text: '#A61E4D' },
+      cyan: { bg: '#E3FAFC', text: '#0B7285' },
+      grape: { bg: '#F8F0FC', text: '#862E9C' },
+      indigo: { bg: '#EDF2FF', text: '#364FC7' },
+    },
   },
   fontFamily: "'Inter Variable', system-ui, sans-serif",
   fontWeight: { regular: 400, medium: 500, semibold: 600, heading: 650 },
@@ -75,3 +87,4 @@ export const icon = {
 export type Space = keyof typeof tokens.space
 export type Radius = keyof typeof tokens.radius
 export type FontSize = keyof typeof tokens.fontSize
+export type DecorativeColor = keyof typeof tokens.color.decorative

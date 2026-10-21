@@ -11,3 +11,12 @@
 .root[data-grow] > * {
   flex: 1 1 0%;
 }
+
+.root[data-shrink] {
+  min-width: 0;
+}
+
+.root[data-fill] {
+  flex: 1 1 0%;
+  min-width: 0;
+}

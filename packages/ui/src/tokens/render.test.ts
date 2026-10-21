@@ -15,6 +15,10 @@ describe('renderTokensCss', () => {
     expect(css).toContain('--mmerp-color-danger-light-color: #AE2E24;')
     expect(css).toContain('--mmerp-color-gray-light: #F0F1F2;') // neutral tint starts one step darker
   })
+  it('emits decorative colours', () => {
+    expect(css).toContain('--mmerp-color-teal-light: #E6FCF5;')
+    expect(css).toContain('--mmerp-color-teal-light-color: #087F5B;')
+  })
   it('emits sizes in rem from px', () => {
     expect(css).toContain('--mmerp-control-height: 1.875rem;')
     expect(css).toContain('--mmerp-control-height-lg: 2.5rem;')

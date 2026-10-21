@@ -10,6 +10,11 @@ export interface AppShellProps extends Omit<React.ComponentPropsWithRef<'div'>, 
   navbar?: React.ReactNode
   navbarWidth?: number
   navbarOpened?: boolean
+  navbarCollapsed?: boolean
+  navbarCollapsedWidth?: number
+  // Pinned to the navbar's bottom (a rail-collapse toggle); hidden below the drawer breakpoint,
+  // where the rest of the navbar's chrome already assumes desktop width.
+  navbarFooter?: React.ReactNode
   children: React.ReactNode
 }
 
@@ -22,23 +27,29 @@ export function AppShell({
   navbar,
   navbarWidth = 240,
   navbarOpened,
+  navbarCollapsed,
+  navbarCollapsedWidth = 56,
+  navbarFooter,
   className,
   style,
   children,
   ...props
 }: AppShellProps) {
   const isMobile = useMediaQuery(mobileQuery)
+  // The rail only applies at desktop widths; on mobile the navbar is always the full-width drawer.
+  const effectiveNavbarWidth = !isMobile && navbarCollapsed ? navbarCollapsedWidth : navbarWidth
   const vars: StyleVars = {
     ...style,
     '--mmerp-appshell-header-height': `${headerHeight}px`,
-    '--mmerp-appshell-navbar-width': `${navbarWidth}px`,
+    '--mmerp-appshell-navbar-width': `${effectiveNavbarWidth}px`,
   }
   return (
     <div className={cx(styles.root, className)} style={vars} data-mobile={isMobile ? '' : undefined} {...props}>
       {header && <header className={styles.header}>{header}</header>}
       {navbar && (
         <nav className={styles.navbar} data-opened={navbarOpened ? '' : undefined} inert={isMobile && !navbarOpened}>
-          {navbar}
+          <div className={styles.navbarContent}>{navbar}</div>
+          {navbarFooter && <div className={styles.navbarFooter}>{navbarFooter}</div>}
         </nav>
       )}
       <main className={styles.main}>{children}</main>

@@ -60,6 +60,17 @@ export const ReadOnly: Story = {
   args: { label: 'Name', readOnly: true, defaultValue: 'Jane Doe' },
 }
 
+export const RootClassName: Story = {
+  args: { label: 'Name', className: 'custom-width' },
+  play: async ({ canvasElement }) => {
+    const input = within(canvasElement).getByRole('textbox', { name: 'Name' })
+    expect(input).not.toHaveClass('custom-width')
+    const root = canvasElement.querySelector('.custom-width')
+    expect(root).not.toBeNull()
+    expect(root?.querySelector('label')).not.toBeNull()
+  },
+}
+
 export const InModal: Story = {
   args: { label: 'Name' },
   render: (args) => (

@@ -6,6 +6,21 @@
   border-bottom: 1px solid var(--mmerp-color-border);
 }
 
+/* One row that scrolls sideways rather than wrapping. */
+.list[data-scroll] {
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.list[data-scroll] > * {
+  flex-shrink: 0;
+}
+
+.list[data-on-rule] {
+  border-bottom: none;
+}
+
 .tab {
   padding: var(--mmerp-space-xs) var(--mmerp-space-sm);
   border: none;

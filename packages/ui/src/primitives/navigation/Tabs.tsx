@@ -21,11 +21,27 @@ function TabsRoot({ value, defaultValue, onValueChange, className, ...props }: T
   )
 }
 
-export type TabsListProps = React.ComponentPropsWithRef<'div'>
+export interface TabsListProps extends React.ComponentPropsWithRef<'div'> {
+  // More tabs than fit: one row that scrolls sideways instead of wrapping.
+  scroll?: boolean
+  // Sits on a PageHeader's own rule instead of drawing one of its own.
+  onRule?: boolean
+}
 
-function List({ className, ...props }: TabsListProps) {
+function List({ scroll, onRule, tabIndex, className, ...props }: TabsListProps) {
   // Automatic activation on arrow focus: a user browsing tabs expects the panel to follow immediately.
-  return <BaseTabs.List activateOnFocus className={cx(styles.list, className)} {...props} />
+  // scroll makes the list itself the scrollable region, so it needs its own tab stop for the a11y
+  // rule that every scrollable region must be reachable by keyboard; callers may still override it.
+  return (
+    <BaseTabs.List
+      activateOnFocus
+      className={cx(styles.list, className)}
+      data-scroll={scroll ? '' : undefined}
+      data-on-rule={onRule ? '' : undefined}
+      tabIndex={tabIndex ?? (scroll ? 0 : undefined)}
+      {...props}
+    />
+  )
 }
 
 export interface TabsTabProps extends React.ComponentPropsWithRef<'button'> {
