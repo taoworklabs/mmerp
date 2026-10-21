@@ -1,0 +1,139 @@
+/* FormSection groups fields under a title; sections are parted by a rule, not boxed, and stop at
+   the content width so fields stay near their labels on wide screens. */
+.section {
+  max-width: var(--mmerp-content-width);
+  border: 0;
+  margin: 0;
+  padding: 0 0 var(--mmerp-space-lg);
+  min-width: 0;
+}
+
+.section + .section {
+  border-top: 1px solid var(--mmerp-color-border);
+  padding-top: var(--mmerp-space-lg);
+}
+
+/* One column below 80em; from there "side" puts the title in a left column (4/12) and the
+   fields on the right (8/12), while "wide"/"compact" keep the title on top at every width. */
+.layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--mmerp-space-sm);
+  align-items: start;
+  min-width: 0;
+}
+
+@media (min-width: 80em) {
+  .layout[data-layout='side'] {
+    grid-template-columns: minmax(0, 4fr) minmax(0, 8fr);
+    gap: var(--mmerp-space-xl);
+  }
+}
+
+.titleColumn {
+  min-width: 0;
+}
+
+.titleRow {
+  display: flex;
+  align-items: center;
+  gap: var(--mmerp-space-xs);
+}
+
+.legend {
+  margin: 0;
+  padding: 0;
+  font-size: var(--mmerp-heading-h2-size);
+  line-height: var(--mmerp-heading-h2-line-height);
+  font-weight: var(--mmerp-font-weight-heading);
+  color: var(--mmerp-color-text);
+}
+
+.description {
+  margin-top: var(--mmerp-space-xxs);
+}
+
+/* A section's field grid: one column below 80em; from there six for "side" (a field takes half
+   a row, a short one a third, a wide one the whole row), two from 48em and four from 80em for
+   "compact"; "wide" stays one column. Data entry gets taller fields than toolbars and filters. */
+.fields {
+  --mmerp-control-height: var(--mmerp-control-height-lg);
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--mmerp-space-md);
+  min-width: 0;
+}
+
+@media (min-width: 80em) {
+  .fields[data-layout='side'] {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+  }
+
+  .fields[data-layout='side'] > * {
+    grid-column: span 3;
+  }
+
+  .fields[data-layout='side'] > .short {
+    grid-column: span 2;
+  }
+}
+
+@media (min-width: 48em) {
+  .fields[data-layout='compact'] {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 80em) {
+  .fields[data-layout='compact'] {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+/* After the spans above, so it wins over them. */
+.fields > .fullRow {
+  grid-column: 1 / -1;
+}
+
+/* The height of an input, at the bottom of its grid cell or row; an auto margin, not align-self,
+   so in a column it still sits at the start. */
+.inputRow {
+  margin-top: auto;
+  height: var(--mmerp-control-height);
+}
+
+/* FormFields: the paired grid for a card's form, without a section's title. */
+.pairFields {
+  --mmerp-control-height: var(--mmerp-control-height-lg);
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--mmerp-space-md);
+}
+
+@media (min-width: 48em) {
+  .pairFields {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* A page form's footer stays on screen however long the form. Pinned 1px past the edge so
+   FormBar can tell when the form runs on under it, and lift it off with a shadow. */
+.bar {
+  position: sticky;
+  bottom: -1px;
+  z-index: 1;
+  padding: var(--mmerp-space-sm) 0;
+  background: var(--mmerp-color-body);
+  border-top: 1px solid var(--mmerp-color-border);
+}
+
+.bar[data-stuck] {
+  box-shadow: var(--mmerp-shadow-footer);
+}
+
+.dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 100%;
+  background: var(--mmerp-color-primary-6);
+}
