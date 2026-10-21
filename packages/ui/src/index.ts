@@ -67,3 +67,7 @@ export { DateInput, type DateInputProps } from './primitives/dates/DateInput.tsx
 export { MonthPickerInput, type MonthPickerInputProps } from './primitives/dates/MonthPickerInput.tsx'
 export { Page, type PageProps, type PageVariant } from './blocks/page/Page.tsx'
 export { PageHeader, type PageHeaderProps, type PageHeaderBreadcrumb, type PageHeaderBackButtonProps } from './blocks/page/PageHeader.tsx'
+export { Panel, type PanelProps } from './blocks/page/Panel.tsx'
+export { FieldList, type FieldListProps, type FieldRow } from './blocks/page/FieldList.tsx'
+export { KeyFacts, type KeyFactsProps } from './blocks/page/KeyFacts.tsx'
+export { RecordColumns, type RecordColumnsProps, ActionBar, type ActionBarProps } from './blocks/page/RecordLayout.tsx'

@@ -1,0 +1,30 @@
+.root {
+  display: flex;
+  flex-direction: column;
+  gap: var(--mmerp-space-sm);
+  padding: var(--mmerp-space-md);
+  border: 1px solid var(--mmerp-color-border);
+  border-radius: var(--mmerp-radius-md);
+}
+
+.root[data-plain] {
+  border: none;
+  padding-inline: 0;
+}
+
+/* On a narrow card the actions drop under the title rather than squeezing it. */
+.titleRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--mmerp-space-xs);
+  min-height: var(--mmerp-control-height);
+}
+
+.titleGroup {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: var(--mmerp-space-xs);
+}

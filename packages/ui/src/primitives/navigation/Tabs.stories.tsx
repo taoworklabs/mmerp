@@ -30,6 +30,35 @@ export const Default: Story = {
   render: () => <Demo />,
 }
 
+export const Scroll: Story = {
+  render: () => (
+    <div style={{ width: 300 }}>
+      <Tabs defaultValue="tab-0">
+        <Tabs.List scroll tabIndex={0}>
+          {Array.from({ length: 8 }, (_, index) => (
+            <Tabs.Tab key={index} value={`tab-${index}`}>
+              {`Long tab label number ${index + 1}`}
+            </Tabs.Tab>
+          ))}
+        </Tabs.List>
+        {Array.from({ length: 8 }, (_, index) => (
+          <Tabs.Panel key={index} value={`tab-${index}`}>
+            {`Panel ${index + 1}`}
+          </Tabs.Panel>
+        ))}
+      </Tabs>
+    </div>
+  ),
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    const list = canvas.getByRole('tablist')
+    expect(list.scrollWidth).toBeGreaterThan(list.clientWidth)
+
+    const tops = new Set(canvas.getAllByRole('tab').map((tab) => tab.getBoundingClientRect().top))
+    expect(tops.size).toBe(1)
+  },
+}
+
 export const ArrowRightSelectsNextTab: Story = {
   render: () => <Demo />,
   play: async ({ canvasElement }) => {
