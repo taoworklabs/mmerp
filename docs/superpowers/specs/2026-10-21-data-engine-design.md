@@ -1,6 +1,6 @@
 # Data engine over sqlc
 
-Status: design, revision 2 (after technical review), awaiting approval · 2026-10-21
+Status: design, revision 2 (after technical review), approved · 2026-10-21
 
 ## Intent
 
@@ -472,3 +472,43 @@ Before continuing past the vertical slice:
 - The slow-query threshold's config name and default.
 - The pool sizes for the app and River pools.
 - The order of modules after Sales and HRM.
+
+## Spike results (2026-10-21)
+
+The spike ran on branch `spike/data-engine` (commits `50285cf`, `d856006`, `b25f17f`, `dc5969c`). That branch is not merged. All four answers are yes.
+
+**S1. Plugin next to `gen.go`: yes.**
+- `make gen && go build ./...` exits 0. All 14 `data.gen.go` files compile, and all 262 queries fit the 8 shapes (`:one`, `:many`, `:exec` and `:execrows`, each with 0 or 1 argument).
+- The plugin uses sqlc's `process.format: json` with `encoding/json`. It imports neither sqlc nor protobuf, and `go.mod` is unchanged.
+- The module name comes from `settings.queries[0]` (the parent directory of `queries.sql`).
+- The relative command `./bin/sqlc-gen-data` resolves even though sqlc clears the environment.
+- `make gen` time with warm caches stays at about 1.7 s.
+- Offline: `GOPROXY=off` already failed before this change, because `go run sqlc@v1.30.0` looks up deprecation info. `GOPROXY=file://$(go env GOMODCACHE)/cache/download` works.
+- **Change for Task 4:** a Go package cannot declare both a func `One0` and a type `One0`. The constructors keep their names (`One0` … `ExecRows1`); the types become `One0Query[R]`, `One1Query[P, R]` … `ExecRows1Query[P]`.
+
+**S2. `RowToStructByName` on the base shapes: yes.**
+- Leave, employees, contracts, customers and sales headers all scan with no error into structs shaped like sqlc rows (no `db` tags). The values equal those from sqlc's own scan.
+- Types covered: `pgtype.Date`, `pgtype.Text`, `numeric::text` and `bigint` money. No new aliases were needed.
+- Scanning into the generated base row types is still to be confirmed, in Task 10.
+
+**S3. Read-only sessions: yes.**
+- Outside a transaction, these fail with `25006`: `INSERT`, `UPDATE`, `DELETE`, a data-modifying CTE, `FOR UPDATE`, `FOR SHARE`, `nextval`, and a function that writes. All succeed inside a `ReadWrite` transaction.
+- `pg_advisory_xact_lock` is allowed outside.
+- **Correction:** `CREATE TEMP TABLE` is also refused outside a transaction, as DDL. No code uses temp tables.
+- **Census of writes outside `InTx`** (Task 2 wraps each in `InTx`). There are 8 production paths:
+  - the job-end notification (`notification.JobEnded`, through `platform/jobs.go:71`);
+  - the dataio cleanup job (`dataio/jobs.go:308`);
+  - the attachment download audit (`attachment/service.go:189`);
+  - the failed-login audit (`iam/service.go:122`);
+  - `iam.SetLocale`;
+  - `iam.SetListSettings`;
+  - `notification.MarkRead`;
+  - `notification.MarkAllRead`.
+
+  The two job paths fail because job workers receive the app pool through `env.context`. On the test side: 7 test calls rely on a caller's transaction, and 18 seeding sites write straight to the pool. Those 18 are covered by one writable seeding helper, `pgtest.System`. Two tests built River clients on the per-test pool; they must use the system pool.
+
+**S4. Count strategy: (c).** The count runs in the same `pgx.Batch` and is skipped when the first page is not full.
+- At 200 000 rows with no filter, `count(*) OVER ()` is slower at every page tested (page 1: p95 430 ms vs 252 ms; page 50: 416 ms vs 187 ms). Its WindowAgg spills to disk at the default `work_mem`.
+- It also returns `Total = 0` whenever the page is empty.
+- With a selective filter, every strategy stays under 1.2 ms at p95.
+- **Note for the vertical slice:** an unfiltered page at 200 000 rows takes 160–240 ms. The slice must examine indexes on the sort columns.
