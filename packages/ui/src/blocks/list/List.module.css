@@ -34,8 +34,13 @@
   background: var(--mmerp-color-gray-light);
 }
 
+/* Base UI sets data-popup-open on the trigger itself (FilterChip's own Button) or on a child of
+   the bordered box (a Select's inner trigger button) — covered respectively by the plain
+   attribute selector and :has(). Focus moves into the portaled popup while open, so :focus-within
+   never holds for either; it still covers a plain text box that never opens a popup. */
 .filters [data-mmerp-control]:focus-within,
-.filters [data-mmerp-control][data-expanded] {
+.filters [data-mmerp-control][data-popup-open],
+.filters [data-mmerp-control]:has([data-popup-open]) {
   border-color: var(--mmerp-color-primary-6);
 }
 
