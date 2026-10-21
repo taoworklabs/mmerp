@@ -29,6 +29,11 @@ function Demo() {
 
 export const Default: Story = {
   render: () => <Demo />,
+  play: async ({ canvasElement }) => {
+    // The header centres and pads its content; it never stretches a lone child to fill its width.
+    const burger = within(canvasElement).getByRole('button', { name: 'Toggle navigation' })
+    expect(burger.getBoundingClientRect().width).toBeLessThan(100)
+  },
 }
 
 function CollapsedDemo() {

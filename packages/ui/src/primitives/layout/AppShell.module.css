@@ -24,13 +24,6 @@
   border-bottom: 1px solid var(--mmerp-color-border);
 }
 
-/* The caller passes one element (often a Group with its own justify-content); it needs the
-   header's full width to actually space its own children apart. */
-.header > * {
-  flex: 1;
-  min-width: 0;
-}
-
 .navbar {
   grid-area: navbar;
   display: flex;

@@ -169,7 +169,7 @@ function Shell({ children }: { children: ReactNode }) {
       navbarCollapsedWidth={56}
       navbarOpened={drawer}
       header={
-        <Group justify="space-between" wrap={false}>
+        <Group fill justify="space-between" wrap={false}>
           <Group gap="xs" wrap={false}>
             {mobile && <Burger opened={drawer} onClick={toggleDrawer} aria-label="Trình đơn" />}
             <ThemeIcon size={28} aria-hidden>
