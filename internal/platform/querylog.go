@@ -42,6 +42,31 @@ func (t *queryTracer) TraceQueryStart(ctx context.Context, _ *pgx.Conn, _ pgx.Tr
 }
 
 func (t *queryTracer) TraceQueryEnd(ctx context.Context, _ *pgx.Conn, data pgx.TraceQueryEndData) {
+	t.logQuery(ctx, data.CommandTag.RowsAffected(), data.Err)
+}
+
+// TraceBatchStart marks when a pgx.Batch (page + count sent together) began, so
+// each query traced inside it can report a duration.
+func (t *queryTracer) TraceBatchStart(ctx context.Context, _ *pgx.Conn, _ pgx.TraceBatchStartData) context.Context {
+	return context.WithValue(ctx, queryStartKey{}, time.Now())
+}
+
+// TraceBatchQuery fires once per query inside the batch, so a batched page and
+// count each log their own record, by name and shape, never SQL or args.
+func (t *queryTracer) TraceBatchQuery(ctx context.Context, _ *pgx.Conn, data pgx.TraceBatchQueryData) {
+	t.logQuery(ctx, data.CommandTag.RowsAffected(), data.Err)
+}
+
+// TraceBatchEnd only logs when the batch failed before any query in it was
+// traced (e.g. preparing it); per-query failures already went through TraceBatchQuery.
+func (t *queryTracer) TraceBatchEnd(ctx context.Context, _ *pgx.Conn, data pgx.TraceBatchEndData) {
+	if data.Err == nil {
+		return
+	}
+	t.logQuery(ctx, 0, data.Err)
+}
+
+func (t *queryTracer) logQuery(ctx context.Context, rowsAffected int64, err error) {
 	name, _ := ctx.Value(queryNameKey{}).(queryName)
 	if name.name == "" {
 		name.name = "unnamed"
@@ -54,15 +79,15 @@ func (t *queryTracer) TraceQueryEnd(ctx context.Context, _ *pgx.Conn, data pgx.T
 	attrs := []slog.Attr{
 		slog.String("name", name.name),
 		slog.Duration("duration", dur),
-		slog.Int64("rows", data.CommandTag.RowsAffected()),
+		slog.Int64("rows", rowsAffected),
 	}
 	if name.shape != "" {
 		attrs = append(attrs, slog.String("shape", name.shape))
 	}
 
 	level := slog.LevelDebug
-	if data.Err != nil {
-		attrs = append(attrs, slog.String("sqlstate", pgSQLState(data.Err)))
+	if err != nil {
+		attrs = append(attrs, slog.String("sqlstate", pgSQLState(err)))
 	} else if name.name != "unnamed" && t.slow > 0 && dur >= t.slow {
 		level = slog.LevelWarn
 	}

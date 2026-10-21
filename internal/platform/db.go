@@ -14,6 +14,9 @@ type Conn interface {
 	Exec(ctx context.Context, sql string, args ...any) (pgconn.CommandTag, error)
 	Query(ctx context.Context, sql string, args ...any) (pgx.Rows, error)
 	QueryRow(ctx context.Context, sql string, args ...any) pgx.Row
+	// SendBatch runs several statements in one round trip; the data engine uses it
+	// to run a list's page and its count together.
+	SendBatch(ctx context.Context, b *pgx.Batch) pgx.BatchResults
 }
 
 // PoolRole says what a pool may do outside a transaction.
