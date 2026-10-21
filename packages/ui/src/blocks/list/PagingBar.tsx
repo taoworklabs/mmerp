@@ -16,6 +16,9 @@ export interface PagingBarProps extends Omit<React.ComponentPropsWithRef<'div'>,
   pageSizeText(n: number): string
   pageSizeLabel: string
   labels: PaginationLabels
+  // The page nav's own accessible name: needed once a second unlabelled <nav> exists on the page
+  // (an app shell's own navigation), so the two aren't flagged as indistinguishable landmarks.
+  navigationLabel?: string
 }
 
 // PagingBar sits under a list's table: the total on the left, the pages centred, the page size on
@@ -31,6 +34,7 @@ export function PagingBar({
   pageSizeText,
   pageSizeLabel,
   labels,
+  navigationLabel,
   className,
   ...props
 }: PagingBarProps) {
@@ -40,7 +44,7 @@ export function PagingBar({
       <Text size="sm" tone="dimmed">
         {totalText}
       </Text>
-      <Pagination total={Math.ceil(total / pageSize)} value={page} onChange={onPage} labels={labels} />
+      <Pagination total={Math.ceil(total / pageSize)} value={page} onChange={onPage} labels={labels} aria-label={navigationLabel} />
       <Select
         aria-label={pageSizeLabel}
         data={pageSizes.map((n) => ({ value: String(n), label: pageSizeText(n) }))}

@@ -72,3 +72,12 @@ export const Empty: Story = {
     expect(canvasElement.firstElementChild).toBeNull()
   },
 }
+
+export const NavigationLabel: Story = {
+  args: { navigationLabel: 'Phân trang nhân viên' },
+  render: (args) => <Controlled {...args} />,
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    expect(canvas.getByRole('navigation', { name: 'Phân trang nhân viên' })).toBeInTheDocument()
+  },
+}
