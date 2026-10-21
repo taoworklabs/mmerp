@@ -5,3 +5,27 @@ export function CloseIcon({ size = 10 }: { size?: number }) {
     </svg>
   )
 }
+
+export function ArrowUpIcon({ size = 16 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M12 5v14M18 11l-6-6M6 11l6-6" />
+    </svg>
+  )
+}
+
+export function ArrowDownIcon({ size = 16 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M12 5v14M18 13l-6 6M6 13l6 6" />
+    </svg>
+  )
+}
+
+export function ArrowsSortIcon({ size = 16 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M3 9l4-4 4 4M7 5v14M21 15l-4 4-4-4M17 19V5" />
+    </svg>
+  )
+}

@@ -57,7 +57,7 @@ export { Pagination, type PaginationProps, type PaginationLabels } from './primi
 export { Burger, type BurgerProps } from './primitives/navigation/Burger.tsx'
 export { TableOfContents, type TableOfContentsProps, type TableOfContentsItem } from './primitives/navigation/TableOfContents.tsx'
 export { AppShell, type AppShellProps } from './primitives/layout/AppShell.tsx'
-export { Table, type TableProps } from './primitives/data-display/Table.tsx'
+export { Table, type TableProps, type ThProps, type TdProps, type SortHeaderProps, type CellLook } from './primitives/data-display/Table.tsx'
 export { Timeline, type TimelineProps, type TimelineItemProps } from './primitives/data-display/Timeline.tsx'
 export { monthGrid, addDays, addMonths, type CalendarLocale, type FirstDayOfWeek } from './primitives/dates/calendarGrid.ts'
 export { Calendar, type CalendarProps } from './primitives/dates/Calendar.tsx'

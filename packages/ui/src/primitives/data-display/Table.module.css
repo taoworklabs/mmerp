@@ -24,8 +24,17 @@
   height: 40px;
 }
 
+/* Header row is shorter than a body row. */
+.thead .tr {
+  height: 36px;
+}
+
 .root[data-highlight-on-hover] .tbody .tr:hover {
   background: var(--mmerp-color-elevation-surface-sunken);
+}
+
+.tr[aria-selected='true'] {
+  background: var(--mmerp-color-primary-light);
 }
 
 .th,
@@ -36,8 +45,79 @@
   vertical-align: middle;
 }
 
+.th:last-child,
+.td:last-child {
+  padding-inline-end: var(--mmerp-space-md);
+}
+
 .th {
   color: var(--mmerp-color-dimmed);
   font-size: var(--mmerp-font-size-xs);
   font-weight: var(--mmerp-font-weight-semibold);
+}
+
+/* Codes, dates and other secondary values step back behind names and figures. */
+.th[data-look='secondary'],
+.td[data-look='secondary'] {
+  font-variant-numeric: tabular-nums;
+  color: var(--mmerp-color-dimmed);
+}
+
+.th[data-look='numeric'],
+.td[data-look='numeric'] {
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.th[data-look='strong'],
+.td[data-look='strong'] {
+  font-weight: 600;
+}
+
+/* The identifier column stays in view when a wide table scrolls sideways. */
+.th[data-sticky],
+.td[data-sticky] {
+  position: sticky;
+  left: var(--mmerp-table-sticky-left, 0);
+  background: var(--mmerp-color-elevation-surface);
+}
+
+/* Above the sticky header's own z-index so the corner cell (both sticky) stays on top. */
+.th[data-sticky] {
+  z-index: 2;
+}
+
+.td[data-sticky] {
+  z-index: 1;
+}
+
+/* The cell is opaque, so it takes the row's hover tint itself. */
+.root[data-highlight-on-hover] .tbody .tr:hover [data-sticky] {
+  background: var(--mmerp-color-elevation-surface-sunken);
+}
+
+/* Its edge shows only while columns slide under it. */
+.root[data-scrolled] [data-sticky] {
+  box-shadow: inset -1px 0 0 var(--mmerp-color-border);
+}
+
+/* On one line, never squeezed by the table's layout. */
+.th[data-fit],
+.td[data-fit] {
+  white-space: nowrap;
+}
+
+.th[data-fit] > *,
+.td[data-fit] > * {
+  min-width: max-content;
+}
+
+.sortButton {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--mmerp-space-xxs);
+}
+
+.sortButton[data-sorted] {
+  color: var(--mmerp-color-text);
 }
