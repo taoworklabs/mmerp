@@ -42,6 +42,7 @@ export { FileInput, type FileInputProps } from './primitives/input/FileInput.tsx
 export { SegmentedControl, type SegmentedControlProps } from './primitives/input/SegmentedControl.tsx'
 export { Select, type SelectProps, type SelectItem } from './primitives/input/Select.tsx'
 export { Combobox, type ComboboxProps } from './primitives/input/Combobox.tsx'
+export { ComboboxButton, type ComboboxButtonProps } from './primitives/input/ComboboxButton.tsx'
 export { MultiSelect, type MultiSelectProps } from './primitives/input/MultiSelect.tsx'
 export { matchesQuery } from './primitives/input/matchesQuery.ts'
 export { ScrollArea, type ScrollAreaProps } from './primitives/layout/ScrollArea.tsx'

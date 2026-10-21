@@ -61,7 +61,7 @@ export interface ButtonProps extends Omit<React.ComponentPropsWithRef<'button'>,
   render?: RenderProp
 }
 
-export function Button({
+function ButtonRoot({
   variant = 'filled',
   color = 'primary',
   size = 'sm',
@@ -102,3 +102,10 @@ export function Button({
     </BaseButton>
   )
 }
+
+// Joins its buttons edge to edge, like a split button or a chip's main button and its clear button.
+function Group({ className, ...props }: React.ComponentPropsWithRef<'div'>) {
+  return <div role="group" className={cx(styles.group, className)} {...props} />
+}
+
+export const Button = Object.assign(ButtonRoot, { Group })

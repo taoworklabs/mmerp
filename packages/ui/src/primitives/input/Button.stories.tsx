@@ -117,3 +117,18 @@ export const Default: Story = {
     await expect(args.onClick).toHaveBeenCalledTimes(1)
   },
 }
+
+export const Grouped: Story = {
+  render: () => (
+    <Button.Group>
+      <Button>First</Button>
+      <Button>Second</Button>
+    </Button.Group>
+  ),
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    const first = canvas.getByRole('button', { name: 'First' })
+    const second = canvas.getByRole('button', { name: 'Second' })
+    expect(second.getBoundingClientRect().left).toBeCloseTo(first.getBoundingClientRect().right - 1, 0)
+  },
+}
