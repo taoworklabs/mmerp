@@ -6,4 +6,29 @@
 
 .col {
   min-width: 0;
+  grid-column: var(--mmerp-span-base);
+}
+
+@media (min-width: 48em) {
+  .col {
+    grid-column: var(--mmerp-span-sm, var(--mmerp-span-base));
+  }
+}
+
+@media (min-width: 64em) {
+  .col {
+    grid-column: var(--mmerp-span-md, var(--mmerp-span-sm, var(--mmerp-span-base)));
+  }
+}
+
+@media (min-width: 80em) {
+  .col {
+    grid-column: var(--mmerp-span-lg, var(--mmerp-span-md, var(--mmerp-span-sm, var(--mmerp-span-base))));
+  }
+}
+
+@media (min-width: 96em) {
+  .col {
+    grid-column: var(--mmerp-span-xl, var(--mmerp-span-lg, var(--mmerp-span-md, var(--mmerp-span-sm, var(--mmerp-span-base)))));
+  }
 }

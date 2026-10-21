@@ -2,14 +2,14 @@ import { Avatar as BaseAvatar } from '@base-ui/react/avatar'
 import type * as React from 'react'
 import { cx } from '../../internal/cx.ts'
 import type { StyleVars } from '../../internal/style.ts'
-import type { ColorName } from '../../tokens/tokens.ts'
+import type { ColorName, DecorativeColor } from '../../tokens/tokens.ts'
 import styles from './Avatar.module.css'
 
 export interface AvatarProps extends Omit<React.ComponentPropsWithRef<'span'>, 'color'> {
   src?: string
   alt: string
   size?: number
-  color?: ColorName
+  color?: ColorName | DecorativeColor
 }
 
 export function Avatar({ src, alt, size = 30, color = 'gray', className, style, children, ...props }: AvatarProps) {

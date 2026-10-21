@@ -13,3 +13,13 @@
 .root[data-underline='hover']:hover {
   text-decoration: underline;
 }
+
+/* Rendered as a button (see `render`): strip the control chrome, keep the anchor's own colour. */
+.root:where(button) {
+  border: none;
+  background: none;
+  padding: 0;
+  margin: 0;
+  font: inherit;
+  cursor: pointer;
+}

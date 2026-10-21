@@ -32,6 +32,17 @@ export const tokens = {
       'input-border': '#0B120E33',
       'overlay-backdrop': '#1E1F2166',
     },
+    // Decorative: picked for distinctness in avatars/tags, never meaning.
+    decorative: {
+      blue: '#228BE6',
+      teal: '#12B886',
+      violet: '#7950F2',
+      orange: '#FD7E14',
+      pink: '#E64980',
+      cyan: '#15AABF',
+      grape: '#BE4BDB',
+      indigo: '#4C6EF5',
+    },
   },
   fontFamily: "'Inter Variable', system-ui, sans-serif",
   fontWeight: { regular: 400, medium: 500, semibold: 600, heading: 650 },
@@ -75,3 +86,4 @@ export const icon = {
 export type Space = keyof typeof tokens.space
 export type Radius = keyof typeof tokens.radius
 export type FontSize = keyof typeof tokens.fontSize
+export type DecorativeColor = keyof typeof tokens.color.decorative

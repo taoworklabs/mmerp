@@ -1,5 +1,8 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import { expect, within } from 'storybook/test'
+import { Button } from '../input/Button.tsx'
+import { Text } from '../typography/Text.tsx'
+import { Group } from './Group.tsx'
 import { Stack } from './Stack.tsx'
 
 const meta: Meta<typeof Stack> = {
@@ -62,6 +65,25 @@ export const Justify: Story = {
       <Item label="Bottom" />
     </Stack>
   ),
+}
+
+export const FillTruncates: Story = {
+  render: () => (
+    <div style={{ width: 300 }}>
+      <Group wrap={false} data-testid="outer">
+        <Stack fill>
+          <Text truncate>{'x'.repeat(200)}</Text>
+        </Stack>
+        <Button>A</Button>
+      </Group>
+    </div>
+  ),
+  play: async ({ canvasElement }) => {
+    const outerGroup = within(canvasElement).getByTestId('outer')
+    const text = within(canvasElement).getByText('x'.repeat(200))
+    expect(outerGroup.scrollWidth).toBeLessThanOrEqual(300)
+    expect(text.scrollWidth).toBeGreaterThan(text.clientWidth)
+  },
 }
 
 export const Render: Story = {

@@ -14,6 +14,8 @@ export interface StackProps extends React.ComponentPropsWithRef<'div'> {
   gap?: Space | 0
   align?: StackAlign
   justify?: StackJustify
+  shrink?: boolean
+  fill?: boolean
   render?: RenderProp
 }
 
@@ -31,7 +33,7 @@ const justifyContent: Record<StackJustify, React.CSSProperties['justifyContent']
   'space-between': 'space-between',
 }
 
-export function Stack({ gap = 'md', align = 'stretch', justify, className, style, render, ...props }: StackProps) {
+export function Stack({ gap = 'md', align = 'stretch', justify, shrink, fill, className, style, render, ...props }: StackProps) {
   const vars: StyleVars = {
     ...style,
     '--mmerp-gap': spaceVar(gap, 'md'),
@@ -41,6 +43,12 @@ export function Stack({ gap = 'md', align = 'stretch', justify, className, style
   return useRender({
     defaultTagName: 'div',
     render,
-    props: { className: cx(styles.root, className), style: vars, ...props },
+    props: {
+      className: cx(styles.root, className),
+      style: vars,
+      'data-shrink': shrink ? '' : undefined,
+      'data-fill': fill ? '' : undefined,
+      ...props,
+    },
   })
 }

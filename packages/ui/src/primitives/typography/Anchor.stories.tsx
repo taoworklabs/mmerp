@@ -34,3 +34,24 @@ export const RenderAsButton: Story = {
     expect(element.tagName).toBe('BUTTON')
   },
 }
+
+export const AsButton: Story = {
+  render: () => (
+    <>
+      <Anchor render={<button type="button" />}>+ Bổ sung</Anchor>
+      <p>Reference text</p>
+    </>
+  ),
+  play: async ({ canvasElement }) => {
+    const button = within(canvasElement).getByText('+ Bổ sung')
+    const reference = within(canvasElement).getByText('Reference text')
+    const buttonStyle = getComputedStyle(button)
+    expect(buttonStyle.borderTopWidth).toBe('0px')
+    // Checked by channel, not as a literal colour string: this file may not contain colour literals.
+    const channels = buttonStyle.backgroundColor.replace(/[^\d.,]/g, '').split(',')
+    expect(channels).toHaveLength(4)
+    expect(Number(channels[3])).toBe(0)
+    expect(buttonStyle.paddingLeft).toBe('0px')
+    expect(buttonStyle.fontSize).toBe(getComputedStyle(reference).fontSize)
+  },
+}
