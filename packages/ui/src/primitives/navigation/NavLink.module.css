@@ -33,11 +33,30 @@
   color: var(--mmerp-color-primary-light-color);
 }
 
+/* An area's menu is a quiet list: 32px rows set close, label and icon in the dimmed
+   text colour until chosen. */
+.root[data-compact] {
+  --mmerp-control-height: 2rem;
+  padding-block: 0;
+}
+
+.root[data-compact]:not([data-active]) {
+  color: var(--mmerp-color-dimmed);
+}
+
+.root[data-compact][data-active] .section {
+  color: inherit;
+}
+
 .section {
   flex: 0 0 auto;
   display: inline-flex;
   align-items: center;
   color: var(--mmerp-color-dimmed);
+}
+
+.root[data-compact] .section {
+  margin-inline-end: var(--mmerp-space-xs);
 }
 
 .body {

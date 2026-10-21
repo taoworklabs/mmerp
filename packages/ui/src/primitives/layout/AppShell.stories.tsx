@@ -31,6 +31,33 @@ export const Default: Story = {
   render: () => <Demo />,
 }
 
+function CollapsedDemo() {
+  const [collapsed, setCollapsed] = useState(true)
+  return (
+    <AppShell
+      header={<button onClick={() => setCollapsed((c) => !c)}>Toggle rail</button>}
+      navbar={<div>Navbar content</div>}
+      navbarCollapsed={collapsed}
+    >
+      <div style={{ flex: 1, minHeight: 0 }}>Page content filling main</div>
+    </AppShell>
+  )
+}
+
+export const CollapsedRail: Story = {
+  render: () => <CollapsedDemo />,
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+
+    await page.viewport(1280, 800)
+    const navbar = canvas.getByText('Navbar content').closest('nav')!
+    await waitFor(() => expect(navbar.getBoundingClientRect().width).toBe(56))
+
+    await userEvent.click(canvas.getByRole('button', { name: 'Toggle rail' }))
+    await waitFor(() => expect(navbar.getBoundingClientRect().width).toBe(240))
+  },
+}
+
 export const OffCanvasBelowBreakpoint: Story = {
   render: () => <Demo />,
   play: async ({ canvasElement }) => {

@@ -11,6 +11,7 @@ export interface NavLinkProps extends Omit<React.ComponentPropsWithRef<'a'>, 'ch
   rightSection?: React.ReactNode
   description?: React.ReactNode
   active?: boolean
+  compact?: boolean
   render?: RenderProp
   children?: React.ReactNode
   defaultOpened?: boolean
@@ -30,6 +31,7 @@ export function NavLink({
   rightSection,
   description,
   active,
+  compact,
   render,
   children,
   defaultOpened,
@@ -53,6 +55,7 @@ export function NavLink({
         <Collapsible.Trigger
           className={cx(styles.root, className)}
           data-active={active ? '' : undefined}
+          data-compact={compact ? '' : undefined}
           {...(props as React.ComponentPropsWithRef<'button'>)}
         >
           {body}
@@ -69,6 +72,7 @@ export function NavLink({
     props: {
       className: cx(styles.root, className),
       'data-active': active ? '' : undefined,
+      'data-compact': compact ? '' : undefined,
       children: body,
       ...props,
     },
