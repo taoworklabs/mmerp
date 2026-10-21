@@ -130,5 +130,10 @@ export const Grouped: Story = {
     const first = canvas.getByRole('button', { name: 'First' })
     const second = canvas.getByRole('button', { name: 'Second' })
     expect(second.getBoundingClientRect().left).toBeCloseTo(first.getBoundingClientRect().right - 1, 0)
+
+    // The neighbour's -1px overlap would otherwise paint over the focused button's own ring.
+    await userEvent.tab()
+    expect(first).toHaveFocus()
+    expect(getComputedStyle(first).zIndex).toBe('1')
   },
 }

@@ -51,7 +51,8 @@
 
 .root[data-mobile] .navbar {
   position: fixed;
-  z-index: 10;
+  /* Above RecordLayout's mobile ActionBar (z-index: 100): the open drawer must never sit under it. */
+  z-index: 101;
   top: var(--mmerp-appshell-header-height);
   bottom: 0;
   left: 0;

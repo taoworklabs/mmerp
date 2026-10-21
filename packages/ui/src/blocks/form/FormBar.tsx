@@ -1,5 +1,5 @@
 import type * as React from 'react'
-import { useCallback, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import { cx } from '../../internal/cx.ts'
 import { mergeRefs } from '../../internal/mergeRefs.ts'
 import { Group } from '../../primitives/layout/Group.tsx'
@@ -22,8 +22,11 @@ function FormBarRoot({ children, status, className, ref, ...props }: FormBarProp
     io.observe(el)
     return () => io.disconnect()
   }, [])
+  // Memoised so the merged ref keeps its identity across renders: without it, every render would
+  // detach and reattach pinned, tearing down and recreating the IntersectionObserver each time.
+  const mergedRef = useMemo(() => mergeRefs(ref, pinned), [ref, pinned])
   return (
-    <Group ref={mergeRefs(ref, pinned)} justify="end" gap="lg" wrap={false} className={cx(styles.bar, className)} data-stuck={stuck || undefined} {...props}>
+    <Group ref={mergedRef} justify="end" gap="lg" wrap={false} className={cx(styles.bar, className)} data-stuck={stuck || undefined} {...props}>
       {status}
       <Group gap="sm" wrap={false}>
         {children}

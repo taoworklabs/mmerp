@@ -16,6 +16,12 @@
   gap: var(--mmerp-space-xxs);
   font-size: var(--mmerp-font-size-sm);
   color: var(--mmerp-color-text);
+  /* Lets a long current-page crumb shrink to the row's width instead of overflowing it. */
+  min-width: 0;
+}
+
+.item > :first-child {
+  min-width: 0;
 }
 
 .separator {

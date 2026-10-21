@@ -153,6 +153,14 @@ export const StickyFirstColumn: Story = {
   render: () => (
     <div style={{ width: 400, overflow: 'auto' }} data-testid="scrollbox" tabIndex={0}>
       <Table style={{ width: 1200 }}>
+        <Table.Thead>
+          <Table.Tr>
+            <Table.Th sticky>Name</Table.Th>
+            {Array.from({ length: 6 }, (_, i) => (
+              <Table.Th key={i}>Column {i + 2}</Table.Th>
+            ))}
+          </Table.Tr>
+        </Table.Thead>
         <Table.Tbody>
           <Table.Tr>
             <Table.Td sticky>Row 1</Table.Td>
@@ -171,6 +179,14 @@ export const StickyFirstColumn: Story = {
 
     box.scrollLeft = 200
     await waitFor(() => expect(Math.abs(cell.getBoundingClientRect().left - box.getBoundingClientRect().left)).toBeLessThanOrEqual(1))
+
+    // The sticky header cell still reads as header, not as a plain elevated surface.
+    const header = canvas.getByRole('columnheader', { name: 'Name' })
+    const probe = document.createElement('div')
+    probe.style.backgroundColor = 'var(--mmerp-color-table-header)'
+    canvasElement.appendChild(probe)
+    expect(getComputedStyle(header).backgroundColor).toBe(getComputedStyle(probe).backgroundColor)
+    probe.remove()
   },
 }
 
@@ -179,7 +195,8 @@ export const SelectedRow: Story = {
     <Table>
       <Table.Tbody>
         <Table.Tr aria-selected="true">
-          <Table.Td>Selected row</Table.Td>
+          <Table.Td sticky>Selected row</Table.Td>
+          <Table.Td>Other cell</Table.Td>
         </Table.Tr>
       </Table.Tbody>
     </Table>
@@ -187,11 +204,15 @@ export const SelectedRow: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
     const row = canvas.getByText('Selected row').closest('tr')!
+    const stickyCell = canvas.getByText('Selected row').closest('td')!
 
     const probe = document.createElement('div')
     probe.style.backgroundColor = 'var(--mmerp-color-primary-light)'
     canvasElement.appendChild(probe)
     expect(getComputedStyle(row).backgroundColor).toBe(getComputedStyle(probe).backgroundColor)
+    // The sticky cell paints its own background, so it must match the row's tint, not the
+    // plain elevated surface it normally uses to stay opaque while scrolling.
+    expect(getComputedStyle(stickyCell).backgroundColor).toBe(getComputedStyle(probe).backgroundColor)
     probe.remove()
   },
 }

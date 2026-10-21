@@ -104,6 +104,9 @@ export const NewRecord: Story = {
 export const LongTitle: Story = {
   args: {
     title: 'x'.repeat(200),
+    current: true,
+    breadcrumbsLabel: 'Breadcrumb',
+    breadcrumbs: [{ label: 'Customers', render: <a href="#" /> }],
     style: { width: 320 },
   },
   play: async ({ canvasElement }) => {
@@ -111,5 +114,13 @@ export const LongTitle: Story = {
     const title = within(canvasElement).getByRole('heading', { level: 1 })
     expect(header.scrollWidth).toBeLessThanOrEqual(header.clientWidth)
     expect(title.scrollWidth).toBeGreaterThan(title.clientWidth)
+
+    // The current crumb repeats the same long title; it must truncate to one line rather than
+    // wrapping or widening the breadcrumb row.
+    const nav = within(canvasElement).getByRole('navigation', { name: 'Breadcrumb' })
+    // The li itself never overflows (its content is clipped inside); the truncating span does.
+    const crumb = nav.querySelector('li[aria-current="page"] span') as HTMLElement
+    expect(crumb.scrollWidth).toBeGreaterThan(crumb.clientWidth)
+    expect(crumb.getBoundingClientRect().height).toBeLessThanOrEqual(24)
   },
 }

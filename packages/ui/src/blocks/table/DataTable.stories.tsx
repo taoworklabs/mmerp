@@ -215,6 +215,49 @@ export const Selectable: Story = {
   },
 }
 
+function SelectableWithLinkAndClickDemo({ onLinkClick, onRowClick }: { onLinkClick(): void; onRowClick(row: Employee): void }) {
+  const [selected, setSelected] = useState<ReadonlySet<string | number>>(new Set())
+  const selection: Selection = { selected, onChange: setSelected }
+  return (
+    <DataTable
+      columns={columns}
+      rows={rows}
+      rowKey={(e) => e.id}
+      label="Danh sách nhân viên"
+      labels={labels}
+      selection={selection}
+      onRowClick={onRowClick}
+      renderLink={(row, children) => (
+        <a
+          href={`#/employees/${row.id}`}
+          onClick={(e) => {
+            e.preventDefault()
+            onLinkClick()
+          }}
+        >
+          {children}
+        </a>
+      )}
+    />
+  )
+}
+
+export const SelectableWithLinkAndRowClick: StoryObj<{ onLinkClick(): void; onRowClick(row: Employee): void }> = {
+  args: { onLinkClick: fn(), onRowClick: fn() },
+  render: (args) => <SelectableWithLinkAndClickDemo onLinkClick={args.onLinkClick} onRowClick={args.onRowClick} />,
+  play: async ({ canvasElement, args }) => {
+    const canvas = within(canvasElement)
+    const rowCheckboxes = canvas.getAllByRole('checkbox', { name: labels.selectRow })
+
+    // The checkbox's own label and control (span[role=checkbox]) both sit outside the row click
+    // guard's old selector: clicking either toggled selection *and* ran the row's link/onRowClick.
+    await userEvent.click(rowCheckboxes[0]!)
+    expect(rowCheckboxes[0]).toHaveAttribute('aria-checked', 'true')
+    expect(args.onLinkClick).not.toHaveBeenCalled()
+    expect(args.onRowClick).not.toHaveBeenCalled()
+  },
+}
+
 export const Resizable: StoryObj<{ onResize(key: string, width: number): void }> = {
   args: { onResize: fn() },
   render: (args) => <DataTable columns={columns} rows={rows} rowKey={(e) => e.id} label="Danh sách nhân viên" labels={labels} onResize={args.onResize} />,
@@ -228,6 +271,32 @@ export const Resizable: StoryObj<{ onResize(key: string, width: number): void }>
     await userEvent.keyboard('{ArrowRight}')
     expect(args.onResize).toHaveBeenCalledTimes(1)
     expect(args.onResize).toHaveBeenCalledWith('code', Math.round(width + 16))
+  },
+}
+
+export const ResizeEdgeCases: StoryObj<{ onResize(key: string, width: number): void }> = {
+  args: { onResize: fn() },
+  render: (args) => <DataTable columns={columns} rows={rows} rowKey={(e) => e.id} label="Danh sách nhân viên" labels={labels} onResize={args.onResize} />,
+  play: async ({ canvasElement, args }) => {
+    const canvas = within(canvasElement)
+    const handle = canvas.getByRole('separator', { name: labels.resize('Mã') })
+    const down = (clientX: number) => handle.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, cancelable: true, clientX, pointerId: 1 }))
+    const move = (clientX: number) => window.dispatchEvent(new PointerEvent('pointermove', { bubbles: true, clientX, pointerId: 1 }))
+    const up = (clientX: number) => window.dispatchEvent(new PointerEvent('pointerup', { bubbles: true, clientX, pointerId: 1 }))
+    const cancel = () => window.dispatchEvent(new PointerEvent('pointercancel', { bubbles: true, pointerId: 1 }))
+
+    // A pointer down/up without any movement between them is a click, not a drag.
+    down(100)
+    up(100)
+    expect(args.onResize).not.toHaveBeenCalled()
+
+    // A cancelled gesture (e.g. a touch scroll takes over) removes the listeners instead of
+    // committing the drag: a later pointerup must then do nothing either.
+    down(100)
+    move(140)
+    cancel()
+    up(140)
+    expect(args.onResize).not.toHaveBeenCalled()
   },
 }
 
@@ -349,7 +418,7 @@ export const MaxHeight: Story = {
   },
 }
 
-type EmptyRow = { id: number; name: string; amount: number }
+type EmptyRow = { id: number; name: string | null | undefined; amount: number | string }
 
 export const EmptyCells: StoryObj = {
   render: () => {
@@ -359,7 +428,9 @@ export const EmptyCells: StoryObj = {
     ]
     const emptyRows: EmptyRow[] = [
       { id: 1, name: '', amount: 0 },
-      { id: 2, name: 'B', amount: 5 },
+      { id: 2, name: null, amount: 5 },
+      { id: 3, name: undefined, amount: '0' },
+      { id: 4, name: 'B', amount: 5 },
     ]
     return (
       <DataTable
@@ -374,8 +445,9 @@ export const EmptyCells: StoryObj = {
   },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
-    // The body row's blank name and zero amount both show a dash.
-    expect(canvas.getAllByText('–')).toHaveLength(2)
+    // Row 1: blank name and zero amount; row 2: null name; row 3: undefined name and '0' amount
+    // (as a string, e.g. from a decimal field) — every one of those five cells shows a dash.
+    expect(canvas.getAllByText('–')).toHaveLength(5)
     // The footer's blank name cell stays blank instead of a dash.
     const footerCells = canvasElement.querySelectorAll('tfoot td')
     expect(footerCells[0]!.textContent).toBe('')

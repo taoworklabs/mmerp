@@ -34,12 +34,6 @@
   min-width: 0;
 }
 
-.titleRow {
-  display: flex;
-  align-items: center;
-  gap: var(--mmerp-space-xs);
-}
-
 .legend {
   margin: 0;
   padding: 0;

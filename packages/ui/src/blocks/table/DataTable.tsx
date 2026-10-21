@@ -180,7 +180,7 @@ export function DataTable<T>({
                     aria-selected={selection ? selection.selected.has(rowKey(row)) : undefined}
                     // The link (or button) in the first cell handles keyboard, middle click and Ctrl+click itself.
                     onClick={(e) => {
-                      if ((e.target as HTMLElement).closest('a,button,input,[role=menu]')) return
+                      if ((e.target as HTMLElement).closest('a,button,input,label,[role=menu],[role=checkbox]')) return
                       if (onRowClick) onRowClick(row)
                       // Only the first (sticky) cell's own link, never some other column's — the
                       // checkbox cell is never sticky, so this can't catch it either.
@@ -266,14 +266,29 @@ function ResizeHandle<T>({ column, cell, onResize, labels }: { column: Column<T>
     if (!th) return
     const startX = e.clientX
     const start = current()
-    const move = (ev: globalThis.PointerEvent) => (th.style.width = `${clampWidth(start + ev.clientX - startX)}px`)
-    const up = (ev: globalThis.PointerEvent) => {
+    // A plain click (down/up, no pointermove between them) is not a drag: it must not resize.
+    let moved = false
+    const move = (ev: globalThis.PointerEvent) => {
+      moved = true
+      th.style.width = `${clampWidth(start + ev.clientX - startX)}px`
+    }
+    const stop = () => {
       window.removeEventListener('pointermove', move)
       window.removeEventListener('pointerup', up)
-      onResize(column.key, clampWidth(start + ev.clientX - startX))
+      window.removeEventListener('pointercancel', cancel)
+    }
+    const up = (ev: globalThis.PointerEvent) => {
+      stop()
+      if (moved) onResize(column.key, clampWidth(start + ev.clientX - startX))
+    }
+    // A cancelled gesture (e.g. a touch scroll takes over) discards the drag instead of committing it.
+    const cancel = () => {
+      stop()
+      th.style.width = `${start}px`
     }
     window.addEventListener('pointermove', move)
     window.addEventListener('pointerup', up)
+    window.addEventListener('pointercancel', cancel)
   }
   function onKeyDown(e: KeyboardEvent<HTMLSpanElement>) {
     const step = e.key === 'ArrowRight' ? 16 : e.key === 'ArrowLeft' ? -16 : 0

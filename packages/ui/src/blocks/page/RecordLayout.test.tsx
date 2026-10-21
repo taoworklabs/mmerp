@@ -1,6 +1,7 @@
 import { render } from 'vitest-browser-react'
 import { page } from 'vitest/browser'
 import { describe, expect, it } from 'vitest'
+import { AppShell } from '../../primitives/layout/AppShell.tsx'
 import { ActionBar, RecordColumns } from './RecordLayout.tsx'
 import '../../styles/index.css'
 
@@ -54,5 +55,23 @@ describe('ActionBar', () => {
     await page.viewport(800, 900)
     await expect.poll(() => getComputedStyle(bar).display).not.toBe('none')
     await expect.poll(() => Math.abs(bar.getBoundingClientRect().bottom - 900)).toBeLessThanOrEqual(1)
+  })
+
+  it('stays under AppShell\'s open drawer where the two fixed overlays meet', async () => {
+    const { container } = await render(
+      <AppShell header={<div>Header</div>} navbar={<div>Navbar</div>} navbarOpened>
+        <ActionBar>
+          <button type="button">Save</button>
+        </ActionBar>
+      </AppShell>,
+    )
+    await page.viewport(800, 900)
+    const navbar = container.querySelector('nav') as HTMLElement
+    const bar = (container.querySelector('button') as HTMLElement).parentElement as HTMLElement
+
+    // Both are fixed overlays sharing the bottom-left corner: the drawer must paint over the bar.
+    const x = navbar.getBoundingClientRect().left + 10
+    const y = bar.getBoundingClientRect().top + 5
+    await expect.poll(() => navbar.contains(document.elementFromPoint(x, y))).toBe(true)
   })
 })

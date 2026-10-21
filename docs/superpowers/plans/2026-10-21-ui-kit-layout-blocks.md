@@ -27,7 +27,7 @@
 ## Review Focus
 
 1. **Long text.** A 200-character title, employee name or chosen filter value ellipsises inside its box (`PageHeader` title one line, `DataTable` first column one line, `FilterChip` max 320px) and never widens the page. Tests: Task 6 (`PageHeader` long title), Task 9 (`FilterChip` long value), Task 10 (`DataTable` long first cell).
-2. **Narrow screens.** Below 1024px: `DataTable` renders cards, `PageHeader` stacks its actions under the title, `ActionBar` is fixed at the bottom with content kept clear of it, `AppShell` rail mode is ignored (drawer instead). Tests: Task 4, Task 6, Task 7, Task 10 (unit tests with `page.viewport(800, 900)`).
+2. **Narrow screens.** Below 1024px: `DataTable` renders cards, `ActionBar` is fixed at the bottom with content kept clear of it, `AppShell` rail mode is ignored (drawer instead); below 768px (48em), `PageHeader` stacks its actions under the title. Tests: Task 4, Task 6, Task 7, Task 10 (unit tests with `page.viewport(800, 900)`).
 3. **Empty and zero values.** A `DataTable` cell rendering `''`, `null` or `undefined` shows a dimmed "–" (but a total row leaves it blank); a `number` cell rendering `0` shows "–". Test: Task 10.
 4. **Keyboard on tables.** Sort header toggles with Enter/Space and sets `aria-sort`; a resize handle moves 16px per arrow key, clamped to 48–800px, and reports once per key; select-all shows indeterminate when some rows are selected. Tests: Task 3, Task 10.
 5. **Focus and overlays in list blocks.** `FilterChip` opens on click and Enter, Escape closes it and returns focus to the chip; with `searchable`, focus lands in the search box. Test: Task 5 (`ComboboxButton`), Task 9.

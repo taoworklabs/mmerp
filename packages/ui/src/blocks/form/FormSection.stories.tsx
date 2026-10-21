@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import { IconUser } from '@tabler/icons-react'
-import { expect } from 'storybook/test'
+import { expect, within } from 'storybook/test'
 import { Badge } from '../../primitives/feedback/Badge.tsx'
 import { formatDate, monthLabels, parseDate, viLocale } from '../../primitives/dates/storySamples.ts'
 import { DateInput } from '../../primitives/dates/DateInput.tsx'
@@ -59,6 +59,10 @@ export const Side: Story = {
     for (const control of controls) {
       expect(control.getBoundingClientRect().height).toBe(40)
     }
+    // The fieldset's legend sits in a nested div, which would otherwise leave it with no
+    // accessible name: aria-labelledby must still name it after the title.
+    const canvas = within(canvasElement)
+    expect(canvas.getByRole('group', { name: 'Thông tin chính' })).not.toBeNull()
   },
 }
 

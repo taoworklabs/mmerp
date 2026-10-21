@@ -63,7 +63,7 @@ function PageHeaderRoot({
             </Anchor>
           ))}
           {current && (
-            <Text size="sm" weight={500} render={<span />}>
+            <Text size="sm" weight={500} truncate render={<span />}>
               {title}
             </Text>
           )}

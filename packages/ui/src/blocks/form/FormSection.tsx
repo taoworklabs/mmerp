@@ -1,4 +1,5 @@
 import type * as React from 'react'
+import { useId } from 'react'
 import { cx } from '../../internal/cx.ts'
 import { Group } from '../../primitives/layout/Group.tsx'
 import { Text } from '../../primitives/typography/Text.tsx'
@@ -19,13 +20,16 @@ export interface FormSectionProps extends Omit<React.ComponentPropsWithRef<'fiel
 }
 
 function FormSectionRoot({ title, description, icon, badge, layout = 'side', children, className, ...props }: FormSectionProps) {
+  // The legend sits inside styles.titleColumn, not as the fieldset's direct child, so it loses the
+  // accessible name browsers would otherwise compute from it automatically: name it explicitly.
+  const legendId = useId()
   return (
-    <fieldset className={cx(styles.section, className)} {...props}>
+    <fieldset className={cx(styles.section, className)} aria-labelledby={legendId} {...props}>
       <div className={styles.layout} data-layout={layout}>
         <div className={styles.titleColumn}>
           <Group gap="xs" wrap={false}>
             {icon}
-            <legend className={styles.legend}>{title}</legend>
+            <legend id={legendId} className={styles.legend}>{title}</legend>
             {badge}
           </Group>
           {/* Quieter than the field labels, so the fields lead. */}
