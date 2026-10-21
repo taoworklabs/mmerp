@@ -1,0 +1,108 @@
+/* FilterBar: chips wrap onto more lines as they run out of room; tools stay at the bar's own right
+   end from 64em instead of wrapping with them. */
+.bar {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--mmerp-space-sm);
+}
+
+.filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--mmerp-space-sm);
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.tools {
+  display: flex;
+  align-items: center;
+  gap: var(--mmerp-space-sm);
+  flex: none;
+}
+
+/* Filter inputs read like the tool buttons beside them: a button's edge and weight, its hover
+   tint, and a primary edge once focused or open. */
+.filters [data-mmerp-control] {
+  border-color: var(--mmerp-color-border);
+  font-weight: var(--mmerp-font-weight-medium);
+}
+
+.filters [data-mmerp-control]:hover {
+  background: var(--mmerp-color-gray-light);
+}
+
+.filters [data-mmerp-control]:focus-within,
+.filters [data-mmerp-control][data-expanded] {
+  border-color: var(--mmerp-color-primary-6);
+}
+
+/* FilterBar.Search: full width below 64em (its own line); from there it shares the row within its
+   bounds, shrinking before the chips do. */
+.search {
+  width: 100%;
+}
+
+@media (min-width: 64em) {
+  .search {
+    width: auto;
+    flex: 1 1 var(--mmerp-filter-width-search-min);
+    min-width: var(--mmerp-filter-width-search-min);
+    max-width: var(--mmerp-filter-width-search);
+  }
+}
+
+/* FilterChip never grows past its own width: a long value ellipsises instead of widening the bar. */
+.chip {
+  max-width: var(--mmerp-filter-width-chip);
+  flex: none;
+}
+
+.main {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+
+.clear {
+  flex: none;
+}
+
+/* PagingBar: the page count sits centred regardless of the widths of the text and select beside it. */
+.paging {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: var(--mmerp-space-sm);
+}
+
+.pageSize {
+  justify-self: end;
+  width: 130px;
+}
+
+/* Quiet like the page buttons beside it: no edge or fill until hovered. */
+.pageSize [data-mmerp-control] {
+  border-color: transparent;
+  background: transparent;
+}
+
+.pageSize [data-mmerp-control]:hover {
+  background: var(--mmerp-color-gray-light);
+}
+
+/* BulkBar takes the filter bar's place while rows are selected. */
+.bulk {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--mmerp-space-xs);
+}
