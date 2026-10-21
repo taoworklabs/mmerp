@@ -5,20 +5,34 @@ import { ActionBar, RecordColumns } from './RecordLayout.tsx'
 import '../../styles/index.css'
 
 describe('RecordColumns', () => {
-  it('holds the 1.6:1 ratio by default and 62:38 with ratio="document" from 64em, and stacks below it', async () => {
+  it('splits main/side at exactly 1.6:2.6 by default and 62:100 with ratio="document" from 64em, and stacks below it', async () => {
     const { container, rerender } = await render(
       <RecordColumns main={<div data-testid="main">Main</div>} side={<div data-testid="side">Side</div>} />,
     )
+    const columns = container.firstElementChild as HTMLElement
     const main = container.querySelector('[data-testid="main"]') as HTMLElement
     const side = container.querySelector('[data-testid="side"]') as HTMLElement
 
     await page.viewport(1300, 900)
-    await expect.poll(() => Math.abs(main.getBoundingClientRect().width / side.getBoundingClientRect().width - 1.6)).toBeLessThanOrEqual(0.05)
+    // The grid's own column-gap, not a hard-coded space token: it still holds if that token changes.
+    let gap = parseFloat(getComputedStyle(columns).columnGap)
+    let available = columns.getBoundingClientRect().width - gap
+    let expectedMain = available * (1.6 / 2.6)
+    let expectedSide = available * (1 / 2.6)
+    expect(main.getBoundingClientRect().width).toBeGreaterThanOrEqual(expectedMain - 2)
+    expect(main.getBoundingClientRect().width).toBeLessThanOrEqual(expectedMain + 2)
+    expect(side.getBoundingClientRect().width).toBeGreaterThanOrEqual(expectedSide - 2)
+    expect(side.getBoundingClientRect().width).toBeLessThanOrEqual(expectedSide + 2)
 
     await rerender(<RecordColumns ratio="document" main={<div data-testid="main">Main</div>} side={<div data-testid="side">Side</div>} />)
-    await expect
-      .poll(() => Math.abs(main.getBoundingClientRect().width / side.getBoundingClientRect().width - 62 / 38))
-      .toBeLessThanOrEqual(0.05)
+    gap = parseFloat(getComputedStyle(columns).columnGap)
+    available = columns.getBoundingClientRect().width - gap
+    expectedMain = available * (62 / 100)
+    expectedSide = available * (38 / 100)
+    expect(main.getBoundingClientRect().width).toBeGreaterThanOrEqual(expectedMain - 2)
+    expect(main.getBoundingClientRect().width).toBeLessThanOrEqual(expectedMain + 2)
+    expect(side.getBoundingClientRect().width).toBeGreaterThanOrEqual(expectedSide - 2)
+    expect(side.getBoundingClientRect().width).toBeLessThanOrEqual(expectedSide + 2)
 
     await page.viewport(800, 900)
     await expect.poll(() => side.getBoundingClientRect().top).toBeGreaterThanOrEqual(main.getBoundingClientRect().bottom)

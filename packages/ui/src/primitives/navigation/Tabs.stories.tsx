@@ -34,7 +34,7 @@ export const Scroll: Story = {
   render: () => (
     <div style={{ width: 300 }}>
       <Tabs defaultValue="tab-0">
-        <Tabs.List scroll tabIndex={0}>
+        <Tabs.List scroll>
           {Array.from({ length: 8 }, (_, index) => (
             <Tabs.Tab key={index} value={`tab-${index}`}>
               {`Long tab label number ${index + 1}`}
@@ -53,9 +53,28 @@ export const Scroll: Story = {
     const canvas = within(canvasElement)
     const list = canvas.getByRole('tablist')
     expect(list.scrollWidth).toBeGreaterThan(list.clientWidth)
+    // No tabIndex was passed here: scroll alone must make the scrollable region a tab stop.
+    expect(list.tabIndex).toBe(0)
 
     const tops = new Set(canvas.getAllByRole('tab').map((tab) => tab.getBoundingClientRect().top))
     expect(tops.size).toBe(1)
+  },
+}
+
+export const OnRule: Story = {
+  render: () => (
+    <Tabs defaultValue="overview">
+      <Tabs.List onRule>
+        <Tabs.Tab value="overview">Overview</Tabs.Tab>
+        <Tabs.Tab value="orders">Orders</Tabs.Tab>
+      </Tabs.List>
+      <Tabs.Panel value="overview">Overview content</Tabs.Panel>
+      <Tabs.Panel value="orders">Orders content</Tabs.Panel>
+    </Tabs>
+  ),
+  play: async ({ canvasElement }) => {
+    const list = within(canvasElement).getByRole('tablist')
+    expect(getComputedStyle(list).borderBottomWidth).toBe('0px')
   },
 }
 

@@ -28,14 +28,17 @@ export interface TabsListProps extends React.ComponentPropsWithRef<'div'> {
   onRule?: boolean
 }
 
-function List({ scroll, onRule, className, ...props }: TabsListProps) {
+function List({ scroll, onRule, tabIndex, className, ...props }: TabsListProps) {
   // Automatic activation on arrow focus: a user browsing tabs expects the panel to follow immediately.
+  // scroll makes the list itself the scrollable region, so it needs its own tab stop for the a11y
+  // rule that every scrollable region must be reachable by keyboard; callers may still override it.
   return (
     <BaseTabs.List
       activateOnFocus
       className={cx(styles.list, className)}
       data-scroll={scroll ? '' : undefined}
       data-on-rule={onRule ? '' : undefined}
+      tabIndex={tabIndex ?? (scroll ? 0 : undefined)}
       {...props}
     />
   )
