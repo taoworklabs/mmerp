@@ -21,6 +21,7 @@ import (
 	"github.com/taoworklabs/mmerp/internal/core/iam/internal/store"
 	"github.com/taoworklabs/mmerp/internal/core/setting"
 	"github.com/taoworklabs/mmerp/internal/platform"
+	"github.com/taoworklabs/mmerp/internal/platform/data"
 )
 
 type Service struct {
@@ -358,6 +359,23 @@ func (s *Service) Scope(ctx context.Context, product, permission string) (Scope,
 		c.m[[2]string{product, permission}] = sc
 	}
 	return sc, err
+}
+
+// DataScope is Scope converted to the sealed data.Scope dynamic lists take: the
+// permission check stays here, so a caller cannot build a wider one itself.
+func (s *Service) DataScope(ctx context.Context, product, permission string) (data.Scope, error) {
+	sc, err := s.Scope(ctx, product, permission)
+	if err != nil {
+		return data.Scope{}, err
+	}
+	switch {
+	case sc.All:
+		return data.GrantAll(), nil
+	case len(sc.Units) > 0:
+		return data.GrantUnits(sc.Units), nil
+	default:
+		return data.Scope{}, nil
+	}
 }
 
 func (s *Service) scope(ctx context.Context, product, permission string) (Scope, error) {
