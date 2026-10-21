@@ -69,7 +69,7 @@ The design docs are written in English; keep them in English when you edit them.
 
 ## Commands
 
-Tools: Go, Node 24+ with pnpm, Docker. The server reads `DATABASE_URL`, `PRODUCTS`, `ENCRYPTION_KEYS`, `HTTP_ADDR` (`:8080`), `FILES_DIR` (`data/files`), `RUN_JOBS` (`true`) and `LOG_LEVEL` (`info`) (`platform.LoadConfig`). Postgres from compose listens on `localhost:5433`. To use a Postgres 18 already running on the machine instead, set `TEST_DATABASE_URL` (and `DATABASE_URL` if it differs from the default) in a gitignored `local.mk`; make then never starts compose.
+Tools: Go, Node 24+ with pnpm, Docker. The server reads `DATABASE_URL`, `PRODUCTS`, `ENCRYPTION_KEYS`, `HTTP_ADDR` (`:8080`), `FILES_DIR` (`data/files`), `RUN_JOBS` (`true`), `SLOW_QUERY_MS` (`500`) and `LOG_LEVEL` (`info`) (`platform.LoadConfig`). Postgres from compose listens on `localhost:5433`. To use a Postgres 18 already running on the machine instead, set `TEST_DATABASE_URL` (and `DATABASE_URL` if it differs from the default) in a gitignored `local.mk`; make then never starts compose.
 
 | Command | Does |
 | --- | --- |
