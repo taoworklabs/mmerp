@@ -1,0 +1,167 @@
+/* Lets a list page's frame shrink the table to the room left, so it scrolls under its header.
+   A table that is part of a page (a tab, a section, a document, a modal) sits in a frame; the
+   table that is a list page's whole content drops it there. */
+.root {
+  min-height: 0;
+  border: 1px solid var(--mmerp-color-border);
+  border-radius: var(--mmerp-radius-md);
+  overflow: hidden;
+}
+
+/* The checkbox column has no sticky cell of its own: it scrolls away, and the identifier column
+   takes its place at the left edge once selectable, offset by the checkbox column's width. */
+.selectable {
+  --mmerp-table-sticky-left: 40px;
+}
+
+/* The vertical scrollbar runs between the sticky header and footer, not behind them.
+   ponytail: no corner-width var exposed by ScrollArea, so it doesn't dodge the horizontal
+   scrollbar's corner; add one if that overlap turns out to matter. */
+.root [data-orientation='vertical'] {
+  top: var(--mmerp-head-height, 0px);
+  bottom: var(--mmerp-foot-height, 0px);
+}
+
+.row {
+  cursor: pointer;
+}
+
+.strong {
+  font-weight: 600;
+}
+
+/* An empty or zero cell steps back, so the eye stops on cells that hold something. */
+.secondary {
+  color: var(--mmerp-color-dimmed);
+}
+
+/* A band of related columns opens with a rule. */
+.bandStart {
+  border-left: 1px solid var(--mmerp-color-border);
+}
+
+.bandLabel {
+  text-align: center;
+}
+
+/* The identifier reads as the row's name, linked or not. */
+.root tbody tr:not(.totalRow) td[data-sticky] {
+  font-weight: 500;
+}
+
+/* The identifier reads as the row's name; it underlines on hover like any link. */
+.idLink {
+  color: var(--mmerp-color-text);
+  font-weight: 500;
+  text-decoration: none;
+}
+
+.idLink:hover {
+  text-decoration: underline;
+}
+
+/* A group's name row and the total rows read as headings of the figures around them. */
+.groupRow td {
+  background: var(--mmerp-color-elevation-surface-sunken);
+  font-weight: 600;
+}
+
+/* The name stays in view when the row scrolls sideways. */
+.groupName {
+  position: sticky;
+  left: var(--mmerp-space-sm);
+}
+
+.totalRow td {
+  font-weight: 600;
+}
+
+.totalRow td[data-sticky] {
+  background: var(--mmerp-color-elevation-surface);
+}
+
+/* In a scroll area of capped height the grand total stays at its bottom. */
+.root tfoot td {
+  position: sticky;
+  bottom: 0;
+  z-index: 1;
+  background: var(--mmerp-color-elevation-surface);
+  box-shadow: inset 0 1px 0 var(--mmerp-color-border);
+}
+
+.root tfoot td[data-sticky] {
+  z-index: 2;
+}
+
+.root[data-scrolled] tfoot td[data-sticky] {
+  box-shadow:
+    inset -1px 0 0 var(--mmerp-color-border),
+    inset 0 1px 0 var(--mmerp-color-border);
+}
+
+/* The checkbox column of a selectable table. */
+.select {
+  width: 40px;
+}
+
+/* A column's right edge, wide enough to grab, visible on hover and focus. A sticky cell already
+   positions itself; only the others need relative to anchor the handle. */
+.root th:not([data-sticky]) {
+  position: relative;
+}
+
+.resize {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 8px;
+  cursor: col-resize;
+  touch-action: none;
+}
+
+.resize:hover,
+.resize:focus-visible {
+  box-shadow: inset -2px 0 0 var(--mmerp-color-primary-6);
+  outline: none;
+}
+
+.sortButton {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--mmerp-space-xxs);
+}
+
+.sortButton[data-sorted] {
+  color: var(--mmerp-color-text);
+}
+
+/* The whole card is the link's hit area. */
+.cardLink {
+  position: relative;
+  display: block;
+  color: inherit;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.cardLink::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+}
+
+.card {
+  position: relative;
+}
+
+/* Above the card link's hit area. */
+.cardAction {
+  position: relative;
+  z-index: 1;
+}
+
+/* A total card stands apart from the rows it sums. */
+.totalCard {
+  background: var(--mmerp-color-elevation-surface-sunken);
+}
