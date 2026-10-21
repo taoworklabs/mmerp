@@ -1,4 +1,5 @@
 import { cloneElement, Fragment, useCallback, useRef, useState } from 'react'
+import type * as React from 'react'
 import type { KeyboardEvent, PointerEvent, ReactElement, ReactNode, RefObject } from 'react'
 import { useElementSize } from '../../hooks/useElementSize.ts'
 import { useMediaQuery } from '../../hooks/useMediaQuery.ts'
@@ -31,7 +32,7 @@ export interface DataTableLabels {
   resize(column: string): string
 }
 
-export type DataTableProps<T> = {
+export type DataTableProps<T> = Omit<React.ComponentPropsWithRef<'div'>, 'children'> & {
   columns: Column<T>[]
   rows: T[]
   rowKey: (row: T) => string | number
@@ -80,6 +81,10 @@ export function DataTable<T>({
   maxHeight,
   cards,
   labels,
+  className,
+  style,
+  ref,
+  ...rest
 }: DataTableProps<T>) {
   const wide = useMediaQuery(`(min-width: ${breakpoint.md})`, true)
   const [scrolled, setScrolled] = useState(false)
@@ -99,14 +104,31 @@ export function DataTable<T>({
   const some = !!selection && keys.some((k) => selection.selected.has(k))
 
   if (!wide || cards) {
-    return <Cards columns={columns} rows={rows} rowKey={rowKey} renderLink={renderLink} menu={menu} label={label} group={group} footer={footer} labels={labels} />
+    return (
+      <Cards
+        columns={columns}
+        rows={rows}
+        rowKey={rowKey}
+        renderLink={renderLink}
+        menu={menu}
+        label={label}
+        group={group}
+        footer={footer}
+        labels={labels}
+        ref={ref}
+        className={className}
+        style={style}
+        {...rest}
+      />
+    )
   }
 
   const head = (rowSpan: number) => ({ columns, sort, onSort, onResize, labels, rowSpan })
-  const vars: StyleVars = { '--mmerp-head-height': `${thead.height}px`, '--mmerp-foot-height': `${tfoot.height}px` }
+  const vars: StyleVars = { ...style, '--mmerp-head-height': `${thead.height}px`, '--mmerp-foot-height': `${tfoot.height}px` }
 
   return (
-    <div className={cx(styles.root, selection && styles.selectable)} style={vars} data-scrolled={scrolled ? '' : undefined}>
+    // data-table: ListPage looks for this to drop its own frame when the table is a page's whole content.
+    <div ref={ref} data-table="" className={cx(styles.root, selection && styles.selectable, className)} style={vars} data-scrolled={scrolled ? '' : undefined} {...rest}>
       {/* Without maxHeight the table takes the room its parent gives it, e.g. a list page's frame. */}
       <ScrollArea viewportRef={onViewport} style={{ maxHeight: maxHeight ?? '100%' }}>
         <Table highlightOnHover stickyHeader scrolled={scrolled} aria-label={label}>
@@ -160,7 +182,9 @@ export function DataTable<T>({
                     onClick={(e) => {
                       if ((e.target as HTMLElement).closest('a,button,input,[role=menu]')) return
                       if (onRowClick) onRowClick(row)
-                      else e.currentTarget.querySelector('a')?.click()
+                      // Only the first (sticky) cell's own link, never some other column's — the
+                      // checkbox cell is never sticky, so this can't catch it either.
+                      else if (renderLink) e.currentTarget.querySelector<HTMLAnchorElement>('td[data-sticky] a')?.click()
                     }}
                   >
                     {selection && (
@@ -351,11 +375,12 @@ function SortButton<T>({ column, sort, onSort }: { column: Column<T>; sort?: str
   )
 }
 
-type CardsProps<T> = Pick<DataTableProps<T>, 'columns' | 'rows' | 'rowKey' | 'renderLink' | 'menu' | 'label' | 'group' | 'footer' | 'labels'>
+type CardsProps<T> = Pick<DataTableProps<T>, 'columns' | 'rows' | 'rowKey' | 'renderLink' | 'menu' | 'label' | 'group' | 'footer' | 'labels' | 'className' | 'style' | 'ref'> &
+  Omit<React.ComponentPropsWithRef<'div'>, 'children' | 'className' | 'style' | 'ref'>
 
-function Cards<T>({ columns, rows, rowKey, renderLink, menu, label, group, footer, labels }: CardsProps<T>) {
+function Cards<T>({ columns, rows, rowKey, renderLink, menu, label, group, footer, labels, className, style, ref, ...rest }: CardsProps<T>) {
   return (
-    <Stack gap="xs" role="list" aria-label={label}>
+    <Stack gap="xs" role="list" aria-label={label} ref={ref} className={className} style={style} {...rest}>
       {grouped(rows, group?.of).map((g) => (
         <Fragment key={`group:${g.name}`}>
           {group && (

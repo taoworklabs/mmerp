@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import { useState } from 'react'
-import { expect, fn, userEvent, within } from 'storybook/test'
+import { expect, fn, userEvent, waitFor, within } from 'storybook/test'
 import { Badge } from '../../primitives/feedback/Badge.tsx'
 import { Menu } from '../../primitives/overlay/Menu.tsx'
 import { DataTable, type Column, type DataTableLabels, type Selection } from './DataTable.tsx'
@@ -69,6 +69,94 @@ export const Basic: StoryObj<{ onLinkClick(): void }> = {
     // kit forwards the click to it instead of navigating itself.
     await userEvent.click(canvas.getByText('Kinh doanh'))
     expect(args.onLinkClick).toHaveBeenCalledTimes(1)
+  },
+}
+
+export const RowClickWithoutLink: StoryObj<{ onInnerLinkClick(): void }> = {
+  args: { onInnerLinkClick: fn() },
+  render: (args) => {
+    // No renderLink here: the second column's own <a> must never be the one the row forwards a
+    // plain-cell click to, since without renderLink the row shouldn't forward a click at all.
+    const linkColumns: Column<Employee>[] = [
+      columns[0]!,
+      {
+        key: 'codeLink',
+        header: 'Mã',
+        role: 'meta',
+        render: (e) => (
+          <a
+            href="#"
+            onClick={(ev) => {
+              ev.preventDefault()
+              args.onInnerLinkClick()
+            }}
+          >
+            {e.code}
+          </a>
+        ),
+      },
+      columns[2]!,
+    ]
+    return <DataTable columns={linkColumns} rows={rows} rowKey={(e) => e.id} label="Danh sách nhân viên" labels={labels} />
+  },
+  play: async ({ canvasElement, args }) => {
+    const canvas = within(canvasElement)
+    await userEvent.click(canvas.getByText('Kinh doanh'))
+    expect(args.onInnerLinkClick).not.toHaveBeenCalled()
+  },
+}
+
+export const RowClickSkipsOtherColumns: StoryObj<{ onFirstLinkClick(): void; onOtherLinkClick(): void }> = {
+  args: { onFirstLinkClick: fn(), onOtherLinkClick: fn() },
+  render: (args) => {
+    // With renderLink, the row forwards a plain-cell click to the first (sticky) cell's own link
+    // only — never to another column's unrelated <a>, even though one exists in the row too.
+    const linkColumns: Column<Employee>[] = [
+      columns[0]!,
+      {
+        key: 'codeLink',
+        header: 'Mã',
+        role: 'meta',
+        render: (e) => (
+          <a
+            href="#"
+            onClick={(ev) => {
+              ev.preventDefault()
+              args.onOtherLinkClick()
+            }}
+          >
+            {e.code}
+          </a>
+        ),
+      },
+      columns[2]!,
+    ]
+    return (
+      <DataTable
+        columns={linkColumns}
+        rows={rows}
+        rowKey={(e) => e.id}
+        label="Danh sách nhân viên"
+        labels={labels}
+        renderLink={(row: Employee, children) => (
+          <a
+            href={`#/employees/${row.id}`}
+            onClick={(e) => {
+              e.preventDefault()
+              args.onFirstLinkClick()
+            }}
+          >
+            {children}
+          </a>
+        )}
+      />
+    )
+  },
+  play: async ({ canvasElement, args }) => {
+    const canvas = within(canvasElement)
+    await userEvent.click(canvas.getByText('Kinh doanh'))
+    expect(args.onFirstLinkClick).toHaveBeenCalledTimes(1)
+    expect(args.onOtherLinkClick).not.toHaveBeenCalled()
   },
 }
 
@@ -227,6 +315,37 @@ export const LongFirstCell: Story = {
     const canvas = within(canvasElement)
     const cell = canvas.getByText('A'.repeat(220)).closest('td')!
     expect(cell.scrollHeight).toBeLessThanOrEqual(41)
+  },
+}
+
+export const MaxHeight: Story = {
+  args: {
+    rows: Array.from({ length: 40 }, (_, i) => ({
+      id: i + 1,
+      full_name: `Nhân viên ${i + 1}`,
+      code: `NV${String(i + 1).padStart(3, '0')}`,
+      org_unit: 'Kinh doanh',
+      hire_date: '2023-01-10',
+      status: 'active' as const,
+    })),
+    maxHeight: '300px',
+  },
+  play: async ({ canvasElement }) => {
+    // Base UI's own fixed class on the scrollable viewport, not a CSS-module hash: stable to query.
+    const viewport = canvasElement.querySelector<HTMLElement>('.base-ui-disable-scrollbar')!
+    expect(viewport.scrollHeight).toBeGreaterThan(viewport.clientHeight)
+
+    const header = canvasElement.querySelector('thead')!
+    const headerTopBefore = header.getBoundingClientRect().top
+
+    viewport.scrollTop = viewport.scrollHeight
+    await waitFor(() => expect(viewport.scrollTop).toBeGreaterThan(0))
+
+    const lastRow = within(canvasElement).getByText('Nhân viên 40').closest('tr')!
+    await waitFor(() => expect(lastRow.getBoundingClientRect().bottom).toBeLessThanOrEqual(viewport.getBoundingClientRect().bottom + 1))
+
+    // The sticky header stays docked at the viewport's top instead of scrolling away with the rows.
+    expect(Math.abs(header.getBoundingClientRect().top - headerTopBefore)).toBeLessThanOrEqual(1)
   },
 }
 

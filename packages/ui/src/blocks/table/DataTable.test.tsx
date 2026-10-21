@@ -30,4 +30,27 @@ describe('DataTable', () => {
     await expect.poll(() => container.querySelector('table')).not.toBeNull()
     await expect.poll(() => container.querySelector('[role="list"]')).toBeNull()
   })
+
+  it('carries data-table, merges a caller className, and forwards ref to the root div', async () => {
+    let rootEl: HTMLDivElement | null = null
+    const { container } = await render(
+      <DataTable
+        columns={columns}
+        rows={rows}
+        rowKey={(e) => e.id}
+        label="Nhân viên"
+        labels={labels}
+        className="extra"
+        ref={(el) => {
+          rootEl = el
+        }}
+      />,
+    )
+
+    await page.viewport(1300, 900)
+    const root = container.firstElementChild as HTMLElement
+    await expect.poll(() => root.hasAttribute('data-table')).toBe(true)
+    expect(root.classList.contains('extra')).toBe(true)
+    expect(rootEl).toBe(root)
+  })
 })
