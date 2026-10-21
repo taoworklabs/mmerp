@@ -84,7 +84,9 @@ export function ComboboxButton({
                 <BaseCombobox.Input placeholder={searchLabel} aria-label={searchLabel} className={textInputStyles.input} />
               </BaseCombobox.InputGroup>
             ) : (
-              <BaseCombobox.Input style={hiddenInputStyle} />
+              // Unlabelled otherwise: the trigger's own keydown handler moves focus here on
+              // ArrowDown/ArrowUp, so it needs the trigger's name, not just its hidden look.
+              <BaseCombobox.Input style={hiddenInputStyle} aria-labelledby={triggerId} />
             )}
             <BaseCombobox.Empty className={optionStyles.empty}>{nothingFound}</BaseCombobox.Empty>
             <BaseCombobox.List>

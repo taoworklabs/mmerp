@@ -59,6 +59,24 @@ export const Default: Story = {
   },
 }
 
+// Pins the hidden input's accessible name: the trigger's own keydown handler moves focus onto it
+// for ArrowDown/ArrowUp, so it must carry a name — left open so the a11y check covers the popup too.
+export const KeyboardOpen: Story = {
+  args: { value: null, trigger: <Button aria-label="Pick a person">Pick a person</Button> },
+  render: (args) => <Controlled {...args} />,
+  play: async ({ canvasElement }) => {
+    const trigger = within(canvasElement).getByRole('combobox', { name: 'Pick a person' })
+    const body = within(canvasElement.ownerDocument.body)
+
+    trigger.focus()
+    await userEvent.keyboard('{ArrowDown}')
+    await waitFor(() => expect(body.getByRole('listbox')).toBeInTheDocument())
+
+    expect(document.activeElement).not.toBe(trigger)
+    expect(document.activeElement).toHaveAccessibleName('Pick a person')
+  },
+}
+
 export const Searchable: Story = {
   args: { value: null, trigger: <Button aria-label="Pick a person">Pick a person</Button>, searchable: true, searchLabel: 'Search people' },
   render: (args) => <Controlled {...args} />,
