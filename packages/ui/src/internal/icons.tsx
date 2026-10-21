@@ -29,3 +29,11 @@ export function ArrowsSortIcon({ size = 16 }: { size?: number }) {
     </svg>
   )
 }
+
+export function ArrowLeftIcon({ size = 16 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M5 12h14M11 18l-6-6M11 6l-6 6" />
+    </svg>
+  )
+}
