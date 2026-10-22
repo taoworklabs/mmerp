@@ -18,7 +18,7 @@ test('a session revoked on the server sends every open tab to the login screen o
   await signedIn(page, '/hrm/employees')
   const other = await context.newPage()
   await other.goto('/')
-  await expect(other.getByRole('button', { name: 'Tài khoản' })).toBeVisible()
+  await expect(other.getByRole('button', { name: /^Tài khoản:/ })).toBeVisible()
 
   // Revoke from outside the browser, as an administrator or expiry would.
   const cookie = (await context.cookies()).find((c) => c.name === 'session')!
@@ -30,7 +30,7 @@ test('a session revoked on the server sends every open tab to the login screen o
   other.on('load', () => loads.other++)
 
   // Any request of the open tab now gets 401.
-  await page.getByRole('button', { name: 'Tài khoản' }).click()
+  await page.getByRole('button', { name: /^Tài khoản:/ }).click()
   await page.getByRole('menuitem', { name: 'English' }).click()
 
   await expect(page).toHaveURL(/\/login\?next=%2Fhrm%2Femployees$/)
@@ -57,7 +57,7 @@ test('changing the language changes the whole interface, menu included', async (
   const nav = page.getByRole('navigation')
   await expect(nav.getByRole('link', { name: 'Nhân viên' })).toBeVisible()
 
-  await page.getByRole('button', { name: 'Tài khoản' }).click()
+  await page.getByRole('button', { name: /^Tài khoản:/ }).click()
   await page.getByRole('menuitem', { name: 'English' }).click()
   await expect(page.getByRole('heading', { name: 'Overview' })).toBeVisible()
   await expect(nav.getByRole('link', { name: 'Employees' })).toBeVisible()

@@ -54,7 +54,7 @@ async function as(browser: Browser, user: string, path: string) {
   await page.getByLabel('Tên đăng nhập').fill(user)
   await page.getByLabel(/^Mật khẩu/).fill(user === admin.login ? admin.password : password)
   await page.getByRole('button', { name: 'Đăng nhập' }).click()
-  await expect(page.getByRole('button', { name: 'Tài khoản' })).toBeVisible()
+  await expect(page.getByRole('button', { name: /^Tài khoản:/ })).toBeVisible()
   return page
 }
 
