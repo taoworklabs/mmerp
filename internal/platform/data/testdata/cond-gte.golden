@@ -1,13 +1,15 @@
 -- empty --
 false
 -- page --
-SELECT b.* FROM (SELECT id, org_unit_id, user_id, number, code, start_date, end_date FROM t) b WHERE b."end_date" >= $1 ORDER BY b."start_date" DESC, b."id" DESC LIMIT $2 OFFSET $3
+SELECT b.* FROM (SELECT id, org_unit_id, user_id, number, code, start_date, end_date FROM t
+) b WHERE b."end_date" >= $1 ORDER BY b."start_date" DESC, b."id" DESC LIMIT $2 OFFSET $3
 -- page args --
 "2026-01-01"
 50
 0
 -- count --
-SELECT count(*) FROM (SELECT id, org_unit_id, user_id, number, code, start_date, end_date FROM t) b WHERE b."end_date" >= $1
+SELECT count(*) FROM (SELECT id, org_unit_id, user_id, number, code, start_date, end_date FROM t
+) b WHERE b."end_date" >= $1
 -- count args --
 "2026-01-01"
 -- shape --

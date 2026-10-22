@@ -212,7 +212,7 @@ func (l List[R]) Compile(q Query, v Viewer, hasViewer bool) (page, count Compile
 
 	slices.Sort(c.filters)
 	shape := strings.Join(slices.Compact(c.filters), ",") + "|" + key
-	from := "FROM (" + l.Base.sql + ") b"
+	from := "FROM (" + l.Base.sql + "\n) b"
 	if len(where) > 0 {
 		from += " WHERE " + strings.Join(where, " AND ")
 	}

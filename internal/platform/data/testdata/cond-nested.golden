@@ -1,7 +1,8 @@
 -- empty --
 false
 -- page --
-SELECT b.* FROM (SELECT id, org_unit_id, user_id, number, code, start_date, end_date FROM t) b WHERE (b."org_unit_id" = ANY($1) OR (b."user_id" = $2)) AND (b."number" ILIKE $3 OR b."code" ILIKE $3) AND ((b."code" = $4 OR b."number" = $5) AND b."start_date" >= $6) ORDER BY b."start_date" DESC, b."id" DESC LIMIT $7 OFFSET $8
+SELECT b.* FROM (SELECT id, org_unit_id, user_id, number, code, start_date, end_date FROM t
+) b WHERE (b."org_unit_id" = ANY($1) OR (b."user_id" = $2)) AND (b."number" ILIKE $3 OR b."code" ILIKE $3) AND ((b."code" = $4 OR b."number" = $5) AND b."start_date" >= $6) ORDER BY b."start_date" DESC, b."id" DESC LIMIT $7 OFFSET $8
 -- page args --
 []int64{3, 7}
 42
@@ -12,7 +13,8 @@ SELECT b.* FROM (SELECT id, org_unit_id, user_id, number, code, start_date, end_
 50
 0
 -- count --
-SELECT count(*) FROM (SELECT id, org_unit_id, user_id, number, code, start_date, end_date FROM t) b WHERE (b."org_unit_id" = ANY($1) OR (b."user_id" = $2)) AND (b."number" ILIKE $3 OR b."code" ILIKE $3) AND ((b."code" = $4 OR b."number" = $5) AND b."start_date" >= $6)
+SELECT count(*) FROM (SELECT id, org_unit_id, user_id, number, code, start_date, end_date FROM t
+) b WHERE (b."org_unit_id" = ANY($1) OR (b."user_id" = $2)) AND (b."number" ILIKE $3 OR b."code" ILIKE $3) AND ((b."code" = $4 OR b."number" = $5) AND b."start_date" >= $6)
 -- count args --
 []int64{3, 7}
 42

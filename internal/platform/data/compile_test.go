@@ -218,6 +218,25 @@ func TestCompileSearchEscapes(t *testing.T) {
 	}
 }
 
+// TestCompileBaseTrailingComment guards a base query ending in a line
+// comment: without a newline before the closing paren, "-- comment) b"
+// comments out ") b" itself and breaks every statement built on it.
+func TestCompileBaseTrailingComment(t *testing.T) {
+	l := fixtureList()
+	l.Scope = Unscoped("test")
+	l.Base = NewBase("fixtureBaseComment", fixtureSQL+" -- trailing comment", l.Base.cols, fixtureMethod)
+
+	page, count, _, err := l.Compile(Query{Paging: paging(1, 20)}, Viewer{}, false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, sql := range []string{page.SQL, count.SQL} {
+		if !strings.Contains(sql, "\n) b") {
+			t.Fatalf("closing paren not on its own line, a trailing base comment would swallow it: %s", sql)
+		}
+	}
+}
+
 func TestCompileUnknownSort(t *testing.T) {
 	_, _, _, err := fixtureList().Compile(Query{Scope: GrantAll(), Sort: "id; DROP TABLE t", Paging: paging(1, 20)}, Viewer{}, false)
 	var pe *platform.Error

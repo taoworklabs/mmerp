@@ -1,12 +1,14 @@
 -- empty --
 false
 -- page --
-SELECT b.* FROM (SELECT id, org_unit_id, user_id, number, code, start_date, end_date FROM t) b ORDER BY b."start_date" DESC, b."id" DESC LIMIT $1 OFFSET $2
+SELECT b.* FROM (SELECT id, org_unit_id, user_id, number, code, start_date, end_date FROM t
+) b ORDER BY b."start_date" DESC, b."id" DESC LIMIT $1 OFFSET $2
 -- page args --
 50
 0
 -- count --
-SELECT count(*) FROM (SELECT id, org_unit_id, user_id, number, code, start_date, end_date FROM t) b
+SELECT count(*) FROM (SELECT id, org_unit_id, user_id, number, code, start_date, end_date FROM t
+) b
 -- count args --
 -- shape --
 |-start_date
