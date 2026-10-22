@@ -1,4 +1,4 @@
-# 0037. Data engine over sqlc: dynamic parts compiled from code-declared fragments, no ORM
+# 0038. Data engine over sqlc: dynamic parts compiled from code-declared fragments, no ORM
 
 Status: accepted · 2026-10-21 · amends ADR-0008 (data access)
 

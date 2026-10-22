@@ -38,19 +38,19 @@
 
 ## Phase 0: ADR
 
-### Task 0: ADR-0037
+### Task 0: ADR-0038
 
 **Files:**
-- Create: `docs/adr/0037-data-engine-over-sqlc.md`
+- Create: `docs/adr/0038-data-engine-over-sqlc.md`
 
 - [ ] **Step 1: Write the ADR** in the format of `docs/adr/0036-approval-flows.md`:
-  - Title `# 0037. Data engine over sqlc: dynamic parts compiled from code-declared fragments, no ORM`.
+  - Title `# 0038. Data engine over sqlc: dynamic parts compiled from code-declared fragments, no ORM`.
   - Status line: `Status: accepted · 2026-10-21 · amends ADR-0008 (data access)`.
   - Sections Context, Decision, Consequences. Decision bullets come from spec §Architecture, §2 (scope, fragments), §3, §4, §5 and §6. Consequences include the behaviour changes from spec §Behaviour changes. Add an "Options not taken" table copied from spec §Why not an ORM.
 - [ ] **Step 2: Commit**
 
 ```bash
-git add docs/adr/0037-data-engine-over-sqlc.md
+git add docs/adr/0038-data-engine-over-sqlc.md
 git commit -m "docs(adr): data engine over sqlc"
 ```
 
