@@ -129,6 +129,8 @@ Rules a tool can enforce are enforced by a tool. For rules no tool can enforce, 
 | Database | One Postgres schema per module, named after the module (`sales.orders`, `iam.users`). Module X's `queries.sql` may only INSERT/UPDATE/DELETE into schema X, and only read the permitted schemas ([Rules between modules](#rules-between-modules)) | A CI script scans the writes and reads in `queries.sql`. SQL written outside `queries.sql` is not caught |
 | Documents | Call `record` before writing document tables | The `recordtest` contract suite (see [documents.md](./documents.md#guarantees)) |
 | Transactions | Services get the DB only through `platform.DBFrom(ctx)` | `depguard` (`no-pool`) forbids importing `pgxpool` in `core`, `shared`, `modules`; `forbidigo` forbids `pgx.Connect`. Package-level DB variables: checked in review |
+| Transactions | A write outside `platform.InTx` fails instead of committing on its own | The app pool is read-only outside a transaction; Postgres rejects the write with `25006` |
+| Data engine | List scopes come from `iam.DataScope`, so a module cannot widen its own visibility | `data.Scope`'s fields are unexported; only `iam.(*Service).DataScope` builds a non-zero one |
 
 Dependencies between products are always interfaces, so when testing a module, the other products are replaced with fakes. Dependencies down to `core` and `shared` are direct imports, so tests use the real ones on the same Postgres.
 
@@ -157,7 +159,7 @@ This tree is not a business model. Which store a warehouse belongs to, which dep
 
 A single rule:
 
-- A service gets a connection with `platform.DBFrom(ctx)`. If ctx holds a transaction, that transaction is returned; otherwise the pool is returned. A service never keeps the pool (`*pgxpool.Pool`) or a `platform.Conn` in a field, and never creates a sqlc store in its constructor.
+- A service gets a connection with `platform.DBFrom(ctx)`. If ctx holds a transaction, that transaction is returned; otherwise the pool is returned, and the pool is read-only outside a transaction: a write on it fails with `25006` instead of committing on its own. A service never keeps the pool (`*pgxpool.Pool`) or a `platform.Conn` in a field, and never creates a sqlc store in its constructor.
 - A service opens a transaction with `platform.InTx(ctx, func(ctx) error)`. If ctx already holds a transaction, that transaction is reused. Every service called inside automatically shares the transaction; only `ctx` needs to be passed.
 - Never pass a `pgx.Tx`, or a sqlc store bound to a transaction, as a parameter. A helper running in a transaction takes `ctx` and calls `store.New(platform.DBFrom(ctx))` itself; otherwise an audit write inside can easily use the outer ctx by mistake and fall outside the transaction.
 - Never use a ctx holding a transaction in another goroutine: a transaction can only be used sequentially, and is no longer valid after commit.

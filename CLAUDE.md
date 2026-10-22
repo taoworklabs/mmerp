@@ -48,6 +48,7 @@ The design docs are written in English; keep them in English when you edit them.
 - Services get a connection only via `platform.DBFrom(ctx)` and open transactions with `platform.InTx(ctx, fn)`. Never pass `pgx.Tx`, or a store bound to one, as a parameter: helpers take the tx `ctx`, so audit rows land in the same transaction.
 - Document writes follow one lock order: in `Create` with a `request_id`, the advisory lock on that key, taken first and only when nothing is locked yet → legal-entity row in `record.period_locks` (`FOR SHARE`; `FOR UPDATE` only to move the lock date) → document row in `record.documents` (`FOR UPDATE`; in `Create`, the `numbering` counter row, then the insert) → module-owned rows (e.g. `hrm.payroll_locks`, then leave balances).
 - One transaction writes exactly one document. Bulk operations are jobs that process each document in its own transaction.
+- App pool sessions are read-only, so any write outside `platform.InTx` fails (SQLSTATE `25006`); `platform.Enqueue` requires a transaction in ctx. River and migrations use the system pool.
 
 ### Documents (`record`, `approval`, `posting`)
 
@@ -74,7 +75,7 @@ Tools: Go, Node 24+ with pnpm, Docker. The server reads `DATABASE_URL`, `PRODUCT
 | Command | Does |
 | --- | --- |
 | `make gen` | sqlc (`sqlc.yaml`, one entry per module; pinned via `go run`, needs cgo), OpenAPI spec from Huma (`api/openapi.json`), TypeScript types (`web/src/shared/api/schema.gen.ts`); the per-product clients in `shared/api/<product>.ts` are typed views of it |
-| `make lint` | golangci-lint (pinned via `go run`; depguard, forbidigo), `tsc`, ESLint, dependency-cruiser on `web/src` and `web/lint-fixtures` (must report exactly `web/lint-fixtures/expected.json`; ESLint on `web/lint-fixtures/eslint`, exactly its `expected.json`), colour-literal scan, i18n key check, `queries.sql` schema scan (`scripts/check-queries.mjs`, which must also report exactly `scripts/query-fixtures/expected.json`) |
+| `make lint` | golangci-lint (pinned via `go run`; depguard, forbidigo), the Go lint-fixture check (`scripts/check-go-lint-fixtures.sh`, `scripts/lint-fixtures/go` must report exactly its `expected.txt`), `tsc`, ESLint, dependency-cruiser on `web/src` and `web/lint-fixtures` (must report exactly `web/lint-fixtures/expected.json`; ESLint on `web/lint-fixtures/eslint`, exactly its `expected.json`), colour-literal scan, i18n key check, `queries.sql` schema scan (`scripts/check-queries.mjs`, which must also report exactly `scripts/query-fixtures/expected.json`) |
 | `make test` | `go test ./...` and Vitest; starts Postgres via compose unless `TEST_DATABASE_URL` is set |
 | `make e2e` | Playwright (`web/e2e`): builds the app, recreates the `mmerp_e2e` database (psql through the `postgres:18` image), creates the admin, serves `:8090` with `PRODUCTS=hrm,sales` and `:8091` with none (`scripts/e2e-server.sh`) |
 | `make db` | Postgres via compose unless `TEST_DATABASE_URL` is set; `make` exports a dev `ENCRYPTION_KEYS` |
