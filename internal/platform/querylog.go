@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"log/slog"
+	"strings"
 	"time"
 
 	"github.com/jackc/pgx/v5"
@@ -101,8 +102,15 @@ func (t *queryTracer) logQuery(ctx context.Context, rowsAffected int64, err erro
 
 	level := slog.LevelDebug
 	if err != nil {
-		attrs = append(attrs, slog.String("sqlstate", pgSQLState(err)))
-	} else if name.name != "unnamed" && t.slow > 0 && dur >= t.slow {
+		state := pgSQLState(err)
+		attrs = append(attrs, slog.String("sqlstate", state))
+		// Class 23 (integrity violation) is an expected business outcome the
+		// caller maps to an API error, not a failure an operator needs to see.
+		if !strings.HasPrefix(state, "23") {
+			level = slog.LevelWarn
+		}
+	}
+	if t.slow > 0 && dur >= t.slow && (name.name != "unnamed" || err != nil) {
 		level = slog.LevelWarn
 	}
 

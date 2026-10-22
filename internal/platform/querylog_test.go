@@ -213,3 +213,114 @@ func TestTracerSQLState(t *testing.T) {
 		t.Errorf("sqlstate = %v, want 42P01", got[0].attrs["sqlstate"])
 	}
 }
+
+// TestTracerNonIntegrityFailureWarns guards a failed query whose SQLSTATE is
+// not class 23 (integrity violation): it is an unexpected failure, not a
+// business outcome, so it belongs at warn even though it is named and fast.
+func TestTracerNonIntegrityFailureWarns(t *testing.T) {
+	c := &logCapture{}
+	pool := tracedPool(t, platform.NewQueryTracer(slog.New(c), 500*time.Millisecond))
+	ctx := platform.WithQueryName(t.Context(), "hrm.Touch", "")
+
+	// The pool is read-only outside InTx, so this write fails closed with 25006.
+	if _, err := pool.Exec(ctx, "CREATE TABLE tracer_warn_probe (id int)"); err == nil {
+		t.Fatal("want error")
+	}
+
+	got := c.all()
+	if len(got) != 1 {
+		t.Fatalf("records = %+v, want exactly 1", got)
+	}
+	if got[0].level != slog.LevelWarn {
+		t.Errorf("level = %v, want warn", got[0].level)
+	}
+	if got[0].attrs["sqlstate"] != "25006" {
+		t.Errorf("sqlstate = %v, want 25006", got[0].attrs["sqlstate"])
+	}
+	if got[0].attrs["name"] != "hrm.Touch" {
+		t.Errorf("name = %v, want hrm.Touch", got[0].attrs["name"])
+	}
+}
+
+// TestTracerIntegrityFailureStaysDebug guards the opposite: a unique violation
+// is an expected business outcome the caller maps to an API error, so it never
+// needs an operator's attention at warn.
+func TestTracerIntegrityFailureStaysDebug(t *testing.T) {
+	c := &logCapture{}
+	pool := tracedPool(t, platform.NewQueryTracer(slog.New(c), 500*time.Millisecond))
+	ctx := platform.WithDB(t.Context(), pool)
+
+	err := platform.InTx(ctx, func(ctx context.Context) error {
+		qc := platform.WithQueryName(ctx, "test.create", "")
+		if _, err := platform.DBFrom(qc).Exec(qc, "CREATE TABLE tracer_debug_probe (id int primary key)"); err != nil {
+			return err
+		}
+		if _, err := platform.DBFrom(qc).Exec(qc, "INSERT INTO tracer_debug_probe (id) VALUES (1)"); err != nil {
+			return err
+		}
+		qc = platform.WithQueryName(ctx, "test.dup", "")
+		_, err := platform.DBFrom(qc).Exec(qc, "INSERT INTO tracer_debug_probe (id) VALUES (1)")
+		return err
+	})
+	if err == nil {
+		t.Fatal("want a unique violation")
+	}
+
+	var dup capturedRecord
+	found := false
+	for _, r := range c.all() {
+		if r.attrs["name"] == "test.dup" {
+			dup = r
+			found = true
+		}
+	}
+	if !found {
+		t.Fatalf("no record for test.dup among %+v", c.all())
+	}
+	if dup.level != slog.LevelDebug {
+		t.Errorf("level = %v, want debug", dup.level)
+	}
+	if dup.attrs["sqlstate"] != "23505" {
+		t.Errorf("sqlstate = %v, want 23505", dup.attrs["sqlstate"])
+	}
+}
+
+// TestTracerSlowFailureWarns guards a query that is both slow and failed: a
+// slow failure deserves an operator's attention even when the failure itself
+// is an expected business outcome (here a unique violation, class 23).
+func TestTracerSlowFailureWarns(t *testing.T) {
+	c := &logCapture{}
+	pool := tracedPool(t, platform.NewQueryTracer(slog.New(c), time.Nanosecond))
+	ctx := platform.WithDB(t.Context(), pool)
+
+	err := platform.InTx(ctx, func(ctx context.Context) error {
+		qc := platform.WithQueryName(ctx, "test.create", "")
+		if _, err := platform.DBFrom(qc).Exec(qc, "CREATE TABLE tracer_slow_probe (id int primary key)"); err != nil {
+			return err
+		}
+		if _, err := platform.DBFrom(qc).Exec(qc, "INSERT INTO tracer_slow_probe (id) VALUES (1)"); err != nil {
+			return err
+		}
+		qc = platform.WithQueryName(ctx, "test.dup", "")
+		_, err := platform.DBFrom(qc).Exec(qc, "INSERT INTO tracer_slow_probe (id) VALUES (1)")
+		return err
+	})
+	if err == nil {
+		t.Fatal("want a unique violation")
+	}
+
+	var dup capturedRecord
+	found := false
+	for _, r := range c.all() {
+		if r.attrs["name"] == "test.dup" {
+			dup = r
+			found = true
+		}
+	}
+	if !found {
+		t.Fatalf("no record for test.dup among %+v", c.all())
+	}
+	if dup.level != slog.LevelWarn {
+		t.Errorf("level = %v, want warn (slow overrides the integrity-violation debug rule)", dup.level)
+	}
+}
