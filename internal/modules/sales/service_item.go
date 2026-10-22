@@ -10,6 +10,7 @@ import (
 	"github.com/taoworklabs/mmerp/internal/core/record"
 	"github.com/taoworklabs/mmerp/internal/modules/sales/internal/store"
 	"github.com/taoworklabs/mmerp/internal/platform"
+	"github.com/taoworklabs/mmerp/internal/platform/data"
 )
 
 // Items lists the catalogue to anyone who may view it at some org unit.
@@ -22,14 +23,15 @@ func (s *Service) Items(ctx context.Context, f ItemFilter) (ItemList, error) {
 	if !sc.Any() {
 		return out, platform.ErrForbidden
 	}
-	rows, err := store.New(platform.DBFrom(ctx)).ListItems(ctx, store.ListItemsParams{
-		Q: strings.TrimSpace(f.Q), Active: boolFilter(f.Active), Sort: f.Sort, Lim: f.Limit(), Off: f.Offset(),
-	})
-	for _, r := range rows {
-		out.Total = r.Total
+	page, err := itemList.Run(ctx, itemQuery(f))
+	if err != nil {
+		return out, err
+	}
+	out.Total = page.Total
+	for _, r := range page.Items {
 		out.Items = append(out.Items, Item{ID: r.ID, Code: r.Code, ItemFields: ItemFields{Name: r.Name, Unit: r.Unit, Price: r.Price, VatRate: r.VatRate, Active: r.Active}})
 	}
-	return out, err
+	return out, nil
 }
 
 // CreateItem adds an item; the catalogue is managed tenant-wide.
@@ -95,12 +97,12 @@ func itemCodeTaken(ctx context.Context, code string) (bool, error) {
 
 // itemOptions finds items for an approval condition; it includes retired items, since a rule may name an item that is later retired.
 func (s *Service) itemOptions(ctx context.Context, q string) ([]record.FieldOption, error) {
-	rows, err := store.New(platform.DBFrom(ctx)).ListItems(ctx, store.ListItemsParams{Q: strings.TrimSpace(q), Lim: 20})
+	page, err := itemList.Run(ctx, data.Query{Q: q, Paging: platform.Paging{Page: 1, PageSize: 20}})
 	if err != nil {
 		return nil, err
 	}
-	out := make([]record.FieldOption, len(rows))
-	for i, r := range rows {
+	out := make([]record.FieldOption, len(page.Items))
+	for i, r := range page.Items {
 		out[i] = record.FieldOption{ID: r.ID, Code: r.Code, Name: r.Name}
 	}
 	return out, nil

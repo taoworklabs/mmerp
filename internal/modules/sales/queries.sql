@@ -45,18 +45,9 @@ SELECT * FROM sales.items WHERE id = $1;
 -- name: ItemsByID :many
 SELECT * FROM sales.items WHERE id = ANY(@ids::bigint[]);
 
--- name: ListItems :many
-SELECT *, count(*) OVER () AS total
-FROM sales.items
-WHERE (@q::text = '' OR code ILIKE '%' || @q || '%' OR name ILIKE '%' || @q || '%')
-  AND (sqlc.narg(active)::bool IS NULL OR active = sqlc.narg(active))
-ORDER BY
-    CASE WHEN @sort::text IN ('', 'code') THEN lower(code) END,
-    CASE WHEN @sort = '-code' THEN lower(code) END DESC,
-    CASE WHEN @sort = 'name' THEN name END,
-    CASE WHEN @sort = '-name' THEN name END DESC,
-    id
-LIMIT @lim OFFSET @off;
+-- name: ItemListBase :many
+-- data:base
+SELECT id, code, name, unit, price, vat_rate, active FROM sales.items;
 
 -- name: InsertHeader :exec
 INSERT INTO sales.headers (id, kind, customer_id, customer_code, customer_name, customer_tax_code,

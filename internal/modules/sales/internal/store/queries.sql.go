@@ -494,6 +494,39 @@ func (q *Queries) ItemCodeTaken(ctx context.Context, lower string) (bool, error)
 	return exists, err
 }
 
+const itemListBase = `-- name: ItemListBase :many
+SELECT id, code, name, unit, price, vat_rate, active FROM sales.items
+`
+
+// data:base
+func (q *Queries) ItemListBase(ctx context.Context) ([]SalesItem, error) {
+	rows, err := q.db.Query(ctx, itemListBase)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []SalesItem
+	for rows.Next() {
+		var i SalesItem
+		if err := rows.Scan(
+			&i.ID,
+			&i.Code,
+			&i.Name,
+			&i.Unit,
+			&i.Price,
+			&i.VatRate,
+			&i.Active,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const itemsByID = `-- name: ItemsByID :many
 SELECT id, code, name, unit, price, vat_rate, active FROM sales.items WHERE id = ANY($1::bigint[])
 `
@@ -615,74 +648,6 @@ func (q *Queries) ListHeaders(ctx context.Context, arg ListHeadersParams) ([]Lis
 			&i.FromQuote,
 			&i.Ordered,
 			&i.TotalRows,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
-const listItems = `-- name: ListItems :many
-SELECT id, code, name, unit, price, vat_rate, active, count(*) OVER () AS total
-FROM sales.items
-WHERE ($1::text = '' OR code ILIKE '%' || $1 || '%' OR name ILIKE '%' || $1 || '%')
-  AND ($2::bool IS NULL OR active = $2)
-ORDER BY
-    CASE WHEN $3::text IN ('', 'code') THEN lower(code) END,
-    CASE WHEN $3 = '-code' THEN lower(code) END DESC,
-    CASE WHEN $3 = 'name' THEN name END,
-    CASE WHEN $3 = '-name' THEN name END DESC,
-    id
-LIMIT $5 OFFSET $4
-`
-
-type ListItemsParams struct {
-	Q      string
-	Active pgtype.Bool
-	Sort   string
-	Off    int32
-	Lim    int32
-}
-
-type ListItemsRow struct {
-	ID      int64
-	Code    string
-	Name    string
-	Unit    string
-	Price   int64
-	VatRate string
-	Active  bool
-	Total   int64
-}
-
-func (q *Queries) ListItems(ctx context.Context, arg ListItemsParams) ([]ListItemsRow, error) {
-	rows, err := q.db.Query(ctx, listItems,
-		arg.Q,
-		arg.Active,
-		arg.Sort,
-		arg.Off,
-		arg.Lim,
-	)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []ListItemsRow
-	for rows.Next() {
-		var i ListItemsRow
-		if err := rows.Scan(
-			&i.ID,
-			&i.Code,
-			&i.Name,
-			&i.Unit,
-			&i.Price,
-			&i.VatRate,
-			&i.Active,
-			&i.Total,
 		); err != nil {
 			return nil, err
 		}
