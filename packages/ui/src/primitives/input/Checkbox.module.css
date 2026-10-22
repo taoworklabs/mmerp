@@ -1,0 +1,59 @@
+.root {
+  display: inline-flex;
+  flex-direction: column;
+}
+
+.label {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--mmerp-space-xs);
+  cursor: pointer;
+}
+
+.label[data-disabled] {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.box {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+  border-radius: var(--mmerp-radius-xs);
+  border: 1px solid var(--mmerp-color-gray-4);
+  background: var(--mmerp-color-elevation-surface);
+  transition:
+    background-color var(--mmerp-motion-duration) ease,
+    border-color var(--mmerp-motion-duration) ease;
+}
+
+.box[data-checked],
+.box[data-indeterminate] {
+  background: var(--mmerp-color-primary-6);
+  border-color: var(--mmerp-color-primary-6);
+}
+
+.indicator {
+  display: inline-flex;
+  color: var(--mmerp-color-body);
+}
+
+.text {
+  font-size: var(--mmerp-font-size-sm);
+  color: var(--mmerp-color-text);
+}
+
+.description {
+  margin: var(--mmerp-space-xxs) 0 0;
+  font-size: var(--mmerp-font-size-xs);
+  color: var(--mmerp-color-dimmed);
+}
+
+.error {
+  margin: var(--mmerp-space-xxs) 0 0;
+  font-size: var(--mmerp-font-size-xs);
+  color: var(--mmerp-color-error);
+}

@@ -1,0 +1,15 @@
+.popup {
+  box-sizing: border-box;
+  padding: var(--mmerp-space-xxs) var(--mmerp-space-xs);
+  border-radius: var(--mmerp-radius-sm);
+  background: var(--mmerp-color-gray-9);
+  color: var(--mmerp-color-body);
+  font-size: var(--mmerp-font-size-xs);
+  outline: 0;
+  transition: opacity var(--mmerp-motion-duration) ease;
+}
+
+.popup[data-starting-style],
+.popup[data-ending-style] {
+  opacity: 0;
+}

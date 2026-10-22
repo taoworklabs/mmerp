@@ -1,0 +1,24 @@
+/* Set apart from the title above and the tabs below; each fact a sunken tile of its own. */
+.root {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--mmerp-space-sm);
+  margin: var(--mmerp-space-md) 0;
+}
+
+@media (min-width: 48em) {
+  .root {
+    grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
+  }
+}
+
+.fact {
+  min-width: 0;
+  padding: var(--mmerp-space-sm) var(--mmerp-space-md);
+  background: var(--mmerp-color-elevation-surface-sunken);
+  border-radius: var(--mmerp-radius-md);
+}
+
+.fact dd {
+  margin: 0;
+}

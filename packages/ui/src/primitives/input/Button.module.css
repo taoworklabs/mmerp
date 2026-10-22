@@ -1,0 +1,74 @@
+.root {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--mmerp-space-xs);
+  height: var(--mmerp-control-height);
+  padding: 0 var(--mmerp-space-sm);
+  border-radius: var(--mmerp-radius-md);
+  border: 1px solid var(--mmerp-btn-border);
+  background: var(--mmerp-btn-bg);
+  color: var(--mmerp-btn-color);
+  font-family: var(--mmerp-font-family);
+  font-size: var(--mmerp-font-size-sm);
+  font-weight: var(--mmerp-font-weight-medium);
+  line-height: var(--mmerp-line-height-sm);
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    background-color var(--mmerp-motion-duration) ease,
+    border-color var(--mmerp-motion-duration) ease;
+}
+
+.root:hover:not(:disabled) {
+  background: var(--mmerp-btn-bg-hover);
+}
+
+.root:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.root[data-full-width] {
+  width: 100%;
+}
+
+.root[data-size='xs'] {
+  height: 24px;
+  padding: 0 var(--mmerp-space-xs);
+  gap: var(--mmerp-space-xxs);
+  font-size: var(--mmerp-font-size-xs);
+}
+
+.loader {
+  display: inline-flex;
+}
+
+.group {
+  display: inline-flex;
+}
+
+.group > *:not(:first-child) {
+  margin-inline-start: -1px;
+}
+
+.group > *:not(:first-child):not(:last-child) {
+  border-radius: 0;
+}
+
+.group > *:first-child:not(:only-child) {
+  border-start-end-radius: 0;
+  border-end-end-radius: 0;
+}
+
+.group > *:last-child:not(:only-child) {
+  border-start-start-radius: 0;
+  border-end-start-radius: 0;
+}
+
+/* Otherwise the neighbour's -1px overlap (above) paints over the focused/active button's ring. */
+.group > *:focus,
+.group > *:active {
+  position: relative;
+  z-index: 1;
+}

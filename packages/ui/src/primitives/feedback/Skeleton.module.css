@@ -1,0 +1,20 @@
+.root {
+  background: var(--mmerp-color-gray-1);
+  border-radius: var(--mmerp-radius-sm);
+  /* A loop, not a transition: the 200ms motion cap doesn't apply; a calm 1.5s pulse. */
+  animation: mmerp-skeleton-pulse 1.5s ease-in-out infinite alternate;
+}
+
+.root[data-circle] {
+  border-radius: 50%;
+}
+
+@keyframes mmerp-skeleton-pulse {
+  from {
+    opacity: 1;
+  }
+
+  to {
+    opacity: 0.4;
+  }
+}

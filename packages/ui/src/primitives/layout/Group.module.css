@@ -1,0 +1,22 @@
+.root {
+  display: flex;
+  flex-direction: row;
+  column-gap: var(--mmerp-gap);
+}
+
+.root[data-wrap] {
+  flex-wrap: wrap;
+}
+
+.root[data-grow] > * {
+  flex: 1 1 0%;
+}
+
+.root[data-shrink] {
+  min-width: 0;
+}
+
+.root[data-fill] {
+  flex: 1 1 0%;
+  min-width: 0;
+}

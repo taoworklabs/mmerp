@@ -1,0 +1,28 @@
+.root {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: var(--mmerp-avatar-size);
+  height: var(--mmerp-avatar-size);
+  border-radius: 50%;
+  overflow: hidden;
+  background: var(--mmerp-avatar-bg);
+  color: var(--mmerp-avatar-color);
+  font-size: var(--mmerp-font-size-xs);
+  font-weight: var(--mmerp-font-weight-medium);
+}
+
+.image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.fallback {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+}

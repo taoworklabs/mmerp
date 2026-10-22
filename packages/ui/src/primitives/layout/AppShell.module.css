@@ -1,0 +1,75 @@
+.root {
+  display: grid;
+  height: 100dvh;
+  grid-template-columns: var(--mmerp-appshell-navbar-width) 1fr;
+  grid-template-rows: var(--mmerp-appshell-header-height) 1fr;
+  grid-template-areas:
+    'header header'
+    'navbar main';
+}
+
+.root[data-mobile] {
+  grid-template-columns: 1fr;
+  grid-template-areas:
+    'header'
+    'main';
+}
+
+.header {
+  grid-area: header;
+  display: flex;
+  align-items: center;
+  padding-inline: var(--mmerp-space-md);
+  background: var(--mmerp-color-elevation-surface);
+  border-bottom: 1px solid var(--mmerp-color-border);
+}
+
+.navbar {
+  grid-area: navbar;
+  display: flex;
+  flex-direction: column;
+  padding: var(--mmerp-space-xs);
+  background: var(--mmerp-color-elevation-surface);
+  border-right: 1px solid var(--mmerp-color-border);
+}
+
+.navbarContent {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.navbarFooter {
+  flex: none;
+}
+
+/* Below the drawer breakpoint the footer's own chrome (a rail-collapse toggle) is meaningless:
+   the rail never applies there, the drawer is always full width. */
+.root[data-mobile] .navbarFooter {
+  display: none;
+}
+
+.root[data-mobile] .navbar {
+  position: fixed;
+  /* Above RecordLayout's mobile ActionBar (z-index: 100): the open drawer must never sit under it. */
+  z-index: 101;
+  top: var(--mmerp-appshell-header-height);
+  bottom: 0;
+  left: 0;
+  width: var(--mmerp-appshell-navbar-width);
+  transform: translateX(-100%);
+  transition: transform var(--mmerp-motion-duration) ease;
+}
+
+.root[data-mobile] .navbar[data-opened] {
+  transform: translateX(0);
+}
+
+.main {
+  grid-area: main;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  overflow: auto;
+}

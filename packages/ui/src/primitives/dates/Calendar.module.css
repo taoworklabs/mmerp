@@ -1,0 +1,96 @@
+.root {
+  display: inline-flex;
+  flex-direction: column;
+  gap: var(--mmerp-space-xs);
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--mmerp-space-xs);
+}
+
+.title {
+  font-size: var(--mmerp-font-size-sm);
+  font-weight: var(--mmerp-font-weight-semibold);
+  color: var(--mmerp-color-text);
+}
+
+.row {
+  display: grid;
+  grid-template-columns: repeat(7, auto);
+  gap: 2px;
+}
+
+.weekday {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 24px;
+  font-size: var(--mmerp-font-size-xs);
+  color: var(--mmerp-color-dimmed);
+}
+
+.cell {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: none;
+  border-radius: var(--mmerp-radius-md);
+  background: transparent;
+  font-family: var(--mmerp-font-family);
+  font-size: var(--mmerp-font-size-sm);
+  color: var(--mmerp-color-text);
+}
+
+button.cell {
+  cursor: pointer;
+  transition: background-color var(--mmerp-motion-duration) ease;
+}
+
+button.cell:hover:not(:disabled) {
+  background: var(--mmerp-color-gray-light);
+}
+
+.cell[aria-current] {
+  background: var(--mmerp-color-primary-light);
+  color: var(--mmerp-color-primary-light-color);
+  font-weight: var(--mmerp-font-weight-semibold);
+}
+
+.cell[aria-selected='true'],
+button.cell[aria-selected='true']:hover {
+  background: var(--mmerp-color-primary-6);
+  color: var(--mmerp-color-body);
+}
+
+.cell:disabled {
+  color: var(--mmerp-color-dimmed);
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Month cells hold words, not numbers: fewer, wider columns. */
+.months .row {
+  grid-template-columns: repeat(3, auto);
+}
+
+.months .cell {
+  width: 72px;
+}
+
+/* Small screens: every cell reaches the touch target; weekday columns follow the cell width. */
+@media (max-width: 63.99em) {
+  .cell {
+    width: var(--mmerp-touch-target);
+    height: var(--mmerp-touch-target);
+  }
+
+  .months .cell {
+    width: 72px;
+  }
+}

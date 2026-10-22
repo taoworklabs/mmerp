@@ -1,0 +1,36 @@
+.root {
+  display: block;
+  width: 100%;
+  padding: var(--mmerp-space-xxs) var(--mmerp-space-sm);
+  border-radius: var(--mmerp-radius-md);
+  border: 1px solid var(--mmerp-color-input-border);
+  background: var(--mmerp-color-elevation-surface);
+  font-family: var(--mmerp-font-family);
+  font-size: var(--mmerp-font-size-sm);
+  line-height: var(--mmerp-line-height-sm);
+  color: var(--mmerp-color-text);
+  resize: vertical;
+  transition: border-color var(--mmerp-motion-duration) ease;
+}
+
+.root::placeholder {
+  color: var(--mmerp-color-placeholder);
+}
+
+.root:focus-visible {
+  border-color: var(--mmerp-color-primary-6);
+}
+
+.root[data-error] {
+  border-color: var(--mmerp-color-error);
+}
+
+.root[data-autosize] {
+  field-sizing: content;
+  resize: none;
+}
+
+.root:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}

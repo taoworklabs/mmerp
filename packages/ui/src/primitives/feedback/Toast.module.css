@@ -1,0 +1,40 @@
+.viewport {
+  position: fixed;
+  right: var(--mmerp-space-lg);
+  bottom: var(--mmerp-space-lg);
+  display: flex;
+  flex-direction: column-reverse;
+  gap: var(--mmerp-space-sm);
+  width: 320px;
+  max-width: calc(100vw - var(--mmerp-space-lg) * 2);
+}
+
+.root {
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  gap: var(--mmerp-space-sm);
+  padding: var(--mmerp-space-sm) var(--mmerp-space-md);
+  border-left: 4px solid var(--mmerp-toast-bar);
+  border-radius: var(--mmerp-radius-md);
+  background: var(--mmerp-color-elevation-surface);
+  box-shadow: var(--mmerp-shadow-md);
+  outline: 0;
+  transition:
+    transform var(--mmerp-motion-duration) ease,
+    opacity var(--mmerp-motion-duration) ease;
+}
+
+.root[data-starting-style],
+.root[data-ending-style] {
+  opacity: 0;
+  transform: translateY(8px);
+}
+
+.description {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  font-size: var(--mmerp-font-size-sm);
+  color: var(--mmerp-color-text);
+}
