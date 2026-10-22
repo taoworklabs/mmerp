@@ -215,24 +215,20 @@ func (s *Service) EmployeeContracts(ctx context.Context, employeeID int64) ([]Co
 // Contracts lists every contract and appendix in the actor's scope, without their terms.
 func (s *Service) Contracts(ctx context.Context, f ContractFilter) (ContractList, error) {
 	out := ContractList{Items: []ContractListItem{}}
-	sc, err := s.d.IAM.Scope(ctx, "hrm", PermContractView)
-	if err != nil || !sc.Any() {
+	sc, err := s.d.IAM.DataScope(ctx, "hrm", PermContractView)
+	if err != nil {
 		return out, err
 	}
 	today, err := s.d.Setting.Today(ctx)
 	if err != nil {
 		return out, err
 	}
-	rows, err := store.New(platform.DBFrom(ctx)).ListContracts(ctx, store.ListContractsParams{
-		AllUnits: sc.All, Units: sc.Units, Status: f.Status, Q: strings.TrimSpace(f.Q),
-		ContractTypeID: pgtype.Int8{Int64: f.ContractTypeID, Valid: f.ContractTypeID != 0},
-		OrgUnitID:      pgtype.Int8{Int64: f.OrgUnitID, Valid: f.OrgUnitID != 0},
-		EmployeeID:     pgtype.Int8{Int64: f.EmployeeID, Valid: f.EmployeeID != 0},
-		Expiring:       f.Expiring, Today: today,
-		Sort: f.Sort, Lim: f.Limit(), Off: f.Offset(),
-	})
-	for _, r := range rows {
-		out.Total = r.Total
+	page, err := contractList.Run(ctx, contractQuery(sc, f, today))
+	if err != nil {
+		return out, err
+	}
+	out.Total = page.Total
+	for _, r := range page.Items {
 		out.Items = append(out.Items, ContractListItem{
 			ID: r.ID, Number: r.Number, Status: r.Status, EmployeeID: r.EmployeeID, EmployeeCode: r.EmployeeCode,
 			EmployeeName: r.EmployeeName, ParentID: platform.Int8Ptr(r.ParentID), ParentNumber: platform.TextPtr(r.ParentNumber),
@@ -240,7 +236,7 @@ func (s *Service) Contracts(ctx context.Context, f ContractFilter) (ContractList
 			AllowedActions: []string{},
 		})
 	}
-	return out, err
+	return out, nil
 }
 
 // Contract returns one contract; one the actor may not view does not exist. The terms

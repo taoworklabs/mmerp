@@ -147,6 +147,68 @@ func (q *Queries) ClosedPeriods(ctx context.Context, arg ClosedPeriodsParams) ([
 	return items, nil
 }
 
+const contractListBase = `-- name: ContractListBase :many
+SELECT c.id, d.number, d.status, d.org_unit_id, c.parent_id, p.number AS parent_number, c.contract_type_id,
+       t.name AS contract_type_name, c.start_date, c.end_date, c.employee_id, e.code AS employee_code,
+       e.full_name AS employee_name
+FROM hrm.contracts c
+JOIN record.documents d ON d.id = c.id
+JOIN hrm.contract_types t ON t.id = c.contract_type_id
+JOIN hrm.employees e ON e.id = c.employee_id
+LEFT JOIN record.documents p ON p.id = c.parent_id
+`
+
+type ContractListBaseRow struct {
+	ID               int64
+	Number           string
+	Status           string
+	OrgUnitID        int64
+	ParentID         pgtype.Int8
+	ParentNumber     pgtype.Text
+	ContractTypeID   int64
+	ContractTypeName string
+	StartDate        pgtype.Date
+	EndDate          pgtype.Date
+	EmployeeID       int64
+	EmployeeCode     string
+	EmployeeName     string
+}
+
+// data:base
+func (q *Queries) ContractListBase(ctx context.Context) ([]ContractListBaseRow, error) {
+	rows, err := q.db.Query(ctx, contractListBase)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ContractListBaseRow
+	for rows.Next() {
+		var i ContractListBaseRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Number,
+			&i.Status,
+			&i.OrgUnitID,
+			&i.ParentID,
+			&i.ParentNumber,
+			&i.ContractTypeID,
+			&i.ContractTypeName,
+			&i.StartDate,
+			&i.EndDate,
+			&i.EmployeeID,
+			&i.EmployeeCode,
+			&i.EmployeeName,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const contractOverlaps = `-- name: ContractOverlaps :one
 SELECT EXISTS (
     SELECT 1 FROM hrm.contracts c JOIN record.documents d ON d.id = c.id
@@ -1410,111 +1472,6 @@ func (q *Queries) ListContractTypes(ctx context.Context) ([]HrmContractType, err
 			&i.Name,
 			&i.Active,
 			&i.FixedTerm,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
-const listContracts = `-- name: ListContracts :many
-SELECT c.id, d.number, d.status, c.parent_id, p.number AS parent_number, t.name AS contract_type_name,
-       c.start_date, c.end_date, c.employee_id, e.code AS employee_code, e.full_name AS employee_name,
-       count(*) OVER () AS total
-FROM hrm.contracts c
-JOIN record.documents d ON d.id = c.id
-JOIN hrm.contract_types t ON t.id = c.contract_type_id
-JOIN hrm.employees e ON e.id = c.employee_id
-LEFT JOIN record.documents p ON p.id = c.parent_id
-WHERE ($1::bool OR d.org_unit_id = ANY($2::bigint[]))
-  AND ($3::text = '' OR d.status = $3)
-  AND ($4::bigint IS NULL OR c.contract_type_id = $4)
-  AND ($5::bigint IS NULL OR d.org_unit_id = $5)
-  AND ($6::text = '' OR d.number ILIKE '%' || $6 || '%' OR e.code ILIKE '%' || $6 || '%' OR e.full_name ILIKE '%' || $6 || '%')
-  AND ($7::bigint IS NULL OR c.employee_id = $7)
-  AND (NOT $8::bool OR (c.parent_id IS NULL AND d.status = 'posted'
-       AND c.end_date BETWEEN $9::date AND $9::date + 30))
-ORDER BY
-    CASE WHEN $10::text = 'start_date' THEN c.start_date END,
-    CASE WHEN $10 = '-start_date' THEN c.start_date END DESC,
-    CASE WHEN $10 = 'end_date' THEN c.end_date END,
-    CASE WHEN $10 = '-end_date' THEN c.end_date END DESC NULLS LAST,
-    CASE WHEN $10 = 'number' THEN d.number END,
-    CASE WHEN $10 = '-number' THEN d.number END DESC,
-    c.id DESC
-LIMIT $12 OFFSET $11
-`
-
-type ListContractsParams struct {
-	AllUnits       bool
-	Units          []int64
-	Status         string
-	ContractTypeID pgtype.Int8
-	OrgUnitID      pgtype.Int8
-	Q              string
-	EmployeeID     pgtype.Int8
-	Expiring       bool
-	Today          pgtype.Date
-	Sort           string
-	Off            int32
-	Lim            int32
-}
-
-type ListContractsRow struct {
-	ID               int64
-	Number           string
-	Status           string
-	ParentID         pgtype.Int8
-	ParentNumber     pgtype.Text
-	ContractTypeName string
-	StartDate        pgtype.Date
-	EndDate          pgtype.Date
-	EmployeeID       int64
-	EmployeeCode     string
-	EmployeeName     string
-	Total            int64
-}
-
-// Every contract and appendix in scope. Expiring: posted originals ending from @today to @today + 30 days.
-func (q *Queries) ListContracts(ctx context.Context, arg ListContractsParams) ([]ListContractsRow, error) {
-	rows, err := q.db.Query(ctx, listContracts,
-		arg.AllUnits,
-		arg.Units,
-		arg.Status,
-		arg.ContractTypeID,
-		arg.OrgUnitID,
-		arg.Q,
-		arg.EmployeeID,
-		arg.Expiring,
-		arg.Today,
-		arg.Sort,
-		arg.Off,
-		arg.Lim,
-	)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []ListContractsRow
-	for rows.Next() {
-		var i ListContractsRow
-		if err := rows.Scan(
-			&i.ID,
-			&i.Number,
-			&i.Status,
-			&i.ParentID,
-			&i.ParentNumber,
-			&i.ContractTypeName,
-			&i.StartDate,
-			&i.EndDate,
-			&i.EmployeeID,
-			&i.EmployeeCode,
-			&i.EmployeeName,
-			&i.Total,
 		); err != nil {
 			return nil, err
 		}

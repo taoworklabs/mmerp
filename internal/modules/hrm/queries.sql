@@ -224,33 +224,16 @@ WHERE c.employee_id = @employee_id AND (@all_units::bool OR d.org_unit_id = ANY(
 ORDER BY (SELECT o.start_date FROM hrm.contracts o WHERE o.id = coalesce(c.parent_id, c.id)) DESC,
          coalesce(c.parent_id, c.id) DESC, c.parent_id NULLS FIRST, c.start_date, c.id;
 
--- name: ListContracts :many
--- Every contract and appendix in scope. Expiring: posted originals ending from @today to @today + 30 days.
-SELECT c.id, d.number, d.status, c.parent_id, p.number AS parent_number, t.name AS contract_type_name,
-       c.start_date, c.end_date, c.employee_id, e.code AS employee_code, e.full_name AS employee_name,
-       count(*) OVER () AS total
+-- name: ContractListBase :many
+-- data:base
+SELECT c.id, d.number, d.status, d.org_unit_id, c.parent_id, p.number AS parent_number, c.contract_type_id,
+       t.name AS contract_type_name, c.start_date, c.end_date, c.employee_id, e.code AS employee_code,
+       e.full_name AS employee_name
 FROM hrm.contracts c
 JOIN record.documents d ON d.id = c.id
 JOIN hrm.contract_types t ON t.id = c.contract_type_id
 JOIN hrm.employees e ON e.id = c.employee_id
-LEFT JOIN record.documents p ON p.id = c.parent_id
-WHERE (@all_units::bool OR d.org_unit_id = ANY(@units::bigint[]))
-  AND (@status::text = '' OR d.status = @status)
-  AND (sqlc.narg(contract_type_id)::bigint IS NULL OR c.contract_type_id = sqlc.narg(contract_type_id))
-  AND (sqlc.narg(org_unit_id)::bigint IS NULL OR d.org_unit_id = sqlc.narg(org_unit_id))
-  AND (@q::text = '' OR d.number ILIKE '%' || @q || '%' OR e.code ILIKE '%' || @q || '%' OR e.full_name ILIKE '%' || @q || '%')
-  AND (sqlc.narg(employee_id)::bigint IS NULL OR c.employee_id = sqlc.narg(employee_id))
-  AND (NOT sqlc.arg(expiring)::bool OR (c.parent_id IS NULL AND d.status = 'posted'
-       AND c.end_date BETWEEN sqlc.arg(today)::date AND sqlc.arg(today)::date + 30))
-ORDER BY
-    CASE WHEN @sort::text = 'start_date' THEN c.start_date END,
-    CASE WHEN @sort = '-start_date' THEN c.start_date END DESC,
-    CASE WHEN @sort = 'end_date' THEN c.end_date END,
-    CASE WHEN @sort = '-end_date' THEN c.end_date END DESC NULLS LAST,
-    CASE WHEN @sort = 'number' THEN d.number END,
-    CASE WHEN @sort = '-number' THEN d.number END DESC,
-    c.id DESC
-LIMIT @lim OFFSET @off;
+LEFT JOIN record.documents p ON p.id = c.parent_id;
 
 -- name: ContractOverlaps :one
 -- Whether another posted original of the employee overlaps [@start, @end] (null end: open-ended).
