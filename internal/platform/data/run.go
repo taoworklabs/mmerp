@@ -16,9 +16,9 @@ type Page[R any] struct {
 }
 
 // Run executes q against l. The page and its count run together in one round
-// trip (S4's chosen strategy), except on page 1: there the page runs alone
-// first, and the count only follows if the page came back full — a page
-// shorter than the limit already is the true total.
+// trip, except on page 1: there the page runs alone first, and the count
+// only follows if the page came back full — a page shorter than the limit
+// already is the true total.
 func (l List[R]) Run(ctx context.Context, q Query) (Page[R], error) {
 	v, hasViewer := viewerFrom(ctx)
 	page, count, empty, err := l.Compile(q, v, hasViewer)
