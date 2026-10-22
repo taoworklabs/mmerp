@@ -10,7 +10,7 @@ import (
 )
 
 // itemsFixture adds 45 items beyond the fixture's two: codes I001..I045, retired
-// every seventh, so the comparison matrix has enough rows to page through.
+// every seventh, so the item picker has more than its 20-row limit to choose from.
 func itemsFixture(t *testing.T, f *fixture) []int64 {
 	t.Helper()
 	catalog := f.ctxFor("catalog_items", "catalog_admin@*")
@@ -42,8 +42,7 @@ func TestItemListSearchLiteralPercent(t *testing.T) {
 }
 
 // TestItemOptionsUnchanged pins itemOptions, the approval item picker: it still
-// returns retired items, at most 20, ordered by code then id. Written against
-// the fixed-SQL implementation and kept unchanged across the switch.
+// returns retired items, at most 20, ordered by code then id.
 func TestItemOptionsUnchanged(t *testing.T) {
 	f := newFixture(t)
 	ids := itemsFixture(t, f)
