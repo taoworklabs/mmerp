@@ -25,7 +25,7 @@ import (
 // LE1 ("Zulu") is created first, so it holds the lower id, but LE2 ("Alpha") is
 // named to sort first: a sort by legal_entity_id instead of its name would give
 // a different order than the one pinned below, so a port that drops the name
-// join is caught here, not only in Task 2's own tests.
+// join is caught here.
 //
 // Layout (period_start DESC, legal entity name, id DESC is the documented order):
 //

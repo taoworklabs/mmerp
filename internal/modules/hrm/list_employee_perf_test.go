@@ -19,9 +19,9 @@ import (
 	"github.com/taoworklabs/mmerp/internal/platform/pgtest"
 )
 
-// The fixed query the employee list used before the data engine, kept as the
-// baseline. Copied verbatim (placeholder order included) from the last commit
-// that had it: c656677, internal/modules/hrm/queries.sql / queries.sql.go.
+// The fixed query from before the data-engine migration, kept as the baseline.
+// Copied verbatim (placeholder order included) from
+// internal/modules/hrm/queries.sql / queries.sql.go.
 const oldEmployeeListSQL = `WITH RECURSIVE under (id) AS (
     SELECT $10::bigint WHERE $10::bigint IS NOT NULL
     UNION

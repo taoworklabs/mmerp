@@ -9,8 +9,8 @@ import (
 	"github.com/taoworklabs/mmerp/internal/platform"
 )
 
-func dateStr(d pgtype.Date, days int) *string {
-	s := d.Time.AddDate(0, 0, days).Format("2006-01-02")
+func dateStr(d pgtype.Date) *string {
+	s := d.Time.Format("2006-01-02")
 	return &s
 }
 
@@ -23,7 +23,7 @@ func TestEmployeeListTerminatedTodayIsActive(t *testing.T) {
 		t.Fatal(err)
 	}
 	in := employee("T1", f.a)
-	in.TerminationDate = dateStr(today, 0)
+	in.TerminationDate = dateStr(today)
 	id := must(t)(f.hrm.CreateEmployee(hr, in))
 	list := func(status string) hrm.EmployeeList {
 		t.Helper()
