@@ -604,6 +604,55 @@ func (q *Queries) EmployeeCodeTaken(ctx context.Context, lower string) (bool, er
 	return exists, err
 }
 
+const employeeListBase = `-- name: EmployeeListBase :many
+SELECT e.id, e.code, e.full_name, e.org_unit_id, u.name AS org_unit_name, e.email, e.phone,
+       e.hire_date, e.termination_date
+FROM hrm.employees e JOIN iam.org_units u ON u.id = e.org_unit_id
+`
+
+type EmployeeListBaseRow struct {
+	ID              int64
+	Code            string
+	FullName        string
+	OrgUnitID       int64
+	OrgUnitName     string
+	Email           pgtype.Text
+	Phone           pgtype.Text
+	HireDate        pgtype.Date
+	TerminationDate pgtype.Date
+}
+
+// data:base
+func (q *Queries) EmployeeListBase(ctx context.Context) ([]EmployeeListBaseRow, error) {
+	rows, err := q.db.Query(ctx, employeeListBase)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []EmployeeListBaseRow
+	for rows.Next() {
+		var i EmployeeListBaseRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Code,
+			&i.FullName,
+			&i.OrgUnitID,
+			&i.OrgUnitName,
+			&i.Email,
+			&i.Phone,
+			&i.HireDate,
+			&i.TerminationDate,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const employeesByCodes = `-- name: EmployeesByCodes :many
 SELECT id, code, org_unit_id FROM hrm.employees WHERE lower(code) = ANY($1::text[])
 `
@@ -1550,103 +1599,6 @@ func (q *Queries) ListEmployeeContracts(ctx context.Context, arg ListEmployeeCon
 			&i.ContractTypeName,
 			&i.StartDate,
 			&i.EndDate,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
-const listEmployees = `-- name: ListEmployees :many
-WITH RECURSIVE under (id) AS (
-    SELECT $10::bigint WHERE $10::bigint IS NOT NULL
-    UNION
-    SELECT s.id FROM hrm.employees s JOIN under ON s.manager_id = under.id
-)
-SELECT e.id, e.code, e.full_name, e.org_unit_id, u.name AS org_unit_name, e.email, e.phone,
-       e.hire_date, e.termination_date, count(*) OVER () AS total
-FROM hrm.employees e JOIN iam.org_units u ON u.id = e.org_unit_id
-WHERE ($1::bool OR e.org_unit_id = ANY($2::bigint[]))
-  AND ($3::text = '' OR e.code ILIKE '%' || $3 || '%' OR e.full_name ILIKE '%' || $3 || '%')
-  AND ($4::bigint IS NULL OR e.org_unit_id = $4)
-  AND ($5::text = ''
-       OR ($5 = 'active' AND (e.termination_date IS NULL OR e.termination_date >= $6::date))
-       OR ($5 = 'terminated' AND e.termination_date < $6::date))
-  AND e.id NOT IN (SELECT id FROM under)
-ORDER BY
-    CASE WHEN $7::text = 'code' THEN lower(e.code) END,
-    CASE WHEN $7 = '-code' THEN lower(e.code) END DESC,
-    CASE WHEN $7 = 'full_name' THEN e.full_name END,
-    CASE WHEN $7 = '-full_name' THEN e.full_name END DESC,
-    CASE WHEN $7 = 'hire_date' THEN e.hire_date END,
-    CASE WHEN $7 = '-hire_date' THEN e.hire_date END DESC,
-    e.id
-LIMIT $9 OFFSET $8
-`
-
-type ListEmployeesParams struct {
-	AllUnits  bool
-	Units     []int64
-	Q         string
-	OrgUnitID pgtype.Int8
-	Status    string
-	Today     pgtype.Date
-	Sort      string
-	Off       int32
-	Lim       int32
-	ManagerOf pgtype.Int8
-}
-
-type ListEmployeesRow struct {
-	ID              int64
-	Code            string
-	FullName        string
-	OrgUnitID       int64
-	OrgUnitName     string
-	Email           pgtype.Text
-	Phone           pgtype.Text
-	HireDate        pgtype.Date
-	TerminationDate pgtype.Date
-	Total           int64
-}
-
-// Scope filter: @all_units or org_unit_id in @units. Status uses @today, in the tenant time zone.
-// manager_of drops that employee and everyone under them, who cannot become their manager.
-func (q *Queries) ListEmployees(ctx context.Context, arg ListEmployeesParams) ([]ListEmployeesRow, error) {
-	rows, err := q.db.Query(ctx, listEmployees,
-		arg.AllUnits,
-		arg.Units,
-		arg.Q,
-		arg.OrgUnitID,
-		arg.Status,
-		arg.Today,
-		arg.Sort,
-		arg.Off,
-		arg.Lim,
-		arg.ManagerOf,
-	)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []ListEmployeesRow
-	for rows.Next() {
-		var i ListEmployeesRow
-		if err := rows.Scan(
-			&i.ID,
-			&i.Code,
-			&i.FullName,
-			&i.OrgUnitID,
-			&i.OrgUnitName,
-			&i.Email,
-			&i.Phone,
-			&i.HireDate,
-			&i.TerminationDate,
-			&i.Total,
 		); err != nil {
 			return nil, err
 		}

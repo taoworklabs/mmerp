@@ -9,7 +9,7 @@ import (
 
 func newQ(c platform.Conn) *Queries { return New(c) }
 
-var ListEmployees = data.Many1("hrm.ListEmployees", newQ, (*Queries).ListEmployees)
+var EmployeeListBase = data.NewBase("hrm.EmployeeListBase", employeeListBase, []string{"id", "code", "full_name", "org_unit_id", "org_unit_name", "email", "phone", "hire_date", "termination_date"}, (*Queries).EmployeeListBase)
 var GetEmployee = data.One1("hrm.GetEmployee", newQ, (*Queries).GetEmployee)
 var LockEmployee = data.One1("hrm.LockEmployee", newQ, (*Queries).LockEmployee)
 var CreateEmployee = data.One1("hrm.CreateEmployee", newQ, (*Queries).CreateEmployee)

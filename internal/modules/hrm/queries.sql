@@ -1,30 +1,8 @@
--- name: ListEmployees :many
--- Scope filter: @all_units or org_unit_id in @units. Status uses @today, in the tenant time zone.
--- manager_of drops that employee and everyone under them, who cannot become their manager.
-WITH RECURSIVE under (id) AS (
-    SELECT sqlc.narg(manager_of)::bigint WHERE sqlc.narg(manager_of)::bigint IS NOT NULL
-    UNION
-    SELECT s.id FROM hrm.employees s JOIN under ON s.manager_id = under.id
-)
+-- name: EmployeeListBase :many
+-- data:base
 SELECT e.id, e.code, e.full_name, e.org_unit_id, u.name AS org_unit_name, e.email, e.phone,
-       e.hire_date, e.termination_date, count(*) OVER () AS total
-FROM hrm.employees e JOIN iam.org_units u ON u.id = e.org_unit_id
-WHERE (@all_units::bool OR e.org_unit_id = ANY(@units::bigint[]))
-  AND (@q::text = '' OR e.code ILIKE '%' || @q || '%' OR e.full_name ILIKE '%' || @q || '%')
-  AND (sqlc.narg(org_unit_id)::bigint IS NULL OR e.org_unit_id = sqlc.narg(org_unit_id))
-  AND (@status::text = ''
-       OR (@status = 'active' AND (e.termination_date IS NULL OR e.termination_date >= @today::date))
-       OR (@status = 'terminated' AND e.termination_date < @today::date))
-  AND e.id NOT IN (SELECT id FROM under)
-ORDER BY
-    CASE WHEN @sort::text = 'code' THEN lower(e.code) END,
-    CASE WHEN @sort = '-code' THEN lower(e.code) END DESC,
-    CASE WHEN @sort = 'full_name' THEN e.full_name END,
-    CASE WHEN @sort = '-full_name' THEN e.full_name END DESC,
-    CASE WHEN @sort = 'hire_date' THEN e.hire_date END,
-    CASE WHEN @sort = '-hire_date' THEN e.hire_date END DESC,
-    e.id
-LIMIT @lim OFFSET @off;
+       e.hire_date, e.termination_date
+FROM hrm.employees e JOIN iam.org_units u ON u.id = e.org_unit_id;
 
 -- name: GetEmployee :one
 SELECT e.*, u.name AS org_unit_name, m.code AS manager_code, m.full_name AS manager_name, a.login AS user_login

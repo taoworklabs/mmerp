@@ -237,7 +237,7 @@ func TestListFiltersSortAndPages(t *testing.T) {
 		{hrm.EmployeeFilter{Status: "terminated"}, "E1/1"},
 		{hrm.EmployeeFilter{OrgUnitID: f.b}, "E2/1"},
 		{hrm.EmployeeFilter{Q: "bìn"}, "E2/1"},
-		{hrm.EmployeeFilter{Paging: platform.Paging{PageSize: 20, Page: 2}}, "/0"},
+		{hrm.EmployeeFilter{Paging: platform.Paging{PageSize: 20, Page: 2}}, "/3"},
 	} {
 		if got := codes(c.f); got != c.want {
 			t.Errorf("%+v: got %s, want %s", c.f, got, c.want)
