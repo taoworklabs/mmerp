@@ -11,4 +11,4 @@ SELECT count(*) FROM (SELECT id, org_unit_id, user_id, number, code, start_date,
 -- count args --
 "%abc%"
 -- shape --
-|default
+q|default

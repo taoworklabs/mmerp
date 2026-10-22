@@ -21,4 +21,4 @@ SELECT count(*) FROM (SELECT id, org_unit_id, user_id, number, code, start_date,
 "N"
 "2026-01-01"
 -- shape --
-code,number,start_date|default
+code,number,q,start_date|default

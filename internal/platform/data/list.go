@@ -189,6 +189,8 @@ func (l List[R]) Compile(q Query, v Viewer, hasViewer bool) (page, count Compile
 			terms[i] = col + " ILIKE " + n
 		}
 		where = append(where, "("+strings.Join(terms, " OR ")+")")
+		// "q" carries no value; Shape only ever names which filters are active.
+		c.filters = append(c.filters, "q")
 	}
 
 	s, err := c.cond(q.Where, true)

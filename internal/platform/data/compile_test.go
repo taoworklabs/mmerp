@@ -252,13 +252,18 @@ func TestCompileShape(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if page.Shape != "org_unit_id,status_x|-start_date" || count.Shape != page.Shape {
+	if page.Shape != "org_unit_id,q,status_x|-start_date" || count.Shape != page.Shape {
 		t.Fatalf("shape %q / %q", page.Shape, count.Shape)
 	}
 	q.Sort, q.Where = "", Cond{}
 	page, _, _, _ = l.Compile(q, Viewer{}, false)
+	if page.Shape != "q|default" {
+		t.Fatalf("default shape with active search %q", page.Shape)
+	}
+	q.Q = ""
+	page, _, _, _ = l.Compile(q, Viewer{}, false)
 	if page.Shape != "|default" {
-		t.Fatalf("default shape %q", page.Shape)
+		t.Fatalf("default shape with no search %q", page.Shape)
 	}
 }
 
