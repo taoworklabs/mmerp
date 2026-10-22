@@ -98,32 +98,17 @@ SELECT item_id, item_code, description, unit, quantity::text AS quantity, unit_p
        discount_percent::text AS discount_percent, vat_rate, amount, discount, vat
 FROM sales.lines WHERE doc_id = $1 ORDER BY position;
 
--- name: ListHeaders :many
--- Scope filter: @all_units or the document's org unit in @units.
-SELECT h.id, d.number, d.status, d.date, h.customer_id, h.customer_code, h.customer_name, h.valid_until, h.total,
-       u.name AS org_unit_name, (h.quote_id IS NOT NULL)::bool AS from_quote,
+-- name: DocListBase :many
+-- data:base
+SELECT h.id, h.kind, d.number, d.status, d.date, d.org_unit_id, h.customer_id, h.customer_code, h.customer_name,
+       h.valid_until, h.total, u.name AS org_unit_name, (h.quote_id IS NOT NULL)::bool AS from_quote,
        EXISTS (
            SELECT 1 FROM sales.headers oh JOIN record.documents od ON od.id = oh.id
            WHERE oh.quote_id = h.id AND od.status <> 'cancelled'
-       ) AS ordered,
-       count(*) OVER () AS total_rows
+       ) AS ordered
 FROM sales.headers h
 JOIN record.documents d ON d.id = h.id
-JOIN iam.org_units u ON u.id = d.org_unit_id
-WHERE h.kind = @kind::text
-  AND (@all_units::bool OR d.org_unit_id = ANY(@units::bigint[]))
-  AND (@status::text = '' OR d.status = @status)
-  AND (sqlc.narg(customer_id)::bigint IS NULL OR h.customer_id = sqlc.narg(customer_id))
-  AND (@q::text = '' OR d.number ILIKE '%' || @q || '%' OR h.customer_name ILIKE '%' || @q || '%' OR h.customer_code ILIKE '%' || @q || '%')
-ORDER BY
-    CASE WHEN @sort::text = 'date' THEN d.date END,
-    CASE WHEN @sort = '-date' THEN d.date END DESC,
-    CASE WHEN @sort = 'number' THEN d.number END,
-    CASE WHEN @sort = '-number' THEN d.number END DESC,
-    CASE WHEN @sort = 'total' THEN h.total END,
-    CASE WHEN @sort = '-total' THEN h.total END DESC,
-    h.id DESC
-LIMIT @lim OFFSET @off;
+JOIN iam.org_units u ON u.id = d.org_unit_id;
 
 -- name: CopyCustomer :one
 -- Takes the customer's details as they are now onto a document being sent; returns whether
