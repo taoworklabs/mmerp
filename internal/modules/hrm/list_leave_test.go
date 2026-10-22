@@ -13,22 +13,34 @@ import (
 
 // listFixture seeds leave requests in every status for M (unit A), E (A, under M),
 // E2 (B, under M) and E3 (B, under E): eight each, on the same
-// weekdays, so start dates tie across employees.
+// weekdays, so start dates tie across employees. HR2 (unit B, no reports) belongs
+// to the A-scoped HR actor, outside that actor's scoped units, to pin the OR with
+// their own manager chain. actors holds one context per case in TestLeaveListVisibility.
 type listFixture struct {
 	*leaveFixture
-	emps map[string]int64
+	emps     map[string]int64
+	leaveIDs map[string][]int64 // leave request ids per employee code
+	actors   map[string]context.Context
 }
 
 func newListFixture(t *testing.T) *listFixture {
-	f := &listFixture{leaveFixture: newLeaveFixture(t), emps: map[string]int64{}}
+	f := &listFixture{leaveFixture: newLeaveFixture(t), emps: map[string]int64{}, leaveIDs: map[string][]int64{}}
 	mgr := f.employeeID("M")
+	e2ctx, e3ctx := f.ctxFor("e2"), f.ctxFor("e3")
+	hrACtx := f.ctxFor("hr_a", "hr@A")
 	e2 := employee("E2", f.b)
-	e2.ManagerID = &mgr
+	e2.ManagerID, e2.UserLogin = &mgr, str("e2")
 	e3 := employee("E3", f.b)
-	e3.ManagerID = &f.emp
+	e3.ManagerID, e3.UserLogin = &f.emp, str("e3")
+	hr2 := employee("HR2", f.b)
+	hr2.UserLogin = str("hr_a")
 	f.emps["M"], f.emps["E"] = mgr, f.emp
 	f.emps["E2"] = must(t)(f.hrm.CreateEmployee(f.hr, e2))
 	f.emps["E3"] = must(t)(f.hrm.CreateEmployee(f.hr, e3))
+	f.emps["HR2"] = must(t)(f.hrm.CreateEmployee(f.hr, hr2))
+	f.actors = map[string]context.Context{
+		"M": f.m, "E": f.e, "E2": e2ctx, "E3": e3ctx, "HR_A": hrACtx, "NOBODY": f.ctxFor("outsider"), "ADMIN": f.admin,
+	}
 	unpaid := must(t)(f.hrm.SaveLeaveType(f.hr, 0, hrm.LeaveTypeInput{Name: "Không lương", Active: true}))
 
 	var days []string
@@ -47,6 +59,7 @@ func newListFixture(t *testing.T) *listFixture {
 			}
 			id := must(t)(f.hrm.CreateLeave(f.hr, hrm.NewLeave{EmployeeID: &emp,
 				LeaveFields: hrm.LeaveFields{LeaveTypeID: unpaid, StartDate: start, EndDate: end, Days: n}}))
+			f.leaveIDs[code] = append(f.leaveIDs[code], id)
 			switch j % 4 {
 			case 1:
 				f.check(f.send(f.hr, id))
@@ -61,6 +74,11 @@ func newListFixture(t *testing.T) *listFixture {
 			}
 		}
 	}
+	// One request of HR2's own, outside the A-scoped HR's unit: visible only via the chain, not the scope.
+	hr2Emp := f.emps["HR2"]
+	hr2Leave := must(t)(f.hrm.CreateLeave(f.hr, hrm.NewLeave{EmployeeID: &hr2Emp,
+		LeaveFields: hrm.LeaveFields{LeaveTypeID: unpaid, StartDate: days[0], EndDate: days[0], Days: "1"}}))
+	f.leaveIDs["HR2"] = append(f.leaveIDs["HR2"], hr2Leave)
 	f.ruleManager()
 	for _, id := range pending {
 		f.check(f.send(f.hr, id))
@@ -109,7 +127,7 @@ func TestLeaveListPagePastEndTotal(t *testing.T) {
 	f := newListFixture(t)
 	l, err := f.hrm.Leaves(f.hr, hrm.LeaveFilter{Sort: "-start_date", Paging: platform.Paging{Page: 5, PageSize: 20}})
 	f.check(err)
-	if len(l.Items) != 0 || l.Total != 32 {
+	if len(l.Items) != 0 || l.Total != 33 {
 		t.Fatalf("page 5: %d items, total %d", len(l.Items), l.Total)
 	}
 }
@@ -120,7 +138,43 @@ func TestLeaveListDefaultSort(t *testing.T) {
 	page := platform.Paging{Page: 1, PageSize: 50}
 	got, _ := f.newLeaves(f.hr, hrm.LeaveFilter{Paging: page})
 	want, _ := f.newLeaves(f.hr, hrm.LeaveFilter{Sort: "-start_date", Paging: page})
-	if len(got) != 32 || !slices.Equal(got, want) {
+	if len(got) != 33 || !slices.Equal(got, want) {
 		t.Fatalf("default order %v, want %v", got, want)
+	}
+}
+
+// TestLeaveListVisibility pins who sees which leave requests: an actor's own chain
+// (their employee plus every report below it, at any depth) OR'd with their
+// org-unit scope — never a sibling's, and never the whole company without a
+// tenant-wide grant.
+func TestLeaveListVisibility(t *testing.T) {
+	f := newListFixture(t)
+	idSet := func(codes ...string) []int64 {
+		var ids []int64
+		for _, c := range codes {
+			ids = append(ids, f.leaveIDs[c]...)
+		}
+		slices.Sort(ids)
+		return ids
+	}
+	for _, c := range []struct {
+		actor string
+		want  []int64
+	}{
+		{"M", idSet("M", "E", "E2", "E3")},
+		{"E", idSet("E", "E3")},
+		{"E2", idSet("E2")},
+		{"E3", idSet("E3")},
+		{"HR_A", idSet("M", "E", "HR2")},
+		{"NOBODY", nil},
+		{"ADMIN", idSet("M", "E", "E2", "E3", "HR2")},
+	} {
+		t.Run(c.actor, func(t *testing.T) {
+			got, total := f.newLeaves(f.actors[c.actor], hrm.LeaveFilter{Sort: "-start_date", Paging: platform.Paging{Page: 1, PageSize: 50}})
+			slices.Sort(got)
+			if !slices.Equal(got, c.want) || total != int64(len(c.want)) {
+				t.Fatalf("%s: got %v (total %d), want %v", c.actor, got, total, c.want)
+			}
+		})
 	}
 }
