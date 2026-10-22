@@ -25,6 +25,7 @@ gen: web/node_modules
 lint: web/node_modules
 	$(GOLANGCI) run ./...
 	GOLANGCI='$(GOLANGCI)' scripts/check-go-lint-fixtures.sh
+	go vet -tags perf ./internal/modules/hrm/ ./internal/platform/data/...
 	pnpm -C web typecheck
 	pnpm -C web lint
 	node web/scripts/check-i18n.mjs
