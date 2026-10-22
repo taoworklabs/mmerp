@@ -22,11 +22,16 @@ import (
 // record.documents and hrm.payrolls, so rows are seeded directly through the
 // fixture's writable system pool instead.
 //
+// LE1 ("Zulu") is created first, so it holds the lower id, but LE2 ("Alpha") is
+// named to sort first: a sort by legal_entity_id instead of its name would give
+// a different order than the one pinned below, so a port that drops the name
+// join is caught here, not only in Task 2's own tests.
+//
 // Layout (period_start DESC, legal entity name, id DESC is the documented order):
 //
-//	p2 LE1 2026-03 draft      p1 LE1 2026-03 posted     p3 LE2 2026-03 cancelled
-//	p4 LE1 2026-02 posted     p5 LE2 2026-02 draft
-//	p6 LE1 2026-01 cancelled  p7 LE2 2026-01 posted
+//	p3 LE2(Alpha) 2026-03 cancelled  p2 LE1(Zulu) 2026-03 draft  p1 LE1(Zulu) 2026-03 posted
+//	p5 LE2(Alpha) 2026-02 draft      p4 LE1(Zulu) 2026-02 posted
+//	p7 LE2(Alpha) 2026-01 posted     p6 LE1(Zulu) 2026-01 cancelled
 type payrollListFixture struct {
 	t                          *testing.T
 	core                       *coretest.Core
@@ -44,12 +49,16 @@ func newPayrollListFixture(t *testing.T) *payrollListFixture {
 	h := hrm.NewService(hrm.Deps{IAM: core.IAM, Record: core.Record, Audit: core.Audit, Setting: core.Setting,
 		DataIO: core.DataIO, Printing: core.Printing, Posting: posting.NewService(posting.Hooks{}), Numbering: core.Numbering})
 	f := &payrollListFixture{t: t, core: core, system: core.System, hrm: h, admin: core.Admin}
-	f.le1 = must(t)(core.IAM.CreateOrgUnit(core.Admin, iam.OrgUnitInput{Kind: "company", Name: "LE1"}))
-	f.le2 = must(t)(core.IAM.CreateOrgUnit(core.Admin, iam.OrgUnitInput{Kind: "company", Name: "LE2"}))
+	// Named so the alphabetical order of the name disagrees with the creation
+	// (and so the id) order: see the comment on payrollListFixture.
+	f.le1 = must(t)(core.IAM.CreateOrgUnit(core.Admin, iam.OrgUnitInput{Kind: "company", Name: "Zulu"}))
+	f.le2 = must(t)(core.IAM.CreateOrgUnit(core.Admin, iam.OrgUnitInput{Kind: "company", Name: "Alpha"}))
 	f.dept1 = must(t)(core.IAM.CreateOrgUnit(core.Admin, iam.OrgUnitInput{ParentID: &f.le1, Kind: "department", Name: "LE1-Dept"}))
 	f.dept2 = must(t)(core.IAM.CreateOrgUnit(core.Admin, iam.OrgUnitInput{ParentID: &f.le2, Kind: "department", Name: "LE2-Dept"}))
 
-	// p1 before p2: both land on LE1/2026-03, so p2 (the later id) sorts first.
+	// p1 and p2 share LE1 ("Zulu") and 2026-03: p2, the later id, pins the final
+	// id DESC tiebreak. p3 (LE2 "Alpha") shares only the period: it sorts before
+	// both by name, ahead of its lower-id siblings.
 	f.p1 = f.seed(f.le1, "2026-03", "posted")
 	f.p2 = f.seed(f.le1, "2026-03", "draft")
 	f.p3 = f.seed(f.le2, "2026-03", "cancelled")
@@ -147,7 +156,7 @@ func TestPayrollListFilters(t *testing.T) {
 		{"status cancelled", hrm.PayrollFilter{Status: "cancelled"}, []int64{f.p3, f.p6}},
 		{"legal entity LE1", hrm.PayrollFilter{LegalEntityID: f.le1}, []int64{f.p2, f.p1, f.p4, f.p6}},
 		{"legal entity LE2", hrm.PayrollFilter{LegalEntityID: f.le2}, []int64{f.p3, f.p5, f.p7}},
-		{"month 2026-02", hrm.PayrollFilter{Month: "2026-02"}, []int64{f.p4, f.p5}},
+		{"month 2026-02", hrm.PayrollFilter{Month: "2026-02"}, []int64{f.p5, f.p4}},
 		{"status and legal entity", hrm.PayrollFilter{Status: "posted", LegalEntityID: f.le1}, []int64{f.p1, f.p4}},
 		{"status and month", hrm.PayrollFilter{Status: "draft", Month: "2026-03"}, []int64{f.p2}},
 		{"legal entity and month", hrm.PayrollFilter{LegalEntityID: f.le2, Month: "2026-01"}, []int64{f.p7}},
@@ -169,7 +178,7 @@ func TestPayrollListOrder(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	want := []int64{f.p2, f.p1, f.p3, f.p4, f.p5, f.p6, f.p7}
+	want := []int64{f.p3, f.p2, f.p1, f.p5, f.p4, f.p7, f.p6}
 	if got := idsOf(list); !slices.Equal(got, want) {
 		t.Fatalf("order = %v, want %v", got, want)
 	}
