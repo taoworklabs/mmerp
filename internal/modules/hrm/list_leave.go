@@ -6,22 +6,26 @@ import (
 	"github.com/taoworklabs/mmerp/internal/platform/data"
 )
 
-// leaveList shows requests in the actor's units, their own, and those of every
-// employee below them on the manager chain. Own and reports form one ARRAY,
-// computed once up front: it filters on employee_id alone, so it can use that
-// column's index, and unlike a subquery it lets the count run in parallel.
-var leaveList = data.Register(data.List[store.LeaveListBaseRow]{
-	Name:  "hrm.LeaveList",
-	Base:  store.LeaveListBase,
-	Scope: data.ByColumn("org_unit_id"),
-	Visibility: func(v data.Viewer) data.Cond {
-		return data.SQL(`b."employee_id" = ANY(ARRAY(WITH RECURSIVE down AS (
+// ownAndReports keeps rows whose employee_id is the actor's employee or any employee
+// below it on the manager chain. Own and reports form one ARRAY, computed once up
+// front: it filters on employee_id alone, so it can use that column's index, and
+// unlike a subquery it lets the count run in parallel.
+func ownAndReports(v data.Viewer) data.Cond {
+	return data.SQL(`b."employee_id" = ANY(ARRAY(WITH RECURSIVE down AS (
     SELECT id FROM hrm.employees WHERE user_id = `).Arg(v.Actor).Text(`::bigint
     UNION
     SELECT e.id FROM hrm.employees e JOIN down ON e.manager_id = down.id
 ) SELECT down.id FROM down))`).Cond()
-	},
-	Search: []string{"number", "employee_code", "employee_name"},
+}
+
+// leaveList shows requests in the actor's units, their own, and those of every
+// employee below them on the manager chain.
+var leaveList = data.Register(data.List[store.LeaveListBaseRow]{
+	Name:       "hrm.LeaveList",
+	Base:       store.LeaveListBase,
+	Scope:      data.ByColumn("org_unit_id"),
+	Visibility: ownAndReports,
+	Search:     []string{"number", "employee_code", "employee_name"},
 	Sorts: map[string][]data.Order{
 		"start_date":  {data.Asc("start_date")},
 		"-start_date": {data.Desc("start_date")},

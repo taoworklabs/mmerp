@@ -123,15 +123,6 @@ JOIN record.documents d ON d.id = r.id
 JOIN hrm.employees e ON e.id = r.employee_id
 JOIN hrm.leave_types t ON t.id = r.leave_type_id;
 
--- name: Reports :many
--- Employees below the actor's own employee record, at any depth.
-WITH RECURSIVE down AS (
-    SELECT e.id FROM hrm.employees e JOIN hrm.employees me ON e.manager_id = me.id WHERE me.user_id = @actor::bigint
-    UNION
-    SELECT e.id FROM hrm.employees e JOIN down ON e.manager_id = down.id
-)
-SELECT down.id FROM down;
-
 -- name: IsManager :one
 -- Whether the user is linked to an employee above @employee on its manager chain.
 WITH RECURSIVE up AS (
@@ -282,27 +273,13 @@ WHERE id = @id;
 -- name: DeleteOvertimeRequest :exec
 DELETE FROM hrm.overtime_requests WHERE id = $1;
 
--- name: ListOvertimeRequests :many
--- Visible as for leave requests.
-SELECT r.id, d.number, d.status, r.employee_id, e.code AS employee_code, e.full_name AS employee_name,
-       r.date, r.day_kind, r.day_hours::text AS day_hours, r.night_hours::text AS night_hours, count(*) OVER () AS total
+-- name: OvertimeListBase :many
+-- data:base
+SELECT r.id, d.number, d.status, d.org_unit_id, r.employee_id, e.code AS employee_code, e.full_name AS employee_name,
+       r.date, r.day_kind, r.day_hours::text AS day_hours, r.night_hours::text AS night_hours
 FROM hrm.overtime_requests r
 JOIN record.documents d ON d.id = r.id
-JOIN hrm.employees e ON e.id = r.employee_id
-WHERE (@all_units::bool OR d.org_unit_id = ANY(@units::bigint[]) OR e.user_id = @actor::bigint OR r.employee_id = ANY(@reports::bigint[]))
-  AND (@status::text = '' OR d.status = @status)
-  AND (@q::text = '' OR d.number ILIKE '%' || @q || '%' OR e.code ILIKE '%' || @q || '%' OR e.full_name ILIKE '%' || @q || '%')
-  AND (sqlc.narg(org_unit_id)::bigint IS NULL OR d.org_unit_id = sqlc.narg(org_unit_id))
-  AND (sqlc.narg(employee_id)::bigint IS NULL OR r.employee_id = sqlc.narg(employee_id))
-  AND (sqlc.narg(from_date)::date IS NULL OR r.date >= sqlc.narg(from_date))
-  AND (sqlc.narg(to_date)::date IS NULL OR r.date <= sqlc.narg(to_date))
-ORDER BY
-    CASE WHEN @sort::text = 'date' THEN r.date END,
-    CASE WHEN @sort = '-date' THEN r.date END DESC,
-    CASE WHEN @sort = 'number' THEN d.number END,
-    CASE WHEN @sort = '-number' THEN d.number END DESC,
-    r.id DESC
-LIMIT @lim OFFSET @off;
+JOIN hrm.employees e ON e.id = r.employee_id;
 
 -- name: CreateTimesheet :exec
 INSERT INTO hrm.timesheets (id, org_unit_id, period_start, period_end) VALUES ($1, $2, $3, $4);

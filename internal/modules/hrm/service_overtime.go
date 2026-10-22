@@ -4,10 +4,8 @@ import (
 	"context"
 	"errors"
 	"net/http"
-	"strings"
 
 	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/shopspring/decimal"
 
 	"github.com/taoworklabs/mmerp/internal/core/audit"
@@ -108,32 +106,23 @@ func (s *Service) OvertimeActions(ctx context.Context) (SelfServiceActions, erro
 // Overtimes lists the overtime requests the actor may see: their own, their reports', and those in scope.
 func (s *Service) Overtimes(ctx context.Context, f OvertimeFilter) (OvertimeList, error) {
 	out := OvertimeList{Items: []OvertimeListItem{}}
-	sc, err := s.d.IAM.Scope(ctx, "hrm", PermOvertimeView)
+	sc, err := s.d.IAM.DataScope(ctx, "hrm", PermOvertimeView)
 	if err != nil {
 		return out, err
 	}
-	actor, _ := platform.ActorFrom(ctx)
-	q := store.New(platform.DBFrom(ctx))
-	reports, err := q.Reports(ctx, actor)
+	page, err := overtimeList.Run(ctx, overtimeQuery(sc, f))
 	if err != nil {
 		return out, err
 	}
-	rows, err := q.ListOvertimeRequests(ctx, store.ListOvertimeRequestsParams{
-		AllUnits: sc.All, Units: sc.Units, Actor: actor, Reports: reports, Status: f.Status, Q: strings.TrimSpace(f.Q),
-		OrgUnitID:  pgtype.Int8{Int64: f.OrgUnitID, Valid: f.OrgUnitID != 0},
-		EmployeeID: pgtype.Int8{Int64: f.EmployeeID, Valid: f.EmployeeID != 0},
-		FromDate:   platform.NullDate(platform.Optional(f.From)), ToDate: platform.NullDate(platform.Optional(f.To)),
-		Sort: f.Sort, Lim: f.Limit(), Off: f.Offset(),
-	})
-	for _, r := range rows {
-		out.Total = r.Total
+	out.Total = page.Total
+	for _, r := range page.Items {
 		out.Items = append(out.Items, OvertimeListItem{
 			ID: r.ID, Number: r.Number, Status: r.Status, EmployeeID: r.EmployeeID, EmployeeCode: r.EmployeeCode,
 			EmployeeName: r.EmployeeName, Date: *platform.DatePtr(r.Date), DayKind: r.DayKind,
 			DayHours: platform.PlainDecimal(r.DayHours), NightHours: platform.PlainDecimal(r.NightHours),
 		})
 	}
-	return out, err
+	return out, nil
 }
 
 // Overtime returns one overtime request; one the actor may not view does not exist.
