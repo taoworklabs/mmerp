@@ -30,6 +30,8 @@ export type SelectProps = FieldProps &
 const triggerStyle: React.CSSProperties = {
   display: 'flex',
   alignItems: 'center',
+  // Keeps the chevron off the value when the box shrinks to its content (as in a FilterBar).
+  gap: 'var(--mmerp-space-xs)',
   flex: '1 1 auto',
   minWidth: 0,
   padding: 0,

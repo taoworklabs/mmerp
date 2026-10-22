@@ -54,7 +54,8 @@ function PageHeaderRoot({
   ...props
 }: PageHeaderProps) {
   return (
-    <div className={cx(styles.root, className)} data-plain={plain ? '' : undefined} data-tabs={tabs ? '' : undefined} {...props}>
+    // data-page-header: a list page drops the header's rule, its table's column headers taking over.
+    <div className={cx(styles.root, className)} data-page-header="" data-plain={plain ? '' : undefined} data-tabs={tabs ? '' : undefined} {...props}>
       {breadcrumbs && breadcrumbs.length > 0 && (
         <Breadcrumbs aria-label={breadcrumbsLabel} currentLast={Boolean(current)} separator={<ChevronRightIcon />}>
           {breadcrumbs.map((crumb, index) => (
@@ -87,7 +88,7 @@ function PageHeaderRoot({
             )}
           </div>
         </div>
-        {actions}
+        {actions && <div className={styles.actions}>{actions}</div>}
       </div>
       {summary}
       {tabs && <div className={styles.tabs}>{tabs}</div>}

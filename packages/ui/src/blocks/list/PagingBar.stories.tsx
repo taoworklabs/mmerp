@@ -3,7 +3,7 @@ import { useState } from 'react'
 import { expect, fn, userEvent, within } from 'storybook/test'
 import { PagingBar, type PagingBarProps } from './PagingBar.tsx'
 
-const labels = { previous: 'Previous page', next: 'Next page', page: (n: number) => `Page ${n}` }
+const labels = { previous: 'Trang trước', next: 'Trang sau', page: (n: number) => `Trang ${n}` }
 
 const meta: Meta<typeof PagingBar> = {
   title: 'Blocks/PagingBar',
@@ -13,9 +13,9 @@ const meta: Meta<typeof PagingBar> = {
     page: 5,
     pageSize: 10,
     pageSizes: [10, 20, 50],
-    totalText: '128 total',
-    pageSizeText: (n: number) => `${n} / page`,
-    pageSizeLabel: 'Rows per page',
+    totalText: 'Tổng 128 bản ghi',
+    pageSizeText: (n: number) => `${n} / trang`,
+    pageSizeLabel: 'Số dòng mỗi trang',
     labels,
     onPage: fn(),
     onPageSize: fn(),
@@ -58,14 +58,30 @@ export const Default: Story = {
     const rightGap = barRect.right - navRect.right
     expect(Math.abs(leftGap - rightGap)).toBeLessThanOrEqual(2)
 
-    await userEvent.click(canvas.getByRole('combobox', { name: 'Rows per page' }))
+    await userEvent.click(canvas.getByRole('combobox', { name: 'Số dòng mỗi trang' }))
     const body = within(canvasElement.ownerDocument.body)
-    await userEvent.click(await body.findByRole('option', { name: '20 / page' }))
+    await userEvent.click(await body.findByRole('option', { name: '20 / trang' }))
     expect(args.onPageSize).toHaveBeenCalledWith(20)
   },
 }
 
+// Too narrow for three columns: the page buttons move to their own row and nothing overflows.
+export const Narrow: Story = {
+  render: (args) => <Controlled {...args} />,
+  globals: { viewport: { value: 'mobile' } },
+  play: async ({ canvasElement }) => {
+    const bar = canvasElement.firstElementChild as HTMLElement
+    const nav = within(canvasElement).getByRole('navigation')
+    const select = within(canvasElement).getByRole('combobox', { name: 'Số dòng mỗi trang' })
+    expect(bar.scrollWidth).toBeLessThanOrEqual(bar.clientWidth)
+    expect(select.getBoundingClientRect().right).toBeLessThanOrEqual(bar.getBoundingClientRect().right + 0.5)
+    expect(nav.getBoundingClientRect().bottom).toBeLessThanOrEqual(select.getBoundingClientRect().top + 0.5)
+  },
+}
+
+// No rows, no paging: the bar renders nothing and leaves the space to the table's empty state.
 export const Empty: Story = {
+  tags: ['!dev', '!autodocs'],
   args: { total: 0 },
   render: (args) => <Controlled {...args} />,
   play: async ({ canvasElement }) => {

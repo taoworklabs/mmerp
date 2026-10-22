@@ -36,6 +36,15 @@
   }
 }
 
+/* One block, so the row's space-between never pushes the buttons of a fragment apart. */
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  flex: none;
+  align-items: center;
+  gap: var(--mmerp-space-sm);
+}
+
 .titleGroup {
   display: flex;
   align-items: center;

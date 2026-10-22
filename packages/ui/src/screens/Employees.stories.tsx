@@ -28,6 +28,7 @@ import {
   IconUsers,
 } from '@tabler/icons-react'
 import { useState, type ReactNode } from 'react'
+import { expect, waitFor, within } from 'storybook/test'
 import {
   ActionIcon,
   Anchor,
@@ -63,6 +64,7 @@ import {
   TextInput,
   ThemeIcon,
   Tooltip,
+  VisuallyHidden,
   addDays,
   icon,
   useDisclosure,
@@ -171,11 +173,17 @@ function Shell({ children }: { children: ReactNode }) {
       header={
         <Group fill justify="space-between" wrap={false}>
           <Group gap="xs" wrap={false}>
-            {mobile && <Burger opened={drawer} onClick={toggleDrawer} aria-label="Trình đơn" />}
-            <ThemeIcon size={28} aria-hidden>
-              <IconBuildingSkyscraper {...icon.text} />
-            </ThemeIcon>
-            <Text weight={600}>Nhân sự</Text>
+            {/* On a phone the burger takes the product icon's place, so the header fits 375px. */}
+            {mobile ? (
+              <Burger opened={drawer} onClick={toggleDrawer} aria-label="Trình đơn" />
+            ) : (
+              <ThemeIcon size={28} aria-hidden>
+                <IconBuildingSkyscraper {...icon.text} />
+              </ThemeIcon>
+            )}
+            <Text weight={600} truncate>
+              Nhân sự
+            </Text>
           </Group>
           <Group gap="xs" wrap={false}>
             <Tooltip label="Thông báo">
@@ -197,11 +205,14 @@ function Shell({ children }: { children: ReactNode }) {
             </Tooltip>
             <Menu.Root>
               {/* No aria-label here: the avatar is aria-hidden, so the button's accessible name is
-                  already just the visible "Quản trị" text, matching it exactly. */}
-              <Menu.Trigger render={<Button variant="subtle" color="gray" rightSection={<IconChevronDown {...icon.text} aria-hidden />} />}>
+                  already just the "Quản trị" text, matching it exactly; on a phone that text is only
+                  hidden visually, so the name stays. */}
+              <Menu.Trigger
+                render={<Button variant="subtle" color="gray" rightSection={mobile ? undefined : <IconChevronDown {...icon.text} aria-hidden />} />}
+              >
                 <Group gap="xs" wrap={false}>
                   <PersonAvatar name="Quản trị" size={24} />
-                  Quản trị
+                  {mobile ? <VisuallyHidden>Quản trị</VisuallyHidden> : 'Quản trị'}
                 </Group>
               </Menu.Trigger>
               <Menu.Popup align="end">
@@ -303,7 +314,7 @@ function ListScreen({ go }: { go: (route: Route) => void }) {
 
   return (
     <Page
-      variant="fill"
+      variant="list"
       header={
         <PageHeader
           title="Nhân viên"
@@ -320,8 +331,7 @@ function ListScreen({ go }: { go: (route: Route) => void }) {
           }
         />
       }
-    >
-      <Page.Content>
+      filters={
         <FilterBar
           label="Bộ lọc nhân viên"
           filters={
@@ -357,42 +367,14 @@ function ListScreen({ go }: { go: (route: Route) => void }) {
                     setPage(1)
                   }}
                 >
-                  Xoá bộ lọc
+                  Xóa bộ lọc
                 </Button>
               )}
             </>
           }
         />
-        <DataTable
-          columns={columns}
-          rows={rows}
-          rowKey={(e) => e.id}
-          label="Nhân viên"
-          labels={dataTableLabels}
-          maxHeight="60dvh"
-          renderLink={(row, children) => (
-            <a
-              href="#"
-              onClick={(e) => {
-                e.preventDefault()
-                go({ page: 'detail', id: row.id })
-              }}
-            >
-              {children}
-            </a>
-          )}
-          selection={{ selected, onChange: setSelected }}
-          sort={sort}
-          onSort={setSort}
-          menu={() => (
-            <>
-              <Menu.Item leftSection={<IconArrowsExchange {...icon.text} aria-hidden />}>Điều chuyển</Menu.Item>
-              <Menu.Item color="danger" leftSection={<IconUserOff {...icon.text} aria-hidden />}>
-                Cho nghỉ việc
-              </Menu.Item>
-            </>
-          )}
-        />
+      }
+      footer={
         <PagingBar
           total={sorted.length}
           page={page}
@@ -409,7 +391,37 @@ function ListScreen({ go }: { go: (route: Route) => void }) {
           labels={pagingLabels}
           navigationLabel="Phân trang nhân viên"
         />
-      </Page.Content>
+      }
+    >
+      <DataTable
+        columns={columns}
+        rows={rows}
+        rowKey={(e) => e.id}
+        label="Nhân viên"
+        labels={dataTableLabels}
+        renderLink={(row, children) => (
+          <a
+            href="#"
+            onClick={(e) => {
+              e.preventDefault()
+              go({ page: 'detail', id: row.id })
+            }}
+          >
+            {children}
+          </a>
+        )}
+        selection={{ selected, onChange: setSelected }}
+        sort={sort}
+        onSort={setSort}
+        menu={() => (
+          <>
+            <Menu.Item leftSection={<IconArrowsExchange {...icon.text} aria-hidden />}>Điều chuyển</Menu.Item>
+            <Menu.Item color="danger" leftSection={<IconUserOff {...icon.text} aria-hidden />}>
+              Cho nghỉ việc
+            </Menu.Item>
+          </>
+        )}
+      />
     </Page>
   )
 }
@@ -589,7 +601,7 @@ function DetailScreen({ id, go }: { id: number; go: (route: Route) => void }) {
               />
             }
             tabs={
-              <Tabs.List onRule>
+              <Tabs.List onRule scroll>
                 {tabs.map((t) => (
                   <Tabs.Tab key={t.value} value={t.value}>
                     {t.label}
@@ -683,13 +695,13 @@ function NewScreen({ go }: { go: (route: Route) => void }) {
               onChange={setManager}
               nothingFound="Không có kết quả"
               clearable
-              clearLabel="Xoá"
+              clearLabel="Xóa"
             />
             <TextInput label="Tài khoản đăng nhập" description="Tên đăng nhập của người dùng đã có" />
           </FormSection>
           <FormSection title="Thông tin cá nhân" description="Liên hệ và nhân thân" icon={<IconAddressBook {...icon.text} aria-hidden />}>
             <FormSection.Short>
-              <DateInput label="Ngày sinh" value={birth} onChange={setBirth} {...dateProps} clearable clearLabel="Xoá" />
+              <DateInput label="Ngày sinh" value={birth} onChange={setBirth} {...dateProps} clearable clearLabel="Xóa" />
             </FormSection.Short>
             <FormSection.Short>
               <Select
@@ -702,7 +714,7 @@ function NewScreen({ go }: { go: (route: Route) => void }) {
                 value={gender}
                 onChange={setGender}
                 clearable
-                clearLabel="Xoá"
+                clearLabel="Xóa"
               />
             </FormSection.Short>
             <FormSection.Short>
@@ -767,3 +779,20 @@ type Story = StoryObj<typeof App>
 export const List: Story = { args: { start: { page: 'list' } } }
 export const Record: Story = { args: { start: { page: 'detail', id: 7 } } }
 export const New: Story = { args: { start: { page: 'new' } } }
+
+// Each screen fits a phone: nothing pushes the page wider than the window.
+const fitsPhone: Story = {
+  globals: { viewport: { value: 'mobile' } },
+  play: async ({ canvasElement }) => {
+    const root = canvasElement.ownerDocument.documentElement
+    await waitFor(() => expect(canvasElement.querySelector('main')).not.toBeNull())
+    expect(root.scrollWidth).toBeLessThanOrEqual(root.clientWidth)
+    // Tab labels stay on one line; the tab row scrolls instead.
+    for (const tab of within(canvasElement).queryAllByRole('tab')) {
+      expect(tab.getBoundingClientRect().height).toBeLessThan(40)
+    }
+  },
+}
+export const ListOnPhone: Story = { ...fitsPhone, tags: ['!dev', '!autodocs'], args: { start: { page: 'list' } } }
+export const RecordOnPhone: Story = { ...fitsPhone, tags: ['!dev', '!autodocs'], args: { start: { page: 'detail', id: 7 } } }
+export const NewOnPhone: Story = { ...fitsPhone, tags: ['!dev', '!autodocs'], args: { start: { page: 'new' } } }

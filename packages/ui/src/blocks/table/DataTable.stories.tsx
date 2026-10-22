@@ -27,6 +27,8 @@ const rows: Employee[] = [
   { id: 3, full_name: 'Lê Văn C', code: 'NV003', org_unit: 'Nhân sự', hire_date: '2021-09-15', status: 'terminated' },
 ]
 
+const longName = 'Nguyễn Thị Phương Thảo – Trưởng phòng Kế toán Tổng hợp, Chi nhánh Thành phố Hồ Chí Minh, phụ trách quyết toán thuế thu nhập cá nhân và bảo hiểm xã hội cho toàn bộ nhân viên khối văn phòng'
+
 const labels: DataTableLabels = { actions: 'Thao tác khác', selectAll: 'Chọn mọi dòng', selectRow: 'Chọn dòng', resize: (c: string) => `Đổi độ rộng cột ${c}` }
 
 const meta: Meta<typeof DataTable<Employee>> = {
@@ -73,6 +75,7 @@ export const Basic: StoryObj<{ onLinkClick(): void }> = {
 }
 
 export const RowClickWithoutLink: StoryObj<{ onInnerLinkClick(): void }> = {
+  tags: ['!dev', '!autodocs'],
   args: { onInnerLinkClick: fn() },
   render: (args) => {
     // No renderLink here: the second column's own <a> must never be the one the row forwards a
@@ -107,6 +110,7 @@ export const RowClickWithoutLink: StoryObj<{ onInnerLinkClick(): void }> = {
 }
 
 export const RowClickSkipsOtherColumns: StoryObj<{ onFirstLinkClick(): void; onOtherLinkClick(): void }> = {
+  tags: ['!dev', '!autodocs'],
   args: { onFirstLinkClick: fn(), onOtherLinkClick: fn() },
   render: (args) => {
     // With renderLink, the row forwards a plain-cell click to the first (sticky) cell's own link
@@ -243,6 +247,7 @@ function SelectableWithLinkAndClickDemo({ onLinkClick, onRowClick }: { onLinkCli
 }
 
 export const SelectableWithLinkAndRowClick: StoryObj<{ onLinkClick(): void; onRowClick(row: Employee): void }> = {
+  tags: ['!dev', '!autodocs'],
   args: { onLinkClick: fn(), onRowClick: fn() },
   render: (args) => <SelectableWithLinkAndClickDemo onLinkClick={args.onLinkClick} onRowClick={args.onRowClick} />,
   play: async ({ canvasElement, args }) => {
@@ -275,6 +280,7 @@ export const Resizable: StoryObj<{ onResize(key: string, width: number): void }>
 }
 
 export const ResizeEdgeCases: StoryObj<{ onResize(key: string, width: number): void }> = {
+  tags: ['!dev', '!autodocs'],
   args: { onResize: fn() },
   render: (args) => <DataTable columns={columns} rows={rows} rowKey={(e) => e.id} label="Danh sách nhân viên" labels={labels} onResize={args.onResize} />,
   play: async ({ canvasElement, args }) => {
@@ -345,7 +351,7 @@ export const RowMenu: StoryObj<{ onArchive(employee: Employee): void }> = {
       menu={(row: Employee) => (
         <>
           <Menu.Item onClick={() => args.onArchive(row)}>Lưu trữ</Menu.Item>
-          <Menu.Item color="danger">Xoá</Menu.Item>
+          <Menu.Item color="danger">Xóa</Menu.Item>
         </>
       )}
     />
@@ -373,7 +379,7 @@ export const LongFirstCell: Story = {
     <div style={{ width: 500 }}>
       <DataTable
         columns={columns}
-        rows={[{ ...rows[0]!, full_name: 'A'.repeat(220) }]}
+        rows={[{ ...rows[0]!, full_name: longName }]}
         rowKey={(e) => e.id}
         label="Danh sách nhân viên"
         labels={labels}
@@ -382,7 +388,7 @@ export const LongFirstCell: Story = {
   ),
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
-    const cell = canvas.getByText('A'.repeat(220)).closest('td')!
+    const cell = canvas.getByText(longName).closest('td')!
     expect(cell.scrollHeight).toBeLessThanOrEqual(41)
   },
 }
@@ -415,6 +421,12 @@ export const MaxHeight: Story = {
 
     // The sticky header stays docked at the viewport's top instead of scrolling away with the rows.
     expect(Math.abs(header.getBoundingClientRect().top - headerTopBefore)).toBeLessThanOrEqual(1)
+
+    // Every header cell, the identifier's too, paints over the rows scrolling under it.
+    for (const th of header.querySelectorAll('th')) {
+      const r = th.getBoundingClientRect()
+      expect(th.contains(document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2))).toBe(true)
+    }
   },
 }
 
@@ -430,14 +442,14 @@ export const EmptyCells: StoryObj = {
       { id: 1, name: '', amount: 0 },
       { id: 2, name: null, amount: 5 },
       { id: 3, name: undefined, amount: '0' },
-      { id: 4, name: 'B', amount: 5 },
+      { id: 4, name: 'Bình', amount: 5 },
     ]
     return (
       <DataTable
         columns={emptyColumns}
         rows={emptyRows}
         rowKey={(r) => r.id}
-        label="Rows"
+        label="Dòng có ô trống"
         labels={labels}
         footer={{ id: 0, name: '', amount: 5 }}
       />

@@ -17,18 +17,18 @@ function Demo() {
     <Table>
       <Table.Thead>
         <Table.Tr>
-          <Table.Th>Name</Table.Th>
-          <Table.Th>Role</Table.Th>
+          <Table.Th>Họ tên</Table.Th>
+          <Table.Th>Chức danh</Table.Th>
         </Table.Tr>
       </Table.Thead>
       <Table.Tbody>
         <Table.Tr>
           <Table.Td>Nguyễn Văn A</Table.Td>
-          <Table.Td>Developer</Table.Td>
+          <Table.Td>Kế toán viên</Table.Td>
         </Table.Tr>
         <Table.Tr>
           <Table.Td>Trần Thị B</Table.Td>
-          <Table.Td>Designer</Table.Td>
+          <Table.Td>Nhân viên kinh doanh</Table.Td>
         </Table.Tr>
       </Table.Tbody>
     </Table>
@@ -39,7 +39,7 @@ export const Default: Story = {
   render: () => <Demo />,
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
-    const header = canvas.getByRole('columnheader', { name: 'Name' })
+    const header = canvas.getByRole('columnheader', { name: 'Họ tên' })
 
     const probe = document.createElement('div')
     probe.style.backgroundColor = 'var(--mmerp-color-table-header)'
@@ -47,7 +47,7 @@ export const Default: Story = {
     expect(getComputedStyle(header.closest('thead')!).backgroundColor).toBe(getComputedStyle(probe).backgroundColor)
     probe.remove()
 
-    const row = canvas.getByText('Developer').closest('tr')!
+    const row = canvas.getByText('Kế toán viên').closest('tr')!
     expect(row.getBoundingClientRect().height).toBe(40)
   },
 }
@@ -57,7 +57,7 @@ export const HighlightOnHover: Story = {
     <Table highlightOnHover>
       <Table.Tbody>
         <Table.Tr>
-          <Table.Td>Row 1</Table.Td>
+          <Table.Td>Dòng 1</Table.Td>
         </Table.Tr>
       </Table.Tbody>
     </Table>
@@ -70,13 +70,13 @@ export const StickyHeader: Story = {
       <Table stickyHeader>
         <Table.Thead>
           <Table.Tr>
-            <Table.Th>Name</Table.Th>
+            <Table.Th>Họ tên</Table.Th>
           </Table.Tr>
         </Table.Thead>
         <Table.Tbody>
           {Array.from({ length: 10 }, (_, i) => (
             <Table.Tr key={i}>
-              <Table.Td>Row {i + 1}</Table.Td>
+              <Table.Td>Dòng {i + 1}</Table.Td>
             </Table.Tr>
           ))}
         </Table.Tbody>
@@ -95,9 +95,9 @@ function SortableDemo() {
     <Table>
       <Table.Thead>
         <Table.Tr>
-          <Table.SortHeader label="Name" state={state('name')} onSort={() => toggle('name')} />
-          <Table.SortHeader label="Role" state={state('role')} onSort={() => toggle('role')} />
-          <Table.SortHeader label="Start date" state={state('start')} onSort={() => toggle('start')} />
+          <Table.SortHeader label="Họ tên" state={state('name')} onSort={() => toggle('name')} />
+          <Table.SortHeader label="Chức danh" state={state('role')} onSort={() => toggle('role')} />
+          <Table.SortHeader label="Ngày vào làm" state={state('start')} onSort={() => toggle('start')} />
         </Table.Tr>
       </Table.Thead>
     </Table>
@@ -108,9 +108,9 @@ export const Sortable: Story = {
   render: () => <SortableDemo />,
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
-    const name = canvas.getByRole('columnheader', { name: 'Name' })
-    const role = canvas.getByRole('columnheader', { name: 'Role' })
-    const start = canvas.getByRole('columnheader', { name: 'Start date' })
+    const name = canvas.getByRole('columnheader', { name: 'Họ tên' })
+    const role = canvas.getByRole('columnheader', { name: 'Chức danh' })
+    const start = canvas.getByRole('columnheader', { name: 'Ngày vào làm' })
 
     await userEvent.click(within(name).getByRole('button'))
     expect(name).toHaveAttribute('aria-sort', 'ascending')
@@ -128,19 +128,19 @@ export const CellLooks: Story = {
     <Table>
       <Table.Tbody>
         <Table.Tr>
-          <Table.Td look="numeric">1,234</Table.Td>
-          <Table.Td look="secondary">INV-001</Table.Td>
+          <Table.Td look="numeric">1.234.000</Table.Td>
+          <Table.Td look="secondary">HĐ-0001</Table.Td>
         </Table.Tr>
       </Table.Tbody>
     </Table>
   ),
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
-    const numeric = canvas.getByText('1,234')
+    const numeric = canvas.getByText('1.234.000')
     expect(getComputedStyle(numeric).textAlign).toBe('right')
     expect(getComputedStyle(numeric).fontVariantNumeric).toContain('tabular-nums')
 
-    const secondary = canvas.getByText('INV-001')
+    const secondary = canvas.getByText('HĐ-0001')
     const probe = document.createElement('div')
     probe.style.color = 'var(--mmerp-color-dimmed)'
     canvasElement.appendChild(probe)
@@ -155,17 +155,17 @@ export const StickyFirstColumn: Story = {
       <Table style={{ width: 1200 }}>
         <Table.Thead>
           <Table.Tr>
-            <Table.Th sticky>Name</Table.Th>
+            <Table.Th sticky>Họ tên</Table.Th>
             {Array.from({ length: 6 }, (_, i) => (
-              <Table.Th key={i}>Column {i + 2}</Table.Th>
+              <Table.Th key={i}>Cột {i + 2}</Table.Th>
             ))}
           </Table.Tr>
         </Table.Thead>
         <Table.Tbody>
           <Table.Tr>
-            <Table.Td sticky>Row 1</Table.Td>
+            <Table.Td sticky>Dòng 1</Table.Td>
             {Array.from({ length: 6 }, (_, i) => (
-              <Table.Td key={i}>Column {i + 2}</Table.Td>
+              <Table.Td key={i}>Cột {i + 2}</Table.Td>
             ))}
           </Table.Tr>
         </Table.Tbody>
@@ -175,13 +175,13 @@ export const StickyFirstColumn: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
     const box = canvas.getByTestId('scrollbox')
-    const cell = canvas.getByText('Row 1')
+    const cell = canvas.getByText('Dòng 1')
 
     box.scrollLeft = 200
     await waitFor(() => expect(Math.abs(cell.getBoundingClientRect().left - box.getBoundingClientRect().left)).toBeLessThanOrEqual(1))
 
     // The sticky header cell still reads as header, not as a plain elevated surface.
-    const header = canvas.getByRole('columnheader', { name: 'Name' })
+    const header = canvas.getByRole('columnheader', { name: 'Họ tên' })
     const probe = document.createElement('div')
     probe.style.backgroundColor = 'var(--mmerp-color-table-header)'
     canvasElement.appendChild(probe)
@@ -195,16 +195,16 @@ export const SelectedRow: Story = {
     <Table>
       <Table.Tbody>
         <Table.Tr aria-selected="true">
-          <Table.Td sticky>Selected row</Table.Td>
-          <Table.Td>Other cell</Table.Td>
+          <Table.Td sticky>Dòng đang chọn</Table.Td>
+          <Table.Td>Ô khác</Table.Td>
         </Table.Tr>
       </Table.Tbody>
     </Table>
   ),
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
-    const row = canvas.getByText('Selected row').closest('tr')!
-    const stickyCell = canvas.getByText('Selected row').closest('td')!
+    const row = canvas.getByText('Dòng đang chọn').closest('tr')!
+    const stickyCell = canvas.getByText('Dòng đang chọn').closest('td')!
 
     const probe = document.createElement('div')
     probe.style.backgroundColor = 'var(--mmerp-color-primary-light)'

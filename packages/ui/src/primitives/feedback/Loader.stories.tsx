@@ -12,17 +12,17 @@ export default meta
 type Story = StoryObj<typeof Loader>
 
 export const Xs: Story = {
-  args: { size: 'xs', label: 'Loading' },
+  args: { size: 'xs', label: 'Đang tải' },
 }
 
 export const Sm: Story = {
-  args: { size: 'sm', label: 'Loading' },
+  args: { size: 'sm', label: 'Đang tải' },
   play: async ({ canvasElement }) => {
-    const loader = within(canvasElement).getByRole('status', { name: 'Loading' })
+    const loader = within(canvasElement).getByRole('status', { name: 'Đang tải' })
     expect(loader).toBeInTheDocument()
   },
 }
 
 export const Md: Story = {
-  args: { size: 'md', label: 'Loading' },
+  args: { size: 'md', label: 'Đang tải' },
 }

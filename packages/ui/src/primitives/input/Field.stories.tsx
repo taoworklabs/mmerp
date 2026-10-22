@@ -14,31 +14,31 @@ export default meta
 type Story = StoryObj<typeof Field>
 
 export const Default: Story = {
-  args: { label: 'Name' },
+  args: { label: 'Họ tên' },
 }
 
 export const WithDescription: Story = {
-  args: { label: 'Name', description: 'As it appears on your ID' },
+  args: { label: 'Họ tên', description: 'Ghi đúng như trên căn cước công dân' },
 }
 
 export const Required: Story = {
-  args: { label: 'Name', required: true },
+  args: { label: 'Họ tên', required: true },
   play: async ({ canvasElement }) => {
     expect(within(canvasElement).getByText('*')).toBeInTheDocument()
   },
 }
 
 export const Error: Story = {
-  args: { label: 'Name', error: 'Name is required' },
+  args: { label: 'Họ tên', error: 'Vui lòng nhập họ tên' },
   play: async ({ canvasElement }) => {
-    expect(within(canvasElement).getByText('Name is required')).toBeInTheDocument()
+    expect(within(canvasElement).getByText('Vui lòng nhập họ tên')).toBeInTheDocument()
   },
 }
 
 export const Disabled: Story = {
-  args: { label: 'Name', disabled: true },
+  args: { label: 'Họ tên', disabled: true },
 }
 
 export const ReadOnly: Story = {
-  args: { label: 'Name', readOnly: true },
+  args: { label: 'Họ tên', readOnly: true },
 }

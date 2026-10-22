@@ -13,10 +13,10 @@ type Story = StoryObj<typeof KeyFacts>
 export const Default: Story = {
   args: {
     facts: [
-      ['Manager', 'Trần Thị B'],
-      ['Tenure', '2 years'],
-      ['Leave left', '8 days'],
-      ['Overtime', '12 hours'],
+      ['Quản lý trực tiếp', 'Trần Thị B'],
+      ['Thâm niên', '2 năm'],
+      ['Phép năm còn lại', '8 ngày'],
+      ['Làm thêm giờ', '12 giờ'],
     ],
   },
 }

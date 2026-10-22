@@ -22,7 +22,7 @@ export const Overflow: Story = {
       style={{ height: 160, width: 280 }}
     >
       {Array.from({ length: 40 }, (_, i) => (
-        <p key={i}>Line {i + 1}</p>
+        <p key={i}>Dòng {i + 1}</p>
       ))}
     </ScrollArea>
   ),

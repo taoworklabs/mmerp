@@ -16,9 +16,9 @@ export const Visible: Story = {
 }
 
 export const Hidden: Story = {
-  args: { visible: false, children: 'Loaded content' },
+  args: { visible: false, children: 'Nội dung đã tải xong' },
   play: async ({ canvasElement }) => {
-    const text = within(canvasElement).getByText('Loaded content')
+    const text = within(canvasElement).getByText('Nội dung đã tải xong')
     expect(text).toBeInTheDocument()
   },
 }

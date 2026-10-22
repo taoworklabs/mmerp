@@ -8,6 +8,8 @@ import { Stack } from './Stack.tsx'
 const meta: Meta<typeof Stack> = {
   title: 'Layout/Stack',
   component: Stack,
+  // React elements, not values to edit.
+  argTypes: { children: { control: false } },
 }
 
 export default meta
@@ -22,8 +24,8 @@ export const Default: Story = {
   args: {
     children: (
       <>
-        <Item label="First" />
-        <Item label="Second" />
+        <Item label="Mục thứ nhất" />
+        <Item label="Mục thứ hai" />
       </>
     ),
   },
@@ -34,13 +36,13 @@ export const Gap: Story = {
     gap: 'md',
     children: (
       <>
-        <Item label="First" />
-        <Item label="Second" />
+        <Item label="Mục thứ nhất" />
+        <Item label="Mục thứ hai" />
       </>
     ),
   },
   play: async ({ canvasElement }) => {
-    const stack = within(canvasElement).getByText('First').parentElement
+    const stack = within(canvasElement).getByText('Mục thứ nhất').parentElement
     expect(stack).not.toBeNull()
     expect(getComputedStyle(stack as HTMLElement).rowGap).toBe('16px')
   },
@@ -51,8 +53,8 @@ export const Align: Story = {
     align: 'center',
     children: (
       <>
-        <Item label="Narrow" />
-        <Item label="A much wider item" />
+        <Item label="Hẹp" />
+        <Item label="Một mục rộng hơn nhiều" />
       </>
     ),
   },
@@ -61,8 +63,8 @@ export const Align: Story = {
 export const Justify: Story = {
   render: () => (
     <Stack justify="space-between" style={{ height: 120 }}>
-      <Item label="Top" />
-      <Item label="Bottom" />
+      <Item label="Trên cùng" />
+      <Item label="Dưới cùng" />
     </Stack>
   ),
 }
@@ -72,15 +74,15 @@ export const FillTruncates: Story = {
     <div style={{ width: 300 }}>
       <Group wrap={false} data-testid="outer">
         <Stack fill>
-          <Text truncate>{'x'.repeat(200)}</Text>
+          <Text truncate>{'Phiếu đề nghị thanh toán tạm ứng công tác phí cho chuyến khảo sát thị trường miền Trung của phòng Kinh doanh quý IV năm 2026'}</Text>
         </Stack>
-        <Button>A</Button>
+        <Button>Lưu</Button>
       </Group>
     </div>
   ),
   play: async ({ canvasElement }) => {
     const outerGroup = within(canvasElement).getByTestId('outer')
-    const text = within(canvasElement).getByText('x'.repeat(200))
+    const text = within(canvasElement).getByText('Phiếu đề nghị thanh toán tạm ứng công tác phí cho chuyến khảo sát thị trường miền Trung của phòng Kinh doanh quý IV năm 2026')
     expect(outerGroup.scrollWidth).toBeLessThanOrEqual(300)
     expect(text.scrollWidth).toBeGreaterThan(text.clientWidth)
   },
@@ -92,13 +94,13 @@ export const Render: Story = {
     gap: 'md',
     children: (
       <>
-        <li>First</li>
-        <li>Second</li>
+        <li>Mục thứ nhất</li>
+        <li>Mục thứ hai</li>
       </>
     ),
   },
   play: async ({ canvasElement }) => {
-    const stack = within(canvasElement).getByText('First').parentElement as HTMLElement
+    const stack = within(canvasElement).getByText('Mục thứ nhất').parentElement as HTMLElement
     expect(stack.tagName).toBe('UL')
     expect(getComputedStyle(stack).rowGap).toBe('16px')
   },

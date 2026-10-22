@@ -6,7 +6,7 @@ import { Checkbox, type CheckboxProps } from './Checkbox.tsx'
 const meta: Meta<typeof Checkbox> = {
   title: 'Input/Checkbox',
   component: Checkbox,
-  args: { label: 'Accept the terms', onChange: fn() },
+  args: { label: 'Đồng ý với điều khoản sử dụng', onChange: fn() },
 }
 
 export default meta
@@ -38,12 +38,12 @@ export const Filled: Story = {
 }
 
 export const WithDescription: Story = {
-  args: { checked: false, description: 'Required to continue' },
+  args: { checked: false, description: 'Bắt buộc để tiếp tục' },
   render: (args) => <Controlled {...args} />,
 }
 
 export const Error: Story = {
-  args: { checked: false, error: 'You must accept the terms' },
+  args: { checked: false, error: 'Bạn cần đồng ý với điều khoản sử dụng' },
   render: (args) => <Controlled {...args} />,
 }
 
@@ -61,6 +61,7 @@ export const Indeterminate: Story = {
 }
 
 export const ToggleWithSpace: Story = {
+  tags: ['!dev', '!autodocs'],
   args: { checked: false },
   render: (args) => <Controlled {...args} />,
   play: async ({ canvasElement }) => {

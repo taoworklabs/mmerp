@@ -13,8 +13,8 @@ type Story = StoryObj<typeof List>
 export const Default: Story = {
   render: () => (
     <List>
-      <List.Item>First item</List.Item>
-      <List.Item>Second item</List.Item>
+      <List.Item>Nộp bản sao căn cước công dân</List.Item>
+      <List.Item>Ký hợp đồng lao động</List.Item>
     </List>
   ),
 }
@@ -22,8 +22,8 @@ export const Default: Story = {
 export const Ordered: Story = {
   render: () => (
     <List type="ordered">
-      <List.Item>First item</List.Item>
-      <List.Item>Second item</List.Item>
+      <List.Item>Nộp bản sao căn cước công dân</List.Item>
+      <List.Item>Ký hợp đồng lao động</List.Item>
     </List>
   ),
 }
@@ -31,8 +31,8 @@ export const Ordered: Story = {
 export const Spacing: Story = {
   render: () => (
     <List spacing="lg">
-      <List.Item>First item</List.Item>
-      <List.Item>Second item</List.Item>
+      <List.Item>Nộp bản sao căn cước công dân</List.Item>
+      <List.Item>Ký hợp đồng lao động</List.Item>
     </List>
   ),
 }

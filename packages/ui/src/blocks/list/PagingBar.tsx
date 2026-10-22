@@ -44,7 +44,7 @@ export function PagingBar({
       <Text size="sm" tone="dimmed">
         {totalText}
       </Text>
-      <Pagination total={Math.ceil(total / pageSize)} value={page} onChange={onPage} labels={labels} aria-label={navigationLabel} />
+      <Pagination total={Math.ceil(total / pageSize)} value={page} onChange={onPage} labels={labels} aria-label={navigationLabel} className={styles.pages} />
       <Select
         aria-label={pageSizeLabel}
         data={pageSizes.map((n) => ({ value: String(n), label: pageSizeText(n) }))}
