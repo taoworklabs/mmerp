@@ -36,20 +36,20 @@ func (s *Service) typeActions(ctx context.Context, code string) (Actions, error)
 // Customers lists the customers under the org units where the actor may view them.
 func (s *Service) Customers(ctx context.Context, f CustomerFilter) (CustomerList, error) {
 	out := CustomerList{Items: []CustomerListItem{}}
-	sc, err := s.d.IAM.Scope(ctx, "sales", PermCustomerView)
-	if err != nil || !sc.Any() {
+	sc, err := s.d.IAM.DataScope(ctx, "sales", PermCustomerView)
+	if err != nil {
 		return out, err
 	}
-	rows, err := store.New(platform.DBFrom(ctx)).ListCustomers(ctx, store.ListCustomersParams{
-		AllUnits: sc.All, Units: sc.Units, Q: strings.TrimSpace(f.Q), Active: boolFilter(f.Active),
-		Sort: f.Sort, Lim: f.Limit(), Off: f.Offset(),
-	})
-	for _, r := range rows {
-		out.Total = r.Total
+	page, err := customerList.Run(ctx, customerQuery(sc, f))
+	if err != nil {
+		return out, err
+	}
+	out.Total = page.Total
+	for _, r := range page.Items {
 		out.Items = append(out.Items, CustomerListItem{ID: r.ID, Code: r.Code, Name: r.Name, TaxCode: platform.TextPtr(r.TaxCode),
 			Phone: platform.TextPtr(r.Phone), OrgUnitName: r.OrgUnitName, Active: r.Active, PaymentTerms: platform.TextPtr(r.PaymentTerms)})
 	}
-	return out, err
+	return out, nil
 }
 
 // Customer returns one customer; one the actor may not view does not exist.

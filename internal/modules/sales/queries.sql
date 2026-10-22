@@ -22,20 +22,10 @@ SELECT 1 FROM sales.customers WHERE id = $1 FOR NO KEY UPDATE;
 -- Read under a share lock, so the customer cannot be deactivated while a document posts.
 SELECT active FROM sales.customers WHERE id = $1 FOR SHARE;
 
--- name: ListCustomers :many
--- Scope filter: @all_units or org_unit_id in @units.
-SELECT c.id, c.code, c.name, c.tax_code, c.phone, c.payment_terms, c.org_unit_id, u.name AS org_unit_name, c.active, count(*) OVER () AS total
-FROM sales.customers c JOIN iam.org_units u ON u.id = c.org_unit_id
-WHERE (@all_units::bool OR c.org_unit_id = ANY(@units::bigint[]))
-  AND (@q::text = '' OR c.code ILIKE '%' || @q || '%' OR c.name ILIKE '%' || @q || '%' OR c.tax_code ILIKE '%' || @q || '%')
-  AND (sqlc.narg(active)::bool IS NULL OR c.active = sqlc.narg(active))
-ORDER BY
-    CASE WHEN @sort::text = 'code' THEN lower(c.code) END,
-    CASE WHEN @sort = '-code' THEN lower(c.code) END DESC,
-    CASE WHEN @sort = 'name' THEN c.name END,
-    CASE WHEN @sort = '-name' THEN c.name END DESC,
-    c.id
-LIMIT @lim OFFSET @off;
+-- name: CustomerListBase :many
+-- data:base
+SELECT c.id, c.code, c.name, c.tax_code, c.phone, c.payment_terms, c.org_unit_id, u.name AS org_unit_name, c.active
+FROM sales.customers c JOIN iam.org_units u ON u.id = c.org_unit_id;
 
 -- name: CreateItem :one
 INSERT INTO sales.items (code, name, unit, price, vat_rate, active) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id;
