@@ -32,7 +32,7 @@ func setup(t *testing.T) (*Service, context.Context, platform.Files) {
 	root := platform.Files{Dir: t.TempDir()}
 	ctx := platform.WithProducts(platform.WithFiles(platform.WithDB(t.Context(), pool), root), []string{"test"})
 	var actor int64
-	if err := pool.QueryRow(ctx, `INSERT INTO iam.users (login, name, password_hash) VALUES ('u', 'U', '') RETURNING id`).Scan(&actor); err != nil {
+	if err := pgtest.System(t, pool).QueryRow(ctx, `INSERT INTO iam.users (login, name, password_hash) VALUES ('u', 'U', '') RETURNING id`).Scan(&actor); err != nil {
 		t.Fatal(err)
 	}
 	ids := iam.NewService(iam.Deps{Setting: setting.NewService(), Audit: audit.NewService()})
@@ -191,7 +191,7 @@ func TestDeletedWithTheDraft(t *testing.T) {
 	if l, err := s.List(ctx, thing); err != nil || len(l.Items) != 1 {
 		t.Fatalf("after a rolled-back deletion: %+v %v", l, err)
 	}
-	if err := s.Deleted(ctx, thing); err != nil {
+	if err := platform.InTx(ctx, func(ctx context.Context) error { return s.Deleted(ctx, thing) }); err != nil {
 		t.Fatal(err)
 	}
 	dir := root.Sub("attachment").Dir

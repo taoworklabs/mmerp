@@ -107,7 +107,7 @@ func TestTimesheet(t *testing.T) {
 	f.check(errOf(f.rec.Transition(f.hr, ref, 2, record.Posted)))
 	f.closePeriod("2026-03-01", "2026-03-31", id)
 	wantErr(t, errOf(f.rec.Transition(f.hr, ref, 3, record.Cancelled)), "payroll_period_closed")
-	if _, err := f.pool.Exec(f.admin, `DELETE FROM hrm.payroll_periods`); err != nil {
+	if _, err := f.system.Exec(f.admin, `DELETE FROM hrm.payroll_periods`); err != nil {
 		t.Fatal(err)
 	}
 	f.check(errOf(f.rec.Transition(f.hr, ref, 3, record.Cancelled)))

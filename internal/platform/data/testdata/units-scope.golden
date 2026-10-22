@@ -1,0 +1,18 @@
+-- empty --
+false
+-- page --
+SELECT b.* FROM (SELECT id, org_unit_id, user_id, number, code, start_date, end_date FROM t
+) b WHERE (b."org_unit_id" = ANY($1) OR (b."user_id" = $2)) ORDER BY b."start_date" DESC, b."id" DESC LIMIT $3 OFFSET $4
+-- page args --
+[]int64{3, 7}
+42
+50
+0
+-- count --
+SELECT count(*) FROM (SELECT id, org_unit_id, user_id, number, code, start_date, end_date FROM t
+) b WHERE (b."org_unit_id" = ANY($1) OR (b."user_id" = $2))
+-- count args --
+[]int64{3, 7}
+42
+-- shape --
+|default

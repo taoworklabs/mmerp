@@ -3,6 +3,7 @@ package iam_test
 import (
 	"context"
 	"errors"
+	"reflect"
 	"slices"
 	"testing"
 
@@ -12,6 +13,7 @@ import (
 	"github.com/taoworklabs/mmerp/internal/core/record"
 	"github.com/taoworklabs/mmerp/internal/core/setting"
 	"github.com/taoworklabs/mmerp/internal/platform"
+	"github.com/taoworklabs/mmerp/internal/platform/data"
 	"github.com/taoworklabs/mmerp/internal/platform/pgtest"
 )
 
@@ -203,6 +205,40 @@ func TestScopeAndGrants(t *testing.T) {
 	}
 	if v2 := must[iam.Me](t)(s.Me(asAn)).AuthzVersion; v2 == v1 {
 		t.Fatal("revoke kept authz_version")
+	}
+}
+
+// DataScope must agree with Scope for an admin, a unit-scoped user and a user
+// with no role: it only converts, it never decides access on its own.
+func TestDataScopeMatchesScope(t *testing.T) {
+	s, ctx := setup(t)
+	company := must[int64](t)(s.CreateOrgUnit(ctx, iam.OrgUnitInput{Kind: "company", Name: "C"}))
+	a := must[int64](t)(s.CreateOrgUnit(ctx, iam.OrgUnitInput{ParentID: &company, Kind: "department", Name: "A"}))
+
+	viewer := must[int64](t)(s.CreateUser(ctx, "viewer", "Viewer", "long enough"))
+	must[int64](t)(s.GrantRole(ctx, viewer, "hrm", "viewer", &a))
+	noRole := must[int64](t)(s.CreateUser(ctx, "norole", "No Role", "long enough"))
+
+	for _, c := range []struct {
+		name string
+		ctx  context.Context
+	}{
+		{"admin", ctx},
+		{"unit-scoped", platform.WithActor(ctx, viewer)},
+		{"no role", platform.WithActor(ctx, noRole)},
+	} {
+		sc := must[iam.Scope](t)(s.Scope(c.ctx, "hrm", "hrm.employee.view"))
+		ds := must[data.Scope](t)(s.DataScope(c.ctx, "hrm", "hrm.employee.view"))
+		want := data.Scope{}
+		switch {
+		case sc.All:
+			want = data.GrantAll()
+		case len(sc.Units) > 0:
+			want = data.GrantUnits(sc.Units)
+		}
+		if !reflect.DeepEqual(ds, want) {
+			t.Errorf("%s: DataScope = %+v, want %+v (Scope = %+v)", c.name, ds, want, sc)
+		}
 	}
 }
 

@@ -7,7 +7,6 @@ import (
 	"github.com/taoworklabs/mmerp/internal/core/approval"
 	"github.com/taoworklabs/mmerp/internal/core/notification"
 	"github.com/taoworklabs/mmerp/internal/core/record"
-	"github.com/taoworklabs/mmerp/internal/platform"
 )
 
 // due gives a step a due time of hours.
@@ -19,7 +18,7 @@ func due(e approval.Element, hours int32) approval.Element {
 // lapse moves the due time of every step of d's open submission into the past.
 func (f *fixture) lapse(d record.Doc) {
 	f.t.Helper()
-	_, err := platform.DBFrom(f.admin).Exec(f.admin,
+	_, err := f.core.System.Exec(f.admin,
 		`UPDATE approval.instance_steps SET due_at = now() - interval '1 minute' WHERE instance_id = $1 AND due_at IS NOT NULL`, *d.ApprovalTicket)
 	f.check(err)
 }
@@ -126,7 +125,7 @@ func TestOverdueSkipsStaleInstances(t *testing.T) {
 	f.check(err)
 	f.lapse(d)
 	// The document moved on without anyone acting on the submission yet.
-	_, err = platform.DBFrom(f.admin).Exec(f.admin, `UPDATE record.documents SET version = version + 1 WHERE id = $1`, d.ID)
+	_, err = f.core.System.Exec(f.admin, `UPDATE record.documents SET version = version + 1 WHERE id = $1`, d.ID)
 	f.check(err)
 	if n := f.overdue(); n != 0 || f.told("boss", d) != 0 || f.told("submitter", d) != 0 {
 		t.Fatalf("announced %d; boss %d, submitter %d", n, f.told("boss", d), f.told("submitter", d))

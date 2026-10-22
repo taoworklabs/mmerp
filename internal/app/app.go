@@ -101,12 +101,14 @@ func CreateAdmin(ctx context.Context, pool *pgxpool.Pool, login, name, password 
 
 // Env is what every request and job runs with. Single-tenant mode: one database, one product list, one keyring.
 type Env struct {
-	Pool     *pgxpool.Pool
-	Log      *slog.Logger
-	Products []string
-	Keys     *platform.Keyring
-	Files    platform.Files
-	Jobs     *river.Client[pgx.Tx]
+	Pool *pgxpool.Pool // AppPool: read-only outside platform.InTx
+	// SystemPool is River's: it fetches and completes jobs outside our transactions.
+	SystemPool *pgxpool.Pool
+	Log        *slog.Logger
+	Products   []string
+	Keys       *platform.Keyring
+	Files      platform.Files
+	Jobs       *river.Client[pgx.Tx]
 }
 
 func (env Env) context(ctx context.Context) context.Context {
@@ -133,7 +135,7 @@ func NewJobs(env Env, modules []platform.Module) (*river.Client[pgx.Tx], error) 
 		}
 		periodic = append(periodic, m.Periodic...)
 	}
-	client, err := river.NewClient(riverpgxv5.New(env.Pool), &river.Config{
+	client, err := river.NewClient(riverpgxv5.New(env.SystemPool), &river.Config{
 		Queues:                      map[string]river.QueueConfig{river.QueueDefault: {MaxWorkers: 10}},
 		Workers:                     workers,
 		PeriodicJobs:                periodic,

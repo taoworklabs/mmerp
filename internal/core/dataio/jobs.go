@@ -305,7 +305,12 @@ func writeSheet(sh Sheet) (*bytes.Buffer, error) {
 func cleanup(ctx context.Context) error {
 	q := store.New(platform.DBFrom(ctx))
 	disk := files(ctx)
-	expired, err := q.DeleteExpiredFiles(ctx)
+	// Committed before the files go, so no row is left naming a removed file.
+	var expired []string
+	err := platform.InTx(ctx, func(ctx context.Context) (err error) {
+		expired, err = store.New(platform.DBFrom(ctx)).DeleteExpiredFiles(ctx)
+		return err
+	})
 	if err != nil {
 		return err
 	}

@@ -13,12 +13,13 @@ import (
 )
 
 func TestGetFallsBackToDefault(t *testing.T) {
-	ctx := platform.WithDB(t.Context(), pgtest.New(t))
+	pool := pgtest.New(t)
+	ctx := platform.WithDB(t.Context(), pool)
 	s := setting.NewService()
 	if v, err := s.Get(ctx, setting.Locale); err != nil || v != "vi" {
 		t.Fatalf("default locale = %q, %v", v, err)
 	}
-	if _, err := platform.DBFrom(ctx).Exec(ctx, `INSERT INTO setting.values VALUES ('setting.locale', 'en')`); err != nil {
+	if _, err := pgtest.System(t, pool).Exec(ctx, `INSERT INTO setting.values VALUES ('setting.locale', 'en')`); err != nil {
 		t.Fatal(err)
 	}
 	if v, err := s.Get(ctx, setting.Locale); err != nil || v != "en" {

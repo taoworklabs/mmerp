@@ -1236,6 +1236,63 @@ func (q *Queries) LeaveHasAttachment(ctx context.Context, docID int64) (bool, er
 	return exists, err
 }
 
+const leaveListBase = `-- name: LeaveListBase :many
+SELECT r.id, d.number, d.status, d.org_unit_id, r.employee_id,
+       e.code AS employee_code, e.full_name AS employee_name, t.name AS leave_type_name,
+       r.start_date, r.end_date, r.days::text AS days
+FROM hrm.leave_requests r
+JOIN record.documents d ON d.id = r.id
+JOIN hrm.employees e ON e.id = r.employee_id
+JOIN hrm.leave_types t ON t.id = r.leave_type_id
+`
+
+type LeaveListBaseRow struct {
+	ID            int64
+	Number        string
+	Status        string
+	OrgUnitID     int64
+	EmployeeID    int64
+	EmployeeCode  string
+	EmployeeName  string
+	LeaveTypeName string
+	StartDate     pgtype.Date
+	EndDate       pgtype.Date
+	Days          string
+}
+
+// data:base
+func (q *Queries) LeaveListBase(ctx context.Context) ([]LeaveListBaseRow, error) {
+	rows, err := q.db.Query(ctx, leaveListBase)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []LeaveListBaseRow
+	for rows.Next() {
+		var i LeaveListBaseRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Number,
+			&i.Status,
+			&i.OrgUnitID,
+			&i.EmployeeID,
+			&i.EmployeeCode,
+			&i.EmployeeName,
+			&i.LeaveTypeName,
+			&i.StartDate,
+			&i.EndDate,
+			&i.Days,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const legalEntities = `-- name: LegalEntities :many
 SELECT id FROM iam.org_units WHERE kind = 'company' ORDER BY id
 `
@@ -1589,106 +1646,6 @@ func (q *Queries) ListEmployees(ctx context.Context, arg ListEmployeesParams) ([
 			&i.Phone,
 			&i.HireDate,
 			&i.TerminationDate,
-			&i.Total,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
-const listLeaveRequests = `-- name: ListLeaveRequests :many
-SELECT r.id, d.number, d.status, r.employee_id, e.code AS employee_code, e.full_name AS employee_name,
-       t.name AS leave_type_name, r.start_date, r.end_date, r.days::text AS days, count(*) OVER () AS total
-FROM hrm.leave_requests r
-JOIN record.documents d ON d.id = r.id
-JOIN hrm.employees e ON e.id = r.employee_id
-JOIN hrm.leave_types t ON t.id = r.leave_type_id
-WHERE ($1::bool OR d.org_unit_id = ANY($2::bigint[]) OR e.user_id = $3::bigint OR r.employee_id = ANY($4::bigint[]))
-  AND ($5::text = '' OR d.status = $5)
-  AND ($6::text = '' OR d.number ILIKE '%' || $6 || '%' OR e.code ILIKE '%' || $6 || '%' OR e.full_name ILIKE '%' || $6 || '%')
-  AND ($7::bigint IS NULL OR d.org_unit_id = $7)
-  AND ($8::bigint IS NULL OR r.employee_id = $8)
-  AND ($9::date IS NULL OR r.end_date >= $9)
-  AND ($10::date IS NULL OR r.start_date <= $10)
-ORDER BY
-    CASE WHEN $11::text = 'start_date' THEN r.start_date END,
-    CASE WHEN $11 = '-start_date' THEN r.start_date END DESC,
-    CASE WHEN $11 = 'number' THEN d.number END,
-    CASE WHEN $11 = '-number' THEN d.number END DESC,
-    r.id DESC
-LIMIT $13 OFFSET $12
-`
-
-type ListLeaveRequestsParams struct {
-	AllUnits   bool
-	Units      []int64
-	Actor      int64
-	Reports    []int64
-	Status     string
-	Q          string
-	OrgUnitID  pgtype.Int8
-	EmployeeID pgtype.Int8
-	FromDate   pgtype.Date
-	ToDate     pgtype.Date
-	Sort       string
-	Off        int32
-	Lim        int32
-}
-
-type ListLeaveRequestsRow struct {
-	ID            int64
-	Number        string
-	Status        string
-	EmployeeID    int64
-	EmployeeCode  string
-	EmployeeName  string
-	LeaveTypeName string
-	StartDate     pgtype.Date
-	EndDate       pgtype.Date
-	Days          string
-	Total         int64
-}
-
-// Visible: org unit in scope, the actor's own requests, or requests of the employees in @reports.
-func (q *Queries) ListLeaveRequests(ctx context.Context, arg ListLeaveRequestsParams) ([]ListLeaveRequestsRow, error) {
-	rows, err := q.db.Query(ctx, listLeaveRequests,
-		arg.AllUnits,
-		arg.Units,
-		arg.Actor,
-		arg.Reports,
-		arg.Status,
-		arg.Q,
-		arg.OrgUnitID,
-		arg.EmployeeID,
-		arg.FromDate,
-		arg.ToDate,
-		arg.Sort,
-		arg.Off,
-		arg.Lim,
-	)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []ListLeaveRequestsRow
-	for rows.Next() {
-		var i ListLeaveRequestsRow
-		if err := rows.Scan(
-			&i.ID,
-			&i.Number,
-			&i.Status,
-			&i.EmployeeID,
-			&i.EmployeeCode,
-			&i.EmployeeName,
-			&i.LeaveTypeName,
-			&i.StartDate,
-			&i.EndDate,
-			&i.Days,
 			&i.Total,
 		); err != nil {
 			return nil, err

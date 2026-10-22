@@ -37,7 +37,7 @@ func TestProductKinds(t *testing.T) {
 		"vi.json": {Data: []byte(`{"test.pinged.email.subject":"Bạn được gọi","test.pinged.email.body":"Có người gọi bạn."}`)},
 	}))
 	pool := pgtest.New(t)
-	jobs, err := river.NewClient(riverpgxv5.New(pool), &river.Config{Logger: slog.New(slog.NewTextHandler(io.Discard, nil))})
+	jobs, err := river.NewClient(riverpgxv5.New(pgtest.System(t, pool)), &river.Config{Logger: slog.New(slog.NewTextHandler(io.Discard, nil))})
 	check(err)
 	ctx := platform.WithJobs(platform.WithKeyring(platform.WithProducts(platform.WithDB(t.Context(), pool), []string{"test"}), pgtest.Keyring()), jobs)
 	set := setting.NewService()
@@ -67,7 +67,7 @@ func TestProductKinds(t *testing.T) {
 	d, err := rec.Create(admin, "test.doc", record.Header{Date: "2026-03-10", OrgUnitID: unit})
 	check(err)
 
-	check(s.Send(admin, "test.pinged", d.Ref, []int64{user}))
+	check(platform.InTx(admin, func(ctx context.Context) error { return s.Send(ctx, "test.pinged", d.Ref, []int64{user}) }))
 	as := platform.WithActor(ctx, user)
 	page, err := s.List(as, nil)
 	check(err)

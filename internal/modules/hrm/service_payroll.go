@@ -119,7 +119,12 @@ func (s *Service) RecomputePayroll(ctx context.Context, id int64, version int32)
 	if err := s.require(ctx, PermSalaryView, p.LegalEntityID); err != nil {
 		return 0, err
 	}
-	return platform.Enqueue(ctx, payrollComputeArgs{ID: id, Version: d.Version})
+	var job int64
+	err = platform.InTx(ctx, func(ctx context.Context) (err error) {
+		job, err = platform.Enqueue(ctx, payrollComputeArgs{ID: id, Version: d.Version})
+		return err
+	})
+	return job, err
 }
 
 // editablePayroll reads a draft the actor may edit, at the version they saw.

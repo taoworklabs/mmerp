@@ -1,6 +1,7 @@
 package audit_test
 
 import (
+	"context"
 	"encoding/base64"
 	"encoding/json"
 	"strings"
@@ -17,15 +18,19 @@ func TestRecordChangesEncryptsSensitiveValues(t *testing.T) {
 	s := audit.NewService()
 	ref := audit.Ref{Type: "hrm.employee", ID: 7}
 	nid := "079123456789"
-	err := s.RecordChanges(ctx, "hrm.employee_updated", ref, []audit.Change{
-		{Field: "full_name", Old: "An", New: "Ân"},
-		{Field: "phone", Old: "1", New: "1"},
-		{Field: "national_id", Old: nil, New: &nid, Sensitive: true},
+	err := platform.InTx(ctx, func(ctx context.Context) error {
+		return s.RecordChanges(ctx, "hrm.employee_updated", ref, []audit.Change{
+			{Field: "full_name", Old: "An", New: "Ân"},
+			{Field: "phone", Old: "1", New: "1"},
+			{Field: "national_id", Old: nil, New: &nid, Sensitive: true},
+		})
 	})
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := s.RecordChanges(ctx, "hrm.employee_updated", ref, []audit.Change{{Field: "phone", Old: "1", New: "1"}}); err != nil {
+	if err := platform.InTx(ctx, func(ctx context.Context) error {
+		return s.RecordChanges(ctx, "hrm.employee_updated", ref, []audit.Change{{Field: "phone", Old: "1", New: "1"}})
+	}); err != nil {
 		t.Fatal(err)
 	}
 

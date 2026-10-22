@@ -25,10 +25,22 @@ const defaultURL = "postgres://mmerp:mmerp@localhost:5433/mmerp?sslmode=disable"
 // Serialises template creation across test binaries running in parallel.
 const templateLockKey = 7_346_201_002
 
-// New returns a pool on a fresh database cloned from the migrated template.
+// New returns an AppPool on a fresh database cloned from the migrated template.
 func New(t testing.TB) *pgxpool.Pool {
 	t.Helper()
-	return create(t, template(t))
+	return create(t, template(t), platform.AppPool)
+}
+
+// System returns a SystemPool on app's database, for River, migrations and seeding
+// rows no service writes.
+func System(t testing.TB, app *pgxpool.Pool) *pgxpool.Pool {
+	t.Helper()
+	pool, err := platform.NewPool(t.Context(), app.Config().ConnString(), platform.SystemPool, nil)
+	if err != nil {
+		t.Fatalf("pgtest: %v", err)
+	}
+	t.Cleanup(pool.Close)
+	return pool
 }
 
 // AwaitLockWait returns once a session on db's database waits for a lock, so a race
@@ -48,10 +60,10 @@ func AwaitLockWait(t testing.TB, db platform.Conn) {
 	t.Fatal("pgtest: no session waits for a lock")
 }
 
-// Empty returns a pool on a fresh database with no migrations applied.
+// Empty returns a SystemPool on a fresh database with no migrations applied, to migrate.
 func Empty(t testing.TB) *pgxpool.Pool {
 	t.Helper()
-	return create(t, "template0")
+	return create(t, "template0", platform.SystemPool)
 }
 
 func baseURL() string {
@@ -71,7 +83,7 @@ func admin(t testing.TB) *pgx.Conn {
 	return conn
 }
 
-func create(t testing.TB, tpl string) *pgxpool.Pool {
+func create(t testing.TB, tpl string, role platform.PoolRole) *pgxpool.Pool {
 	t.Helper()
 	ctx := t.Context()
 	name := "t_" + rand.Text()[:16]
@@ -79,7 +91,7 @@ func create(t testing.TB, tpl string) *pgxpool.Pool {
 	if _, err := conn.Exec(ctx, fmt.Sprintf(`CREATE DATABASE %q TEMPLATE %q`, name, tpl)); err != nil {
 		t.Fatalf("pgtest: create database: %v", err)
 	}
-	pool, err := pgxpool.New(ctx, urlFor(t, name))
+	pool, err := platform.NewPool(ctx, urlFor(t, name), role, nil)
 	if err != nil {
 		t.Fatalf("pgtest: %v", err)
 	}

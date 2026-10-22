@@ -48,5 +48,7 @@ func (s *Service) SetListSettings(ctx context.Context, key string, in ListSettin
 		return err
 	}
 	id, _ := platform.ActorFrom(ctx)
-	return store.New(platform.DBFrom(ctx)).SetListSettings(ctx, store.SetListSettingsParams{UserID: id, ListKey: key, Settings: raw})
+	return platform.InTx(ctx, func(ctx context.Context) error {
+		return store.New(platform.DBFrom(ctx)).SetListSettings(ctx, store.SetListSettingsParams{UserID: id, ListKey: key, Settings: raw})
+	})
 }

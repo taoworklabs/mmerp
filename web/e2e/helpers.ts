@@ -19,5 +19,5 @@ export async function signIn(page: Page, password = admin.password) {
 export async function signedIn(page: Page, url = '/') {
   await page.goto(url)
   await signIn(page)
-  await expect(page.getByRole('button', { name: 'Tài khoản' })).toBeVisible()
+  await expect(page.getByRole('button', { name: /^Tài khoản:/ })).toBeVisible()
 }

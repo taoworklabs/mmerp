@@ -13,7 +13,7 @@ import (
 // any document id stands in for the payroll.
 func (f *fixture) closePeriod(start, end string, doc int64) {
 	f.t.Helper()
-	if _, err := f.pool.Exec(f.admin, `INSERT INTO hrm.payroll_periods (legal_entity_id, period_start, period_end, posted_payroll_id)
+	if _, err := f.system.Exec(f.admin, `INSERT INTO hrm.payroll_periods (legal_entity_id, period_start, period_end, posted_payroll_id)
 		VALUES ($1, $2, $3, $4)`, f.c, start, end, doc); err != nil {
 		f.t.Fatal(err)
 	}

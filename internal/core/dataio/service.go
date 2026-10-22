@@ -108,7 +108,12 @@ func (s *Service) StartExport(ctx context.Context, kind string, params json.RawM
 	if params, ok = jsonObject(params); !ok {
 		return 0, ErrInvalidParams
 	}
-	return platform.Enqueue(ctx, exportArgs{Target: kind, Product: exp.Product, Params: params})
+	var job int64
+	err := platform.InTx(ctx, func(ctx context.Context) (err error) {
+		job, err = platform.Enqueue(ctx, exportArgs{Target: kind, Product: exp.Product, Params: params})
+		return err
+	})
+	return job, err
 }
 
 // Template returns an empty import file: the header row only.

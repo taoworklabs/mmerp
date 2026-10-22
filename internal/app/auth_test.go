@@ -21,7 +21,7 @@ import (
 // env builds what the app runs with; its job client only enqueues (see work).
 func env(t *testing.T, pool *pgxpool.Pool, products []string) app.Env {
 	t.Helper()
-	e := app.Env{Pool: pool, Log: slog.New(slog.NewTextHandler(io.Discard, nil)), Products: products, Keys: pgtest.Keyring(),
+	e := app.Env{Pool: pool, SystemPool: pgtest.System(t, pool), Log: slog.New(slog.NewTextHandler(io.Discard, nil)), Products: products, Keys: pgtest.Keyring(),
 		Files: platform.Files{Dir: t.TempDir()}}
 	var err error
 	if e.Jobs, err = app.NewJobs(e, app.Modules()); err != nil {

@@ -186,7 +186,9 @@ func (s *Service) Open(ctx context.Context, id int64) (Attachment, *os.File, err
 		return Attachment{}, nil, err
 	}
 	ref := record.Ref{Type: row.DocType, ID: row.DocID}
-	if err := s.d.Audit.RecordFor(ctx, "attachment.downloaded", audit.Ref(ref), map[string]any{"id": id}); err != nil {
+	if err := platform.InTx(ctx, func(ctx context.Context) error {
+		return s.d.Audit.RecordFor(ctx, "attachment.downloaded", audit.Ref(ref), map[string]any{"id": id})
+	}); err != nil {
 		_ = f.Close()
 		return Attachment{}, nil, err
 	}

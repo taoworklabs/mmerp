@@ -123,8 +123,10 @@ func (s *Service) SendTestMail(ctx context.Context) error {
 	if !r.Email.Valid {
 		return errNoAddress
 	}
-	_, err = platform.Enqueue(ctx, emailArgs{TestTo: actor})
-	return err
+	return platform.InTx(ctx, func(ctx context.Context) error {
+		_, err := platform.Enqueue(ctx, emailArgs{TestTo: actor})
+		return err
+	})
 }
 
 // message is one email: a subject and a plain-text body.
