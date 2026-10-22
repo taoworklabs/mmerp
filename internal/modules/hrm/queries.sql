@@ -135,28 +135,15 @@ UPDATE hrm.leave_requests SET deducted = CAST(@deducted::text AS numeric) WHERE 
 -- name: DeleteLeaveRequest :exec
 DELETE FROM hrm.leave_requests WHERE id = $1;
 
--- name: ListLeaveRequests :many
--- Visible: org unit in scope, the actor's own requests, or requests of the employees in @reports.
-SELECT r.id, d.number, d.status, r.employee_id, e.code AS employee_code, e.full_name AS employee_name,
-       t.name AS leave_type_name, r.start_date, r.end_date, r.days::text AS days, count(*) OVER () AS total
+-- name: LeaveListBase :many
+-- data:base
+SELECT r.id, d.number, d.status, d.org_unit_id, r.employee_id,
+       e.code AS employee_code, e.full_name AS employee_name, t.name AS leave_type_name,
+       r.start_date, r.end_date, r.days::text AS days
 FROM hrm.leave_requests r
 JOIN record.documents d ON d.id = r.id
 JOIN hrm.employees e ON e.id = r.employee_id
-JOIN hrm.leave_types t ON t.id = r.leave_type_id
-WHERE (@all_units::bool OR d.org_unit_id = ANY(@units::bigint[]) OR e.user_id = @actor::bigint OR r.employee_id = ANY(@reports::bigint[]))
-  AND (@status::text = '' OR d.status = @status)
-  AND (@q::text = '' OR d.number ILIKE '%' || @q || '%' OR e.code ILIKE '%' || @q || '%' OR e.full_name ILIKE '%' || @q || '%')
-  AND (sqlc.narg(org_unit_id)::bigint IS NULL OR d.org_unit_id = sqlc.narg(org_unit_id))
-  AND (sqlc.narg(employee_id)::bigint IS NULL OR r.employee_id = sqlc.narg(employee_id))
-  AND (sqlc.narg(from_date)::date IS NULL OR r.end_date >= sqlc.narg(from_date))
-  AND (sqlc.narg(to_date)::date IS NULL OR r.start_date <= sqlc.narg(to_date))
-ORDER BY
-    CASE WHEN @sort::text = 'start_date' THEN r.start_date END,
-    CASE WHEN @sort = '-start_date' THEN r.start_date END DESC,
-    CASE WHEN @sort = 'number' THEN d.number END,
-    CASE WHEN @sort = '-number' THEN d.number END DESC,
-    r.id DESC
-LIMIT @lim OFFSET @off;
+JOIN hrm.leave_types t ON t.id = r.leave_type_id;
 
 -- name: Reports :many
 -- Employees below the actor's own employee record, at any depth.
