@@ -1,0 +1,10 @@
+scripts/lint-fixtures/go/fixture.go:16 depguard
+scripts/lint-fixtures/go/fixture.go:31 forbidigo
+scripts/lint-fixtures/go/fixture.go:33 forbidigo
+scripts/lint-fixtures/go/fixture.go:36 forbidigo
+scripts/lint-fixtures/go/fixture.go:38 forbidigo
+scripts/lint-fixtures/go/fixture.go:41 forbidigo
+scripts/lint-fixtures/go/fixture.go:44 forbidigo
+scripts/lint-fixtures/go/fixture.go:46 forbidigo
+scripts/lint-fixtures/go/fixture.go:47 forbidigo
+scripts/lint-fixtures/go/fixture.go:48 forbidigo
