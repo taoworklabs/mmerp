@@ -84,8 +84,8 @@ linters:
           msg: get the connection from platform.DBFrom(ctx)
         - pattern: ^float(32|64)$
           msg: money is int64 in minor units; rates use shopspring/decimal
-        # Data access (spec: lint enforcement). store.New and platform.DBFrom are not
-        # switched on for any module yet; see the exclusions below.
+        # Data access. store.New and platform.DBFrom are not switched on for
+        # any module yet; see the exclusions below.
         - pattern: ^store\.New$
           msg: query through the data engine (internal/platform/data) once your module migrates
         - pattern: ^platform\.DBFrom$
@@ -113,10 +113,9 @@ linters:
       - path: internal/core/printing/page\.go
         linters: [forbidigo]
         text: float
-      # Data access (spec: lint enforcement). Begin*, River Insert/InsertTx and
-      # Static/Grant* stay allowed in infrastructure: internal/platform/**,
-      # internal/app/**, cmd/**, pgtest/**, coretest/**, generated *.gen.go and
-      # queries.sql.go.
+      # Data access. Begin*, River Insert/InsertTx and Static/Grant* stay
+      # allowed in infrastructure: internal/platform/**, internal/app/**,
+      # cmd/**, pgtest/**, coretest/**, generated *.gen.go and queries.sql.go.
       - path: ^internal/platform/|^internal/app/|^cmd/|/pgtest/|/coretest/|\.gen\.go$|/queries\.sql\.go$
         linters: [forbidigo]
         text: \.Begin(Tx)?
