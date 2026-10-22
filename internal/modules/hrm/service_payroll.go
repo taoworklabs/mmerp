@@ -461,8 +461,8 @@ func (s *Service) SavePayrollAdjustments(ctx context.Context, id int64, in Payro
 // Payrolls lists the payrolls of the legal entities in the actor's scope, latest period first.
 func (s *Service) Payrolls(ctx context.Context, f PayrollFilter) (PayrollList, error) {
 	out := PayrollList{Items: []PayrollListItem{}}
-	sc, err := s.d.IAM.Scope(ctx, "hrm", PermPayrollView)
-	if err != nil || !sc.Any() {
+	sc, err := s.d.IAM.DataScope(ctx, "hrm", PermPayrollView)
+	if err != nil {
 		return out, err
 	}
 	var start pgtype.Date
@@ -471,17 +471,17 @@ func (s *Service) Payrolls(ctx context.Context, f PayrollFilter) (PayrollList, e
 			return out, err
 		}
 	}
-	rows, err := store.New(platform.DBFrom(ctx)).ListPayrolls(ctx, store.ListPayrollsParams{
-		AllUnits: sc.All, Units: sc.Units, Status: f.Status, LegalEntityID: pgtype.Int8{Int64: f.LegalEntityID, Valid: f.LegalEntityID != 0},
-		PeriodStart: start, Lim: f.Limit(), Off: f.Offset(),
-	})
-	for _, r := range rows {
-		out.Total = r.Total
+	page, err := payrollList.Run(ctx, payrollQuery(sc, f, start))
+	if err != nil {
+		return out, err
+	}
+	out.Total = page.Total
+	for _, r := range page.Items {
 		out.Items = append(out.Items, PayrollListItem{ID: r.ID, Number: r.Number, Status: r.Status, LegalEntityID: r.LegalEntityID,
 			LegalEntityName: r.LegalEntityName, PeriodStart: *platform.DatePtr(r.PeriodStart), PeriodEnd: *platform.DatePtr(r.PeriodEnd),
 			ComputedAt: platform.Instant(r.ComputedAt)})
 	}
-	return out, err
+	return out, nil
 }
 
 // Payroll returns a payroll with its department totals; one the actor may not view does not

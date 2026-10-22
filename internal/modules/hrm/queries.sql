@@ -455,18 +455,13 @@ WHERE p.id = $1;
 -- name: DeletePayroll :exec
 DELETE FROM hrm.payrolls WHERE id = $1;
 
--- name: ListPayrolls :many
-SELECT p.id, d.number, d.status, d.legal_entity_id, u.name AS legal_entity_name, p.period_start, p.period_end,
-       p.computed_at, count(*) OVER () AS total
+-- name: PayrollListBase :many
+-- data:base
+SELECT p.id, d.number, d.status, d.legal_entity_id, u.name AS legal_entity_name,
+       p.period_start, p.period_end, p.computed_at
 FROM hrm.payrolls p
 JOIN record.documents d ON d.id = p.id
-JOIN iam.org_units u ON u.id = d.legal_entity_id
-WHERE (@all_units::bool OR d.legal_entity_id = ANY(@units::bigint[]))
-  AND (@status::text = '' OR d.status = @status)
-  AND (sqlc.narg(legal_entity_id)::bigint IS NULL OR d.legal_entity_id = sqlc.narg(legal_entity_id))
-  AND (sqlc.narg(period_start)::date IS NULL OR p.period_start = sqlc.narg(period_start))
-ORDER BY p.period_start DESC, u.name, p.id DESC
-LIMIT @lim OFFSET @off;
+JOIN iam.org_units u ON u.id = d.legal_entity_id;
 
 -- name: SavePayrollResult :exec
 UPDATE hrm.payrolls SET computed_at = now(), inputs_hash = @inputs_hash WHERE id = @id;

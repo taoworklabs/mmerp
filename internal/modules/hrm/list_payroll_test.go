@@ -191,9 +191,9 @@ func TestPayrollListPaging(t *testing.T) {
 	if err != nil || list.Total != 7 || len(list.Items) != 7 {
 		t.Fatalf("page 1 = %+v, %v", list, err)
 	}
-	// Today, a page past the end has no rows to count from, so Total comes back 0.
+	// A page past the end still counts the true total.
 	past, err := f.hrm.Payrolls(f.admin, hrm.PayrollFilter{Paging: platform.Paging{Page: 2, PageSize: 20}})
-	if err != nil || len(past.Items) != 0 || past.Total != 0 {
+	if err != nil || len(past.Items) != 0 || past.Total != 7 {
 		t.Fatalf("page past the end = %+v, %v", past, err)
 	}
 }

@@ -1813,80 +1813,6 @@ func (q *Queries) ListOvertimeRequests(ctx context.Context, arg ListOvertimeRequ
 	return items, nil
 }
 
-const listPayrolls = `-- name: ListPayrolls :many
-SELECT p.id, d.number, d.status, d.legal_entity_id, u.name AS legal_entity_name, p.period_start, p.period_end,
-       p.computed_at, count(*) OVER () AS total
-FROM hrm.payrolls p
-JOIN record.documents d ON d.id = p.id
-JOIN iam.org_units u ON u.id = d.legal_entity_id
-WHERE ($1::bool OR d.legal_entity_id = ANY($2::bigint[]))
-  AND ($3::text = '' OR d.status = $3)
-  AND ($4::bigint IS NULL OR d.legal_entity_id = $4)
-  AND ($5::date IS NULL OR p.period_start = $5)
-ORDER BY p.period_start DESC, u.name, p.id DESC
-LIMIT $7 OFFSET $6
-`
-
-type ListPayrollsParams struct {
-	AllUnits      bool
-	Units         []int64
-	Status        string
-	LegalEntityID pgtype.Int8
-	PeriodStart   pgtype.Date
-	Off           int32
-	Lim           int32
-}
-
-type ListPayrollsRow struct {
-	ID              int64
-	Number          string
-	Status          string
-	LegalEntityID   int64
-	LegalEntityName string
-	PeriodStart     pgtype.Date
-	PeriodEnd       pgtype.Date
-	ComputedAt      pgtype.Timestamptz
-	Total           int64
-}
-
-func (q *Queries) ListPayrolls(ctx context.Context, arg ListPayrollsParams) ([]ListPayrollsRow, error) {
-	rows, err := q.db.Query(ctx, listPayrolls,
-		arg.AllUnits,
-		arg.Units,
-		arg.Status,
-		arg.LegalEntityID,
-		arg.PeriodStart,
-		arg.Off,
-		arg.Lim,
-	)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []ListPayrollsRow
-	for rows.Next() {
-		var i ListPayrollsRow
-		if err := rows.Scan(
-			&i.ID,
-			&i.Number,
-			&i.Status,
-			&i.LegalEntityID,
-			&i.LegalEntityName,
-			&i.PeriodStart,
-			&i.PeriodEnd,
-			&i.ComputedAt,
-			&i.Total,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
 const listTimesheets = `-- name: ListTimesheets :many
 SELECT t.id, d.number, d.status, t.org_unit_id, u.name AS org_unit_name, t.period_start, t.period_end, count(*) OVER () AS total
 FROM hrm.timesheets t
@@ -2394,6 +2320,55 @@ func (q *Queries) PayrollLines(ctx context.Context, payrollID int64) ([]PayrollL
 			&i.Data,
 			&i.Code,
 			&i.FullName,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const payrollListBase = `-- name: PayrollListBase :many
+SELECT p.id, d.number, d.status, d.legal_entity_id, u.name AS legal_entity_name,
+       p.period_start, p.period_end, p.computed_at
+FROM hrm.payrolls p
+JOIN record.documents d ON d.id = p.id
+JOIN iam.org_units u ON u.id = d.legal_entity_id
+`
+
+type PayrollListBaseRow struct {
+	ID              int64
+	Number          string
+	Status          string
+	LegalEntityID   int64
+	LegalEntityName string
+	PeriodStart     pgtype.Date
+	PeriodEnd       pgtype.Date
+	ComputedAt      pgtype.Timestamptz
+}
+
+// data:base
+func (q *Queries) PayrollListBase(ctx context.Context) ([]PayrollListBaseRow, error) {
+	rows, err := q.db.Query(ctx, payrollListBase)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []PayrollListBaseRow
+	for rows.Next() {
+		var i PayrollListBaseRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Number,
+			&i.Status,
+			&i.LegalEntityID,
+			&i.LegalEntityName,
+			&i.PeriodStart,
+			&i.PeriodEnd,
+			&i.ComputedAt,
 		); err != nil {
 			return nil, err
 		}
