@@ -512,3 +512,72 @@ The spike ran on branch `spike/data-engine` (commits `50285cf`, `d856006`, `b25f
 - It also returns `Total = 0` whenever the page is empty.
 - With a selective filter, every strategy stays under 1.2 ms at p95.
 - **Note for the vertical slice:** an unfiltered page at 200 000 rows takes 160–240 ms. The slice must examine indexes on the sort columns.
+
+## Vertical slice results (2026-10-22)
+
+The leave request list runs on the engine (commit `b676cbb`). Engine commits run from `cadb083` to `bee23dc`.
+
+**Correctness.**
+- Old and new were compared on 1 224 combinations: 6 actors (admin, scoped HR, a manager two levels deep, a plain employee, a user with no employee, …) × every filter, search, sort and paging case.
+- The same ids come back in the same order. Totals match, except a page past the end, which now returns the true total. That is a deliberate change.
+- The old query `ListLeaveRequests` is removed. `Reports` stays, because overtime still uses it.
+
+**Visibility shape (implementation ruling).** The actor's own requests and their reports' requests are one condition: `b."employee_id" = ANY(ARRAY(<the actor's employee and everyone below it, recursive>))`. The actor is bound as a parameter.
+- This is equivalent to the old `e.user_id = actor OR employee_id = ANY(reports)` because `hrm.employees.user_id` is `UNIQUE`.
+- It is 4× faster for managers.
+
+**Performance.** 200 000 requests; p95 sequential / p95 at 8 clients / shared-hit buffers; times in ms.
+
+| case | custom old | custom new | generic old | generic new |
+|---|---|---|---|---|
+| no filter | 1128 / 778 / 4684 | 176 / 573 / 6925 | 1756 / 4103 / 1.60M | 436 / 2344 / 7187 |
+| employee | 1.3 / 3.4 / 167 | 1.3 / 2.5 / 167 | 38 / 60 / 1987 | 1.0 / 2.1 / 167 |
+| status draft | 105 / 412 / 4684 | 99 / 353 / 9619 | 860 / 1993 / 882k | 278 / 432 / 9619 |
+| q | 271 / 1156 / 4816 | 274 / 1306 / 4816 | 734 / 2641 / 1.40M | 272 / 1306 / 4821 |
+| sort start_date | 497 / 1639 / 4684 | 218 / 679 / 4518 | 1545 / 3706 / 1.60M | 724 / 1325 / 7187 |
+| sort number | 628 / 1220 / 4684 | 223 / 872 / 8136 | 897 / 3011 / 1.60M | 606 / 2816 / 7194 |
+| sort -number | 705 / 1395 / 4684 | 557 / 2177 / 5761 | 2310 / 7217 / 1.60M | 762 / 2335 / 7194 |
+| offset 10000 | 552 / 1114 / 4684 | 269 / 743 / 51302 | 2090 / 5997 / 1.60M | 763 / 1160 / 13967 |
+| scoped HR (5 units) | 183 / 704 / 4802 | 219 / 796 / 9627 | 737 / 2838 / 1.42M | 268 / 946 / 9627 |
+| manager (no units) | 166 / 640 / 4806 | 45 / 85 / 40903 | 1324 / 7505 / 1.41M | 44 / 86 / 40903 |
+
+- **Generic plan.** The new list is better on every case: about 2–30× faster, with 100–200× fewer buffers.
+  - With pgx's statement cache, Postgres switches the old catch-all query to its generic plan after 5 executions (seen in `pg_prepared_statements`). The generic columns are therefore the realistic baseline.
+- **Custom plan: needs an explicit decision at the gate.** Three cases cross the spec's regression thresholds, all because the count runs as a second statement:
+  - scoped HR: sequential p95 +20%, buffers 2×;
+  - status draft: buffers 2×;
+  - sort -number: p95 at 8 clients +56%.
+
+  Two other cases show more buffers but are faster. They come from index nested loops, and every buffer is a shared hit:
+  - offset 10000: 11× buffers;
+  - manager: 8.5× buffers.
+
+  No index or migration was added.
+- **Statements:** 15 distinct across the matrix.
+- **Allocations:** 576 per call unfiltered, 403 with the employee filter.
+- **Harness:** a full run takes about 70 min. It needs a Postgres with at least 1 GB `/dev/shm`; at the compose default of 64 MB, parallel queries fail with `53100` under 8 clients.
+
+**Writes found outside `InTx` and now wrapped** (Task 2):
+- the job-end notification;
+- the dataio cleanup job;
+- the attachment download audit;
+- the failed-login audit;
+- `iam.SetLocale`;
+- `iam.SetListSettings`;
+- `notification.MarkRead`;
+- `notification.MarkAllRead`.
+
+Three `Enqueue` callers that had no transaction now enqueue in their own `InTx`: `RecomputePayroll`, `StartExport` and `SendTestMail`.
+
+**Changes from the plan made during the slice:**
+- The lint ban on `JobsFrom` is narrowed to River `Insert`/`InsertTx`, because dataio reads jobs through `JobsFrom`.
+- The depguard rule targets `riverdriver/riverpgxv5`.
+- `CREATE TEMP TABLE` is refused outside a transaction.
+
+**For the follow-up plan:**
+- Decide the custom-plan trade-off before migrating the other 9 lists. Options:
+  - accept it;
+  - skip the count when the client does not need a total;
+  - add sort indexes, which needs a migration.
+- Add a list-level visibility table test (depth-2, siblings, scoped HR plus own requests). It was not committed after the comparison test was removed.
+- The deferred minors are listed in the execution ledger. One must be fixed before merge: two `.golangci.yml` comments mention "spec".
