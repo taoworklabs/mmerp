@@ -575,9 +575,5 @@ Three `Enqueue` callers that had no transaction now enqueue in their own `InTx`:
 - `CREATE TEMP TABLE` is refused outside a transaction.
 
 **For the follow-up plan:**
-- Decide the custom-plan trade-off before migrating the other 9 lists. Options:
-  - accept it;
-  - skip the count when the client does not need a total;
-  - add sort indexes, which needs a migration.
-- Add a list-level visibility table test (depth-2, siblings, scoped HR plus own requests). It was not committed after the comparison test was removed.
-- The deferred minors are listed in the execution ledger. One must be fixed before merge: two `.golangci.yml` comments mention "spec".
+- Custom-plan trade-off before migrating the other 9 lists. Open: pending product-owner decision (accept / count only when needed / sort indexes).
+- The deferred minors are listed in the execution ledger.
