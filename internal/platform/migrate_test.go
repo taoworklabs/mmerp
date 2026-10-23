@@ -42,16 +42,16 @@ func versions(t *testing.T, pool *pgxpool.Pool) []string {
 func TestMigrateAppliesInOrderOnce(t *testing.T) {
 	pool := pgtest.Empty(t)
 	fsys := sqlFS(map[string]string{
-		"0002_demo_add_col.sql": `ALTER TABLE demo.items ADD COLUMN name text;`,
-		"0001_demo_init.sql":    `CREATE SCHEMA demo; CREATE TABLE demo.items (id int);`,
-		"README.md":             `ignored`,
+		"20260101000002_demo_add_col.sql": `ALTER TABLE demo.items ADD COLUMN name text;`,
+		"20260101000001_demo_init.sql":    `CREATE SCHEMA demo; CREATE TABLE demo.items (id int);`,
+		"README.md":                       `ignored`,
 	})
 	for range 2 {
 		if err := platform.Migrate(t.Context(), pool, fsys); err != nil {
 			t.Fatal(err)
 		}
 	}
-	if got := versions(t, pool); strings.Join(got, ",") != "0001_demo_init.sql,0002_demo_add_col.sql" {
+	if got := versions(t, pool); strings.Join(got, ",") != "20260101000001_demo_init.sql,20260101000002_demo_add_col.sql" {
 		t.Fatalf("versions = %v", got)
 	}
 	var river bool
@@ -63,10 +63,10 @@ func TestMigrateAppliesInOrderOnce(t *testing.T) {
 func TestMigrateRollsBackEverythingOnFailure(t *testing.T) {
 	pool := pgtest.Empty(t)
 	err := platform.Migrate(t.Context(), pool, sqlFS(map[string]string{
-		"0001_demo_init.sql":   `CREATE SCHEMA demo;`,
-		"0002_demo_broken.sql": `CREATE TABLE nowhere.items (id int);`,
+		"20260101000001_demo_init.sql":   `CREATE SCHEMA demo;`,
+		"20260101000002_demo_broken.sql": `CREATE TABLE nowhere.items (id int);`,
 	}))
-	if err == nil || !strings.Contains(err.Error(), "0002_demo_broken.sql") {
+	if err == nil || !strings.Contains(err.Error(), "20260101000002_demo_broken.sql") {
 		t.Fatalf("err = %v", err)
 	}
 	var n int
@@ -81,12 +81,12 @@ func TestMigrateRollsBackEverythingOnFailure(t *testing.T) {
 func TestMigrateRefusesUnknownAppliedVersion(t *testing.T) {
 	pool := pgtest.Empty(t)
 	if err := platform.Migrate(t.Context(), pool, sqlFS(map[string]string{
-		"0001_demo_init.sql": `SELECT 1;`,
-		"0002_demo_next.sql": `SELECT 1;`,
+		"20260101000001_demo_init.sql": `SELECT 1;`,
+		"20260101000002_demo_next.sql": `SELECT 1;`,
 	})); err != nil {
 		t.Fatal(err)
 	}
-	err := platform.Migrate(t.Context(), pool, sqlFS(map[string]string{"0001_demo_init.sql": `SELECT 1;`}))
+	err := platform.Migrate(t.Context(), pool, sqlFS(map[string]string{"20260101000001_demo_init.sql": `SELECT 1;`}))
 	if err == nil || !strings.Contains(err.Error(), "schema_newer_than_binary") {
 		t.Fatalf("err = %v", err)
 	}
@@ -100,23 +100,8 @@ func TestMigrateRejectsBadFileName(t *testing.T) {
 	}
 }
 
-func TestMigrateRunsTimestampedAfterNumbered(t *testing.T) {
-	pool := pgtest.Empty(t)
-	err := platform.Migrate(t.Context(), pool, sqlFS(map[string]string{
-		"20261023143005_core_second.sql": `INSERT INTO t VALUES (2);`,
-		"0001_core_first.sql":            `CREATE TABLE t (v int); INSERT INTO t VALUES (1);`,
-	}))
-	if err != nil {
-		t.Fatal(err)
-	}
-	if got := versions(t, pool); len(got) != 2 || got[1] != "20261023143005_core_second.sql" {
-		t.Fatalf("versions = %v", got)
-	}
-}
-
-// New migrations take a timestamp; the numbered series is closed.
-func TestMigrateRejectsNewNumberedOrMalformedNames(t *testing.T) {
-	for _, name := range []string{"0045_core_late.sql", "045_core_x.sql", "2026102314300_core_x.sql", "20261023143005_Core_x.sql"} {
+func TestMigrateRejectsMalformedNames(t *testing.T) {
+	for _, name := range []string{"0001_core_numbered.sql", "045_core_x.sql", "2026102314300_core_x.sql", "20261023143005_Core_x.sql"} {
 		pool := pgtest.Empty(t)
 		err := platform.Migrate(t.Context(), pool, sqlFS(map[string]string{name: `SELECT 1;`}))
 		if err == nil || !strings.Contains(err.Error(), name) {
@@ -128,7 +113,7 @@ func TestMigrateRejectsNewNumberedOrMalformedNames(t *testing.T) {
 func TestMigrateConcurrentRunsApplyOnce(t *testing.T) {
 	pool := pgtest.Empty(t)
 	// A non-idempotent statement: running it twice fails.
-	fsys := sqlFS(map[string]string{"0001_demo_init.sql": `CREATE SCHEMA demo;`})
+	fsys := sqlFS(map[string]string{"20260101000001_demo_init.sql": `CREATE SCHEMA demo;`})
 	var wg sync.WaitGroup
 	errs := make([]error, 4)
 	for i := range errs {
