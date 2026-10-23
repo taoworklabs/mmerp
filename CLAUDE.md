@@ -109,7 +109,7 @@ CI (GitHub Actions, `.github/workflows/ci.yml`) runs `make gen` (fails on diff),
 - **Comments are short.** Explain why, not what, in a line or two. Never reference repository documents, ADRs or roadmap milestones in comments.
 - APIs return stable error codes with parameters, never sentences.
 - Business dates are `date`; instants are `timestamptz`; "today" uses the tenant time zone.
-- Migrations are SQL only, never edited after release, and never down-migrated. New ones are created with `make migration` (timestamp names; the numbered `0001`–`0044` are closed). Parallel branches may land out of creation order: two migrations touching the same table must be coordinated by their authors.
+- Migrations are SQL only, never edited after release, and never down-migrated. New ones are created with `make migration` (timestamp names); the schema before 2026-10-23 is one baseline, `20261023000000_all_baseline.sql`. Parallel branches may land out of creation order: two migrations touching the same table must be coordinated by their authors.
 
 ## Workflow
 

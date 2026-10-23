@@ -17,7 +17,7 @@ internal/
 ├── modules/          # business modules of each product, including accounting
 │   └── <module>/
 └── integration/      # one package per external provider (see platform.md)
-migrations/           # one directory, global ordering by file name: YYYYMMDDHHMMSS_<module>_<description>.sql (UTC creation time, `make migration`); 0001–0044 keep their numbers
+migrations/           # one directory, global ordering by file name: YYYYMMDDHHMMSS_<module>_<description>.sql (UTC creation time, `make migration`), starting from one baseline
 ```
 
 | Layer | Always on | Knows business logic | Has tables |
