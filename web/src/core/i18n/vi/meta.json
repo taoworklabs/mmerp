@@ -110,6 +110,9 @@
   "core.nav.print_templates": "Mẫu in",
   "core.nav.code_series": "Dãy mã",
   "core.jobs.kind.print": "In PDF",
+  "partner.role.viewer": "Xem đối tác",
+  "partner.role.editor": "Sửa đối tác",
+  "partner.partner.code_series": "Đối tác",
   "item.role.viewer": "Xem danh mục hàng hóa",
   "item.role.admin": "Quản lý danh mục hàng hóa",
   "item.item.code_series": "Hàng hóa, dịch vụ"

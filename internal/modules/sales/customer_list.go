@@ -26,6 +26,9 @@ func customerQuery(sc data.Scope, f CustomerFilter) data.Query {
 	a := boolFilter(f.Active)
 	return data.Query{
 		Scope: sc, Q: f.Q, Sort: f.Sort, Paging: f.Paging,
-		Where: data.When(a.Valid, data.Eq("active", a.Bool)),
+		Where: data.And(
+			data.When(a.Valid, data.Eq("active", a.Bool)),
+			data.When(f.PartnerID != 0, data.Eq("partner_id", f.PartnerID)),
+		),
 	}
 }

@@ -19,7 +19,7 @@ test('submitting a quotation with unsaved edits asks to save first and keeps the
   const item = await created(api.post('/api/items', { data: { code: `G${run}`, name: `Giấy A4 ${run}`, unit: 'ram', price: 70000, vat_rate: '10', active: true } }))
   const customer = await created(
     api.post('/api/sales/customers', {
-      data: { code: `KG${run}`, name: `Khách G ${run}`, tax_code: null, address: null, phone: null, email: null, contact_name: null, payment_terms: null, org_unit_id: unit, active: true },
+      data: { code: `KG${run}`, partner: { name: `Khách G ${run}`, tax_code: null, address: null, phone: null, email: null, contact_name: null }, payment_terms: null, org_unit_id: unit, active: true },
     }),
   )
   const quote = await created(

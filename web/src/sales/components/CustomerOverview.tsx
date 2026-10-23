@@ -26,7 +26,7 @@ export function CustomerSummary({ customer: c }: { customer: Customer }) {
   return (
     <KeyFacts
       facts={[
-        [t('sales.customer.contact_name'), c.contact_name || <MissingValue label={t('sales.customer.contact_name')} />],
+        [t('sales.customer.contact_name'), c.partner.contact_name || <MissingValue label={t('sales.customer.contact_name')} />],
         [t('sales.customer.payment_terms'), c.payment_terms || <MissingValue label={t('sales.customer.payment_terms')} />],
         ...(!quotes.isError ? [[t('sales.quotes.title'), count(quotes)] as [string, string]] : []),
         ...(!orders.isError ? [[t('sales.orders.title'), count(orders)] as [string, string]] : []),

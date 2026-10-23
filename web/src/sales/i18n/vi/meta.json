@@ -24,6 +24,8 @@
   "sales.preview.lines": "Số dòng hàng",
   "sales.preview.discount_total": "Tổng chiết khấu (đ)",
   "sales.preview.total": "Tổng thanh toán (đ)",
+  "sales.error.customer_exists_for_partner": "Đối tác này đã là khách hàng của đơn vị đó.",
+  "sales.error.customer_partner_required": "Chọn một đối tác có sẵn hoặc nhập thông tin đối tác mới.",
   "sales.error.customer_code_taken": "Mã khách hàng đã được dùng.",
   "sales.customer.code_series": "Khách hàng",
   "sales.error.customer_inactive": "Khách hàng đã ngừng giao dịch. Kích hoạt lại khách hàng hoặc chọn khách hàng khác.",

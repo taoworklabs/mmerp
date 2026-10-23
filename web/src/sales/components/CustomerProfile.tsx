@@ -26,16 +26,16 @@ export function CustomerProfile({ customer: c, onSaved }: { customer: Customer; 
           <FieldList
             stacked
             rows={[
-              [t('sales.customer.name'), c.name],
+              [t('sales.customer.name'), c.partner.name],
               [t('sales.customer.code'), c.code],
-              [t('sales.customer.tax_code'), or(open, t('sales.customer.tax_code'), c.tax_code)],
-              [t('sales.customer.contact_name'), or(open, t('sales.customer.contact_name'), c.contact_name)],
+              [t('sales.customer.tax_code'), or(open, t('sales.customer.tax_code'), c.partner.tax_code)],
+              [t('sales.customer.contact_name'), or(open, t('sales.customer.contact_name'), c.partner.contact_name)],
               [
                 t('sales.customer.phone'),
-                or(open, t('sales.customer.phone'), c.phone && <Anchor href={`tel:${c.phone.replace(/\s/g, '')}`} size="sm" inherit>{c.phone}</Anchor>),
+                or(open, t('sales.customer.phone'), c.partner.phone && <Anchor href={`tel:${c.partner.phone.replace(/\s/g, '')}`} size="sm" inherit>{c.partner.phone}</Anchor>),
               ],
-              [t('sales.customer.email'), or(open, t('sales.customer.email'), c.email && <Anchor href={`mailto:${c.email}`} size="sm" inherit>{c.email}</Anchor>)],
-              [t('sales.customer.address'), or(open, t('sales.customer.address'), c.address), 'wide'],
+              [t('sales.customer.email'), or(open, t('sales.customer.email'), c.partner.email && <Anchor href={`mailto:${c.partner.email}`} size="sm" inherit>{c.partner.email}</Anchor>)],
+              [t('sales.customer.address'), or(open, t('sales.customer.address'), c.partner.address), 'wide'],
             ]}
           />
         )}

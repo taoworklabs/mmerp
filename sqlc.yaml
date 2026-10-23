@@ -64,6 +64,10 @@ sql:
     gen: { go: { <<: *go, out: internal/shared/item/internal/store } }
     codegen: [{ plugin: data, out: internal/shared/item/internal/store }]
   - <<: *module
+    queries: internal/shared/partner/queries
+    gen: { go: { <<: *go, out: internal/shared/partner/internal/store } }
+    codegen: [{ plugin: data, out: internal/shared/partner/internal/store }]
+  - <<: *module
     queries: internal/core/printing/queries
     gen: { go: { <<: *go, out: internal/core/printing/internal/store } }
     codegen: [{ plugin: data, out: internal/core/printing/internal/store }]

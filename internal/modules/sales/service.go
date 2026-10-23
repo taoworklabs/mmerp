@@ -56,7 +56,8 @@ func NewService(d Deps) *Service {
 	}
 	s := &Service{d: d}
 	data.RegisterConstraints(data.Constraints{
-		"sales.customers_code_key": ErrCustomerCodeTaken,
+		"sales.customers_code_key":             ErrCustomerCodeTaken,
+		"sales.customers_partner_org_unit_key": ErrCustomerExists,
 	})
 	work := []string{PermCustomerView, PermCustomerEdit, PermQuoteView, PermQuoteEdit, PermOrderView, PermOrderEdit}
 	d.IAM.RegisterRoles("sales", map[string][]string{

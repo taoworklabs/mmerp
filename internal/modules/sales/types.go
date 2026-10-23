@@ -26,6 +26,8 @@ type Actions struct {
 
 var (
 	ErrCustomerCodeTaken = &platform.Error{Status: http.StatusConflict, Code: "customer_code_taken"}
+	ErrCustomerExists    = &platform.Error{Status: http.StatusConflict, Code: "customer_exists_for_partner"}
+	ErrPartnerRequired   = &platform.Error{Status: http.StatusUnprocessableEntity, Code: "customer_partner_required"}
 	ErrCustomerInactive  = &platform.Error{Status: http.StatusUnprocessableEntity, Code: "customer_inactive"}
 	ErrValidUntil        = &platform.Error{Status: http.StatusUnprocessableEntity, Code: "quote_valid_until_before_date"}
 	ErrDeliveryDate      = &platform.Error{Status: http.StatusUnprocessableEntity, Code: "order_delivery_before_date"}

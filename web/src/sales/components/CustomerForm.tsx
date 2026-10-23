@@ -1,7 +1,7 @@
 import { IconAddressBook, IconBuildingStore } from '@tabler/icons-react'
 import { useForm } from 'react-hook-form'
 import { useTranslation } from 'react-i18next'
-import { api, unwrap, type Customer, type CustomerFields } from '@/shared/api/sales'
+import { api, unwrap, type Customer, type CustomerUpdate } from '@/shared/api/sales'
 import { CheckboxField, CodeField, Form, FormActions, FormSection, OrgUnitField, TextField } from '@/shared/ui/form'
 
 type Values = {
@@ -25,12 +25,12 @@ export function useCustomerForm(customer: Customer | undefined, onSaved: (id: nu
     mode: 'onBlur',
     defaultValues: {
       code: customer?.code ?? '',
-      name: customer?.name ?? '',
-      tax_code: customer?.tax_code ?? '',
-      address: customer?.address ?? '',
-      phone: customer?.phone ?? '',
-      email: customer?.email ?? '',
-      contact_name: customer?.contact_name ?? '',
+      name: customer?.partner.name ?? '',
+      tax_code: customer?.partner.tax_code ?? '',
+      address: customer?.partner.address ?? '',
+      phone: customer?.partner.phone ?? '',
+      email: customer?.partner.email ?? '',
+      contact_name: customer?.partner.contact_name ?? '',
       payment_terms: customer?.payment_terms ?? '',
       org_unit_id: customer ? String(customer.org_unit_id) : null,
       active: customer?.active ?? true,
@@ -38,13 +38,15 @@ export function useCustomerForm(customer: Customer | undefined, onSaved: (id: nu
   })
 
   async function save(v: Values) {
-    const body: CustomerFields = {
-      name: v.name.trim(),
-      tax_code: orNull(v.tax_code),
-      address: orNull(v.address),
-      phone: orNull(v.phone),
-      email: orNull(v.email),
-      contact_name: orNull(v.contact_name),
+    const body: CustomerUpdate = {
+      partner: {
+        name: v.name.trim(),
+        tax_code: orNull(v.tax_code),
+        address: orNull(v.address),
+        phone: orNull(v.phone),
+        email: orNull(v.email),
+        contact_name: orNull(v.contact_name),
+      },
       payment_terms: orNull(v.payment_terms),
       org_unit_id: Number(v.org_unit_id),
       active: v.active,

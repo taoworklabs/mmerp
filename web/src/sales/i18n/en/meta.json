@@ -24,6 +24,8 @@
   "sales.preview.lines": "Lines",
   "sales.preview.discount_total": "Discount total (VND)",
   "sales.preview.total": "Total (VND)",
+  "sales.error.customer_exists_for_partner": "This partner is already a customer of that org unit.",
+  "sales.error.customer_partner_required": "Pick an existing partner or enter a new partner's details.",
   "sales.error.customer_code_taken": "This customer code is already used.",
   "sales.customer.code_series": "Customers",
   "sales.error.customer_inactive": "The customer is inactive. Reactivate the customer or choose another one.",

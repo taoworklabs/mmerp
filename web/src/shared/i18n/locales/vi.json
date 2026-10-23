@@ -51,6 +51,8 @@
   "shared.error.unknown_role": "Vai trò không tồn tại.",
   "shared.error.role_tenant_wide": "Vai trò này chỉ cấp cho toàn công ty, không theo đơn vị.",
   "shared.error.role_already_granted": "Người dùng đã có vai trò này tại đơn vị đó.",
+  "shared.error.partner_code_taken": "Mã đối tác đã được dùng.",
+  "shared.error.partner_tax_code_taken": "Mã số thuế đã thuộc về một đối tác khác.",
   "shared.error.item_code_taken": "Mã hàng đã được dùng.",
   "shared.error.org_unit_cycle": "Không thể đặt một đơn vị dưới chính đơn vị con của nó.",
   "shared.error.org_unit_misplaced": "Vị trí không hợp lệ: pháp nhân và nhóm không nằm dưới pháp nhân; chi nhánh và phòng ban phải nằm dưới một pháp nhân.",

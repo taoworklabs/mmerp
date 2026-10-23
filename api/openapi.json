@@ -874,13 +874,6 @@
           "active": {
             "type": "boolean"
           },
-          "address": {
-            "maxLength": 500,
-            "type": [
-              "string",
-              "null"
-            ]
-          },
           "allowed_actions": {
             "items": {
               "type": "string"
@@ -890,28 +883,9 @@
           "code": {
             "type": "string"
           },
-          "contact_name": {
-            "maxLength": 200,
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "email": {
-            "maxLength": 200,
-            "type": [
-              "string",
-              "null"
-            ]
-          },
           "id": {
             "format": "int64",
             "type": "integer"
-          },
-          "name": {
-            "maxLength": 300,
-            "minLength": 1,
-            "type": "string"
           },
           "org_unit_id": {
             "description": "Owning org unit: who may see the customer",
@@ -921,23 +895,19 @@
           "org_unit_name": {
             "type": "string"
           },
+          "partner": {
+            "$ref": "#/components/schemas/Fields"
+          },
+          "partner_code": {
+            "type": "string"
+          },
+          "partner_id": {
+            "format": "int64",
+            "type": "integer"
+          },
           "payment_terms": {
             "description": "Prefilled on new quotations and orders",
             "maxLength": 1000,
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "phone": {
-            "maxLength": 50,
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "tax_code": {
-            "maxLength": 20,
             "type": [
               "string",
               "null"
@@ -947,14 +917,11 @@
         "required": [
           "id",
           "code",
+          "partner_id",
+          "partner_code",
+          "partner",
           "org_unit_name",
           "allowed_actions",
-          "name",
-          "tax_code",
-          "address",
-          "phone",
-          "email",
-          "contact_name",
           "payment_terms",
           "org_unit_id",
           "active"
@@ -1014,88 +981,6 @@
           "phone",
           "email",
           "contact_name"
-        ],
-        "type": "object"
-      },
-      "CustomerFields": {
-        "additionalProperties": false,
-        "properties": {
-          "$schema": {
-            "description": "A URL to the JSON Schema for this object.",
-            "examples": [
-              "/api/schemas/CustomerFields.json"
-            ],
-            "format": "uri",
-            "readOnly": true,
-            "type": "string"
-          },
-          "active": {
-            "type": "boolean"
-          },
-          "address": {
-            "maxLength": 500,
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "contact_name": {
-            "maxLength": 200,
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "email": {
-            "maxLength": 200,
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "name": {
-            "maxLength": 300,
-            "minLength": 1,
-            "type": "string"
-          },
-          "org_unit_id": {
-            "description": "Owning org unit: who may see the customer",
-            "format": "int64",
-            "type": "integer"
-          },
-          "payment_terms": {
-            "description": "Prefilled on new quotations and orders",
-            "maxLength": 1000,
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "phone": {
-            "maxLength": 50,
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "tax_code": {
-            "maxLength": 20,
-            "type": [
-              "string",
-              "null"
-            ]
-          }
-        },
-        "required": [
-          "name",
-          "tax_code",
-          "address",
-          "phone",
-          "email",
-          "contact_name",
-          "payment_terms",
-          "org_unit_id",
-          "active"
         ],
         "type": "object"
       },
@@ -1175,6 +1060,46 @@
           "org_unit_name",
           "active",
           "payment_terms"
+        ],
+        "type": "object"
+      },
+      "CustomerUpdate": {
+        "additionalProperties": false,
+        "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "/api/schemas/CustomerUpdate.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
+          "active": {
+            "type": "boolean"
+          },
+          "org_unit_id": {
+            "description": "Owning org unit: who may see the customer",
+            "format": "int64",
+            "type": "integer"
+          },
+          "partner": {
+            "$ref": "#/components/schemas/Fields"
+          },
+          "payment_terms": {
+            "description": "Prefilled on new quotations and orders",
+            "maxLength": 1000,
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "partner",
+          "payment_terms",
+          "org_unit_id",
+          "active"
         ],
         "type": "object"
       },
@@ -2375,6 +2300,69 @@
         ],
         "type": "object"
       },
+      "Fields": {
+        "additionalProperties": false,
+        "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "/api/schemas/Fields.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
+          "address": {
+            "maxLength": 500,
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "contact_name": {
+            "maxLength": 200,
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "email": {
+            "maxLength": 200,
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "name": {
+            "maxLength": 300,
+            "minLength": 1,
+            "type": "string"
+          },
+          "phone": {
+            "maxLength": 50,
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "tax_code": {
+            "maxLength": 20,
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "name",
+          "tax_code",
+          "address",
+          "phone",
+          "email",
+          "contact_name"
+        ],
+        "type": "object"
+      },
       "Grant": {
         "additionalProperties": false,
         "properties": {
@@ -3531,6 +3519,35 @@
         ],
         "type": "object"
       },
+      "List": {
+        "additionalProperties": false,
+        "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "/api/schemas/List.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/ListItem"
+            },
+            "type": "array"
+          },
+          "total": {
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "items",
+          "total"
+        ],
+        "type": "object"
+      },
       "ListColumn": {
         "additionalProperties": false,
         "properties": {
@@ -3556,6 +3573,69 @@
           "key",
           "hidden",
           "width"
+        ],
+        "type": "object"
+      },
+      "ListItem": {
+        "additionalProperties": false,
+        "properties": {
+          "address": {
+            "maxLength": 500,
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "code": {
+            "type": "string"
+          },
+          "contact_name": {
+            "maxLength": 200,
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "email": {
+            "maxLength": 200,
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "id": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "name": {
+            "maxLength": 300,
+            "minLength": 1,
+            "type": "string"
+          },
+          "phone": {
+            "maxLength": 50,
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "tax_code": {
+            "maxLength": 20,
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "code",
+          "name",
+          "tax_code",
+          "address",
+          "phone",
+          "email",
+          "contact_name"
         ],
         "type": "object"
       },
@@ -3914,39 +3994,22 @@
           "active": {
             "type": "boolean"
           },
-          "address": {
-            "maxLength": 500,
-            "type": [
-              "string",
-              "null"
-            ]
-          },
           "code": {
             "description": "Empty or absent: issued from the sales.customer code series",
             "maxLength": 50,
             "type": "string"
           },
-          "contact_name": {
-            "maxLength": 200,
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "email": {
-            "maxLength": 200,
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "name": {
-            "maxLength": 300,
-            "minLength": 1,
-            "type": "string"
-          },
           "org_unit_id": {
             "description": "Owning org unit: who may see the customer",
+            "format": "int64",
+            "type": "integer"
+          },
+          "partner": {
+            "$ref": "#/components/schemas/Fields",
+            "description": "A new partner's identity"
+          },
+          "partner_id": {
+            "description": "An existing partner",
             "format": "int64",
             "type": "integer"
           },
@@ -3957,29 +4020,9 @@
               "string",
               "null"
             ]
-          },
-          "phone": {
-            "maxLength": 50,
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "tax_code": {
-            "maxLength": 20,
-            "type": [
-              "string",
-              "null"
-            ]
           }
         },
         "required": [
-          "name",
-          "tax_code",
-          "address",
-          "phone",
-          "email",
-          "contact_name",
           "payment_terms",
           "org_unit_id",
           "active"
@@ -4352,6 +4395,74 @@
           "day_hours",
           "night_hours",
           "reason"
+        ],
+        "type": "object"
+      },
+      "NewPartner": {
+        "additionalProperties": false,
+        "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "/api/schemas/NewPartner.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
+          "address": {
+            "maxLength": 500,
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "code": {
+            "description": "Empty or absent: issued from the partner.partner code series",
+            "maxLength": 50,
+            "type": "string"
+          },
+          "contact_name": {
+            "maxLength": 200,
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "email": {
+            "maxLength": 200,
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "name": {
+            "maxLength": 300,
+            "minLength": 1,
+            "type": "string"
+          },
+          "phone": {
+            "maxLength": 50,
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "tax_code": {
+            "maxLength": 20,
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "name",
+          "tax_code",
+          "address",
+          "phone",
+          "email",
+          "contact_name"
         ],
         "type": "object"
       },
@@ -4907,6 +5018,85 @@
         "required": [
           "items",
           "next_before"
+        ],
+        "type": "object"
+      },
+      "Partner": {
+        "additionalProperties": false,
+        "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "/api/schemas/Partner.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
+          "address": {
+            "maxLength": 500,
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "allowed_actions": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "code": {
+            "type": "string"
+          },
+          "contact_name": {
+            "maxLength": 200,
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "email": {
+            "maxLength": 200,
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "id": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "name": {
+            "maxLength": 300,
+            "minLength": 1,
+            "type": "string"
+          },
+          "phone": {
+            "maxLength": 50,
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "tax_code": {
+            "maxLength": 20,
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "code",
+          "allowed_actions",
+          "name",
+          "tax_code",
+          "address",
+          "phone",
+          "email",
+          "contact_name"
         ],
         "type": "object"
       },
@@ -11891,6 +12081,224 @@
         ]
       }
     },
+    "/partners": {
+      "get": {
+        "operationId": "list-partners",
+        "parameters": [
+          {
+            "explode": false,
+            "in": "query",
+            "name": "q",
+            "schema": {
+              "maxLength": 100,
+              "type": "string"
+            }
+          },
+          {
+            "description": "Exact, trimmed and case-insensitive",
+            "explode": false,
+            "in": "query",
+            "name": "tax_code",
+            "schema": {
+              "description": "Exact, trimmed and case-insensitive",
+              "maxLength": 20,
+              "type": "string"
+            }
+          },
+          {
+            "explode": false,
+            "in": "query",
+            "name": "sort",
+            "schema": {
+              "default": "code",
+              "enum": [
+                "code",
+                "-code",
+                "name",
+                "-name"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "explode": false,
+            "in": "query",
+            "name": "page",
+            "schema": {
+              "default": 1,
+              "format": "int64",
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "explode": false,
+            "in": "query",
+            "name": "page_size",
+            "schema": {
+              "default": 50,
+              "enum": [
+                20,
+                50,
+                100
+              ],
+              "format": "int64",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/List"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "tags": [
+          "core",
+          "core"
+        ]
+      },
+      "post": {
+        "operationId": "create-partner",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NewPartner"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreatedOutputBody"
+                }
+              }
+            },
+            "description": "Created"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "tags": [
+          "core",
+          "core"
+        ]
+      }
+    },
+    "/partners/{id}": {
+      "get": {
+        "operationId": "get-partner",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Partner"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "tags": [
+          "core",
+          "core"
+        ]
+      },
+      "put": {
+        "operationId": "update-partner",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Fields"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "tags": [
+          "core",
+          "core"
+        ]
+      }
+    },
     "/period-locks": {
       "get": {
         "operationId": "list-period-locks",
@@ -12455,6 +12863,15 @@
           {
             "explode": false,
             "in": "query",
+            "name": "partner_id",
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          },
+          {
+            "explode": false,
+            "in": "query",
             "name": "page",
             "schema": {
               "default": 1,
@@ -12635,7 +13052,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/CustomerFields"
+                "$ref": "#/components/schemas/CustomerUpdate"
               }
             }
           },

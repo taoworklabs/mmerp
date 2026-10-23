@@ -8,7 +8,7 @@ export const api = productClient<'/sales/'>()
 export { ApiError } from './error'
 
 export type Customer = components['schemas']['Customer']
-export type CustomerFields = components['schemas']['CustomerFields']
+export type CustomerUpdate = components['schemas']['CustomerUpdate']
 export type CustomerListItem = components['schemas']['CustomerListItem']
 export type CustomerSort = NonNullable<NonNullable<operations['list-customers']['parameters']['query']>['sort']>
 export type Doc = components['schemas']['Doc']

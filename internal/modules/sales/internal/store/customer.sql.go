@@ -23,19 +23,14 @@ func (q *Queries) AnyCatalog(ctx context.Context) (bool, error) {
 }
 
 const createCustomer = `-- name: CreateCustomer :one
-INSERT INTO sales.customers (code, name, tax_code, address, phone, email, contact_name, payment_terms, org_unit_id, active)
-VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+INSERT INTO sales.customers (code, partner_id, payment_terms, org_unit_id, active)
+VALUES ($1, $2, $3, $4, $5)
 RETURNING id
 `
 
 type CreateCustomerParams struct {
 	Code         string
-	Name         string
-	TaxCode      pgtype.Text
-	Address      pgtype.Text
-	Phone        pgtype.Text
-	Email        pgtype.Text
-	ContactName  pgtype.Text
+	PartnerID    int64
 	PaymentTerms pgtype.Text
 	OrgUnitID    int64
 	Active       bool
@@ -44,12 +39,7 @@ type CreateCustomerParams struct {
 func (q *Queries) CreateCustomer(ctx context.Context, arg CreateCustomerParams) (int64, error) {
 	row := q.db.QueryRow(ctx, createCustomer,
 		arg.Code,
-		arg.Name,
-		arg.TaxCode,
-		arg.Address,
-		arg.Phone,
-		arg.Email,
-		arg.ContactName,
+		arg.PartnerID,
 		arg.PaymentTerms,
 		arg.OrgUnitID,
 		arg.Active,
@@ -83,13 +73,16 @@ func (q *Queries) CustomerCodeTaken(ctx context.Context, lower string) (bool, er
 }
 
 const customerListBase = `-- name: CustomerListBase :many
-SELECT c.id, c.code, c.name, c.tax_code, c.phone, c.payment_terms, c.org_unit_id, u.name AS org_unit_name, c.active
-FROM sales.customers c JOIN iam.org_units u ON u.id = c.org_unit_id
+SELECT c.id, c.code, c.partner_id, p.name, p.tax_code, p.phone, c.payment_terms, c.org_unit_id, u.name AS org_unit_name, c.active
+FROM sales.customers c
+JOIN partner.partners p ON p.id = c.partner_id
+JOIN iam.org_units u ON u.id = c.org_unit_id
 `
 
 type CustomerListBaseRow struct {
 	ID           int64
 	Code         string
+	PartnerID    int64
 	Name         string
 	TaxCode      pgtype.Text
 	Phone        pgtype.Text
@@ -112,6 +105,7 @@ func (q *Queries) CustomerListBase(ctx context.Context) ([]CustomerListBaseRow, 
 		if err := rows.Scan(
 			&i.ID,
 			&i.Code,
+			&i.PartnerID,
 			&i.Name,
 			&i.TaxCode,
 			&i.Phone,
@@ -131,14 +125,19 @@ func (q *Queries) CustomerListBase(ctx context.Context) ([]CustomerListBaseRow, 
 }
 
 const getCustomer = `-- name: GetCustomer :one
-SELECT c.id, c.code, c.name, c.tax_code, c.address, c.phone, c.email, c.contact_name, c.payment_terms, c.org_unit_id, c.active, u.name AS org_unit_name
-FROM sales.customers c JOIN iam.org_units u ON u.id = c.org_unit_id
+SELECT c.id, c.code, c.partner_id, p.code AS partner_code, p.name, p.tax_code, p.address, p.phone, p.email,
+       p.contact_name, c.payment_terms, c.org_unit_id, c.active, u.name AS org_unit_name
+FROM sales.customers c
+JOIN partner.partners p ON p.id = c.partner_id
+JOIN iam.org_units u ON u.id = c.org_unit_id
 WHERE c.id = $1
 `
 
 type GetCustomerRow struct {
 	ID           int64
 	Code         string
+	PartnerID    int64
+	PartnerCode  string
 	Name         string
 	TaxCode      pgtype.Text
 	Address      pgtype.Text
@@ -151,12 +150,15 @@ type GetCustomerRow struct {
 	OrgUnitName  string
 }
 
+// The customer role with its partner's identity.
 func (q *Queries) GetCustomer(ctx context.Context, id int64) (GetCustomerRow, error) {
 	row := q.db.QueryRow(ctx, getCustomer, id)
 	var i GetCustomerRow
 	err := row.Scan(
 		&i.ID,
 		&i.Code,
+		&i.PartnerID,
+		&i.PartnerCode,
 		&i.Name,
 		&i.TaxCode,
 		&i.Address,
@@ -182,20 +184,11 @@ func (q *Queries) LockCustomer(ctx context.Context, id int64) error {
 }
 
 const updateCustomer = `-- name: UpdateCustomer :exec
-UPDATE sales.customers
-SET name = $2, tax_code = $3, address = $4, phone = $5, email = $6, contact_name = $7,
-    payment_terms = $8, org_unit_id = $9, active = $10
-WHERE id = $1
+UPDATE sales.customers SET payment_terms = $2, org_unit_id = $3, active = $4 WHERE id = $1
 `
 
 type UpdateCustomerParams struct {
 	ID           int64
-	Name         string
-	TaxCode      pgtype.Text
-	Address      pgtype.Text
-	Phone        pgtype.Text
-	Email        pgtype.Text
-	ContactName  pgtype.Text
 	PaymentTerms pgtype.Text
 	OrgUnitID    int64
 	Active       bool
@@ -204,12 +197,6 @@ type UpdateCustomerParams struct {
 func (q *Queries) UpdateCustomer(ctx context.Context, arg UpdateCustomerParams) error {
 	_, err := q.db.Exec(ctx, updateCustomer,
 		arg.ID,
-		arg.Name,
-		arg.TaxCode,
-		arg.Address,
-		arg.Phone,
-		arg.Email,
-		arg.ContactName,
 		arg.PaymentTerms,
 		arg.OrgUnitID,
 		arg.Active,

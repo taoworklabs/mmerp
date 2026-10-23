@@ -280,9 +280,11 @@ test('seed Sales on the Demo demo company', async ({ baseURL }) => {
   }
   const users = await get<{ id: number; login: string }[]>(admin, '/api/users')
   const userId = (login: string) => users.find((u) => u.login === login)!.id
-  // Every Sales role also reads the shared item catalogue, at the same unit.
+  // Every Sales role also reads the shared item catalogue and partners at the same unit;
+  // staff and managers edit partners.
   const grant = async (login: string, role: string, org_unit_id: number | null) => {
-    for (const [product, r] of [['sales', role], ['item', 'viewer']]) {
+    const partnerRole = role === 'viewer' ? 'viewer' : 'editor'
+    for (const [product, r] of [['sales', role], ['item', 'viewer'], ['partner', partnerRole]]) {
       const res = await admin.post(`/api/users/${userId(login)}/roles`, { data: { product, role: r, org_unit_id } })
       expect([201, 409], await res.text()).toContain(res.status())
     }
@@ -321,7 +323,7 @@ test('seed Sales on the Demo demo company', async ({ baseURL }) => {
   const customerTerms: Record<string, string> = {}
   for (const [code, name, t, tax_code, address, phone, contact_name, payment_terms, active] of customers) {
     const r = await admin.post('/api/sales/customers', {
-      data: { code, name, tax_code, address, phone, email: null, contact_name, payment_terms, org_unit_id: team[t], active },
+      data: { code, partner: { name, tax_code, address, phone, email: null, contact_name }, payment_terms, org_unit_id: team[t], active },
     })
     customerId[code] =
       r.status() === 409

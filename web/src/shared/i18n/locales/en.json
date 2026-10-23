@@ -51,6 +51,8 @@
   "shared.error.unknown_role": "This role does not exist.",
   "shared.error.role_tenant_wide": "This role is granted for the whole company, not per unit.",
   "shared.error.role_already_granted": "The user already has this role at that unit.",
+  "shared.error.partner_code_taken": "This partner code is already used.",
+  "shared.error.partner_tax_code_taken": "This tax code already belongs to another partner.",
   "shared.error.item_code_taken": "This item code is already used.",
   "shared.error.org_unit_cycle": "A unit cannot be placed under one of its own sub-units.",
   "shared.error.org_unit_misplaced": "Invalid position: legal entities and groups cannot sit under a legal entity; branches and departments must sit under one.",
