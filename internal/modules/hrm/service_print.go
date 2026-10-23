@@ -40,8 +40,7 @@ type contractPrint struct {
 // contractPrint reads a contract as printed, salary included: printing checked the
 // actor may see it.
 func (s *Service) contractPrint(ctx context.Context, id int64) ([]printing.Part, error) {
-	q := store.New(platform.DBFrom(ctx))
-	r, err := q.GetContract(ctx, id)
+	r, err := store.GetContract.Run(ctx, id)
 	if err != nil {
 		return nil, err
 	}
@@ -49,7 +48,7 @@ func (s *Service) contractPrint(ctx context.Context, id int64) ([]printing.Part,
 	if err != nil {
 		return nil, err
 	}
-	e, err := q.GetEmployee(ctx, r.EmployeeID)
+	e, err := store.GetEmployee.Run(ctx, r.EmployeeID)
 	if err != nil {
 		return nil, err
 	}
@@ -143,8 +142,7 @@ type payslipPrint struct {
 // payslips reads one payslip per employee of a computed payroll, by department then code:
 // printing checked the actor may see each person's pay.
 func (s *Service) payslips(ctx context.Context, id int64) ([]printing.Part, error) {
-	q := store.New(platform.DBFrom(ctx))
-	p, err := q.GetPayroll(ctx, id)
+	p, err := store.GetPayroll.Run(ctx, id)
 	if err != nil {
 		return nil, err
 	}

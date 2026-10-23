@@ -37,16 +37,13 @@ func (s *Service) Items(ctx context.Context, f ItemFilter) (ItemList, error) {
 // CreateItem adds an item; the catalogue is managed tenant-wide.
 func (s *Service) CreateItem(ctx context.Context, in NewItem) (int64, error) {
 	var id int64
-	err := s.writeItem(ctx, func(ctx context.Context, q *store.Queries) error {
+	err := s.writeItem(ctx, func(ctx context.Context) error {
 		var err error
 		if in.Code, err = s.d.Numbering.Code(ctx, itemCodeSeries, in.Code, itemCodeTaken); err != nil {
 			return err
 		}
 		in.ItemFields = trimItem(in.ItemFields)
-		id, err = q.CreateItem(ctx, store.CreateItemParams{Code: in.Code, Name: in.Name, Unit: in.Unit, Price: in.Price, VatRate: in.VatRate, Active: in.Active})
-		if platform.Violates(err, "items_code_key") {
-			return ErrItemCodeTaken
-		}
+		id, err = store.CreateItem.Run(ctx, store.CreateItemParams{Code: in.Code, Name: in.Name, Unit: in.Unit, Price: in.Price, VatRate: in.VatRate, Active: in.Active})
 		if err != nil {
 			return err
 		}
@@ -57,9 +54,9 @@ func (s *Service) CreateItem(ctx context.Context, in NewItem) (int64, error) {
 
 // UpdateItem replaces an item's fields; its code never changes.
 func (s *Service) UpdateItem(ctx context.Context, id int64, in ItemFields) error {
-	return s.writeItem(ctx, func(ctx context.Context, q *store.Queries) error {
+	return s.writeItem(ctx, func(ctx context.Context) error {
 		in = trimItem(in)
-		code, err := q.UpdateItem(ctx, store.UpdateItemParams{ID: id, Name: in.Name, Unit: in.Unit, Price: in.Price, VatRate: in.VatRate, Active: in.Active})
+		code, err := store.UpdateItem.Run(ctx, store.UpdateItemParams{ID: id, Name: in.Name, Unit: in.Unit, Price: in.Price, VatRate: in.VatRate, Active: in.Active})
 		if errors.Is(err, pgx.ErrNoRows) {
 			return platform.ErrNotFound
 		}
@@ -70,14 +67,14 @@ func (s *Service) UpdateItem(ctx context.Context, id int64, in ItemFields) error
 	})
 }
 
-func (s *Service) writeItem(ctx context.Context, fn func(context.Context, *store.Queries) error) error {
+func (s *Service) writeItem(ctx context.Context, fn func(context.Context) error) error {
 	if err := platform.ProductGate(ctx, "sales", platform.ClassWrite); err != nil {
 		return err
 	}
 	if err := s.d.IAM.RequireTenantWide(ctx, "sales", PermItemManage); err != nil {
 		return err
 	}
-	return platform.InTx(ctx, func(ctx context.Context) error { return fn(ctx, store.New(platform.DBFrom(ctx))) })
+	return platform.InTx(ctx, fn)
 }
 
 func trimItem(in ItemFields) ItemFields {
@@ -92,7 +89,7 @@ func (s *Service) auditItem(ctx context.Context, id int64, code string, in ItemF
 
 // itemCodeTaken reports whether a code is used, for numbering to skip it.
 func itemCodeTaken(ctx context.Context, code string) (bool, error) {
-	return store.New(platform.DBFrom(ctx)).ItemCodeTaken(ctx, code)
+	return store.ItemCodeTaken.Run(ctx, code)
 }
 
 // itemOptions finds items for an approval condition; it includes retired items, since a rule may name an item that is later retired.
@@ -111,7 +108,7 @@ func (s *Service) itemOptions(ctx context.Context, q string) ([]record.FieldOpti
 // itemLabels is the "items" approval field's Labels: items by id, for showing a saved
 // condition before any search.
 func (s *Service) itemLabels(ctx context.Context, ids []int64) ([]record.FieldOption, error) {
-	rows, err := store.New(platform.DBFrom(ctx)).ItemsByID(ctx, ids)
+	rows, err := store.ItemsByID.Run(ctx, ids)
 	if err != nil {
 		return nil, err
 	}

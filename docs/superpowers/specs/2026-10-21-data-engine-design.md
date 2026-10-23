@@ -431,27 +431,27 @@ Each step is a ticket under one spec branch and PR, per the repo workflow. The s
 
 Before approving implementation (after the spike):
 
-- [ ] The ADR is written and accepted.
-- [ ] The spike shows: the plugin runs inside `make gen` offline; the descriptors compile for all 262 queries with no type mapping in the plugin; every §5 case fails with `25006`; River runs on its own pool; the count strategy is chosen from measurements.
+- [x] The ADR is written and accepted.
+- [x] The spike shows: the plugin runs inside `make gen` offline; the descriptors compile for all 262 queries with no type mapping in the plugin; every §5 case fails with `25006`; River runs on its own pool; the count strategy is chosen from measurements.
 
 Before continuing past the vertical slice:
 
-- [ ] Golden SQL tests cover every condition kind, nesting, scope variants (all, units, none, none with visibility, unscoped), search escaping, every sort and the count skip.
-- [ ] A fuzz test over `Sort`, `Q`, filter values and paging shows the SQL text never contains input and the args carry it.
-- [ ] Scope tests:
+- [x] Golden SQL tests cover every condition kind, nesting, scope variants (all, units, none, none with visibility, unscoped), search escaping, every sort and the count skip.
+- [x] A fuzz test over `Sort`, `Q`, filter values and paging shows the SQL text never contains input and the args carry it.
+- [x] Scope tests:
   - the zero `Scope` returns nothing;
   - a list without a rule fails validation;
   - `Visibility` cannot be set per call;
   - lint fixtures prove that `GrantAll`/`GrantUnits`/`Static(` outside allowed packages fail.
-- [ ] Write tests:
+- [x] Write tests:
   - each §5 case outside `InTx` fails;
   - inside `InTx` it succeeds;
   - `Enqueue` without a transaction errors;
   - a business write, its audit row, its number and its job commit or roll back together.
-- [ ] Error tests: one per SQLSTATE class with real violations; mapped versus unmapped behaviour; `Violates` still matches a mapped error.
-- [ ] Logging tests: the tracer logs once per query with name and shape, and no SQL text or argument appears in captured logs.
-- [ ] The leave list passes the old-versus-new correctness test and the performance criteria of §Performance, with numbers recorded in the PR.
-- [ ] `make gen` (no diff), `make lint`, `make test` and `make e2e` pass.
+- [x] Error tests: one per SQLSTATE class with real violations; mapped versus unmapped behaviour; `Violates` still matches a mapped error.
+- [x] Logging tests: the tracer logs once per query with name and shape, and no SQL text or argument appears in captured logs.
+- [x] The leave list passes the old-versus-new correctness test and the performance criteria of §Performance, with numbers recorded in the PR. The three custom-plan cases over the thresholds were accepted by the product owner (§Count strategy decision).
+- [x] `make gen` (no diff), `make lint`, `make test` and `make e2e` pass.
 
 ## Assessment
 
@@ -575,7 +575,7 @@ Three `Enqueue` callers that had no transaction now enqueue in their own `InTx`:
 - `CREATE TEMP TABLE` is refused outside a transaction.
 
 **For the follow-up plan:**
-- Custom-plan trade-off before migrating the other 9 lists. Open: pending product-owner decision (accept / count only when needed / sort indexes).
+- Custom-plan trade-off before migrating the other 9 lists. Decided 2026-10-23: accepted (see §Count strategy decision).
 - The deferred minors are listed in the execution ledger.
 
 ## Slice 2 results (2026-10-22)
@@ -593,7 +593,7 @@ The payroll and employee lists run on the engine (commits `c656677`, `037c002`).
 
 **Engine.** No engine change was needed for either list: the payroll scope (`legal_entity_id`), the employee recursive `manager_of` fragment, the date-relative `termination_date < today` status and the fixed multi-column sort all expressed directly through `Where`/`Sorts`/`Default` as declared.
 
-Open: product-owner decision on the count strategy; the employee list adds no new data.
+The count strategy was later accepted as is (§Count strategy decision); the employee list adds no new data.
 
 ## Remaining HRM lists results (2026-10-23)
 
@@ -606,3 +606,21 @@ The contract, overtime and timesheet lists run on the engine.
 **Engine.** No engine change, no migration, no performance measurement (product-owner decision).
 
 With the Sales lists (separate branch), every filterable paginated list is on the engine.
+
+## Modules results (2026-10-23)
+
+Steps 5 and 6 of the migration plan.
+
+- **Sales batched line insert.** `InsertLine`, one call per line, is replaced by `InsertLines`, one `INSERT … SELECT unnest(…)`.
+- **Fixed call sites.** Every module (Sales, `shared/posting`, HRM, then every core module) calls its generated descriptors (`store.<Query>.Run`). No `store.New` or `platform.DBFrom` is left outside infrastructure, tests and `recordtest`.
+- **Constraint maps.** Mapped: `sales.customers_code_key`, `sales.items_code_key`, `posting.recordings_doc_once`, `hrm.leave_types_name_key`, `hrm.contract_types_name_key`, `hrm.timesheets_org_unit_period_key`, `approval.step_votes_pkey`, `approval.step_votes_one_per_person_idx`. Kept on `platform.Violates`, as their meaning depends on the caller: `sales.customers_org_unit_id_fkey` (also fires when `iam` deletes a unit), `hrm.leave_balances_days_check` (two errors), `hrm.contracts_parent_id_fkey` (only the delete means "has appendices"), `approval.instances_one_open_idx` (`record.ErrAwaitingApproval`).
+- **Lint.** The `store.New` and `platform.DBFrom` bans apply everywhere except the infrastructure allowlist, `_test.go` files and `recordtest`, which inspect the database directly. The per-module exclusions are gone.
+- **Behaviour.** No change. A test now pins the leave type and contract type name collisions, whose mapping moved.
+
+## Count strategy decision (2026-10-23)
+
+The product owner accepts the count strategy as built: the count runs in the same batch as the page, and is skipped when the first page is not full. No index and no API change.
+
+- Three custom-plan cases of the leave list cross the regression thresholds (scoped HR, status draft, sort `-number`), all because the count is a second statement.
+- pgx caches prepared statements, so Postgres moves to the generic plan after 5 executions. That is the realistic case, and there the new list is faster on every combination.
+- Revisit, with sort indexes first, if a production list measures slow.

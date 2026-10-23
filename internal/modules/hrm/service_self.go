@@ -25,14 +25,14 @@ func selfGrant(ctx context.Context, employee int64, user pgtype.Int8, action rec
 	}
 	switch action {
 	case record.View, record.Export, record.ViewFiles:
-		return store.New(platform.DBFrom(ctx)).IsManager(ctx, store.IsManagerParams{Employee: employee, Actor: actor})
+		return store.IsManager.Run(ctx, store.IsManagerParams{Employee: employee, Actor: actor})
 	}
 	return false, nil
 }
 
 // managerApprover returns the account of the manager level steps up the employee's chain.
 func managerApprover(ctx context.Context, employee int64, level int) ([]int64, error) {
-	u, err := store.New(platform.DBFrom(ctx)).ManagerUser(ctx, store.ManagerUserParams{Employee: employee, Level: int32(level)})
+	u, err := store.ManagerUser.Run(ctx, store.ManagerUserParams{Employee: employee, Level: int32(level)})
 	if errors.Is(err, pgx.ErrNoRows) || err == nil && !u.Valid {
 		return nil, nil
 	}
@@ -73,7 +73,7 @@ func (s *Service) selfServiceActions(ctx context.Context, code string) (SelfServ
 func selfEmployee(ctx context.Context) (SelfServiceActions, error) {
 	out := SelfServiceActions{AllowedActions: []string{}}
 	actor, _ := platform.ActorFrom(ctx)
-	self, err := store.New(platform.DBFrom(ctx)).EmployeeByUser(ctx, pgtype.Int8{Int64: actor, Valid: true})
+	self, err := store.EmployeeByUser.Run(ctx, pgtype.Int8{Int64: actor, Valid: true})
 	if errors.Is(err, pgx.ErrNoRows) {
 		return out, nil
 	}
@@ -102,16 +102,15 @@ func (s *Service) filer(ctx context.Context, id *int64, editPerm string) (employ
 // account: the actor's own record when id is nil. Whether the actor may file for
 // them is not checked here.
 func subject(ctx context.Context, id *int64) (employee, unit int64, user pgtype.Int8, err error) {
-	q := store.New(platform.DBFrom(ctx))
 	if id == nil {
 		actor, _ := platform.ActorFrom(ctx)
-		self, err := q.EmployeeByUser(ctx, pgtype.Int8{Int64: actor, Valid: true})
+		self, err := store.EmployeeByUser.Run(ctx, pgtype.Int8{Int64: actor, Valid: true})
 		if errors.Is(err, pgx.ErrNoRows) {
 			return 0, 0, user, ErrNotAnEmployee
 		}
 		return self.ID, self.OrgUnitID, pgtype.Int8{Int64: actor, Valid: true}, err
 	}
-	e, err := q.GetEmployee(ctx, *id)
+	e, err := store.GetEmployee.Run(ctx, *id)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return 0, 0, user, platform.ErrNotFound
 	}

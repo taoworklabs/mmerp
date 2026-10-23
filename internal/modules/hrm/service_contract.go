@@ -20,7 +20,7 @@ import (
 const termsAAD = "hrm.contracts.terms"
 
 func (s *Service) contractTypeOptions(ctx context.Context) ([]record.Option, error) {
-	rows, err := store.New(platform.DBFrom(ctx)).ListContractTypes(ctx)
+	rows, err := store.ListContractTypes.Run(ctx)
 	out := make([]record.Option, len(rows))
 	for i, r := range rows {
 		out[i] = record.Option{Value: strconv.FormatInt(r.ID, 10), Label: r.Name}
@@ -30,7 +30,7 @@ func (s *Service) contractTypeOptions(ctx context.Context) ([]record.Option, err
 
 // ContractTypes lists every kind of contract, inactive ones included.
 func (s *Service) ContractTypes(ctx context.Context) ([]ContractType, error) {
-	rows, err := store.New(platform.DBFrom(ctx)).ListContractTypes(ctx)
+	rows, err := store.ListContractTypes.Run(ctx)
 	out := make([]ContractType, len(rows))
 	for i, r := range rows {
 		out[i] = ContractType{ID: r.ID, ContractTypeInput: ContractTypeInput{Name: r.Name, FixedTerm: r.FixedTerm, Active: r.Active}}
@@ -44,19 +44,15 @@ func (s *Service) SaveContractType(ctx context.Context, id int64, in ContractTyp
 		return 0, err
 	}
 	err := platform.InTx(ctx, func(ctx context.Context) error {
-		q := store.New(platform.DBFrom(ctx))
 		var err error
 		if id == 0 {
-			id, err = q.CreateContractType(ctx, store.CreateContractTypeParams{Name: in.Name, FixedTerm: in.FixedTerm, Active: in.Active})
+			id, err = store.CreateContractType.Run(ctx, store.CreateContractTypeParams{Name: in.Name, FixedTerm: in.FixedTerm, Active: in.Active})
 		} else {
 			var n int64
-			n, err = q.UpdateContractType(ctx, store.UpdateContractTypeParams{ID: id, Name: in.Name, FixedTerm: in.FixedTerm, Active: in.Active})
+			n, err = store.UpdateContractType.Run(ctx, store.UpdateContractTypeParams{ID: id, Name: in.Name, FixedTerm: in.FixedTerm, Active: in.Active})
 			if err == nil && n == 0 {
 				return platform.ErrNotFound
 			}
-		}
-		if platform.Violates(err, "contract_types_name_key") {
-			return ErrContractTypeTaken
 		}
 		if err != nil {
 			return err
@@ -76,7 +72,7 @@ func (s *Service) canWriteContract(ctx context.Context, unit int64) (bool, error
 
 // contractSubjects is the account of the employee, who never approves their own contract.
 func (s *Service) contractSubjects(ctx context.Context, id int64) ([]int64, error) {
-	r, err := store.New(platform.DBFrom(ctx)).GetContract(ctx, id)
+	r, err := store.GetContract.Run(ctx, id)
 	if err != nil || !r.EmployeeUserID.Valid {
 		return nil, err
 	}
@@ -91,8 +87,7 @@ func (s *Service) contractTransition(ctx context.Context, d record.Doc, from rec
 	if !ok {
 		return nil
 	}
-	q := store.New(platform.DBFrom(ctx))
-	r, err := q.GetContract(ctx, d.ID)
+	r, err := store.GetContract.Run(ctx, d.ID)
 	if err != nil {
 		return err
 	}
@@ -111,13 +106,13 @@ func (s *Service) contractTransition(ctx context.Context, d record.Doc, from rec
 	if err := checkPayrollPeriods(ctx, d.LegalEntityID, *platform.DatePtr(r.StartDate), end); err != nil {
 		return err
 	}
-	if _, err := q.LockEmployee(ctx, r.EmployeeID); err != nil {
+	if _, err := store.LockEmployee.Run(ctx, r.EmployeeID); err != nil {
 		return err
 	}
 	switch {
 	case posted && appendix:
 		// Read again under the lock: the original may have just been cancelled.
-		if r, err = q.GetContract(ctx, d.ID); err != nil {
+		if r, err = store.GetContract.Run(ctx, d.ID); err != nil {
 			return err
 		}
 		if r.ParentStatus.String != string(record.Posted) {
@@ -127,7 +122,7 @@ func (s *Service) contractTransition(ctx context.Context, d record.Doc, from rec
 			return ErrAppendixDate
 		}
 	case posted:
-		overlaps, err := q.ContractOverlaps(ctx, store.ContractOverlapsParams{EmployeeID: r.EmployeeID, ID: r.ID, StartDate: r.StartDate, EndDate: r.EndDate})
+		overlaps, err := store.ContractOverlaps.Run(ctx, store.ContractOverlapsParams{EmployeeID: r.EmployeeID, ID: r.ID, StartDate: r.StartDate, EndDate: r.EndDate})
 		if err != nil {
 			return err
 		}
@@ -135,7 +130,7 @@ func (s *Service) contractTransition(ctx context.Context, d record.Doc, from rec
 			return ErrContractOverlaps
 		}
 	case !appendix:
-		has, err := q.HasPostedAppendix(ctx, pgtype.Int8{Int64: r.ID, Valid: true})
+		has, err := store.HasPostedAppendix.Run(ctx, pgtype.Int8{Int64: r.ID, Valid: true})
 		if err != nil {
 			return err
 		}
@@ -156,7 +151,7 @@ func within(d, start, end pgtype.Date) bool {
 // hrm.salary.view; the read is audited on the contract the terms came from.
 func (s *Service) contractAt(ctx context.Context, employeeID int64, date string) (t ContractTerms, ok bool, err error) {
 	err = platform.InTx(ctx, func(ctx context.Context) error {
-		r, err := store.New(platform.DBFrom(ctx)).ContractTermsAt(ctx, store.ContractTermsAtParams{EmployeeID: employeeID, At: platform.NullDate(&date)})
+		r, err := store.ContractTermsAt.Run(ctx, store.ContractTermsAtParams{EmployeeID: employeeID, At: platform.NullDate(&date)})
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil
 		}
@@ -190,7 +185,7 @@ func (s *Service) EmployeeContracts(ctx context.Context, employeeID int64) ([]Co
 		return nil, err
 	}
 	write = write && platform.ProductGate(ctx, "hrm", platform.ClassWrite) == nil
-	rows, err := store.New(platform.DBFrom(ctx)).ListEmployeeContracts(ctx, store.ListEmployeeContractsParams{EmployeeID: employeeID, AllUnits: sc.All, Units: sc.Units})
+	rows, err := store.ListEmployeeContracts.Run(ctx, store.ListEmployeeContractsParams{EmployeeID: employeeID, AllUnits: sc.All, Units: sc.Units})
 	out := make([]ContractListItem, len(rows))
 	numbers := map[int64]string{}
 	for _, r := range rows {
@@ -249,7 +244,7 @@ func (s *Service) Contract(ctx context.Context, id int64) (Contract, error) {
 		if err != nil {
 			return err
 		}
-		r, err := store.New(platform.DBFrom(ctx)).GetContract(ctx, id)
+		r, err := store.GetContract.Run(ctx, id)
 		if err != nil {
 			return err
 		}
@@ -284,8 +279,7 @@ func (s *Service) CreateContract(ctx context.Context, in NewContract) (int64, er
 		if err := s.d.Record.Visible(ctx, record.Ref{Type: employeeType, ID: in.EmployeeID}, record.View); err != nil {
 			return err
 		}
-		q := store.New(platform.DBFrom(ctx))
-		e, err := q.GetEmployee(ctx, in.EmployeeID)
+		e, err := store.GetEmployee.Run(ctx, in.EmployeeID)
 		if errors.Is(err, pgx.ErrNoRows) {
 			return platform.ErrNotFound
 		}
@@ -298,7 +292,7 @@ func (s *Service) CreateContract(ctx context.Context, in NewContract) (int64, er
 		}
 		var parent *store.GetContractRow
 		if in.ParentID != nil {
-			p, err := q.GetContract(ctx, *in.ParentID)
+			p, err := store.GetContract.Run(ctx, *in.ParentID)
 			if errors.Is(err, pgx.ErrNoRows) || err == nil && (p.EmployeeID != e.ID || p.ParentID.Valid) {
 				return ErrContractParent
 			}
@@ -325,7 +319,7 @@ func (s *Service) CreateContract(ctx context.Context, in NewContract) (int64, er
 			}
 		}
 		row.ID, row.EmployeeID, row.ParentID = id, e.ID, platform.NullInt8(in.ParentID)
-		if err := q.CreateContract(ctx, row); err != nil {
+		if err := store.CreateContract.Run(ctx, row); err != nil {
 			return err
 		}
 		return s.d.Audit.RecordChanges(ctx, "hrm.contract_created", audit.Ref{Type: contractType, ID: id}, contractChanges(nil, "", &in.ContractFields, typeName))
@@ -336,17 +330,16 @@ func (s *Service) CreateContract(ctx context.Context, in NewContract) (int64, er
 // UpdateContract replaces the fields of a draft at the version the actor saw.
 func (s *Service) UpdateContract(ctx context.Context, id int64, in ContractUpdate) error {
 	return platform.InTx(ctx, func(ctx context.Context) error {
-		q := store.New(platform.DBFrom(ctx))
 		if _, err := s.d.Record.Read(ctx, record.Ref{Type: contractType, ID: id}); err != nil {
 			return err
 		}
-		old, err := q.GetContract(ctx, id)
+		old, err := store.GetContract.Run(ctx, id)
 		if err != nil {
 			return err
 		}
 		var parent *store.GetContractRow
 		if old.ParentID.Valid {
-			p, err := q.GetContract(ctx, old.ParentID.Int64)
+			p, err := store.GetContract.Run(ctx, old.ParentID.Int64)
 			if err != nil {
 				return err
 			}
@@ -360,7 +353,7 @@ func (s *Service) UpdateContract(ctx context.Context, id int64, in ContractUpdat
 		if _, err := s.d.Record.Edit(ctx, record.Ref{Type: contractType, ID: id}, in.Version, h); err != nil {
 			return err
 		}
-		if err := q.UpdateContract(ctx, store.UpdateContractParams{
+		if err := store.UpdateContract.Run(ctx, store.UpdateContractParams{
 			ID: id, ContractTypeID: row.ContractTypeID, StartDate: row.StartDate, EndDate: row.EndDate, Terms: row.Terms,
 		}); err != nil {
 			return err
@@ -376,7 +369,7 @@ func (s *Service) UpdateContract(ctx context.Context, id int64, in ContractUpdat
 
 // deleteContract keeps an original with appendices.
 func deleteContract(ctx context.Context, id int64) error {
-	err := store.New(platform.DBFrom(ctx)).DeleteContract(ctx, id)
+	err := store.DeleteContract.Run(ctx, id)
 	if platform.Violates(err, "contracts_parent_id_fkey") {
 		return ErrContractHasAppendices
 	}
@@ -412,7 +405,7 @@ func (s *Service) contractHeader(ctx context.Context, unit int64, parent *store.
 			return h, row, "", ErrContractTerms
 		}
 	}
-	t, err := store.New(platform.DBFrom(ctx)).GetContractType(ctx, in.ContractTypeID)
+	t, err := store.GetContractType.Run(ctx, in.ContractTypeID)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return h, row, "", platform.ErrNotFound
 	}

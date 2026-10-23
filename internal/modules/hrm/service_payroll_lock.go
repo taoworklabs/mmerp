@@ -13,14 +13,13 @@ import (
 // It holds the legal entity's payroll lock FOR SHARE until commit, so the set of
 // closed periods cannot change under the caller.
 func checkPayrollPeriods(ctx context.Context, legalEntity int64, from string, to *string) error {
-	q := store.New(platform.DBFrom(ctx))
-	if err := q.EnsurePayrollLock(ctx, legalEntity); err != nil {
+	if err := store.EnsurePayrollLock.Run(ctx, legalEntity); err != nil {
 		return err
 	}
-	if err := q.SharePayrollLock(ctx, legalEntity); err != nil {
+	if err := store.SharePayrollLock.Run(ctx, legalEntity); err != nil {
 		return err
 	}
-	rows, err := q.ClosedPeriods(ctx, store.ClosedPeriodsParams{LegalEntityID: legalEntity, FromDate: platform.NullDate(&from), ToDate: platform.NullDate(to)})
+	rows, err := store.ClosedPeriods.Run(ctx, store.ClosedPeriodsParams{LegalEntityID: legalEntity, FromDate: platform.NullDate(&from), ToDate: platform.NullDate(to)})
 	if err != nil || len(rows) == 0 {
 		return err
 	}

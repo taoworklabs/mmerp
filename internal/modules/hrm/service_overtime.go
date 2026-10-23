@@ -30,7 +30,7 @@ func (s *Service) dayKindOptions(ctx context.Context) ([]record.Option, error) {
 }
 
 func (s *Service) overtimeGrant(ctx context.Context, id int64, action record.Action) (bool, error) {
-	r, err := store.New(platform.DBFrom(ctx)).GetOvertimeRequest(ctx, id)
+	r, err := store.GetOvertimeRequest.Run(ctx, id)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return false, nil
 	}
@@ -41,7 +41,7 @@ func (s *Service) overtimeGrant(ctx context.Context, id int64, action record.Act
 }
 
 func (s *Service) overtimeApprovers(ctx context.Context, ref record.Ref, level int) ([]int64, error) {
-	r, err := store.New(platform.DBFrom(ctx)).GetOvertimeRequest(ctx, ref.ID)
+	r, err := store.GetOvertimeRequest.Run(ctx, ref.ID)
 	if err != nil {
 		return nil, err
 	}
@@ -49,7 +49,7 @@ func (s *Service) overtimeApprovers(ctx context.Context, ref record.Ref, level i
 }
 
 func (s *Service) overtimeSubjects(ctx context.Context, id int64) ([]int64, error) {
-	r, err := store.New(platform.DBFrom(ctx)).GetOvertimeRequest(ctx, id)
+	r, err := store.GetOvertimeRequest.Run(ctx, id)
 	return subjectOf(r.EmployeeUserID), err
 }
 
@@ -62,7 +62,7 @@ func (s *Service) overtimeTransition(ctx context.Context, d record.Doc, from rec
 	}
 	if posted {
 		// The calendar may have changed since the request was saved.
-		r, err := store.New(platform.DBFrom(ctx)).GetOvertimeRequest(ctx, d.ID)
+		r, err := store.GetOvertimeRequest.Run(ctx, d.ID)
 		if err != nil {
 			return err
 		}
@@ -131,7 +131,7 @@ func (s *Service) Overtime(ctx context.Context, id int64) (Overtime, error) {
 	if err != nil {
 		return Overtime{}, err
 	}
-	r, err := store.New(platform.DBFrom(ctx)).GetOvertimeRequest(ctx, id)
+	r, err := store.GetOvertimeRequest.Run(ctx, id)
 	if err != nil {
 		return Overtime{}, err
 	}
@@ -171,7 +171,7 @@ func (s *Service) CreateOvertime(ctx context.Context, in NewOvertime) (int64, er
 			return err
 		}
 		f := in.OvertimeFields
-		if err := store.New(platform.DBFrom(ctx)).CreateOvertimeRequest(ctx, store.CreateOvertimeRequestParams{
+		if err := store.CreateOvertimeRequest.Run(ctx, store.CreateOvertimeRequestParams{
 			ID: id, EmployeeID: employee, Date: platform.NullDate(&f.Date), DayKind: f.DayKind,
 			DayHours: f.DayHours, NightHours: f.NightHours, Reason: platform.NullText(f.Reason),
 		}); err != nil {
@@ -188,7 +188,7 @@ func (s *Service) UpdateOvertime(ctx context.Context, id int64, in OvertimeUpdat
 		if _, err := s.d.Record.Read(ctx, record.Ref{Type: overtimeType, ID: id}); err != nil {
 			return err
 		}
-		old, err := store.New(platform.DBFrom(ctx)).GetOvertimeRequest(ctx, id)
+		old, err := store.GetOvertimeRequest.Run(ctx, id)
 		if err != nil {
 			return err
 		}
@@ -203,7 +203,7 @@ func (s *Service) UpdateOvertime(ctx context.Context, id int64, in OvertimeUpdat
 			return err
 		}
 		f := in.OvertimeFields
-		if err := store.New(platform.DBFrom(ctx)).UpdateOvertimeRequest(ctx, store.UpdateOvertimeRequestParams{
+		if err := store.UpdateOvertimeRequest.Run(ctx, store.UpdateOvertimeRequestParams{
 			ID: id, Date: platform.NullDate(&f.Date), DayKind: f.DayKind, DayHours: f.DayHours, NightHours: f.NightHours, Reason: platform.NullText(f.Reason),
 		}); err != nil {
 			return err
@@ -213,7 +213,7 @@ func (s *Service) UpdateOvertime(ctx context.Context, id int64, in OvertimeUpdat
 }
 
 func deleteOvertime(ctx context.Context, id int64) error {
-	return store.New(platform.DBFrom(ctx)).DeleteOvertimeRequest(ctx, id)
+	return store.DeleteOvertimeRequest.Run(ctx, id)
 }
 
 // overtimeHeader checks the hours and builds the record header; hours is day plus night.

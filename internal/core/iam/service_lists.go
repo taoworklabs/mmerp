@@ -15,7 +15,7 @@ import (
 // ListSettings returns the signed-in user's settings for a list; none saved reads as empty.
 func (s *Service) ListSettings(ctx context.Context, key string) (ListSettings, error) {
 	id, _ := platform.ActorFrom(ctx)
-	raw, err := store.New(platform.DBFrom(ctx)).ListSettings(ctx, store.ListSettingsParams{UserID: id, ListKey: key})
+	raw, err := store.ListSettings.Run(ctx, store.ListSettingsParams{UserID: id, ListKey: key})
 	out := ListSettings{Views: []ListView{}, Columns: []ListColumn{}}
 	if errors.Is(err, pgx.ErrNoRows) {
 		return out, nil
@@ -49,6 +49,6 @@ func (s *Service) SetListSettings(ctx context.Context, key string, in ListSettin
 	}
 	id, _ := platform.ActorFrom(ctx)
 	return platform.InTx(ctx, func(ctx context.Context) error {
-		return store.New(platform.DBFrom(ctx)).SetListSettings(ctx, store.SetListSettingsParams{UserID: id, ListKey: key, Settings: raw})
+		return store.SetListSettings.Run(ctx, store.SetListSettingsParams{UserID: id, ListKey: key, Settings: raw})
 	})
 }

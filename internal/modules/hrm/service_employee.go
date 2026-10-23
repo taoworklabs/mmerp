@@ -20,7 +20,7 @@ var sensitiveFields = []string{"national_id", "social_insurance_no", "tax_code",
 
 // employeeUnit locates an employee for record: the org unit the profile belongs to.
 func employeeUnit(ctx context.Context, id int64) (int64, error) {
-	e, err := store.New(platform.DBFrom(ctx)).GetEmployee(ctx, id)
+	e, err := store.GetEmployee.Run(ctx, id)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return 0, platform.ErrNotFound
 	}
@@ -157,7 +157,7 @@ func (s *Service) visible(ctx context.Context, id int64) (store.GetEmployeeRow, 
 	if err := s.d.Record.Visible(ctx, record.Ref{Type: employeeType, ID: id}, record.View); err != nil {
 		return store.GetEmployeeRow{}, err
 	}
-	return store.New(platform.DBFrom(ctx)).GetEmployee(ctx, id)
+	return store.GetEmployee.Run(ctx, id)
 }
 
 // RevealSensitive returns one sensitive field. The read is audited before the value
@@ -189,11 +189,10 @@ func (s *Service) CreateEmployee(ctx context.Context, in NewEmployee) (int64, er
 		if err != nil {
 			return err
 		}
-		q := store.New(platform.DBFrom(ctx))
 		if row.Code, err = s.d.Numbering.Code(ctx, employeeType, in.Code, employeeCodeTaken); err != nil {
 			return err
 		}
-		id, err = q.CreateEmployee(ctx, store.CreateEmployeeParams{
+		id, err = store.CreateEmployee.Run(ctx, store.CreateEmployeeParams{
 			Code: row.Code, FullName: row.FullName, DateOfBirth: row.DateOfBirth, Gender: row.Gender, Phone: row.Phone,
 			Email: row.Email, Address: row.Address, OrgUnitID: row.OrgUnitID, ManagerID: row.ManagerID, UserID: row.UserID,
 			HireDate: row.HireDate, TerminationDate: row.TerminationDate, NationalID: row.NationalID,
@@ -211,11 +210,10 @@ func (s *Service) CreateEmployee(ctx context.Context, in NewEmployee) (int64, er
 // UpdateEmployee replaces the plain fields and the sensitive fields listed in in.
 func (s *Service) UpdateEmployee(ctx context.Context, id int64, in EmployeeInput) error {
 	return platform.InTx(ctx, func(ctx context.Context) error {
-		q := store.New(platform.DBFrom(ctx))
 		if _, err := s.visible(ctx, id); err != nil {
 			return err
 		}
-		old, err := q.LockEmployee(ctx, id)
+		old, err := store.LockEmployee.Run(ctx, id)
 		if err != nil {
 			return err
 		}
@@ -228,10 +226,10 @@ func (s *Service) UpdateEmployee(ctx context.Context, id int64, in EmployeeInput
 		}
 		if row.ManagerID.Valid && row.ManagerID != old.ManagerID {
 			// ponytail: one lock for all manager changes; per-tree locks if HR edits get busy.
-			if err := q.LockManagerTree(ctx); err != nil {
+			if err := store.LockManagerTree.Run(ctx); err != nil {
 				return err
 			}
-			chain, err := q.ManagerChain(ctx, row.ManagerID.Int64)
+			chain, err := store.ManagerChain.Run(ctx, row.ManagerID.Int64)
 			if err != nil {
 				return err
 			}
@@ -239,14 +237,14 @@ func (s *Service) UpdateEmployee(ctx context.Context, id int64, in EmployeeInput
 				return ErrManagerSelf
 			}
 			if slices.Contains(chain, id) {
-				m, err := q.GetEmployee(ctx, row.ManagerID.Int64)
+				m, err := store.GetEmployee.Run(ctx, row.ManagerID.Int64)
 				if err != nil {
 					return err
 				}
 				return &platform.Error{Status: ErrManagerCycle.Status, Code: ErrManagerCycle.Code, Params: map[string]any{"name": m.Code + " · " + m.FullName}}
 			}
 		}
-		if err := q.UpdateEmployee(ctx, store.UpdateEmployeeParams{
+		if err := store.UpdateEmployee.Run(ctx, store.UpdateEmployeeParams{
 			ID: row.ID, FullName: row.FullName, DateOfBirth: row.DateOfBirth, Gender: row.Gender, Phone: row.Phone, Email: row.Email,
 			Address: row.Address, OrgUnitID: row.OrgUnitID, ManagerID: row.ManagerID, UserID: row.UserID, HireDate: row.HireDate,
 			TerminationDate: row.TerminationDate, NationalID: row.NationalID, SocialInsuranceNo: row.SocialInsuranceNo, TaxCode: row.TaxCode,
@@ -429,5 +427,5 @@ func writeErr(err error) error {
 
 // employeeCodeTaken reports whether a code is used, for numbering to skip it.
 func employeeCodeTaken(ctx context.Context, code string) (bool, error) {
-	return store.New(platform.DBFrom(ctx)).EmployeeCodeTaken(ctx, code)
+	return store.EmployeeCodeTaken.Run(ctx, code)
 }

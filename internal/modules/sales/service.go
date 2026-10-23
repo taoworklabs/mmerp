@@ -14,6 +14,7 @@ import (
 	"github.com/taoworklabs/mmerp/internal/core/record"
 	"github.com/taoworklabs/mmerp/internal/modules/sales/internal/store"
 	"github.com/taoworklabs/mmerp/internal/platform"
+	"github.com/taoworklabs/mmerp/internal/platform/data"
 )
 
 const (
@@ -56,6 +57,10 @@ func NewService(d Deps) *Service {
 		panic(err) // embedded files: broken only by a bad build
 	}
 	s := &Service{d: d}
+	data.RegisterConstraints(data.Constraints{
+		"sales.customers_code_key": ErrCustomerCodeTaken,
+		"sales.items_code_key":     ErrItemCodeTaken,
+	})
 	work := []string{PermCustomerView, PermCustomerEdit, PermQuoteView, PermQuoteEdit, PermOrderView, PermOrderEdit, PermItemView}
 	d.IAM.RegisterRoles("sales", map[string][]string{
 		// The same permissions under two names, so approval rules can route steps to managers.
@@ -72,7 +77,7 @@ func NewService(d Deps) *Service {
 	d.Record.Register(record.Type{Code: customerType, Product: "sales", Kind: record.Catalog,
 		Perms:   record.Perms{View: PermCustomerView, Edit: PermCustomerEdit, ViewFiles: PermCustomerView, Attach: PermCustomerEdit},
 		Locate:  locateCustomer,
-		HasData: func(ctx context.Context) (bool, error) { return store.New(platform.DBFrom(ctx)).AnyCatalog(ctx) }})
+		HasData: func(ctx context.Context) (bool, error) { return store.AnyCatalog.Run(ctx) }})
 	for _, k := range []kind{quoteKind, orderKind} {
 		var actions map[record.Action]record.ModuleAction
 		if k == quoteKind {
@@ -103,14 +108,13 @@ func (s *Service) require(ctx context.Context, perm string, unit int64, more ...
 // transition keeps posted documents to active customers, and a quotation with a live
 // order from being cancelled; the quotation's row lock orders this against making the order.
 func (s *Service) transition(ctx context.Context, d record.Doc, _ record.Status) error {
-	q := store.New(platform.DBFrom(ctx))
 	switch d.Status {
 	case record.Posted:
-		h, err := q.GetHeader(ctx, d.ID)
+		h, err := store.GetHeader.Run(ctx, d.ID)
 		if err != nil {
 			return err
 		}
-		active, err := q.CustomerActive(ctx, h.CustomerID)
+		active, err := store.CustomerActive.Run(ctx, h.CustomerID)
 		if err != nil {
 			return err
 		}
@@ -121,7 +125,7 @@ func (s *Service) transition(ctx context.Context, d record.Doc, _ record.Status)
 		if d.Type != quoteType {
 			return nil
 		}
-		_, err := q.LiveOrder(ctx, pgtype.Int8{Int64: d.ID, Valid: true})
+		_, err := store.LiveOrder.Run(ctx, pgtype.Int8{Int64: d.ID, Valid: true})
 		if err == nil {
 			return ErrQuoteHasOrder
 		}
@@ -135,7 +139,7 @@ func (s *Service) transition(ctx context.Context, d record.Doc, _ record.Status)
 // beforeSubmit copies the customer's current details onto a draft being sent, so what goes to
 // approval, and what posts, is the customer as it is at sending; an inactive one keeps it a draft.
 func (s *Service) beforeSubmit(ctx context.Context, d record.Doc) error {
-	active, err := store.New(platform.DBFrom(ctx)).CopyCustomer(ctx, d.ID)
+	active, err := store.CopyCustomer.Run(ctx, d.ID)
 	if err != nil {
 		return err
 	}

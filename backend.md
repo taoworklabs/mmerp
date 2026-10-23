@@ -128,7 +128,7 @@ Rules a tool can enforce are enforced by a tool. For rules no tool can enforce, 
 | Cross-product calls | Through interfaces in `deps.go` or `hooks.go`, wired in `internal/app` | If it cannot be imported, it has to go through an interface |
 | Database | One Postgres schema per module, named after the module (`sales.orders`, `iam.users`). Module X's `queries.sql` may only INSERT/UPDATE/DELETE into schema X, and only read the permitted schemas ([Rules between modules](#rules-between-modules)) | A CI script scans the writes and reads in `queries.sql`. SQL written outside `queries.sql` is not caught |
 | Documents | Call `record` before writing document tables | The `recordtest` contract suite (see [documents.md](./documents.md#guarantees)) |
-| Transactions | Services get the DB only through `platform.DBFrom(ctx)` | `depguard` (`no-pool`) forbids importing `pgxpool` in `core`, `shared`, `modules`; `forbidigo` forbids `pgx.Connect`. Package-level DB variables: checked in review |
+| Data access | Services query only through the data engine (`internal/platform/data`) | `forbidigo` forbids `store.New` and `platform.DBFrom` outside infrastructure, tests and `recordtest`; `depguard` (`no-pool`) forbids importing `pgxpool` in `core`, `shared`, `modules`; `forbidigo` forbids `pgx.Connect`. Package-level DB variables: checked in review |
 | Transactions | A write outside `platform.InTx` fails instead of committing on its own | The app pool is read-only outside a transaction; Postgres rejects the write with `25006` |
 | Data engine | List scopes come from `iam.DataScope`, so a module cannot widen its own visibility | `data.Scope`'s fields are unexported; only `iam.(*Service).DataScope` builds a non-zero one |
 
@@ -155,13 +155,28 @@ This tree is not a business model. Which store a warehouse belongs to, which dep
 - No module creates sign-in accounts itself. Business person records (employees, customers…) are owned by business modules and link to `iam.users.id` when needed.
 - **Promoting an entity to shared.** When an entity of one product is about to be used by a second product, move it to `shared/` *before* the second product starts using it. This means moving the package and moving the table to a new schema (`ALTER TABLE … SET SCHEMA`); ids and foreign keys stay unchanged.
 
+## Data access
+
+Services never build a sqlc store. `make gen` writes a descriptor for every query into the module's `internal/store/data.gen.go`, and services call it:
+
+```go
+c, err := store.GetCustomer.Run(ctx, id)
+err = store.DeleteLines.Run(ctx, docID)
+```
+
+`Run` takes the connection from `ctx`, names the query in the logs and normalizes the error. `pgx.ErrNoRows` passes through unchanged.
+
+- **Filterable, paginated lists** are a `data.List` over a `-- data:base` query: scope rule, search columns, sorts and tiebreak are declared once, filters are `data.Eq/Gte/Lte/In/…` conditions, and the scope comes from `iam.DataScope`. Dynamic SQL is built only from code-declared fragments (`data.SQL(…).Arg(v)`).
+- **Constraints with one meaning everywhere** are mapped once, in `NewService`, with `data.RegisterConstraints` (`"sales.items_code_key": ErrItemCodeTaken`). A constraint whose meaning depends on the caller stays unmapped and keeps `platform.Violates` at its call site.
+- **Many rows at once** are one statement (`INSERT … SELECT unnest(@a::…[]), …`), not one call per row.
+
 ## Transactions
 
 A single rule:
 
-- A service gets a connection with `platform.DBFrom(ctx)`. If ctx holds a transaction, that transaction is returned; otherwise the pool is returned, and the pool is read-only outside a transaction: a write on it fails with `25006` instead of committing on its own. A service never keeps the pool (`*pgxpool.Pool`) or a `platform.Conn` in a field, and never creates a sqlc store in its constructor.
+- The data engine gets its connection from `ctx`. If ctx holds a transaction, that transaction is used; otherwise the pool is, and the pool is read-only outside a transaction: a write on it fails with `25006` instead of committing on its own. A service never keeps the pool (`*pgxpool.Pool`) or a `platform.Conn` in a field.
 - A service opens a transaction with `platform.InTx(ctx, func(ctx) error)`. If ctx already holds a transaction, that transaction is reused. Every service called inside automatically shares the transaction; only `ctx` needs to be passed.
-- Never pass a `pgx.Tx`, or a sqlc store bound to a transaction, as a parameter. A helper running in a transaction takes `ctx` and calls `store.New(platform.DBFrom(ctx))` itself; otherwise an audit write inside can easily use the outer ctx by mistake and fall outside the transaction.
+- Never pass a `pgx.Tx`, or a sqlc store bound to a transaction, as a parameter. A helper running in a transaction takes `ctx` and passes it to every query; otherwise an audit write inside can easily use the outer ctx by mistake and fall outside the transaction.
 - Never use a ctx holding a transaction in another goroutine: a transaction can only be used sequentially, and is no longer valid after commit.
 - The audit log of a change is written in the same transaction as the change.
 
@@ -187,8 +202,8 @@ A product module reaches the core only through these entry points. A need none o
 | Writes while a product is disabled | `platform.ProductGate`; `record`, the route middleware, settings, jobs, prints, imports and exports apply it by the registered product |
 | Audit | `audit.Record` / `RecordFor` / `RecordChanges` in the change's transaction; `record.RestrictHistory` keeps an entry off a record's timeline for who may not see it |
 | Today and settings | `setting.Today`; `setting.GetFor`; a product's legal-entity settings registered with `RegisterLegalEntityKey(product, …)` |
-| Errors | `*platform.Error` sentinels with stable codes; `platform.Violates(err, constraint)` maps a constraint to one; any other error answers `internal_error` and is logged |
-| Lists | Filters embed `platform.Paging` |
+| Errors | `*platform.Error` sentinels with stable codes; `data.RegisterConstraints` maps a constraint with one meaning, `platform.Violates(err, constraint)` the others at their call site; any other error answers `internal_error` and is logged |
+| Lists | A `data.List` scoped by `iam.DataScope` ([Data access](#data-access)); filters embed `platform.Paging` |
 | Jobs, prints, imports, exports | `platform.Enqueue`; `printing.Register`; `dataio.RegisterImport` / `RegisterExport` |
 | Attachments, discussion, notifications | Come with the record type; `notification.Send` for a module's own events |
 | A disabled product stays shown | Documents count by themselves; a catalog type answers `HasData` |

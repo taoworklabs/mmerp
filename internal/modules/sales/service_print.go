@@ -40,12 +40,11 @@ type docPrint struct {
 
 // printData reads a quotation or order as printed; printing checked the actor may print it.
 func (s *Service) printData(ctx context.Context, id int64) ([]printing.Part, error) {
-	q := store.New(platform.DBFrom(ctx))
-	h, err := q.GetHeader(ctx, id)
+	h, err := store.GetHeader.Run(ctx, id)
 	if err != nil {
 		return nil, err
 	}
-	lines, err := q.GetLines(ctx, id)
+	lines, err := store.GetLines.Run(ctx, id)
 	if err != nil {
 		return nil, err
 	}

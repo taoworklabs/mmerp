@@ -17,7 +17,7 @@ Every choice below must satisfy these three constraints:
 | Language | Go, latest stable release | Upgrade Go with each app release |
 | HTTP | [Huma v2](https://huma.rocks) on the [chi](https://go-chi.io) router | Huma generates OpenAPI 3.1 from Go types and validates requests; chi handles routing and middleware. Handlers only translate between HTTP and the service, with no logic |
 | Database | Postgres, pinned to one major | At least version 15 (needs `NULLS NOT DISTINCT`). Pick the newest major that has had at least one patch release |
-| DB access | [pgx v5](https://github.com/jackc/pgx) + [sqlc](https://sqlc.dev) | One `queries.sql` per module; generated code lives in the module's `internal/store`. Get a connection through `platform.DBFrom(ctx)` ([backend.md](./backend.md#transactions)) |
+| DB access | [pgx v5](https://github.com/jackc/pgx) + [sqlc](https://sqlc.dev) | One `queries.sql` per module; generated code lives in the module's `internal/store`. `make gen` also writes a data-engine descriptor per query (`data.gen.go`, plugin `cmd/sqlc-gen-data`); services call those ([backend.md](./backend.md#data-access)) |
 | Jobs | [River](https://riverqueue.com) | Queue in the tenant database, enqueued with `InsertTx` in the same transaction ([ADR-0004](./docs/adr/0004-job-queue-in-tenant-database.md)) |
 | Migration | Custom runner in `platform` | SQL files embedded with `embed`; all pending migrations run in one transaction under an advisory lock, and River's migrations run in the same transaction ([tenancy.md](./tenancy.md#versions-and-migrations)) |
 | Sign-in | Cookie + session stored in the DB (`iam`) | Cookie `HttpOnly`, `Secure`, `SameSite=Lax`. Revoking a session takes effect immediately. Third-party API access uses API keys |

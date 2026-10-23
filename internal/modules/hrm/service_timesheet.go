@@ -20,8 +20,7 @@ func (s *Service) timesheetTransition(ctx context.Context, d record.Doc, from re
 	if _, ok := payrollEffect(d, from); !ok {
 		return nil
 	}
-	q := store.New(platform.DBFrom(ctx))
-	t, err := q.GetTimesheet(ctx, d.ID)
+	t, err := store.GetTimesheet.Run(ctx, d.ID)
 	if err != nil {
 		return err
 	}
@@ -29,7 +28,7 @@ func (s *Service) timesheetTransition(ctx context.Context, d record.Doc, from re
 		return err
 	}
 	if d.Status == record.Cancelled {
-		return q.DeactivateTimesheet(ctx, d.ID)
+		return store.DeactivateTimesheet.Run(ctx, d.ID)
 	}
 	return nil
 }
@@ -72,7 +71,7 @@ func (s *Service) Timesheet(ctx context.Context, id int64) (Timesheet, error) {
 	if err != nil {
 		return Timesheet{}, err
 	}
-	t, err := store.New(platform.DBFrom(ctx)).GetTimesheet(ctx, id)
+	t, err := store.GetTimesheet.Run(ctx, id)
 	if err != nil {
 		return Timesheet{}, err
 	}
@@ -113,7 +112,7 @@ func timesheetWarnings(ctx context.Context, cal calendar, t store.GetTimesheetRo
 	for i, e := range emps {
 		ids[i] = e.ID
 	}
-	rows, err := store.New(platform.DBFrom(ctx)).PayrollLeaves(ctx, store.PayrollLeavesParams{Ids: ids, PeriodStart: t.PeriodStart, PeriodEnd: t.PeriodEnd})
+	rows, err := store.PayrollLeaves.Run(ctx, store.PayrollLeavesParams{Ids: ids, PeriodStart: t.PeriodStart, PeriodEnd: t.PeriodEnd})
 	if err != nil {
 		return nil, err
 	}
@@ -157,11 +156,7 @@ func (s *Service) CreateTimesheet(ctx context.Context, in NewTimesheet) (int64, 
 		if err != nil || d.Reused {
 			return err
 		}
-		err = store.New(platform.DBFrom(ctx)).CreateTimesheet(ctx, store.CreateTimesheetParams{ID: id, OrgUnitID: in.OrgUnitID, PeriodStart: start, PeriodEnd: end})
-		if platform.Violates(err, "timesheets_org_unit_period_key") {
-			return ErrTimesheetExists
-		}
-		return err
+		return store.CreateTimesheet.Run(ctx, store.CreateTimesheetParams{ID: id, OrgUnitID: in.OrgUnitID, PeriodStart: start, PeriodEnd: end})
 	})
 	return id, err
 }
@@ -176,7 +171,7 @@ func (s *Service) SaveTimesheet(ctx context.Context, id int64, in TimesheetUpdat
 		if _, err := s.d.Record.Read(ctx, record.Ref{Type: timesheetType, ID: id}); err != nil {
 			return err
 		}
-		t, err := store.New(platform.DBFrom(ctx)).GetTimesheet(ctx, id)
+		t, err := store.GetTimesheet.Run(ctx, id)
 		if err != nil {
 			return err
 		}
@@ -193,18 +188,13 @@ func (s *Service) SaveTimesheet(ctx context.Context, id int64, in TimesheetUpdat
 		if p.EmployeeIds, p.Dates, p.Days, err = checkLines(t, emps, in.Lines); err != nil {
 			return err
 		}
-		q := store.New(platform.DBFrom(ctx))
-		err = q.UpdateTimesheetPeriod(ctx, store.UpdateTimesheetPeriodParams{ID: id, PeriodStart: start, PeriodEnd: end})
-		if platform.Violates(err, "timesheets_org_unit_period_key") {
-			return ErrTimesheetExists
-		}
-		if err != nil {
+		if err := store.UpdateTimesheetPeriod.Run(ctx, store.UpdateTimesheetPeriodParams{ID: id, PeriodStart: start, PeriodEnd: end}); err != nil {
 			return err
 		}
-		if err := q.DeleteTimesheetLines(ctx, id); err != nil {
+		if err := store.DeleteTimesheetLines.Run(ctx, id); err != nil {
 			return err
 		}
-		if err := q.InsertTimesheetLines(ctx, p); err != nil {
+		if err := store.InsertTimesheetLines.Run(ctx, p); err != nil {
 			return err
 		}
 		return s.d.Audit.RecordFor(ctx, "hrm.timesheet_saved", audit.Ref{Type: timesheetType, ID: id},
@@ -213,11 +203,11 @@ func (s *Service) SaveTimesheet(ctx context.Context, id int64, in TimesheetUpdat
 }
 
 func deleteTimesheet(ctx context.Context, id int64) error {
-	return store.New(platform.DBFrom(ctx)).DeleteTimesheet(ctx, id)
+	return store.DeleteTimesheet.Run(ctx, id)
 }
 
 func (s *Service) timesheetEmployees(ctx context.Context, t store.GetTimesheetRow) ([]TimesheetEmployee, error) {
-	rows, err := store.New(platform.DBFrom(ctx)).TimesheetEmployees(ctx, store.TimesheetEmployeesParams{
+	rows, err := store.TimesheetEmployees.Run(ctx, store.TimesheetEmployeesParams{
 		OrgUnitID: t.OrgUnitID, PeriodStart: t.PeriodStart, PeriodEnd: t.PeriodEnd, TimesheetID: t.ID,
 	})
 	out := make([]TimesheetEmployee, len(rows))
@@ -228,7 +218,7 @@ func (s *Service) timesheetEmployees(ctx context.Context, t store.GetTimesheetRo
 }
 
 func timesheetLines(ctx context.Context, id int64) ([]TimesheetLine, error) {
-	rows, err := store.New(platform.DBFrom(ctx)).TimesheetLines(ctx, id)
+	rows, err := store.TimesheetLines.Run(ctx, id)
 	out := make([]TimesheetLine, len(rows))
 	for i, r := range rows {
 		out[i] = TimesheetLine{EmployeeID: r.EmployeeID, Date: *platform.DatePtr(r.Date), Days: platform.PlainDecimal(r.Days)}

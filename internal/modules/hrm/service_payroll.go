@@ -101,7 +101,7 @@ func (s *Service) CreatePayroll(ctx context.Context, in NewPayroll) (PayrollJob,
 		if err != nil || d.Reused {
 			return err
 		}
-		if err := store.New(platform.DBFrom(ctx)).CreatePayroll(ctx, store.CreatePayrollParams{ID: d.ID, PeriodStart: start, PeriodEnd: end}); err != nil {
+		if err := store.CreatePayroll.Run(ctx, store.CreatePayrollParams{ID: d.ID, PeriodStart: start, PeriodEnd: end}); err != nil {
 			return err
 		}
 		out.JobID, err = platform.Enqueue(ctx, payrollComputeArgs{ID: d.ID, Version: d.Version})
@@ -133,7 +133,7 @@ func (s *Service) editablePayroll(ctx context.Context, id int64, version int32) 
 	if err != nil {
 		return store.GetPayrollRow{}, d, err
 	}
-	p, err := store.New(platform.DBFrom(ctx)).GetPayroll(ctx, id)
+	p, err := store.GetPayroll.Run(ctx, id)
 	if err != nil {
 		return p, d, err
 	}
@@ -159,7 +159,7 @@ func (s *Service) computePayroll(ctx context.Context, j *river.Job[payrollComput
 		if ok, err := s.d.Record.Can(ctx, payrollType, ref.ID, record.Edit); err != nil || !ok {
 			return platform.OrErr(err, platform.ErrForbidden)
 		}
-		p, err := store.New(platform.DBFrom(ctx)).GetPayroll(ctx, ref.ID)
+		p, err := store.GetPayroll.Run(ctx, ref.ID)
 		if err != nil {
 			return err
 		}
@@ -186,8 +186,7 @@ func (s *Service) computePayroll(ctx context.Context, j *river.Job[payrollComput
 		if _, err := s.d.Record.Edit(ctx, ref, j.Args.Version, record.Header{Date: b.End, OrgUnitID: p.LegalEntityID, Amount: &cost}); err != nil {
 			return err
 		}
-		q := store.New(platform.DBFrom(ctx))
-		if err := q.DeletePayrollLines(ctx, ref.ID); err != nil {
+		if err := store.DeletePayrollLines.Run(ctx, ref.ID); err != nil {
 			return err
 		}
 		for i, e := range b.Employees {
@@ -195,7 +194,7 @@ func (s *Service) computePayroll(ctx context.Context, j *river.Job[payrollComput
 			if err != nil {
 				return err
 			}
-			if err := q.InsertPayrollLine(ctx, store.InsertPayrollLineParams{PayrollID: ref.ID, EmployeeID: e.ID, OrgUnitID: e.OrgUnitID,
+			if err := store.InsertPayrollLine.Run(ctx, store.InsertPayrollLineParams{PayrollID: ref.ID, EmployeeID: e.ID, OrgUnitID: e.OrgUnitID,
 				Data: platform.Encrypt(ctx, linesAAD, raw)}); err != nil {
 				return err
 			}
@@ -204,17 +203,17 @@ func (s *Service) computePayroll(ctx context.Context, j *river.Job[payrollComput
 		for _, x := range b.Sources {
 			src.DocTypes, src.DocIds, src.Versions = append(src.DocTypes, x.DocType), append(src.DocIds, x.DocID), append(src.Versions, x.Version)
 		}
-		if err := q.DeletePayrollSources(ctx, ref.ID); err != nil {
+		if err := store.DeletePayrollSources.Run(ctx, ref.ID); err != nil {
 			return err
 		}
-		if err := q.InsertPayrollSources(ctx, src); err != nil {
+		if err := store.InsertPayrollSources.Run(ctx, src); err != nil {
 			return err
 		}
 		hash, err := b.hash()
 		if err != nil {
 			return err
 		}
-		if err := q.SavePayrollResult(ctx, store.SavePayrollResultParams{ID: ref.ID, InputsHash: hash}); err != nil {
+		if err := store.SavePayrollResult.Run(ctx, store.SavePayrollResultParams{ID: ref.ID, InputsHash: hash}); err != nil {
 			return err
 		}
 		if err := s.d.Audit.RecordFor(ctx, "hrm.payroll_computed", audit.Ref(ref), map[string]any{"employees": len(b.Employees), "sources": len(b.Sources)}); err != nil {
@@ -240,7 +239,7 @@ func (s *Service) sourcesChanged(ctx context.Context, p store.GetPayrollRow) (bo
 
 // payrollBeforeSubmit sends only a payroll computed from its current sources.
 func (s *Service) payrollBeforeSubmit(ctx context.Context, d record.Doc) error {
-	p, err := store.New(platform.DBFrom(ctx)).GetPayroll(ctx, d.ID)
+	p, err := store.GetPayroll.Run(ctx, d.ID)
 	if err != nil {
 		return err
 	}
@@ -262,28 +261,27 @@ func (s *Service) payrollTransition(ctx context.Context, d record.Doc, from reco
 	if !ok {
 		return nil
 	}
-	q := store.New(platform.DBFrom(ctx))
-	p, err := q.GetPayroll(ctx, d.ID)
+	p, err := store.GetPayroll.Run(ctx, d.ID)
 	if err != nil {
 		return err
 	}
 	le := p.LegalEntityID
-	if err := q.EnsurePayrollLock(ctx, le); err != nil {
+	if err := store.EnsurePayrollLock.Run(ctx, le); err != nil {
 		return err
 	}
-	if err := q.LockPayrollLock(ctx, le); err != nil {
+	if err := store.LockPayrollLock.Run(ctx, le); err != nil {
 		return err
 	}
-	if err := q.EnsurePayrollPeriod(ctx, store.EnsurePayrollPeriodParams{LegalEntityID: le, PeriodStart: p.PeriodStart, PeriodEnd: p.PeriodEnd}); err != nil {
+	if err := store.EnsurePayrollPeriod.Run(ctx, store.EnsurePayrollPeriodParams{LegalEntityID: le, PeriodStart: p.PeriodStart, PeriodEnd: p.PeriodEnd}); err != nil {
 		return err
 	}
-	holder, err := q.PostedPayroll(ctx, store.PostedPayrollParams{LegalEntityID: le, PeriodStart: p.PeriodStart})
+	holder, err := store.PostedPayroll.Run(ctx, store.PostedPayrollParams{LegalEntityID: le, PeriodStart: p.PeriodStart})
 	if err != nil {
 		return err
 	}
 	ref := record.Ref{Type: payrollType, ID: d.ID}
 	set := func(id pgtype.Int8) error {
-		return q.SetPostedPayroll(ctx, store.SetPostedPayrollParams{LegalEntityID: le, PeriodStart: p.PeriodStart, PostedPayrollID: id})
+		return store.SetPostedPayroll.Run(ctx, store.SetPostedPayrollParams{LegalEntityID: le, PeriodStart: p.PeriodStart, PostedPayrollID: id})
 	}
 	if !posted {
 		if holder.Int64 != d.ID {
@@ -347,7 +345,7 @@ func postingLines(le int64, lines []PayrollLine) []posting.Line {
 
 // payrollLines decrypts every employee's pay of a payroll, by employee code.
 func (s *Service) payrollLines(ctx context.Context, id int64) ([]PayrollLine, error) {
-	rows, err := store.New(platform.DBFrom(ctx)).PayrollLines(ctx, id)
+	rows, err := store.PayrollLines.Run(ctx, id)
 	out := make([]PayrollLine, len(rows))
 	for i, r := range rows {
 		raw, err := platform.Decrypt(ctx, linesAAD, r.Data)
@@ -370,7 +368,7 @@ func (s *Service) payrollLines(ctx context.Context, id int64) ([]PayrollLine, er
 
 // adjustments decrypts the adjustments of a payroll.
 func (s *Service) adjustments(ctx context.Context, id int64) ([]PayrollAdjustment, error) {
-	rows, err := store.New(platform.DBFrom(ctx)).PayrollAdjustments(ctx, id)
+	rows, err := store.PayrollAdjustments.Run(ctx, id)
 	out := make([]PayrollAdjustment, len(rows))
 	for i, r := range rows {
 		raw, err := platform.Decrypt(ctx, adjustmentsAAD, r.Data)
@@ -396,7 +394,7 @@ func (s *Service) SavePayrollAdjustments(ctx context.Context, id int64, in Payro
 		if _, err := s.d.Record.Read(ctx, ref); err != nil {
 			return err
 		}
-		p, err := store.New(platform.DBFrom(ctx)).GetPayroll(ctx, id)
+		p, err := store.GetPayroll.Run(ctx, id)
 		if err != nil {
 			return err
 		}
@@ -411,8 +409,7 @@ func (s *Service) SavePayrollAdjustments(ctx context.Context, id int64, in Payro
 		if err != nil {
 			return err
 		}
-		q := store.New(platform.DBFrom(ctx))
-		if err := q.DeletePayrollAdjustments(ctx, id); err != nil {
+		if err := store.DeletePayrollAdjustments.Run(ctx, id); err != nil {
 			return err
 		}
 		for _, a := range in.Items {
@@ -421,7 +418,7 @@ func (s *Service) SavePayrollAdjustments(ctx context.Context, id int64, in Payro
 				return ErrAdjustment
 			}
 			// Only an employee of the payroll's legal entity: their pay is read into it.
-			e, err := q.GetEmployee(ctx, a.EmployeeID)
+			e, err := store.GetEmployee.Run(ctx, a.EmployeeID)
 			if errors.Is(err, pgx.ErrNoRows) {
 				return ErrAdjustment
 			}
@@ -435,12 +432,12 @@ func (s *Service) SavePayrollAdjustments(ctx context.Context, id int64, in Payro
 			if err != nil {
 				return err
 			}
-			if err := q.InsertPayrollAdjustment(ctx, store.InsertPayrollAdjustmentParams{PayrollID: id, EmployeeID: a.EmployeeID, SourcePeriod: start,
+			if err := store.InsertPayrollAdjustment.Run(ctx, store.InsertPayrollAdjustmentParams{PayrollID: id, EmployeeID: a.EmployeeID, SourcePeriod: start,
 				Data: platform.Encrypt(ctx, adjustmentsAAD, raw)}); err != nil {
 				return err
 			}
 		}
-		if err := q.ClearPayrollComputed(ctx, id); err != nil {
+		if err := store.ClearPayrollComputed.Run(ctx, id); err != nil {
 			return err
 		}
 		oldItems := make([]PayrollAdjustmentInput, len(before))
@@ -494,7 +491,7 @@ func (s *Service) Payroll(ctx context.Context, id int64) (Payroll, error) {
 		if err != nil {
 			return err
 		}
-		p, err := store.New(platform.DBFrom(ctx)).GetPayroll(ctx, id)
+		p, err := store.GetPayroll.Run(ctx, id)
 		if err != nil {
 			return err
 		}
@@ -554,7 +551,7 @@ func payrollTotals(ctx context.Context, lines []PayrollLine) ([]PayrollTotal, er
 	for i, t := range out {
 		ids[i] = t.OrgUnitID
 	}
-	names, err := store.New(platform.DBFrom(ctx)).OrgUnitNames(ctx, ids)
+	names, err := store.OrgUnitNames.Run(ctx, ids)
 	for i := range out {
 		for _, n := range names {
 			if n.ID == out[i].OrgUnitID {
@@ -566,7 +563,7 @@ func payrollTotals(ctx context.Context, lines []PayrollLine) ([]PayrollTotal, er
 }
 
 func deletePayroll(ctx context.Context, id int64) error {
-	return store.New(platform.DBFrom(ctx)).DeletePayroll(ctx, id)
+	return store.DeletePayroll.Run(ctx, id)
 }
 
 // payrollColumns are the money columns of the export, in order.
@@ -592,7 +589,7 @@ func (s *Service) exportablePayroll(ctx context.Context, params json.RawMessage)
 	if ok, err := s.d.Record.Can(ctx, payrollType, in.PayrollID, record.Export); err != nil || !ok {
 		return store.GetPayrollRow{}, platform.OrErr(err, platform.ErrForbidden)
 	}
-	return store.New(platform.DBFrom(ctx)).GetPayroll(ctx, in.PayrollID)
+	return store.GetPayroll.Run(ctx, in.PayrollID)
 }
 
 // exportPayroll writes one row per employee with every amount, department by department,

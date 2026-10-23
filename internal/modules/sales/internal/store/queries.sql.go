@@ -506,44 +506,46 @@ func (q *Queries) InsertHeader(ctx context.Context, arg InsertHeaderParams) erro
 	return err
 }
 
-const insertLine = `-- name: InsertLine :exec
+const insertLines = `-- name: InsertLines :exec
 INSERT INTO sales.lines (doc_id, position, item_id, item_code, description, unit, quantity, unit_price,
     discount_percent, vat_rate, amount, discount, vat)
-VALUES ($1, $2, $3, $4, $5, $6, CAST($7::text AS numeric), $8,
-    CAST($9::text AS numeric), $10, $11, $12, $13)
+SELECT $1::bigint, unnest($2::int[]), unnest($3::bigint[]), unnest($4::text[]),
+    unnest($5::text[]), unnest($6::text[]), unnest($7::text[])::numeric,
+    unnest($8::bigint[]), unnest($9::text[])::numeric, unnest($10::text[]),
+    unnest($11::bigint[]), unnest($12::bigint[]), unnest($13::bigint[])
 `
 
-type InsertLineParams struct {
-	DocID           int64
-	Position        int32
-	ItemID          int64
-	ItemCode        string
-	Description     string
-	Unit            string
-	Quantity        string
-	UnitPrice       int64
-	DiscountPercent string
-	VatRate         string
-	Amount          int64
-	Discount        int64
-	Vat             int64
+type InsertLinesParams struct {
+	DocID            int64
+	Positions        []int32
+	ItemIds          []int64
+	ItemCodes        []string
+	Descriptions     []string
+	Units            []string
+	Quantities       []string
+	UnitPrices       []int64
+	DiscountPercents []string
+	VatRates         []string
+	Amounts          []int64
+	Discounts        []int64
+	Vats             []int64
 }
 
-func (q *Queries) InsertLine(ctx context.Context, arg InsertLineParams) error {
-	_, err := q.db.Exec(ctx, insertLine,
+func (q *Queries) InsertLines(ctx context.Context, arg InsertLinesParams) error {
+	_, err := q.db.Exec(ctx, insertLines,
 		arg.DocID,
-		arg.Position,
-		arg.ItemID,
-		arg.ItemCode,
-		arg.Description,
-		arg.Unit,
-		arg.Quantity,
-		arg.UnitPrice,
-		arg.DiscountPercent,
-		arg.VatRate,
-		arg.Amount,
-		arg.Discount,
-		arg.Vat,
+		arg.Positions,
+		arg.ItemIds,
+		arg.ItemCodes,
+		arg.Descriptions,
+		arg.Units,
+		arg.Quantities,
+		arg.UnitPrices,
+		arg.DiscountPercents,
+		arg.VatRates,
+		arg.Amounts,
+		arg.Discounts,
+		arg.Vats,
 	)
 	return err
 }

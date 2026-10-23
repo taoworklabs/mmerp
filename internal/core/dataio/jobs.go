@@ -149,7 +149,7 @@ func (s *Service) runImport(ctx context.Context, j *river.Job[importArgs]) error
 // readFile opens the requester's own upload and returns its first sheet, header
 // row included, without trailing blank rows and cells.
 func (s *Service) readFile(ctx context.Context, id string) ([][]string, error) {
-	row, err := store.New(platform.DBFrom(ctx)).GetFile(ctx, id)
+	row, err := store.GetFile.Run(ctx, id)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return nil, ErrFileGone
 	}
@@ -303,12 +303,11 @@ func writeSheet(sh Sheet) (*bytes.Buffer, error) {
 // cleanup removes expired files, then files on disk older than a day that no row
 // names (left by a failure between writing a file and its row).
 func cleanup(ctx context.Context) error {
-	q := store.New(platform.DBFrom(ctx))
 	disk := files(ctx)
 	// Committed before the files go, so no row is left naming a removed file.
 	var expired []string
 	err := platform.InTx(ctx, func(ctx context.Context) (err error) {
-		expired, err = store.New(platform.DBFrom(ctx)).DeleteExpiredFiles(ctx)
+		expired, err = store.DeleteExpiredFiles.Run(ctx)
 		return err
 	})
 	if err != nil {
@@ -319,5 +318,5 @@ func cleanup(ctx context.Context) error {
 			return err
 		}
 	}
-	return disk.Sweep(ctx, time.Now().Add(-24*time.Hour), q.KnownFiles)
+	return disk.Sweep(ctx, time.Now().Add(-24*time.Hour), store.KnownFiles.Run)
 }

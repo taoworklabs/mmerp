@@ -86,3 +86,18 @@ func TestApprovalNeedsTheAttachmentStillThere(t *testing.T) {
 		t.Fatalf("status = %s, want pending_approval", s)
 	}
 }
+
+// Kind names are unique regardless of case, on create and on rename.
+func TestKindNameTaken(t *testing.T) {
+	f := newLeaveFixture(t)
+	must(t)(f.hrm.SaveLeaveType(f.hr, 0, hrm.LeaveTypeInput{Name: "Kết hôn", Active: true}))
+	other := must(t)(f.hrm.SaveLeaveType(f.hr, 0, hrm.LeaveTypeInput{Name: "Ốm", Active: true}))
+	_, err := f.hrm.SaveLeaveType(f.hr, 0, hrm.LeaveTypeInput{Name: "KẾT HÔN", Active: true})
+	wantErr(t, err, "leave_type_taken")
+	_, err = f.hrm.SaveLeaveType(f.hr, other, hrm.LeaveTypeInput{Name: "kết hôn", Active: true})
+	wantErr(t, err, "leave_type_taken")
+
+	must(t)(f.hrm.SaveContractType(f.hr, 0, hrm.ContractTypeInput{Name: "Thử việc", Active: true}))
+	_, err = f.hrm.SaveContractType(f.hr, 0, hrm.ContractTypeInput{Name: "THỬ VIỆC", Active: true})
+	wantErr(t, err, "contract_type_taken")
+}

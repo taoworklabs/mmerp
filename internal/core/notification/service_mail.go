@@ -47,7 +47,7 @@ func (s *Service) MailServer(ctx context.Context) (MailServer, error) {
 	if err := s.d.IAM.RequireCore(ctx, iam.PermManageMail); err != nil {
 		return MailServer{}, err
 	}
-	m, err := store.New(platform.DBFrom(ctx)).GetMailServer(ctx)
+	m, err := store.GetMailServer.Run(ctx)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return MailServer{}, platform.ErrNotFound
 	}
@@ -70,16 +70,15 @@ func (s *Service) SaveMailServer(ctx context.Context, in MailServerInput) error 
 		password = platform.Encrypt(ctx, passwordAAD, []byte(*in.Password))
 	}
 	return platform.InTx(ctx, func(ctx context.Context) error {
-		q := store.New(platform.DBFrom(ctx))
 		// The stored password only goes on to the server it was given for: pointing it
 		// anywhere else would hand it to whoever runs that host.
-		if cur, err := q.GetMailServer(ctx); err == nil && in.Password == nil && cur.Password != nil &&
+		if cur, err := store.GetMailServer.Run(ctx); err == nil && in.Password == nil && cur.Password != nil &&
 			(cur.Host != in.Host || cur.Port != in.Port || cur.Security != in.Security || cur.Username != in.Username) {
 			return invalid("password")
 		} else if err != nil && !errors.Is(err, pgx.ErrNoRows) {
 			return err
 		}
-		if err := q.SaveMailServer(ctx, store.SaveMailServerParams{
+		if err := store.SaveMailServer.Run(ctx, store.SaveMailServerParams{
 			Host: in.Host, Port: in.Port, Security: in.Security, Username: in.Username, Password: password,
 			FromAddress: in.FromAddress, BaseUrl: strings.TrimRight(in.BaseURL, "/"),
 		}); err != nil {
@@ -96,7 +95,7 @@ func (s *Service) DeleteMailServer(ctx context.Context) error {
 		return err
 	}
 	return platform.InTx(ctx, func(ctx context.Context) error {
-		n, err := store.New(platform.DBFrom(ctx)).DeleteMailServer(ctx)
+		n, err := store.DeleteMailServer.Run(ctx)
 		if err != nil || n == 0 {
 			return platform.OrErr(err, platform.ErrNotFound)
 		}
@@ -109,14 +108,13 @@ func (s *Service) SendTestMail(ctx context.Context) error {
 	if err := s.d.IAM.RequireCore(ctx, iam.PermManageMail); err != nil {
 		return err
 	}
-	q := store.New(platform.DBFrom(ctx))
-	if _, err := q.GetMailServer(ctx); errors.Is(err, pgx.ErrNoRows) {
+	if _, err := store.GetMailServer.Run(ctx); errors.Is(err, pgx.ErrNoRows) {
 		return errMailServerMissing
 	} else if err != nil {
 		return err
 	}
 	actor, _ := platform.ActorFrom(ctx)
-	r, err := q.Recipient(ctx, actor)
+	r, err := store.Recipient.Run(ctx, actor)
 	if err != nil {
 		return err
 	}
@@ -134,8 +132,7 @@ type message struct{ subject, body string }
 
 // sendEmail sends the email of a job, if there is still a server and an address.
 func (s *Service) sendEmail(ctx context.Context, a emailArgs) error {
-	q := store.New(platform.DBFrom(ctx))
-	srv, err := q.GetMailServer(ctx)
+	srv, err := store.GetMailServer.Run(ctx)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return nil
 	}
@@ -146,13 +143,13 @@ func (s *Service) sendEmail(ctx context.Context, a emailArgs) error {
 	// nothing of the record leaves through the mail server.
 	user, key, link := a.TestTo, "notification.email.test", srv.BaseUrl
 	if a.Notification != 0 {
-		n, err := q.GetNotification(ctx, a.Notification)
+		n, err := store.GetNotification.Run(ctx, a.Notification)
 		if err != nil {
 			return err
 		}
 		user, key, link = n.UserID, emailKey(n.Kind), srv.BaseUrl+"/notifications"
 	}
-	r, err := q.Recipient(ctx, user)
+	r, err := store.Recipient.Run(ctx, user)
 	if errors.Is(err, pgx.ErrNoRows) || (err == nil && !r.Email.Valid) {
 		return nil
 	}

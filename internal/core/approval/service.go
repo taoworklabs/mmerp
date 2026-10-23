@@ -19,11 +19,18 @@ import (
 	"github.com/taoworklabs/mmerp/internal/core/notification"
 	"github.com/taoworklabs/mmerp/internal/core/record"
 	"github.com/taoworklabs/mmerp/internal/platform"
+	"github.com/taoworklabs/mmerp/internal/platform/data"
 )
 
 type Service struct{ d Deps }
 
-func NewService(d Deps) *Service { return &Service{d: d} }
+func NewService(d Deps) *Service {
+	data.RegisterConstraints(data.Constraints{
+		"approval.step_votes_pkey":               ErrAlreadyVoted,
+		"approval.step_votes_one_per_person_idx": ErrAlreadyVoted,
+	})
+	return &Service{d: d}
+}
 
 // Submit implements record.ApprovalGate.
 func (s *Service) Submit(ctx context.Context, d record.Doc) (int64, bool, error) {
@@ -38,7 +45,7 @@ func (s *Service) Hold(ctx context.Context, d record.Doc, action record.Action, 
 
 // HeldBy implements record.ApprovalGate.
 func (s *Service) HeldBy(ctx context.Context, ref record.Ref) (*record.Hold, error) {
-	inst, err := store.New(platform.DBFrom(ctx)).HeldBy(ctx, store.HeldByParams{DocType: ref.Type, DocID: ref.ID})
+	inst, err := store.HeldBy.Run(ctx, store.HeldByParams{DocType: ref.Type, DocID: ref.ID})
 	if errors.Is(err, pgx.ErrNoRows) {
 		return nil, nil
 	}
@@ -51,7 +58,7 @@ func (s *Service) HeldBy(ctx context.Context, ref record.Ref) (*record.Hold, err
 
 // HeldInPeriod implements record.ApprovalGate.
 func (s *Service) HeldInPeriod(ctx context.Context, legalEntity int64, until pgtype.Date) ([]record.HeldDoc, error) {
-	rows, err := store.New(platform.DBFrom(ctx)).HeldInPeriod(ctx, store.HeldInPeriodParams{LegalEntityID: legalEntity, Date: until})
+	rows, err := store.HeldInPeriod.Run(ctx, store.HeldInPeriodParams{LegalEntityID: legalEntity, Date: until})
 	out := make([]record.HeldDoc, len(rows))
 	for i, r := range rows {
 		out[i] = record.HeldDoc(r)
@@ -63,8 +70,7 @@ func (s *Service) HeldInPeriod(ctx context.Context, legalEntity int64, until pgt
 // instance with one step per resolved step, and starts the first ones. No rule, or a
 // flow resolving to no step, needs no approval.
 func (s *Service) open(ctx context.Context, d record.Doc, action record.Action, params json.RawMessage) (int64, bool, error) {
-	q := store.New(platform.DBFrom(ctx))
-	rule, err := q.GetRule(ctx, store.GetRuleParams{DocType: d.Type, Action: string(action)})
+	rule, err := store.GetRule.Run(ctx, store.GetRuleParams{DocType: d.Type, Action: string(action)})
 	if errors.Is(err, pgx.ErrNoRows) {
 		return 0, false, nil
 	}
@@ -84,7 +90,7 @@ func (s *Service) open(ctx context.Context, d record.Doc, action record.Action, 
 		return 0, false, err
 	}
 	actor, _ := platform.ActorFrom(ctx)
-	id, err := q.InsertInstance(ctx, store.InsertInstanceParams{
+	id, err := store.InsertInstance.Run(ctx, store.InsertInstanceParams{
 		DocType: d.Type, DocID: d.ID, Version: d.Version, SubmittedBy: actor, Plan: rawPlan,
 		MaxLevels: rule.MaxLevels, FallbackProduct: rule.FallbackProduct, FallbackRole: rule.FallbackRole,
 		Action: string(action), Params: params,
@@ -100,12 +106,12 @@ func (s *Service) open(ctx context.Context, d record.Doc, action record.Action, 
 		if err != nil {
 			return 0, false, err
 		}
-		if err := q.InsertStep(ctx, store.InsertStepParams{InstanceID: id, Position: int32(i + 1), Approver: raw,
+		if err := store.InsertStep.Run(ctx, store.InsertStepParams{InstanceID: id, Position: int32(i + 1), Approver: raw,
 			Approvals: st.Approvals, Rejections: st.Rejections, DueHours: platform.NullInt4(st.DueHours)}); err != nil {
 			return 0, false, err
 		}
 	}
-	inst, err := q.GetInstance(ctx, id)
+	inst, err := store.GetInstance.Run(ctx, id)
 	if err != nil {
 		return 0, false, err
 	}
@@ -124,11 +130,10 @@ func (s *Service) startSteps(ctx context.Context, inst store.ApprovalInstance, d
 
 // Withdrawn implements record.ApprovalGate.
 func (s *Service) Withdrawn(ctx context.Context, d record.Doc) error {
-	q := store.New(platform.DBFrom(ctx))
-	if err := q.CancelOpenSteps(ctx, *d.ApprovalTicket); err != nil {
+	if err := store.CancelOpenSteps.Run(ctx, *d.ApprovalTicket); err != nil {
 		return err
 	}
-	return q.CloseInstance(ctx, store.CloseInstanceParams{ID: *d.ApprovalTicket, Status: "withdrawn"})
+	return store.CloseInstance.Run(ctx, store.CloseInstanceParams{ID: *d.ApprovalTicket, Status: "withdrawn"})
 }
 
 // startStep fixes who approves a step. The submitter never approves; when nobody
@@ -136,8 +141,7 @@ func (s *Service) Withdrawn(ctx context.Context, d record.Doc) error {
 // submission fails: approval is never automatic. Fewer approvers than the step's
 // approval count fail it too, since it could never pass.
 func (s *Service) startStep(ctx context.Context, inst store.ApprovalInstance, d record.Doc, pos int32) error {
-	q := store.New(platform.DBFrom(ctx))
-	st, err := q.GetStep(ctx, store.GetStepParams{InstanceID: inst.ID, Position: pos})
+	st, err := store.GetStep.Run(ctx, store.GetStepParams{InstanceID: inst.ID, Position: pos})
 	if err != nil {
 		return err
 	}
@@ -197,7 +201,7 @@ func (s *Service) startStep(ctx context.Context, inst store.ApprovalInstance, d 
 	if len(users) < int(st.Approvals) {
 		return errNoApprover(pos)
 	}
-	if err := q.StartStep(ctx, store.StartStepParams{InstanceID: inst.ID, Position: pos, Approvers: users, Fallback: fallback}); err != nil {
+	if err := store.StartStep.Run(ctx, store.StartStepParams{InstanceID: inst.ID, Position: pos, Approvers: users, Fallback: fallback}); err != nil {
 		return err
 	}
 	return s.requestVotes(ctx, notification.ApprovalRequested, d, excluded, users)
@@ -209,7 +213,7 @@ func (s *Service) requestVotes(ctx context.Context, kind notification.Kind, d re
 	if err != nil {
 		return err
 	}
-	delegates, err := store.New(platform.DBFrom(ctx)).DelegatesOf(ctx, store.DelegatesOfParams{Users: users, Today: today})
+	delegates, err := store.DelegatesOf.Run(ctx, store.DelegatesOfParams{Users: users, Today: today})
 	if err != nil {
 		return err
 	}
@@ -243,7 +247,7 @@ func (s *Service) holds(ctx context.Context, d record.Doc, c Expr, doubt bool) (
 		if err1 != nil || err2 != nil {
 			return doubt, nil
 		}
-		return store.New(platform.DBFrom(ctx)).Within(ctx, store.WithinParams{Unit: unit, Ancestor: ancestor})
+		return store.Within.Run(ctx, store.WithinParams{Unit: unit, Ancestor: ancestor})
 	case OpHas:
 		ids, ok := record.ParseSet(v)
 		id, err := strconv.ParseInt(c.Value, 10, 64)
@@ -309,8 +313,7 @@ func current(inst store.ApprovalInstance, d record.Doc) bool {
 func (s *Service) act(ctx context.Context, id int64, step int32, fn func(ctx context.Context, inst store.ApprovalInstance, st store.ApprovalInstanceStep, d record.Doc) error) error {
 	stale := false
 	err := platform.InTx(ctx, func(ctx context.Context) error {
-		q := store.New(platform.DBFrom(ctx))
-		inst, err := q.GetInstance(ctx, id)
+		inst, err := store.GetInstance.Run(ctx, id)
 		if errors.Is(err, pgx.ErrNoRows) {
 			return platform.ErrNotFound
 		}
@@ -325,7 +328,7 @@ func (s *Service) act(ctx context.Context, id int64, step int32, fn func(ctx con
 		if err != nil {
 			return err
 		}
-		if inst, err = q.LockInstance(ctx, id); err != nil {
+		if inst, err = store.LockInstance.Run(ctx, id); err != nil {
 			return err
 		}
 		if ok, err := s.d.Record.Can(ctx, ref.Type, ref.ID, record.View); err != nil || !ok {
@@ -336,7 +339,7 @@ func (s *Service) act(ctx context.Context, id int64, step int32, fn func(ctx con
 		}
 		var st store.ApprovalInstanceStep
 		if step != 0 {
-			st, err = q.GetStep(ctx, store.GetStepParams{InstanceID: id, Position: step})
+			st, err = store.GetStep.Run(ctx, store.GetStepParams{InstanceID: id, Position: step})
 			if errors.Is(err, pgx.ErrNoRows) || err == nil && st.Status != "open" {
 				return ErrClosed
 			}
@@ -349,10 +352,10 @@ func (s *Service) act(ctx context.Context, id int64, step int32, fn func(ctx con
 		}
 		if !current(inst, d) {
 			stale = true
-			if err := q.CancelOpenSteps(ctx, id); err != nil {
+			if err := store.CancelOpenSteps.Run(ctx, id); err != nil {
 				return err
 			}
-			return q.CloseInstance(ctx, store.CloseInstanceParams{ID: id, Status: "stale"})
+			return store.CloseInstance.Run(ctx, store.CloseInstanceParams{ID: id, Status: "stale"})
 		}
 		return fn(ctx, inst, st, d)
 	})
@@ -372,8 +375,7 @@ func (s *Service) Approve(ctx context.Context, id int64, step int32) error {
 		if err != nil || status != "approved" {
 			return err
 		}
-		q := store.New(platform.DBFrom(ctx))
-		rows, err := q.StepStatuses(ctx, id)
+		rows, err := store.StepStatuses.Run(ctx, id)
 		if err != nil {
 			return err
 		}
@@ -394,7 +396,7 @@ func (s *Service) Approve(ctx context.Context, id int64, step int32) error {
 				return err
 			}
 		}
-		if err := q.CloseInstance(ctx, store.CloseInstanceParams{ID: id, Status: "approved"}); err != nil {
+		if err := store.CloseInstance.Run(ctx, store.CloseInstanceParams{ID: id, Status: "approved"}); err != nil {
 			return err
 		}
 		if inst.Action == string(record.Post) {
@@ -415,11 +417,10 @@ func (s *Service) Reject(ctx context.Context, id int64, step int32, reason strin
 		if err != nil || status != "rejected" {
 			return err
 		}
-		q := store.New(platform.DBFrom(ctx))
-		if err := q.CancelOpenSteps(ctx, id); err != nil {
+		if err := store.CancelOpenSteps.Run(ctx, id); err != nil {
 			return err
 		}
-		if err := q.CloseInstance(ctx, store.CloseInstanceParams{ID: id, Status: "rejected"}); err != nil {
+		if err := store.CloseInstance.Run(ctx, store.CloseInstanceParams{ID: id, Status: "rejected"}); err != nil {
 			return err
 		}
 		if inst.Action == string(record.Post) {
@@ -441,11 +442,10 @@ func (s *Service) Withdraw(ctx context.Context, id int64) error {
 		if inst.Action == string(record.Post) {
 			return record.ErrInvalidTransition
 		}
-		q := store.New(platform.DBFrom(ctx))
-		if err := q.CancelOpenSteps(ctx, id); err != nil {
+		if err := store.CancelOpenSteps.Run(ctx, id); err != nil {
 			return err
 		}
-		if err := q.CloseInstance(ctx, store.CloseInstanceParams{ID: id, Status: "withdrawn"}); err != nil {
+		if err := store.CloseInstance.Run(ctx, store.CloseInstanceParams{ID: id, Status: "withdrawn"}); err != nil {
 			return err
 		}
 		return s.d.Audit.RecordFor(ctx, "approval.withdrawn", audit.Ref(d.Ref), map[string]any{"instance": id, "action": inst.Action})
@@ -456,7 +456,6 @@ func (s *Service) Withdraw(ctx context.Context, id int64) error {
 // approved, rejected, or "" while it is still open. A step rejects on its rejection
 // count, or as soon as the remaining voters can no longer bring its approvals.
 func (s *Service) vote(ctx context.Context, inst store.ApprovalInstance, st store.ApprovalInstanceStep, decision string, reason *string) (string, error) {
-	q := store.New(platform.DBFrom(ctx))
 	actor, _ := platform.ActorFrom(ctx)
 	// Approvers were fixed when the step started; who the document is about may have changed
 	// since. seatFor already skips a seat whose holder is now excluded, in favour of another
@@ -477,18 +476,15 @@ func (s *Service) vote(ctx context.Context, inst store.ApprovalInstance, st stor
 	if onBehalfOf != nil {
 		castBy, params["on_behalf_of"] = &actor, seat
 	}
-	err = q.InsertVote(ctx, store.InsertVoteParams{InstanceID: inst.ID, Position: st.Position, UserID: seat,
+	err = store.InsertVote.Run(ctx, store.InsertVoteParams{InstanceID: inst.ID, Position: st.Position, UserID: seat,
 		CastBy: platform.NullInt8(castBy), Decision: decision, Reason: platform.NullText(reason)})
-	if platform.Violates(err, "step_votes_pkey") || platform.Violates(err, "step_votes_one_per_person_idx") {
-		return "", ErrAlreadyVoted
-	}
 	if err != nil {
 		return "", err
 	}
 	if err := s.d.Audit.RecordFor(ctx, "approval."+decision, audit.Ref{Type: inst.DocType, ID: inst.DocID}, params); err != nil {
 		return "", err
 	}
-	c, err := q.StepVotes(ctx, store.StepVotesParams{InstanceID: inst.ID, Position: st.Position})
+	c, err := store.StepVotes.Run(ctx, store.StepVotesParams{InstanceID: inst.ID, Position: st.Position})
 	if err != nil {
 		return "", err
 	}
@@ -502,7 +498,7 @@ func (s *Service) vote(ctx context.Context, inst store.ApprovalInstance, st stor
 	default:
 		return "", nil
 	}
-	return status, q.SetStepStatus(ctx, store.SetStepStatusParams{InstanceID: inst.ID, Position: st.Position, Status: status})
+	return status, store.SetStepStatus.Run(ctx, store.SetStepStatusParams{InstanceID: inst.ID, Position: st.Position, Status: status})
 }
 
 // seatFor picks the seat the actor votes in step: their own while pending and not excluded,
@@ -512,8 +508,7 @@ func (s *Service) vote(ctx context.Context, inst store.ApprovalInstance, st stor
 // have matched but for exclusion yields ErrSelfApproval rather than ErrForbidden, so a
 // delegate who could have had a seat gets the same error voting it directly would.
 func (s *Service) seatFor(ctx context.Context, ref record.Ref, st store.ApprovalInstanceStep, actor int64, excluded []int64) (int64, *int64, error) {
-	q := store.New(platform.DBFrom(ctx))
-	votes, err := q.CastVotes(ctx, store.CastVotesParams{InstanceID: st.InstanceID, Position: st.Position})
+	votes, err := store.CastVotes.Run(ctx, store.CastVotesParams{InstanceID: st.InstanceID, Position: st.Position})
 	if err != nil {
 		return 0, nil, err
 	}
@@ -535,7 +530,7 @@ func (s *Service) seatFor(ctx context.Context, ref record.Ref, st store.Approval
 	if err != nil {
 		return 0, nil, err
 	}
-	from, err := q.DelegatorsOf(ctx, store.DelegatorsOfParams{Delegate: actor, Users: st.Approvers, Today: today})
+	from, err := store.DelegatorsOf.Run(ctx, store.DelegatorsOfParams{Delegate: actor, Users: st.Approvers, Today: today})
 	if err != nil {
 		return 0, nil, err
 	}
@@ -584,7 +579,6 @@ func (s *Service) Reassign(ctx context.Context, id int64, step int32, from int64
 		if ok, err := s.d.Record.Can(s.d.IAM.AsUser(ctx, user), d.Type, d.ID, record.View); err != nil || !ok {
 			return platform.OrErr(err, ErrApproverCannotView)
 		}
-		q := store.New(platform.DBFrom(ctx))
 		i := slices.Index(st.Approvers, from)
 		if i < 0 {
 			return platform.ErrNotFound
@@ -593,7 +587,7 @@ func (s *Service) Reassign(ctx context.Context, id int64, step int32, from int64
 			return ErrAlreadyApprover
 		}
 		// Someone who already voted here as a delegate could never use the seat.
-		votes, err := q.CastVotes(ctx, store.CastVotesParams{InstanceID: id, Position: step})
+		votes, err := store.CastVotes.Run(ctx, store.CastVotesParams{InstanceID: id, Position: step})
 		if err != nil {
 			return err
 		}
@@ -602,11 +596,11 @@ func (s *Service) Reassign(ctx context.Context, id int64, step int32, from int64
 		}) {
 			return ErrAlreadyVoted
 		}
-		if voted, err := q.HasVoted(ctx, store.HasVotedParams{InstanceID: id, Position: step, UserID: from}); err != nil || voted {
+		if voted, err := store.HasVoted.Run(ctx, store.HasVotedParams{InstanceID: id, Position: step, UserID: from}); err != nil || voted {
 			return platform.OrErr(err, ErrAlreadyVoted)
 		}
 		st.Approvers[i] = user
-		if err := q.SetApprovers(ctx, store.SetApproversParams{InstanceID: id, Position: step, Approvers: st.Approvers}); err != nil {
+		if err := store.SetApprovers.Run(ctx, store.SetApproversParams{InstanceID: id, Position: step, Approvers: st.Approvers}); err != nil {
 			return err
 		}
 		if err := s.requestVotes(ctx, notification.ApprovalRequested, d, excluded, []int64{user}); err != nil {
@@ -643,8 +637,7 @@ func (s *Service) Inbox(ctx context.Context) ([]InboxItem, error) {
 	if err != nil {
 		return nil, err
 	}
-	q := store.New(platform.DBFrom(ctx))
-	rows, err := q.Inbox(ctx, store.InboxParams{Actor: actor, Today: today})
+	rows, err := store.Inbox.Run(ctx, store.InboxParams{Actor: actor, Today: today})
 	if err != nil {
 		return nil, err
 	}
@@ -667,7 +660,7 @@ func (s *Service) Inbox(ctx context.Context) ([]InboxItem, error) {
 			if slices.Contains(excluded, actor) {
 				continue
 			}
-			st, err := q.GetStep(ctx, store.GetStepParams{InstanceID: r.ID, Position: r.Step})
+			st, err := store.GetStep.Run(ctx, store.GetStepParams{InstanceID: r.ID, Position: r.Step})
 			if err != nil {
 				return nil, err
 			}
@@ -689,15 +682,14 @@ func (s *Service) DocumentInstance(ctx context.Context, ref record.Ref) (*Instan
 	if ok, err := s.d.Record.Can(ctx, ref.Type, ref.ID, record.View); err != nil || !ok {
 		return nil, platform.OrErr(err, platform.ErrNotFound)
 	}
-	q := store.New(platform.DBFrom(ctx))
-	inst, err := q.LatestInstance(ctx, store.LatestInstanceParams{DocType: ref.Type, DocID: ref.ID})
+	inst, err := store.LatestInstance.Run(ctx, store.LatestInstanceParams{DocType: ref.Type, DocID: ref.ID})
 	if errors.Is(err, pgx.ErrNoRows) {
 		return nil, nil
 	}
 	if err != nil {
 		return nil, err
 	}
-	rows, err := q.Steps(ctx, inst.ID)
+	rows, err := store.Steps.Run(ctx, inst.ID)
 	if err != nil {
 		return nil, err
 	}
@@ -837,7 +829,7 @@ func (s *Service) Rules(ctx context.Context, product string) ([]TypeRule, error)
 	if err != nil {
 		return nil, err
 	}
-	rows, err := store.New(platform.DBFrom(ctx)).ListRules(ctx)
+	rows, err := store.ListRules.Run(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -912,7 +904,7 @@ func (s *Service) Users(ctx context.Context) ([]ApproverUser, error) {
 	if _, err := s.manageableTypes(ctx); err != nil {
 		return nil, err
 	}
-	rows, err := store.New(platform.DBFrom(ctx)).ListUsers(ctx)
+	rows, err := store.ListUsers.Run(ctx)
 	out := make([]ApproverUser, len(rows))
 	for i, r := range rows {
 		out[i] = ApproverUser(r)
@@ -939,7 +931,7 @@ func (s *Service) SaveRule(ctx context.Context, docType string, action record.Ac
 		return err
 	}
 	return platform.InTx(ctx, func(ctx context.Context) error {
-		if err := store.New(platform.DBFrom(ctx)).SaveRule(ctx, store.SaveRuleParams{
+		if err := store.SaveRule.Run(ctx, store.SaveRuleParams{
 			DocType: docType, Action: string(action), Flow: flow, MaxLevels: in.MaxLevels,
 			FallbackProduct: in.FallbackProduct, FallbackRole: in.FallbackRole,
 		}); err != nil {
@@ -955,7 +947,7 @@ func (s *Service) DeleteRule(ctx context.Context, docType string, action record.
 		return err
 	}
 	return platform.InTx(ctx, func(ctx context.Context) error {
-		if err := store.New(platform.DBFrom(ctx)).DeleteRule(ctx, store.DeleteRuleParams{DocType: docType, Action: string(action)}); err != nil {
+		if err := store.DeleteRule.Run(ctx, store.DeleteRuleParams{DocType: docType, Action: string(action)}); err != nil {
 			return err
 		}
 		return s.d.Audit.Record(ctx, "approval.rule_deleted", map[string]any{"doc_type": docType, "action": action})

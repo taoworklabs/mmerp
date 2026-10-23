@@ -91,12 +91,11 @@ func (s *Service) doc(ctx context.Context, k kind, id int64) (Doc, error) {
 	if err != nil {
 		return Doc{}, err
 	}
-	q := store.New(platform.DBFrom(ctx))
-	h, err := q.GetHeader(ctx, id)
+	h, err := store.GetHeader.Run(ctx, id)
 	if err != nil {
 		return Doc{}, err
 	}
-	lines, err := q.GetLines(ctx, id)
+	lines, err := store.GetLines.Run(ctx, id)
 	if err != nil {
 		return Doc{}, err
 	}
@@ -135,7 +134,7 @@ func (s *Service) doc(ctx context.Context, k kind, id int64) (Doc, error) {
 			return Doc{}, err
 		}
 		out.Expired = expired(h.ValidUntil, today)
-		o, err := q.LiveOrder(ctx, pgtype.Int8{Int64: id, Valid: true})
+		o, err := store.LiveOrder.Run(ctx, pgtype.Int8{Int64: id, Valid: true})
 		switch {
 		case err == nil:
 			out.Ordered = true
@@ -181,7 +180,7 @@ func (s *Service) create(ctx context.Context, k kind, requestID string, f DocFie
 		return d.ID, err
 	}
 	c := p.customer
-	if err := store.New(platform.DBFrom(ctx)).InsertHeader(ctx, store.InsertHeaderParams{
+	if err := store.InsertHeader.Run(ctx, store.InsertHeaderParams{
 		ID: d.ID, Kind: k.name, CustomerID: c.ID, CustomerCode: c.Code, CustomerName: c.Name,
 		CustomerTaxCode: platform.NullText(c.TaxCode), CustomerAddress: platform.NullText(c.Address), CustomerPhone: platform.NullText(c.Phone),
 		CustomerEmail: platform.NullText(c.Email), ContactName: platform.NullText(c.ContactName),
@@ -207,8 +206,7 @@ func (s *Service) update(ctx context.Context, k kind, id int64, in DocUpdate) er
 			return err
 		}
 		c, f := p.customer, in.DocFields
-		q := store.New(platform.DBFrom(ctx))
-		if err := q.UpdateHeader(ctx, store.UpdateHeaderParams{
+		if err := store.UpdateHeader.Run(ctx, store.UpdateHeaderParams{
 			ID: id, CustomerID: c.ID, CustomerCode: c.Code, CustomerName: c.Name,
 			CustomerTaxCode: platform.NullText(c.TaxCode), CustomerAddress: platform.NullText(c.Address), CustomerPhone: platform.NullText(c.Phone),
 			CustomerEmail: platform.NullText(c.Email), ContactName: platform.NullText(c.ContactName),
@@ -218,7 +216,7 @@ func (s *Service) update(ctx context.Context, k kind, id int64, in DocUpdate) er
 		}); err != nil {
 			return err
 		}
-		if err := q.DeleteLines(ctx, id); err != nil {
+		if err := store.DeleteLines.Run(ctx, id); err != nil {
 			return err
 		}
 		return s.writeLines(ctx, k, id, p)
@@ -227,7 +225,7 @@ func (s *Service) update(ctx context.Context, k kind, id int64, in DocUpdate) er
 
 // deleteDoc deletes a draft's header; its lines go with it.
 func deleteDoc(ctx context.Context, id int64) error {
-	return store.New(platform.DBFrom(ctx)).DeleteHeader(ctx, id)
+	return store.DeleteHeader.Run(ctx, id)
 }
 
 // prepared is a draft's content, checked against the current catalogues and computed.
@@ -256,7 +254,7 @@ func (s *Service) prepare(ctx context.Context, k kind, f DocFields) (prepared, e
 	if err := s.d.Record.Visible(ctx, record.Ref{Type: customerType, ID: f.CustomerID}, record.View); err != nil {
 		return p, err
 	}
-	c, err := store.New(platform.DBFrom(ctx)).GetCustomer(ctx, f.CustomerID)
+	c, err := store.GetCustomer.Run(ctx, f.CustomerID)
 	if err != nil {
 		return p, err
 	}
@@ -269,7 +267,7 @@ func (s *Service) prepare(ctx context.Context, k kind, f DocFields) (prepared, e
 	for i, l := range f.Lines {
 		ids[i] = l.ItemID
 	}
-	rows, err := store.New(platform.DBFrom(ctx)).ItemsByID(ctx, ids)
+	rows, err := store.ItemsByID.Run(ctx, ids)
 	if err != nil {
 		return p, err
 	}
@@ -305,15 +303,23 @@ func (s *Service) prepare(ctx context.Context, k kind, f DocFields) (prepared, e
 }
 
 func (s *Service) writeLines(ctx context.Context, k kind, id int64, p prepared) error {
-	q := store.New(platform.DBFrom(ctx))
+	a := store.InsertLinesParams{DocID: id}
 	for i, l := range p.lines {
-		if err := q.InsertLine(ctx, store.InsertLineParams{
-			DocID: id, Position: int32(i + 1), ItemID: l.ItemID, ItemCode: l.ItemCode, Description: l.Description, Unit: l.Unit,
-			Quantity: l.Quantity, UnitPrice: l.UnitPrice, DiscountPercent: l.DiscountPercent, VatRate: l.VatRate,
-			Amount: l.Amount, Discount: l.Discount, Vat: l.Vat,
-		}); err != nil {
-			return err
-		}
+		a.Positions = append(a.Positions, int32(i+1))
+		a.ItemIds = append(a.ItemIds, l.ItemID)
+		a.ItemCodes = append(a.ItemCodes, l.ItemCode)
+		a.Descriptions = append(a.Descriptions, l.Description)
+		a.Units = append(a.Units, l.Unit)
+		a.Quantities = append(a.Quantities, l.Quantity)
+		a.UnitPrices = append(a.UnitPrices, l.UnitPrice)
+		a.DiscountPercents = append(a.DiscountPercents, l.DiscountPercent)
+		a.VatRates = append(a.VatRates, l.VatRate)
+		a.Amounts = append(a.Amounts, l.Amount)
+		a.Discounts = append(a.Discounts, l.Discount)
+		a.Vats = append(a.Vats, l.Vat)
+	}
+	if err := store.InsertLines.Run(ctx, a); err != nil {
+		return err
 	}
 	return s.d.Audit.RecordFor(ctx, "sales.document_saved", audit.Ref{Type: k.docType, ID: id},
 		map[string]any{"customer_id": p.customer.ID, "lines": len(p.lines), "total": p.totals.Total})
@@ -382,7 +388,7 @@ func (s *Service) mayOrder(ctx context.Context, ref record.Ref) error {
 // liveOrder is the order from the quotation not cancelled, 0 for none; one the actor may
 // not view is refused.
 func (s *Service) liveOrder(ctx context.Context, quoteID int64) (int64, error) {
-	live, err := store.New(platform.DBFrom(ctx)).LiveOrder(ctx, pgtype.Int8{Int64: quoteID, Valid: true})
+	live, err := store.LiveOrder.Run(ctx, pgtype.Int8{Int64: quoteID, Valid: true})
 	if errors.Is(err, pgx.ErrNoRows) {
 		return 0, nil
 	}
@@ -400,8 +406,7 @@ func (s *Service) orderFields(ctx context.Context, d record.Doc) (DocFields, err
 	if d.Status != record.Posted {
 		return DocFields{}, ErrQuoteNotPosted
 	}
-	q := store.New(platform.DBFrom(ctx))
-	h, err := q.GetHeader(ctx, d.ID)
+	h, err := store.GetHeader.Run(ctx, d.ID)
 	if err != nil {
 		return DocFields{}, err
 	}
@@ -412,7 +417,7 @@ func (s *Service) orderFields(ctx context.Context, d record.Doc) (DocFields, err
 	if expired(h.ValidUntil, today) {
 		return DocFields{}, ErrQuoteExpired
 	}
-	lines, err := q.GetLines(ctx, d.ID)
+	lines, err := store.GetLines.Run(ctx, d.ID)
 	if err != nil {
 		return DocFields{}, err
 	}

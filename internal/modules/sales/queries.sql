@@ -87,11 +87,13 @@ WHERE h.quote_id = $1 AND d.status <> 'cancelled';
 -- name: DeleteLines :exec
 DELETE FROM sales.lines WHERE doc_id = $1;
 
--- name: InsertLine :exec
+-- name: InsertLines :exec
 INSERT INTO sales.lines (doc_id, position, item_id, item_code, description, unit, quantity, unit_price,
     discount_percent, vat_rate, amount, discount, vat)
-VALUES (@doc_id, @position, @item_id, @item_code, @description, @unit, CAST(@quantity::text AS numeric), @unit_price,
-    CAST(@discount_percent::text AS numeric), @vat_rate, @amount, @discount, @vat);
+SELECT @doc_id::bigint, unnest(@positions::int[]), unnest(@item_ids::bigint[]), unnest(@item_codes::text[]),
+    unnest(@descriptions::text[]), unnest(@units::text[]), unnest(@quantities::text[])::numeric,
+    unnest(@unit_prices::bigint[]), unnest(@discount_percents::text[])::numeric, unnest(@vat_rates::text[]),
+    unnest(@amounts::bigint[]), unnest(@discounts::bigint[]), unnest(@vats::bigint[]);
 
 -- name: GetLines :many
 SELECT item_id, item_code, description, unit, quantity::text AS quantity, unit_price,
