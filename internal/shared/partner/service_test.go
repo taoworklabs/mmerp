@@ -101,7 +101,7 @@ func TestPartnerCRUD(t *testing.T) {
 	if err := f.partners.Update(editor, id+100, in); !errors.Is(err, platform.ErrNotFound) {
 		t.Fatalf("update missing: %v", err)
 	}
-	wantCode(t, must2(f.partners.Create(editor, "OWN", partner.PartnerFields{Name: "Y"})), "partner_code_taken")
+	_ = wantCode(t, must2(f.partners.Create(editor, "OWN", partner.PartnerFields{Name: "Y"})), "partner_code_taken")
 
 	l, err := f.partners.List(viewer, partner.PartnerFilter{Q: "ánh", Paging: page})
 	if err != nil || l.Total != 1 || l.Items[0].ID != id {
