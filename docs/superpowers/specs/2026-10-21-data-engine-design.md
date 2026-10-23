@@ -450,7 +450,7 @@ Before continuing past the vertical slice:
   - a business write, its audit row, its number and its job commit or roll back together.
 - [x] Error tests: one per SQLSTATE class with real violations; mapped versus unmapped behaviour; `Violates` still matches a mapped error.
 - [x] Logging tests: the tracer logs once per query with name and shape, and no SQL text or argument appears in captured logs.
-- [ ] The leave list passes the old-versus-new correctness test and the performance criteria of §Performance, with numbers recorded in the PR. Correctness passes and the numbers are recorded (§Vertical slice results); under the custom plan three cases cross the regression thresholds, pending the product-owner decision on the count strategy.
+- [x] The leave list passes the old-versus-new correctness test and the performance criteria of §Performance, with numbers recorded in the PR. The three custom-plan cases over the thresholds were accepted by the product owner (§Count strategy decision).
 - [x] `make gen` (no diff), `make lint`, `make test` and `make e2e` pass.
 
 ## Assessment
@@ -575,7 +575,7 @@ Three `Enqueue` callers that had no transaction now enqueue in their own `InTx`:
 - `CREATE TEMP TABLE` is refused outside a transaction.
 
 **For the follow-up plan:**
-- Custom-plan trade-off before migrating the other 9 lists. Open: pending product-owner decision (accept / count only when needed / sort indexes).
+- Custom-plan trade-off before migrating the other 9 lists. Decided 2026-10-23: accepted (see §Count strategy decision).
 - The deferred minors are listed in the execution ledger.
 
 ## Slice 2 results (2026-10-22)
@@ -593,7 +593,7 @@ The payroll and employee lists run on the engine (commits `c656677`, `037c002`).
 
 **Engine.** No engine change was needed for either list: the payroll scope (`legal_entity_id`), the employee recursive `manager_of` fragment, the date-relative `termination_date < today` status and the fixed multi-column sort all expressed directly through `Where`/`Sorts`/`Default` as declared.
 
-Open: product-owner decision on the count strategy; the employee list adds no new data.
+The count strategy was later accepted as is (§Count strategy decision); the employee list adds no new data.
 
 ## Remaining HRM lists results (2026-10-23)
 
@@ -616,3 +616,11 @@ Steps 5 and 6 of the migration plan.
 - **Constraint maps.** Mapped: `sales.customers_code_key`, `sales.items_code_key`, `posting.recordings_doc_once`, `hrm.leave_types_name_key`, `hrm.contract_types_name_key`, `hrm.timesheets_org_unit_period_key`, `approval.step_votes_pkey`, `approval.step_votes_one_per_person_idx`. Kept on `platform.Violates`, as their meaning depends on the caller: `sales.customers_org_unit_id_fkey` (also fires when `iam` deletes a unit), `hrm.leave_balances_days_check` (two errors), `hrm.contracts_parent_id_fkey` (only the delete means "has appendices"), `approval.instances_one_open_idx` (`record.ErrAwaitingApproval`).
 - **Lint.** The `store.New` and `platform.DBFrom` bans apply everywhere except the infrastructure allowlist, `_test.go` files and `recordtest`, which inspect the database directly. The per-module exclusions are gone.
 - **Behaviour.** No change. A test now pins the leave type and contract type name collisions, whose mapping moved.
+
+## Count strategy decision (2026-10-23)
+
+The product owner accepts the count strategy as built: the count runs in the same batch as the page, and is skipped when the first page is not full. No index and no API change.
+
+- Three custom-plan cases of the leave list cross the regression thresholds (scoped HR, status draft, sort `-number`), all because the count is a second statement.
+- pgx caches prepared statements, so Postgres moves to the generic plan after 5 executions. That is the realistic case, and there the new list is faster on every combination.
+- Revisit, with sort indexes first, if a production list measures slow.
