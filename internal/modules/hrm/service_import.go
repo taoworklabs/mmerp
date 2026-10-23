@@ -50,7 +50,7 @@ func (s *Service) sheetTimesheet(ctx context.Context, params json.RawMessage, ac
 	if ok, err := s.d.Record.Can(ctx, timesheetType, p.TimesheetID, action); err != nil || !ok {
 		return store.GetTimesheetRow{}, platform.OrErr(err, platform.ErrForbidden)
 	}
-	return store.New(platform.DBFrom(ctx)).GetTimesheet(ctx, p.TimesheetID)
+	return store.GetTimesheet.Run(ctx, p.TimesheetID)
 }
 
 func (s *Service) timesheetHeader(ctx context.Context, params json.RawMessage) ([]string, error) {
@@ -254,9 +254,8 @@ func (s *Service) importLeaveBalances(ctx context.Context, _ json.RawMessage, ro
 		k := key{e.ID, a.year}
 		sums[k], last[k] = sums[k].Add(days), a
 	}
-	q := store.New(platform.DBFrom(ctx))
 	for k, sum := range sums {
-		balance, err := q.LeaveBalanceDays(ctx, store.LeaveBalanceDaysParams{EmployeeID: k.employee, Year: k.year})
+		balance, err := store.LeaveBalanceDays.Run(ctx, store.LeaveBalanceDaysParams{EmployeeID: k.employee, Year: k.year})
 		if err != nil {
 			return nil, err
 		}
@@ -294,7 +293,7 @@ func (s *Service) knownCodes(ctx context.Context, rows [][]string) (map[string]s
 		}
 		codes = append(codes, strings.ToLower(strings.TrimSpace(r[0])))
 	}
-	found, err := store.New(platform.DBFrom(ctx)).EmployeesByCodes(ctx, codes)
+	found, err := store.EmployeesByCodes.Run(ctx, codes)
 	out := make(map[string]store.EmployeesByCodesRow, len(found))
 	for _, e := range found {
 		out[strings.ToLower(e.Code)] = e

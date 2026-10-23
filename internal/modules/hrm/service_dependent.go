@@ -22,7 +22,7 @@ func (s *Service) Dependents(ctx context.Context, employeeID int64) ([]Dependent
 		if err := s.d.Audit.RecordFor(ctx, "hrm.dependents_viewed", audit.Ref{Type: employeeType, ID: employeeID}, nil); err != nil {
 			return err
 		}
-		rows, err := store.New(platform.DBFrom(ctx)).ListDependents(ctx, employeeID)
+		rows, err := store.ListDependents.Run(ctx, employeeID)
 		if err != nil {
 			return err
 		}
@@ -49,10 +49,9 @@ func (s *Service) SaveDependent(ctx context.Context, employeeID, id int64, in De
 			return err
 		}
 		data := platform.Encrypt(ctx, "hrm.dependents.data", raw)
-		q := store.New(platform.DBFrom(ctx))
 		var old *DependentInput
 		if id == 0 {
-			if id, err = q.CreateDependent(ctx, store.CreateDependentParams{EmployeeID: employeeID, Data: data}); err != nil {
+			if id, err = store.CreateDependent.Run(ctx, store.CreateDependentParams{EmployeeID: employeeID, Data: data}); err != nil {
 				return err
 			}
 		} else {
@@ -61,7 +60,7 @@ func (s *Service) SaveDependent(ctx context.Context, employeeID, id int64, in De
 				return err
 			}
 			old = &prev
-			if err := q.UpdateDependent(ctx, store.UpdateDependentParams{ID: id, EmployeeID: employeeID, Data: data}); err != nil {
+			if err := store.UpdateDependent.Run(ctx, store.UpdateDependentParams{ID: id, EmployeeID: employeeID, Data: data}); err != nil {
 				return err
 			}
 		}
@@ -81,7 +80,7 @@ func (s *Service) DeleteDependent(ctx context.Context, employeeID, id int64) err
 		if err != nil {
 			return err
 		}
-		if err := store.New(platform.DBFrom(ctx)).DeleteDependent(ctx, store.DeleteDependentParams{ID: id, EmployeeID: employeeID}); err != nil {
+		if err := store.DeleteDependent.Run(ctx, store.DeleteDependentParams{ID: id, EmployeeID: employeeID}); err != nil {
 			return err
 		}
 		return s.d.Audit.RecordChanges(ctx, "hrm.dependent_deleted", audit.Ref{Type: employeeType, ID: employeeID},
@@ -90,7 +89,7 @@ func (s *Service) DeleteDependent(ctx context.Context, employeeID, id int64) err
 }
 
 func (s *Service) lockDependent(ctx context.Context, employeeID, id int64) (DependentInput, error) {
-	data, err := store.New(platform.DBFrom(ctx)).GetDependent(ctx, store.GetDependentParams{ID: id, EmployeeID: employeeID})
+	data, err := store.GetDependent.Run(ctx, store.GetDependentParams{ID: id, EmployeeID: employeeID})
 	if errors.Is(err, pgx.ErrNoRows) {
 		return DependentInput{}, platform.ErrNotFound
 	}

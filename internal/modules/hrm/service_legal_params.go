@@ -82,7 +82,7 @@ func checkLegalParam(key, value string) error {
 // LegalParams lists every version of every legal parameter.
 func (s *Service) LegalParams(ctx context.Context) (LegalParams, error) {
 	out := LegalParams{Items: []LegalParam{}, AllowedActions: []string{}}
-	rows, err := store.New(platform.DBFrom(ctx)).ListLegalParams(ctx)
+	rows, err := store.ListLegalParams.Run(ctx)
 	if err != nil {
 		return out, err
 	}
@@ -111,8 +111,7 @@ func (s *Service) SaveLegalParam(ctx context.Context, p LegalParam) error {
 		return err
 	}
 	return platform.InTx(ctx, func(ctx context.Context) error {
-		q := store.New(platform.DBFrom(ctx))
-		rows, err := q.ListLegalParams(ctx)
+		rows, err := store.ListLegalParams.Run(ctx)
 		if err != nil {
 			return err
 		}
@@ -123,7 +122,7 @@ func (s *Service) SaveLegalParam(ctx context.Context, p LegalParam) error {
 				break
 			}
 		}
-		entities, err := q.LegalEntities(ctx)
+		entities, err := store.LegalEntities.Run(ctx)
 		if err != nil {
 			return err
 		}
@@ -132,14 +131,14 @@ func (s *Service) SaveLegalParam(ctx context.Context, p LegalParam) error {
 				return err
 			}
 		}
-		old, err := q.GetLegalParam(ctx, store.GetLegalParamParams{Key: p.Key, EffectiveFrom: from})
+		old, err := store.GetLegalParam.Run(ctx, store.GetLegalParamParams{Key: p.Key, EffectiveFrom: from})
 		if errors.Is(err, pgx.ErrNoRows) {
 			old, err = "", nil
 		}
 		if err != nil {
 			return err
 		}
-		if err := q.SaveLegalParam(ctx, store.SaveLegalParamParams{Key: p.Key, EffectiveFrom: from, Value: p.Value}); err != nil {
+		if err := store.SaveLegalParam.Run(ctx, store.SaveLegalParamParams{Key: p.Key, EffectiveFrom: from, Value: p.Value}); err != nil {
 			return err
 		}
 		return s.d.Audit.Record(ctx, "hrm.legal_param_changed", map[string]any{"key": p.Key, "effective_from": p.EffectiveFrom, "old": old, "new": p.Value})

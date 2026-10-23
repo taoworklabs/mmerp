@@ -24,16 +24,15 @@ type calendar struct {
 
 // workCalendar reads the work weeks and the holidays of [from, to] (YYYY-MM-DD).
 func workCalendar(ctx context.Context, legalEntity int64, from, to string) (calendar, error) {
-	q := store.New(platform.DBFrom(ctx))
 	c := calendar{Holidays: map[string]string{}}
-	weeks, err := q.WorkWeeks(ctx, legalEntity)
+	weeks, err := store.WorkWeeks.Run(ctx, legalEntity)
 	if err != nil {
 		return c, err
 	}
 	for _, w := range weeks {
 		c.Weeks = append(c.Weeks, workWeek(w))
 	}
-	days, err := q.Holidays(ctx, store.HolidaysParams{LegalEntityID: legalEntity, FromDate: platform.NullDate(&from), ToDate: platform.NullDate(&to)})
+	days, err := store.Holidays.Run(ctx, store.HolidaysParams{LegalEntityID: legalEntity, FromDate: platform.NullDate(&from), ToDate: platform.NullDate(&to)})
 	for _, h := range days {
 		c.Holidays[*platform.DatePtr(h.Date)] = h.Name
 	}
@@ -151,14 +150,14 @@ func (s *Service) SaveWorkWeek(ctx context.Context, legalEntity int64, w WorkWee
 	}
 	slices.Sort(days)
 	return s.writeWorkWeek(ctx, legalEntity, w.EffectiveFrom, func(ctx context.Context, from pgtype.Date) error {
-		return store.New(platform.DBFrom(ctx)).SaveWorkWeek(ctx, store.SaveWorkWeekParams{LegalEntityID: legalEntity, EffectiveFrom: from, OffDays: days})
+		return store.SaveWorkWeek.Run(ctx, store.SaveWorkWeekParams{LegalEntityID: legalEntity, EffectiveFrom: from, OffDays: days})
 	}, map[string]any{"off_days": days})
 }
 
 // DeleteWorkWeek removes a version; the one before it applies again.
 func (s *Service) DeleteWorkWeek(ctx context.Context, legalEntity int64, effectiveFrom string) error {
 	return s.writeWorkWeek(ctx, legalEntity, effectiveFrom, func(ctx context.Context, from pgtype.Date) error {
-		n, err := store.New(platform.DBFrom(ctx)).DeleteWorkWeek(ctx, store.DeleteWorkWeekParams{LegalEntityID: legalEntity, EffectiveFrom: from})
+		n, err := store.DeleteWorkWeek.Run(ctx, store.DeleteWorkWeekParams{LegalEntityID: legalEntity, EffectiveFrom: from})
 		if err == nil && n == 0 {
 			return platform.ErrNotFound
 		}
@@ -175,8 +174,7 @@ func (s *Service) writeWorkWeek(ctx context.Context, legalEntity int64, effectiv
 		if err := s.requireCalendar(ctx, legalEntity); err != nil {
 			return err
 		}
-		q := store.New(platform.DBFrom(ctx))
-		weeks, err := q.WorkWeeks(ctx, legalEntity)
+		weeks, err := store.WorkWeeks.Run(ctx, legalEntity)
 		if err != nil {
 			return err
 		}
@@ -201,13 +199,13 @@ func (s *Service) writeWorkWeek(ctx context.Context, legalEntity int64, effectiv
 // SaveHoliday adds or renames a holiday; refused in a closed payroll period.
 func (s *Service) SaveHoliday(ctx context.Context, legalEntity int64, h Holiday) error {
 	return s.writeHoliday(ctx, legalEntity, h.Date, func(ctx context.Context, date pgtype.Date) error {
-		return store.New(platform.DBFrom(ctx)).SaveHoliday(ctx, store.SaveHolidayParams{LegalEntityID: legalEntity, Date: date, Name: h.Name})
+		return store.SaveHoliday.Run(ctx, store.SaveHolidayParams{LegalEntityID: legalEntity, Date: date, Name: h.Name})
 	}, map[string]any{"name": h.Name})
 }
 
 func (s *Service) DeleteHoliday(ctx context.Context, legalEntity int64, date string) error {
 	return s.writeHoliday(ctx, legalEntity, date, func(ctx context.Context, d pgtype.Date) error {
-		n, err := store.New(platform.DBFrom(ctx)).DeleteHoliday(ctx, store.DeleteHolidayParams{LegalEntityID: legalEntity, Date: d})
+		n, err := store.DeleteHoliday.Run(ctx, store.DeleteHolidayParams{LegalEntityID: legalEntity, Date: d})
 		if err == nil && n == 0 {
 			return platform.ErrNotFound
 		}

@@ -18,7 +18,7 @@ import (
 )
 
 func (s *Service) leaveTypeOptions(ctx context.Context) ([]record.Option, error) {
-	rows, err := store.New(platform.DBFrom(ctx)).ListLeaveTypes(ctx)
+	rows, err := store.ListLeaveTypes.Run(ctx)
 	out := make([]record.Option, len(rows))
 	for i, r := range rows {
 		out[i] = record.Option{Value: strconv.FormatInt(r.ID, 10), Label: r.Name}
@@ -28,7 +28,7 @@ func (s *Service) leaveTypeOptions(ctx context.Context) ([]record.Option, error)
 
 // LeaveTypes lists every kind of leave, inactive ones included.
 func (s *Service) LeaveTypes(ctx context.Context) ([]LeaveType, error) {
-	rows, err := store.New(platform.DBFrom(ctx)).ListLeaveTypes(ctx)
+	rows, err := store.ListLeaveTypes.Run(ctx)
 	out := make([]LeaveType, len(rows))
 	for i, r := range rows {
 		out[i] = LeaveType{ID: r.ID, LeaveTypeInput: LeaveTypeInput{Name: r.Name, DeductsBalance: r.DeductsBalance, Paid: r.Paid, Active: r.Active,
@@ -48,21 +48,17 @@ func (s *Service) SaveLeaveType(ctx context.Context, id int64, in LeaveTypeInput
 		}
 	}
 	err := platform.InTx(ctx, func(ctx context.Context) error {
-		q := store.New(platform.DBFrom(ctx))
 		var err error
 		if id == 0 {
-			id, err = q.CreateLeaveType(ctx, store.CreateLeaveTypeParams{Name: in.Name, DeductsBalance: in.DeductsBalance, Paid: in.Paid, Active: in.Active,
+			id, err = store.CreateLeaveType.Run(ctx, store.CreateLeaveTypeParams{Name: in.Name, DeductsBalance: in.DeductsBalance, Paid: in.Paid, Active: in.Active,
 				MaxDays: platform.NullText(in.MaxDays), RequiresAttachment: in.RequiresAttachment})
 		} else {
 			var n int64
-			n, err = q.UpdateLeaveType(ctx, store.UpdateLeaveTypeParams{ID: id, Name: in.Name, DeductsBalance: in.DeductsBalance, Paid: in.Paid, Active: in.Active,
+			n, err = store.UpdateLeaveType.Run(ctx, store.UpdateLeaveTypeParams{ID: id, Name: in.Name, DeductsBalance: in.DeductsBalance, Paid: in.Paid, Active: in.Active,
 				MaxDays: platform.NullText(in.MaxDays), RequiresAttachment: in.RequiresAttachment})
 			if err == nil && n == 0 {
 				return platform.ErrNotFound
 			}
-		}
-		if platform.Violates(err, "leave_types_name_key") {
-			return ErrLeaveTypeTaken
 		}
 		if err != nil {
 			return err
@@ -74,7 +70,7 @@ func (s *Service) SaveLeaveType(ctx context.Context, id int64, in LeaveTypeInput
 }
 
 func (s *Service) leaveGrant(ctx context.Context, id int64, action record.Action) (bool, error) {
-	r, err := store.New(platform.DBFrom(ctx)).GetLeaveRequest(ctx, id)
+	r, err := store.GetLeaveRequest.Run(ctx, id)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return false, nil
 	}
@@ -85,7 +81,7 @@ func (s *Service) leaveGrant(ctx context.Context, id int64, action record.Action
 }
 
 func (s *Service) leaveApprovers(ctx context.Context, ref record.Ref, level int) ([]int64, error) {
-	r, err := store.New(platform.DBFrom(ctx)).GetLeaveRequest(ctx, ref.ID)
+	r, err := store.GetLeaveRequest.Run(ctx, ref.ID)
 	if err != nil {
 		return nil, err
 	}
@@ -93,13 +89,13 @@ func (s *Service) leaveApprovers(ctx context.Context, ref record.Ref, level int)
 }
 
 func (s *Service) leaveSubjects(ctx context.Context, id int64) ([]int64, error) {
-	r, err := store.New(platform.DBFrom(ctx)).GetLeaveRequest(ctx, id)
+	r, err := store.GetLeaveRequest.Run(ctx, id)
 	return subjectOf(r.EmployeeUserID), err
 }
 
 // leaveBeforeSubmit refuses to send a request whose kind needs a file while it has none.
 func (s *Service) leaveBeforeSubmit(ctx context.Context, d record.Doc) error {
-	r, err := store.New(platform.DBFrom(ctx)).GetLeaveRequest(ctx, d.ID)
+	r, err := store.GetLeaveRequest.Run(ctx, d.ID)
 	if err != nil {
 		return err
 	}
@@ -110,7 +106,7 @@ func checkLeaveAttachment(ctx context.Context, r store.GetLeaveRequestRow) error
 	if !r.RequiresAttachment {
 		return nil
 	}
-	ok, err := store.New(platform.DBFrom(ctx)).LeaveHasAttachment(ctx, r.ID)
+	ok, err := store.LeaveHasAttachment.Run(ctx, r.ID)
 	if err == nil && !ok {
 		err = ErrLeaveAttachment
 	}
@@ -125,8 +121,7 @@ func (s *Service) leaveTransition(ctx context.Context, d record.Doc, from record
 	if !ok {
 		return nil
 	}
-	q := store.New(platform.DBFrom(ctx))
-	r, err := q.GetLeaveRequest(ctx, d.ID)
+	r, err := store.GetLeaveRequest.Run(ctx, d.ID)
 	if err != nil {
 		return err
 	}
@@ -136,7 +131,7 @@ func (s *Service) leaveTransition(ctx context.Context, d record.Doc, from record
 	if approved {
 		// Locking the employee serializes one person's approvals, so two requests cannot
 		// both find the dates free. Contracts take the same lock at the same point.
-		if _, err := q.LockEmployee(ctx, r.EmployeeID); err != nil {
+		if _, err := store.LockEmployee.Run(ctx, r.EmployeeID); err != nil {
 			return err
 		}
 		if err := s.checkLeaveDates(ctx, d, r); err != nil {
@@ -170,7 +165,7 @@ func (s *Service) leaveTransition(ctx context.Context, d record.Doc, from record
 	if delta.IsZero() {
 		return nil
 	}
-	_, err = q.AddLeaveBalance(ctx, store.AddLeaveBalanceParams{EmployeeID: r.EmployeeID, Year: int32(r.StartDate.Time.Year()), Delta: delta.String()})
+	_, err = store.AddLeaveBalance.Run(ctx, store.AddLeaveBalanceParams{EmployeeID: r.EmployeeID, Year: int32(r.StartDate.Time.Year()), Delta: delta.String()})
 	if errors.Is(err, pgx.ErrNoRows) || platform.Violates(err, "leave_balances_days_check") {
 		return ErrInsufficientBalance
 	}
@@ -181,7 +176,7 @@ func (s *Service) leaveTransition(ctx context.Context, d record.Doc, from record
 	if approved {
 		deducted = delta.Neg()
 	}
-	return q.SetLeaveDeducted(ctx, store.SetLeaveDeductedParams{ID: d.ID, Deducted: deducted.String()})
+	return store.SetLeaveDeducted.Run(ctx, store.SetLeaveDeductedParams{ID: d.ID, Deducted: deducted.String()})
 }
 
 // LeaveActions lists what the actor may do before picking a leave request.
@@ -217,8 +212,7 @@ func (s *Service) Leave(ctx context.Context, id int64) (Leave, error) {
 	if err != nil {
 		return Leave{}, err
 	}
-	q := store.New(platform.DBFrom(ctx))
-	r, err := q.GetLeaveRequest(ctx, id)
+	r, err := store.GetLeaveRequest.Run(ctx, id)
 	if err != nil {
 		return Leave{}, err
 	}
@@ -236,7 +230,7 @@ func (s *Service) Leave(ctx context.Context, id int64) (Leave, error) {
 	if ok, err := s.canSeeBalance(ctx, r.EmployeeID); err != nil {
 		return Leave{}, err
 	} else if ok {
-		balances, err := q.LeaveBalances(ctx, r.EmployeeID)
+		balances, err := store.LeaveBalances.Run(ctx, r.EmployeeID)
 		if err != nil {
 			return Leave{}, err
 		}
@@ -254,7 +248,6 @@ func (s *Service) Leave(ctx context.Context, id int64) (Leave, error) {
 func (s *Service) CreateLeave(ctx context.Context, in NewLeave) (int64, error) {
 	var id int64
 	err := platform.InTx(ctx, func(ctx context.Context) error {
-		q := store.New(platform.DBFrom(ctx))
 		employee, unit, user, err := subject(ctx, in.EmployeeID)
 		if err != nil {
 			return err
@@ -274,7 +267,7 @@ func (s *Service) CreateLeave(ctx context.Context, in NewLeave) (int64, error) {
 			return err
 		}
 		row.ID, row.EmployeeID = id, employee
-		if err := q.CreateLeaveRequest(ctx, row); err != nil {
+		if err := store.CreateLeaveRequest.Run(ctx, row); err != nil {
 			return err
 		}
 		return s.d.Audit.RecordChanges(ctx, "hrm.leave_request_created", audit.Ref{Type: leaveType, ID: id}, leaveChanges(LeaveFields{}, "", in.LeaveFields, typeName))
@@ -285,11 +278,10 @@ func (s *Service) CreateLeave(ctx context.Context, in NewLeave) (int64, error) {
 // UpdateLeave replaces the fields of a draft at the version the actor saw.
 func (s *Service) UpdateLeave(ctx context.Context, id int64, in LeaveUpdate) error {
 	return platform.InTx(ctx, func(ctx context.Context) error {
-		q := store.New(platform.DBFrom(ctx))
 		if _, err := s.d.Record.Read(ctx, record.Ref{Type: leaveType, ID: id}); err != nil {
 			return err
 		}
-		old, err := q.GetLeaveRequest(ctx, id)
+		old, err := store.GetLeaveRequest.Run(ctx, id)
 		if err != nil {
 			return err
 		}
@@ -301,7 +293,7 @@ func (s *Service) UpdateLeave(ctx context.Context, id int64, in LeaveUpdate) err
 			return err
 		}
 		row.ID = id
-		if err := q.UpdateLeaveRequest(ctx, store.UpdateLeaveRequestParams{
+		if err := store.UpdateLeaveRequest.Run(ctx, store.UpdateLeaveRequestParams{
 			ID: id, LeaveTypeID: row.LeaveTypeID, StartDate: row.StartDate, EndDate: row.EndDate, Days: row.Days, Reason: row.Reason,
 		}); err != nil {
 			return err
@@ -312,7 +304,7 @@ func (s *Service) UpdateLeave(ctx context.Context, id int64, in LeaveUpdate) err
 }
 
 func deleteLeave(ctx context.Context, id int64) error {
-	return store.New(platform.DBFrom(ctx)).DeleteLeaveRequest(ctx, id)
+	return store.DeleteLeaveRequest.Run(ctx, id)
 }
 
 // checkLeaveDates re-checks on approval what the entry already checked, and refuses dates
@@ -324,7 +316,7 @@ func (s *Service) checkLeaveDates(ctx context.Context, d record.Doc, r store.Get
 	if err != nil {
 		return err
 	}
-	others, err := store.New(platform.DBFrom(ctx)).ApprovedLeaveOverlapping(ctx, store.ApprovedLeaveOverlappingParams{
+	others, err := store.ApprovedLeaveOverlapping.Run(ctx, store.ApprovedLeaveOverlappingParams{
 		EmployeeID: r.EmployeeID, ID: d.ID, StartDate: r.StartDate, EndDate: r.EndDate,
 	})
 	if err != nil {
@@ -459,7 +451,7 @@ func (s *Service) leaveHeader(ctx context.Context, unit int64, in LeaveFields) (
 	if err := checkLeaveDays(ctx, legalEntity, in.StartDate, in.EndDate, days); err != nil {
 		return h, row, "", err
 	}
-	t, err := store.New(platform.DBFrom(ctx)).GetLeaveType(ctx, in.LeaveTypeID)
+	t, err := store.GetLeaveType.Run(ctx, in.LeaveTypeID)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return h, row, "", platform.ErrNotFound
 	}
@@ -490,7 +482,7 @@ func leaveChanges(old LeaveFields, oldType string, n LeaveFields, newType string
 
 // canSeeBalance: the employee themself, or leave viewers and balance adjusters at their unit.
 func (s *Service) canSeeBalance(ctx context.Context, employeeID int64) (bool, error) {
-	e, err := store.New(platform.DBFrom(ctx)).GetEmployee(ctx, employeeID)
+	e, err := store.GetEmployee.Run(ctx, employeeID)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return false, nil
 	}
@@ -511,7 +503,7 @@ func (s *Service) LeaveBalances(ctx context.Context, employeeID int64) ([]LeaveB
 	if ok, err := s.canSeeBalance(ctx, employeeID); err != nil || !ok {
 		return nil, platform.OrErr(err, platform.ErrNotFound)
 	}
-	rows, err := store.New(platform.DBFrom(ctx)).LeaveBalances(ctx, employeeID)
+	rows, err := store.LeaveBalances.Run(ctx, employeeID)
 	out := make([]LeaveBalance, len(rows))
 	for i, r := range rows {
 		out[i] = LeaveBalance{Year: r.Year, Days: platform.PlainDecimal(r.Days)}
@@ -523,7 +515,7 @@ func (s *Service) LeaveBalances(ctx context.Context, employeeID int64) ([]LeaveB
 // locks the balance row like approving a request does, so the two never interleave.
 func (s *Service) AdjustLeaveBalance(ctx context.Context, employeeID int64, year int32, in BalanceAdjustment) error {
 	return platform.InTx(ctx, func(ctx context.Context) error {
-		e, err := store.New(platform.DBFrom(ctx)).GetEmployee(ctx, employeeID)
+		e, err := store.GetEmployee.Run(ctx, employeeID)
 		if errors.Is(err, pgx.ErrNoRows) {
 			return platform.ErrNotFound
 		}
@@ -543,11 +535,10 @@ func (s *Service) AdjustLeaveBalance(ctx context.Context, employeeID int64, year
 		if strings.TrimSpace(in.Reason) == "" {
 			return ErrReasonRequired
 		}
-		q := store.New(platform.DBFrom(ctx))
-		if err := q.EnsureLeaveBalance(ctx, store.EnsureLeaveBalanceParams{EmployeeID: employeeID, Year: year}); err != nil {
+		if err := store.EnsureLeaveBalance.Run(ctx, store.EnsureLeaveBalanceParams{EmployeeID: employeeID, Year: year}); err != nil {
 			return err
 		}
-		after, err := q.AddLeaveBalance(ctx, store.AddLeaveBalanceParams{EmployeeID: employeeID, Year: year, Delta: in.Delta})
+		after, err := store.AddLeaveBalance.Run(ctx, store.AddLeaveBalanceParams{EmployeeID: employeeID, Year: year, Delta: in.Delta})
 		if platform.Violates(err, "leave_balances_days_check") {
 			return ErrNegativeBalance
 		}

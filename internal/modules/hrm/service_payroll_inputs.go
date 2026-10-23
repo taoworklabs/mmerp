@@ -82,7 +82,6 @@ func dayOf(s string) time.Time {
 // readBasis gathers a payroll's non-sensitive inputs; payrollID adds the employees of its
 // adjustments (0 for none). Every org unit of the employees needs a posted timesheet.
 func (s *Service) readBasis(ctx context.Context, legalEntity, payrollID int64, start, end time.Time) (payrollBasis, error) {
-	q := store.New(platform.DBFrom(ctx))
 	ps, pe := start.Format(time.DateOnly), end.Format(time.DateOnly)
 	prevStart := start.AddDate(0, -1, 0)
 	yearStart := time.Date(start.Year(), 1, 1, 0, 0, 0, 0, time.UTC)
@@ -102,7 +101,7 @@ func (s *Service) readBasis(ctx context.Context, legalEntity, payrollID int64, s
 	}
 	pgStart, pgEnd, pgPrev, pgYear := platform.NullDate(&ps), platform.NullDate(&pe), pgDate(prevStart), pgDate(yearStart)
 
-	emps, err := q.PayrollEmployees(ctx, store.PayrollEmployeesParams{PeriodStart: pgStart, PeriodEnd: pgEnd, LegalEntityID: legalEntity, PayrollID: payrollID})
+	emps, err := store.PayrollEmployees.Run(ctx, store.PayrollEmployeesParams{PeriodStart: pgStart, PeriodEnd: pgEnd, LegalEntityID: legalEntity, PayrollID: payrollID})
 	if err != nil {
 		return b, err
 	}
@@ -120,7 +119,7 @@ func (s *Service) readBasis(ctx context.Context, legalEntity, payrollID int64, s
 		return b, err
 	}
 
-	deps, err := q.PayrollDependents(ctx, ids)
+	deps, err := store.PayrollDependents.Run(ctx, ids)
 	if err != nil {
 		return b, err
 	}
@@ -129,7 +128,7 @@ func (s *Service) readBasis(ctx context.Context, legalEntity, payrollID int64, s
 		sum := sha256.Sum256(append(digests[d.EmployeeID], d.Data...))
 		digests[d.EmployeeID] = sum[:]
 	}
-	balances, err := q.PayrollLeaveBalances(ctx, store.PayrollLeaveBalancesParams{Ids: ids, Year: int32(start.Year())})
+	balances, err := store.PayrollLeaveBalances.Run(ctx, store.PayrollLeaveBalancesParams{Ids: ids, Year: int32(start.Year())})
 	if err != nil {
 		return b, err
 	}
@@ -145,21 +144,21 @@ func (s *Service) readBasis(ctx context.Context, legalEntity, payrollID int64, s
 		}
 	}
 
-	docs, err := q.PayrollSourceDocs(ctx, store.PayrollSourceDocsParams{LegalEntityID: legalEntity, PeriodStart: pgStart, PeriodEnd: pgEnd, PrevStart: pgPrev, YearStart: pgYear})
+	docs, err := store.PayrollSourceDocs.Run(ctx, store.PayrollSourceDocsParams{LegalEntityID: legalEntity, PeriodStart: pgStart, PeriodEnd: pgEnd, PrevStart: pgPrev, YearStart: pgYear})
 	if err != nil {
 		return b, err
 	}
 	for _, d := range docs {
 		b.Sources = append(b.Sources, payrollSource{DocType: d.DocType, DocID: d.ID, Version: d.Version})
 	}
-	worked, err := q.PayrollWorkedDays(ctx, store.PayrollWorkedDaysParams{PeriodStart: pgStart, Ids: ids})
+	worked, err := store.PayrollWorkedDays.Run(ctx, store.PayrollWorkedDaysParams{PeriodStart: pgStart, Ids: ids})
 	if err != nil {
 		return b, err
 	}
 	for _, w := range worked {
 		b.Worked[fmt.Sprintf("%d:%s", w.EmployeeID, *platform.DatePtr(w.Date))] = w.Days
 	}
-	leaves, err := q.PayrollLeaves(ctx, store.PayrollLeavesParams{Ids: ids, PeriodStart: pgStart, PeriodEnd: pgEnd})
+	leaves, err := store.PayrollLeaves.Run(ctx, store.PayrollLeavesParams{Ids: ids, PeriodStart: pgStart, PeriodEnd: pgEnd})
 	if err != nil {
 		return b, err
 	}
@@ -167,7 +166,7 @@ func (s *Service) readBasis(ctx context.Context, legalEntity, payrollID int64, s
 		b.Leaves = append(b.Leaves, basisLeave{EmployeeID: l.EmployeeID, Start: *platform.DatePtr(l.StartDate), End: *platform.DatePtr(l.EndDate),
 			Days: decimal.RequireFromString(l.Days), Paid: l.Paid})
 	}
-	ots, err := q.PayrollOvertime(ctx, store.PayrollOvertimeParams{Ids: ids, YearStart: pgYear, PeriodEnd: pgEnd})
+	ots, err := store.PayrollOvertime.Run(ctx, store.PayrollOvertimeParams{Ids: ids, YearStart: pgYear, PeriodEnd: pgEnd})
 	for _, o := range ots {
 		b.Overtime = append(b.Overtime, basisOvertime{EmployeeID: o.EmployeeID, overtimeDay: overtimeDay{Date: *platform.DatePtr(o.Date), DayKind: o.DayKind,
 			DayHours: decimal.RequireFromString(o.DayHours), NightHours: decimal.RequireFromString(o.NightHours)}})
@@ -177,8 +176,7 @@ func (s *Service) readBasis(ctx context.Context, legalEntity, payrollID int64, s
 
 // missingTimesheets refuses a payroll while an org unit of its employees has no posted timesheet.
 func missingTimesheets(ctx context.Context, units []int64, start pgtype.Date) error {
-	q := store.New(platform.DBFrom(ctx))
-	posted, err := q.PostedTimesheetUnits(ctx, start)
+	posted, err := store.PostedTimesheetUnits.Run(ctx, start)
 	if err != nil {
 		return err
 	}
@@ -191,7 +189,7 @@ func missingTimesheets(ctx context.Context, units []int64, start pgtype.Date) er
 	if len(missing) == 0 {
 		return nil
 	}
-	rows, err := q.OrgUnitNames(ctx, missing)
+	rows, err := store.OrgUnitNames.Run(ctx, missing)
 	if err != nil {
 		return err
 	}
@@ -208,7 +206,6 @@ func pgDate(t time.Time) pgtype.Date { return pgtype.Date{Time: t, Valid: true} 
 // and builds each employee's input, in the basis's employee order. Each contract whose
 // terms are read is audited.
 func (s *Service) payInputs(ctx context.Context, b payrollBasis, payrollID int64) ([]payInput, error) {
-	q := store.New(platform.DBFrom(ctx))
 	start, end := dayOf(b.Start), dayOf(b.End)
 	prevStart, prevEnd := start.AddDate(0, -1, 0), start.AddDate(0, 0, -1)
 	ids := make([]int64, len(b.Employees))
@@ -216,7 +213,7 @@ func (s *Service) payInputs(ctx context.Context, b payrollBasis, payrollID int64
 		ids[i] = e.ID
 	}
 
-	rows, err := q.PayrollContracts(ctx, store.PayrollContractsParams{LegalEntityID: b.LegalEntity, Ids: ids, PeriodEnd: platform.NullDate(&b.End), PrevStart: platform.NullDate(new(prevStart.Format(time.DateOnly)))})
+	rows, err := store.PayrollContracts.Run(ctx, store.PayrollContractsParams{LegalEntityID: b.LegalEntity, Ids: ids, PeriodEnd: platform.NullDate(&b.End), PrevStart: platform.NullDate(new(prevStart.Format(time.DateOnly)))})
 	if err != nil {
 		return nil, err
 	}
@@ -233,7 +230,7 @@ func (s *Service) payInputs(ctx context.Context, b payrollBasis, payrollID int64
 			Start: *platform.DatePtr(r.StartDate), End: platform.DatePtr(r.EndDate), Terms: t})
 	}
 
-	deps, err := q.PayrollDependents(ctx, ids)
+	deps, err := store.PayrollDependents.Run(ctx, ids)
 	if err != nil {
 		return nil, err
 	}
@@ -437,7 +434,7 @@ func payParams(p map[string]LegalParam, region string) (params, error) {
 // legalParamsAt reads each key's version in force at date; a missing key is an error
 // naming it, since no payroll can be computed without it.
 func legalParamsAt(ctx context.Context, date string) (map[string]LegalParam, error) {
-	rows, err := store.New(platform.DBFrom(ctx)).LegalParamsAt(ctx, platform.NullDate(&date))
+	rows, err := store.LegalParamsAt.Run(ctx, platform.NullDate(&date))
 	if err != nil {
 		return nil, err
 	}
