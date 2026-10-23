@@ -39,7 +39,7 @@ func TestOne1RunsInCtxTx(t *testing.T) {
 	pool := pgtest.New(t)
 	ctx := platform.WithDB(t.Context(), pool)
 
-	getValue := data.One1("test.GetValue", newFakeQueries, (*fakeQueries).GetValue)
+	getValue := data.OneArg("test.GetValue", newFakeQueries, (*fakeQueries).GetValue)
 
 	err := platform.InTx(ctx, func(ctx context.Context) error {
 		if _, err := platform.DBFrom(ctx).Exec(ctx, `CREATE TABLE fixed_test_t (id int primary key, v text)`); err != nil {
@@ -76,7 +76,7 @@ func TestRunNormalizesErrors(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	insertUnique := data.Exec1("test.InsertUnique", newFakeQueries, (*fakeQueries).InsertUnique)
+	insertUnique := data.ExecArg("test.InsertUnique", newFakeQueries, (*fakeQueries).InsertUnique)
 
 	if err := platform.InTx(ctx, func(ctx context.Context) error {
 		return insertUnique.Run(ctx, "dup")
@@ -157,7 +157,7 @@ func TestRunSetsQueryName(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	getValue := data.One1("test.NamedGetValue", newFakeQueries, func(q *fakeQueries, ctx context.Context, id int64) (string, error) {
+	getValue := data.OneArg("test.NamedGetValue", newFakeQueries, func(q *fakeQueries, ctx context.Context, id int64) (string, error) {
 		var v string
 		err := q.db.QueryRow(ctx, `SELECT v FROM fixed_test_name WHERE id = $1`, id).Scan(&v)
 		return v, err

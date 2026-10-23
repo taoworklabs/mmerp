@@ -9,10 +9,10 @@ import (
 
 func newQ(c platform.Conn) *Queries { return New(c) }
 
-var LegalEntity = data.One1("printing.LegalEntity", newQ, (*Queries).LegalEntity)
-var CreateSnapshots = data.Exec1("printing.CreateSnapshots", newQ, (*Queries).CreateSnapshots)
-var Snapshots = data.Many1("printing.Snapshots", newQ, (*Queries).Snapshots)
-var CreatePin = data.Exec1("printing.CreatePin", newQ, (*Queries).CreatePin)
-var GetPin = data.One1("printing.GetPin", newQ, (*Queries).GetPin)
-var LatestBlocks = data.Many0("printing.LatestBlocks", newQ, (*Queries).LatestBlocks)
-var SaveBlocks = data.One1("printing.SaveBlocks", newQ, (*Queries).SaveBlocks)
+var LegalEntity = data.OneArg("printing.LegalEntity", newQ, (*Queries).LegalEntity)
+var CreateSnapshots = data.ExecArg("printing.CreateSnapshots", newQ, (*Queries).CreateSnapshots)
+var Snapshots = data.ManyArg("printing.Snapshots", newQ, (*Queries).Snapshots)
+var CreatePin = data.ExecArg("printing.CreatePin", newQ, (*Queries).CreatePin)
+var GetPin = data.OneArg("printing.GetPin", newQ, (*Queries).GetPin)
+var LatestBlocks = data.Many("printing.LatestBlocks", newQ, (*Queries).LatestBlocks)
+var SaveBlocks = data.OneArg("printing.SaveBlocks", newQ, (*Queries).SaveBlocks)

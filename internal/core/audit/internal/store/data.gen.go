@@ -9,4 +9,4 @@ import (
 
 func newQ(c platform.Conn) *Queries { return New(c) }
 
-var Insert = data.Exec1("audit.Insert", newQ, (*Queries).Insert)
+var Insert = data.ExecArg("audit.Insert", newQ, (*Queries).Insert)

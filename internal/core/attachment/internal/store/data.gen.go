@@ -9,9 +9,9 @@ import (
 
 func newQ(c platform.Conn) *Queries { return New(c) }
 
-var CreateFile = data.One1("attachment.CreateFile", newQ, (*Queries).CreateFile)
-var GetFile = data.One1("attachment.GetFile", newQ, (*Queries).GetFile)
-var ListFiles = data.Many1("attachment.ListFiles", newQ, (*Queries).ListFiles)
-var DeleteFile = data.One1("attachment.DeleteFile", newQ, (*Queries).DeleteFile)
-var KnownFiles = data.Many1("attachment.KnownFiles", newQ, (*Queries).KnownFiles)
-var DeleteRecordFiles = data.Exec1("attachment.DeleteRecordFiles", newQ, (*Queries).DeleteRecordFiles)
+var CreateFile = data.OneArg("attachment.CreateFile", newQ, (*Queries).CreateFile)
+var GetFile = data.OneArg("attachment.GetFile", newQ, (*Queries).GetFile)
+var ListFiles = data.ManyArg("attachment.ListFiles", newQ, (*Queries).ListFiles)
+var DeleteFile = data.OneArg("attachment.DeleteFile", newQ, (*Queries).DeleteFile)
+var KnownFiles = data.ManyArg("attachment.KnownFiles", newQ, (*Queries).KnownFiles)
+var DeleteRecordFiles = data.ExecArg("attachment.DeleteRecordFiles", newQ, (*Queries).DeleteRecordFiles)

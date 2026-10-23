@@ -9,8 +9,8 @@ import (
 
 func newQ(c platform.Conn) *Queries { return New(c) }
 
-var DocumentHeader = data.One1("posting.DocumentHeader", newQ, (*Queries).DocumentHeader)
-var InsertRecording = data.Exec1("posting.InsertRecording", newQ, (*Queries).InsertRecording)
-var InsertLines = data.Exec1("posting.InsertLines", newQ, (*Queries).InsertLines)
-var VoidRecording = data.Exec1("posting.VoidRecording", newQ, (*Queries).VoidRecording)
-var VoidLines = data.Exec1("posting.VoidLines", newQ, (*Queries).VoidLines)
+var DocumentHeader = data.OneArg("posting.DocumentHeader", newQ, (*Queries).DocumentHeader)
+var InsertRecording = data.ExecArg("posting.InsertRecording", newQ, (*Queries).InsertRecording)
+var InsertLines = data.ExecArg("posting.InsertLines", newQ, (*Queries).InsertLines)
+var VoidRecording = data.ExecArg("posting.VoidRecording", newQ, (*Queries).VoidRecording)
+var VoidLines = data.ExecArg("posting.VoidLines", newQ, (*Queries).VoidLines)

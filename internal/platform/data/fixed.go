@@ -6,115 +6,115 @@ import (
 	"github.com/taoworklabs/mmerp/internal/platform"
 )
 
-// run0 is the one place a no-parameter fixed query sets its name and normalizes
-// its error: One0, Many0 and ExecRows0 all call it, and Exec0 adapts to it.
-func run0[Q, R any](ctx context.Context, name string, newQ func(platform.Conn) Q, f func(Q, context.Context) (R, error)) (R, error) {
+// run is the one place a no-parameter fixed query sets its name and normalizes
+// its error: One, Many and ExecRows all call it, and Exec adapts to it.
+func run[Q, R any](ctx context.Context, name string, newQ func(platform.Conn) Q, f func(Q, context.Context) (R, error)) (R, error) {
 	ctx = platform.WithQueryName(ctx, name, "")
 	r, err := f(newQ(platform.DBFrom(ctx)), ctx)
 	return r, Normalize(err)
 }
 
-// run1 is the one place a one-parameter fixed query sets its name and normalizes
-// its error: One1, Many1 and ExecRows1 all call it, and Exec1 adapts to it.
-func run1[Q, P, R any](ctx context.Context, name string, newQ func(platform.Conn) Q, p P, f func(Q, context.Context, P) (R, error)) (R, error) {
+// runArg is the one place a one-parameter fixed query sets its name and normalizes
+// its error: OneArg, ManyArg and ExecRowsArg all call it, and ExecArg adapts to it.
+func runArg[Q, P, R any](ctx context.Context, name string, newQ func(platform.Conn) Q, p P, f func(Q, context.Context, P) (R, error)) (R, error) {
 	ctx = platform.WithQueryName(ctx, name, "")
 	r, err := f(newQ(platform.DBFrom(ctx)), ctx, p)
 	return r, Normalize(err)
 }
 
-// One0Query runs a fixed query with no parameters that returns one row.
-type One0Query[R any] struct {
+// OneQuery runs a fixed query with no parameters that returns one row.
+type OneQuery[R any] struct {
 	name string
 	run  func(ctx context.Context) (R, error)
 }
 
-// One0 wraps a sqlc method with no parameters that returns one row.
-func One0[Q, R any](name string, newQ func(platform.Conn) Q, f func(Q, context.Context) (R, error)) One0Query[R] {
-	return One0Query[R]{
+// One wraps a sqlc method with no parameters that returns one row.
+func One[Q, R any](name string, newQ func(platform.Conn) Q, f func(Q, context.Context) (R, error)) OneQuery[R] {
+	return OneQuery[R]{
 		name: name,
-		run:  func(ctx context.Context) (R, error) { return run0(ctx, name, newQ, f) },
+		run:  func(ctx context.Context) (R, error) { return run(ctx, name, newQ, f) },
 	}
 }
 
 // Run executes the query.
-func (d One0Query[R]) Run(ctx context.Context) (R, error) { return d.run(ctx) }
+func (d OneQuery[R]) Run(ctx context.Context) (R, error) { return d.run(ctx) }
 
 // Name reports the query's registered name.
-func (d One0Query[R]) Name() string { return d.name }
+func (d OneQuery[R]) Name() string { return d.name }
 
-// One1Query runs a fixed query with one parameter that returns one row.
-type One1Query[P, R any] struct {
+// OneArgQuery runs a fixed query with one parameter that returns one row.
+type OneArgQuery[P, R any] struct {
 	name string
 	run  func(ctx context.Context, p P) (R, error)
 }
 
-// One1 wraps a sqlc method with one parameter that returns one row.
-func One1[Q, P, R any](name string, newQ func(platform.Conn) Q, f func(Q, context.Context, P) (R, error)) One1Query[P, R] {
-	return One1Query[P, R]{
+// OneArg wraps a sqlc method with one parameter that returns one row.
+func OneArg[Q, P, R any](name string, newQ func(platform.Conn) Q, f func(Q, context.Context, P) (R, error)) OneArgQuery[P, R] {
+	return OneArgQuery[P, R]{
 		name: name,
-		run:  func(ctx context.Context, p P) (R, error) { return run1(ctx, name, newQ, p, f) },
+		run:  func(ctx context.Context, p P) (R, error) { return runArg(ctx, name, newQ, p, f) },
 	}
 }
 
 // Run executes the query with p.
-func (d One1Query[P, R]) Run(ctx context.Context, p P) (R, error) { return d.run(ctx, p) }
+func (d OneArgQuery[P, R]) Run(ctx context.Context, p P) (R, error) { return d.run(ctx, p) }
 
 // Name reports the query's registered name.
-func (d One1Query[P, R]) Name() string { return d.name }
+func (d OneArgQuery[P, R]) Name() string { return d.name }
 
-// Many0Query runs a fixed query with no parameters that returns many rows.
-type Many0Query[R any] struct {
+// ManyQuery runs a fixed query with no parameters that returns many rows.
+type ManyQuery[R any] struct {
 	name string
 	run  func(ctx context.Context) ([]R, error)
 }
 
-// Many0 wraps a sqlc method with no parameters that returns many rows.
-func Many0[Q, R any](name string, newQ func(platform.Conn) Q, f func(Q, context.Context) ([]R, error)) Many0Query[R] {
-	return Many0Query[R]{
+// Many wraps a sqlc method with no parameters that returns many rows.
+func Many[Q, R any](name string, newQ func(platform.Conn) Q, f func(Q, context.Context) ([]R, error)) ManyQuery[R] {
+	return ManyQuery[R]{
 		name: name,
-		run:  func(ctx context.Context) ([]R, error) { return run0(ctx, name, newQ, f) },
+		run:  func(ctx context.Context) ([]R, error) { return run(ctx, name, newQ, f) },
 	}
 }
 
 // Run executes the query.
-func (d Many0Query[R]) Run(ctx context.Context) ([]R, error) { return d.run(ctx) }
+func (d ManyQuery[R]) Run(ctx context.Context) ([]R, error) { return d.run(ctx) }
 
 // Name reports the query's registered name.
-func (d Many0Query[R]) Name() string { return d.name }
+func (d ManyQuery[R]) Name() string { return d.name }
 
-// Many1Query runs a fixed query with one parameter that returns many rows.
-type Many1Query[P, R any] struct {
+// ManyArgQuery runs a fixed query with one parameter that returns many rows.
+type ManyArgQuery[P, R any] struct {
 	name string
 	run  func(ctx context.Context, p P) ([]R, error)
 }
 
-// Many1 wraps a sqlc method with one parameter that returns many rows.
-func Many1[Q, P, R any](name string, newQ func(platform.Conn) Q, f func(Q, context.Context, P) ([]R, error)) Many1Query[P, R] {
-	return Many1Query[P, R]{
+// ManyArg wraps a sqlc method with one parameter that returns many rows.
+func ManyArg[Q, P, R any](name string, newQ func(platform.Conn) Q, f func(Q, context.Context, P) ([]R, error)) ManyArgQuery[P, R] {
+	return ManyArgQuery[P, R]{
 		name: name,
-		run:  func(ctx context.Context, p P) ([]R, error) { return run1(ctx, name, newQ, p, f) },
+		run:  func(ctx context.Context, p P) ([]R, error) { return runArg(ctx, name, newQ, p, f) },
 	}
 }
 
 // Run executes the query with p.
-func (d Many1Query[P, R]) Run(ctx context.Context, p P) ([]R, error) { return d.run(ctx, p) }
+func (d ManyArgQuery[P, R]) Run(ctx context.Context, p P) ([]R, error) { return d.run(ctx, p) }
 
 // Name reports the query's registered name.
-func (d Many1Query[P, R]) Name() string { return d.name }
+func (d ManyArgQuery[P, R]) Name() string { return d.name }
 
-// Exec0Query runs a fixed query with no parameters and no result rows.
-type Exec0Query struct {
+// ExecQuery runs a fixed query with no parameters and no result rows.
+type ExecQuery struct {
 	name string
 	run  func(ctx context.Context) error
 }
 
-// Exec0 wraps a sqlc method with no parameters and no result rows, adapting it
-// to run0's shape with a throwaway result type.
-func Exec0[Q any](name string, newQ func(platform.Conn) Q, f func(Q, context.Context) error) Exec0Query {
-	return Exec0Query{
+// Exec wraps a sqlc method with no parameters and no result rows, adapting it
+// to run's shape with a throwaway result type.
+func Exec[Q any](name string, newQ func(platform.Conn) Q, f func(Q, context.Context) error) ExecQuery {
+	return ExecQuery{
 		name: name,
 		run: func(ctx context.Context) error {
-			_, err := run0(ctx, name, newQ, func(q Q, ctx context.Context) (struct{}, error) {
+			_, err := run(ctx, name, newQ, func(q Q, ctx context.Context) (struct{}, error) {
 				return struct{}{}, f(q, ctx)
 			})
 			return err
@@ -123,24 +123,24 @@ func Exec0[Q any](name string, newQ func(platform.Conn) Q, f func(Q, context.Con
 }
 
 // Run executes the query.
-func (d Exec0Query) Run(ctx context.Context) error { return d.run(ctx) }
+func (d ExecQuery) Run(ctx context.Context) error { return d.run(ctx) }
 
 // Name reports the query's registered name.
-func (d Exec0Query) Name() string { return d.name }
+func (d ExecQuery) Name() string { return d.name }
 
-// Exec1Query runs a fixed query with one parameter and no result rows.
-type Exec1Query[P any] struct {
+// ExecArgQuery runs a fixed query with one parameter and no result rows.
+type ExecArgQuery[P any] struct {
 	name string
 	run  func(ctx context.Context, p P) error
 }
 
-// Exec1 wraps a sqlc method with one parameter and no result rows, adapting it
-// to run1's shape with a throwaway result type.
-func Exec1[Q, P any](name string, newQ func(platform.Conn) Q, f func(Q, context.Context, P) error) Exec1Query[P] {
-	return Exec1Query[P]{
+// ExecArg wraps a sqlc method with one parameter and no result rows, adapting it
+// to runArg's shape with a throwaway result type.
+func ExecArg[Q, P any](name string, newQ func(platform.Conn) Q, f func(Q, context.Context, P) error) ExecArgQuery[P] {
+	return ExecArgQuery[P]{
 		name: name,
 		run: func(ctx context.Context, p P) error {
-			_, err := run1(ctx, name, newQ, p, func(q Q, ctx context.Context, p P) (struct{}, error) {
+			_, err := runArg(ctx, name, newQ, p, func(q Q, ctx context.Context, p P) (struct{}, error) {
 				return struct{}{}, f(q, ctx, p)
 			})
 			return err
@@ -149,47 +149,47 @@ func Exec1[Q, P any](name string, newQ func(platform.Conn) Q, f func(Q, context.
 }
 
 // Run executes the query with p.
-func (d Exec1Query[P]) Run(ctx context.Context, p P) error { return d.run(ctx, p) }
+func (d ExecArgQuery[P]) Run(ctx context.Context, p P) error { return d.run(ctx, p) }
 
 // Name reports the query's registered name.
-func (d Exec1Query[P]) Name() string { return d.name }
+func (d ExecArgQuery[P]) Name() string { return d.name }
 
-// ExecRows0Query runs a fixed query with no parameters that reports rows affected.
-type ExecRows0Query struct {
+// ExecRowsQuery runs a fixed query with no parameters that reports rows affected.
+type ExecRowsQuery struct {
 	name string
 	run  func(ctx context.Context) (int64, error)
 }
 
-// ExecRows0 wraps a sqlc method with no parameters that reports rows affected.
-func ExecRows0[Q any](name string, newQ func(platform.Conn) Q, f func(Q, context.Context) (int64, error)) ExecRows0Query {
-	return ExecRows0Query{
+// ExecRows wraps a sqlc method with no parameters that reports rows affected.
+func ExecRows[Q any](name string, newQ func(platform.Conn) Q, f func(Q, context.Context) (int64, error)) ExecRowsQuery {
+	return ExecRowsQuery{
 		name: name,
-		run:  func(ctx context.Context) (int64, error) { return run0(ctx, name, newQ, f) },
+		run:  func(ctx context.Context) (int64, error) { return run(ctx, name, newQ, f) },
 	}
 }
 
 // Run executes the query.
-func (d ExecRows0Query) Run(ctx context.Context) (int64, error) { return d.run(ctx) }
+func (d ExecRowsQuery) Run(ctx context.Context) (int64, error) { return d.run(ctx) }
 
 // Name reports the query's registered name.
-func (d ExecRows0Query) Name() string { return d.name }
+func (d ExecRowsQuery) Name() string { return d.name }
 
-// ExecRows1Query runs a fixed query with one parameter that reports rows affected.
-type ExecRows1Query[P any] struct {
+// ExecRowsArgQuery runs a fixed query with one parameter that reports rows affected.
+type ExecRowsArgQuery[P any] struct {
 	name string
 	run  func(ctx context.Context, p P) (int64, error)
 }
 
-// ExecRows1 wraps a sqlc method with one parameter that reports rows affected.
-func ExecRows1[Q, P any](name string, newQ func(platform.Conn) Q, f func(Q, context.Context, P) (int64, error)) ExecRows1Query[P] {
-	return ExecRows1Query[P]{
+// ExecRowsArg wraps a sqlc method with one parameter that reports rows affected.
+func ExecRowsArg[Q, P any](name string, newQ func(platform.Conn) Q, f func(Q, context.Context, P) (int64, error)) ExecRowsArgQuery[P] {
+	return ExecRowsArgQuery[P]{
 		name: name,
-		run:  func(ctx context.Context, p P) (int64, error) { return run1(ctx, name, newQ, p, f) },
+		run:  func(ctx context.Context, p P) (int64, error) { return runArg(ctx, name, newQ, p, f) },
 	}
 }
 
 // Run executes the query with p.
-func (d ExecRows1Query[P]) Run(ctx context.Context, p P) (int64, error) { return d.run(ctx, p) }
+func (d ExecRowsArgQuery[P]) Run(ctx context.Context, p P) (int64, error) { return d.run(ctx, p) }
 
 // Name reports the query's registered name.
-func (d ExecRows1Query[P]) Name() string { return d.name }
+func (d ExecRowsArgQuery[P]) Name() string { return d.name }

@@ -9,8 +9,8 @@ import (
 
 func newQ(c platform.Conn) *Queries { return New(c) }
 
-var Next = data.One1("numbering.Next", newQ, (*Queries).Next)
-var NextInSeries = data.One1("numbering.NextInSeries", newQ, (*Queries).NextInSeries)
-var ListSeries = data.Many0("numbering.ListSeries", newQ, (*Queries).ListSeries)
-var LockSeries = data.One1("numbering.LockSeries", newQ, (*Queries).LockSeries)
-var SetPrefix = data.Exec1("numbering.SetPrefix", newQ, (*Queries).SetPrefix)
+var Next = data.OneArg("numbering.Next", newQ, (*Queries).Next)
+var NextInSeries = data.OneArg("numbering.NextInSeries", newQ, (*Queries).NextInSeries)
+var ListSeries = data.Many("numbering.ListSeries", newQ, (*Queries).ListSeries)
+var LockSeries = data.OneArg("numbering.LockSeries", newQ, (*Queries).LockSeries)
+var SetPrefix = data.ExecArg("numbering.SetPrefix", newQ, (*Queries).SetPrefix)
