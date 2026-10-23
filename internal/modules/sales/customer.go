@@ -160,3 +160,66 @@ func boolFilter(v string) pgtype.Bool {
 func customerCodeTaken(ctx context.Context, code string) (bool, error) {
 	return store.CustomerCodeTaken.Run(ctx, code)
 }
+
+// CustomerFields are what an edit may change; the code is set once, at creation.
+type CustomerFields struct {
+	Name         string  `json:"name" minLength:"1" maxLength:"300"`
+	TaxCode      *string `json:"tax_code" maxLength:"20"`
+	Address      *string `json:"address" maxLength:"500"`
+	Phone        *string `json:"phone" maxLength:"50"`
+	Email        *string `json:"email" maxLength:"200"`
+	ContactName  *string `json:"contact_name" maxLength:"200"`
+	PaymentTerms *string `json:"payment_terms" maxLength:"1000" doc:"Prefilled on new quotations and orders"`
+	OrgUnitID    int64   `json:"org_unit_id" doc:"Owning org unit: who may see the customer"`
+	Active       bool    `json:"active"`
+}
+
+type NewCustomer struct {
+	Code string `json:"code,omitempty" maxLength:"50" doc:"Empty or absent: issued from the sales.customer code series"`
+	CustomerFields
+}
+
+type Customer struct {
+	ID   int64  `json:"id"`
+	Code string `json:"code"`
+	CustomerFields
+	OrgUnitName string `json:"org_unit_name"`
+	// edit, attach.
+	AllowedActions []string `json:"allowed_actions" nullable:"false"`
+}
+
+type CustomerFilter struct {
+	Q      string `query:"q" maxLength:"100"`
+	Active string `query:"active" enum:"true,false"`
+	Sort   string `query:"sort" enum:"code,-code,name,-name" default:"code"`
+	platform.Paging
+}
+
+type CustomerListItem struct {
+	ID          int64   `json:"id"`
+	Code        string  `json:"code"`
+	Name        string  `json:"name"`
+	TaxCode     *string `json:"tax_code"`
+	Phone       *string `json:"phone"`
+	OrgUnitName string  `json:"org_unit_name"`
+	Active      bool    `json:"active"`
+	// Prefilled on a new quotation or order of the customer.
+	PaymentTerms *string `json:"payment_terms"`
+}
+
+type CustomerList struct {
+	Items []CustomerListItem `json:"items" nullable:"false"`
+	Total int64              `json:"total"`
+}
+
+// CustomerCopy is the customer as the document copied it on its last draft save.
+type CustomerCopy struct {
+	ID          int64   `json:"id"`
+	Code        string  `json:"code"`
+	Name        string  `json:"name"`
+	TaxCode     *string `json:"tax_code"`
+	Address     *string `json:"address"`
+	Phone       *string `json:"phone"`
+	Email       *string `json:"email"`
+	ContactName *string `json:"contact_name"`
+}

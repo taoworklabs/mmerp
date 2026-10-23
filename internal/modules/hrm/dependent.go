@@ -119,3 +119,17 @@ func openDependent(ctx context.Context, data []byte) (DependentInput, error) {
 	}
 	return d, json.Unmarshal(raw, &d)
 }
+
+type DependentInput struct {
+	FullName      string  `json:"full_name" minLength:"1" maxLength:"200"`
+	Relationship  string  `json:"relationship" enum:"child,spouse,parent,other"`
+	DateOfBirth   *string `json:"date_of_birth" format:"date"`
+	IDNumber      *string `json:"id_number" maxLength:"50" doc:"National ID or personal tax code"`
+	DeductionFrom *string `json:"deduction_from" pattern:"^[0-9]{4}-[0-9]{2}$" doc:"First month of the deduction, YYYY-MM"`
+	DeductionTo   *string `json:"deduction_to" pattern:"^[0-9]{4}-[0-9]{2}$"`
+}
+
+type Dependent struct {
+	ID int64 `json:"id"`
+	DependentInput
+}

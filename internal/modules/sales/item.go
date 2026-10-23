@@ -118,3 +118,35 @@ func (s *Service) itemLabels(ctx context.Context, ids []int64) ([]record.FieldOp
 	}
 	return out, nil
 }
+
+// ItemFields are what an edit may change; the code is set once, at creation.
+type ItemFields struct {
+	Name    string `json:"name" minLength:"1" maxLength:"300"`
+	Unit    string `json:"unit" minLength:"1" maxLength:"30"`
+	Price   int64  `json:"price" minimum:"0" doc:"Default unit price in đồng"`
+	VatRate string `json:"vat_rate" enum:"none,0,5,8,10"`
+	Active  bool   `json:"active"`
+}
+
+type NewItem struct {
+	Code string `json:"code,omitempty" maxLength:"50" doc:"Empty or absent: issued from the sales.item code series"`
+	ItemFields
+}
+
+type Item struct {
+	ID   int64  `json:"id"`
+	Code string `json:"code"`
+	ItemFields
+}
+
+type ItemFilter struct {
+	Q      string `query:"q" maxLength:"100"`
+	Active string `query:"active" enum:"true,false"`
+	Sort   string `query:"sort" enum:"code,-code,name,-name" default:"code"`
+	platform.Paging
+}
+
+type ItemList struct {
+	Items []Item `json:"items" nullable:"false"`
+	Total int64  `json:"total"`
+}

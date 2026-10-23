@@ -247,3 +247,24 @@ func (s *Service) checkLegalEntity(ctx context.Context, id int64) error {
 	}
 	return nil
 }
+
+// WorkWeek is a version of a legal entity's weekly days off, 0 (Sunday) to 6 (Saturday).
+type WorkWeek struct {
+	EffectiveFrom string `json:"effective_from" format:"date"`
+	OffDays       []int  `json:"off_days" nullable:"false" maxItems:"7"`
+}
+
+// Holiday is a public holiday or a day off in lieu.
+type Holiday struct {
+	Date string `json:"date" format:"date"`
+	Name string `json:"name" minLength:"1" maxLength:"200"`
+}
+
+// WorkCalendar is a legal entity's weekly days off by version and its holidays of one year.
+// Without any version the days off are Saturday and Sunday.
+type WorkCalendar struct {
+	WorkWeeks []WorkWeek `json:"work_weeks" nullable:"false"`
+	Holidays  []Holiday  `json:"holidays" nullable:"false"`
+	// manage.
+	AllowedActions []string `json:"allowed_actions" nullable:"false"`
+}
