@@ -22,7 +22,7 @@ var placeholder = regexp.MustCompile(`\{([^{}]*)\}`)
 
 // latest reads the last save of every template's blocks, by template.
 func latest(ctx context.Context) (map[string]store.LatestBlocksRow, error) {
-	rows, err := store.New(platform.DBFrom(ctx)).LatestBlocks(ctx)
+	rows, err := store.LatestBlocks.Run(ctx)
 	out := map[string]store.LatestBlocksRow{}
 	for _, r := range rows {
 		out[r.Template] = r
@@ -160,7 +160,7 @@ func (s *Service) SaveBlocks(ctx context.Context, code string, in []BlockText) e
 	}
 	actor, _ := platform.ActorFrom(ctx)
 	return platform.InTx(ctx, func(ctx context.Context) error {
-		v, err := store.New(platform.DBFrom(ctx)).SaveBlocks(ctx, store.SaveBlocksParams{Template: code, Texts: raw, SavedBy: actor})
+		v, err := store.SaveBlocks.Run(ctx, store.SaveBlocksParams{Template: code, Texts: raw, SavedBy: actor})
 		if err != nil {
 			return err
 		}

@@ -65,7 +65,7 @@ func (s *Service) List(ctx context.Context, ref record.Ref) (AttachmentList, err
 	if attach {
 		out.AllowedActions = append(out.AllowedActions, string(record.Attach))
 	}
-	rows, err := store.New(platform.DBFrom(ctx)).ListFiles(ctx, store.ListFilesParams{DocType: ref.Type, DocID: ref.ID})
+	rows, err := store.ListFiles.Run(ctx, store.ListFilesParams{DocType: ref.Type, DocID: ref.ID})
 	if err != nil {
 		return out, err
 	}
@@ -113,7 +113,7 @@ func (s *Service) Add(ctx context.Context, ref record.Ref, name string, r io.Rea
 			return err
 		}
 		actor, _ := platform.ActorFrom(ctx)
-		id, err := store.New(platform.DBFrom(ctx)).CreateFile(ctx, store.CreateFileParams{
+		id, err := store.CreateFile.Run(ctx, store.CreateFileParams{
 			DocType: ref.Type, DocID: ref.ID, FileID: fileID, Name: name, Size: int64(len(b)), ContentType: kind, UploadedBy: actor,
 		})
 		if err != nil {
@@ -162,7 +162,7 @@ func (s *Service) Remove(ctx context.Context, id int64) error {
 			return err
 		}
 		// Gone already: removed meanwhile by someone else.
-		if _, err := store.New(platform.DBFrom(ctx)).DeleteFile(ctx, id); errors.Is(err, pgx.ErrNoRows) {
+		if _, err := store.DeleteFile.Run(ctx, id); errors.Is(err, pgx.ErrNoRows) {
 			return platform.ErrNotFound
 		} else if err != nil {
 			return err
@@ -198,7 +198,7 @@ func (s *Service) Open(ctx context.Context, id int64) (Attachment, *os.File, err
 // file reads an attachment's row if the actor may see its record's files now; any other
 // does not exist, even with a guessed id.
 func (s *Service) file(ctx context.Context, id int64) (store.AttachmentFile, error) {
-	row, err := store.New(platform.DBFrom(ctx)).GetFile(ctx, id)
+	row, err := store.GetFile.Run(ctx, id)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return row, platform.ErrNotFound
 	}
@@ -211,7 +211,7 @@ func (s *Service) file(ctx context.Context, id int64) (store.AttachmentFile, err
 // Deleted forgets the attachments of a deleted draft, in its transaction; cleanup
 // removes the files later.
 func (s *Service) Deleted(ctx context.Context, ref record.Ref) error {
-	return store.New(platform.DBFrom(ctx)).DeleteRecordFiles(ctx, store.DeleteRecordFilesParams{DocType: ref.Type, DocID: ref.ID})
+	return store.DeleteRecordFiles.Run(ctx, store.DeleteRecordFilesParams{DocType: ref.Type, DocID: ref.ID})
 }
 
 // detect names the type of a file from its content, or "" for a type not accepted.

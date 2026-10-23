@@ -98,5 +98,5 @@ func (s *Service) insert(ctx context.Context, action string, ref *Ref, data map[
 			return err
 		}
 	}
-	return store.New(platform.DBFrom(ctx)).Insert(ctx, p)
+	return store.Insert.Run(ctx, p)
 }

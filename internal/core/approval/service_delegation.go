@@ -19,7 +19,7 @@ func (s *Service) DelegateUsers(ctx context.Context) ([]ApproverUser, error) {
 	if err != nil {
 		return nil, err
 	}
-	rows, err := store.New(platform.DBFrom(ctx)).ListUsers(ctx)
+	rows, err := store.ListUsers.Run(ctx)
 	out := make([]ApproverUser, len(rows))
 	for i, r := range rows {
 		out[i] = ApproverUser(r)
@@ -50,7 +50,7 @@ func (s *Service) Delegations(ctx context.Context) ([]Delegation, error) {
 		return nil, err
 	}
 	actor, _ := platform.ActorFrom(ctx)
-	rows, err := store.New(platform.DBFrom(ctx)).ListDelegations(ctx, store.ListDelegationsParams{Today: today, Everyone: all, Actor: actor})
+	rows, err := store.ListDelegations.Run(ctx, store.ListDelegationsParams{Today: today, Everyone: all, Actor: actor})
 	out := make([]Delegation, len(rows))
 	for i, r := range rows {
 		out[i] = Delegation{ID: r.ID, UserID: r.UserID, UserName: r.UserName, DelegateID: r.DelegateID, DelegateName: r.DelegateName,
@@ -81,8 +81,7 @@ func (s *Service) CreateDelegation(ctx context.Context, in DelegationInput) (int
 	}
 	var id int64
 	err := platform.InTx(ctx, func(ctx context.Context) error {
-		q := store.New(platform.DBFrom(ctx))
-		ok, err := q.UsersExist(ctx, store.UsersExistParams{UserID: user, DelegateID: in.DelegateID})
+		ok, err := store.UsersExist.Run(ctx, store.UsersExistParams{UserID: user, DelegateID: in.DelegateID})
 		if err != nil {
 			return err
 		}
@@ -100,10 +99,10 @@ func (s *Service) CreateDelegation(ctx context.Context, in DelegationInput) (int
 		if ends.Time.Before(today.Time) {
 			return ErrInvalidDelegation("past")
 		}
-		if err := q.LockDelegations(ctx, user); err != nil {
+		if err := store.LockDelegations.Run(ctx, user); err != nil {
 			return err
 		}
-		other, err := q.OverlappingDelegation(ctx, store.OverlappingDelegationParams{UserID: user, StartsOn: starts, EndsOn: ends})
+		other, err := store.OverlappingDelegation.Run(ctx, store.OverlappingDelegationParams{UserID: user, StartsOn: starts, EndsOn: ends})
 		if err == nil {
 			e := ErrInvalidDelegation("overlap")
 			e.Params["id"] = other
@@ -112,7 +111,7 @@ func (s *Service) CreateDelegation(ctx context.Context, in DelegationInput) (int
 		if !errors.Is(err, pgx.ErrNoRows) {
 			return err
 		}
-		if id, err = q.InsertDelegation(ctx, store.InsertDelegationParams{UserID: user, DelegateID: in.DelegateID,
+		if id, err = store.InsertDelegation.Run(ctx, store.InsertDelegationParams{UserID: user, DelegateID: in.DelegateID,
 			StartsOn: starts, EndsOn: ends, CreatedBy: actor}); err != nil {
 			return err
 		}
@@ -131,15 +130,14 @@ func (s *Service) DeleteDelegation(ctx context.Context, id int64) error {
 	}
 	actor, _ := platform.ActorFrom(ctx)
 	return platform.InTx(ctx, func(ctx context.Context) error {
-		q := store.New(platform.DBFrom(ctx))
-		d, err := q.GetDelegation(ctx, id)
+		d, err := store.GetDelegation.Run(ctx, id)
 		if errors.Is(err, pgx.ErrNoRows) || err == nil && !all && d.UserID != actor {
 			return platform.ErrNotFound
 		}
 		if err != nil {
 			return err
 		}
-		if err := q.DeleteDelegation(ctx, id); err != nil {
+		if err := store.DeleteDelegation.Run(ctx, id); err != nil {
 			return err
 		}
 		return s.d.Audit.Record(ctx, "approval.delegation_deleted", map[string]any{"id": id, "user": d.UserID,

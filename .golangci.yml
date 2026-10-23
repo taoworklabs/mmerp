@@ -84,8 +84,7 @@ linters:
           msg: get the connection from platform.DBFrom(ctx)
         - pattern: ^float(32|64)$
           msg: money is int64 in minor units; rates use shopspring/decimal
-        # Data access. store.New and platform.DBFrom are switched on per
-        # migrated module; see the exclusions below.
+        # Data access; infrastructure exceptions are in the exclusions below.
         - pattern: ^store\.New$
           msg: query through the data engine (internal/platform/data)
         - pattern: ^platform\.DBFrom$
@@ -129,17 +128,10 @@ linters:
       - path: ^internal/platform/|^internal/app/|^cmd/|/pgtest/|/coretest/|\.gen\.go$|/queries\.sql\.go$|^internal/core/iam/
         linters: [forbidigo]
         text: Static|GrantAll|GrantUnits
-      # store.New and platform.DBFrom bypass the data engine. They apply to the
-      # modules that have migrated (listed after the fixture path); every other
-      # directory stays excluded until it migrates and joins the list. Tests may
-      # inspect the database directly; generated stores build their own Queries.
-      - path-except: ^scripts/lint-fixtures/go/|^internal/modules/(hrm|sales)/|^internal/shared/posting/
-        linters: [forbidigo]
-        text: store\.New
-      - path-except: ^scripts/lint-fixtures/go/|^internal/modules/(hrm|sales)/|^internal/shared/posting/
-        linters: [forbidigo]
-        text: platform\.DBFrom
-      - path: _test\.go$|\.gen\.go$|/queries\.sql\.go$
+      # store.New and platform.DBFrom bypass the data engine; they stay allowed
+      # in infrastructure, and in tests and the recordtest suite, which inspect
+      # the database directly.
+      - path: ^internal/platform/|^internal/app/|^cmd/|/pgtest/|/coretest/|/recordtest/|_test\.go$|\.gen\.go$|/queries\.sql\.go$
         linters: [forbidigo]
         text: store\.New|platform\.DBFrom
 

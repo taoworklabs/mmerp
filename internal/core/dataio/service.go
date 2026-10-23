@@ -139,7 +139,7 @@ func (s *Service) Template(ctx context.Context, kind string, params json.RawMess
 // File opens a file the actor owns, before it expires, and for an export while its
 // module still lets the actor read it; any other does not exist.
 func (s *Service) File(ctx context.Context, id string) (name string, f *os.File, err error) {
-	row, err := store.New(platform.DBFrom(ctx)).GetFile(ctx, id)
+	row, err := store.GetFile.Run(ctx, id)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return "", nil, platform.ErrNotFound
 	}
@@ -285,7 +285,7 @@ func (s *Service) keep(ctx context.Context, id, name string, p store.CreateFileP
 	actor, _ := platform.ActorFrom(ctx)
 	p.ID, p.Name, p.OwnerID = id, name, actor
 	p.ExpiresAt = pgtype.Timestamptz{Time: time.Now().Add(fileTTL), Valid: true}
-	return store.New(platform.DBFrom(ctx)).CreateFile(ctx, p)
+	return store.CreateFile.Run(ctx, p)
 }
 
 // jsonObject accepts params as a JSON object; empty means {}.

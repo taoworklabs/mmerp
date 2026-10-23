@@ -61,7 +61,7 @@ func (s *Service) Get(ctx context.Context, key string) (string, error) {
 		// Unknown keys are wiring bugs; failing loudly beats returning "".
 		return "", fmt.Errorf("setting: unknown key %q", key)
 	}
-	v, err := store.New(platform.DBFrom(ctx)).GetValue(ctx, key)
+	v, err := store.GetValue.Run(ctx, key)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return def, nil
 	}
@@ -74,7 +74,7 @@ func (s *Service) Today(ctx context.Context) (pgtype.Date, error) {
 	if err != nil {
 		return pgtype.Date{}, err
 	}
-	return store.New(platform.DBFrom(ctx)).Today(ctx, tz)
+	return store.Today.Run(ctx, tz)
 }
 
 // RegisterLegalEntityKey adds a legal-entity setting of product (empty for core) while
@@ -92,7 +92,7 @@ func (s *Service) GetFor(ctx context.Context, legalEntity int64, name string) (s
 	if !ok {
 		return "", fmt.Errorf("setting: unknown key %q", name)
 	}
-	v, err := store.New(platform.DBFrom(ctx)).GetLegalEntityValue(ctx, store.GetLegalEntityValueParams{LegalEntityID: legalEntity, Key: name})
+	v, err := store.GetLegalEntityValue.Run(ctx, store.GetLegalEntityValueParams{LegalEntityID: legalEntity, Key: name})
 	if errors.Is(err, pgx.ErrNoRows) {
 		return k.def, nil
 	}
@@ -101,7 +101,7 @@ func (s *Service) GetFor(ctx context.Context, legalEntity int64, name string) (s
 
 // RoundingOf returns the rounding of an org unit's legal entity.
 func (s *Service) RoundingOf(ctx context.Context, unit int64) (platform.Rounding, error) {
-	v, err := store.New(platform.DBFrom(ctx)).UnitLegalEntityValue(ctx, store.UnitLegalEntityValueParams{Unit: unit, Key: Rounding})
+	v, err := store.UnitLegalEntityValue.Run(ctx, store.UnitLegalEntityValueParams{Unit: unit, Key: Rounding})
 	if errors.Is(err, pgx.ErrNoRows) {
 		return "", platform.ErrNotFound
 	}
@@ -119,7 +119,7 @@ func (s *Service) LegalEntitySettings(ctx context.Context, legalEntity int64) ([
 	if err := s.checkEntity(ctx, legalEntity); err != nil {
 		return nil, err
 	}
-	rows, err := store.New(platform.DBFrom(ctx)).LegalEntityValues(ctx, legalEntity)
+	rows, err := store.LegalEntityValues.Run(ctx, legalEntity)
 	if err != nil {
 		return nil, err
 	}
@@ -159,7 +159,7 @@ func (s *Service) SetFor(ctx context.Context, legalEntity int64, name, value str
 		if err != nil {
 			return err
 		}
-		if err := store.New(platform.DBFrom(ctx)).SetLegalEntityValue(ctx, store.SetLegalEntityValueParams{LegalEntityID: legalEntity, Key: name, Value: value}); err != nil {
+		if err := store.SetLegalEntityValue.Run(ctx, store.SetLegalEntityValueParams{LegalEntityID: legalEntity, Key: name, Value: value}); err != nil {
 			return err
 		}
 		return s.audit.Record(ctx, "setting.changed", map[string]any{"legal_entity_id": legalEntity, "key": name, "old": old, "new": value})
@@ -170,7 +170,7 @@ func (s *Service) checkEntity(ctx context.Context, legalEntity int64) error {
 	if err := s.authz.RequireCore(ctx, PermManage); err != nil {
 		return err
 	}
-	ok, err := store.New(platform.DBFrom(ctx)).IsLegalEntity(ctx, legalEntity)
+	ok, err := store.IsLegalEntity.Run(ctx, legalEntity)
 	if err == nil && !ok {
 		return platform.ErrNotFound
 	}

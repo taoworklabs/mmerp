@@ -72,7 +72,7 @@ func (s *Service) CreateAdmin(ctx context.Context, login, name, password string)
 		if id, err = s.createUser(ctx, login, name, password); err != nil {
 			return err
 		}
-		if _, err := store.New(platform.DBFrom(ctx)).GrantRole(ctx, store.GrantRoleParams{UserID: id, Product: "core", Role: "admin"}); err != nil {
+		if _, err := store.GrantRole.Run(ctx, store.GrantRoleParams{UserID: id, Product: "core", Role: "admin"}); err != nil {
 			return err
 		}
 		// No actor: the install command acts, not a user.
@@ -85,7 +85,7 @@ func (s *Service) createUser(ctx context.Context, login, name, password string) 
 	if len(password) < MinPasswordLength {
 		return 0, ErrPasswordTooShort
 	}
-	id, err := store.New(platform.DBFrom(ctx)).CreateUser(ctx, store.CreateUserParams{Login: login, Name: name, PasswordHash: hashPassword(password)})
+	id, err := store.CreateUser.Run(ctx, store.CreateUserParams{Login: login, Name: name, PasswordHash: hashPassword(password)})
 	if pgErr, ok := errors.AsType[*pgconn.PgError](err); ok && pgErr.Code == "23505" {
 		return 0, ErrLoginTaken
 	}
@@ -95,7 +95,7 @@ func (s *Service) createUser(ctx context.Context, login, name, password string) 
 // Login checks the password and opens a session; the returned token goes into the cookie.
 func (s *Service) Login(ctx context.Context, login, password string) (string, error) {
 	// Hashing runs outside the transaction so it holds no connection.
-	u, err := store.New(platform.DBFrom(ctx)).GetUserByLogin(ctx, login)
+	u, err := store.GetUserByLogin.Run(ctx, login)
 	switch {
 	case errors.Is(err, pgx.ErrNoRows):
 		verifyPassword(password, dummyHash)
@@ -107,11 +107,10 @@ func (s *Service) Login(ctx context.Context, login, password string) (string, er
 	}
 	token := rand.Text()
 	err = platform.InTx(platform.WithActor(ctx, u.ID), func(ctx context.Context) error {
-		q := store.New(platform.DBFrom(ctx))
-		if err := q.DeleteExpiredSessions(ctx, u.ID); err != nil {
+		if err := store.DeleteExpiredSessions.Run(ctx, u.ID); err != nil {
 			return err
 		}
-		if err := q.CreateSession(ctx, store.CreateSessionParams{TokenHash: tokenHash(token), UserID: u.ID}); err != nil {
+		if err := store.CreateSession.Run(ctx, store.CreateSessionParams{TokenHash: tokenHash(token), UserID: u.ID}); err != nil {
 			return err
 		}
 		return s.d.Audit.Record(ctx, "iam.login", nil)
@@ -132,7 +131,7 @@ func (s *Service) loginFailed(ctx context.Context, login string) error {
 // Logout ends the session of token; an unknown token is already logged out.
 func (s *Service) Logout(ctx context.Context, token string) error {
 	return platform.InTx(ctx, func(ctx context.Context) error {
-		userID, err := store.New(platform.DBFrom(ctx)).DeleteSession(ctx, tokenHash(token))
+		userID, err := store.DeleteSession.Run(ctx, tokenHash(token))
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil
 		}
@@ -145,7 +144,7 @@ func (s *Service) Logout(ctx context.Context, token string) error {
 
 // Authenticate resolves a session token; ok is false when it is unknown or expired.
 func (s *Service) Authenticate(ctx context.Context, token string) (sess Session, ok bool, err error) {
-	row, err := store.New(platform.DBFrom(ctx)).GetSession(ctx, tokenHash(token))
+	row, err := store.GetSession.Run(ctx, tokenHash(token))
 	if errors.Is(err, pgx.ErrNoRows) {
 		return Session{}, false, nil
 	}
@@ -158,7 +157,7 @@ func (s *Service) Authenticate(ctx context.Context, token string) (sess Session,
 // Me describes the actor in ctx.
 func (s *Service) Me(ctx context.Context) (Me, error) {
 	id, _ := platform.ActorFrom(ctx)
-	u, err := store.New(platform.DBFrom(ctx)).GetUser(ctx, id)
+	u, err := store.GetUser.Run(ctx, id)
 	if err != nil {
 		return Me{}, err
 	}
@@ -196,7 +195,7 @@ func (s *Service) Me(ctx context.Context) (Me, error) {
 func (s *Service) SetLocale(ctx context.Context, locale string) error {
 	id, _ := platform.ActorFrom(ctx)
 	return platform.InTx(ctx, func(ctx context.Context) error {
-		return store.New(platform.DBFrom(ctx)).SetLocale(ctx, store.SetLocaleParams{ID: id, Locale: pgtype.Text{String: locale, Valid: true}})
+		return store.SetLocale.Run(ctx, store.SetLocaleParams{ID: id, Locale: pgtype.Text{String: locale, Valid: true}})
 	})
 }
 
@@ -205,7 +204,7 @@ func (s *Service) Users(ctx context.Context) ([]User, error) {
 	if err := s.require(ctx, PermManageUsers); err != nil {
 		return nil, err
 	}
-	rows, err := store.New(platform.DBFrom(ctx)).ListUsers(ctx)
+	rows, err := store.ListUsers.Run(ctx)
 	out := make([]User, len(rows))
 	for i, r := range rows {
 		out[i] = User{ID: r.ID, Login: r.Login, Name: r.Name, Email: platform.TextPtr(r.Email)}
@@ -218,7 +217,7 @@ func (s *Service) User(ctx context.Context, id int64) (User, error) {
 	if err := s.require(ctx, PermManageUsers); err != nil {
 		return User{}, err
 	}
-	u, err := store.New(platform.DBFrom(ctx)).GetUser(ctx, id)
+	u, err := store.GetUser.Run(ctx, id)
 	return User{ID: u.ID, Login: u.Login, Name: u.Name, Email: platform.TextPtr(u.Email)}, notFound(err)
 }
 
@@ -238,7 +237,7 @@ func (s *Service) SetEmail(ctx context.Context, id int64, email *string) error {
 		}
 	}
 	return platform.InTx(ctx, func(ctx context.Context) error {
-		n, err := store.New(platform.DBFrom(ctx)).SetUserEmail(ctx, store.SetUserEmailParams{ID: id, Email: platform.NullText(email)})
+		n, err := store.SetUserEmail.Run(ctx, store.SetUserEmailParams{ID: id, Email: platform.NullText(email)})
 		if err != nil {
 			return err
 		}
@@ -251,7 +250,7 @@ func (s *Service) SetEmail(ctx context.Context, id int64, email *string) error {
 
 // UserIDByLogin resolves a login (case-insensitive) for modules that link records to accounts.
 func (s *Service) UserIDByLogin(ctx context.Context, login string) (int64, error) {
-	u, err := store.New(platform.DBFrom(ctx)).GetUserByLogin(ctx, login)
+	u, err := store.GetUserByLogin.Run(ctx, login)
 	return u.ID, notFound(err)
 }
 
@@ -383,7 +382,7 @@ func (s *Service) scope(ctx context.Context, product, permission string) (Scope,
 	if !ok {
 		return Scope{}, nil
 	}
-	grants, err := store.New(platform.DBFrom(ctx)).UserRoles(ctx, userID)
+	grants, err := store.UserRoles.Run(ctx, userID)
 	if err != nil {
 		return Scope{}, err
 	}
@@ -403,7 +402,7 @@ func (s *Service) scope(ctx context.Context, product, permission string) (Scope,
 	if len(roots) == 0 {
 		return Scope{}, nil
 	}
-	units, err := store.New(platform.DBFrom(ctx)).Subtrees(ctx, roots)
+	units, err := store.Subtrees.Run(ctx, roots)
 	return Scope{Units: units}, err
 }
 
@@ -461,7 +460,7 @@ func (s *Service) require(ctx context.Context, permission string) error {
 
 // permissions lists every permission the user has anywhere, by product.
 func (s *Service) permissions(ctx context.Context, userID int64) (map[string][]string, error) {
-	grants, err := store.New(platform.DBFrom(ctx)).UserRoles(ctx, userID)
+	grants, err := store.UserRoles.Run(ctx, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -495,7 +494,7 @@ func (s *Service) UserRoles(ctx context.Context, userID int64) ([]Grant, error) 
 	if err := s.require(ctx, PermManageUsers); err != nil {
 		return nil, err
 	}
-	rows, err := store.New(platform.DBFrom(ctx)).UserRoles(ctx, userID)
+	rows, err := store.UserRoles.Run(ctx, userID)
 	out := make([]Grant, len(rows))
 	for i, r := range rows {
 		out[i] = Grant{ID: r.ID, Product: r.Product, Role: r.Role, OrgUnitID: platform.Int8Ptr(r.OrgUnitID), OrgUnitName: platform.TextPtr(r.OrgUnitName)}
@@ -516,9 +515,8 @@ func (s *Service) GrantRole(ctx context.Context, userID int64, product, role str
 	}
 	var id int64
 	err := platform.InTx(ctx, func(ctx context.Context) error {
-		q := store.New(platform.DBFrom(ctx))
 		var err error
-		id, err = q.GrantRole(ctx, store.GrantRoleParams{UserID: userID, Product: product, Role: role, OrgUnitID: platform.NullInt8(unit)})
+		id, err = store.GrantRole.Run(ctx, store.GrantRoleParams{UserID: userID, Product: product, Role: role, OrgUnitID: platform.NullInt8(unit)})
 		if pgErr, ok := errors.AsType[*pgconn.PgError](err); ok {
 			switch pgErr.Code {
 			case "23505":
@@ -530,7 +528,7 @@ func (s *Service) GrantRole(ctx context.Context, userID int64, product, role str
 		if err != nil {
 			return err
 		}
-		if err := q.BumpUserAuthz(ctx, userID); err != nil {
+		if err := store.BumpUserAuthz.Run(ctx, userID); err != nil {
 			return err
 		}
 		return s.d.Audit.Record(ctx, "iam.role_granted", map[string]any{"user_id": userID, "product": product, "role": role, "org_unit_id": unit})
@@ -544,12 +542,11 @@ func (s *Service) RevokeRole(ctx context.Context, userID, grantID int64) error {
 		return err
 	}
 	return platform.InTx(ctx, func(ctx context.Context) error {
-		q := store.New(platform.DBFrom(ctx))
-		g, err := q.RevokeRole(ctx, store.RevokeRoleParams{ID: grantID, UserID: userID})
+		g, err := store.RevokeRole.Run(ctx, store.RevokeRoleParams{ID: grantID, UserID: userID})
 		if err != nil {
 			return notFound(err)
 		}
-		if err := q.BumpUserAuthz(ctx, userID); err != nil {
+		if err := store.BumpUserAuthz.Run(ctx, userID); err != nil {
 			return err
 		}
 		return s.d.Audit.Record(ctx, "iam.role_revoked", map[string]any{"user_id": userID, "product": g.Product, "role": g.Role, "org_unit_id": platform.Int8Ptr(g.OrgUnitID)})
@@ -572,7 +569,7 @@ func (s *Service) OrgUnits(ctx context.Context, product, permission string) ([]O
 	if err != nil {
 		return nil, err
 	}
-	rows, err := store.New(platform.DBFrom(ctx)).ListOrgUnits(ctx)
+	rows, err := store.ListOrgUnits.Run(ctx)
 	out := []OrgUnit{}
 	for _, r := range rows {
 		if sc.Has(r.ID) {
@@ -593,7 +590,7 @@ func (s *Service) CreateOrgUnit(ctx context.Context, in OrgUnitInput) (int64, er
 	var id int64
 	err := s.writeTree(ctx, func(ctx context.Context) error {
 		var err error
-		id, err = store.New(platform.DBFrom(ctx)).CreateOrgUnit(ctx, store.CreateOrgUnitParams{
+		id, err = store.CreateOrgUnit.Run(ctx, store.CreateOrgUnitParams{
 			ParentID: platform.NullInt8(in.ParentID), Kind: in.Kind, Name: in.Name,
 			TaxCode: platform.NullText(in.TaxCode), LegalName: platform.NullText(in.LegalName), Address: platform.NullText(in.Address),
 		})
@@ -614,19 +611,18 @@ func (s *Service) UpdateOrgUnit(ctx context.Context, id int64, in OrgUnitInput) 
 		return err
 	}
 	return s.writeTree(ctx, func(ctx context.Context) error {
-		q := store.New(platform.DBFrom(ctx))
-		old, err := q.GetOrgUnit(ctx, id)
+		old, err := store.GetOrgUnit.Run(ctx, id)
 		if err != nil {
 			return notFound(err)
 		}
-		if _, err := q.UpdateOrgUnit(ctx, store.UpdateOrgUnitParams{
+		if _, err := store.UpdateOrgUnit.Run(ctx, store.UpdateOrgUnitParams{
 			ID: id, ParentID: platform.NullInt8(in.ParentID), Kind: in.Kind, Name: in.Name,
 			TaxCode: platform.NullText(in.TaxCode), LegalName: platform.NullText(in.LegalName), Address: platform.NullText(in.Address),
 		}); err != nil {
 			return err
 		}
 		if old.ParentID != platform.NullInt8(in.ParentID) {
-			if err := q.BumpTenantAuthz(ctx); err != nil {
+			if err := store.BumpTenantAuthz.Run(ctx); err != nil {
 				return err
 			}
 		}
@@ -640,8 +636,7 @@ func (s *Service) UpdateOrgUnit(ctx context.Context, id int64, in OrgUnitInput) 
 // fn must use the ctx it is given, so its writes and audit entry roll back together.
 func (s *Service) writeTree(ctx context.Context, fn func(ctx context.Context) error) error {
 	return platform.InTx(ctx, func(ctx context.Context) error {
-		q := store.New(platform.DBFrom(ctx))
-		if err := q.LockOrgUnits(ctx); err != nil {
+		if err := store.LockOrgUnits.Run(ctx); err != nil {
 			return err
 		}
 		if err := fn(ctx); err != nil {
@@ -650,7 +645,7 @@ func (s *Service) writeTree(ctx context.Context, fn func(ctx context.Context) er
 			}
 			return err
 		}
-		v, err := q.OrgTreeViolations(ctx)
+		v, err := store.OrgTreeViolations.Run(ctx)
 		switch {
 		case err != nil:
 			return err
@@ -669,18 +664,18 @@ func (s *Service) writeTree(ctx context.Context, fn func(ctx context.Context) er
 // ShareTree holds tree writes off until ctx's transaction ends, so a legal entity read
 // after it stays the one a unit belongs to (a document never changes legal entity).
 func (s *Service) ShareTree(ctx context.Context) error {
-	return store.New(platform.DBFrom(ctx)).ShareOrgUnits(ctx)
+	return store.ShareOrgUnits.Run(ctx)
 }
 
 // LegalEntityOf returns the legal entity a unit belongs to: the nearest company at or above it.
 func (s *Service) LegalEntityOf(ctx context.Context, unit int64) (int64, error) {
-	id, err := store.New(platform.DBFrom(ctx)).LegalEntityOf(ctx, unit)
+	id, err := store.LegalEntityOf.Run(ctx, unit)
 	return id, notFound(err)
 }
 
 // UsersWithRole lists users holding a role that covers unit: granted there, above it, or tenant-wide.
 func (s *Service) UsersWithRole(ctx context.Context, product, role string, unit int64) ([]int64, error) {
-	return store.New(platform.DBFrom(ctx)).UsersWithRole(ctx, store.UsersWithRoleParams{Unit: unit, Product: product, Role: role})
+	return store.UsersWithRole.Run(ctx, store.UsersWithRoleParams{Unit: unit, Product: product, Role: role})
 }
 
 func (in OrgUnitInput) check() error {

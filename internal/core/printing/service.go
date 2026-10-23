@@ -54,7 +54,7 @@ func NewService(d Deps) *Service {
 
 // LegalEntity reads a legal entity as a print shows it, for a template's Data.
 func (s *Service) LegalEntity(ctx context.Context, id int64) (LegalEntity, error) {
-	r, err := store.New(platform.DBFrom(ctx)).LegalEntity(ctx, id)
+	r, err := store.LegalEntity.Run(ctx, id)
 	return LegalEntity{Name: r.Name, TaxCode: platform.TextPtr(r.TaxCode), Address: platform.TextPtr(r.Address)}, err
 }
 
@@ -205,12 +205,12 @@ func (s *Service) freeze(ctx context.Context, t Template, ref record.Ref) ([]Par
 		in.Positions = append(in.Positions, int32(i))
 		in.Data = append(in.Data, platform.Encrypt(ctx, snapshotAAD, p.Data))
 	}
-	return parts, store.New(platform.DBFrom(ctx)).CreateSnapshots(ctx, in)
+	return parts, store.CreateSnapshots.Run(ctx, in)
 }
 
 // snapshots decrypts the snapshot of a record, in print order; nil when it has none.
 func (s *Service) snapshots(ctx context.Context, ref record.Ref) ([]Part, error) {
-	rows, err := store.New(platform.DBFrom(ctx)).Snapshots(ctx, store.SnapshotsParams{DocType: ref.Type, DocID: ref.ID})
+	rows, err := store.Snapshots.Run(ctx, store.SnapshotsParams{DocType: ref.Type, DocID: ref.ID})
 	if err != nil || len(rows) == 0 {
 		return nil, err
 	}
@@ -234,12 +234,11 @@ func (s *Service) pin(ctx context.Context, ref record.Ref, layout int, locale st
 	}
 	var pin store.GetPinRow
 	err = platform.InTx(ctx, func(ctx context.Context) error {
-		q := store.New(platform.DBFrom(ctx))
-		err := q.CreatePin(ctx, store.CreatePinParams{DocType: ref.Type, DocID: ref.ID, Layout: int32(layout), Locale: locale, Blocks: raw})
+		err := store.CreatePin.Run(ctx, store.CreatePinParams{DocType: ref.Type, DocID: ref.ID, Layout: int32(layout), Locale: locale, Blocks: raw})
 		if err != nil {
 			return err
 		}
-		pin, err = q.GetPin(ctx, store.GetPinParams{DocType: ref.Type, DocID: ref.ID})
+		pin, err = store.GetPin.Run(ctx, store.GetPinParams{DocType: ref.Type, DocID: ref.ID})
 		return err
 	})
 	if err != nil {

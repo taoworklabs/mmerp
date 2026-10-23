@@ -151,7 +151,7 @@ func (s *Service) ProductsWithData(ctx context.Context) ([]string, error) {
 	for _, t := range s.DocumentTypes() {
 		codes = append(codes, t.Code)
 	}
-	used, err := store.New(platform.DBFrom(ctx)).DocTypesInUse(ctx, codes)
+	used, err := store.DocTypesInUse.Run(ctx, codes)
 	if err != nil {
 		return nil, err
 	}
@@ -351,7 +351,7 @@ func (s *Service) lifecycleActions(ctx context.Context, d Doc) ([]string, error)
 		}
 		return out, err
 	}
-	rows, err := store.New(platform.DBFrom(ctx)).LockedUntil(ctx, d.LegalEntityID)
+	rows, err := store.LockedUntil.Run(ctx, d.LegalEntityID)
 	if err != nil {
 		return nil, err
 	}
@@ -375,7 +375,7 @@ func (s *Service) lifecycleActions(ctx context.Context, d Doc) ([]string, error)
 
 // Get reads a document without locking it.
 func (s *Service) Get(ctx context.Context, ref Ref) (Doc, error) {
-	row, err := store.New(platform.DBFrom(ctx)).GetDocument(ctx, store.GetDocumentParams{ID: ref.ID, DocType: ref.Type})
+	row, err := store.GetDocument.Run(ctx, store.GetDocumentParams{ID: ref.ID, DocType: ref.Type})
 	if errors.Is(err, pgx.ErrNoRows) {
 		return Doc{}, platform.ErrNotFound
 	}
@@ -426,7 +426,7 @@ func (s *Service) Create(ctx context.Context, code string, h Header) (Doc, error
 			return err
 		}
 		number := fmt.Sprintf("%s-%d-%05d", t.NumberPrefix, year, n)
-		id, err := store.New(platform.DBFrom(ctx)).InsertDocument(ctx, store.InsertDocumentParams{
+		id, err := store.InsertDocument.Run(ctx, store.InsertDocumentParams{
 			DocType: code, Number: number, Date: date, LegalEntityID: le, OrgUnitID: h.OrgUnitID,
 			Amount: platform.NullInt8(h.Amount), Fields: fields,
 			RequestID: pgtype.Text{String: h.RequestID, Valid: h.RequestID != ""}, RequestedBy: requester(ctx, h.RequestID),
@@ -444,11 +444,10 @@ func (s *Service) Create(ctx context.Context, code string, h Header) (Doc, error
 // byRequest finds the document the actor created earlier with requestID. Its lock makes
 // a racing twin wait for the first to commit, then find it.
 func byRequest(ctx context.Context, code, requestID string) (Doc, bool, error) {
-	q := store.New(platform.DBFrom(ctx))
-	if err := q.LockRequest(ctx, requestID); err != nil {
+	if err := store.LockRequest.Run(ctx, requestID); err != nil {
 		return Doc{}, false, err
 	}
-	row, err := q.DocumentByRequest(ctx, store.DocumentByRequestParams{RequestID: requestID, RequestedBy: requester(ctx, requestID)})
+	row, err := store.DocumentByRequest.Run(ctx, store.DocumentByRequestParams{RequestID: requestID, RequestedBy: requester(ctx, requestID)})
 	if errors.Is(err, pgx.ErrNoRows) {
 		return Doc{}, false, nil
 	}
@@ -498,7 +497,7 @@ func (s *Service) Edit(ctx context.Context, ref Ref, version int32, h Header) (D
 				return err
 			}
 		}
-		if err := store.New(platform.DBFrom(ctx)).UpdateHeader(ctx, store.UpdateHeaderParams{
+		if err := store.UpdateHeader.Run(ctx, store.UpdateHeaderParams{
 			ID: ref.ID, Date: date, OrgUnitID: h.OrgUnitID, Amount: platform.NullInt8(h.Amount), Fields: fields,
 		}); err != nil {
 			return err
@@ -520,7 +519,7 @@ func (s *Service) Touch(ctx context.Context, ref Ref, version int32) (int32, err
 			return err
 		}
 		out = d.Version + 1
-		return store.New(platform.DBFrom(ctx)).BumpVersion(ctx, ref.ID)
+		return store.BumpVersion.Run(ctx, ref.ID)
 	})
 	return out, err
 }
@@ -536,7 +535,7 @@ func (s *Service) Delete(ctx context.Context, ref Ref, version int32) error {
 		if err != nil {
 			return err
 		}
-		if err := store.New(platform.DBFrom(ctx)).DeleteDocument(ctx, ref.ID); err != nil {
+		if err := store.DeleteDocument.Run(ctx, ref.ID); err != nil {
 			return err
 		}
 		if t.OnDelete != nil {
@@ -632,7 +631,7 @@ func (s *Service) Transition(ctx context.Context, ref Ref, version int32, to Sta
 				break
 			}
 			actor, _ := platform.ActorFrom(ctx)
-			if err := store.New(platform.DBFrom(ctx)).SetStatus(ctx, store.SetStatusParams{
+			if err := store.SetStatus.Run(ctx, store.SetStatusParams{
 				ID: ref.ID, Status: string(PendingApproval), ApprovalTicket: pgtype.Int8{Int64: ticket, Valid: true},
 				SubmittedBy: pgtype.Int8{Int64: actor, Valid: true},
 			}); err != nil {
@@ -770,7 +769,7 @@ func (s *Service) decide(ctx context.Context, ref Ref, ticket int64, version int
 }
 
 func (s *Service) apply(ctx context.Context, d Doc, to Status) error {
-	if err := store.New(platform.DBFrom(ctx)).SetStatus(ctx, store.SetStatusParams{ID: d.ID, Status: string(to), Bump: 1}); err != nil {
+	if err := store.SetStatus.Run(ctx, store.SetStatusParams{ID: d.ID, Status: string(to), Bump: 1}); err != nil {
 		return err
 	}
 	if err := s.d.Audit.RecordFor(ctx, "record.transitioned", audit.Ref(d.Ref), map[string]any{"from": d.Status, "to": to}); err != nil {
@@ -874,7 +873,7 @@ func (s *Service) lock(ctx context.Context, ref Ref) (Doc, pgtype.Date, error) {
 	if err != nil {
 		return d, locked, err
 	}
-	row, err := store.New(platform.DBFrom(ctx)).LockDocument(ctx, ref.ID)
+	row, err := store.LockDocument.Run(ctx, ref.ID)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return d, locked, platform.ErrNotFound
 	}
@@ -886,11 +885,10 @@ func (s *Service) lock(ctx context.Context, ref Ref) (Doc, pgtype.Date, error) {
 }
 
 func (s *Service) sharePeriod(ctx context.Context, legalEntity int64) (pgtype.Date, error) {
-	q := store.New(platform.DBFrom(ctx))
-	if err := q.EnsurePeriodLock(ctx, legalEntity); err != nil {
+	if err := store.EnsurePeriodLock.Run(ctx, legalEntity); err != nil {
 		return pgtype.Date{}, err
 	}
-	return q.SharePeriodLock(ctx, legalEntity)
+	return store.SharePeriodLock.Run(ctx, legalEntity)
 }
 
 func checkPeriod(date string, locked pgtype.Date) error {
@@ -947,7 +945,7 @@ func (s *Service) PeriodLocks(ctx context.Context) ([]PeriodLock, error) {
 	if err := s.d.IAM.RequireCore(ctx, iam.PermManagePeriods); err != nil {
 		return nil, err
 	}
-	rows, err := store.New(platform.DBFrom(ctx)).PeriodLocks(ctx)
+	rows, err := store.PeriodLocks.Run(ctx)
 	out := make([]PeriodLock, len(rows))
 	for i, r := range rows {
 		out[i] = PeriodLock{LegalEntityID: r.ID, LegalEntityName: r.Name, LockedUntil: platform.DatePtr(r.LockedUntil)}
@@ -974,16 +972,15 @@ func (s *Service) SetPeriodLock(ctx context.Context, legalEntity int64, until *s
 		if le, err := s.d.IAM.LegalEntityOf(ctx, legalEntity); err != nil || le != legalEntity {
 			return platform.OrErr(err, platform.ErrNotFound)
 		}
-		q := store.New(platform.DBFrom(ctx))
-		if err := q.EnsurePeriodLock(ctx, legalEntity); err != nil {
+		if err := store.EnsurePeriodLock.Run(ctx, legalEntity); err != nil {
 			return err
 		}
-		old, err := q.LockPeriodLock(ctx, legalEntity)
+		old, err := store.LockPeriodLock.Run(ctx, legalEntity)
 		if err != nil {
 			return err
 		}
 		if date.Valid && (!old.Valid || date.Time.After(old.Time)) {
-			pending, err := q.PendingInPeriod(ctx, store.PendingInPeriodParams{LegalEntityID: legalEntity, Date: date})
+			pending, err := store.PendingInPeriod.Run(ctx, store.PendingInPeriodParams{LegalEntityID: legalEntity, Date: date})
 			if err != nil {
 				return err
 			}
@@ -1004,7 +1001,7 @@ func (s *Service) SetPeriodLock(ctx context.Context, legalEntity int64, until *s
 				return &platform.Error{Status: http.StatusConflict, Code: "period_has_pending_documents", Params: map[string]any{"documents": docs}}
 			}
 		}
-		if err := q.SetLockedUntil(ctx, store.SetLockedUntilParams{LegalEntityID: legalEntity, LockedUntil: date}); err != nil {
+		if err := store.SetLockedUntil.Run(ctx, store.SetLockedUntilParams{LegalEntityID: legalEntity, LockedUntil: date}); err != nil {
 			return err
 		}
 		return s.d.Audit.Record(ctx, "record.period_locked", map[string]any{
@@ -1015,7 +1012,7 @@ func (s *Service) SetPeriodLock(ctx context.Context, legalEntity int64, until *s
 
 // TreeChanged refuses an org-unit tree write that moves documents to another legal entity.
 func (s *Service) TreeChanged(ctx context.Context) error {
-	n, err := store.New(platform.DBFrom(ctx)).MisplacedDocuments(ctx)
+	n, err := store.MisplacedDocuments.Run(ctx)
 	if err == nil && n > 0 {
 		return ErrOrgUnitHasDocuments
 	}
@@ -1028,7 +1025,7 @@ func (s *Service) History(ctx context.Context, ref Ref) ([]HistoryEntry, error) 
 	if ok, err := s.Can(ctx, ref.Type, ref.ID, View); err != nil || !ok {
 		return nil, platform.OrErr(err, platform.ErrNotFound)
 	}
-	rows, err := store.New(platform.DBFrom(ctx)).History(ctx, store.HistoryParams{
+	rows, err := store.History.Run(ctx, store.HistoryParams{
 		DocType: pgtype.Text{String: ref.Type, Valid: true}, DocID: pgtype.Int8{Int64: ref.ID, Valid: true},
 	})
 	if err != nil {
