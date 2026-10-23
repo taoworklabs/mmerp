@@ -3456,35 +3456,6 @@
         ],
         "type": "object"
       },
-      "List": {
-        "additionalProperties": false,
-        "properties": {
-          "$schema": {
-            "description": "A URL to the JSON Schema for this object.",
-            "examples": [
-              "/api/schemas/List.json"
-            ],
-            "format": "uri",
-            "readOnly": true,
-            "type": "string"
-          },
-          "items": {
-            "items": {
-              "$ref": "#/components/schemas/ListItem"
-            },
-            "type": "array"
-          },
-          "total": {
-            "format": "int64",
-            "type": "integer"
-          }
-        },
-        "required": [
-          "items",
-          "total"
-        ],
-        "type": "object"
-      },
       "ListColumn": {
         "additionalProperties": false,
         "properties": {
@@ -3510,69 +3481,6 @@
           "key",
           "hidden",
           "width"
-        ],
-        "type": "object"
-      },
-      "ListItem": {
-        "additionalProperties": false,
-        "properties": {
-          "address": {
-            "maxLength": 500,
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "code": {
-            "type": "string"
-          },
-          "contact_name": {
-            "maxLength": 200,
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "email": {
-            "maxLength": 200,
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "id": {
-            "format": "int64",
-            "type": "integer"
-          },
-          "name": {
-            "maxLength": 300,
-            "minLength": 1,
-            "type": "string"
-          },
-          "phone": {
-            "maxLength": 50,
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "tax_code": {
-            "maxLength": 20,
-            "type": [
-              "string",
-              "null"
-            ]
-          }
-        },
-        "required": [
-          "id",
-          "code",
-          "name",
-          "tax_code",
-          "address",
-          "phone",
-          "email",
-          "contact_name"
         ],
         "type": "object"
       },
@@ -5091,6 +4999,98 @@
           }
         },
         "required": [
+          "name",
+          "tax_code",
+          "address",
+          "phone",
+          "email",
+          "contact_name"
+        ],
+        "type": "object"
+      },
+      "PartnerList": {
+        "additionalProperties": false,
+        "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "/api/schemas/PartnerList.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/PartnerListItem"
+            },
+            "type": "array"
+          },
+          "total": {
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "items",
+          "total"
+        ],
+        "type": "object"
+      },
+      "PartnerListItem": {
+        "additionalProperties": false,
+        "properties": {
+          "address": {
+            "maxLength": 500,
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "code": {
+            "type": "string"
+          },
+          "contact_name": {
+            "maxLength": 200,
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "email": {
+            "maxLength": 200,
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "id": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "name": {
+            "maxLength": 300,
+            "minLength": 1,
+            "type": "string"
+          },
+          "phone": {
+            "maxLength": 50,
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "tax_code": {
+            "maxLength": 20,
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "code",
           "name",
           "tax_code",
           "address",
@@ -12152,7 +12152,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/List"
+                  "$ref": "#/components/schemas/PartnerList"
                 }
               }
             },

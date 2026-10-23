@@ -22,7 +22,7 @@ var partnerList = data.Register(data.List[store.PartnerPartner]{
 })
 
 // partnerQuery turns the API filter into a query over partnerList.
-func partnerQuery(f Filter) data.Query {
+func partnerQuery(f PartnerFilter) data.Query {
 	return data.Query{
 		Q: f.Q, Sort: f.Sort, Paging: f.Paging,
 		Where: data.When(f.TaxCode != "", data.SQL("lower(btrim(tax_code)) = lower(btrim(").Arg(f.TaxCode).Text("))").Cond()),

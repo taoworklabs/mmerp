@@ -38,4 +38,4 @@ export type ItemList = components['schemas']['ItemList']
 export type ItemSort = NonNullable<NonNullable<operations['list-items']['parameters']['query']>['sort']>
 export type Partner = components['schemas']['Partner']
 export type PartnerIdentity = components['schemas']['PartnerFields']
-export type PartnerListItem = components['schemas']['ListItem']
+export type PartnerListItem = components['schemas']['PartnerListItem']

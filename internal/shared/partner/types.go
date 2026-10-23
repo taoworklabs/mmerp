@@ -33,7 +33,7 @@ type NewPartner struct {
 	PartnerFields
 }
 
-type ListItem struct {
+type PartnerListItem struct {
 	ID   int64  `json:"id"`
 	Code string `json:"code"`
 	PartnerFields
@@ -47,14 +47,14 @@ type Partner struct {
 	AllowedActions []string `json:"allowed_actions" nullable:"false"`
 }
 
-type Filter struct {
+type PartnerFilter struct {
 	Q       string `query:"q" maxLength:"100"`
 	TaxCode string `query:"tax_code" maxLength:"20" doc:"Exact, trimmed and case-insensitive"`
 	Sort    string `query:"sort" enum:"code,-code,name,-name" default:"code"`
 	platform.Paging
 }
 
-type List struct {
-	Items []ListItem `json:"items" nullable:"false"`
+type PartnerList struct {
+	Items []PartnerListItem `json:"items" nullable:"false"`
 	Total int64      `json:"total"`
 }

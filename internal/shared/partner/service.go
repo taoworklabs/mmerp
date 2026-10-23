@@ -49,8 +49,8 @@ func locate(ctx context.Context, id int64) (int64, error) {
 }
 
 // List lists every partner to anyone who may view partners somewhere.
-func (s *Service) List(ctx context.Context, f Filter) (List, error) {
-	out := List{Items: []ListItem{}}
+func (s *Service) List(ctx context.Context, f PartnerFilter) (PartnerList, error) {
+	out := PartnerList{Items: []PartnerListItem{}}
 	if err := s.requireAnywhere(ctx, PermView); err != nil {
 		return out, err
 	}
@@ -60,7 +60,7 @@ func (s *Service) List(ctx context.Context, f Filter) (List, error) {
 	}
 	out.Total = page.Total
 	for _, r := range page.Items {
-		out.Items = append(out.Items, ListItem{ID: r.ID, Code: r.Code, PartnerFields: fields(r)})
+		out.Items = append(out.Items, PartnerListItem{ID: r.ID, Code: r.Code, PartnerFields: fields(r)})
 	}
 	return out, nil
 }

@@ -1,6 +1,6 @@
 # 0027. The Sales product
 
-Status: accepted · 2026-10-09 · replaces the "probe product" row of the roadmap's "Not in this roadmap" table; amends [ADR-0023](./0023-build-core-first.md) ("a second product remains outside the roadmap") and the sentence "VAT is computed in `shared/tax`" of [ADR-0006](./0006-money-rounding.md)
+Status: accepted · 2026-10-09 · partly superseded by ADR-0039 (customers, items and VAT moved to shared) · replaces the "probe product" row of the roadmap's "Not in this roadmap" table; amends [ADR-0023](./0023-build-core-first.md) ("a second product remains outside the roadmap") and the sentence "VAT is computed in `shared/tax`" of [ADR-0006](./0006-money-rounding.md)
 
 ## Context
 

@@ -103,18 +103,18 @@ func TestPartnerCRUD(t *testing.T) {
 	}
 	wantCode(t, must2(f.partners.Create(editor, "OWN", partner.PartnerFields{Name: "Y"})), "partner_code_taken")
 
-	l, err := f.partners.List(viewer, partner.Filter{Q: "ánh", Paging: page})
+	l, err := f.partners.List(viewer, partner.PartnerFilter{Q: "ánh", Paging: page})
 	if err != nil || l.Total != 1 || l.Items[0].ID != id {
 		t.Fatalf("search %+v %v", l, err)
 	}
-	if l, err := f.partners.List(viewer, partner.Filter{TaxCode: " 0312345678", Paging: page}); err != nil || l.Total != 1 || l.Items[0].ID != id {
+	if l, err := f.partners.List(viewer, partner.PartnerFilter{TaxCode: " 0312345678", Paging: page}); err != nil || l.Total != 1 || l.Items[0].ID != id {
 		t.Fatalf("by tax code %+v %v", l, err)
 	}
-	if l, err := f.partners.List(viewer, partner.Filter{Sort: "-code", Paging: page}); err != nil || l.Total != 2 || l.Items[0].Code != "own" {
+	if l, err := f.partners.List(viewer, partner.PartnerFilter{Sort: "-code", Paging: page}); err != nil || l.Total != 2 || l.Items[0].Code != "own" {
 		t.Fatalf("sorted %+v %v", l, err)
 	}
 	nobody := f.user(t, "nobody", "", 0)
-	if _, err := f.partners.List(nobody, partner.Filter{Paging: page}); !errors.Is(err, platform.ErrForbidden) {
+	if _, err := f.partners.List(nobody, partner.PartnerFilter{Paging: page}); !errors.Is(err, platform.ErrForbidden) {
 		t.Fatalf("nobody lists: %v", err)
 	}
 	if _, err := f.partners.Get(nobody, id); !errors.Is(err, platform.ErrNotFound) {
@@ -164,7 +164,7 @@ func TestPartnerVisibleAnywhere(t *testing.T) {
 	if p, err := f.partners.Get(viewer, id); err != nil || p.Name != "Của B" {
 		t.Fatalf("viewer of A reads B's partner: %+v %v", p, err)
 	}
-	if l, err := f.partners.List(viewer, partner.Filter{Paging: page}); err != nil || l.Total != 1 {
+	if l, err := f.partners.List(viewer, partner.PartnerFilter{Paging: page}); err != nil || l.Total != 1 {
 		t.Fatalf("viewer of A lists: %+v %v", l, err)
 	}
 	if err := f.partners.Update(f.user(t, "editor_a", "editor", f.a), id, partner.PartnerFields{Name: "Đổi"}); err != nil {

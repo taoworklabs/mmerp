@@ -9,7 +9,7 @@ import (
 	"github.com/taoworklabs/mmerp/internal/platform"
 )
 
-type partnersOutput struct{ Body List }
+type partnersOutput struct{ Body PartnerList }
 
 type partnerOutput struct{ Body Partner }
 
@@ -22,7 +22,7 @@ type updatePartnerInput struct {
 
 func registerHandlers(api huma.API, s *Service) {
 	huma.Register(api, huma.Operation{OperationID: "list-partners", Method: http.MethodGet, Path: "/partners"},
-		func(ctx context.Context, in *Filter) (*partnersOutput, error) {
+		func(ctx context.Context, in *PartnerFilter) (*partnersOutput, error) {
 			l, err := s.List(ctx, *in)
 			return &partnersOutput{Body: l}, err
 		})

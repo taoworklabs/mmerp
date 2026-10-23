@@ -2786,33 +2786,11 @@ export interface components {
             /** @enum {string} */
             vat_rate: "none" | "0" | "5" | "8" | "10";
         };
-        List: {
-            /**
-             * Format: uri
-             * @description A URL to the JSON Schema for this object.
-             * @example /api/schemas/List.json
-             */
-            readonly $schema?: string;
-            items: components["schemas"]["ListItem"][];
-            /** Format: int64 */
-            total: number;
-        };
         ListColumn: {
             hidden: boolean;
             key: string;
             /** Format: int64 */
             width: number | null;
-        };
-        ListItem: {
-            address: string | null;
-            code: string;
-            contact_name: string | null;
-            email: string | null;
-            /** Format: int64 */
-            id: number;
-            name: string;
-            phone: string | null;
-            tax_code: string | null;
         };
         ListSettings: {
             /**
@@ -3313,6 +3291,28 @@ export interface components {
             address: string | null;
             contact_name: string | null;
             email: string | null;
+            name: string;
+            phone: string | null;
+            tax_code: string | null;
+        };
+        PartnerList: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example /api/schemas/PartnerList.json
+             */
+            readonly $schema?: string;
+            items: components["schemas"]["PartnerListItem"][];
+            /** Format: int64 */
+            total: number;
+        };
+        PartnerListItem: {
+            address: string | null;
+            code: string;
+            contact_name: string | null;
+            email: string | null;
+            /** Format: int64 */
+            id: number;
             name: string;
             phone: string | null;
             tax_code: string | null;
@@ -7344,7 +7344,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["List"];
+                    "application/json": components["schemas"]["PartnerList"];
                 };
             };
             /** @description Error */
