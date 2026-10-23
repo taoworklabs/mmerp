@@ -87,6 +87,9 @@ func (s *Service) Register(t Type) {
 	if _, dup := s.types[t.Code]; dup {
 		panic("record: type " + t.Code + " registered twice")
 	}
+	if t.Kind == Document && t.Anywhere {
+		panic("record: document type " + t.Code + " cannot be anywhere")
+	}
 	if t.Kind == Document && t.NumberPrefix == "" {
 		panic("record: document type " + t.Code + " has no number prefix")
 	}
@@ -157,12 +160,12 @@ func (s *Service) ProductsWithData(ctx context.Context) ([]string, error) {
 	}
 	out := []string{}
 	for _, c := range used {
-		if p := s.types[c].Product; !slices.Contains(out, p) {
+		if p := s.types[c].Product; !s.types[c].Shared && !slices.Contains(out, p) {
 			out = append(out, p)
 		}
 	}
 	for _, t := range s.types {
-		if t.HasData == nil || slices.Contains(out, t.Product) {
+		if t.HasData == nil || t.Shared || slices.Contains(out, t.Product) {
 			continue
 		}
 		if ok, err := t.HasData(ctx); err != nil {
@@ -205,7 +208,15 @@ func (s *Service) answer(ctx context.Context, t Type, id, unit int64, action Act
 	if perm == "" || (action == Print || action == Export) && !slices.Contains(s.offers[t.Code], action) {
 		return false, nil
 	}
-	ok, err := s.d.IAM.Allowed(ctx, t.Product, perm, unit)
+	var ok bool
+	var err error
+	if t.Anywhere {
+		var sc iam.Scope
+		sc, err = s.d.IAM.Scope(ctx, t.Product, perm)
+		ok = sc.Any()
+	} else {
+		ok, err = s.d.IAM.Allowed(ctx, t.Product, perm, unit)
+	}
 	if err == nil && !ok && t.Grant != nil {
 		ok, err = t.Grant(ctx, id, action)
 	}
@@ -215,7 +226,15 @@ func (s *Service) answer(ctx context.Context, t Type, id, unit int64, action Act
 	if err != nil || !ok {
 		return false, err
 	}
-	return platform.ProductGate(ctx, t.Product, action.class()) == nil, nil
+	return gate(ctx, t, action.class()) == nil, nil
+}
+
+// gate is the product gate of t; a shared type has no product to gate.
+func gate(ctx context.Context, t Type, c platform.Class) error {
+	if t.Shared {
+		return nil
+	}
+	return platform.ProductGate(ctx, t.Product, c)
 }
 
 // Read returns a document the actor may view; one they may not does not exist.
@@ -272,7 +291,7 @@ func (s *Service) TypeActions(ctx context.Context, code string) ([]string, error
 		return nil, fmt.Errorf("record: unknown type %q", code)
 	}
 	out := []string{}
-	if platform.ProductGate(ctx, t.Product, platform.ClassWrite) != nil {
+	if gate(ctx, t, platform.ClassWrite) != nil {
 		return out, nil
 	}
 	for _, a := range []Action{Create, Import} {
@@ -300,7 +319,7 @@ func (s *Service) MayCreate(ctx context.Context, code string, h Header) error {
 	if !ok || t.Kind != Document {
 		return fmt.Errorf("record: %q is not a document type", code)
 	}
-	if err := platform.ProductGate(ctx, t.Product, platform.ClassWrite); err != nil {
+	if err := gate(ctx, t, platform.ClassWrite); err != nil {
 		return err
 	}
 	actor, _ := platform.ActorFrom(ctx)
@@ -321,7 +340,7 @@ func (s *Service) MayCreate(ctx context.Context, code string, h Header) error {
 
 // require fails with the product gate's own error first, so a disabled product says so.
 func (s *Service) require(ctx context.Context, ref Ref, action Action) error {
-	if err := platform.ProductGate(ctx, s.types[ref.Type].Product, action.class()); err != nil {
+	if err := gate(ctx, s.types[ref.Type], action.class()); err != nil {
 		return err
 	}
 	ok, err := s.Can(ctx, ref.Type, ref.ID, action)
@@ -820,7 +839,7 @@ func (s *Service) WriteGate(ctx context.Context, ref Ref) error {
 	if !ok {
 		return platform.ErrNotFound
 	}
-	return platform.ProductGate(ctx, t.Product, platform.ClassWrite)
+	return gate(ctx, t, platform.ClassWrite)
 }
 
 // Open reports whether ref still takes additions (attachments, comments): its product

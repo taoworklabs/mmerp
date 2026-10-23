@@ -303,3 +303,11 @@ func TestListSettingsArePersonal(t *testing.T) {
 		t.Fatalf("duplicate names: %v", err)
 	}
 }
+
+func TestAdminHoldsSharedNamespace(t *testing.T) {
+	s, ctx := setup(t)
+	s.RegisterRoles("widget", map[string][]string{"editor": {"widget.view", "widget.edit"}})
+	if sc := must[iam.Scope](t)(s.Scope(ctx, "widget", "widget.edit")); !sc.All {
+		t.Fatalf("admin scope on widget.edit = %+v, want all", sc)
+	}
+}
