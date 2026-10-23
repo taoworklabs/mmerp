@@ -123,15 +123,6 @@ JOIN record.documents d ON d.id = r.id
 JOIN hrm.employees e ON e.id = r.employee_id
 JOIN hrm.leave_types t ON t.id = r.leave_type_id;
 
--- name: Reports :many
--- Employees below the actor's own employee record, at any depth.
-WITH RECURSIVE down AS (
-    SELECT e.id FROM hrm.employees e JOIN hrm.employees me ON e.manager_id = me.id WHERE me.user_id = @actor::bigint
-    UNION
-    SELECT e.id FROM hrm.employees e JOIN down ON e.manager_id = down.id
-)
-SELECT down.id FROM down;
-
 -- name: IsManager :one
 -- Whether the user is linked to an employee above @employee on its manager chain.
 WITH RECURSIVE up AS (
@@ -224,33 +215,16 @@ WHERE c.employee_id = @employee_id AND (@all_units::bool OR d.org_unit_id = ANY(
 ORDER BY (SELECT o.start_date FROM hrm.contracts o WHERE o.id = coalesce(c.parent_id, c.id)) DESC,
          coalesce(c.parent_id, c.id) DESC, c.parent_id NULLS FIRST, c.start_date, c.id;
 
--- name: ListContracts :many
--- Every contract and appendix in scope. Expiring: posted originals ending from @today to @today + 30 days.
-SELECT c.id, d.number, d.status, c.parent_id, p.number AS parent_number, t.name AS contract_type_name,
-       c.start_date, c.end_date, c.employee_id, e.code AS employee_code, e.full_name AS employee_name,
-       count(*) OVER () AS total
+-- name: ContractListBase :many
+-- data:base
+SELECT c.id, d.number, d.status, d.org_unit_id, c.parent_id, p.number AS parent_number, c.contract_type_id,
+       t.name AS contract_type_name, c.start_date, c.end_date, c.employee_id, e.code AS employee_code,
+       e.full_name AS employee_name
 FROM hrm.contracts c
 JOIN record.documents d ON d.id = c.id
 JOIN hrm.contract_types t ON t.id = c.contract_type_id
 JOIN hrm.employees e ON e.id = c.employee_id
-LEFT JOIN record.documents p ON p.id = c.parent_id
-WHERE (@all_units::bool OR d.org_unit_id = ANY(@units::bigint[]))
-  AND (@status::text = '' OR d.status = @status)
-  AND (sqlc.narg(contract_type_id)::bigint IS NULL OR c.contract_type_id = sqlc.narg(contract_type_id))
-  AND (sqlc.narg(org_unit_id)::bigint IS NULL OR d.org_unit_id = sqlc.narg(org_unit_id))
-  AND (@q::text = '' OR d.number ILIKE '%' || @q || '%' OR e.code ILIKE '%' || @q || '%' OR e.full_name ILIKE '%' || @q || '%')
-  AND (sqlc.narg(employee_id)::bigint IS NULL OR c.employee_id = sqlc.narg(employee_id))
-  AND (NOT sqlc.arg(expiring)::bool OR (c.parent_id IS NULL AND d.status = 'posted'
-       AND c.end_date BETWEEN sqlc.arg(today)::date AND sqlc.arg(today)::date + 30))
-ORDER BY
-    CASE WHEN @sort::text = 'start_date' THEN c.start_date END,
-    CASE WHEN @sort = '-start_date' THEN c.start_date END DESC,
-    CASE WHEN @sort = 'end_date' THEN c.end_date END,
-    CASE WHEN @sort = '-end_date' THEN c.end_date END DESC NULLS LAST,
-    CASE WHEN @sort = 'number' THEN d.number END,
-    CASE WHEN @sort = '-number' THEN d.number END DESC,
-    c.id DESC
-LIMIT @lim OFFSET @off;
+LEFT JOIN record.documents p ON p.id = c.parent_id;
 
 -- name: ContractOverlaps :one
 -- Whether another posted original of the employee overlaps [@start, @end] (null end: open-ended).
@@ -299,27 +273,13 @@ WHERE id = @id;
 -- name: DeleteOvertimeRequest :exec
 DELETE FROM hrm.overtime_requests WHERE id = $1;
 
--- name: ListOvertimeRequests :many
--- Visible as for leave requests.
-SELECT r.id, d.number, d.status, r.employee_id, e.code AS employee_code, e.full_name AS employee_name,
-       r.date, r.day_kind, r.day_hours::text AS day_hours, r.night_hours::text AS night_hours, count(*) OVER () AS total
+-- name: OvertimeListBase :many
+-- data:base
+SELECT r.id, d.number, d.status, d.org_unit_id, r.employee_id, e.code AS employee_code, e.full_name AS employee_name,
+       r.date, r.day_kind, r.day_hours::text AS day_hours, r.night_hours::text AS night_hours
 FROM hrm.overtime_requests r
 JOIN record.documents d ON d.id = r.id
-JOIN hrm.employees e ON e.id = r.employee_id
-WHERE (@all_units::bool OR d.org_unit_id = ANY(@units::bigint[]) OR e.user_id = @actor::bigint OR r.employee_id = ANY(@reports::bigint[]))
-  AND (@status::text = '' OR d.status = @status)
-  AND (@q::text = '' OR d.number ILIKE '%' || @q || '%' OR e.code ILIKE '%' || @q || '%' OR e.full_name ILIKE '%' || @q || '%')
-  AND (sqlc.narg(org_unit_id)::bigint IS NULL OR d.org_unit_id = sqlc.narg(org_unit_id))
-  AND (sqlc.narg(employee_id)::bigint IS NULL OR r.employee_id = sqlc.narg(employee_id))
-  AND (sqlc.narg(from_date)::date IS NULL OR r.date >= sqlc.narg(from_date))
-  AND (sqlc.narg(to_date)::date IS NULL OR r.date <= sqlc.narg(to_date))
-ORDER BY
-    CASE WHEN @sort::text = 'date' THEN r.date END,
-    CASE WHEN @sort = '-date' THEN r.date END DESC,
-    CASE WHEN @sort = 'number' THEN d.number END,
-    CASE WHEN @sort = '-number' THEN d.number END DESC,
-    r.id DESC
-LIMIT @lim OFFSET @off;
+JOIN hrm.employees e ON e.id = r.employee_id;
 
 -- name: CreateTimesheet :exec
 INSERT INTO hrm.timesheets (id, org_unit_id, period_start, period_end) VALUES ($1, $2, $3, $4);
@@ -358,22 +318,12 @@ DELETE FROM hrm.timesheet_lines WHERE timesheet_id = $1;
 INSERT INTO hrm.timesheet_lines (timesheet_id, employee_id, date, days)
 SELECT @timesheet_id::bigint, unnest(@employee_ids::bigint[]), unnest(@dates::date[]), unnest(@days::text[])::numeric;
 
--- name: ListTimesheets :many
-SELECT t.id, d.number, d.status, t.org_unit_id, u.name AS org_unit_name, t.period_start, t.period_end, count(*) OVER () AS total
+-- name: TimesheetListBase :many
+-- data:base
+SELECT t.id, d.number, d.status, t.org_unit_id, u.name AS org_unit_name, t.period_start, t.period_end
 FROM hrm.timesheets t
 JOIN record.documents d ON d.id = t.id
-JOIN iam.org_units u ON u.id = t.org_unit_id
-WHERE (@all_units::bool OR t.org_unit_id = ANY(@units::bigint[]))
-  AND (@status::text = '' OR d.status = @status)
-  AND (sqlc.narg(org_unit_id)::bigint IS NULL OR t.org_unit_id = sqlc.narg(org_unit_id))
-  AND (sqlc.narg(period_start)::date IS NULL OR t.period_start = sqlc.narg(period_start))
-ORDER BY
-    CASE WHEN @sort::text = 'period' THEN t.period_start END,
-    CASE WHEN @sort IN ('', '-period') THEN t.period_start END DESC,
-    CASE WHEN @sort = 'number' THEN d.number END,
-    CASE WHEN @sort = '-number' THEN d.number END DESC,
-    u.name, t.id DESC
-LIMIT @lim OFFSET @off;
+JOIN iam.org_units u ON u.id = t.org_unit_id;
 
 -- name: EmployeesByCodes :many
 SELECT id, code, org_unit_id FROM hrm.employees WHERE lower(code) = ANY(@codes::text[]);

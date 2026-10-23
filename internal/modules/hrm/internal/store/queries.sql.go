@@ -147,6 +147,68 @@ func (q *Queries) ClosedPeriods(ctx context.Context, arg ClosedPeriodsParams) ([
 	return items, nil
 }
 
+const contractListBase = `-- name: ContractListBase :many
+SELECT c.id, d.number, d.status, d.org_unit_id, c.parent_id, p.number AS parent_number, c.contract_type_id,
+       t.name AS contract_type_name, c.start_date, c.end_date, c.employee_id, e.code AS employee_code,
+       e.full_name AS employee_name
+FROM hrm.contracts c
+JOIN record.documents d ON d.id = c.id
+JOIN hrm.contract_types t ON t.id = c.contract_type_id
+JOIN hrm.employees e ON e.id = c.employee_id
+LEFT JOIN record.documents p ON p.id = c.parent_id
+`
+
+type ContractListBaseRow struct {
+	ID               int64
+	Number           string
+	Status           string
+	OrgUnitID        int64
+	ParentID         pgtype.Int8
+	ParentNumber     pgtype.Text
+	ContractTypeID   int64
+	ContractTypeName string
+	StartDate        pgtype.Date
+	EndDate          pgtype.Date
+	EmployeeID       int64
+	EmployeeCode     string
+	EmployeeName     string
+}
+
+// data:base
+func (q *Queries) ContractListBase(ctx context.Context) ([]ContractListBaseRow, error) {
+	rows, err := q.db.Query(ctx, contractListBase)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ContractListBaseRow
+	for rows.Next() {
+		var i ContractListBaseRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Number,
+			&i.Status,
+			&i.OrgUnitID,
+			&i.ParentID,
+			&i.ParentNumber,
+			&i.ContractTypeID,
+			&i.ContractTypeName,
+			&i.StartDate,
+			&i.EndDate,
+			&i.EmployeeID,
+			&i.EmployeeCode,
+			&i.EmployeeName,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const contractOverlaps = `-- name: ContractOverlaps :one
 SELECT EXISTS (
     SELECT 1 FROM hrm.contracts c JOIN record.documents d ON d.id = c.id
@@ -1421,111 +1483,6 @@ func (q *Queries) ListContractTypes(ctx context.Context) ([]HrmContractType, err
 	return items, nil
 }
 
-const listContracts = `-- name: ListContracts :many
-SELECT c.id, d.number, d.status, c.parent_id, p.number AS parent_number, t.name AS contract_type_name,
-       c.start_date, c.end_date, c.employee_id, e.code AS employee_code, e.full_name AS employee_name,
-       count(*) OVER () AS total
-FROM hrm.contracts c
-JOIN record.documents d ON d.id = c.id
-JOIN hrm.contract_types t ON t.id = c.contract_type_id
-JOIN hrm.employees e ON e.id = c.employee_id
-LEFT JOIN record.documents p ON p.id = c.parent_id
-WHERE ($1::bool OR d.org_unit_id = ANY($2::bigint[]))
-  AND ($3::text = '' OR d.status = $3)
-  AND ($4::bigint IS NULL OR c.contract_type_id = $4)
-  AND ($5::bigint IS NULL OR d.org_unit_id = $5)
-  AND ($6::text = '' OR d.number ILIKE '%' || $6 || '%' OR e.code ILIKE '%' || $6 || '%' OR e.full_name ILIKE '%' || $6 || '%')
-  AND ($7::bigint IS NULL OR c.employee_id = $7)
-  AND (NOT $8::bool OR (c.parent_id IS NULL AND d.status = 'posted'
-       AND c.end_date BETWEEN $9::date AND $9::date + 30))
-ORDER BY
-    CASE WHEN $10::text = 'start_date' THEN c.start_date END,
-    CASE WHEN $10 = '-start_date' THEN c.start_date END DESC,
-    CASE WHEN $10 = 'end_date' THEN c.end_date END,
-    CASE WHEN $10 = '-end_date' THEN c.end_date END DESC NULLS LAST,
-    CASE WHEN $10 = 'number' THEN d.number END,
-    CASE WHEN $10 = '-number' THEN d.number END DESC,
-    c.id DESC
-LIMIT $12 OFFSET $11
-`
-
-type ListContractsParams struct {
-	AllUnits       bool
-	Units          []int64
-	Status         string
-	ContractTypeID pgtype.Int8
-	OrgUnitID      pgtype.Int8
-	Q              string
-	EmployeeID     pgtype.Int8
-	Expiring       bool
-	Today          pgtype.Date
-	Sort           string
-	Off            int32
-	Lim            int32
-}
-
-type ListContractsRow struct {
-	ID               int64
-	Number           string
-	Status           string
-	ParentID         pgtype.Int8
-	ParentNumber     pgtype.Text
-	ContractTypeName string
-	StartDate        pgtype.Date
-	EndDate          pgtype.Date
-	EmployeeID       int64
-	EmployeeCode     string
-	EmployeeName     string
-	Total            int64
-}
-
-// Every contract and appendix in scope. Expiring: posted originals ending from @today to @today + 30 days.
-func (q *Queries) ListContracts(ctx context.Context, arg ListContractsParams) ([]ListContractsRow, error) {
-	rows, err := q.db.Query(ctx, listContracts,
-		arg.AllUnits,
-		arg.Units,
-		arg.Status,
-		arg.ContractTypeID,
-		arg.OrgUnitID,
-		arg.Q,
-		arg.EmployeeID,
-		arg.Expiring,
-		arg.Today,
-		arg.Sort,
-		arg.Off,
-		arg.Lim,
-	)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []ListContractsRow
-	for rows.Next() {
-		var i ListContractsRow
-		if err := rows.Scan(
-			&i.ID,
-			&i.Number,
-			&i.Status,
-			&i.ParentID,
-			&i.ParentNumber,
-			&i.ContractTypeName,
-			&i.StartDate,
-			&i.EndDate,
-			&i.EmployeeID,
-			&i.EmployeeCode,
-			&i.EmployeeName,
-			&i.Total,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
 const listDependents = `-- name: ListDependents :many
 SELECT id, data FROM hrm.dependents WHERE employee_id = $1 ORDER BY id
 `
@@ -1666,183 +1623,6 @@ func (q *Queries) ListLegalParams(ctx context.Context) ([]HrmLegalParam, error) 
 	return items, nil
 }
 
-const listOvertimeRequests = `-- name: ListOvertimeRequests :many
-SELECT r.id, d.number, d.status, r.employee_id, e.code AS employee_code, e.full_name AS employee_name,
-       r.date, r.day_kind, r.day_hours::text AS day_hours, r.night_hours::text AS night_hours, count(*) OVER () AS total
-FROM hrm.overtime_requests r
-JOIN record.documents d ON d.id = r.id
-JOIN hrm.employees e ON e.id = r.employee_id
-WHERE ($1::bool OR d.org_unit_id = ANY($2::bigint[]) OR e.user_id = $3::bigint OR r.employee_id = ANY($4::bigint[]))
-  AND ($5::text = '' OR d.status = $5)
-  AND ($6::text = '' OR d.number ILIKE '%' || $6 || '%' OR e.code ILIKE '%' || $6 || '%' OR e.full_name ILIKE '%' || $6 || '%')
-  AND ($7::bigint IS NULL OR d.org_unit_id = $7)
-  AND ($8::bigint IS NULL OR r.employee_id = $8)
-  AND ($9::date IS NULL OR r.date >= $9)
-  AND ($10::date IS NULL OR r.date <= $10)
-ORDER BY
-    CASE WHEN $11::text = 'date' THEN r.date END,
-    CASE WHEN $11 = '-date' THEN r.date END DESC,
-    CASE WHEN $11 = 'number' THEN d.number END,
-    CASE WHEN $11 = '-number' THEN d.number END DESC,
-    r.id DESC
-LIMIT $13 OFFSET $12
-`
-
-type ListOvertimeRequestsParams struct {
-	AllUnits   bool
-	Units      []int64
-	Actor      int64
-	Reports    []int64
-	Status     string
-	Q          string
-	OrgUnitID  pgtype.Int8
-	EmployeeID pgtype.Int8
-	FromDate   pgtype.Date
-	ToDate     pgtype.Date
-	Sort       string
-	Off        int32
-	Lim        int32
-}
-
-type ListOvertimeRequestsRow struct {
-	ID           int64
-	Number       string
-	Status       string
-	EmployeeID   int64
-	EmployeeCode string
-	EmployeeName string
-	Date         pgtype.Date
-	DayKind      string
-	DayHours     string
-	NightHours   string
-	Total        int64
-}
-
-// Visible as for leave requests.
-func (q *Queries) ListOvertimeRequests(ctx context.Context, arg ListOvertimeRequestsParams) ([]ListOvertimeRequestsRow, error) {
-	rows, err := q.db.Query(ctx, listOvertimeRequests,
-		arg.AllUnits,
-		arg.Units,
-		arg.Actor,
-		arg.Reports,
-		arg.Status,
-		arg.Q,
-		arg.OrgUnitID,
-		arg.EmployeeID,
-		arg.FromDate,
-		arg.ToDate,
-		arg.Sort,
-		arg.Off,
-		arg.Lim,
-	)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []ListOvertimeRequestsRow
-	for rows.Next() {
-		var i ListOvertimeRequestsRow
-		if err := rows.Scan(
-			&i.ID,
-			&i.Number,
-			&i.Status,
-			&i.EmployeeID,
-			&i.EmployeeCode,
-			&i.EmployeeName,
-			&i.Date,
-			&i.DayKind,
-			&i.DayHours,
-			&i.NightHours,
-			&i.Total,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
-const listTimesheets = `-- name: ListTimesheets :many
-SELECT t.id, d.number, d.status, t.org_unit_id, u.name AS org_unit_name, t.period_start, t.period_end, count(*) OVER () AS total
-FROM hrm.timesheets t
-JOIN record.documents d ON d.id = t.id
-JOIN iam.org_units u ON u.id = t.org_unit_id
-WHERE ($1::bool OR t.org_unit_id = ANY($2::bigint[]))
-  AND ($3::text = '' OR d.status = $3)
-  AND ($4::bigint IS NULL OR t.org_unit_id = $4)
-  AND ($5::date IS NULL OR t.period_start = $5)
-ORDER BY
-    CASE WHEN $6::text = 'period' THEN t.period_start END,
-    CASE WHEN $6 IN ('', '-period') THEN t.period_start END DESC,
-    CASE WHEN $6 = 'number' THEN d.number END,
-    CASE WHEN $6 = '-number' THEN d.number END DESC,
-    u.name, t.id DESC
-LIMIT $8 OFFSET $7
-`
-
-type ListTimesheetsParams struct {
-	AllUnits    bool
-	Units       []int64
-	Status      string
-	OrgUnitID   pgtype.Int8
-	PeriodStart pgtype.Date
-	Sort        string
-	Off         int32
-	Lim         int32
-}
-
-type ListTimesheetsRow struct {
-	ID          int64
-	Number      string
-	Status      string
-	OrgUnitID   int64
-	OrgUnitName string
-	PeriodStart pgtype.Date
-	PeriodEnd   pgtype.Date
-	Total       int64
-}
-
-func (q *Queries) ListTimesheets(ctx context.Context, arg ListTimesheetsParams) ([]ListTimesheetsRow, error) {
-	rows, err := q.db.Query(ctx, listTimesheets,
-		arg.AllUnits,
-		arg.Units,
-		arg.Status,
-		arg.OrgUnitID,
-		arg.PeriodStart,
-		arg.Sort,
-		arg.Off,
-		arg.Lim,
-	)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []ListTimesheetsRow
-	for rows.Next() {
-		var i ListTimesheetsRow
-		if err := rows.Scan(
-			&i.ID,
-			&i.Number,
-			&i.Status,
-			&i.OrgUnitID,
-			&i.OrgUnitName,
-			&i.PeriodStart,
-			&i.PeriodEnd,
-			&i.Total,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
 const lockEmployee = `-- name: LockEmployee :one
 SELECT id, code, full_name, date_of_birth, gender, phone, email, address, org_unit_id, manager_id, user_id, hire_date, termination_date, national_id, social_insurance_no, tax_code, bank_account FROM hrm.employees WHERE id = $1 FOR UPDATE
 `
@@ -1962,6 +1742,61 @@ func (q *Queries) OrgUnitNames(ctx context.Context, ids []int64) ([]OrgUnitNames
 	for rows.Next() {
 		var i OrgUnitNamesRow
 		if err := rows.Scan(&i.ID, &i.Name); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const overtimeListBase = `-- name: OvertimeListBase :many
+SELECT r.id, d.number, d.status, d.org_unit_id, r.employee_id, e.code AS employee_code, e.full_name AS employee_name,
+       r.date, r.day_kind, r.day_hours::text AS day_hours, r.night_hours::text AS night_hours
+FROM hrm.overtime_requests r
+JOIN record.documents d ON d.id = r.id
+JOIN hrm.employees e ON e.id = r.employee_id
+`
+
+type OvertimeListBaseRow struct {
+	ID           int64
+	Number       string
+	Status       string
+	OrgUnitID    int64
+	EmployeeID   int64
+	EmployeeCode string
+	EmployeeName string
+	Date         pgtype.Date
+	DayKind      string
+	DayHours     string
+	NightHours   string
+}
+
+// data:base
+func (q *Queries) OvertimeListBase(ctx context.Context) ([]OvertimeListBaseRow, error) {
+	rows, err := q.db.Query(ctx, overtimeListBase)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []OvertimeListBaseRow
+	for rows.Next() {
+		var i OvertimeListBaseRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Number,
+			&i.Status,
+			&i.OrgUnitID,
+			&i.EmployeeID,
+			&i.EmployeeCode,
+			&i.EmployeeName,
+			&i.Date,
+			&i.DayKind,
+			&i.DayHours,
+			&i.NightHours,
+		); err != nil {
 			return nil, err
 		}
 		items = append(items, i)
@@ -2515,36 +2350,6 @@ func (q *Queries) PostedTimesheetUnits(ctx context.Context, periodStart pgtype.D
 	return items, nil
 }
 
-const reports = `-- name: Reports :many
-WITH RECURSIVE down AS (
-    SELECT e.id FROM hrm.employees e JOIN hrm.employees me ON e.manager_id = me.id WHERE me.user_id = $1::bigint
-    UNION
-    SELECT e.id FROM hrm.employees e JOIN down ON e.manager_id = down.id
-)
-SELECT down.id FROM down
-`
-
-// Employees below the actor's own employee record, at any depth.
-func (q *Queries) Reports(ctx context.Context, actor int64) ([]int64, error) {
-	rows, err := q.db.Query(ctx, reports, actor)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []int64
-	for rows.Next() {
-		var id int64
-		if err := rows.Scan(&id); err != nil {
-			return nil, err
-		}
-		items = append(items, id)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
 const saveHoliday = `-- name: SaveHoliday :exec
 INSERT INTO hrm.holidays (legal_entity_id, date, name) VALUES ($1, $2, $3)
 ON CONFLICT (legal_entity_id, date) DO UPDATE SET name = excluded.name
@@ -2721,6 +2526,52 @@ func (q *Queries) TimesheetLines(ctx context.Context, timesheetID int64) ([]Time
 	for rows.Next() {
 		var i TimesheetLinesRow
 		if err := rows.Scan(&i.EmployeeID, &i.Date, &i.Days); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const timesheetListBase = `-- name: TimesheetListBase :many
+SELECT t.id, d.number, d.status, t.org_unit_id, u.name AS org_unit_name, t.period_start, t.period_end
+FROM hrm.timesheets t
+JOIN record.documents d ON d.id = t.id
+JOIN iam.org_units u ON u.id = t.org_unit_id
+`
+
+type TimesheetListBaseRow struct {
+	ID          int64
+	Number      string
+	Status      string
+	OrgUnitID   int64
+	OrgUnitName string
+	PeriodStart pgtype.Date
+	PeriodEnd   pgtype.Date
+}
+
+// data:base
+func (q *Queries) TimesheetListBase(ctx context.Context) ([]TimesheetListBaseRow, error) {
+	rows, err := q.db.Query(ctx, timesheetListBase)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []TimesheetListBaseRow
+	for rows.Next() {
+		var i TimesheetListBaseRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Number,
+			&i.Status,
+			&i.OrgUnitID,
+			&i.OrgUnitName,
+			&i.PeriodStart,
+			&i.PeriodEnd,
+		); err != nil {
 			return nil, err
 		}
 		items = append(items, i)

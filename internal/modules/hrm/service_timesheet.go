@@ -42,7 +42,7 @@ func (s *Service) TimesheetActions(ctx context.Context) ([]string, error) {
 // Timesheets lists the timesheets of the org units in the actor's scope, latest period first.
 func (s *Service) Timesheets(ctx context.Context, f TimesheetFilter) (TimesheetList, error) {
 	out := TimesheetList{Items: []TimesheetListItem{}}
-	sc, err := s.d.IAM.Scope(ctx, "hrm", PermTimesheetView)
+	sc, err := s.d.IAM.DataScope(ctx, "hrm", PermTimesheetView)
 	if err != nil {
 		return out, err
 	}
@@ -52,18 +52,18 @@ func (s *Service) Timesheets(ctx context.Context, f TimesheetFilter) (TimesheetL
 			return out, err
 		}
 	}
-	rows, err := store.New(platform.DBFrom(ctx)).ListTimesheets(ctx, store.ListTimesheetsParams{
-		AllUnits: sc.All, Units: sc.Units, Status: f.Status, OrgUnitID: pgtype.Int8{Int64: f.OrgUnitID, Valid: f.OrgUnitID != 0},
-		PeriodStart: start, Sort: f.Sort, Lim: f.Limit(), Off: f.Offset(),
-	})
-	for _, r := range rows {
-		out.Total = r.Total
+	page, err := timesheetList.Run(ctx, timesheetQuery(sc, f, start))
+	if err != nil {
+		return out, err
+	}
+	out.Total = page.Total
+	for _, r := range page.Items {
 		out.Items = append(out.Items, TimesheetListItem{
 			ID: r.ID, Number: r.Number, Status: r.Status, OrgUnitID: r.OrgUnitID, OrgUnitName: r.OrgUnitName,
 			PeriodStart: *platform.DatePtr(r.PeriodStart), PeriodEnd: *platform.DatePtr(r.PeriodEnd),
 		})
 	}
-	return out, err
+	return out, nil
 }
 
 // Timesheet returns a timesheet with its grid; one the actor may not view does not exist.
