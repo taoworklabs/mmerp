@@ -56,21 +56,20 @@ func (s *Service) UpdateOrder(ctx context.Context, id int64, in DocUpdate) error
 
 func (s *Service) docs(ctx context.Context, k kind, f DocFilter) (DocList, error) {
 	out := DocList{Items: []DocListItem{}}
-	sc, err := s.d.IAM.Scope(ctx, "sales", k.view)
-	if err != nil || !sc.Any() {
+	sc, err := s.d.IAM.DataScope(ctx, "sales", k.view)
+	if err != nil {
 		return out, err
 	}
 	today, err := s.d.Setting.Today(ctx)
 	if err != nil {
 		return out, err
 	}
-	rows, err := store.New(platform.DBFrom(ctx)).ListHeaders(ctx, store.ListHeadersParams{
-		Kind: k.name, AllUnits: sc.All, Units: sc.Units, Status: f.Status, Q: f.Q,
-		CustomerID: pgtype.Int8{Int64: f.CustomerID, Valid: f.CustomerID != 0},
-		Sort:       f.Sort, Lim: f.Limit(), Off: f.Offset(),
-	})
-	for _, r := range rows {
-		out.Total = r.TotalRows
+	page, err := docList.Run(ctx, docQuery(sc, k, f))
+	if err != nil {
+		return out, err
+	}
+	out.Total = page.Total
+	for _, r := range page.Items {
 		out.Items = append(out.Items, DocListItem{
 			ID: r.ID, Number: r.Number, Status: r.Status, Date: *platform.DatePtr(r.Date), CustomerID: r.CustomerID,
 			CustomerCode: r.CustomerCode, CustomerName: r.CustomerName, OrgUnitName: r.OrgUnitName, Total: r.Total,
@@ -78,7 +77,7 @@ func (s *Service) docs(ctx context.Context, k kind, f DocFilter) (DocList, error
 			Ordered: r.Ordered, FromQuote: r.FromQuote,
 		})
 	}
-	return out, err
+	return out, nil
 }
 
 // expired: a quotation is valid through its validity date, in the tenant time zone.
