@@ -82,6 +82,7 @@ Tools: Go, Node 24+ with pnpm, Docker. The server reads `DATABASE_URL`, `PRODUCT
 | `make dev` | Postgres via compose, backend (`go run ./cmd/server`, `:8080`) and Vite dev server (proxies `/api`, `/healthz`) |
 | `make ui-dev` | Vite dev server alone, opening the design system catalogue `/dev/ui` (foundations read live from the theme, then every component and page template) (`web/src/app/devui`, dev builds only; no session; every API call is answered in the browser from samples (`app/devui/api.ts`), so no backend or Postgres) |
 | `make storybook` | Storybook of the `@mmerp/ui` primitives (`packages/ui`, a standalone package with its own lockfile; `:6006`), installing its dependencies first |
+| `make migration name=<module>_<description>` | Creates an empty `migrations/YYYYMMDDHHMMSS_<module>_<description>.sql` named after the current UTC time, so parallel branches never pick the same name |
 | `make reset-db` | Drops and recreates the dev database, then creates `admin` (password `e2e password`); a running `make dev` reconnects |
 | `make seed` | Builds the Demo demo company (org chart, accounts, employees, contracts, leave, overtime, timesheets, payrolls; then Sales: catalogue, customers, quotations, orders, `web/e2e/sales.seed.ts`) through the API of a running `make dev` on an empty database (`make reset-db` first; Playwright project `seed`, `web/e2e/demo.seed.ts`); accounts other than `admin` use password `Demo@2026`; `E2E_ADMIN_LOGIN`/`E2E_ADMIN_PASSWORD` name a tenant administrator |
 | `make image` | Runtime image `mmerp:dev`; the frontend is embedded with `-tags embedweb` |
@@ -108,7 +109,7 @@ CI (GitHub Actions, `.github/workflows/ci.yml`) runs `make gen` (fails on diff),
 - **Comments are short.** Explain why, not what, in a line or two. Never reference repository documents, ADRs or roadmap milestones in comments.
 - APIs return stable error codes with parameters, never sentences.
 - Business dates are `date`; instants are `timestamptz`; "today" uses the tenant time zone.
-- Migrations are SQL only, never edited after release, and never down-migrated.
+- Migrations are SQL only, never edited after release, and never down-migrated. New ones are created with `make migration` (timestamp names; the numbered `0001`–`0044` are closed). Parallel branches may land out of creation order: two migrations touching the same table must be coordinated by their authors.
 
 ## Workflow
 
