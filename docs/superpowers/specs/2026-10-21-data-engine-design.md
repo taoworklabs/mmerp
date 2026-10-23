@@ -606,3 +606,13 @@ The contract, overtime and timesheet lists run on the engine.
 **Engine.** No engine change, no migration, no performance measurement (product-owner decision).
 
 With the Sales lists (separate branch), every filterable paginated list is on the engine.
+
+## Modules results (2026-10-23)
+
+Steps 5 and 6 of the migration plan.
+
+- **Sales batched line insert.** `InsertLine`, one call per line, is replaced by `InsertLines`, one `INSERT … SELECT unnest(…)`.
+- **Fixed call sites.** Every module (Sales, `shared/posting`, HRM, then every core module) calls its generated descriptors (`store.<Query>.Run`). No `store.New` or `platform.DBFrom` is left outside infrastructure, tests and `recordtest`.
+- **Constraint maps.** Mapped: `sales.customers_code_key`, `sales.items_code_key`, `posting.recordings_doc_once`, `hrm.leave_types_name_key`, `hrm.contract_types_name_key`, `hrm.timesheets_org_unit_period_key`, `approval.step_votes_pkey`, `approval.step_votes_one_per_person_idx`. Kept on `platform.Violates`, as their meaning depends on the caller: `sales.customers_org_unit_id_fkey` (also fires when `iam` deletes a unit), `hrm.leave_balances_days_check` (two errors), `hrm.contracts_parent_id_fkey` (only the delete means "has appendices"), `approval.instances_one_open_idx` (`record.ErrAwaitingApproval`).
+- **Lint.** The `store.New` and `platform.DBFrom` bans apply everywhere except the infrastructure allowlist, `_test.go` files and `recordtest`, which inspect the database directly. The per-module exclusions are gone.
+- **Behaviour.** No change. A test now pins the leave type and contract type name collisions, whose mapping moved.
