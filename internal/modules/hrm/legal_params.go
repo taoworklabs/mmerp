@@ -144,3 +144,17 @@ func (s *Service) SaveLegalParam(ctx context.Context, p LegalParam) error {
 		return s.d.Audit.Record(ctx, "hrm.legal_param_changed", map[string]any{"key": p.Key, "effective_from": p.EffectiveFrom, "old": old, "new": p.Value})
 	})
 }
+
+// LegalParam is one version of a legal parameter. The value is a decimal, or for
+// pit_brackets JSON [[upper bound or null, rate], …].
+type LegalParam struct {
+	Key           string `json:"key"`
+	EffectiveFrom string `json:"effective_from" format:"date"`
+	Value         string `json:"value"`
+}
+
+type LegalParams struct {
+	Items []LegalParam `json:"items" nullable:"false"`
+	// manage.
+	AllowedActions []string `json:"allowed_actions" nullable:"false"`
+}

@@ -70,7 +70,7 @@ Every module in `core`, `shared` and `modules` has the same shape:
 ```
 internal/modules/sales/
 ├── module.go       # Module(svc) → platform.Module: the manifest internal/app registers
-├── service.go      # exported methods other modules may call; a large service splits into service_<part>.go
+├── service.go      # Service, NewService and exported methods other modules may call
 ├── types.go        # exported types used in those methods
 ├── deps.go         # Deps struct: core/shared modules passed in, and interfaces for other products
 ├── hooks.go        # hook interfaces this module EMITS
@@ -79,6 +79,8 @@ internal/modules/sales/
 └── internal/
     └── store/      # sqlc-generated code; Go forbids any package outside the module from importing it
 ```
+
+A module with several business areas splits them area first, so each area's files sort together: `<area>.go` (its service methods), `<area>_types.go`, `<area>_list.go`, `<area>_handler.go`, `<area>_test.go` (HRM: `leave.go`, `leave_types.go`, `leave_list.go`, `leave_handler.go`, `leave_test.go`). `service.go`, `types.go` and `handler.go` then keep only what spans areas. An area with few types keeps them in `<area>.go`.
 
 A file with no content is left out, never created empty: a module without routes has no `handler.go` or `module.go`, a module that emits no hooks has no `hooks.go`. The files that do exist always have the names and roles above.
 
@@ -123,7 +125,7 @@ Rules a tool can enforce are enforced by a tool. For rules no tool can enforce, 
 | Level | Rule | What enforces it |
 | --- | --- | --- |
 | Code | Other modules cannot touch the store | Go's `internal/` directory: compile error |
-| Code | Exports only in `service.go`, the `service_<part>.go` files and `types.go`, plus `Deps` (`deps.go`), `Module` (`module.go`) and hook types (`hooks.go`). Go controls exports per package, not per file, so any exported identifier in another file is also visible from outside | Convention, checked in review |
+| Code | Exports only in `service.go`, `types.go` and the `<area>.go` and `<area>_types.go` files, plus `Deps` (`deps.go`), `Module` (`module.go`) and hook types (`hooks.go`). Go controls exports per package, not per file, so any exported identifier in another file is also visible from outside | Convention, checked in review |
 | Dependencies | The layer direction above; modules in `modules/` do not import each other | `depguard` in golangci-lint, run in CI |
 | Cross-product calls | Through interfaces in `deps.go` or `hooks.go`, wired in `internal/app` | If it cannot be imported, it has to go through an interface |
 | Database | One Postgres schema per module, named after the module (`sales.orders`, `iam.users`). Module X's `queries/*.sql` may only INSERT/UPDATE/DELETE into schema X, and only read the permitted schemas ([Rules between modules](#rules-between-modules)) | A CI script scans the writes and reads in `queries/*.sql`. SQL written outside `queries/` is not caught |

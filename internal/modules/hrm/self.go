@@ -116,3 +116,12 @@ func subject(ctx context.Context, id *int64) (employee, unit int64, user pgtype.
 	}
 	return e.ID, e.OrgUnitID, e.UserID, err
 }
+
+// SelfServiceActions is what the actor may do before picking a leave or overtime request.
+type SelfServiceActions struct {
+	// create: for oneself (linked to an employee) or as HR; create_for_others: as HR, for another employee.
+	AllowedActions []string `json:"allowed_actions" nullable:"false"`
+	// The actor's own employee record, if linked.
+	SelfEmployeeID   *int64  `json:"self_employee_id"`
+	SelfEmployeeName *string `json:"self_employee_name"`
+}
