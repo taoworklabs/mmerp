@@ -25,7 +25,7 @@ func TestGenerate(t *testing.T) {
 }
 
 func TestRejectsUnknownCmd(t *testing.T) {
-	in := `{"settings":{"queries":["internal/core/iam/queries.sql"]},
+	in := `{"settings":{"queries":["internal/core/iam/queries"]},
 		"queries":[{"name":"CopyUsers","cmd":":execresult"}]}`
 	_, err := generate([]byte(in))
 	if err == nil || !strings.Contains(err.Error(), "iam.CopyUsers") {
@@ -34,7 +34,7 @@ func TestRejectsUnknownCmd(t *testing.T) {
 }
 
 func TestRejectsBaseWithParams(t *testing.T) {
-	in := `{"settings":{"queries":["internal/core/iam/queries.sql"]},
+	in := `{"settings":{"queries":["internal/core/iam/queries"]},
 		"queries":[{"name":"UserList","cmd":":many","comments":[" data:base"],
 		"columns":[{"name":"id"}],"params":[{"number":1,"column":{"name":"id"}}]}]}`
 	_, err := generate([]byte(in))
