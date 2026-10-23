@@ -231,3 +231,65 @@ func TestPartnerMigration(t *testing.T) {
 		t.Fatalf("series %d %v", last, err)
 	}
 }
+
+func TestItemMigration(t *testing.T) {
+	const itemInit = "20261023084903_item_init.sql"
+	pool := pgtest.Empty(t)
+	ctx := t.Context()
+	before := fstest.MapFS{}
+	entries, err := fs.ReadDir(migrations.FS, ".")
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, e := range entries {
+		if e.Name() >= itemInit || !strings.HasSuffix(e.Name(), ".sql") {
+			continue
+		}
+		b, err := fs.ReadFile(migrations.FS, e.Name())
+		if err != nil {
+			t.Fatal(err)
+		}
+		before[e.Name()] = &fstest.MapFile{Data: b}
+	}
+	if err := platform.Migrate(ctx, pool, before); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := pool.Exec(ctx, `
+		INSERT INTO iam.org_units (id, kind, name) OVERRIDING SYSTEM VALUE VALUES (1, 'company', 'U1'), (2, 'company', 'U2');
+		INSERT INTO iam.users (id, login, name, password_hash) OVERRIDING SYSTEM VALUE VALUES
+			(1, 'staff', 'staff', 'x'), (2, 'manager', 'manager', 'x'), (3, 'viewer', 'viewer', 'x'), (4, 'admin', 'admin', 'x');
+		INSERT INTO iam.user_roles (user_id, product, role, org_unit_id) VALUES
+			(1, 'sales', 'staff', 1), (2, 'sales', 'manager', 2), (3, 'sales', 'viewer', NULL), (4, 'sales', 'catalog_admin', 2);
+		INSERT INTO sales.items (id, code, name, unit, price, vat_rate) OVERRIDING SYSTEM VALUE VALUES
+			(7, 'HH7', 'A', 'cái', 100, '10'), (9, 'HH9', 'B', 'cái', 200, 'none');
+		INSERT INTO numbering.series (code, prefix, last) VALUES ('sales.item', 'SP', 9)`); err != nil {
+		t.Fatal(err)
+	}
+	if err := platform.Migrate(ctx, pool, migrations.FS); err != nil {
+		t.Fatal(err)
+	}
+	rows, _ := pool.Query(ctx, `SELECT id::text || ':' || code FROM item.items ORDER BY id`)
+	items, err := pgx.CollectRows(rows, pgx.RowTo[string])
+	if want := []string{"7:HH7", "9:HH9"}; err != nil || !slices.Equal(items, want) {
+		t.Fatalf("items %v %v, want %v", items, err, want)
+	}
+	rows, _ = pool.Query(ctx, `SELECT user_id || ':' || role || ':' || coalesce(org_unit_id::text, '*') FROM iam.user_roles
+		WHERE product = 'item' ORDER BY user_id, role`)
+	roles, err := pgx.CollectRows(rows, pgx.RowTo[string])
+	if want := []string{"1:viewer:1", "2:viewer:2", "3:viewer:*", "4:admin:*", "4:viewer:2"}; err != nil || !slices.Equal(roles, want) {
+		t.Fatalf("roles %v %v, want %v", roles, err, want)
+	}
+	var left int
+	if err := pool.QueryRow(ctx, `SELECT count(*) FROM iam.user_roles WHERE product = 'sales' AND role = 'catalog_admin'`).Scan(&left); err != nil || left != 0 {
+		t.Fatalf("catalog_admin rows left %d %v", left, err)
+	}
+	var prefix string
+	var last int64
+	if err := pool.QueryRow(ctx, `SELECT prefix, last FROM numbering.series WHERE code = 'item.item'`).Scan(&prefix, &last); err != nil || prefix != "SP" || last != 9 {
+		t.Fatalf("series %q %d %v", prefix, last, err)
+	}
+	var old int
+	if err := pool.QueryRow(ctx, `SELECT count(*) FROM numbering.series WHERE code = 'sales.item'`).Scan(&old); err != nil || old != 0 {
+		t.Fatalf("sales.item series left %d %v", old, err)
+	}
+}
