@@ -157,4 +157,16 @@ test('customer and item, a quotation approved by the manager, printed, then orde
   await expect(staff).toHaveURL(/tab=quotes/)
   await staff.getByRole('table', { name: 'Báo giá' }).getByRole('link', { name: /^BG-\d{4}-/ }).click()
   await expect(staff).toHaveURL(quoteUrl)
+
+  // Team B sells to the same company: its tax code finds the partner instead of a second company.
+  await other.goto('/sales/customers/new')
+  await other.getByRole('textbox', { name: 'Tên khách hàng' }).fill(`Ánh Dương chi nhánh ${run}`)
+  await other.getByRole('textbox', { name: 'Mã số thuế' }).fill(`031234${run}`)
+  await other.getByRole('combobox', { name: 'Đơn vị phụ trách' }).click()
+  await other.getByRole('option', { name: `Kinh doanh B ${run}` }).click()
+  await other.getByRole('button', { name: 'Thêm khách hàng' }).click()
+  await expect(other.getByText('Công ty đã có trong danh sách đối tác')).toBeVisible()
+  await other.getByRole('button', { name: 'Dùng đối tác này' }).click()
+  await expect(other.getByRole('heading', { name: `Công ty Ánh Dương ${run}` })).toBeVisible()
+  expect(other.url()).not.toBe(customerUrl)
 })
