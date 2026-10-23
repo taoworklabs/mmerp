@@ -62,11 +62,11 @@ JOIN record.documents d ON d.id = h.id
 JOIN iam.org_units u ON u.id = d.org_unit_id;
 
 -- name: CopyCustomer :one
--- Takes the customer's details as they are now onto a document being sent; returns whether
--- the customer is active.
+-- Takes the customer's code and its partner's identity as they are now onto a document
+-- being sent; returns whether the customer is active.
 UPDATE sales.headers h
-SET customer_code = c.code, customer_name = c.name, customer_tax_code = c.tax_code, customer_address = c.address,
-    customer_phone = c.phone, customer_email = c.email, contact_name = c.contact_name
-FROM sales.customers c
+SET customer_code = c.code, customer_name = p.name, customer_tax_code = p.tax_code, customer_address = p.address,
+    customer_phone = p.phone, customer_email = p.email, contact_name = p.contact_name
+FROM sales.customers c JOIN partner.partners p ON p.id = c.partner_id
 WHERE h.id = $1 AND c.id = h.customer_id
 RETURNING c.active;

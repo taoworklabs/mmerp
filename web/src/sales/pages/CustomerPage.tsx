@@ -36,9 +36,9 @@ export function CustomerPage() {
   }
   return (
     <RecordPage
-      title={c.name}
+      title={c.partner.name}
       breadcrumbs={[{ label: t('sales.customers.title'), to: '/sales/customers' }]}
-      leading={<PersonAvatar name={c.name} size="lg" />}
+      leading={<PersonAvatar name={c.partner.name} size="lg" />}
       status={<CustomerStatus active={c.active} />}
       description={[c.code, c.org_unit_name].join(' · ')}
       summary={<CustomerSummary customer={c} />}

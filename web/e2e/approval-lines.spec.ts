@@ -18,12 +18,12 @@ test.beforeAll(async ({ baseURL }) => {
   originalRule = rules.find((r) => r.doc_type === 'sales.quote' && r.action === 'post')?.rule ?? null
   const company = await created(api.post('/api/org-units', { data: { parent_id: null, kind: 'company', name: `Công ty AL ${run}`, legal_name: `Công ty TNHH AL ${run}` } }))
   const unit = await created(api.post('/api/org-units', { data: { parent_id: company, kind: 'department', name: `Kinh doanh AL ${run}` } }))
-  await createUser(api, login.staff, [{ role: 'sales.staff', unit }])
-  await createUser(api, login.manager, [{ role: 'sales.manager', unit }])
-  const item = (code: string, name: string) => created(api.post('/api/sales/items', { data: { code, name, unit: 'kg', price: 50_000, vat_rate: '10', active: true } }))
+  await createUser(api, login.staff, [{ role: 'sales.staff', unit }, { role: 'partner.editor', unit }, { role: 'item.viewer', unit }])
+  await createUser(api, login.manager, [{ role: 'sales.manager', unit }, { role: 'partner.editor', unit }, { role: 'item.viewer', unit }])
+  const item = (code: string, name: string) => created(api.post('/api/items', { data: { code, name, unit: 'kg', price: 50_000, vat_rate: '10', active: true } }))
   const customer = await created(
     api.post('/api/sales/customers', {
-      data: { code: `KHAL${run}`, name: `Công ty Hòa Phát ${run}`, tax_code: null, address: null, phone: null, email: null, contact_name: null, payment_terms: null, org_unit_id: unit, active: true },
+      data: { code: `KHAL${run}`, partner: { name: `Công ty Hòa Phát ${run}`, tax_code: null, address: null, phone: null, email: null, contact_name: null }, payment_terms: null, org_unit_id: unit, active: true },
     }),
   )
   ids = { unit, customer, special: await item(special.code, special.name), plain: await item(`AL${run}`, `Thép thường ${run}`) }

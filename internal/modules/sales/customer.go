@@ -3,7 +3,6 @@ package sales
 import (
 	"context"
 	"errors"
-	"strings"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
@@ -12,6 +11,7 @@ import (
 	"github.com/taoworklabs/mmerp/internal/core/record"
 	"github.com/taoworklabs/mmerp/internal/modules/sales/internal/store"
 	"github.com/taoworklabs/mmerp/internal/platform"
+	"github.com/taoworklabs/mmerp/internal/shared/partner"
 )
 
 // locateCustomer: a customer is owned by its org unit.
@@ -52,7 +52,8 @@ func (s *Service) Customers(ctx context.Context, f CustomerFilter) (CustomerList
 	return out, nil
 }
 
-// Customer returns one customer; one the actor may not view does not exist.
+// Customer returns one customer with its partner's identity; one the actor may not view
+// does not exist.
 func (s *Service) Customer(ctx context.Context, id int64) (Customer, error) {
 	if err := s.d.Record.Visible(ctx, record.Ref{Type: customerType, ID: id}, record.View); err != nil {
 		return Customer{}, err
@@ -62,27 +63,45 @@ func (s *Service) Customer(ctx context.Context, id int64) (Customer, error) {
 		return Customer{}, err
 	}
 	actions, err := s.d.Record.Actions(ctx, record.Doc{Ref: record.Ref{Type: customerType, ID: id}})
-	return Customer{ID: id, Code: c.Code, CustomerFields: customerFields(c), OrgUnitName: c.OrgUnitName, AllowedActions: actions}, err
+	if err != nil {
+		return Customer{}, err
+	}
+	// The identity is the partner's, so its own actions decide who edits it.
+	partnerActions, err := s.d.Partner.Actions(ctx, c.PartnerID)
+	return Customer{ID: id, Code: c.Code, PartnerID: c.PartnerID, PartnerCode: c.PartnerCode, Partner: partnerFields(c),
+		CustomerFields: customerFields(c), OrgUnitName: c.OrgUnitName, AllowedActions: actions, PartnerActions: partnerActions}, err
 }
 
-// CreateCustomer adds a customer owned by an org unit where the actor may edit customers.
+// CreateCustomer adds a customer owned by an org unit where the actor may edit customers,
+// over an existing partner or one it creates in the same transaction.
 func (s *Service) CreateCustomer(ctx context.Context, in NewCustomer) (int64, error) {
 	if err := platform.ProductGate(ctx, "sales", platform.ClassWrite); err != nil {
 		return 0, err
+	}
+	if (in.PartnerID == nil) == (in.Partner == nil) {
+		return 0, ErrPartnerRequired
 	}
 	if err := s.require(ctx, PermCustomerEdit, in.OrgUnitID); err != nil {
 		return 0, err
 	}
 	var id int64
 	err := platform.InTx(ctx, func(ctx context.Context) error {
+		var partnerID int64
 		var err error
+		if in.PartnerID != nil {
+			// Only a partner the actor may see.
+			if err := s.d.Partner.Visible(ctx, *in.PartnerID); err != nil {
+				return err
+			}
+			partnerID = *in.PartnerID
+		} else if partnerID, err = s.d.Partner.Create(ctx, "", *in.Partner); err != nil {
+			return err
+		}
 		if in.Code, err = s.d.Numbering.Code(ctx, customerType, in.Code, customerCodeTaken); err != nil {
 			return err
 		}
 		id, err = store.CreateCustomer.Run(ctx, store.CreateCustomerParams{
-			Code: in.Code, Name: strings.TrimSpace(in.Name), TaxCode: platform.NullText(in.TaxCode),
-			Address: platform.NullText(in.Address), Phone: platform.NullText(in.Phone), Email: platform.NullText(in.Email),
-			ContactName: platform.NullText(in.ContactName), PaymentTerms: platform.NullText(in.PaymentTerms), OrgUnitID: in.OrgUnitID, Active: in.Active,
+			Code: in.Code, PartnerID: partnerID, PaymentTerms: platform.NullText(in.PaymentTerms), OrgUnitID: in.OrgUnitID, Active: in.Active,
 		})
 		if platform.Violates(err, "customers_org_unit_id_fkey") {
 			return platform.ErrNotFound
@@ -90,15 +109,18 @@ func (s *Service) CreateCustomer(ctx context.Context, in NewCustomer) (int64, er
 		if err != nil {
 			return err
 		}
-		return s.d.Audit.RecordChanges(ctx, "sales.customer_created", audit.Ref{Type: customerType, ID: id}, append([]audit.Change{{Field: "code", New: in.Code}}, customerChanges(CustomerFields{}, in.CustomerFields)...))
+		return s.d.Audit.RecordChanges(ctx, "sales.customer_created", audit.Ref{Type: customerType, ID: id},
+			append([]audit.Change{{Field: "code", New: in.Code}, {Field: "partner_id", New: partnerID}}, customerChanges(CustomerFields{}, in.CustomerFields)...))
 	})
 	return id, err
 }
 
-// UpdateCustomer replaces a customer's fields; moving it needs edit at both org units.
-func (s *Service) UpdateCustomer(ctx context.Context, id int64, in CustomerFields) error {
+// UpdateCustomer replaces a customer's fields and, when given, its partner's identity;
+// moving it needs edit at both org units, changing the identity needs partner edit.
+func (s *Service) UpdateCustomer(ctx context.Context, id int64, in CustomerUpdate) error {
 	return platform.InTx(ctx, func(ctx context.Context) error {
-		// Locked first, so the checks and the audit diff see what a concurrent edit left.
+		// Locked first, so the checks and the audit diff see what a concurrent edit left;
+		// the partner row comes after.
 		if err := store.LockCustomer.Run(ctx, id); err != nil {
 			return err
 		}
@@ -116,10 +138,13 @@ func (s *Service) UpdateCustomer(ctx context.Context, id int64, in CustomerField
 		if err := s.require(ctx, PermCustomerEdit, old.OrgUnitID, in.OrgUnitID); err != nil {
 			return err
 		}
+		if in.Partner != nil {
+			if err := s.d.Partner.Update(ctx, old.PartnerID, *in.Partner); err != nil {
+				return err
+			}
+		}
 		err = store.UpdateCustomer.Run(ctx, store.UpdateCustomerParams{
-			ID: id, Name: strings.TrimSpace(in.Name), TaxCode: platform.NullText(in.TaxCode),
-			Address: platform.NullText(in.Address), Phone: platform.NullText(in.Phone), Email: platform.NullText(in.Email),
-			ContactName: platform.NullText(in.ContactName), PaymentTerms: platform.NullText(in.PaymentTerms), OrgUnitID: in.OrgUnitID, Active: in.Active,
+			ID: id, PaymentTerms: platform.NullText(in.PaymentTerms), OrgUnitID: in.OrgUnitID, Active: in.Active,
 		})
 		if platform.Violates(err, "customers_org_unit_id_fkey") {
 			return platform.ErrNotFound
@@ -127,24 +152,22 @@ func (s *Service) UpdateCustomer(ctx context.Context, id int64, in CustomerField
 		if err != nil {
 			return err
 		}
-		return s.d.Audit.RecordChanges(ctx, "sales.customer_updated", audit.Ref{Type: customerType, ID: id}, customerChanges(customerFields(old), in))
+		return s.d.Audit.RecordChanges(ctx, "sales.customer_updated", audit.Ref{Type: customerType, ID: id}, customerChanges(customerFields(old), in.CustomerFields))
 	})
 }
 
 func customerFields(c store.GetCustomerRow) CustomerFields {
-	return CustomerFields{Name: c.Name, TaxCode: platform.TextPtr(c.TaxCode), Address: platform.TextPtr(c.Address),
-		Phone: platform.TextPtr(c.Phone), Email: platform.TextPtr(c.Email), ContactName: platform.TextPtr(c.ContactName),
-		PaymentTerms: platform.TextPtr(c.PaymentTerms), OrgUnitID: c.OrgUnitID, Active: c.Active}
+	return CustomerFields{PaymentTerms: platform.TextPtr(c.PaymentTerms), OrgUnitID: c.OrgUnitID, Active: c.Active}
 }
 
+func partnerFields(c store.GetCustomerRow) partner.PartnerFields {
+	return partner.PartnerFields{Name: c.Name, TaxCode: platform.TextPtr(c.TaxCode), Address: platform.TextPtr(c.Address),
+		Phone: platform.TextPtr(c.Phone), Email: platform.TextPtr(c.Email), ContactName: platform.TextPtr(c.ContactName)}
+}
+
+// customerChanges are the customer role's fields; the identity is audited on the partner.
 func customerChanges(old, n CustomerFields) []audit.Change {
 	return []audit.Change{
-		{Field: "name", Old: old.Name, New: n.Name},
-		{Field: "tax_code", Old: old.TaxCode, New: n.TaxCode},
-		{Field: "address", Old: old.Address, New: n.Address},
-		{Field: "phone", Old: old.Phone, New: n.Phone},
-		{Field: "email", Old: old.Email, New: n.Email},
-		{Field: "contact_name", Old: old.ContactName, New: n.ContactName},
 		{Field: "payment_terms", Old: old.PaymentTerms, New: n.PaymentTerms},
 		{Field: "org_unit_id", Old: old.OrgUnitID, New: n.OrgUnitID},
 		{Field: "active", Old: old.Active, New: n.Active},
@@ -161,37 +184,48 @@ func customerCodeTaken(ctx context.Context, code string) (bool, error) {
 	return store.CustomerCodeTaken.Run(ctx, code)
 }
 
-// CustomerFields are what an edit may change; the code is set once, at creation.
+// CustomerFields are the customer role's own fields; the identity is its partner's.
 type CustomerFields struct {
-	Name         string  `json:"name" minLength:"1" maxLength:"300"`
-	TaxCode      *string `json:"tax_code" maxLength:"20"`
-	Address      *string `json:"address" maxLength:"500"`
-	Phone        *string `json:"phone" maxLength:"50"`
-	Email        *string `json:"email" maxLength:"200"`
-	ContactName  *string `json:"contact_name" maxLength:"200"`
 	PaymentTerms *string `json:"payment_terms" maxLength:"1000" doc:"Prefilled on new quotations and orders"`
 	OrgUnitID    int64   `json:"org_unit_id" doc:"Owning org unit: who may see the customer"`
 	Active       bool    `json:"active"`
 }
 
+// NewCustomer names exactly one of an existing partner and a new partner's identity.
 type NewCustomer struct {
-	Code string `json:"code,omitempty" maxLength:"50" doc:"Empty or absent: issued from the sales.customer code series"`
+	Code      string                 `json:"code,omitempty" maxLength:"50" doc:"Empty or absent: issued from the sales.customer code series"`
+	PartnerID *int64                 `json:"partner_id,omitempty" doc:"An existing partner"`
+	Partner   *partner.PartnerFields `json:"partner,omitempty" doc:"A new partner's identity"`
 	CustomerFields
 }
 
+// CustomerUpdate saves a customer and, when given, its partner's identity; an unchanged
+// identity needs no partner edit.
+type CustomerUpdate struct {
+	CustomerFields
+	Partner *partner.PartnerFields `json:"partner,omitempty" doc:"Absent: the identity is left as it is"`
+}
+
 type Customer struct {
-	ID   int64  `json:"id"`
-	Code string `json:"code"`
+	ID          int64                 `json:"id"`
+	Code        string                `json:"code"`
+	PartnerID   int64                 `json:"partner_id"`
+	PartnerCode string                `json:"partner_code"`
+	Partner     partner.PartnerFields `json:"partner"`
 	CustomerFields
 	OrgUnitName string `json:"org_unit_name"`
 	// edit, attach.
 	AllowedActions []string `json:"allowed_actions" nullable:"false"`
+	// The partner's allowed_actions: edit means the identity may change.
+	PartnerActions []string `json:"partner_actions" nullable:"false"`
 }
 
 type CustomerFilter struct {
 	Q      string `query:"q" maxLength:"100"`
 	Active string `query:"active" enum:"true,false"`
 	Sort   string `query:"sort" enum:"code,-code,name,-name" default:"code"`
+	// The customers of one partner.
+	PartnerID int64 `query:"partner_id"`
 	platform.Paging
 }
 

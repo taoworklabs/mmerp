@@ -5,9 +5,10 @@ import { useTranslation } from 'react-i18next'
 import { api, unwrap, type Doc, type DocFields, type LineInput } from '@/shared/api/sales'
 import { useDocumentMutation } from '@/shared/document'
 import { formatDecimal, formatNumber } from '@/shared/i18n'
+import { ItemPicker } from '@/shared/master'
 import { DateField, DecimalField, Form, FormActions, FormRow, FormSection, LinesTable, LinesTotals, MoneyField, OrgUnitField, SelectField, TextField, type ErrorFields, type LineColumn } from '@/shared/ui/form'
 import { docTypeOf, pathOf, type Kind } from '../keys'
-import { CustomerField, ItemField } from './pickers'
+import { CustomerField } from './pickers'
 import { useVatOptions } from './vat'
 
 type LineValues = {
@@ -137,7 +138,7 @@ export function DocForm({ kind, doc, onCreated }: Props) {
       required: true,
       width: 200,
       cell: (i, bare, line) => (
-        <ItemField
+        <ItemPicker
           name={`lines.${i}.item_id`}
           label={t('sales.line.item', { n: i + 1 })}
           bare={bare}

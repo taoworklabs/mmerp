@@ -7,6 +7,7 @@ import (
 	"github.com/taoworklabs/mmerp/internal/core/printing"
 	"github.com/taoworklabs/mmerp/internal/core/record"
 	"github.com/taoworklabs/mmerp/internal/core/setting"
+	"github.com/taoworklabs/mmerp/internal/shared/partner"
 )
 
 type Deps struct {
@@ -16,4 +17,5 @@ type Deps struct {
 	Setting   *setting.Service
 	Printing  *printing.Service
 	Numbering *numbering.Service
+	Partner   *partner.Service
 }

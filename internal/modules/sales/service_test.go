@@ -19,6 +19,8 @@ import (
 	"github.com/taoworklabs/mmerp/internal/core/setting"
 	"github.com/taoworklabs/mmerp/internal/modules/sales"
 	"github.com/taoworklabs/mmerp/internal/platform"
+	"github.com/taoworklabs/mmerp/internal/shared/item"
+	"github.com/taoworklabs/mmerp/internal/shared/partner"
 )
 
 // fixture: company C with sales teams A and B, a staff user and a manager in A, one
@@ -34,6 +36,8 @@ type fixture struct {
 	rec      *record.Service
 	appr     *approval.Service
 	sales    *sales.Service
+	items    *item.Service
+	partners *partner.Service
 	num      *numbering.Service
 	c, a, b  int64
 	customer int64
@@ -45,8 +49,9 @@ func newFixture(t *testing.T) *fixture {
 	t.Helper()
 	core := coretest.New(t, "sales")
 	ctx, admin, ids, set, rec, num := core.Ctx, core.Admin, core.IAM, core.Setting, core.Record, core.Numbering
-	s := sales.NewService(sales.Deps{IAM: ids, Record: rec, Audit: core.Audit, Setting: set, Printing: core.Printing, Numbering: num})
-	f := &fixture{t: t, core: core, ctx: ctx, admin: admin, set: set, rec: rec, appr: core.Approval, sales: s, num: num}
+	partners := partner.NewService(partner.Deps{IAM: ids, Record: rec, Audit: core.Audit, Numbering: num})
+	s := sales.NewService(sales.Deps{IAM: ids, Record: rec, Audit: core.Audit, Setting: set, Printing: core.Printing, Numbering: num, Partner: partners})
+	f := &fixture{t: t, core: core, ctx: ctx, admin: admin, set: set, rec: rec, appr: core.Approval, sales: s, num: num, partners: partners}
 	f.c = must(t)(ids.CreateOrgUnit(admin, iam.OrgUnitInput{Kind: "company", Name: "C"}))
 	f.a = must(t)(ids.CreateOrgUnit(admin, iam.OrgUnitInput{ParentID: &f.c, Kind: "department", Name: "A"}))
 	f.b = must(t)(ids.CreateOrgUnit(admin, iam.OrgUnitInput{ParentID: &f.c, Kind: "department", Name: "B"}))
@@ -56,14 +61,18 @@ func newFixture(t *testing.T) *fixture {
 		for _, g := range grants {
 			role, unit, _ := strings.Cut(g, "@")
 			u := map[string]*int64{"A": &f.a, "B": &f.b, "*": nil}[unit]
-			must(t)(ids.GrantRole(admin, id, "sales", role, u))
+			product := "sales"
+			if p, r, ok := strings.Cut(role, "."); ok {
+				product, role = p, r
+			}
+			must(t)(ids.GrantRole(admin, id, product, role, u))
 		}
 		return platform.WithActor(ctx, id)
 	}
-	f.staff, f.manager = f.ctxFor("staff", "staff@A"), f.ctxFor("manager", "manager@A")
-	catalog := f.ctxFor("catalog", "catalog_admin@*")
-	f.pen = must(t)(s.CreateItem(catalog, sales.NewItem{Code: "BUT", ItemFields: sales.ItemFields{Name: "Bút bi", Unit: "hộp", Price: 10_005, VatRate: "8", Active: true}}))
-	f.fix = must(t)(s.CreateItem(catalog, sales.NewItem{Code: "SUA", ItemFields: sales.ItemFields{Name: "Sửa chữa", Unit: "giờ", Price: 250_000, VatRate: "10", Active: true}}))
+	f.staff, f.manager = f.ctxFor("staff", "staff@A", "partner.editor@A"), f.ctxFor("manager", "manager@A", "partner.editor@A")
+	f.items = item.NewService(item.Deps{IAM: ids, Audit: core.Audit, Numbering: num})
+	f.pen = must(t)(f.items.CreateItem(admin, item.NewItem{Code: "BUT", ItemFields: item.ItemFields{Name: "Bút bi", Unit: "hộp", Price: 10_005, VatRate: "8", Active: true}}))
+	f.fix = must(t)(f.items.CreateItem(admin, item.NewItem{Code: "SUA", ItemFields: item.ItemFields{Name: "Sửa chữa", Unit: "giờ", Price: 250_000, VatRate: "10", Active: true}}))
 	f.customer = must(t)(s.CreateCustomer(f.staff, customer("KH1", f.a)))
 	return f
 }
@@ -88,8 +97,13 @@ func (f *fixture) check(err error) {
 func str(s string) *string { return &s }
 
 func customer(code string, unit int64) sales.NewCustomer {
-	return sales.NewCustomer{Code: code, CustomerFields: sales.CustomerFields{Name: "Công ty " + code, TaxCode: str("0101234567"), Address: str("1 Lê Lợi, Huế"),
-		PaymentTerms: str("30 ngày"), OrgUnitID: unit, Active: true}}
+	return sales.NewCustomer{Code: code, Partner: &partner.PartnerFields{Name: "Công ty " + code, Address: str("1 Lê Lợi, Huế")},
+		CustomerFields: sales.CustomerFields{PaymentTerms: str("30 ngày"), OrgUnitID: unit, Active: true}}
+}
+
+// upd is the edit that saves c as it is.
+func upd(c sales.NewCustomer) sales.CustomerUpdate {
+	return sales.CustomerUpdate{CustomerFields: c.CustomerFields, Partner: c.Partner}
 }
 
 var requests atomic.Int64
@@ -166,7 +180,7 @@ func contract(t *testing.T, docType string) {
 		deactivate := func(*testing.T, record.Ref) {
 			c := customer("KH1", f.a)
 			c.Active = false
-			f.check(f.sales.UpdateCustomer(f.staff, f.customer, c.CustomerFields))
+			f.check(f.sales.UpdateCustomer(f.staff, f.customer, upd(c)))
 		}
 		fields := func(date string) sales.DocFields {
 			fl := f.fields(date)
@@ -206,8 +220,8 @@ func TestOrderRecordContract(t *testing.T) { contract(t, "sales.order") }
 // A customer belongs to a team: other teams neither list nor open it, even by id.
 func TestCustomerScope(t *testing.T) {
 	f := newFixture(t)
-	staffB := f.ctxFor("staff_b", "staff@B")
-	viewer := f.ctxFor("viewer", "viewer@*")
+	staffB := f.ctxFor("staff_b", "staff@B", "partner.editor@B")
+	viewer := f.ctxFor("viewer", "viewer@*", "partner.viewer@*")
 	nobody := f.ctxFor("nobody")
 
 	if _, err := f.sales.CreateCustomer(f.staff, customer("KHB", f.b)); !errors.Is(err, platform.ErrForbidden) {
@@ -220,32 +234,32 @@ func TestCustomerScope(t *testing.T) {
 	if _, err := f.sales.Customer(staffB, f.customer); !errors.Is(err, platform.ErrNotFound) {
 		t.Fatalf("B opens A's customer: %v", err)
 	}
-	if err := f.sales.UpdateCustomer(staffB, f.customer, customer("KH1", f.b).CustomerFields); !errors.Is(err, platform.ErrNotFound) {
+	if err := f.sales.UpdateCustomer(staffB, f.customer, upd(customer("KH1", f.b))); !errors.Is(err, platform.ErrNotFound) {
 		t.Fatalf("B edits A's customer: %v", err)
 	}
 	if l, _ := f.sales.Customers(nobody, sales.CustomerFilter{Sort: "code", Paging: platform.Paging{Page: 1, PageSize: 50}}); l.Total != 0 {
 		t.Fatalf("nobody lists %+v", l)
 	}
 	c, err := f.sales.Customer(viewer, f.customer)
-	if err != nil || len(c.AllowedActions) != 0 || c.Name != "Công ty KH1" {
+	if err != nil || len(c.AllowedActions) != 0 || c.Partner.Name != "Công ty KH1" {
 		t.Fatalf("viewer: %+v %v", c, err)
 	}
-	if err := f.sales.UpdateCustomer(viewer, f.customer, customer("KH1", f.a).CustomerFields); !errors.Is(err, platform.ErrForbidden) {
+	if err := f.sales.UpdateCustomer(viewer, f.customer, upd(customer("KH1", f.a))); !errors.Is(err, platform.ErrForbidden) {
 		t.Fatalf("viewer edits: %v", err)
 	}
 	// Moving a customer needs edit at both ends.
-	if err := f.sales.UpdateCustomer(f.staff, f.customer, customer("KH1", f.b).CustomerFields); !errors.Is(err, platform.ErrForbidden) {
+	if err := f.sales.UpdateCustomer(f.staff, f.customer, upd(customer("KH1", f.b))); !errors.Is(err, platform.ErrForbidden) {
 		t.Fatalf("move to B: %v", err)
 	}
 	if c, _ := f.sales.Customer(f.staff, f.customer); !slices.Equal(c.AllowedActions, []string{"edit"}) {
 		t.Fatalf("staff actions %v", c.AllowedActions)
 	}
 	// An org unit that does not exist is not found, for a tenant-wide editor too.
-	everywhere := f.ctxFor("staff_all", "staff@*")
+	everywhere := f.ctxFor("staff_all", "staff@*", "partner.editor@*")
 	if _, err := f.sales.CreateCustomer(everywhere, customer("KH9", 999999)); !errors.Is(err, platform.ErrNotFound) {
 		t.Fatalf("create at a missing unit: %v", err)
 	}
-	if err := f.sales.UpdateCustomer(everywhere, f.customer, customer("KH1", 999999).CustomerFields); !errors.Is(err, platform.ErrNotFound) {
+	if err := f.sales.UpdateCustomer(everywhere, f.customer, upd(customer("KH1", 999999))); !errors.Is(err, platform.ErrNotFound) {
 		t.Fatalf("move to a missing unit: %v", err)
 	}
 
@@ -254,7 +268,7 @@ func TestCustomerScope(t *testing.T) {
 	if _, err := f.sales.Customer(off, f.customer); err != nil {
 		t.Fatal(err)
 	}
-	wantCode(t, f.sales.UpdateCustomer(off, f.customer, customer("KH1", f.a).CustomerFields), "product_not_enabled")
+	wantCode(t, f.sales.UpdateCustomer(off, f.customer, upd(customer("KH1", f.a))), "product_not_enabled")
 	wantCode(t, must2(f.sales.CreateCustomer(off, customer("KH2", f.a))), "product_not_enabled")
 	if a, _ := f.sales.CustomerActions(off); len(a.AllowedActions) != 0 {
 		t.Fatalf("actions with Sales off: %v", a)
@@ -263,7 +277,7 @@ func TestCustomerScope(t *testing.T) {
 
 func must2(_ int64, err error) error { return err }
 
-// A customer or item saved without a code gets the next one of its series, past typed codes;
+// A customer saved without a code gets the next one of its series, past typed codes;
 // the code then never changes.
 func TestIssuedCodes(t *testing.T) {
 	f := newFixture(t)
@@ -281,58 +295,13 @@ func TestIssuedCodes(t *testing.T) {
 	if c := code(f.staff, must(t)(f.sales.CreateCustomer(f.staff, customer("", f.a)))); c != "KH00003" {
 		t.Fatalf("issued past a typed code: %q", c)
 	}
-	f.check(f.sales.UpdateCustomer(f.staff, first, customer("", f.a).CustomerFields))
+	f.check(f.sales.UpdateCustomer(f.staff, first, upd(customer("", f.a))))
 	if c := code(f.staff, first); c != "KH00001" {
 		t.Fatalf("code after edit: %q", c)
 	}
 	f.check(f.num.SetPrefix(f.admin, "sales.customer", "CUS-"))
 	if c := code(f.staff, must(t)(f.sales.CreateCustomer(f.staff, customer("", f.a)))); c != "CUS-00004" {
 		t.Fatalf("after a prefix change: %q", c)
-	}
-
-	catalog := f.ctxFor("catalog2", "catalog_admin@*")
-	must(t)(f.sales.CreateItem(catalog, sales.NewItem{Code: "hh00001", ItemFields: sales.ItemFields{Name: "Mực", Unit: "lọ", VatRate: "8", Active: true}}))
-	id := must(t)(f.sales.CreateItem(catalog, sales.NewItem{ItemFields: sales.ItemFields{Name: "Giấy", Unit: "ram", VatRate: "8", Active: true}}))
-	f.check(f.sales.UpdateItem(catalog, id, sales.ItemFields{Name: "Giấy A4", Unit: "ram", VatRate: "8", Active: true}))
-	l, err := f.sales.Items(catalog, sales.ItemFilter{Q: "giấy", Paging: platform.Paging{Page: 1, PageSize: 50}})
-	if err != nil || l.Total != 1 || l.Items[0].Code != "HH00002" || l.Items[0].Name != "Giấy A4" {
-		t.Fatalf("items %+v %v", l, err)
-	}
-}
-
-// The catalogue is tenant-wide: read by any sales user, written only by catalogue admins.
-func TestItems(t *testing.T) {
-	f := newFixture(t)
-	if l, err := f.sales.Items(f.ctxFor("viewer_b", "viewer@B"), sales.ItemFilter{Q: "bút", Paging: platform.Paging{Page: 1, PageSize: 50}}); err != nil || l.Total != 1 {
-		t.Fatalf("viewer of B: %+v %v", l, err)
-	}
-	if _, err := f.sales.Items(f.ctxFor("nobody"), sales.ItemFilter{Paging: platform.Paging{Page: 1, PageSize: 50}}); !errors.Is(err, platform.ErrForbidden) {
-		t.Fatalf("nobody: %v", err)
-	}
-	if _, err := f.sales.CreateItem(f.manager, sales.NewItem{Code: "X", ItemFields: sales.ItemFields{Name: "X", Unit: "cái", VatRate: "0", Active: true}}); !errors.Is(err, platform.ErrForbidden) {
-		t.Fatalf("manager adds an item: %v", err)
-	}
-	catalog := f.ctxFor("catalog2", "catalog_admin@*")
-	wantCode(t, must2(f.sales.CreateItem(catalog, sales.NewItem{Code: "but", ItemFields: sales.ItemFields{Name: "Bút", Unit: "cái", VatRate: "8", Active: true}})), "item_code_taken")
-
-	// The catalogue sorts by code or name, either way; code is the default.
-	must(t)(f.sales.CreateItem(catalog, sales.NewItem{Code: "A1", ItemFields: sales.ItemFields{Name: "Zeta", Unit: "cái", VatRate: "8", Active: true}}))
-	must(t)(f.sales.CreateItem(catalog, sales.NewItem{Code: "Z9", ItemFields: sales.ItemFields{Name: "Alpha", Unit: "cái", VatRate: "8", Active: true}}))
-	codes := func(sort string) []string {
-		l, err := f.sales.Items(catalog, sales.ItemFilter{Sort: sort, Paging: platform.Paging{Page: 1, PageSize: 50}})
-		f.check(err)
-		out := []string{}
-		for _, it := range l.Items {
-			if it.Code == "A1" || it.Code == "Z9" {
-				out = append(out, it.Code)
-			}
-		}
-		return out
-	}
-	for sort, want := range map[string][]string{"": {"A1", "Z9"}, "-code": {"Z9", "A1"}, "name": {"Z9", "A1"}, "-name": {"A1", "Z9"}} {
-		if got := codes(sort); !slices.Equal(got, want) {
-			t.Fatalf("sort %q: %v", sort, got)
-		}
 	}
 }
 
@@ -378,8 +347,8 @@ func TestQuote(t *testing.T) {
 	f.check(f.move(f.staff, "sales.quote", id, record.Posted))
 	// Editing the customer after posting changes nothing on the quotation.
 	c := customer("KH1", f.a)
-	c.Name = "Công ty đổi tên"
-	f.check(f.sales.UpdateCustomer(f.staff, f.customer, c.CustomerFields))
+	c.Partner.Name = "Công ty đổi tên"
+	f.check(f.sales.UpdateCustomer(f.staff, f.customer, upd(c)))
 	if q, _ := f.sales.Quote(f.staff, id); q.Customer.Name != "Công ty KH1" || q.Status != "posted" || !slices.Contains(q.AllowedActions, "create_order") {
 		t.Fatalf("posted quote: %+v", q)
 	}
@@ -628,8 +597,8 @@ func TestCustomerCopiedAtSending(t *testing.T) {
 	f.managerApproves("sales.quote", record.Post)
 	rename := func(name string, active bool) {
 		c := customer("KH1", f.a)
-		c.Name, c.Active = name, active
-		f.check(f.sales.UpdateCustomer(f.staff, f.customer, c.CustomerFields))
+		c.Partner.Name, c.Active = name, active
+		f.check(f.sales.UpdateCustomer(f.staff, f.customer, upd(c)))
 	}
 	fl := f.fields("2026-03-10")
 	fl.Lines[2].DiscountPercent = "15"
@@ -704,5 +673,104 @@ func TestItemRuleRoutesTheQuote(t *testing.T) {
 	f.check(f.move(f.staff, "sales.quote", id2, record.Posted))
 	if q, _ := f.sales.Quote(f.staff, id2); q.Status != "posted" {
 		t.Fatalf("quote without the item: %s", q.Status)
+	}
+}
+
+// Two teams sell to one company: each has its own customer, code and terms, over one partner.
+func TestCustomerOnExistingPartner(t *testing.T) {
+	f := newFixture(t)
+	mine, err := f.sales.Customer(f.staff, f.customer)
+	f.check(err)
+	staffB := f.ctxFor("staff_b", "staff@B", "partner.editor@B")
+	in := sales.NewCustomer{Code: "KHB", PartnerID: &mine.PartnerID, CustomerFields: sales.CustomerFields{OrgUnitID: f.b, Active: true}}
+	id := must(t)(f.sales.CreateCustomer(staffB, in))
+	theirs, err := f.sales.Customer(staffB, id)
+	if err != nil || theirs.Code != "KHB" || theirs.PartnerID != mine.PartnerID || theirs.PartnerCode != mine.PartnerCode ||
+		theirs.Partner.Name != "Công ty KH1" || theirs.PaymentTerms != nil {
+		t.Fatalf("B's customer %+v %v", theirs, err)
+	}
+	l, err := f.sales.Customers(f.admin, sales.CustomerFilter{PartnerID: mine.PartnerID, Sort: "code", Paging: platform.Paging{Page: 1, PageSize: 50}})
+	if err != nil || l.Total != 2 || l.Items[0].Name != "Công ty KH1" {
+		t.Fatalf("by partner %+v %v", l, err)
+	}
+	// Exactly one of an existing partner and a new one.
+	in.Partner = &partner.PartnerFields{Name: "X"}
+	wantCode(t, must2(f.sales.CreateCustomer(staffB, in)), "customer_partner_required")
+	in.Partner, in.PartnerID = nil, nil
+	wantCode(t, must2(f.sales.CreateCustomer(staffB, in)), "customer_partner_required")
+	missing := int64(999999)
+	in.PartnerID = &missing
+	if _, err := f.sales.CreateCustomer(staffB, in); !errors.Is(err, platform.ErrNotFound) {
+		t.Fatalf("missing partner: %v", err)
+	}
+}
+
+func TestCustomerSamePartnerSameUnit(t *testing.T) {
+	f := newFixture(t)
+	c, err := f.sales.Customer(f.staff, f.customer)
+	f.check(err)
+	in := sales.NewCustomer{PartnerID: &c.PartnerID, CustomerFields: sales.CustomerFields{OrgUnitID: f.a, Active: true}}
+	wantCode(t, must2(f.sales.CreateCustomer(f.staff, in)), "customer_exists_for_partner")
+}
+
+// Customer edit alone saves the customer role; changing the identity needs partner edit.
+func TestCustomerEditWithoutPartnerEdit(t *testing.T) {
+	f := newFixture(t)
+	ctx := f.ctxFor("staff_only", "staff@A")
+	c := customer("KH1", f.a)
+	c.PaymentTerms = str("60 ngày")
+	f.check(f.sales.UpdateCustomer(ctx, f.customer, upd(c)))
+	if got, _ := f.sales.Customer(ctx, f.customer); *got.PaymentTerms != "60 ngày" || slices.Contains(got.PartnerActions, "edit") {
+		t.Fatalf("terms or partner actions %+v", got)
+	}
+	if got, _ := f.sales.Customer(f.staff, f.customer); !slices.Contains(got.PartnerActions, "edit") {
+		t.Fatalf("a partner editor's partner actions %v", got.PartnerActions)
+	}
+	c.Partner.Name = "Đổi tên"
+	wantCode(t, f.sales.UpdateCustomer(ctx, f.customer, upd(c)), "forbidden")
+	if got, _ := f.sales.Customer(ctx, f.customer); got.Partner.Name != "Công ty KH1" {
+		t.Fatalf("name %+v", got)
+	}
+	// Creating with a new identity needs it too.
+	wantCode(t, must2(f.sales.CreateCustomer(ctx, customer("KH2", f.a))), "forbidden")
+}
+
+func TestCustomerWriteSalesDisabled(t *testing.T) {
+	f := newFixture(t)
+	off := platform.WithProducts(f.staff, nil)
+	wantCode(t, must2(f.sales.CreateCustomer(off, customer("KH2", f.a))), "product_not_enabled")
+	wantCode(t, f.sales.UpdateCustomer(off, f.customer, upd(customer("KH1", f.a))), "product_not_enabled")
+}
+
+// Sending copies the partner's identity and the customer's code.
+func TestDocumentCopiesPartnerIdentity(t *testing.T) {
+	f := newFixture(t)
+	id := must(t)(f.sales.CreateQuote(f.staff, sales.NewDoc{RequestID: newRequest(), DocFields: f.fields("2026-03-10")}))
+	c, err := f.sales.Customer(f.staff, f.customer)
+	f.check(err)
+	f.check(f.partners.Update(f.staff, c.PartnerID, partner.PartnerFields{Name: "Công ty Mới", TaxCode: str("0312345678"), Address: str("5 Nguyễn Huệ")}))
+	f.check(f.move(f.staff, "sales.quote", id, record.Posted))
+	q, err := f.sales.Quote(f.staff, id)
+	f.check(err)
+	if q.Customer.Code != "KH1" || q.Customer.Name != "Công ty Mới" || *q.Customer.TaxCode != "0312345678" || *q.Customer.Address != "5 Nguyễn Huệ" {
+		t.Fatalf("copied %+v", q.Customer)
+	}
+}
+
+// Saving the role alone leaves the identity as another user left it.
+func TestCustomerRoleSaveKeepsPartner(t *testing.T) {
+	f := newFixture(t)
+	ctx := f.ctxFor("staff_only", "staff@A")
+	c, err := f.sales.Customer(ctx, f.customer)
+	f.check(err)
+	moved := c.Partner
+	moved.Address = str("9 Trần Phú, Đà Nẵng")
+	f.check(f.partners.Update(f.staff, c.PartnerID, moved))
+	terms := c.CustomerFields
+	terms.PaymentTerms = str("45 ngày")
+	f.check(f.sales.UpdateCustomer(ctx, f.customer, sales.CustomerUpdate{CustomerFields: terms}))
+	got, err := f.sales.Customer(ctx, f.customer)
+	if err != nil || *got.PaymentTerms != "45 ngày" || *got.Partner.Address != "9 Trần Phú, Đà Nẵng" {
+		t.Fatalf("customer %+v %v", got, err)
 	}
 }

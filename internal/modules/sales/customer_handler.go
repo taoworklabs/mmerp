@@ -17,7 +17,7 @@ type customerInput struct{ Body NewCustomer }
 
 type updateCustomerInput struct {
 	ID   int64 `path:"id"`
-	Body CustomerFields
+	Body CustomerUpdate
 }
 
 func registerCustomerHandlers(api huma.API, s *Service) {

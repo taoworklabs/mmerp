@@ -12,6 +12,7 @@
   ["shared-not-to-areas", "shared/reexport.ts"],
   ["area-only-through-index", "shared/reexport.ts"],
   ["shared-not-to-areas", "shared/to-core.ts"],
+  ["master-api-only-core", "shared/master/sales-api.ts"],
   ["area-only-through-index", "app/deep.ts"],
   ["entry-only-to-app", "main.ts"],
   ["entry-only-to-app", "main-alias.ts"]

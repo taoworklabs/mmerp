@@ -15,15 +15,9 @@ const (
 	PermQuoteEdit = "sales.quote.edit"
 	PermOrderView = "sales.order.view"
 	PermOrderEdit = "sales.order.edit"
-	// The item catalogue is tenant-wide: viewing needs the permission anywhere, managing tenant-wide.
-	PermItemView   = "sales.item.view"
-	PermItemManage = "sales.item.manage"
 	// Approval rules of Sales document types; core's approval checks it by name.
 	PermApprovalManage = "sales.approval.manage"
 )
-
-// VatRates are the VAT rates a line may carry; none is not subject to VAT.
-var VatRates = []string{"none", "0", "5", "8", "10"}
 
 // Actions is what the actor may do before picking a record: create.
 type Actions struct {
@@ -32,7 +26,8 @@ type Actions struct {
 
 var (
 	ErrCustomerCodeTaken = &platform.Error{Status: http.StatusConflict, Code: "customer_code_taken"}
-	ErrItemCodeTaken     = &platform.Error{Status: http.StatusConflict, Code: "item_code_taken"}
+	ErrCustomerExists    = &platform.Error{Status: http.StatusConflict, Code: "customer_exists_for_partner"}
+	ErrPartnerRequired   = &platform.Error{Status: http.StatusUnprocessableEntity, Code: "customer_partner_required"}
 	ErrCustomerInactive  = &platform.Error{Status: http.StatusUnprocessableEntity, Code: "customer_inactive"}
 	ErrValidUntil        = &platform.Error{Status: http.StatusUnprocessableEntity, Code: "quote_valid_until_before_date"}
 	ErrDeliveryDate      = &platform.Error{Status: http.StatusUnprocessableEntity, Code: "order_delivery_before_date"}

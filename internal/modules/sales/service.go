@@ -1,4 +1,4 @@
-// Package sales owns customers, the item catalogue, quotations and sales orders.
+// Package sales owns customers, quotations and sales orders.
 package sales
 
 import (
@@ -19,10 +19,8 @@ import (
 
 const (
 	customerType = "sales.customer"
-	// The code series of items; an item is not a record type.
-	itemCodeSeries = "sales.item"
-	quoteType      = "sales.quote"
-	orderType      = "sales.order"
+	quoteType    = "sales.quote"
+	orderType    = "sales.order"
 
 	actionCreateOrder record.Action = "create_order"
 )
@@ -58,21 +56,19 @@ func NewService(d Deps) *Service {
 	}
 	s := &Service{d: d}
 	data.RegisterConstraints(data.Constraints{
-		"sales.customers_code_key": ErrCustomerCodeTaken,
-		"sales.items_code_key":     ErrItemCodeTaken,
+		"sales.customers_code_key":             ErrCustomerCodeTaken,
+		"sales.customers_partner_org_unit_key": ErrCustomerExists,
 	})
-	work := []string{PermCustomerView, PermCustomerEdit, PermQuoteView, PermQuoteEdit, PermOrderView, PermOrderEdit, PermItemView}
+	work := []string{PermCustomerView, PermCustomerEdit, PermQuoteView, PermQuoteEdit, PermOrderView, PermOrderEdit}
 	d.IAM.RegisterRoles("sales", map[string][]string{
 		// The same permissions under two names, so approval rules can route steps to managers.
 		"staff":   work,
 		"manager": work,
-		"viewer":  {PermCustomerView, PermQuoteView, PermOrderView, PermItemView},
-		// The catalogue and the approval rules apply to every org unit.
-		"catalog_admin":  {PermItemView, PermItemManage},
+		"viewer":  {PermCustomerView, PermQuoteView, PermOrderView},
+		// The approval rules apply to every org unit.
 		"approval_admin": {PermApprovalManage},
-	}, "catalog_admin", "approval_admin")
+	}, "approval_admin")
 	d.Numbering.RegisterSeries(customerType, "sales", "KH")
-	d.Numbering.RegisterSeries(itemCodeSeries, "sales", "HH")
 	// A customer's files are as open as the customer.
 	d.Record.Register(record.Type{Code: customerType, Product: "sales", Kind: record.Catalog,
 		Perms:   record.Perms{View: PermCustomerView, Edit: PermCustomerEdit, ViewFiles: PermCustomerView, Attach: PermCustomerEdit},

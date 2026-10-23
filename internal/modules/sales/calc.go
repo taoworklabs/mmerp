@@ -1,12 +1,11 @@
 package sales
 
 import (
-	"slices"
-
 	"github.com/shopspring/decimal"
 
 	"github.com/taoworklabs/mmerp/internal/core/record"
 	"github.com/taoworklabs/mmerp/internal/platform"
+	"github.com/taoworklabs/mmerp/internal/shared/tax"
 )
 
 var (
@@ -18,14 +17,14 @@ var (
 // amounts are what the server computes for one line.
 type amounts struct{ amount, discount, vat int64 }
 
-// compute works out every line's amounts and the document totals. VAT rounds per line, or
-// with RoundTotal once per rate over the document, allocated back to that rate's lines.
+// compute works out every line's amounts and the document totals; VAT rounding is tax.VAT's.
 // It also returns the largest discount, the max_discount approval field: a line priced below
 // its catalogue price (list, 0 for none) counts that cut as discount, so lowering the unit
 // price never slips past a discount rule.
 func compute(lines []LineInput, list []int64, mode platform.Rounding) ([]amounts, Totals, decimal.Decimal, error) {
 	out := make([]amounts, len(lines))
-	vats := make([]decimal.Decimal, len(lines)) // unrounded
+	nets := make([]int64, len(lines))
+	rates := make([]string, len(lines))
 	maxDiscount := decimal.Zero
 	for i, l := range lines {
 		qty, ok := record.ParseNumber(l.Quantity)
@@ -36,7 +35,7 @@ func compute(lines []LineInput, list []int64, mode platform.Rounding) ([]amounts
 		if !ok || pct.IsNegative() || pct.GreaterThan(hundred) {
 			return nil, Totals{}, maxDiscount, errLine("invalid_discount", i+1)
 		}
-		if !slices.Contains(VatRates, l.VatRate) {
+		if !tax.Valid(l.VatRate) {
 			return nil, Totals{}, maxDiscount, errLine("invalid_vat_rate", i+1)
 		}
 		maxDiscount = decimal.Max(maxDiscount, pct)
@@ -52,25 +51,10 @@ func compute(lines []LineInput, list []int64, mode platform.Rounding) ([]amounts
 		a := platform.Round(gross)
 		d := platform.Round(decimal.NewFromInt(a).Mul(pct).Div(hundred))
 		out[i] = amounts{amount: a, discount: d}
-		vats[i] = decimal.NewFromInt(a - d).Mul(vatRate(l.VatRate))
+		nets[i], rates[i] = a-d, l.VatRate
 	}
-	if mode == platform.RoundTotal {
-		for _, rate := range VatRates {
-			var idx []int
-			var parts []decimal.Decimal
-			for i, l := range lines {
-				if l.VatRate == rate {
-					idx, parts = append(idx, i), append(parts, vats[i])
-				}
-			}
-			for j, v := range platform.Allocate(parts) {
-				out[idx[j]].vat = v
-			}
-		}
-	} else {
-		for i := range lines {
-			out[i].vat = platform.Round(vats[i])
-		}
+	for i, v := range tax.VAT(nets, rates, mode) {
+		out[i].vat = v
 	}
 	var t Totals
 	for _, a := range out {
@@ -80,12 +64,4 @@ func compute(lines []LineInput, list []int64, mode platform.Rounding) ([]amounts
 	}
 	t.Total = t.Subtotal - t.DiscountTotal + t.VatTotal
 	return out, t, maxDiscount, nil
-}
-
-// vatRate is a rate code as a fraction; none (not subject to VAT) is zero.
-func vatRate(code string) decimal.Decimal {
-	if code == "none" {
-		return decimal.Zero
-	}
-	return decimal.RequireFromString(code).Div(hundred)
 }

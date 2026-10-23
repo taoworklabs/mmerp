@@ -155,7 +155,8 @@ This tree is not a business model. Which store a warehouse belongs to, which dep
 
 - Each table has exactly one owning module and sits in that module's schema. Only the owning module's service may write to the table.
 - No module creates sign-in accounts itself. Business person records (employees, customers…) are owned by business modules and link to `iam.users.id` when needed.
-- **Promoting an entity to shared.** When an entity of one product is about to be used by a second product, move it to `shared/` *before* the second product starts using it. This means moving the package and moving the table to a new schema (`ALTER TABLE … SET SCHEMA`); ids and foreign keys stay unchanged.
+- **Promoting an entity to shared.** When an entity of one product is about to be used by a second product, move it to `shared/` *before* the second product starts using it. This means moving the package and moving the table to a new schema (`ALTER TABLE … SET SCHEMA`); ids and foreign keys stay unchanged. When the entity has product-specific fields or ownership, split identity from the product's role instead (`shared/partner` holds identity, `sales.customers` is Sales' role over it): `SET SCHEMA` alone cannot make one company both customer and supplier.
+- **Shared namespaces.** A `shared` module may own roles, permissions and record types under its own namespace (`partner.`, `item.`), as `core` does with `core.`; a namespace is not a product. Its record types set `Shared` (never refused by `ProductGate`, ignored by `products_with_data`) and, with no org-unit scope, `Anywhere` (a permission held at any org unit covers every record; `Locate` returns org unit 0). No role grants another namespace's permissions, so a product's users also get the shared roles they need (`partner.viewer`, `item.viewer`, ...) from their own role tables.
 
 ## Data access
 
@@ -169,7 +170,7 @@ err = store.DeleteLines.Run(ctx, docID)
 `Run` takes the connection from `ctx`, names the query in the logs and normalizes the error. `pgx.ErrNoRows` passes through unchanged.
 
 - **Filterable, paginated lists** are a `data.List` over a `-- data:base` query: scope rule, search columns, sorts and tiebreak are declared once, filters are `data.Eq/Gte/Lte/In/…` conditions, and the scope comes from `iam.DataScope`. Dynamic SQL is built only from code-declared fragments (`data.SQL(…).Arg(v)`).
-- **Constraints with one meaning everywhere** are mapped once, in `NewService`, with `data.RegisterConstraints` (`"sales.items_code_key": ErrItemCodeTaken`). A constraint whose meaning depends on the caller stays unmapped and keeps `platform.Violates` at its call site.
+- **Constraints with one meaning everywhere** are mapped once, in `NewService`, with `data.RegisterConstraints` (`"item.items_code_key": ErrCodeTaken`). A constraint whose meaning depends on the caller stays unmapped and keeps `platform.Violates` at its call site.
 - **Many rows at once** are one statement (`INSERT … SELECT unnest(@a::…[]), …`), not one call per row.
 
 ## Transactions

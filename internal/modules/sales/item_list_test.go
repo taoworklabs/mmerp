@@ -5,21 +5,21 @@ import (
 	"slices"
 	"testing"
 
+	"github.com/taoworklabs/mmerp/internal/core/record"
 	"github.com/taoworklabs/mmerp/internal/modules/sales"
-	"github.com/taoworklabs/mmerp/internal/platform"
+	"github.com/taoworklabs/mmerp/internal/shared/item"
 )
 
 // itemsFixture adds 45 items beyond the fixture's two: codes I001..I045, retired
 // every seventh, so the item picker has more than its 20-row limit to choose from.
 func itemsFixture(t *testing.T, f *fixture) []int64 {
 	t.Helper()
-	catalog := f.ctxFor("catalog_items", "catalog_admin@*")
 	vats := []string{"none", "0", "5", "8", "10"}
 	ids := make([]int64, 45)
 	for i := 1; i <= 45; i++ {
-		ids[i-1] = must(t)(f.sales.CreateItem(catalog, sales.NewItem{
+		ids[i-1] = must(t)(f.items.CreateItem(f.admin, item.NewItem{
 			Code: fmt.Sprintf("I%03d", i),
-			ItemFields: sales.ItemFields{
+			ItemFields: item.ItemFields{
 				Name: fmt.Sprintf("Hàng %03d", i), Unit: "cái", Price: int64(i * 1000),
 				VatRate: vats[i%len(vats)], Active: i%7 != 0,
 			},
@@ -28,17 +28,11 @@ func itemsFixture(t *testing.T, f *fixture) []int64 {
 	return ids
 }
 
-// A "%" in the search matches a literal percent sign, not everything: the
-// engine escapes LIKE metacharacters.
-func TestItemListSearchLiteralPercent(t *testing.T) {
-	f := newFixture(t)
-	l, err := f.sales.Items(f.ctxFor("viewer_pct", "viewer@A"), sales.ItemFilter{Q: "%", Sort: "code", Paging: platform.Paging{Page: 1, PageSize: 20}})
-	if err != nil {
-		t.Fatal(err)
-	}
-	if l.Total != 0 || len(l.Items) != 0 {
-		t.Fatalf("q %q matched %d, want 0", "%", l.Total)
-	}
+func (f *fixture) itemOptions(q string, ids ...int64) []record.FieldOption {
+	f.t.Helper()
+	out, err := f.appr.FieldOptions(f.ctxFor(fmt.Sprintf("appr_%d", requests.Add(1)), "approval_admin@*"), "sales.quote", "items", q, ids)
+	f.check(err)
+	return out
 }
 
 // TestItemOptionsUnchanged pins itemOptions, the approval item picker: it still
@@ -46,17 +40,11 @@ func TestItemListSearchLiteralPercent(t *testing.T) {
 func TestItemOptionsUnchanged(t *testing.T) {
 	f := newFixture(t)
 	ids := itemsFixture(t, f)
-	admin := f.ctxFor("appr_admin", "approval_admin@*")
-
 	options := func(q string) []int64 {
 		t.Helper()
-		out, err := f.appr.FieldOptions(admin, "sales.quote", "items", q, nil)
-		if err != nil {
-			t.Fatal(err)
-		}
-		got := make([]int64, len(out))
-		for i, o := range out {
-			got[i] = o.ID
+		var got []int64
+		for _, o := range f.itemOptions(q) {
+			got = append(got, o.ID)
 		}
 		return got
 	}
@@ -72,5 +60,23 @@ func TestItemOptionsUnchanged(t *testing.T) {
 	// A fragment matching only a retired item (i = 7, retired since 7 mod 7 == 0).
 	if want := []int64{ids[6]}; !slices.Equal(options("i007"), want) {
 		t.Fatalf("q=i007: got %v, want %v", options("i007"), want)
+	}
+}
+
+// An item of the shared catalogue goes on a quotation and shows in the "items"
+// approval field, by search and by id.
+func TestItemsApprovalFieldAfterMove(t *testing.T) {
+	f := newFixture(t)
+	id := must(t)(f.items.CreateItem(f.admin, item.NewItem{Code: "MUC", ItemFields: item.ItemFields{Name: "Mực in", Unit: "lọ", Price: 5000, VatRate: "8", Active: true}}))
+	fl := f.fields("2026-03-10")
+	fl.Lines = append(fl.Lines, fl.Lines[0])
+	fl.Lines[len(fl.Lines)-1].ItemID = id
+	must(t)(f.sales.CreateQuote(f.staff, sales.NewDoc{RequestID: newRequest(), DocFields: fl}))
+	want := []record.FieldOption{{ID: id, Code: "MUC", Name: "Mực in"}}
+	if got := f.itemOptions("muc"); !slices.Equal(got, want) {
+		t.Fatalf("search: %v", got)
+	}
+	if got := f.itemOptions("", id); !slices.Equal(got, want) {
+		t.Fatalf("labels: %v", got)
 	}
 }

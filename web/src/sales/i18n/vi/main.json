@@ -136,5 +136,19 @@
   "sales.customer.latest_order": "Đơn bán gần đây",
   "sales.customer.doc_line": "{{date}} · {{total}} đ",
   "sales.quotes.title_count": "Báo giá ({{count}})",
-  "sales.orders.title_count": "Đơn bán hàng ({{count}})"
+  "sales.orders.title_count": "Đơn bán hàng ({{count}})",
+  "sales.customer.partner": "Đối tác",
+  "sales.customer.existing_partner": "Đối tác có sẵn",
+  "sales.customer.partner_taken_title": "Công ty đã có trong danh sách đối tác",
+  "sales.customer.partner_taken": "Mã số thuế này thuộc đối tác {{code}} · {{name}}. Dùng đối tác này để không tạo trùng công ty.",
+  "sales.customer.use_partner": "Dùng đối tác này",
+  "sales.partner.identity": "Thông tin đối tác",
+  "sales.partner.saved": "Đã lưu đối tác.",
+  "sales.partner.customers": "Khách hàng",
+  "sales.partner.customers_count": "Khách hàng ({{count}})",
+  "sales.partner.no_customers": "Đối tác chưa là khách hàng của đơn vị nào bạn được giao",
+  "sales.customer.field.partner_id": "Đối tác",
+  "sales.customer.field.payment_terms": "Điều kiện thanh toán",
+  "sales.customer.field.org_unit_id": "Đơn vị phụ trách",
+  "sales.customer.field.active": "Đang giao dịch"
 }
