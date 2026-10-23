@@ -9,10 +9,10 @@ import (
 
 func newQ(c platform.Conn) *Queries { return New(c) }
 
-var GetValue = data.One1("setting.GetValue", newQ, (*Queries).GetValue)
-var IsLegalEntity = data.One1("setting.IsLegalEntity", newQ, (*Queries).IsLegalEntity)
-var UnitLegalEntityValue = data.One1("setting.UnitLegalEntityValue", newQ, (*Queries).UnitLegalEntityValue)
-var LegalEntityValues = data.Many1("setting.LegalEntityValues", newQ, (*Queries).LegalEntityValues)
-var GetLegalEntityValue = data.One1("setting.GetLegalEntityValue", newQ, (*Queries).GetLegalEntityValue)
-var SetLegalEntityValue = data.Exec1("setting.SetLegalEntityValue", newQ, (*Queries).SetLegalEntityValue)
-var Today = data.One1("setting.Today", newQ, (*Queries).Today)
+var GetValue = data.OneArg("setting.GetValue", newQ, (*Queries).GetValue)
+var IsLegalEntity = data.OneArg("setting.IsLegalEntity", newQ, (*Queries).IsLegalEntity)
+var UnitLegalEntityValue = data.OneArg("setting.UnitLegalEntityValue", newQ, (*Queries).UnitLegalEntityValue)
+var LegalEntityValues = data.ManyArg("setting.LegalEntityValues", newQ, (*Queries).LegalEntityValues)
+var GetLegalEntityValue = data.OneArg("setting.GetLegalEntityValue", newQ, (*Queries).GetLegalEntityValue)
+var SetLegalEntityValue = data.ExecArg("setting.SetLegalEntityValue", newQ, (*Queries).SetLegalEntityValue)
+var Today = data.OneArg("setting.Today", newQ, (*Queries).Today)

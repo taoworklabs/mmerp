@@ -9,8 +9,8 @@ import (
 
 func newQ(c platform.Conn) *Queries { return New(c) }
 
-var CreateComment = data.One1("discussion.CreateComment", newQ, (*Queries).CreateComment)
-var ListComments = data.Many1("discussion.ListComments", newQ, (*Queries).ListComments)
-var DeleteRecordComments = data.Exec1("discussion.DeleteRecordComments", newQ, (*Queries).DeleteRecordComments)
-var UsersByLogin = data.Many1("discussion.UsersByLogin", newQ, (*Queries).UsersByLogin)
-var Users = data.Many0("discussion.Users", newQ, (*Queries).Users)
+var CreateComment = data.OneArg("discussion.CreateComment", newQ, (*Queries).CreateComment)
+var ListComments = data.ManyArg("discussion.ListComments", newQ, (*Queries).ListComments)
+var DeleteRecordComments = data.ExecArg("discussion.DeleteRecordComments", newQ, (*Queries).DeleteRecordComments)
+var UsersByLogin = data.ManyArg("discussion.UsersByLogin", newQ, (*Queries).UsersByLogin)
+var Users = data.Many("discussion.Users", newQ, (*Queries).Users)

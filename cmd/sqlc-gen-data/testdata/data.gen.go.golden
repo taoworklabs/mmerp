@@ -9,12 +9,12 @@ import (
 
 func newQ(c platform.Conn) *Queries { return New(c) }
 
-var CountEmployees = data.One0("hrm.CountEmployees", newQ, (*Queries).CountEmployees)
-var GetEmployee = data.One1("hrm.GetEmployee", newQ, (*Queries).GetEmployee)
-var ListUnits = data.Many0("hrm.ListUnits", newQ, (*Queries).ListUnits)
-var ListEmployeesInUnit = data.Many1("hrm.ListEmployeesInUnit", newQ, (*Queries).ListEmployeesInUnit)
-var PurgeDrafts = data.Exec0("hrm.PurgeDrafts", newQ, (*Queries).PurgeDrafts)
-var RenameEmployee = data.Exec1("hrm.RenameEmployee", newQ, (*Queries).RenameEmployee)
-var ClearSessions = data.ExecRows0("hrm.ClearSessions", newQ, (*Queries).ClearSessions)
-var DeleteEmployee = data.ExecRows1("hrm.DeleteEmployee", newQ, (*Queries).DeleteEmployee)
+var CountEmployees = data.One("hrm.CountEmployees", newQ, (*Queries).CountEmployees)
+var GetEmployee = data.OneArg("hrm.GetEmployee", newQ, (*Queries).GetEmployee)
+var ListUnits = data.Many("hrm.ListUnits", newQ, (*Queries).ListUnits)
+var ListEmployeesInUnit = data.ManyArg("hrm.ListEmployeesInUnit", newQ, (*Queries).ListEmployeesInUnit)
+var PurgeDrafts = data.Exec("hrm.PurgeDrafts", newQ, (*Queries).PurgeDrafts)
+var RenameEmployee = data.ExecArg("hrm.RenameEmployee", newQ, (*Queries).RenameEmployee)
+var ClearSessions = data.ExecRows("hrm.ClearSessions", newQ, (*Queries).ClearSessions)
+var DeleteEmployee = data.ExecRowsArg("hrm.DeleteEmployee", newQ, (*Queries).DeleteEmployee)
 var EmployeeList = data.NewBase("hrm.EmployeeList", employeeList, []string{"id", "name", "unit_name"}, (*Queries).EmployeeList)

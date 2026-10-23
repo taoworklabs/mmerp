@@ -9,7 +9,7 @@ import (
 
 func newQ(c platform.Conn) *Queries { return New(c) }
 
-var CreateFile = data.Exec1("dataio.CreateFile", newQ, (*Queries).CreateFile)
-var GetFile = data.One1("dataio.GetFile", newQ, (*Queries).GetFile)
-var DeleteExpiredFiles = data.Many0("dataio.DeleteExpiredFiles", newQ, (*Queries).DeleteExpiredFiles)
-var KnownFiles = data.Many1("dataio.KnownFiles", newQ, (*Queries).KnownFiles)
+var CreateFile = data.ExecArg("dataio.CreateFile", newQ, (*Queries).CreateFile)
+var GetFile = data.OneArg("dataio.GetFile", newQ, (*Queries).GetFile)
+var DeleteExpiredFiles = data.Many("dataio.DeleteExpiredFiles", newQ, (*Queries).DeleteExpiredFiles)
+var KnownFiles = data.ManyArg("dataio.KnownFiles", newQ, (*Queries).KnownFiles)

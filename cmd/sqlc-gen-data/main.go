@@ -65,11 +65,10 @@ func generate(in []byte) ([]byte, error) {
 		if !ok {
 			return nil, fmt.Errorf("%s: unsupported cmd %s", name, q.Cmd)
 		}
-		arity := 0
 		if len(q.Params) > 0 {
-			arity = 1 // sqlc-go folds several parameters into one Params struct
+			kind += "Arg" // sqlc-go folds several parameters into one Params struct
 		}
-		fmt.Fprintf(&b, "var %s = data.%s%d(%q, newQ, (*Queries).%s)\n", q.Name, kind, arity, name, q.Name)
+		fmt.Fprintf(&b, "var %s = data.%s(%q, newQ, (*Queries).%s)\n", q.Name, kind, name, q.Name)
 	}
 	return format.Source([]byte(b.String()))
 }
