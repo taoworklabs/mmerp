@@ -84,12 +84,12 @@ linters:
           msg: get the connection from platform.DBFrom(ctx)
         - pattern: ^float(32|64)$
           msg: money is int64 in minor units; rates use shopspring/decimal
-        # Data access. store.New and platform.DBFrom are not switched on for
-        # any module yet; see the exclusions below.
+        # Data access. store.New and platform.DBFrom are switched on per
+        # migrated module; see the exclusions below.
         - pattern: ^store\.New$
-          msg: query through the data engine (internal/platform/data) once your module migrates
+          msg: query through the data engine (internal/platform/data)
         - pattern: ^platform\.DBFrom$
-          msg: get a connection through the data engine once your module migrates; platform.DBFrom is for infrastructure only
+          msg: query through the data engine; platform.DBFrom is for infrastructure only
         - pattern: \.Begin(Tx)?$
           msg: start transactions with platform.InTx; it is the only way to open one
         - pattern: ^pgx\.Begin(Tx)?Func$
@@ -129,17 +129,19 @@ linters:
       - path: ^internal/platform/|^internal/app/|^cmd/|/pgtest/|/coretest/|\.gen\.go$|/queries\.sql\.go$|^internal/core/iam/
         linters: [forbidigo]
         text: Static|GrantAll|GrantUnits
-      # store.New and platform.DBFrom bypass the data engine; not active on any
-      # module yet, since none has migrated (proved only by the lint fixture). A
-      # module drops its own copy of these two lines, narrowed to the directories
-      # still untouched, as it migrates; once every module has moved, both rules
-      # above apply everywhere and these two exclusions go away.
-      - path-except: ^scripts/lint-fixtures/go/
+      # store.New and platform.DBFrom bypass the data engine. They apply to the
+      # modules that have migrated (listed after the fixture path); every other
+      # directory stays excluded until it migrates and joins the list. Tests may
+      # inspect the database directly; generated stores build their own Queries.
+      - path-except: ^scripts/lint-fixtures/go/|^internal/modules/sales/
         linters: [forbidigo]
         text: store\.New
-      - path-except: ^scripts/lint-fixtures/go/
+      - path-except: ^scripts/lint-fixtures/go/|^internal/modules/sales/
         linters: [forbidigo]
         text: platform\.DBFrom
+      - path: _test\.go$|\.gen\.go$|/queries\.sql\.go$
+        linters: [forbidigo]
+        text: store\.New|platform\.DBFrom
 
 formatters:
   enable:

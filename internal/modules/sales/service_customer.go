@@ -16,7 +16,7 @@ import (
 
 // locateCustomer: a customer is owned by its org unit.
 func locateCustomer(ctx context.Context, id int64) (int64, error) {
-	c, err := store.New(platform.DBFrom(ctx)).GetCustomer(ctx, id)
+	c, err := store.GetCustomer.Run(ctx, id)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return 0, platform.ErrNotFound
 	}
@@ -57,7 +57,7 @@ func (s *Service) Customer(ctx context.Context, id int64) (Customer, error) {
 	if err := s.d.Record.Visible(ctx, record.Ref{Type: customerType, ID: id}, record.View); err != nil {
 		return Customer{}, err
 	}
-	c, err := store.New(platform.DBFrom(ctx)).GetCustomer(ctx, id)
+	c, err := store.GetCustomer.Run(ctx, id)
 	if err != nil {
 		return Customer{}, err
 	}
@@ -75,19 +75,15 @@ func (s *Service) CreateCustomer(ctx context.Context, in NewCustomer) (int64, er
 	}
 	var id int64
 	err := platform.InTx(ctx, func(ctx context.Context) error {
-		q := store.New(platform.DBFrom(ctx))
 		var err error
 		if in.Code, err = s.d.Numbering.Code(ctx, customerType, in.Code, customerCodeTaken); err != nil {
 			return err
 		}
-		id, err = q.CreateCustomer(ctx, store.CreateCustomerParams{
+		id, err = store.CreateCustomer.Run(ctx, store.CreateCustomerParams{
 			Code: in.Code, Name: strings.TrimSpace(in.Name), TaxCode: platform.NullText(in.TaxCode),
 			Address: platform.NullText(in.Address), Phone: platform.NullText(in.Phone), Email: platform.NullText(in.Email),
 			ContactName: platform.NullText(in.ContactName), PaymentTerms: platform.NullText(in.PaymentTerms), OrgUnitID: in.OrgUnitID, Active: in.Active,
 		})
-		if platform.Violates(err, "customers_code_key") {
-			return ErrCustomerCodeTaken
-		}
 		if platform.Violates(err, "customers_org_unit_id_fkey") {
 			return platform.ErrNotFound
 		}
@@ -103,14 +99,14 @@ func (s *Service) CreateCustomer(ctx context.Context, in NewCustomer) (int64, er
 func (s *Service) UpdateCustomer(ctx context.Context, id int64, in CustomerFields) error {
 	return platform.InTx(ctx, func(ctx context.Context) error {
 		// Locked first, so the checks and the audit diff see what a concurrent edit left.
-		if err := store.New(platform.DBFrom(ctx)).LockCustomer(ctx, id); err != nil {
+		if err := store.LockCustomer.Run(ctx, id); err != nil {
 			return err
 		}
 		ref := record.Ref{Type: customerType, ID: id}
 		if err := s.d.Record.Visible(ctx, ref, record.View); err != nil {
 			return err
 		}
-		old, err := store.New(platform.DBFrom(ctx)).GetCustomer(ctx, id)
+		old, err := store.GetCustomer.Run(ctx, id)
 		if err != nil {
 			return err
 		}
@@ -120,7 +116,7 @@ func (s *Service) UpdateCustomer(ctx context.Context, id int64, in CustomerField
 		if err := s.require(ctx, PermCustomerEdit, old.OrgUnitID, in.OrgUnitID); err != nil {
 			return err
 		}
-		err = store.New(platform.DBFrom(ctx)).UpdateCustomer(ctx, store.UpdateCustomerParams{
+		err = store.UpdateCustomer.Run(ctx, store.UpdateCustomerParams{
 			ID: id, Name: strings.TrimSpace(in.Name), TaxCode: platform.NullText(in.TaxCode),
 			Address: platform.NullText(in.Address), Phone: platform.NullText(in.Phone), Email: platform.NullText(in.Email),
 			ContactName: platform.NullText(in.ContactName), PaymentTerms: platform.NullText(in.PaymentTerms), OrgUnitID: in.OrgUnitID, Active: in.Active,
@@ -162,5 +158,5 @@ func boolFilter(v string) pgtype.Bool {
 
 // customerCodeTaken reports whether a code is used, for numbering to skip it.
 func customerCodeTaken(ctx context.Context, code string) (bool, error) {
-	return store.New(platform.DBFrom(ctx)).CustomerCodeTaken(ctx, code)
+	return store.CustomerCodeTaken.Run(ctx, code)
 }
