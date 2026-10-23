@@ -20,7 +20,7 @@ type fixture struct {
 
 func newFixture(t *testing.T) *fixture {
 	t.Helper()
-	core := coretest.New(t, "sales")
+	core := coretest.New(t)
 	f := &fixture{core: core, items: item.NewService(item.Deps{IAM: core.IAM, Audit: core.Audit, Numbering: core.Numbering})}
 	f.unit = must(t)(core.IAM.CreateOrgUnit(core.Admin, iam.OrgUnitInput{Kind: "company", Name: "C"}))
 	return f
@@ -118,8 +118,8 @@ func TestItemManageTenantWide(t *testing.T) {
 	}
 }
 
-// Items belong to no product: they stay writable with Sales disabled.
-func TestItemWriteWithSalesDisabled(t *testing.T) {
+// Items belong to no product: they stay writable with every product disabled.
+func TestItemWriteWithProductsDisabled(t *testing.T) {
 	f := newFixture(t)
 	ctx := platform.WithProducts(f.user(t, "cat", "admin"), nil)
 	id := must(t)(f.items.CreateItem(ctx, item.NewItem{ItemFields: fields("X", true)}))

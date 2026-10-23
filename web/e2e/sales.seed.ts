@@ -280,9 +280,12 @@ test('seed Sales on the Demo demo company', async ({ baseURL }) => {
   }
   const users = await get<{ id: number; login: string }[]>(admin, '/api/users')
   const userId = (login: string) => users.find((u) => u.login === login)!.id
+  // Every Sales role also reads the shared item catalogue, at the same unit.
   const grant = async (login: string, role: string, org_unit_id: number | null) => {
-    const r = await admin.post(`/api/users/${userId(login)}/roles`, { data: { product: 'sales', role, org_unit_id } })
-    expect([201, 409], await r.text()).toContain(r.status())
+    for (const [product, r] of [['sales', role], ['item', 'viewer']]) {
+      const res = await admin.post(`/api/users/${userId(login)}/roles`, { data: { product, role: r, org_unit_id } })
+      expect([201, 409], await res.text()).toContain(res.status())
+    }
   }
   await grant('kd.hn', 'staff', team.hn)
   await grant('kd.hn2', 'staff', team.hn)

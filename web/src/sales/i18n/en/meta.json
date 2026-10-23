@@ -26,7 +26,6 @@
   "sales.preview.total": "Total (VND)",
   "sales.error.customer_code_taken": "This customer code is already used.",
   "sales.customer.code_series": "Customers",
-  "sales.error.item_code_taken": "This item code is already used.",
   "sales.error.customer_inactive": "The customer is inactive. Reactivate the customer or choose another one.",
   "sales.error.item_inactive": "Line {{line}}: the item is no longer sold.",
   "sales.error.invalid_quantity": "Line {{line}}: the quantity must be more than 0, with up to 3 decimals.",
