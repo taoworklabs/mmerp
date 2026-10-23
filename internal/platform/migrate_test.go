@@ -100,6 +100,31 @@ func TestMigrateRejectsBadFileName(t *testing.T) {
 	}
 }
 
+func TestMigrateRunsTimestampedAfterNumbered(t *testing.T) {
+	pool := pgtest.Empty(t)
+	err := platform.Migrate(t.Context(), pool, sqlFS(map[string]string{
+		"20261023143005_core_second.sql": `INSERT INTO t VALUES (2);`,
+		"0001_core_first.sql":            `CREATE TABLE t (v int); INSERT INTO t VALUES (1);`,
+	}))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := versions(t, pool); len(got) != 2 || got[1] != "20261023143005_core_second.sql" {
+		t.Fatalf("versions = %v", got)
+	}
+}
+
+// New migrations take a timestamp; the numbered series is closed.
+func TestMigrateRejectsNewNumberedOrMalformedNames(t *testing.T) {
+	for _, name := range []string{"0045_core_late.sql", "045_core_x.sql", "2026102314300_core_x.sql", "20261023143005_Core_x.sql"} {
+		pool := pgtest.Empty(t)
+		err := platform.Migrate(t.Context(), pool, sqlFS(map[string]string{name: `SELECT 1;`}))
+		if err == nil || !strings.Contains(err.Error(), name) {
+			t.Errorf("%s: err = %v", name, err)
+		}
+	}
+}
+
 func TestMigrateConcurrentRunsApplyOnce(t *testing.T) {
 	pool := pgtest.Empty(t)
 	// A non-idempotent statement: running it twice fails.

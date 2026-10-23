@@ -17,7 +17,11 @@ import (
 // Arbitrary constant shared by every binary version.
 const migrationLockKey = 7_346_201_001
 
-var migrationName = regexp.MustCompile(`^[0-9]{4}_[a-z]+_[a-z0-9_]+\.sql$`)
+// New migrations are named after their UTC creation time, so parallel branches never
+// pick the same name; the numbered series before them is closed at lastNumbered.
+var migrationName = regexp.MustCompile(`^([0-9]{4}|[0-9]{14})_[a-z]+_[a-z0-9_]+\.sql$`)
+
+const lastNumbered = "0044"
 
 // Migrate applies every missing migration in fsys, then River's, in one
 // transaction, so a failure leaves the schema at its previous version. pool must be
@@ -33,8 +37,8 @@ func Migrate(ctx context.Context, pool *pgxpool.Pool, fsys fs.FS) error {
 		if e.IsDir() || path.Ext(e.Name()) != ".sql" {
 			continue
 		}
-		if !migrationName.MatchString(e.Name()) {
-			return fmt.Errorf("migration %q: name must match NNNN_<module>_<description>.sql", e.Name())
+		if m := migrationName.FindStringSubmatch(e.Name()); m == nil || len(m[1]) == 4 && m[1] > lastNumbered {
+			return fmt.Errorf("migration %q: name must match YYYYMMDDHHMMSS_<module>_<description>.sql", e.Name())
 		}
 		files = append(files, e.Name())
 	}

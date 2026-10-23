@@ -10,7 +10,7 @@ DATABASE_URL ?= postgres://mmerp:mmerp@localhost:5433/mmerp?sslmode=disable
 # Dev-only key, also used by e2e; never use it for real data.
 export ENCRYPTION_KEYS ?= 1:bW1lcnAgZGV2IGtleSAtIG5ldmVyIHByb2R1Y3Rpb24=
 
-.PHONY: gen lint test e2e dev ui-dev storybook image smoke db reset-db seed
+.PHONY: gen lint test e2e dev ui-dev storybook image smoke db reset-db seed migration
 
 web/node_modules: web/package.json web/pnpm-lock.yaml
 	pnpm -C web install --frozen-lockfile
@@ -51,6 +51,11 @@ e2e: db web/node_modules
 reset-db: db
 	docker run --rm --network host postgres:18 psql -q '$(subst /mmerp?,/postgres?,$(DATABASE_URL))' -c 'DROP DATABASE IF EXISTS mmerp WITH (FORCE)' -c 'CREATE DATABASE mmerp'
 	echo 'e2e password' | DATABASE_URL='$(DATABASE_URL)' go run ./cmd/server create-admin admin 'Quản trị viên'
+
+# Creates an empty migration named after the current UTC time: make migration name=hrm_leave_carryover.
+migration:
+	@echo '$(name)' | grep -qE '^[a-z]+_[a-z0-9_]+$$' || { echo 'usage: make migration name=<module>_<description> (lowercase, digits, _)'; exit 1; }
+	@f=migrations/$$(date -u +%Y%m%d%H%M%S)_$(name).sql; touch $$f; echo $$f
 
 # Builds the Demo demo company through the API of a running make dev, on an empty
 # database (make reset-db); E2E_ADMIN_LOGIN and E2E_ADMIN_PASSWORD name a tenant administrator.
