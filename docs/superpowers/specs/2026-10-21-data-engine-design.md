@@ -431,27 +431,27 @@ Each step is a ticket under one spec branch and PR, per the repo workflow. The s
 
 Before approving implementation (after the spike):
 
-- [ ] The ADR is written and accepted.
-- [ ] The spike shows: the plugin runs inside `make gen` offline; the descriptors compile for all 262 queries with no type mapping in the plugin; every §5 case fails with `25006`; River runs on its own pool; the count strategy is chosen from measurements.
+- [x] The ADR is written and accepted.
+- [x] The spike shows: the plugin runs inside `make gen` offline; the descriptors compile for all 262 queries with no type mapping in the plugin; every §5 case fails with `25006`; River runs on its own pool; the count strategy is chosen from measurements.
 
 Before continuing past the vertical slice:
 
-- [ ] Golden SQL tests cover every condition kind, nesting, scope variants (all, units, none, none with visibility, unscoped), search escaping, every sort and the count skip.
-- [ ] A fuzz test over `Sort`, `Q`, filter values and paging shows the SQL text never contains input and the args carry it.
-- [ ] Scope tests:
+- [x] Golden SQL tests cover every condition kind, nesting, scope variants (all, units, none, none with visibility, unscoped), search escaping, every sort and the count skip.
+- [x] A fuzz test over `Sort`, `Q`, filter values and paging shows the SQL text never contains input and the args carry it.
+- [x] Scope tests:
   - the zero `Scope` returns nothing;
   - a list without a rule fails validation;
   - `Visibility` cannot be set per call;
   - lint fixtures prove that `GrantAll`/`GrantUnits`/`Static(` outside allowed packages fail.
-- [ ] Write tests:
+- [x] Write tests:
   - each §5 case outside `InTx` fails;
   - inside `InTx` it succeeds;
   - `Enqueue` without a transaction errors;
   - a business write, its audit row, its number and its job commit or roll back together.
-- [ ] Error tests: one per SQLSTATE class with real violations; mapped versus unmapped behaviour; `Violates` still matches a mapped error.
-- [ ] Logging tests: the tracer logs once per query with name and shape, and no SQL text or argument appears in captured logs.
-- [ ] The leave list passes the old-versus-new correctness test and the performance criteria of §Performance, with numbers recorded in the PR.
-- [ ] `make gen` (no diff), `make lint`, `make test` and `make e2e` pass.
+- [x] Error tests: one per SQLSTATE class with real violations; mapped versus unmapped behaviour; `Violates` still matches a mapped error.
+- [x] Logging tests: the tracer logs once per query with name and shape, and no SQL text or argument appears in captured logs.
+- [ ] The leave list passes the old-versus-new correctness test and the performance criteria of §Performance, with numbers recorded in the PR. Correctness passes and the numbers are recorded (§Vertical slice results); under the custom plan three cases cross the regression thresholds, pending the product-owner decision on the count strategy.
+- [x] `make gen` (no diff), `make lint`, `make test` and `make e2e` pass.
 
 ## Assessment
 
