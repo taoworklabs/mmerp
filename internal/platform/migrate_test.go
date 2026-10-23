@@ -44,7 +44,7 @@ func TestMigrateAppliesInOrderOnce(t *testing.T) {
 	fsys := sqlFS(map[string]string{
 		"20260101000002_demo_add_col.sql": `ALTER TABLE demo.items ADD COLUMN name text;`,
 		"20260101000001_demo_init.sql":    `CREATE SCHEMA demo; CREATE TABLE demo.items (id int);`,
-		"README.md":             `ignored`,
+		"README.md":                       `ignored`,
 	})
 	for range 2 {
 		if err := platform.Migrate(t.Context(), pool, fsys); err != nil {
