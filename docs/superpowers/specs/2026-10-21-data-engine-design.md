@@ -520,7 +520,7 @@ The leave request list runs on the engine (commit `b676cbb`). Engine commits run
 **Correctness.**
 - Old and new were compared on 1 224 combinations: 6 actors (admin, scoped HR, a manager two levels deep, a plain employee, a user with no employee, …) × every filter, search, sort and paging case.
 - The same ids come back in the same order. Totals match, except a page past the end, which now returns the true total. That is a deliberate change.
-- The old query `ListLeaveRequests` is removed. `Reports` stays, because overtime still uses it.
+- The old query `ListLeaveRequests` is removed. `Reports` was removed when the overtime list moved to the engine.
 
 **Visibility shape (implementation ruling).** The actor's own requests and their reports' requests are one condition: `b."employee_id" = ANY(ARRAY(<the actor's employee and everyone below it, recursive>))`. The actor is bound as a parameter.
 - This is equivalent to the old `e.user_id = actor OR employee_id = ANY(reports)` because `hrm.employees.user_id` is `UNIQUE`.
@@ -594,3 +594,15 @@ The payroll and employee lists run on the engine (commits `c656677`, `037c002`).
 **Engine.** No engine change was needed for either list: the payroll scope (`legal_entity_id`), the employee recursive `manager_of` fragment, the date-relative `termination_date < today` status and the fixed multi-column sort all expressed directly through `Where`/`Sorts`/`Default` as declared.
 
 Open: product-owner decision on the count strategy; the employee list adds no new data.
+
+## Remaining HRM lists results (2026-10-23)
+
+The contract, overtime and timesheet lists run on the engine.
+
+**Correctness.** Old and new were compared on 1224 (contract), 960 (overtime) and 630 (timesheet) cases. Same ids, same order, same totals, except the deliberate changes: `q` trims and escapes `%`, `_` and `\` (contracts and overtime); a page past the end returns the true total; an empty sort uses the list default for internal callers (contracts and overtime previously ordered by id only).
+
+**Overtime visibility** shares the leave list's own-and-reports condition (`ownAndReports`), so the service-side `Reports` lookup is removed.
+
+**Engine.** No engine change, no migration, no performance measurement (product-owner decision).
+
+With the Sales lists (separate branch), every filterable paginated list is on the engine.
