@@ -22,9 +22,6 @@ const (
 	PermApprovalManage = "sales.approval.manage"
 )
 
-// VatRates are the VAT rates a line may carry; none is not subject to VAT.
-var VatRates = []string{"none", "0", "5", "8", "10"}
-
 // Actions is what the actor may do before picking a record: create.
 type Actions struct {
 	AllowedActions []string `json:"allowed_actions" nullable:"false"`
