@@ -29,6 +29,11 @@ export function newCustomerBody(v: CustomerValues): NewCustomer {
   return v.partner_id ? { ...role, partner_id: Number(v.partner_id) } : { ...role, partner: partnerBody(v) }
 }
 
+// customerUpdateBody: the identity only from the card that edits it, so saving the role alone
+// leaves the partner as others last saved it.
+export const customerUpdateBody = (v: CustomerValues, identity: boolean): CustomerUpdate =>
+  identity ? { partner: partnerBody(v), ...roleBody(v) } : roleBody(v)
+
 // takenPartnerId: the partner already holding the typed tax code, when that is why the save failed.
 export function takenPartnerId(err: unknown): number | undefined {
   if (!(err instanceof ApiError) || err.code !== 'partner_tax_code_taken') return undefined
@@ -39,8 +44,9 @@ export function takenPartnerId(err: unknown): number | undefined {
 // withPartner puts an existing partner, its identity shown, in place of the typed one.
 export const withPartner = (v: CustomerValues, p: PartnerListItem | Partner): CustomerValues => ({ ...v, ...partnerValues(p), partner_id: String(p.id) })
 
-// useCustomerForm holds the whole customer whichever part of it is on screen: the API saves it as a whole.
-export function useCustomerForm(customer: Customer | undefined, onSaved: (id: number) => Promise<void> | void) {
+// useCustomerForm holds the whole customer whichever part of it is on screen; an edit sends the
+// identity only when it is the part on screen.
+export function useCustomerForm(customer: Customer | undefined, onSaved: (id: number) => Promise<void> | void, identity = false) {
   const [taken, setTaken] = useState<number>()
   const form = useForm<CustomerValues>({
     mode: 'onBlur',
@@ -57,8 +63,7 @@ export function useCustomerForm(customer: Customer | undefined, onSaved: (id: nu
   async function save(v: CustomerValues) {
     setTaken(undefined)
     if (customer) {
-      const body: CustomerUpdate = { partner: partnerBody(v), ...roleBody(v) }
-      await unwrap(api.PUT('/sales/customers/{id}', { params: { path: { id: customer.id } }, body }))
+      await unwrap(api.PUT('/sales/customers/{id}', { params: { path: { id: customer.id } }, body: customerUpdateBody(v, identity) }))
       await onSaved(customer.id)
       return
     }

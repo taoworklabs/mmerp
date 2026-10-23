@@ -65,17 +65,21 @@ func (s *Service) List(ctx context.Context, f PartnerFilter) (PartnerList, error
 	return out, nil
 }
 
+// Visible fails with not found when the partner is missing or the actor may not view it.
+func (s *Service) Visible(ctx context.Context, id int64) error {
+	return s.d.Record.Visible(ctx, record.Ref{Type: partnerType, ID: id}, record.View)
+}
+
 // Get returns one partner; one the actor may not view does not exist.
 func (s *Service) Get(ctx context.Context, id int64) (Partner, error) {
-	ref := record.Ref{Type: partnerType, ID: id}
-	if err := s.d.Record.Visible(ctx, ref, record.View); err != nil {
+	if err := s.Visible(ctx, id); err != nil {
 		return Partner{}, err
 	}
 	r, err := store.GetPartner.Run(ctx, id)
 	if err != nil {
 		return Partner{}, err
 	}
-	actions, err := s.d.Record.Actions(ctx, record.Doc{Ref: ref})
+	actions, err := s.d.Record.Actions(ctx, record.Doc{Ref: record.Ref{Type: partnerType, ID: id}})
 	return Partner{ID: r.ID, Code: r.Code, PartnerFields: fields(r), AllowedActions: actions}, err
 }
 

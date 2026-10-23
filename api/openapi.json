@@ -1084,7 +1084,8 @@
             "type": "integer"
           },
           "partner": {
-            "$ref": "#/components/schemas/PartnerFields"
+            "$ref": "#/components/schemas/PartnerFields",
+            "description": "Absent: the identity is left as it is"
           },
           "payment_terms": {
             "description": "Prefilled on new quotations and orders",
@@ -1096,7 +1097,6 @@
           }
         },
         "required": [
-          "partner",
           "payment_terms",
           "org_unit_id",
           "active"

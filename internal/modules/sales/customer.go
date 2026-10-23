@@ -85,11 +85,10 @@ func (s *Service) CreateCustomer(ctx context.Context, in NewCustomer) (int64, er
 		var err error
 		if in.PartnerID != nil {
 			// Only a partner the actor may see.
-			p, err := s.d.Partner.Get(ctx, *in.PartnerID)
-			if err != nil {
+			if err := s.d.Partner.Visible(ctx, *in.PartnerID); err != nil {
 				return err
 			}
-			partnerID = p.ID
+			partnerID = *in.PartnerID
 		} else if partnerID, err = s.d.Partner.Create(ctx, "", *in.Partner); err != nil {
 			return err
 		}
@@ -111,8 +110,8 @@ func (s *Service) CreateCustomer(ctx context.Context, in NewCustomer) (int64, er
 	return id, err
 }
 
-// UpdateCustomer replaces a customer's fields and its partner's identity; moving it needs
-// edit at both org units, changing the identity needs partner edit.
+// UpdateCustomer replaces a customer's fields and, when given, its partner's identity;
+// moving it needs edit at both org units, changing the identity needs partner edit.
 func (s *Service) UpdateCustomer(ctx context.Context, id int64, in CustomerUpdate) error {
 	return platform.InTx(ctx, func(ctx context.Context) error {
 		// Locked first, so the checks and the audit diff see what a concurrent edit left;
@@ -134,8 +133,10 @@ func (s *Service) UpdateCustomer(ctx context.Context, id int64, in CustomerUpdat
 		if err := s.require(ctx, PermCustomerEdit, old.OrgUnitID, in.OrgUnitID); err != nil {
 			return err
 		}
-		if err := s.d.Partner.Update(ctx, old.PartnerID, in.Partner); err != nil {
-			return err
+		if in.Partner != nil {
+			if err := s.d.Partner.Update(ctx, old.PartnerID, *in.Partner); err != nil {
+				return err
+			}
 		}
 		err = store.UpdateCustomer.Run(ctx, store.UpdateCustomerParams{
 			ID: id, PaymentTerms: platform.NullText(in.PaymentTerms), OrgUnitID: in.OrgUnitID, Active: in.Active,
@@ -193,11 +194,11 @@ type NewCustomer struct {
 	CustomerFields
 }
 
-// CustomerUpdate saves a customer and its partner's identity; an unchanged identity
-// needs no partner edit.
+// CustomerUpdate saves a customer and, when given, its partner's identity; an unchanged
+// identity needs no partner edit.
 type CustomerUpdate struct {
 	CustomerFields
-	Partner partner.PartnerFields `json:"partner"`
+	Partner *partner.PartnerFields `json:"partner,omitempty" doc:"Absent: the identity is left as it is"`
 }
 
 type Customer struct {

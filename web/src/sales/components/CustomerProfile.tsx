@@ -74,13 +74,14 @@ export function CustomerProfile({ customer: c, onSaved }: { customer: Customer; 
   )
 }
 
-// PartForm edits one part in its card with a form holding the whole customer: the API saves it as a whole.
+// PartForm edits one part in its card with a form holding the whole customer; only the general
+// part sends the partner's identity.
 function PartForm({ customer: c, part, onClose, onSaved }: { customer: Customer; part: Part; onClose: () => void; onSaved: () => Promise<void> }) {
   const { t } = useTranslation()
   const { form, save, errorFields } = useCustomerForm(c, async () => {
     await onSaved()
     onClose()
-  })
+  }, part === 'general')
   return (
     // The one error mapped to a field (code taken) belongs to the general part.
     <Form form={form} onSubmit={save} errorFields={part === 'general' ? errorFields : undefined}>

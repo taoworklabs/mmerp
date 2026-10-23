@@ -103,7 +103,7 @@ func customer(code string, unit int64) sales.NewCustomer {
 
 // upd is the edit that saves c as it is.
 func upd(c sales.NewCustomer) sales.CustomerUpdate {
-	return sales.CustomerUpdate{CustomerFields: c.CustomerFields, Partner: *c.Partner}
+	return sales.CustomerUpdate{CustomerFields: c.CustomerFields, Partner: c.Partner}
 }
 
 var requests atomic.Int64
@@ -751,5 +751,23 @@ func TestDocumentCopiesPartnerIdentity(t *testing.T) {
 	f.check(err)
 	if q.Customer.Code != "KH1" || q.Customer.Name != "Công ty Mới" || *q.Customer.TaxCode != "0312345678" || *q.Customer.Address != "5 Nguyễn Huệ" {
 		t.Fatalf("copied %+v", q.Customer)
+	}
+}
+
+// Saving the role alone leaves the identity as another user left it.
+func TestCustomerRoleSaveKeepsPartner(t *testing.T) {
+	f := newFixture(t)
+	ctx := f.ctxFor("staff_only", "staff@A")
+	c, err := f.sales.Customer(ctx, f.customer)
+	f.check(err)
+	moved := c.Partner
+	moved.Address = str("9 Trần Phú, Đà Nẵng")
+	f.check(f.partners.Update(f.staff, c.PartnerID, moved))
+	terms := c.CustomerFields
+	terms.PaymentTerms = str("45 ngày")
+	f.check(f.sales.UpdateCustomer(ctx, f.customer, sales.CustomerUpdate{CustomerFields: terms}))
+	got, err := f.sales.Customer(ctx, f.customer)
+	if err != nil || *got.PaymentTerms != "45 ngày" || *got.Partner.Address != "9 Trần Phú, Đà Nẵng" {
+		t.Fatalf("customer %+v %v", got, err)
 	}
 }

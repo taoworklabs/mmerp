@@ -2049,7 +2049,8 @@ export interface components {
              * @description Owning org unit: who may see the customer
              */
             org_unit_id: number;
-            partner: components["schemas"]["PartnerFields"];
+            /** @description Absent: the identity is left as it is */
+            partner?: components["schemas"]["PartnerFields"];
             /** @description Prefilled on new quotations and orders */
             payment_terms: string | null;
         };

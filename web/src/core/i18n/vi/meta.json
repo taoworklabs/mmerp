@@ -116,5 +116,14 @@
   "partner.partner.code_series": "Đối tác",
   "item.role.viewer": "Xem danh mục hàng hóa",
   "item.role.admin": "Quản lý danh mục hàng hóa",
-  "item.item.code_series": "Hàng hóa, dịch vụ"
+  "item.item.code_series": "Hàng hóa, dịch vụ",
+  "partner.partner_created": "Thêm đối tác",
+  "partner.partner_updated": "Sửa đối tác",
+  "partner.partner.field.code": "Mã",
+  "partner.partner.field.name": "Tên",
+  "partner.partner.field.tax_code": "Mã số thuế",
+  "partner.partner.field.address": "Địa chỉ",
+  "partner.partner.field.phone": "Điện thoại",
+  "partner.partner.field.email": "Email",
+  "partner.partner.field.contact_name": "Người liên hệ"
 }

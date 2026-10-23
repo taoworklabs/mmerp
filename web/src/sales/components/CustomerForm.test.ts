@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { ApiError } from '@/shared/api/core'
 import { canEditPartner } from '@/shared/master'
-import { newCustomerBody, takenPartnerId, withPartner, type CustomerValues } from './CustomerForm'
+import { customerUpdateBody, newCustomerBody, takenPartnerId, withPartner, type CustomerValues } from './CustomerForm'
 
 const typed: CustomerValues = {
   code: '',
@@ -37,6 +37,15 @@ describe('new customer', () => {
     expect(body.partner_id).toBe(7)
     expect(body).not.toHaveProperty('partner')
     expect(body).toMatchObject({ org_unit_id: 4, active: true, payment_terms: null })
+  })
+})
+
+describe('customer edit', () => {
+  it('sends the identity only from the general card', () => {
+    expect(customerUpdateBody(typed, true).partner).toMatchObject({ name: 'Ánh Dương' })
+    const role = customerUpdateBody(typed, false)
+    expect(role).not.toHaveProperty('partner')
+    expect(role).toEqual({ payment_terms: null, org_unit_id: 4, active: true })
   })
 })
 

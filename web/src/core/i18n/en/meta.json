@@ -116,5 +116,14 @@
   "partner.partner.code_series": "Partners",
   "item.role.viewer": "Item catalogue viewer",
   "item.role.admin": "Item catalogue admin",
-  "item.item.code_series": "Items"
+  "item.item.code_series": "Items",
+  "partner.partner_created": "Partner added",
+  "partner.partner_updated": "Partner edited",
+  "partner.partner.field.code": "Code",
+  "partner.partner.field.name": "Name",
+  "partner.partner.field.tax_code": "Tax code",
+  "partner.partner.field.address": "Address",
+  "partner.partner.field.phone": "Phone",
+  "partner.partner.field.email": "Email",
+  "partner.partner.field.contact_name": "Contact person"
 }

@@ -146,5 +146,9 @@
   "sales.partner.saved": "Đã lưu đối tác.",
   "sales.partner.customers": "Khách hàng",
   "sales.partner.customers_count": "Khách hàng ({{count}})",
-  "sales.partner.no_customers": "Đối tác chưa là khách hàng của đơn vị nào bạn được giao"
+  "sales.partner.no_customers": "Đối tác chưa là khách hàng của đơn vị nào bạn được giao",
+  "sales.customer.field.partner_id": "Đối tác",
+  "sales.customer.field.payment_terms": "Điều kiện thanh toán",
+  "sales.customer.field.org_unit_id": "Đơn vị phụ trách",
+  "sales.customer.field.active": "Đang giao dịch"
 }
