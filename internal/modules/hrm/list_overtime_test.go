@@ -58,7 +58,7 @@ func newOvertimeListFixture(t *testing.T) *overtimeListFixture {
 	return f
 }
 
-func (f *overtimeListFixture) newOvertimes(ctx context.Context, fl hrm.OvertimeFilter) ([]int64, int64) {
+func (f *overtimeListFixture) overtimes(ctx context.Context, fl hrm.OvertimeFilter) ([]int64, int64) {
 	f.t.Helper()
 	l, err := f.hrm.Overtimes(ctx, fl)
 	f.check(err)
@@ -72,7 +72,7 @@ func (f *overtimeListFixture) newOvertimes(ctx context.Context, fl hrm.OvertimeF
 func TestOvertimeListSearchLiteralPercent(t *testing.T) {
 	f := newOvertimeListFixture(t)
 	for _, q := range []string{"%", "_", `\`} {
-		if _, total := f.newOvertimes(f.hr, hrm.OvertimeFilter{Q: q, Sort: "-date", Paging: platform.Paging{Page: 1, PageSize: 20}}); total != 0 {
+		if _, total := f.overtimes(f.hr, hrm.OvertimeFilter{Q: q, Sort: "-date", Paging: platform.Paging{Page: 1, PageSize: 20}}); total != 0 {
 			t.Errorf("q %q matched %d", q, total)
 		}
 	}
@@ -103,7 +103,7 @@ func TestOvertimeListVisibility(t *testing.T) {
 		{"ADMIN", idSet("M", "E", "E2", "E3", "HR2")},
 	} {
 		t.Run(c.actor, func(t *testing.T) {
-			got, total := f.newOvertimes(f.actors[c.actor], hrm.OvertimeFilter{Sort: "-date", Paging: platform.Paging{Page: 1, PageSize: 50}})
+			got, total := f.overtimes(f.actors[c.actor], hrm.OvertimeFilter{Sort: "-date", Paging: platform.Paging{Page: 1, PageSize: 50}})
 			slices.Sort(got)
 			if !slices.Equal(got, c.want) || total != int64(len(c.want)) {
 				t.Fatalf("%s: got %v (total %d), want %v", c.actor, got, total, c.want)
