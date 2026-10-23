@@ -63,8 +63,13 @@ func (s *Service) Customer(ctx context.Context, id int64) (Customer, error) {
 		return Customer{}, err
 	}
 	actions, err := s.d.Record.Actions(ctx, record.Doc{Ref: record.Ref{Type: customerType, ID: id}})
+	if err != nil {
+		return Customer{}, err
+	}
+	// The identity is the partner's, so its own actions decide who edits it.
+	partnerActions, err := s.d.Partner.Actions(ctx, c.PartnerID)
 	return Customer{ID: id, Code: c.Code, PartnerID: c.PartnerID, PartnerCode: c.PartnerCode, Partner: partnerFields(c),
-		CustomerFields: customerFields(c), OrgUnitName: c.OrgUnitName, AllowedActions: actions}, err
+		CustomerFields: customerFields(c), OrgUnitName: c.OrgUnitName, AllowedActions: actions, PartnerActions: partnerActions}, err
 }
 
 // CreateCustomer adds a customer owned by an org unit where the actor may edit customers,
@@ -211,6 +216,8 @@ type Customer struct {
 	OrgUnitName string `json:"org_unit_name"`
 	// edit, attach.
 	AllowedActions []string `json:"allowed_actions" nullable:"false"`
+	// The partner's allowed_actions: edit means the identity may change.
+	PartnerActions []string `json:"partner_actions" nullable:"false"`
 }
 
 type CustomerFilter struct {

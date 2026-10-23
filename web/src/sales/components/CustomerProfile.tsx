@@ -5,7 +5,7 @@ import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router'
 import type { Customer } from '@/shared/api/sales'
 import { useCan } from '@/shared/auth/me'
-import { canEditPartner, usePartner } from '@/shared/master'
+import { canEditPartner } from '@/shared/master'
 import { FieldList, MissingValue } from '@/shared/ui/FieldList'
 import { EditablePanel, Form, FormActions, FormFields } from '@/shared/ui/form'
 import { CustomerStatus } from './CustomerStatus'
@@ -21,7 +21,7 @@ export function CustomerProfile({ customer: c, onSaved }: { customer: Customer; 
   const { t } = useTranslation()
   const canEdit = c.allowed_actions.includes('edit')
   const canSeePartner = useCan('partner.view')
-  const canEditIdentity = canEdit && canEditPartner(usePartner(canSeePartner ? c.partner_id : undefined).data)
+  const canEditIdentity = canEdit && canEditPartner({ allowed_actions: c.partner_actions })
   const edit = (part: Part) => (close: () => void) => <PartForm customer={c} part={part} onClose={close} onSaved={onSaved} />
   // An empty value: "+ Bổ sung" opening the card's form for who may edit it.
   const or = (may: boolean) => (open: () => void, label: string, value: ReactNode) => value || <MissingValue label={label} onAdd={may ? open : undefined} />

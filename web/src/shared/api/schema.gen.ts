@@ -1997,6 +1997,7 @@ export interface components {
             org_unit_id: number;
             org_unit_name: string;
             partner: components["schemas"]["PartnerFields"];
+            partner_actions: string[];
             partner_code: string;
             /** Format: int64 */
             partner_id: number;

@@ -898,6 +898,12 @@
           "partner": {
             "$ref": "#/components/schemas/PartnerFields"
           },
+          "partner_actions": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
           "partner_code": {
             "type": "string"
           },
@@ -922,6 +928,7 @@
           "partner",
           "org_unit_name",
           "allowed_actions",
+          "partner_actions",
           "payment_terms",
           "org_unit_id",
           "active"

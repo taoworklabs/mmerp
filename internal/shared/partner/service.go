@@ -79,8 +79,13 @@ func (s *Service) Get(ctx context.Context, id int64) (Partner, error) {
 	if err != nil {
 		return Partner{}, err
 	}
-	actions, err := s.d.Record.Actions(ctx, record.Doc{Ref: record.Ref{Type: partnerType, ID: id}})
+	actions, err := s.Actions(ctx, id)
 	return Partner{ID: r.ID, Code: r.Code, PartnerFields: fields(r), AllowedActions: actions}, err
+}
+
+// Actions is the allowed_actions of a partner the caller has already checked is visible.
+func (s *Service) Actions(ctx context.Context, id int64) ([]string, error) {
+	return s.d.Record.Actions(ctx, record.Doc{Ref: record.Ref{Type: partnerType, ID: id}})
 }
 
 // Create adds a partner, in the caller's transaction if there is one.

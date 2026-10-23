@@ -1,6 +1,6 @@
 import { Button, Stack, Text } from '@mantine/core'
 import { IconAddressBook, IconBuildingStore } from '@tabler/icons-react'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useForm, useWatch } from 'react-hook-form'
 import { useTranslation } from 'react-i18next'
 import { ApiError, type Partner, type PartnerListItem } from '@/shared/api/core'
@@ -123,6 +123,9 @@ function TakenPartner({ id, onUse }: { id: number; onUse: (p: Partner) => void }
   )
 }
 
+const partnerKeys = ['name', 'tax_code', 'address', 'phone', 'email', 'contact_name'] as const
+const identityKeys = ['partner_id', ...partnerKeys] as const
+
 // CustomerForm creates a customer over an existing partner, picked or found by its tax code, or
 // over a new one; an existing customer is edited a part at a time on its page.
 export function CustomerForm({ onSaved }: { onSaved: (id: number) => Promise<void> | void }) {
@@ -134,9 +137,16 @@ export function CustomerForm({ onSaved }: { onSaved: (id: number) => Promise<voi
   const use = (p: PartnerListItem | Partner) => {
     setPicked(p)
     const v = withPartner(form.getValues(), p)
-    for (const k of ['partner_id', 'name', 'tax_code', 'address', 'phone', 'email', 'contact_name'] as const) form.setValue(k, v[k], { shouldDirty: true })
+    for (const k of identityKeys) form.setValue(k, v[k], { shouldDirty: true })
     form.clearErrors()
   }
+  // A cleared pick leaves blank inputs for a new company, not the dropped partner's identity.
+  useEffect(() => {
+    if (partnerId || !picked) return
+    setPicked(undefined)
+    const blank = partnerValues(undefined)
+    for (const k of partnerKeys) form.setValue(k, blank[k], { shouldDirty: true })
+  }, [partnerId, picked, form])
   return (
     <Form form={form} onSubmit={save} errorFields={errorFields}>
       <FormSection title={t('sales.customer.section.general')} description={t('sales.customer.section.general_hint')} icon={IconAddressBook}>

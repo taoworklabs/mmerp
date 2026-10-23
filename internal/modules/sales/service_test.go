@@ -720,8 +720,11 @@ func TestCustomerEditWithoutPartnerEdit(t *testing.T) {
 	c := customer("KH1", f.a)
 	c.PaymentTerms = str("60 ngày")
 	f.check(f.sales.UpdateCustomer(ctx, f.customer, upd(c)))
-	if got, _ := f.sales.Customer(ctx, f.customer); *got.PaymentTerms != "60 ngày" {
-		t.Fatalf("terms %+v", got)
+	if got, _ := f.sales.Customer(ctx, f.customer); *got.PaymentTerms != "60 ngày" || slices.Contains(got.PartnerActions, "edit") {
+		t.Fatalf("terms or partner actions %+v", got)
+	}
+	if got, _ := f.sales.Customer(f.staff, f.customer); !slices.Contains(got.PartnerActions, "edit") {
+		t.Fatalf("a partner editor's partner actions %v", got.PartnerActions)
 	}
 	c.Partner.Name = "Đổi tên"
 	wantCode(t, f.sales.UpdateCustomer(ctx, f.customer, upd(c)), "forbidden")
