@@ -128,6 +128,54 @@ func (q *Queries) CustomerCodeTaken(ctx context.Context, lower string) (bool, er
 	return exists, err
 }
 
+const customerListBase = `-- name: CustomerListBase :many
+SELECT c.id, c.code, c.name, c.tax_code, c.phone, c.payment_terms, c.org_unit_id, u.name AS org_unit_name, c.active
+FROM sales.customers c JOIN iam.org_units u ON u.id = c.org_unit_id
+`
+
+type CustomerListBaseRow struct {
+	ID           int64
+	Code         string
+	Name         string
+	TaxCode      pgtype.Text
+	Phone        pgtype.Text
+	PaymentTerms pgtype.Text
+	OrgUnitID    int64
+	OrgUnitName  string
+	Active       bool
+}
+
+// data:base
+func (q *Queries) CustomerListBase(ctx context.Context) ([]CustomerListBaseRow, error) {
+	rows, err := q.db.Query(ctx, customerListBase)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []CustomerListBaseRow
+	for rows.Next() {
+		var i CustomerListBaseRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Code,
+			&i.Name,
+			&i.TaxCode,
+			&i.Phone,
+			&i.PaymentTerms,
+			&i.OrgUnitID,
+			&i.OrgUnitName,
+			&i.Active,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const deleteHeader = `-- name: DeleteHeader :exec
 DELETE FROM sales.headers WHERE id = $1
 `
@@ -144,6 +192,71 @@ DELETE FROM sales.lines WHERE doc_id = $1
 func (q *Queries) DeleteLines(ctx context.Context, docID int64) error {
 	_, err := q.db.Exec(ctx, deleteLines, docID)
 	return err
+}
+
+const docListBase = `-- name: DocListBase :many
+SELECT h.id, h.kind, d.number, d.status, d.date, d.org_unit_id, h.customer_id, h.customer_code, h.customer_name,
+       h.valid_until, h.total, u.name AS org_unit_name, (h.quote_id IS NOT NULL)::bool AS from_quote,
+       EXISTS (
+           SELECT 1 FROM sales.headers oh JOIN record.documents od ON od.id = oh.id
+           WHERE oh.quote_id = h.id AND od.status <> 'cancelled'
+       ) AS ordered
+FROM sales.headers h
+JOIN record.documents d ON d.id = h.id
+JOIN iam.org_units u ON u.id = d.org_unit_id
+`
+
+type DocListBaseRow struct {
+	ID           int64
+	Kind         string
+	Number       string
+	Status       string
+	Date         pgtype.Date
+	OrgUnitID    int64
+	CustomerID   int64
+	CustomerCode string
+	CustomerName string
+	ValidUntil   pgtype.Date
+	Total        int64
+	OrgUnitName  string
+	FromQuote    bool
+	Ordered      bool
+}
+
+// data:base
+func (q *Queries) DocListBase(ctx context.Context) ([]DocListBaseRow, error) {
+	rows, err := q.db.Query(ctx, docListBase)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []DocListBaseRow
+	for rows.Next() {
+		var i DocListBaseRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Kind,
+			&i.Number,
+			&i.Status,
+			&i.Date,
+			&i.OrgUnitID,
+			&i.CustomerID,
+			&i.CustomerCode,
+			&i.CustomerName,
+			&i.ValidUntil,
+			&i.Total,
+			&i.OrgUnitName,
+			&i.FromQuote,
+			&i.Ordered,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const getCustomer = `-- name: GetCustomer :one
@@ -446,12 +559,13 @@ func (q *Queries) ItemCodeTaken(ctx context.Context, lower string) (bool, error)
 	return exists, err
 }
 
-const itemsByID = `-- name: ItemsByID :many
-SELECT id, code, name, unit, price, vat_rate, active FROM sales.items WHERE id = ANY($1::bigint[])
+const itemListBase = `-- name: ItemListBase :many
+SELECT id, code, name, unit, price, vat_rate, active FROM sales.items
 `
 
-func (q *Queries) ItemsByID(ctx context.Context, ids []int64) ([]SalesItem, error) {
-	rows, err := q.db.Query(ctx, itemsByID, ids)
+// data:base
+func (q *Queries) ItemListBase(ctx context.Context) ([]SalesItem, error) {
+	rows, err := q.db.Query(ctx, itemListBase)
 	if err != nil {
 		return nil, err
 	}
@@ -478,232 +592,19 @@ func (q *Queries) ItemsByID(ctx context.Context, ids []int64) ([]SalesItem, erro
 	return items, nil
 }
 
-const listCustomers = `-- name: ListCustomers :many
-SELECT c.id, c.code, c.name, c.tax_code, c.phone, c.payment_terms, c.org_unit_id, u.name AS org_unit_name, c.active, count(*) OVER () AS total
-FROM sales.customers c JOIN iam.org_units u ON u.id = c.org_unit_id
-WHERE ($1::bool OR c.org_unit_id = ANY($2::bigint[]))
-  AND ($3::text = '' OR c.code ILIKE '%' || $3 || '%' OR c.name ILIKE '%' || $3 || '%' OR c.tax_code ILIKE '%' || $3 || '%')
-  AND ($4::bool IS NULL OR c.active = $4)
-ORDER BY
-    CASE WHEN $5::text = 'code' THEN lower(c.code) END,
-    CASE WHEN $5 = '-code' THEN lower(c.code) END DESC,
-    CASE WHEN $5 = 'name' THEN c.name END,
-    CASE WHEN $5 = '-name' THEN c.name END DESC,
-    c.id
-LIMIT $7 OFFSET $6
+const itemsByID = `-- name: ItemsByID :many
+SELECT id, code, name, unit, price, vat_rate, active FROM sales.items WHERE id = ANY($1::bigint[])
 `
 
-type ListCustomersParams struct {
-	AllUnits bool
-	Units    []int64
-	Q        string
-	Active   pgtype.Bool
-	Sort     string
-	Off      int32
-	Lim      int32
-}
-
-type ListCustomersRow struct {
-	ID           int64
-	Code         string
-	Name         string
-	TaxCode      pgtype.Text
-	Phone        pgtype.Text
-	PaymentTerms pgtype.Text
-	OrgUnitID    int64
-	OrgUnitName  string
-	Active       bool
-	Total        int64
-}
-
-// Scope filter: @all_units or org_unit_id in @units.
-func (q *Queries) ListCustomers(ctx context.Context, arg ListCustomersParams) ([]ListCustomersRow, error) {
-	rows, err := q.db.Query(ctx, listCustomers,
-		arg.AllUnits,
-		arg.Units,
-		arg.Q,
-		arg.Active,
-		arg.Sort,
-		arg.Off,
-		arg.Lim,
-	)
+func (q *Queries) ItemsByID(ctx context.Context, ids []int64) ([]SalesItem, error) {
+	rows, err := q.db.Query(ctx, itemsByID, ids)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []ListCustomersRow
+	var items []SalesItem
 	for rows.Next() {
-		var i ListCustomersRow
-		if err := rows.Scan(
-			&i.ID,
-			&i.Code,
-			&i.Name,
-			&i.TaxCode,
-			&i.Phone,
-			&i.PaymentTerms,
-			&i.OrgUnitID,
-			&i.OrgUnitName,
-			&i.Active,
-			&i.Total,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
-const listHeaders = `-- name: ListHeaders :many
-SELECT h.id, d.number, d.status, d.date, h.customer_id, h.customer_code, h.customer_name, h.valid_until, h.total,
-       u.name AS org_unit_name, (h.quote_id IS NOT NULL)::bool AS from_quote,
-       EXISTS (
-           SELECT 1 FROM sales.headers oh JOIN record.documents od ON od.id = oh.id
-           WHERE oh.quote_id = h.id AND od.status <> 'cancelled'
-       ) AS ordered,
-       count(*) OVER () AS total_rows
-FROM sales.headers h
-JOIN record.documents d ON d.id = h.id
-JOIN iam.org_units u ON u.id = d.org_unit_id
-WHERE h.kind = $1::text
-  AND ($2::bool OR d.org_unit_id = ANY($3::bigint[]))
-  AND ($4::text = '' OR d.status = $4)
-  AND ($5::bigint IS NULL OR h.customer_id = $5)
-  AND ($6::text = '' OR d.number ILIKE '%' || $6 || '%' OR h.customer_name ILIKE '%' || $6 || '%' OR h.customer_code ILIKE '%' || $6 || '%')
-ORDER BY
-    CASE WHEN $7::text = 'date' THEN d.date END,
-    CASE WHEN $7 = '-date' THEN d.date END DESC,
-    CASE WHEN $7 = 'number' THEN d.number END,
-    CASE WHEN $7 = '-number' THEN d.number END DESC,
-    CASE WHEN $7 = 'total' THEN h.total END,
-    CASE WHEN $7 = '-total' THEN h.total END DESC,
-    h.id DESC
-LIMIT $9 OFFSET $8
-`
-
-type ListHeadersParams struct {
-	Kind       string
-	AllUnits   bool
-	Units      []int64
-	Status     string
-	CustomerID pgtype.Int8
-	Q          string
-	Sort       string
-	Off        int32
-	Lim        int32
-}
-
-type ListHeadersRow struct {
-	ID           int64
-	Number       string
-	Status       string
-	Date         pgtype.Date
-	CustomerID   int64
-	CustomerCode string
-	CustomerName string
-	ValidUntil   pgtype.Date
-	Total        int64
-	OrgUnitName  string
-	FromQuote    bool
-	Ordered      bool
-	TotalRows    int64
-}
-
-// Scope filter: @all_units or the document's org unit in @units.
-func (q *Queries) ListHeaders(ctx context.Context, arg ListHeadersParams) ([]ListHeadersRow, error) {
-	rows, err := q.db.Query(ctx, listHeaders,
-		arg.Kind,
-		arg.AllUnits,
-		arg.Units,
-		arg.Status,
-		arg.CustomerID,
-		arg.Q,
-		arg.Sort,
-		arg.Off,
-		arg.Lim,
-	)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []ListHeadersRow
-	for rows.Next() {
-		var i ListHeadersRow
-		if err := rows.Scan(
-			&i.ID,
-			&i.Number,
-			&i.Status,
-			&i.Date,
-			&i.CustomerID,
-			&i.CustomerCode,
-			&i.CustomerName,
-			&i.ValidUntil,
-			&i.Total,
-			&i.OrgUnitName,
-			&i.FromQuote,
-			&i.Ordered,
-			&i.TotalRows,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
-const listItems = `-- name: ListItems :many
-SELECT id, code, name, unit, price, vat_rate, active, count(*) OVER () AS total
-FROM sales.items
-WHERE ($1::text = '' OR code ILIKE '%' || $1 || '%' OR name ILIKE '%' || $1 || '%')
-  AND ($2::bool IS NULL OR active = $2)
-ORDER BY
-    CASE WHEN $3::text IN ('', 'code') THEN lower(code) END,
-    CASE WHEN $3 = '-code' THEN lower(code) END DESC,
-    CASE WHEN $3 = 'name' THEN name END,
-    CASE WHEN $3 = '-name' THEN name END DESC,
-    id
-LIMIT $5 OFFSET $4
-`
-
-type ListItemsParams struct {
-	Q      string
-	Active pgtype.Bool
-	Sort   string
-	Off    int32
-	Lim    int32
-}
-
-type ListItemsRow struct {
-	ID      int64
-	Code    string
-	Name    string
-	Unit    string
-	Price   int64
-	VatRate string
-	Active  bool
-	Total   int64
-}
-
-func (q *Queries) ListItems(ctx context.Context, arg ListItemsParams) ([]ListItemsRow, error) {
-	rows, err := q.db.Query(ctx, listItems,
-		arg.Q,
-		arg.Active,
-		arg.Sort,
-		arg.Off,
-		arg.Lim,
-	)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []ListItemsRow
-	for rows.Next() {
-		var i ListItemsRow
+		var i SalesItem
 		if err := rows.Scan(
 			&i.ID,
 			&i.Code,
@@ -712,7 +613,6 @@ func (q *Queries) ListItems(ctx context.Context, arg ListItemsParams) ([]ListIte
 			&i.Price,
 			&i.VatRate,
 			&i.Active,
-			&i.Total,
 		); err != nil {
 			return nil, err
 		}

@@ -378,7 +378,7 @@ This is correct because lines are editable only while the document is a draft (A
 
 The migrated lists keep their filters, sort orders (including `lower()`, `NULLS LAST`, per-list tiebreak direction and the payroll list's fixed three-column order) and visibility. The existing service and Playwright tests must pass, except for these deliberate changes:
 
-- **Search escaping.** `%`, `_` and `\` in `q` are matched literally; today they are wildcards. HRM now trims `q` as Sales does.
+- **Search escaping.** `%`, `_` and `\` in `q` are matched literally; today they are wildcards. HRM and the Sales quotation/order lists now trim `q`, as the other Sales lists already did.
 - **Total past the end.** A page past the end returns the true total instead of 0.
 - **Writes outside `InTx` fail** (`25006`), and `Enqueue` outside a transaction errors.
 
