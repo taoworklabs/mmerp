@@ -15,9 +15,6 @@ const (
 	PermQuoteEdit = "sales.quote.edit"
 	PermOrderView = "sales.order.view"
 	PermOrderEdit = "sales.order.edit"
-	// The item catalogue is tenant-wide: viewing needs the permission anywhere, managing tenant-wide.
-	PermItemView   = "sales.item.view"
-	PermItemManage = "sales.item.manage"
 	// Approval rules of Sales document types; core's approval checks it by name.
 	PermApprovalManage = "sales.approval.manage"
 )
@@ -29,7 +26,6 @@ type Actions struct {
 
 var (
 	ErrCustomerCodeTaken = &platform.Error{Status: http.StatusConflict, Code: "customer_code_taken"}
-	ErrItemCodeTaken     = &platform.Error{Status: http.StatusConflict, Code: "item_code_taken"}
 	ErrCustomerInactive  = &platform.Error{Status: http.StatusUnprocessableEntity, Code: "customer_inactive"}
 	ErrValidUntil        = &platform.Error{Status: http.StatusUnprocessableEntity, Code: "quote_valid_until_before_date"}
 	ErrDeliveryDate      = &platform.Error{Status: http.StatusUnprocessableEntity, Code: "order_delivery_before_date"}

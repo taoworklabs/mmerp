@@ -17,7 +17,7 @@ test.beforeAll(async ({ baseURL }) => {
   await createUser(api, login.staff, [{ role: 'sales.staff', unit: a }])
   await createUser(api, login.manager, [{ role: 'sales.manager', unit: a }])
   await createUser(api, login.other, [{ role: 'sales.staff', unit: b }])
-  await createUser(api, login.catalog, [{ role: 'sales.catalog_admin', unit: null }])
+  await createUser(api, login.catalog, [{ role: 'item.admin', unit: null }])
   const rule = await api.put('/api/approval-rules/sales.quote', {
     data: {
       flow: toFlow([{ condition: { field: 'max_discount', op: 'gt', value: '10' }, approver: { kind: 'role', product: 'sales', role: 'manager' } }]),

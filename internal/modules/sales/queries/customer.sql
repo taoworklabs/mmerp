@@ -29,3 +29,6 @@ FROM sales.customers c JOIN iam.org_units u ON u.id = c.org_unit_id;
 
 -- name: CustomerCodeTaken :one
 SELECT EXISTS (SELECT 1 FROM sales.customers WHERE lower(code) = lower($1));
+
+-- name: AnyCatalog :one
+SELECT EXISTS (SELECT 1 FROM sales.customers)::bool AS any;

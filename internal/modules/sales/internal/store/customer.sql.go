@@ -11,6 +11,17 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const anyCatalog = `-- name: AnyCatalog :one
+SELECT EXISTS (SELECT 1 FROM sales.customers)::bool AS any
+`
+
+func (q *Queries) AnyCatalog(ctx context.Context) (bool, error) {
+	row := q.db.QueryRow(ctx, anyCatalog)
+	var any bool
+	err := row.Scan(&any)
+	return any, err
+}
+
 const createCustomer = `-- name: CreateCustomer :one
 INSERT INTO sales.customers (code, name, tax_code, address, phone, email, contact_name, payment_terms, org_unit_id, active)
 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)

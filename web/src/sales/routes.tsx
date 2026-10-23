@@ -14,7 +14,7 @@ export default function SalesRoutes() {
   const canCustomers = useCan('sales.customer.view')
   const canQuotes = useCan('sales.quote.view')
   const canOrders = useCan('sales.order.view')
-  const canItems = useCan('sales.item.view')
+  const canItems = useCan('item.view')
   const canRules = useCan(['sales.approval.manage', 'core.approval.manage'])
   return (
     <Routes>

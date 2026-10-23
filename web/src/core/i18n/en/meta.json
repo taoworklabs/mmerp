@@ -109,5 +109,8 @@
   "core.nav.mail_server": "Mail server",
   "core.nav.print_templates": "Print templates",
   "core.nav.code_series": "Code series",
-  "core.jobs.kind.print": "Print to PDF"
+  "core.jobs.kind.print": "Print to PDF",
+  "item.role.viewer": "Item catalogue viewer",
+  "item.role.admin": "Item catalogue admin",
+  "item.item.code_series": "Items"
 }

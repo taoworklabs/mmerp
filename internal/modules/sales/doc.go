@@ -271,7 +271,7 @@ func (s *Service) prepare(ctx context.Context, k kind, f DocFields) (prepared, e
 	if err != nil {
 		return p, err
 	}
-	items := map[int64]store.SalesItem{}
+	items := map[int64]store.ItemItem{}
 	for _, r := range rows {
 		items[r.ID] = r
 	}

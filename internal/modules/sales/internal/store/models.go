@@ -4,7 +4,7 @@
 
 package store
 
-type SalesItem struct {
+type ItemItem struct {
 	ID      int64
 	Code    string
 	Name    string

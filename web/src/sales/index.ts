@@ -11,7 +11,7 @@ export const sales: AreaManifest = {
     { label: 'sales.nav.customers', path: 'customers', icon: IconAddressBook, permission: 'sales.customer.view' },
     { label: 'sales.nav.quotes', path: 'quotes', icon: IconFileDollar, permission: 'sales.quote.view' },
     { label: 'sales.nav.orders', path: 'orders', icon: IconReceipt, permission: 'sales.order.view' },
-    { label: 'sales.nav.items', path: 'items', icon: IconPackage, permission: 'sales.item.view', group: 'sales.nav.group_config' },
+    { label: 'sales.nav.items', path: 'items', icon: IconPackage, permission: 'item.view', group: 'sales.nav.group_config' },
     {
       label: 'sales.nav.approval_rules',
       path: 'approval-rules',

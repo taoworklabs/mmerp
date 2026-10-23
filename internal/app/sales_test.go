@@ -31,18 +31,18 @@ func newSalesFixture(t *testing.T, products []string) *salesFixture {
 	f.company = f.id(f.admin, "/api/org-units", `{"parent_id":null,"kind":"company","name":"C","tax_code":"0100000001","legal_name":"Công ty TNHH C","address":"1 Tràng Tiền"}`)
 	f.a = f.id(f.admin, "/api/org-units", fmt.Sprintf(`{"parent_id":%d,"kind":"department","name":"Kinh doanh A"}`, f.company))
 	b := f.id(f.admin, "/api/org-units", fmt.Sprintf(`{"parent_id":%d,"kind":"department","name":"Kinh doanh B"}`, f.company))
-	user := func(login, role string, unit any) *client {
+	user := func(login, product, role string, unit any) *client {
 		id := f.id(f.admin, "/api/users", fmt.Sprintf(`{"login":%q,"name":%q,"password":"correct horse"}`, login, login))
-		f.id(f.admin, fmt.Sprintf("/api/users/%d/roles", id), fmt.Sprintf(`{"product":"sales","role":%q,"org_unit_id":%v}`, role, unit))
+		f.id(f.admin, fmt.Sprintf("/api/users/%d/roles", id), fmt.Sprintf(`{"product":%q,"role":%q,"org_unit_id":%v}`, product, role, unit))
 		return f.login(login)
 	}
-	f.staffA, f.staffB = user("staff_a", "staff", f.a), user("staff_b", "staff", b)
-	catalog := user("catalog", "catalog_admin", "null")
+	f.staffA, f.staffB = user("staff_a", "sales", "staff", f.a), user("staff_b", "sales", "staff", b)
+	catalog := user("catalog", "item", "admin", "null")
 	return f.withData(catalog)
 }
 
 func (f *salesFixture) withData(catalog *client) *salesFixture {
-	item := f.id(catalog, "/api/sales/items", `{"code":"BUT","name":"Bút bi","unit":"hộp","price":10005,"vat_rate":"8","active":true}`)
+	item := f.id(catalog, "/api/items", `{"code":"BUT","name":"Bút bi","unit":"hộp","price":10005,"vat_rate":"8","active":true}`)
 	f.customer = f.id(f.staffA, "/api/sales/customers", fmt.Sprintf(`{"code":"KH1","name":"Công ty Ánh Dương","tax_code":"0312345678",
 		"address":"5 Nguyễn Huệ","phone":null,"email":null,"contact_name":"Chị Hương","payment_terms":"30 ngày","org_unit_id":%d,"active":true}`, f.a))
 	f.quote = f.id(f.staffA, "/api/sales/quotes", fmt.Sprintf(`{"request_id":"7d7c1a52-6c8e-4f7a-9d0e-1f2a3b4c5d6e","date":"2026-03-10",
@@ -111,7 +111,8 @@ func TestSalesProductOff(t *testing.T) {
 	}
 }
 
-// A catalogue alone is Sales data: with Sales off, its area still shows.
+// Customers alone are Sales data: with Sales off, its area still shows. Items belong
+// to no product, so they alone are nobody's data.
 func TestSalesCatalogueIsData(t *testing.T) {
 	pool := pgtest.New(t)
 	if err := app.CreateAdmin(t.Context(), pool, "admin", "Admin", "correct horse"); err != nil {
@@ -119,15 +120,26 @@ func TestSalesCatalogueIsData(t *testing.T) {
 	}
 	e := env(t, pool, []string{"sales"})
 	f := &jobsFixture{t: t, system: e.SystemPool, env: e}
+	admin := f.login("admin")
 	// Without a code, the item gets one issued.
-	f.id(f.login("admin"), "/api/sales/items", `{"name":"Bút bi","unit":"hộp","price":10005,"vat_rate":"8","active":true}`)
-	f.env = env(t, pool, nil)
-	var me struct {
-		ProductsWithData []string `json:"products_with_data"`
+	f.id(admin, "/api/items", `{"name":"Bút bi","unit":"hộp","price":10005,"vat_rate":"8","active":true}`)
+	unit := f.id(admin, "/api/org-units", `{"parent_id":null,"kind":"company","name":"C"}`)
+	withData := func() []string {
+		f.env = env(t, pool, nil)
+		var me struct {
+			ProductsWithData []string `json:"products_with_data"`
+		}
+		_ = json.Unmarshal(f.ok(f.login("admin"), "GET", "/api/me", "", 200), &me)
+		return me.ProductsWithData
 	}
-	_ = json.Unmarshal(f.ok(f.login("admin"), "GET", "/api/me", "", 200), &me)
-	if !slices.Equal(me.ProductsWithData, []string{"sales"}) {
-		t.Fatalf("products with data: %v", me.ProductsWithData)
+	if got := withData(); len(got) != 0 {
+		t.Fatalf("products with data, items only: %v", got)
+	}
+	f.env = env(t, pool, []string{"sales"})
+	f.id(f.login("admin"), "/api/sales/customers", fmt.Sprintf(`{"name":"Khách","tax_code":null,"address":null,"phone":null,"email":null,
+		"contact_name":null,"payment_terms":null,"org_unit_id":%d,"active":true}`, unit))
+	if got := withData(); !slices.Equal(got, []string{"sales"}) {
+		t.Fatalf("products with data: %v", got)
 	}
 }
 

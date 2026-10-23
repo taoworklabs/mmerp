@@ -4199,7 +4199,7 @@
             "type": "boolean"
           },
           "code": {
-            "description": "Empty or absent: issued from the sales.item code series",
+            "description": "Empty or absent: issued from the item.item code series",
             "maxLength": 50,
             "type": "string"
           },
@@ -10977,6 +10977,185 @@
         ]
       }
     },
+    "/items": {
+      "get": {
+        "operationId": "list-items",
+        "parameters": [
+          {
+            "explode": false,
+            "in": "query",
+            "name": "q",
+            "schema": {
+              "maxLength": 100,
+              "type": "string"
+            }
+          },
+          {
+            "explode": false,
+            "in": "query",
+            "name": "active",
+            "schema": {
+              "enum": [
+                "true",
+                "false"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "explode": false,
+            "in": "query",
+            "name": "sort",
+            "schema": {
+              "default": "code",
+              "enum": [
+                "code",
+                "-code",
+                "name",
+                "-name"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "explode": false,
+            "in": "query",
+            "name": "page",
+            "schema": {
+              "default": 1,
+              "format": "int64",
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "explode": false,
+            "in": "query",
+            "name": "page_size",
+            "schema": {
+              "default": 50,
+              "enum": [
+                20,
+                50,
+                100
+              ],
+              "format": "int64",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ItemList"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "tags": [
+          "core",
+          "core"
+        ]
+      },
+      "post": {
+        "operationId": "create-item",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NewItem"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreatedOutputBody"
+                }
+              }
+            },
+            "description": "Created"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "tags": [
+          "core",
+          "core"
+        ]
+      }
+    },
+    "/items/{id}": {
+      "put": {
+        "operationId": "update-item",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ItemFields"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "tags": [
+          "core",
+          "core"
+        ]
+      }
+    },
     "/jobs": {
       "get": {
         "description": "The caller's own background jobs, or the system jobs with core.job.monitor, newest first; finished jobs are kept for 7 days.",
@@ -12457,185 +12636,6 @@
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/CustomerFields"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "204": {
-            "description": "No Content"
-          },
-          "default": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            },
-            "description": "Error"
-          }
-        },
-        "tags": [
-          "sales",
-          "sales"
-        ]
-      }
-    },
-    "/sales/items": {
-      "get": {
-        "operationId": "list-items",
-        "parameters": [
-          {
-            "explode": false,
-            "in": "query",
-            "name": "q",
-            "schema": {
-              "maxLength": 100,
-              "type": "string"
-            }
-          },
-          {
-            "explode": false,
-            "in": "query",
-            "name": "active",
-            "schema": {
-              "enum": [
-                "true",
-                "false"
-              ],
-              "type": "string"
-            }
-          },
-          {
-            "explode": false,
-            "in": "query",
-            "name": "sort",
-            "schema": {
-              "default": "code",
-              "enum": [
-                "code",
-                "-code",
-                "name",
-                "-name"
-              ],
-              "type": "string"
-            }
-          },
-          {
-            "explode": false,
-            "in": "query",
-            "name": "page",
-            "schema": {
-              "default": 1,
-              "format": "int64",
-              "minimum": 1,
-              "type": "integer"
-            }
-          },
-          {
-            "explode": false,
-            "in": "query",
-            "name": "page_size",
-            "schema": {
-              "default": 50,
-              "enum": [
-                20,
-                50,
-                100
-              ],
-              "format": "int64",
-              "type": "integer"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ItemList"
-                }
-              }
-            },
-            "description": "OK"
-          },
-          "default": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            },
-            "description": "Error"
-          }
-        },
-        "tags": [
-          "sales",
-          "sales"
-        ]
-      },
-      "post": {
-        "operationId": "create-item",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/NewItem"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "201": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/CreatedOutputBody"
-                }
-              }
-            },
-            "description": "Created"
-          },
-          "default": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            },
-            "description": "Error"
-          }
-        },
-        "tags": [
-          "sales",
-          "sales"
-        ]
-      }
-    },
-    "/sales/items/{id}": {
-      "put": {
-        "operationId": "update-item",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "id",
-            "required": true,
-            "schema": {
-              "format": "int64",
-              "type": "integer"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/ItemFields"
               }
             }
           },

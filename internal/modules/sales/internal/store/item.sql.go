@@ -9,98 +9,27 @@ import (
 	"context"
 )
 
-const anyCatalog = `-- name: AnyCatalog :one
-SELECT (EXISTS (SELECT 1 FROM sales.customers) OR EXISTS (SELECT 1 FROM sales.items))::bool AS any
+const itemOptionsBase = `-- name: ItemOptionsBase :many
+SELECT id, code, name FROM item.items
 `
 
-// Items count as Sales data too, though they are no record type.
-func (q *Queries) AnyCatalog(ctx context.Context) (bool, error) {
-	row := q.db.QueryRow(ctx, anyCatalog)
-	var any bool
-	err := row.Scan(&any)
-	return any, err
+type ItemOptionsBaseRow struct {
+	ID   int64
+	Code string
+	Name string
 }
-
-const createItem = `-- name: CreateItem :one
-INSERT INTO sales.items (code, name, unit, price, vat_rate, active) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id
-`
-
-type CreateItemParams struct {
-	Code    string
-	Name    string
-	Unit    string
-	Price   int64
-	VatRate string
-	Active  bool
-}
-
-func (q *Queries) CreateItem(ctx context.Context, arg CreateItemParams) (int64, error) {
-	row := q.db.QueryRow(ctx, createItem,
-		arg.Code,
-		arg.Name,
-		arg.Unit,
-		arg.Price,
-		arg.VatRate,
-		arg.Active,
-	)
-	var id int64
-	err := row.Scan(&id)
-	return id, err
-}
-
-const getItem = `-- name: GetItem :one
-SELECT id, code, name, unit, price, vat_rate, active FROM sales.items WHERE id = $1
-`
-
-func (q *Queries) GetItem(ctx context.Context, id int64) (SalesItem, error) {
-	row := q.db.QueryRow(ctx, getItem, id)
-	var i SalesItem
-	err := row.Scan(
-		&i.ID,
-		&i.Code,
-		&i.Name,
-		&i.Unit,
-		&i.Price,
-		&i.VatRate,
-		&i.Active,
-	)
-	return i, err
-}
-
-const itemCodeTaken = `-- name: ItemCodeTaken :one
-SELECT EXISTS (SELECT 1 FROM sales.items WHERE lower(code) = lower($1))
-`
-
-func (q *Queries) ItemCodeTaken(ctx context.Context, lower string) (bool, error) {
-	row := q.db.QueryRow(ctx, itemCodeTaken, lower)
-	var exists bool
-	err := row.Scan(&exists)
-	return exists, err
-}
-
-const itemListBase = `-- name: ItemListBase :many
-SELECT id, code, name, unit, price, vat_rate, active FROM sales.items
-`
 
 // data:base
-func (q *Queries) ItemListBase(ctx context.Context) ([]SalesItem, error) {
-	rows, err := q.db.Query(ctx, itemListBase)
+func (q *Queries) ItemOptionsBase(ctx context.Context) ([]ItemOptionsBaseRow, error) {
+	rows, err := q.db.Query(ctx, itemOptionsBase)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []SalesItem
+	var items []ItemOptionsBaseRow
 	for rows.Next() {
-		var i SalesItem
-		if err := rows.Scan(
-			&i.ID,
-			&i.Code,
-			&i.Name,
-			&i.Unit,
-			&i.Price,
-			&i.VatRate,
-			&i.Active,
-		); err != nil {
+		var i ItemOptionsBaseRow
+		if err := rows.Scan(&i.ID, &i.Code, &i.Name); err != nil {
 			return nil, err
 		}
 		items = append(items, i)
@@ -112,18 +41,18 @@ func (q *Queries) ItemListBase(ctx context.Context) ([]SalesItem, error) {
 }
 
 const itemsByID = `-- name: ItemsByID :many
-SELECT id, code, name, unit, price, vat_rate, active FROM sales.items WHERE id = ANY($1::bigint[])
+SELECT id, code, name, unit, price, vat_rate, active FROM item.items WHERE id = ANY($1::bigint[])
 `
 
-func (q *Queries) ItemsByID(ctx context.Context, ids []int64) ([]SalesItem, error) {
+func (q *Queries) ItemsByID(ctx context.Context, ids []int64) ([]ItemItem, error) {
 	rows, err := q.db.Query(ctx, itemsByID, ids)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []SalesItem
+	var items []ItemItem
 	for rows.Next() {
-		var i SalesItem
+		var i ItemItem
 		if err := rows.Scan(
 			&i.ID,
 			&i.Code,
@@ -141,31 +70,4 @@ func (q *Queries) ItemsByID(ctx context.Context, ids []int64) ([]SalesItem, erro
 		return nil, err
 	}
 	return items, nil
-}
-
-const updateItem = `-- name: UpdateItem :one
-UPDATE sales.items SET name = $2, unit = $3, price = $4, vat_rate = $5, active = $6 WHERE id = $1 RETURNING code
-`
-
-type UpdateItemParams struct {
-	ID      int64
-	Name    string
-	Unit    string
-	Price   int64
-	VatRate string
-	Active  bool
-}
-
-func (q *Queries) UpdateItem(ctx context.Context, arg UpdateItemParams) (string, error) {
-	row := q.db.QueryRow(ctx, updateItem,
-		arg.ID,
-		arg.Name,
-		arg.Unit,
-		arg.Price,
-		arg.VatRate,
-		arg.Active,
-	)
-	var code string
-	err := row.Scan(&code)
-	return code, err
 }

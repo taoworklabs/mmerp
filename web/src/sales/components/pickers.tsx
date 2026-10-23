@@ -1,4 +1,5 @@
-import { api, unwrap, type CustomerListItem, type Item } from '@/shared/api/sales'
+import { api as coreApi, type Item } from '@/shared/api/core'
+import { api, unwrap, type CustomerListItem } from '@/shared/api/sales'
 import { RemoteSelectField } from '@/shared/ui/form'
 import { salesKeys } from '../keys'
 
@@ -58,7 +59,7 @@ export function ItemField({
       bare={bare}
       onPicked={onPicked}
       queryKey={salesKeys.items.picker}
-      search={async (q) => (await unwrap(api.GET('/sales/items', { params: { query: { q: q || undefined, active: 'true', page_size: 20 } } }))).items}
+      search={async (q) => (await unwrap(coreApi.GET('/items', { params: { query: { q: q || undefined, active: 'true', page_size: 20 } } }))).items}
     />
   )
 }

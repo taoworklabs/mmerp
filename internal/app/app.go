@@ -37,6 +37,7 @@ import (
 	"github.com/taoworklabs/mmerp/internal/modules/hrm"
 	"github.com/taoworklabs/mmerp/internal/modules/sales"
 	"github.com/taoworklabs/mmerp/internal/platform"
+	"github.com/taoworklabs/mmerp/internal/shared/item"
 	"github.com/taoworklabs/mmerp/internal/shared/posting"
 )
 
@@ -89,8 +90,9 @@ func Modules() []platform.Module {
 	// No accounting yet: nothing reacts to posting lines.
 	pst := posting.NewService(posting.Hooks{})
 	h := hrm.NewService(hrm.Deps{IAM: ids, Record: rec, Audit: audit.NewService(), Setting: set, DataIO: dio, Printing: prn, Posting: pst, Numbering: num})
+	itm := item.NewService(item.Deps{IAM: ids, Audit: audit.NewService(), Numbering: num})
 	sal := sales.NewService(sales.Deps{IAM: ids, Record: rec, Audit: audit.NewService(), Setting: set, Printing: prn, Numbering: num})
-	return []platform.Module{iam.Module(ids), setting.Module(set), numbering.Module(num), record.Module(rec), approval.Module(appr), dataio.Module(dio), attachment.Module(att), printing.Module(prn), discussion.Module(dis), notification.Module(ntf), hrm.Module(h), sales.Module(sal)}
+	return []platform.Module{iam.Module(ids), setting.Module(set), numbering.Module(num), record.Module(rec), approval.Module(appr), dataio.Module(dio), attachment.Module(att), printing.Module(prn), discussion.Module(dis), notification.Module(ntf), item.Module(itm), hrm.Module(h), sales.Module(sal)}
 }
 
 // CreateAdmin adds the first administrator at install time.

@@ -307,10 +307,10 @@ test('seed Sales on the Demo demo company', async ({ baseURL }) => {
   const itemOf: Record<string, (typeof items)[number]> = {}
   for (const it of items) {
     const [code, name, unitName, price, vat_rate, active] = it
-    const r = await admin.post('/api/sales/items', { data: { code, name, unit: unitName, price, vat_rate, active } })
+    const r = await admin.post('/api/items', { data: { code, name, unit: unitName, price, vat_rate, active } })
     itemId[code] =
       r.status() === 409
-        ? (await get<{ items: { id: number; code: string }[] }>(admin, `/api/sales/items?q=${code}&page_size=20`)).items.find((x) => x.code === code)!.id
+        ? (await get<{ items: { id: number; code: string }[] }>(admin, `/api/items?q=${code}&page_size=20`)).items.find((x) => x.code === code)!.id
         : await created(Promise.resolve(r))
     itemOf[code] = it
   }
