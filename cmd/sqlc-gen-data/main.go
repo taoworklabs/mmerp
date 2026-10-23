@@ -40,7 +40,7 @@ func generate(in []byte) ([]byte, error) {
 	if len(req.Settings.Queries) == 0 {
 		return nil, fmt.Errorf("no queries path in settings")
 	}
-	// internal/modules/hrm/queries.sql -> hrm
+	// internal/modules/hrm/queries -> hrm
 	module := filepath.Base(filepath.Dir(req.Settings.Queries[0]))
 
 	var b strings.Builder

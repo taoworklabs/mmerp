@@ -7,7 +7,7 @@ sql:
   - &module
     engine: postgresql
     schema: migrations
-    queries: internal/core/iam/queries.sql
+    queries: internal/core/iam/queries
     gen:
       go: &go
         package: store
@@ -16,54 +16,54 @@ sql:
         omit_unused_structs: true
     codegen: [{ plugin: data, out: internal/core/iam/internal/store }]
   - <<: *module
-    queries: internal/core/setting/queries.sql
+    queries: internal/core/setting/queries
     gen: { go: { <<: *go, out: internal/core/setting/internal/store } }
     codegen: [{ plugin: data, out: internal/core/setting/internal/store }]
   - <<: *module
-    queries: internal/core/audit/queries.sql
+    queries: internal/core/audit/queries
     gen: { go: { <<: *go, out: internal/core/audit/internal/store } }
     codegen: [{ plugin: data, out: internal/core/audit/internal/store }]
   - <<: *module
-    queries: internal/modules/hrm/queries.sql
+    queries: internal/modules/hrm/queries
     gen: { go: { <<: *go, out: internal/modules/hrm/internal/store } }
     codegen: [{ plugin: data, out: internal/modules/hrm/internal/store }]
   - <<: *module
-    queries: internal/core/numbering/queries.sql
+    queries: internal/core/numbering/queries
     gen: { go: { <<: *go, out: internal/core/numbering/internal/store } }
     codegen: [{ plugin: data, out: internal/core/numbering/internal/store }]
   - <<: *module
-    queries: internal/core/record/queries.sql
+    queries: internal/core/record/queries
     gen: { go: { <<: *go, out: internal/core/record/internal/store } }
     codegen: [{ plugin: data, out: internal/core/record/internal/store }]
   - <<: *module
-    queries: internal/core/approval/queries.sql
+    queries: internal/core/approval/queries
     gen: { go: { <<: *go, out: internal/core/approval/internal/store } }
     codegen: [{ plugin: data, out: internal/core/approval/internal/store }]
   - <<: *module
-    queries: internal/core/dataio/queries.sql
+    queries: internal/core/dataio/queries
     gen: { go: { <<: *go, out: internal/core/dataio/internal/store } }
     codegen: [{ plugin: data, out: internal/core/dataio/internal/store }]
   - <<: *module
-    queries: internal/core/attachment/queries.sql
+    queries: internal/core/attachment/queries
     gen: { go: { <<: *go, out: internal/core/attachment/internal/store } }
     codegen: [{ plugin: data, out: internal/core/attachment/internal/store }]
   - <<: *module
-    queries: internal/core/discussion/queries.sql
+    queries: internal/core/discussion/queries
     gen: { go: { <<: *go, out: internal/core/discussion/internal/store } }
     codegen: [{ plugin: data, out: internal/core/discussion/internal/store }]
   - <<: *module
-    queries: internal/core/notification/queries.sql
+    queries: internal/core/notification/queries
     gen: { go: { <<: *go, out: internal/core/notification/internal/store } }
     codegen: [{ plugin: data, out: internal/core/notification/internal/store }]
   - <<: *module
-    queries: internal/shared/posting/queries.sql
+    queries: internal/shared/posting/queries
     gen: { go: { <<: *go, out: internal/shared/posting/internal/store } }
     codegen: [{ plugin: data, out: internal/shared/posting/internal/store }]
   - <<: *module
-    queries: internal/core/printing/queries.sql
+    queries: internal/core/printing/queries
     gen: { go: { <<: *go, out: internal/core/printing/internal/store } }
     codegen: [{ plugin: data, out: internal/core/printing/internal/store }]
   - <<: *module
-    queries: internal/modules/sales/queries.sql
+    queries: internal/modules/sales/queries
     gen: { go: { <<: *go, out: internal/modules/sales/internal/store } }
     codegen: [{ plugin: data, out: internal/modules/sales/internal/store }]

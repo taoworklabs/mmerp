@@ -3,7 +3,7 @@
     "version": "2",
     "engine": "postgresql",
     "schema": ["migrations"],
-    "queries": ["internal/modules/hrm/queries.sql"],
+    "queries": ["internal/modules/hrm/queries"],
     "codegen": {"out": "internal/modules/hrm/internal/store", "plugin": "data"}
   },
   "queries": [
