@@ -856,5 +856,12 @@
   "shared.approval.done.withdraw": "Đã rút yêu cầu.",
   "shared.document.sent_for_approval": "Đã gửi yêu cầu duyệt cho {{number}}.",
   "shared.error.awaiting_approval": "Chứng từ đang chờ duyệt một yêu cầu.",
-  "shared.error.submitter_forbidden": "Người gửi không còn quyền thực hiện thao tác này; hãy từ chối yêu cầu."
+  "shared.error.submitter_forbidden": "Người gửi không còn quyền thực hiện thao tác này; hãy từ chối yêu cầu.",
+  "shared.partner.name": "Tên đối tác",
+  "shared.partner.code": "Mã đối tác",
+  "shared.partner.tax_code": "Mã số thuế",
+  "shared.partner.contact_name": "Người liên hệ",
+  "shared.partner.phone": "Điện thoại",
+  "shared.partner.email": "Email",
+  "shared.partner.address": "Địa chỉ"
 }

@@ -36,3 +36,6 @@ export type FlowCondition = components['schemas']['Expr']
 export type Item = components['schemas']['Item']
 export type ItemList = components['schemas']['ItemList']
 export type ItemSort = NonNullable<NonNullable<operations['list-items']['parameters']['query']>['sort']>
+export type Partner = components['schemas']['Partner']
+export type PartnerIdentity = components['schemas']['PartnerFields']
+export type PartnerListItem = components['schemas']['ListItem']

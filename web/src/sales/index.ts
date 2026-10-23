@@ -1,6 +1,7 @@
 import { IconAddressBook, IconFileDollar, IconGitBranch, IconPackage, IconReceipt, IconShoppingCart } from '@tabler/icons-react'
 import type { AreaManifest } from '@/shared/area'
-import { customerDocType, orderDocType, quoteDocType, salesKeys } from './keys'
+import { masterKeys } from '@/shared/master'
+import { customerDocType, orderDocType, partnerType, quoteDocType, salesKeys } from './keys'
 
 export const sales: AreaManifest = {
   product: 'sales',
@@ -40,8 +41,13 @@ export const sales: AreaManifest = {
     },
     [customerDocType]: {
       path: (id) => `customers/${id}`,
-      // Names show in pickers too, so every customer query.
-      invalidate: () => [salesKeys.customers.all()],
+      // Names show in pickers too, so every customer query; its identity is its partner's.
+      invalidate: () => [salesKeys.customers.all(), masterKeys.partners.all()],
+    },
+    // Partners open in Sales for now; their identity shows on every customer of theirs.
+    [partnerType]: {
+      path: (id) => `partners/${id}`,
+      invalidate: () => [salesKeys.customers.all(), masterKeys.partners.all()],
     },
   },
 }

@@ -112,6 +112,7 @@
   "core.jobs.kind.print": "Print to PDF",
   "partner.role.viewer": "View partners",
   "partner.role.editor": "Edit partners",
+  "partner.partner.name": "Partner",
   "partner.partner.code_series": "Partners",
   "item.role.viewer": "Item catalogue viewer",
   "item.role.admin": "Item catalogue admin",

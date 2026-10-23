@@ -7,6 +7,7 @@ import { useTranslation } from 'react-i18next'
 import { api, unwrap, type Item, type ItemList, type ItemSort } from '@/shared/api/core'
 import { useCan } from '@/shared/auth/me'
 import { errorText, formatNumber } from '@/shared/i18n'
+import { masterKeys } from '@/shared/master'
 import { type Column } from '@/shared/ui/DataTable'
 import { CheckboxField, CodeField, FilterChip, Form, FormActions, MoneyField, SearchInput, SelectField, TextField } from '@/shared/ui/form'
 import { useListView } from '@/shared/ui/ListView'
@@ -76,7 +77,7 @@ export function ItemsPage() {
       if (undo) return
       notifyUndo(t(x.active ? 'sales.items.retired_done' : 'sales.items.reactivated_done', { name: x.name }), t('shared.undo'), () => toggle.mutate({ item: { ...x, active: !x.active }, undo: true }))
     },
-    onSettled: () => qc.invalidateQueries({ queryKey: salesKeys.items.all() }),
+    onSettled: () => Promise.all([qc.invalidateQueries({ queryKey: salesKeys.items.all() }), qc.invalidateQueries({ queryKey: masterKeys.items.all() })]),
   })
 
   const columns: Column<Item>[] = [
@@ -175,7 +176,8 @@ function ItemModal({ item, onClose }: { item: Item | null; onClose: () => void }
     }
     if (item) await unwrap(api.PUT('/items/{id}', { params: { path: { id: item.id } }, body }))
     else await unwrap(api.POST('/items', { body: { ...body, code: v.code.trim() } }))
-    await qc.invalidateQueries({ queryKey: salesKeys.items.all() })
+    // The pickers too: an item's name and price fill new lines.
+    await Promise.all([qc.invalidateQueries({ queryKey: salesKeys.items.all() }), qc.invalidateQueries({ queryKey: masterKeys.items.all() })])
     notifySuccess(t('sales.items.saved'))
     onClose()
   }

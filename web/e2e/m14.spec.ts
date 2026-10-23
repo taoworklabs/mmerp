@@ -63,7 +63,7 @@ test('customer and item, a quotation approved by the manager, printed, then orde
   await staff.getByRole('link', { name: 'Thêm khách hàng' }).click()
   await staff.getByRole('textbox', { name: 'Mã khách hàng' }).fill(`KH${run}`)
   await staff.getByRole('textbox', { name: 'Tên khách hàng' }).fill(`Công ty Ánh Dương ${run}`)
-  await staff.getByRole('textbox', { name: 'Mã số thuế' }).fill('0312345678')
+  await staff.getByRole('textbox', { name: 'Mã số thuế' }).fill(`031234${run}`)
   await staff.getByRole('combobox', { name: 'Đơn vị phụ trách' }).click()
   await staff.getByRole('option', { name: team }).click()
   await staff.getByRole('textbox', { name: 'Điều kiện thanh toán' }).fill('Thanh toán trong 30 ngày')

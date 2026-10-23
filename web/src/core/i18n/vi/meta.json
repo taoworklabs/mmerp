@@ -112,6 +112,7 @@
   "core.jobs.kind.print": "In PDF",
   "partner.role.viewer": "Xem đối tác",
   "partner.role.editor": "Sửa đối tác",
+  "partner.partner.name": "Đối tác",
   "partner.partner.code_series": "Đối tác",
   "item.role.viewer": "Xem danh mục hàng hóa",
   "item.role.admin": "Quản lý danh mục hàng hóa",
