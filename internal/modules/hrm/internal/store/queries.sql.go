@@ -1623,84 +1623,6 @@ func (q *Queries) ListLegalParams(ctx context.Context) ([]HrmLegalParam, error) 
 	return items, nil
 }
 
-const listTimesheets = `-- name: ListTimesheets :many
-SELECT t.id, d.number, d.status, t.org_unit_id, u.name AS org_unit_name, t.period_start, t.period_end, count(*) OVER () AS total
-FROM hrm.timesheets t
-JOIN record.documents d ON d.id = t.id
-JOIN iam.org_units u ON u.id = t.org_unit_id
-WHERE ($1::bool OR t.org_unit_id = ANY($2::bigint[]))
-  AND ($3::text = '' OR d.status = $3)
-  AND ($4::bigint IS NULL OR t.org_unit_id = $4)
-  AND ($5::date IS NULL OR t.period_start = $5)
-ORDER BY
-    CASE WHEN $6::text = 'period' THEN t.period_start END,
-    CASE WHEN $6 IN ('', '-period') THEN t.period_start END DESC,
-    CASE WHEN $6 = 'number' THEN d.number END,
-    CASE WHEN $6 = '-number' THEN d.number END DESC,
-    u.name, t.id DESC
-LIMIT $8 OFFSET $7
-`
-
-type ListTimesheetsParams struct {
-	AllUnits    bool
-	Units       []int64
-	Status      string
-	OrgUnitID   pgtype.Int8
-	PeriodStart pgtype.Date
-	Sort        string
-	Off         int32
-	Lim         int32
-}
-
-type ListTimesheetsRow struct {
-	ID          int64
-	Number      string
-	Status      string
-	OrgUnitID   int64
-	OrgUnitName string
-	PeriodStart pgtype.Date
-	PeriodEnd   pgtype.Date
-	Total       int64
-}
-
-func (q *Queries) ListTimesheets(ctx context.Context, arg ListTimesheetsParams) ([]ListTimesheetsRow, error) {
-	rows, err := q.db.Query(ctx, listTimesheets,
-		arg.AllUnits,
-		arg.Units,
-		arg.Status,
-		arg.OrgUnitID,
-		arg.PeriodStart,
-		arg.Sort,
-		arg.Off,
-		arg.Lim,
-	)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []ListTimesheetsRow
-	for rows.Next() {
-		var i ListTimesheetsRow
-		if err := rows.Scan(
-			&i.ID,
-			&i.Number,
-			&i.Status,
-			&i.OrgUnitID,
-			&i.OrgUnitName,
-			&i.PeriodStart,
-			&i.PeriodEnd,
-			&i.Total,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
 const lockEmployee = `-- name: LockEmployee :one
 SELECT id, code, full_name, date_of_birth, gender, phone, email, address, org_unit_id, manager_id, user_id, hire_date, termination_date, national_id, social_insurance_no, tax_code, bank_account FROM hrm.employees WHERE id = $1 FOR UPDATE
 `
@@ -2604,6 +2526,52 @@ func (q *Queries) TimesheetLines(ctx context.Context, timesheetID int64) ([]Time
 	for rows.Next() {
 		var i TimesheetLinesRow
 		if err := rows.Scan(&i.EmployeeID, &i.Date, &i.Days); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const timesheetListBase = `-- name: TimesheetListBase :many
+SELECT t.id, d.number, d.status, t.org_unit_id, u.name AS org_unit_name, t.period_start, t.period_end
+FROM hrm.timesheets t
+JOIN record.documents d ON d.id = t.id
+JOIN iam.org_units u ON u.id = t.org_unit_id
+`
+
+type TimesheetListBaseRow struct {
+	ID          int64
+	Number      string
+	Status      string
+	OrgUnitID   int64
+	OrgUnitName string
+	PeriodStart pgtype.Date
+	PeriodEnd   pgtype.Date
+}
+
+// data:base
+func (q *Queries) TimesheetListBase(ctx context.Context) ([]TimesheetListBaseRow, error) {
+	rows, err := q.db.Query(ctx, timesheetListBase)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []TimesheetListBaseRow
+	for rows.Next() {
+		var i TimesheetListBaseRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Number,
+			&i.Status,
+			&i.OrgUnitID,
+			&i.OrgUnitName,
+			&i.PeriodStart,
+			&i.PeriodEnd,
+		); err != nil {
 			return nil, err
 		}
 		items = append(items, i)

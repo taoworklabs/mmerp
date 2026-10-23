@@ -318,22 +318,12 @@ DELETE FROM hrm.timesheet_lines WHERE timesheet_id = $1;
 INSERT INTO hrm.timesheet_lines (timesheet_id, employee_id, date, days)
 SELECT @timesheet_id::bigint, unnest(@employee_ids::bigint[]), unnest(@dates::date[]), unnest(@days::text[])::numeric;
 
--- name: ListTimesheets :many
-SELECT t.id, d.number, d.status, t.org_unit_id, u.name AS org_unit_name, t.period_start, t.period_end, count(*) OVER () AS total
+-- name: TimesheetListBase :many
+-- data:base
+SELECT t.id, d.number, d.status, t.org_unit_id, u.name AS org_unit_name, t.period_start, t.period_end
 FROM hrm.timesheets t
 JOIN record.documents d ON d.id = t.id
-JOIN iam.org_units u ON u.id = t.org_unit_id
-WHERE (@all_units::bool OR t.org_unit_id = ANY(@units::bigint[]))
-  AND (@status::text = '' OR d.status = @status)
-  AND (sqlc.narg(org_unit_id)::bigint IS NULL OR t.org_unit_id = sqlc.narg(org_unit_id))
-  AND (sqlc.narg(period_start)::date IS NULL OR t.period_start = sqlc.narg(period_start))
-ORDER BY
-    CASE WHEN @sort::text = 'period' THEN t.period_start END,
-    CASE WHEN @sort IN ('', '-period') THEN t.period_start END DESC,
-    CASE WHEN @sort = 'number' THEN d.number END,
-    CASE WHEN @sort = '-number' THEN d.number END DESC,
-    u.name, t.id DESC
-LIMIT @lim OFFSET @off;
+JOIN iam.org_units u ON u.id = t.org_unit_id;
 
 -- name: EmployeesByCodes :many
 SELECT id, code, org_unit_id FROM hrm.employees WHERE lower(code) = ANY(@codes::text[]);
