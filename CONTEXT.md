@@ -116,13 +116,20 @@ Product description: [products/hrm.md](./products/hrm.md).
 - **Payroll samples** (vi: "Bộ mẫu lương"): sample payroll cases with the expected value of every item, used as the payroll acceptance test ([docs/payroll-samples](./docs/payroll-samples/README.md)).
 - **Initial import** (vi: "Nhập ban đầu"): loading the organisation's existing data (employees, dependants, contracts in effect) into the system when they start using it. Contracts imported this way take effect immediately, without approval. Only possible while the legal entity has no finalized pay period. Done in M10.
 
+## Shared master data
+
+- **Partner** (`partner.partner`, vi: "Đối tác"): a company or person known to the whole tenant; identity only (code, name, tax code, address, phone, email, contact person). Tax code is unique among partners when present. Readable and editable by anyone holding `partner.view` or `partner.edit` anywhere. See [ADR-0039](./docs/adr/0039-shared-master-data.md).
+- **Partner role** (vi: "Vai trò đối tác"): a product's relation to a partner, holding that product's fields and ownership (customer today, supplier later).
+- **Partner code** (`code`, vi: "Mã đối tác"): issued from the code series `partner.partner`, prefix `DT` (`DT00001`).
+- **Partner roles and item roles** (vi: "Vai trò dữ liệu dùng chung"): `partner.viewer`, `partner.editor`, `item.viewer`, `item.admin` (`item.manage`; tenant-wide only).
+
 ## Sales
 
 Product description: [products/sales.md](./products/sales.md).
 
-- **Customer** (`sales.customer`, vi: "Khách hàng"): a party the organisation sells to, a company or a person. Has an **owning org unit** that decides who sees it. Not synonymous with User.
+- **Customer** (`sales.customer`, vi: "Khách hàng"): Sales' **partner role**: a partner the organisation sells to. One per partner per org unit at most. Owns the **owning org unit** that decides who sees it, payment terms, the active flag and its `code`; identity (name, tax code, address, contact) lives on the partner. Not synonymous with User.
 - **Customer code** (`code`, vi: "Mã khách hàng"): typed by the user or issued from the `sales.customer` code series, unique within the tenant, case-insensitive. Never changes after creation.
-- **Item** (`sales.items`, vi: "Hàng hóa, dịch vụ"): one entry of the catalogue of what is sold, goods or a service alike: code, name, unit, default unit price, default VAT rate. Tenant-wide.
+- **Item** (`item.items`, vi: "Hàng hóa, dịch vụ"): one entry of the shared catalogue, goods or a service alike: code, name, unit, default unit price, default VAT rate. Tenant-wide. Moved out of Sales by [ADR-0039](./docs/adr/0039-shared-master-data.md).
 - **Quotation** (`sales.quote`, vi: "Báo giá"): a document offering items to a customer at stated prices until its validity date (`valid_until`). `posted` means approved.
 - **Sales order** (`sales.order`, vi: "Đơn bán hàng"): a document recording what a customer ordered. `posted` means confirmed. Created from a quotation or directly.
 - **Line** (vi: "Dòng hàng"): one item on a quotation or order: description, quantity, unit price, discount, VAT rate, and the amounts computed from them.
@@ -133,4 +140,4 @@ Product description: [products/sales.md](./products/sales.md).
 - **Expired** (vi: "Hết hiệu lực"): a quotation whose validity date is before today in the tenant time zone. Derived, not stored. An expired quotation cannot become an order.
 - **Create sales order** (vi: "Tạo đơn bán hàng"): turning a posted, unexpired quotation into a draft order with the same customer, terms and lines. Repeating it returns the same order while that order is not cancelled.
 - **Request id** (`request_id`, vi: "Mã yêu cầu"): a UUID a create form generates once; sending the same create twice returns the first document.
-- **Sales roles** (vi: "Vai trò bán hàng"): `staff` and `manager` (customers, quotations and orders, view and edit; same permissions, two names for approval routing), `viewer` (view), `catalog_admin` (items; tenant-wide only), `approval_admin` (`sales.approval.manage`; tenant-wide only). See [ADR-0027](./docs/adr/0027-sales-product.md).
+- **Sales roles** (vi: "Vai trò bán hàng"): `staff` and `manager` (customers, quotations and orders, view and edit; same permissions, two names for approval routing), `viewer` (view), `approval_admin` (`sales.approval.manage`; tenant-wide only). See [ADR-0027](./docs/adr/0027-sales-product.md).

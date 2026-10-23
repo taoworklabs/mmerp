@@ -18,6 +18,8 @@ The product owner decided to open Sales as the second product, generic across tr
 
 ### Who owns customers and items
 
+Superseded by [ADR-0039](./0039-shared-master-data.md).
+
 **Customers and items belong to `sales`**, not to `shared/`. No other product uses them; [backend.md](../../backend.md#data-ownership) already says to promote an entity to `shared/` *before* a second product starts using it, with `ALTER TABLE … SET SCHEMA`, ids unchanged. A generic master-data module (partners with roles, an item master with variants and units of measure) is not built ahead of need.
 
 - `sales.customers`: a catalogue record type `sales.customer`. Code (unique in the tenant, case-insensitive), name, optional tax code, address, phone, email, contact person, default payment terms, an **owning org unit** and an active flag. The org unit decides who sees the customer.
