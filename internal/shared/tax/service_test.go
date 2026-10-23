@@ -8,7 +8,7 @@ import (
 )
 
 func TestVATPerLine(t *testing.T) {
-	// Two lines of net 10,005 at 8 %: VAT 800.4 each; 2.5 × ... net 72,916 × 10 % = 7,291.6.
+	// Each line rounds alone: 10,005 × 8 % = 800.4 → 800 (twice); 72,916 × 10 % = 7,291.6 → 7,292.
 	got := VAT([]int64{10_005, 10_005, 72_916}, []string{"8", "8", "10"}, platform.RoundLine)
 	if want := []int64{800, 800, 7_292}; !slices.Equal(got, want) {
 		t.Fatalf("got %v, want %v", got, want)

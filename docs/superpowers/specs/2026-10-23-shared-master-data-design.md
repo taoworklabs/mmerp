@@ -51,6 +51,7 @@ This round moves the master data that exists today and makes the core able to ho
 - Holders of partner view see the identity (name, tax code, address, contact) of **every** partner, including those whose only customers belong to other org units. They still see only the customers, quotations and orders of their own scope.
 - Holders of partner edit may edit the identity of any partner; a change shows in every org unit and every product using it. Changes are audited on the partner.
 - Creating a customer with a tax code that already belongs to a partner attaches the new customer to that partner (identity prefilled) instead of creating a second company. Creating a second customer for the same partner in the same org unit is refused with a stable error code.
+- Items alone no longer count as Sales data: a disabled Sales whose only data is items is no longer shown.
 
 ## Decisions made with the product owner
 
@@ -64,7 +65,7 @@ This round moves the master data that exists today and makes the core able to ho
 
 - **Grants are migrated so nobody loses an action:** every user holding a Sales role that grants customer view gets the partner viewer role; customer edit gets partner editor; item view gets item viewer; `sales.catalog_admin` gets item admin. Scopes are copied as granted (partner and item permissions are "anywhere", so scope only matters for revocation).
 - **Partner code** is new, issued from the partner module's code series (prefix is the builder's call); existing partners get generated codes. Customer codes (`KH…`) stay on the customer and keep printing.
-- **Tax code is unique among partners** when present, compared trimmed and case-insensitive. Migration: customers sharing a tax code collapse onto one partner, identity taken from the most recently updated one; customers without a tax code each get their own partner. Data is simulated only (ADR-0027), so no merge UI is needed.
+- **Tax code is unique among partners** when present, compared trimmed and case-insensitive. Migration: customers sharing a tax code collapse onto one partner, identity taken from the one with the highest id (no update timestamp exists); customers without a tax code each get their own partner. Data is simulated only (ADR-0027), so no merge UI is needed.
 - **Existing files, comments and history stay on the `sales.customer` records** they were attached to; nothing becomes more visible than it is. The partner page starts empty. The Sales customer page shows both.
 - **Partner record links** open in the Sales area this round (Sales declares `partner.partner` in its `recordTypes`). How two areas share one record type's link is settled when Purchasing arrives.
 - **Documents copy** the customer's code and the partner's identity at save and send, exactly the fields they copy today; prints are unchanged.
@@ -75,7 +76,7 @@ This round moves the master data that exists today and makes the core able to ho
 - All of `CLAUDE.md`: layering `modules → shared → core → platform`, data engine only, one schema per module, SQL migrations only, never edit a released migration, money in `int64`, rounding through `platform`, lock order for document writes.
 - `platform.Module` must still not reference `core` types.
 - `shared` modules never import or name `sales`.
-- `sales.customer` and the partner record type pass the `recordtest` contract suite.
+- `recordtest` covers documents only; the `sales.customer` and partner catalogue types are covered by service tests.
 - Every existing Go test, Vitest and Playwright test keeps passing (adjusted only where a deliberate behaviour change above requires it); `make seed` keeps working and creates partners.
 - Areas never import each other; the shared master-data UI folder calls only `shared/api/core`.
 
