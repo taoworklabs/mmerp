@@ -133,10 +133,10 @@ linters:
       # modules that have migrated (listed after the fixture path); every other
       # directory stays excluded until it migrates and joins the list. Tests may
       # inspect the database directly; generated stores build their own Queries.
-      - path-except: ^scripts/lint-fixtures/go/|^internal/modules/sales/
+      - path-except: ^scripts/lint-fixtures/go/|^internal/modules/sales/|^internal/shared/posting/
         linters: [forbidigo]
         text: store\.New
-      - path-except: ^scripts/lint-fixtures/go/|^internal/modules/sales/
+      - path-except: ^scripts/lint-fixtures/go/|^internal/modules/sales/|^internal/shared/posting/
         linters: [forbidigo]
         text: platform\.DBFrom
       - path: _test\.go$|\.gen\.go$|/queries\.sql\.go$
