@@ -154,8 +154,8 @@ func customerFields(c store.GetCustomerRow) CustomerFields {
 	return CustomerFields{PaymentTerms: platform.TextPtr(c.PaymentTerms), OrgUnitID: c.OrgUnitID, Active: c.Active}
 }
 
-func partnerFields(c store.GetCustomerRow) partner.Fields {
-	return partner.Fields{Name: c.Name, TaxCode: platform.TextPtr(c.TaxCode), Address: platform.TextPtr(c.Address),
+func partnerFields(c store.GetCustomerRow) partner.PartnerFields {
+	return partner.PartnerFields{Name: c.Name, TaxCode: platform.TextPtr(c.TaxCode), Address: platform.TextPtr(c.Address),
 		Phone: platform.TextPtr(c.Phone), Email: platform.TextPtr(c.Email), ContactName: platform.TextPtr(c.ContactName)}
 }
 
@@ -187,9 +187,9 @@ type CustomerFields struct {
 
 // NewCustomer names exactly one of an existing partner and a new partner's identity.
 type NewCustomer struct {
-	Code      string          `json:"code,omitempty" maxLength:"50" doc:"Empty or absent: issued from the sales.customer code series"`
-	PartnerID *int64          `json:"partner_id,omitempty" doc:"An existing partner"`
-	Partner   *partner.Fields `json:"partner,omitempty" doc:"A new partner's identity"`
+	Code      string                 `json:"code,omitempty" maxLength:"50" doc:"Empty or absent: issued from the sales.customer code series"`
+	PartnerID *int64                 `json:"partner_id,omitempty" doc:"An existing partner"`
+	Partner   *partner.PartnerFields `json:"partner,omitempty" doc:"A new partner's identity"`
 	CustomerFields
 }
 
@@ -197,15 +197,15 @@ type NewCustomer struct {
 // needs no partner edit.
 type CustomerUpdate struct {
 	CustomerFields
-	Partner partner.Fields `json:"partner"`
+	Partner partner.PartnerFields `json:"partner"`
 }
 
 type Customer struct {
-	ID          int64          `json:"id"`
-	Code        string         `json:"code"`
-	PartnerID   int64          `json:"partner_id"`
-	PartnerCode string         `json:"partner_code"`
-	Partner     partner.Fields `json:"partner"`
+	ID          int64                 `json:"id"`
+	Code        string                `json:"code"`
+	PartnerID   int64                 `json:"partner_id"`
+	PartnerCode string                `json:"partner_code"`
+	Partner     partner.PartnerFields `json:"partner"`
 	CustomerFields
 	OrgUnitName string `json:"org_unit_name"`
 	// edit, attach.

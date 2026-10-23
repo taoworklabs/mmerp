@@ -1996,7 +1996,7 @@ export interface components {
              */
             org_unit_id: number;
             org_unit_name: string;
-            partner: components["schemas"]["Fields"];
+            partner: components["schemas"]["PartnerFields"];
             partner_code: string;
             /** Format: int64 */
             partner_id: number;
@@ -2049,7 +2049,7 @@ export interface components {
              * @description Owning org unit: who may see the customer
              */
             org_unit_id: number;
-            partner: components["schemas"]["Fields"];
+            partner: components["schemas"]["PartnerFields"];
             /** @description Prefilled on new quotations and orders */
             payment_terms: string | null;
         };
@@ -2404,20 +2404,6 @@ export interface components {
             /** Format: int64 */
             id: number;
             name: string;
-        };
-        Fields: {
-            /**
-             * Format: uri
-             * @description A URL to the JSON Schema for this object.
-             * @example /api/schemas/Fields.json
-             */
-            readonly $schema?: string;
-            address: string | null;
-            contact_name: string | null;
-            email: string | null;
-            name: string;
-            phone: string | null;
-            tax_code: string | null;
         };
         Grant: {
             /** Format: int64 */
@@ -2959,7 +2945,7 @@ export interface components {
              */
             org_unit_id: number;
             /** @description A new partner's identity */
-            partner?: components["schemas"]["Fields"];
+            partner?: components["schemas"]["PartnerFields"];
             /**
              * Format: int64
              * @description An existing partner
@@ -3313,6 +3299,20 @@ export interface components {
             email: string | null;
             /** Format: int64 */
             id: number;
+            name: string;
+            phone: string | null;
+            tax_code: string | null;
+        };
+        PartnerFields: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example /api/schemas/PartnerFields.json
+             */
+            readonly $schema?: string;
+            address: string | null;
+            contact_name: string | null;
+            email: string | null;
             name: string;
             phone: string | null;
             tax_code: string | null;
@@ -7433,7 +7433,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["Fields"];
+                "application/json": components["schemas"]["PartnerFields"];
             };
         };
         responses: {

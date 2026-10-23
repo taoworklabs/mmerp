@@ -203,7 +203,8 @@ func TestPartnerMigration(t *testing.T) {
 		INSERT INTO iam.users (id, login, name, password_hash) OVERRIDING SYSTEM VALUE VALUES (1, 'staff', 'staff', 'x'), (2, 'viewer', 'viewer', 'x');
 		INSERT INTO iam.user_roles (user_id, product, role, org_unit_id) VALUES (1, 'sales', 'staff', 1), (2, 'sales', 'viewer', NULL);
 		INSERT INTO sales.customers (id, code, name, tax_code, org_unit_id) OVERRIDING SYSTEM VALUE VALUES
-			(1, 'KHA', 'A', '0101 ', 1), (2, 'KHB', 'B', '0101', 2), (3, 'KHC', 'C', NULL, 1), (4, 'KHD', 'D', '0101', 1)`); err != nil {
+			(1, 'KHA', 'A', '0101 ', 1), (2, 'KHB', 'B', '0101', 2), (3, 'KHC', 'C', NULL, 1), (4, 'KHD', 'D', '0101', 1);
+		UPDATE sales.customers SET phone = '', address = ' x ' WHERE id = 3`); err != nil {
 		t.Fatal(err)
 	}
 	if err := platform.Migrate(ctx, pool, migrations.FS); err != nil {
@@ -214,6 +215,11 @@ func TestPartnerMigration(t *testing.T) {
 	got, err := pgx.CollectRows(rows, pgx.RowTo[string])
 	if want := []string{"KHA:DT00001:B:0101", "KHB:DT00001:B:0101", "KHC:DT00002:C:-", "KHD:DT00003:D:-"}; err != nil || !slices.Equal(got, want) {
 		t.Fatalf("customers %v %v, want %v", got, err, want)
+	}
+	var phone, address *string
+	if err := pool.QueryRow(ctx, `SELECT p.phone, p.address FROM partner.partners p JOIN sales.customers c ON c.partner_id = p.id WHERE c.id = 3`).Scan(&phone, &address); err != nil ||
+		phone != nil || address == nil || *address != "x" {
+		t.Fatalf("C's identity not cleaned: phone %v, address %v, %v", phone, address, err)
 	}
 	rows, _ = pool.Query(ctx, `SELECT user_id || ':' || role || ':' || coalesce(org_unit_id::text, '*') FROM iam.user_roles WHERE product = 'partner' ORDER BY user_id`)
 	roles, err := pgx.CollectRows(rows, pgx.RowTo[string])

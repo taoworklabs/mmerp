@@ -97,7 +97,7 @@ func (f *fixture) check(err error) {
 func str(s string) *string { return &s }
 
 func customer(code string, unit int64) sales.NewCustomer {
-	return sales.NewCustomer{Code: code, Partner: &partner.Fields{Name: "Công ty " + code, Address: str("1 Lê Lợi, Huế")},
+	return sales.NewCustomer{Code: code, Partner: &partner.PartnerFields{Name: "Công ty " + code, Address: str("1 Lê Lợi, Huế")},
 		CustomerFields: sales.CustomerFields{PaymentTerms: str("30 ngày"), OrgUnitID: unit, Active: true}}
 }
 
@@ -694,7 +694,7 @@ func TestCustomerOnExistingPartner(t *testing.T) {
 		t.Fatalf("by partner %+v %v", l, err)
 	}
 	// Exactly one of an existing partner and a new one.
-	in.Partner = &partner.Fields{Name: "X"}
+	in.Partner = &partner.PartnerFields{Name: "X"}
 	wantCode(t, must2(f.sales.CreateCustomer(staffB, in)), "customer_partner_required")
 	in.Partner, in.PartnerID = nil, nil
 	wantCode(t, must2(f.sales.CreateCustomer(staffB, in)), "customer_partner_required")
@@ -745,7 +745,7 @@ func TestDocumentCopiesPartnerIdentity(t *testing.T) {
 	id := must(t)(f.sales.CreateQuote(f.staff, sales.NewDoc{RequestID: newRequest(), DocFields: f.fields("2026-03-10")}))
 	c, err := f.sales.Customer(f.staff, f.customer)
 	f.check(err)
-	f.check(f.partners.Update(f.staff, c.PartnerID, partner.Fields{Name: "Công ty Mới", TaxCode: str("0312345678"), Address: str("5 Nguyễn Huệ")}))
+	f.check(f.partners.Update(f.staff, c.PartnerID, partner.PartnerFields{Name: "Công ty Mới", TaxCode: str("0312345678"), Address: str("5 Nguyễn Huệ")}))
 	f.check(f.move(f.staff, "sales.quote", id, record.Posted))
 	q, err := f.sales.Quote(f.staff, id)
 	f.check(err)

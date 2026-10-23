@@ -896,7 +896,7 @@
             "type": "string"
           },
           "partner": {
-            "$ref": "#/components/schemas/Fields"
+            "$ref": "#/components/schemas/PartnerFields"
           },
           "partner_code": {
             "type": "string"
@@ -1084,7 +1084,7 @@
             "type": "integer"
           },
           "partner": {
-            "$ref": "#/components/schemas/Fields"
+            "$ref": "#/components/schemas/PartnerFields"
           },
           "payment_terms": {
             "description": "Prefilled on new quotations and orders",
@@ -2297,69 +2297,6 @@
           "id",
           "code",
           "name"
-        ],
-        "type": "object"
-      },
-      "Fields": {
-        "additionalProperties": false,
-        "properties": {
-          "$schema": {
-            "description": "A URL to the JSON Schema for this object.",
-            "examples": [
-              "/api/schemas/Fields.json"
-            ],
-            "format": "uri",
-            "readOnly": true,
-            "type": "string"
-          },
-          "address": {
-            "maxLength": 500,
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "contact_name": {
-            "maxLength": 200,
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "email": {
-            "maxLength": 200,
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "name": {
-            "maxLength": 300,
-            "minLength": 1,
-            "type": "string"
-          },
-          "phone": {
-            "maxLength": 50,
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "tax_code": {
-            "maxLength": 20,
-            "type": [
-              "string",
-              "null"
-            ]
-          }
-        },
-        "required": [
-          "name",
-          "tax_code",
-          "address",
-          "phone",
-          "email",
-          "contact_name"
         ],
         "type": "object"
       },
@@ -4005,7 +3942,7 @@
             "type": "integer"
           },
           "partner": {
-            "$ref": "#/components/schemas/Fields",
+            "$ref": "#/components/schemas/PartnerFields",
             "description": "A new partner's identity"
           },
           "partner_id": {
@@ -5091,6 +5028,69 @@
           "id",
           "code",
           "allowed_actions",
+          "name",
+          "tax_code",
+          "address",
+          "phone",
+          "email",
+          "contact_name"
+        ],
+        "type": "object"
+      },
+      "PartnerFields": {
+        "additionalProperties": false,
+        "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "/api/schemas/PartnerFields.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
+          "address": {
+            "maxLength": 500,
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "contact_name": {
+            "maxLength": 200,
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "email": {
+            "maxLength": 200,
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "name": {
+            "maxLength": 300,
+            "minLength": 1,
+            "type": "string"
+          },
+          "phone": {
+            "maxLength": 50,
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "tax_code": {
+            "maxLength": 20,
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
           "name",
           "tax_code",
           "address",
@@ -12272,7 +12272,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/Fields"
+                "$ref": "#/components/schemas/PartnerFields"
               }
             }
           },

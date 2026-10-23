@@ -65,13 +65,13 @@ var page = platform.Paging{Page: 1, PageSize: 50}
 func TestPartnerCRUD(t *testing.T) {
 	f := newFixture(t)
 	editor := f.user(t, "editor", "editor", f.a)
-	id := must(t)(f.partners.Create(editor, "", partner.Fields{Name: " Công ty Ánh Dương ", TaxCode: str(" 0312345678 "), Address: str(" "), ContactName: str("Chị Hương")}))
-	must(t)(f.partners.Create(editor, "own", partner.Fields{Name: "Bình Minh"}))
+	id := must(t)(f.partners.Create(editor, "", partner.PartnerFields{Name: " Công ty Ánh Dương ", TaxCode: str(" 0312345678 "), Address: str(" "), ContactName: str("Chị Hương")}))
+	must(t)(f.partners.Create(editor, "own", partner.PartnerFields{Name: "Bình Minh"}))
 	p, err := f.partners.Get(editor, id)
 	if err != nil || p.Code != "DT00001" || p.Name != "Công ty Ánh Dương" || *p.TaxCode != "0312345678" || p.Address != nil || !slices.Equal(p.AllowedActions, []string{"edit"}) {
 		t.Fatalf("created %+v %v", p, err)
 	}
-	in := p.Fields
+	in := p.PartnerFields
 	in.Phone = str("0909")
 	if err := f.partners.Update(editor, id, in); err != nil {
 		t.Fatal(err)
@@ -84,17 +84,24 @@ func TestPartnerCRUD(t *testing.T) {
 	if err := f.partners.Update(viewer, id, in); err != nil {
 		t.Fatalf("viewer saves unchanged: %v", err)
 	}
+	// The route always needs edit, so it tells no outsider which partners exist.
+	if err := f.partners.Edit(f.user(t, "outsider", "", 0), id, in); !errors.Is(err, platform.ErrForbidden) {
+		t.Fatalf("outsider saves unchanged through the route: %v", err)
+	}
+	if err := f.partners.Edit(editor, id, in); err != nil {
+		t.Fatal(err)
+	}
 	in.Name = "Đổi"
 	if err := f.partners.Update(viewer, id, in); !errors.Is(err, platform.ErrForbidden) {
 		t.Fatalf("viewer edits: %v", err)
 	}
-	if _, err := f.partners.Create(viewer, "", partner.Fields{Name: "X"}); !errors.Is(err, platform.ErrForbidden) {
+	if _, err := f.partners.Create(viewer, "", partner.PartnerFields{Name: "X"}); !errors.Is(err, platform.ErrForbidden) {
 		t.Fatalf("viewer creates: %v", err)
 	}
 	if err := f.partners.Update(editor, id+100, in); !errors.Is(err, platform.ErrNotFound) {
 		t.Fatalf("update missing: %v", err)
 	}
-	wantCode(t, must2(f.partners.Create(editor, "OWN", partner.Fields{Name: "Y"})), "partner_code_taken")
+	wantCode(t, must2(f.partners.Create(editor, "OWN", partner.PartnerFields{Name: "Y"})), "partner_code_taken")
 
 	l, err := f.partners.List(viewer, partner.Filter{Q: "ánh", Paging: page})
 	if err != nil || l.Total != 1 || l.Items[0].ID != id {
@@ -133,18 +140,18 @@ func must2(_ int64, err error) error { return err }
 func TestPartnerTaxCodeTaken(t *testing.T) {
 	f := newFixture(t)
 	editor := f.user(t, "editor", "editor", f.a)
-	id := must(t)(f.partners.Create(editor, "", partner.Fields{Name: "A", TaxCode: str(" 0101234567 ")}))
-	e := wantCode(t, must2(f.partners.Create(editor, "", partner.Fields{Name: "B", TaxCode: str("0101234567")})), "partner_tax_code_taken")
+	id := must(t)(f.partners.Create(editor, "", partner.PartnerFields{Name: "A", TaxCode: str(" 0101234567 ")}))
+	e := wantCode(t, must2(f.partners.Create(editor, "", partner.PartnerFields{Name: "B", TaxCode: str("0101234567")})), "partner_tax_code_taken")
 	if e.Params["partner_id"] != id {
 		t.Fatalf("params %v", e.Params)
 	}
-	other := must(t)(f.partners.Create(editor, "", partner.Fields{Name: "C"}))
-	e = wantCode(t, f.partners.Update(editor, other, partner.Fields{Name: "C", TaxCode: str("0101234567")}), "partner_tax_code_taken")
+	other := must(t)(f.partners.Create(editor, "", partner.PartnerFields{Name: "C"}))
+	e = wantCode(t, f.partners.Update(editor, other, partner.PartnerFields{Name: "C", TaxCode: str("0101234567")}), "partner_tax_code_taken")
 	if e.Params["partner_id"] != id {
 		t.Fatalf("params %v", e.Params)
 	}
 	// Its own tax code is no conflict.
-	if err := f.partners.Update(editor, id, partner.Fields{Name: "A2", TaxCode: str("0101234567")}); err != nil {
+	if err := f.partners.Update(editor, id, partner.PartnerFields{Name: "A2", TaxCode: str("0101234567")}); err != nil {
 		t.Fatal(err)
 	}
 }
@@ -152,7 +159,7 @@ func TestPartnerTaxCodeTaken(t *testing.T) {
 // Partner view held at one org unit sees every partner.
 func TestPartnerVisibleAnywhere(t *testing.T) {
 	f := newFixture(t)
-	id := must(t)(f.partners.Create(f.user(t, "editor_b", "editor", f.b), "", partner.Fields{Name: "Của B"}))
+	id := must(t)(f.partners.Create(f.user(t, "editor_b", "editor", f.b), "", partner.PartnerFields{Name: "Của B"}))
 	viewer := f.user(t, "viewer_a", "viewer", f.a)
 	if p, err := f.partners.Get(viewer, id); err != nil || p.Name != "Của B" {
 		t.Fatalf("viewer of A reads B's partner: %+v %v", p, err)
@@ -160,7 +167,7 @@ func TestPartnerVisibleAnywhere(t *testing.T) {
 	if l, err := f.partners.List(viewer, partner.Filter{Paging: page}); err != nil || l.Total != 1 {
 		t.Fatalf("viewer of A lists: %+v %v", l, err)
 	}
-	if err := f.partners.Update(f.user(t, "editor_a", "editor", f.a), id, partner.Fields{Name: "Đổi"}); err != nil {
+	if err := f.partners.Update(f.user(t, "editor_a", "editor", f.a), id, partner.PartnerFields{Name: "Đổi"}); err != nil {
 		t.Fatalf("editor of A edits B's partner: %v", err)
 	}
 }
@@ -169,8 +176,8 @@ func TestPartnerVisibleAnywhere(t *testing.T) {
 func TestPartnerWriteWithSalesDisabled(t *testing.T) {
 	f := newFixture(t)
 	ctx := platform.WithProducts(f.user(t, "editor", "editor", f.a), nil)
-	id := must(t)(f.partners.Create(ctx, "", partner.Fields{Name: "X"}))
-	if err := f.partners.Update(ctx, id, partner.Fields{Name: "Y"}); err != nil {
+	id := must(t)(f.partners.Create(ctx, "", partner.PartnerFields{Name: "X"}))
+	if err := f.partners.Update(ctx, id, partner.PartnerFields{Name: "Y"}); err != nil {
 		t.Fatal(err)
 	}
 	if p, err := f.partners.Get(ctx, id); err != nil || !slices.Equal(p.AllowedActions, []string{"edit"}) {

@@ -17,7 +17,7 @@ type partnerInput struct{ Body NewPartner }
 
 type updatePartnerInput struct {
 	ID   int64 `path:"id"`
-	Body Fields
+	Body PartnerFields
 }
 
 func registerHandlers(api huma.API, s *Service) {
@@ -33,10 +33,10 @@ func registerHandlers(api huma.API, s *Service) {
 		})
 	huma.Register(api, huma.Operation{OperationID: "create-partner", Method: http.MethodPost, Path: "/partners", DefaultStatus: http.StatusCreated},
 		func(ctx context.Context, in *partnerInput) (*platform.CreatedOutput, error) {
-			return platform.Created(s.Create(ctx, in.Body.Code, in.Body.Fields))
+			return platform.Created(s.Create(ctx, in.Body.Code, in.Body.PartnerFields))
 		})
 	huma.Register(api, huma.Operation{OperationID: "update-partner", Method: http.MethodPut, Path: "/partners/{id}", DefaultStatus: http.StatusNoContent},
 		func(ctx context.Context, in *updatePartnerInput) (*struct{}, error) {
-			return nil, s.Update(ctx, in.ID, in.Body)
+			return nil, s.Edit(ctx, in.ID, in.Body)
 		})
 }

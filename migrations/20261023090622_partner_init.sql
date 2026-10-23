@@ -19,6 +19,7 @@ CREATE UNIQUE INDEX partners_tax_code_key ON partner.partners (lower(btrim(tax_c
 -- customer (highest id); customers without one each get their own. A partner holds at most
 -- one customer per org unit, so a later customer of the same tax code and org unit gets a
 -- partner of its own, without the tax code (data is simulated, nobody merges it).
+-- Identity is stored trimmed, a blank field as none, as the service writes it.
 -- Partner codes follow the first customer of each partner, in id order.
 CREATE TEMP TABLE customer_partner ON COMMIT DROP AS
 WITH k AS (
@@ -35,8 +36,8 @@ WITH k AS (
 SELECT id, keeps_tax, 'DT' || lpad(dense_rank() OVER (ORDER BY first_id)::text, 5, '0') AS code FROM first;
 
 INSERT INTO partner.partners (code, name, tax_code, address, phone, email, contact_name)
-SELECT DISTINCT ON (m.code) m.code, c.name, CASE WHEN m.keeps_tax THEN btrim(c.tax_code) END,
-       c.address, c.phone, c.email, c.contact_name
+SELECT DISTINCT ON (m.code) m.code, btrim(c.name), CASE WHEN m.keeps_tax THEN nullif(btrim(c.tax_code), '') END,
+       nullif(btrim(c.address), ''), nullif(btrim(c.phone), ''), nullif(btrim(c.email), ''), nullif(btrim(c.contact_name), '')
 FROM customer_partner m JOIN sales.customers c ON c.id = m.id
 ORDER BY m.code, c.id DESC;
 

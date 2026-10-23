@@ -60,7 +60,7 @@ func (s *Service) List(ctx context.Context, f Filter) (List, error) {
 	}
 	out.Total = page.Total
 	for _, r := range page.Items {
-		out.Items = append(out.Items, ListItem{ID: r.ID, Code: r.Code, Fields: fields(r)})
+		out.Items = append(out.Items, ListItem{ID: r.ID, Code: r.Code, PartnerFields: fields(r)})
 	}
 	return out, nil
 }
@@ -76,11 +76,11 @@ func (s *Service) Get(ctx context.Context, id int64) (Partner, error) {
 		return Partner{}, err
 	}
 	actions, err := s.d.Record.Actions(ctx, record.Doc{Ref: ref})
-	return Partner{ID: r.ID, Code: r.Code, Fields: fields(r), AllowedActions: actions}, err
+	return Partner{ID: r.ID, Code: r.Code, PartnerFields: fields(r), AllowedActions: actions}, err
 }
 
 // Create adds a partner, in the caller's transaction if there is one.
-func (s *Service) Create(ctx context.Context, code string, f Fields) (int64, error) {
+func (s *Service) Create(ctx context.Context, code string, f PartnerFields) (int64, error) {
 	if err := s.requireAnywhere(ctx, PermEdit); err != nil {
 		return 0, err
 	}
@@ -100,14 +100,14 @@ func (s *Service) Create(ctx context.Context, code string, f Fields) (int64, err
 			return err
 		}
 		return s.d.Audit.RecordChanges(ctx, "partner.partner_created", audit.Ref{Type: partnerType, ID: id},
-			append([]audit.Change{{Field: "code", New: code}}, changes(Fields{}, f)...))
+			append([]audit.Change{{Field: "code", New: code}}, changes(PartnerFields{}, f)...))
 	})
 	return id, err
 }
 
 // Update replaces a partner's identity, in the caller's transaction if there is one. An
 // unchanged identity saves without partner edit, so a product may save its role alone.
-func (s *Service) Update(ctx context.Context, id int64, f Fields) error {
+func (s *Service) Update(ctx context.Context, id int64, f PartnerFields) error {
 	f = clean(f)
 	return platform.InTx(ctx, func(ctx context.Context) error {
 		r, err := store.LockPartner.Run(ctx, id)
@@ -135,6 +135,15 @@ func (s *Service) Update(ctx context.Context, id int64, f Fields) error {
 	})
 }
 
+// Edit is Update for the partner routes: it always needs partner edit, so an unchanged
+// identity tells nobody else whether the partner exists.
+func (s *Service) Edit(ctx context.Context, id int64, f PartnerFields) error {
+	if err := s.requireAnywhere(ctx, PermEdit); err != nil {
+		return err
+	}
+	return s.Update(ctx, id, f)
+}
+
 func (s *Service) requireAnywhere(ctx context.Context, perm string) error {
 	sc, err := s.d.IAM.Scope(ctx, "partner", perm)
 	if err == nil && !sc.Any() {
@@ -160,7 +169,7 @@ func taxCodeFree(ctx context.Context, self int64, tax *string) error {
 }
 
 // clean trims the identity; a blank optional field is none.
-func clean(f Fields) Fields {
+func clean(f PartnerFields) PartnerFields {
 	f.Name = strings.TrimSpace(f.Name)
 	for _, p := range []**string{&f.TaxCode, &f.Address, &f.Phone, &f.Email, &f.ContactName} {
 		if *p == nil {
@@ -175,12 +184,12 @@ func clean(f Fields) Fields {
 	return f
 }
 
-func fields(r store.PartnerPartner) Fields {
-	return Fields{Name: r.Name, TaxCode: platform.TextPtr(r.TaxCode), Address: platform.TextPtr(r.Address),
+func fields(r store.PartnerPartner) PartnerFields {
+	return PartnerFields{Name: r.Name, TaxCode: platform.TextPtr(r.TaxCode), Address: platform.TextPtr(r.Address),
 		Phone: platform.TextPtr(r.Phone), Email: platform.TextPtr(r.Email), ContactName: platform.TextPtr(r.ContactName)}
 }
 
-func changes(old, n Fields) []audit.Change {
+func changes(old, n PartnerFields) []audit.Change {
 	return []audit.Change{
 		{Field: "name", Old: old.Name, New: n.Name},
 		{Field: "tax_code", Old: old.TaxCode, New: n.TaxCode},

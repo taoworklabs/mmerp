@@ -18,8 +18,8 @@ var (
 	ErrTaxCodeTaken = &platform.Error{Status: http.StatusConflict, Code: "partner_tax_code_taken"}
 )
 
-// Fields are a partner's identity; the code is set once, at creation.
-type Fields struct {
+// PartnerFields are a partner's identity; the code is set once, at creation.
+type PartnerFields struct {
 	Name        string  `json:"name" minLength:"1" maxLength:"300"`
 	TaxCode     *string `json:"tax_code" maxLength:"20"`
 	Address     *string `json:"address" maxLength:"500"`
@@ -30,19 +30,19 @@ type Fields struct {
 
 type NewPartner struct {
 	Code string `json:"code,omitempty" maxLength:"50" doc:"Empty or absent: issued from the partner.partner code series"`
-	Fields
+	PartnerFields
 }
 
 type ListItem struct {
 	ID   int64  `json:"id"`
 	Code string `json:"code"`
-	Fields
+	PartnerFields
 }
 
 type Partner struct {
 	ID   int64  `json:"id"`
 	Code string `json:"code"`
-	Fields
+	PartnerFields
 	// edit, attach.
 	AllowedActions []string `json:"allowed_actions" nullable:"false"`
 }
