@@ -237,7 +237,7 @@ func TestListFiltersSortAndPages(t *testing.T) {
 		{hrm.EmployeeFilter{Status: "terminated"}, "E1/1"},
 		{hrm.EmployeeFilter{OrgUnitID: f.b}, "E2/1"},
 		{hrm.EmployeeFilter{Q: "bìn"}, "E2/1"},
-		{hrm.EmployeeFilter{Paging: platform.Paging{PageSize: 20, Page: 2}}, "/0"},
+		{hrm.EmployeeFilter{Paging: platform.Paging{PageSize: 20, Page: 2}}, "/3"},
 	} {
 		if got := codes(c.f); got != c.want {
 			t.Errorf("%+v: got %s, want %s", c.f, got, c.want)
@@ -352,6 +352,9 @@ func TestManagerAndAccountLinks(t *testing.T) {
 		t.Fatalf("unknown login: %v", err)
 	}
 	outside := must(t)(f.hrm.CreateEmployee(hr, employee("B", f.b)))
+	sub := employee("H", f.a)
+	sub.ManagerID = &e
+	h := must(t)(f.hrm.CreateEmployee(hr, sub))
 	hrA := f.ctxFor("hr_a", "hr@A")
 	probe := employee("G", f.a)
 	probe.ManagerID = &outside
@@ -380,6 +383,19 @@ func TestManagerAndAccountLinks(t *testing.T) {
 	}
 	if list.Total != 1 || list.Items[0].ID != outside {
 		t.Fatalf("manager_of = %+v", list.Items)
+	}
+	// A middle manager: manager_of=e excludes e and everyone under e (h), but
+	// boss and outside, which are not under e, are still offered.
+	midList, err := f.hrm.Employees(hr, hrm.EmployeeFilter{ManagerOf: e, Sort: "code", Paging: platform.Paging{Page: 1, PageSize: 50}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	offered := map[int64]bool{}
+	for _, it := range midList.Items {
+		offered[it.ID] = true
+	}
+	if midList.Total != 2 || !offered[boss] || !offered[outside] || offered[e] || offered[h] {
+		t.Fatalf("manager_of(middle) = %+v", midList.Items)
 	}
 }
 

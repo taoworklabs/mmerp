@@ -9,7 +9,7 @@ import (
 
 func newQ(c platform.Conn) *Queries { return New(c) }
 
-var ListEmployees = data.Many1("hrm.ListEmployees", newQ, (*Queries).ListEmployees)
+var EmployeeListBase = data.NewBase("hrm.EmployeeListBase", employeeListBase, []string{"id", "code", "full_name", "org_unit_id", "org_unit_name", "email", "phone", "hire_date", "termination_date"}, (*Queries).EmployeeListBase)
 var GetEmployee = data.One1("hrm.GetEmployee", newQ, (*Queries).GetEmployee)
 var LockEmployee = data.One1("hrm.LockEmployee", newQ, (*Queries).LockEmployee)
 var CreateEmployee = data.One1("hrm.CreateEmployee", newQ, (*Queries).CreateEmployee)
@@ -88,7 +88,7 @@ var LegalEntities = data.Many0("hrm.LegalEntities", newQ, (*Queries).LegalEntiti
 var CreatePayroll = data.Exec1("hrm.CreatePayroll", newQ, (*Queries).CreatePayroll)
 var GetPayroll = data.One1("hrm.GetPayroll", newQ, (*Queries).GetPayroll)
 var DeletePayroll = data.Exec1("hrm.DeletePayroll", newQ, (*Queries).DeletePayroll)
-var ListPayrolls = data.Many1("hrm.ListPayrolls", newQ, (*Queries).ListPayrolls)
+var PayrollListBase = data.NewBase("hrm.PayrollListBase", payrollListBase, []string{"id", "number", "status", "legal_entity_id", "legal_entity_name", "period_start", "period_end", "computed_at"}, (*Queries).PayrollListBase)
 var SavePayrollResult = data.Exec1("hrm.SavePayrollResult", newQ, (*Queries).SavePayrollResult)
 var ClearPayrollComputed = data.Exec1("hrm.ClearPayrollComputed", newQ, (*Queries).ClearPayrollComputed)
 var DeletePayrollLines = data.Exec1("hrm.DeletePayrollLines", newQ, (*Queries).DeletePayrollLines)

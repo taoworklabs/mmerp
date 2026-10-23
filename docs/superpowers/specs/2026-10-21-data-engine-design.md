@@ -577,3 +577,20 @@ Three `Enqueue` callers that had no transaction now enqueue in their own `InTx`:
 **For the follow-up plan:**
 - Custom-plan trade-off before migrating the other 9 lists. Open: pending product-owner decision (accept / count only when needed / sort indexes).
 - The deferred minors are listed in the execution ledger.
+
+## Slice 2 results (2026-10-22)
+
+The payroll and employee lists run on the engine (commits `c656677`, `037c002`).
+
+**Correctness.**
+- Payroll: old and new were compared on 132 combinations (4 actors × 11 filter combinations × 3 pagings). Same ids, same order, same totals, except a page past the end, which now returns the true total — the deliberate change. Payroll scope is unchanged: a role granted at department level still sees no payroll.
+- Employee: old and new were compared on 810 combinations (3 actors × 15 filters × 6 sorts × 3 pages, since deleted; the matrix passed before it was removed). Same ids, same order, same totals, with the same deliberate past-end-total change, plus the one deliberate search change the global constraints call for: `q` trims and escapes `%`, `_` and `\`, so it matches those characters literally instead of as wildcards. The terminated-today boundary (`termination_date < today`) is not a behaviour change, it is pinned unchanged: a mutation check (flipping it to `<=`) made the comparison fail with 24 mismatches, confirming the test actually pins it.
+- `manager_of` keeps excluding exactly the targeted employee and everyone under them, nobody else, on the extended `TestManagerAndAccountLinks` case (a middle manager: excludes that employee and everyone below, still offers everyone above and outside the chain).
+
+**Payroll `EXPLAIN` summary** (admin, no filter, page 1, `force_custom_plan`, 7 payrolls / 2 legal entities): old and new produce the same join/sort shape (`hrm.payrolls` seq scan at a few hundred rows at most — no index needed); the new page query skips the `WindowAgg` node the old query paid for on every row even on page 1, where the running total it fed was never read. Planning/execution: old 0.576 ms / 0.315 ms vs new 0.359 ms / 0.157 ms on this fixture. No index or engine change.
+
+**Employee list performance: not measured.** The 50 000-employee / 8-client harness (`internal/modules/hrm/list_employee_perf_test.go`, `-tags perf`) is written and lint-vetted, but the run was stopped at the product owner's request to focus on implementation instead. Running it needs a Postgres with at least 1 GB `/dev/shm` (`go test -tags perf ./internal/modules/hrm -run EmployeeListPerf -v -timeout 240m`; the leave list's equivalent run took about 70 minutes) for whenever that trade-off needs real numbers.
+
+**Engine.** No engine change was needed for either list: the payroll scope (`legal_entity_id`), the employee recursive `manager_of` fragment, the date-relative `termination_date < today` status and the fixed multi-column sort all expressed directly through `Where`/`Sorts`/`Default` as declared.
+
+Open: product-owner decision on the count strategy; the employee list adds no new data.

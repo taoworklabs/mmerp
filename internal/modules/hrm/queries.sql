@@ -1,30 +1,8 @@
--- name: ListEmployees :many
--- Scope filter: @all_units or org_unit_id in @units. Status uses @today, in the tenant time zone.
--- manager_of drops that employee and everyone under them, who cannot become their manager.
-WITH RECURSIVE under (id) AS (
-    SELECT sqlc.narg(manager_of)::bigint WHERE sqlc.narg(manager_of)::bigint IS NOT NULL
-    UNION
-    SELECT s.id FROM hrm.employees s JOIN under ON s.manager_id = under.id
-)
+-- name: EmployeeListBase :many
+-- data:base
 SELECT e.id, e.code, e.full_name, e.org_unit_id, u.name AS org_unit_name, e.email, e.phone,
-       e.hire_date, e.termination_date, count(*) OVER () AS total
-FROM hrm.employees e JOIN iam.org_units u ON u.id = e.org_unit_id
-WHERE (@all_units::bool OR e.org_unit_id = ANY(@units::bigint[]))
-  AND (@q::text = '' OR e.code ILIKE '%' || @q || '%' OR e.full_name ILIKE '%' || @q || '%')
-  AND (sqlc.narg(org_unit_id)::bigint IS NULL OR e.org_unit_id = sqlc.narg(org_unit_id))
-  AND (@status::text = ''
-       OR (@status = 'active' AND (e.termination_date IS NULL OR e.termination_date >= @today::date))
-       OR (@status = 'terminated' AND e.termination_date < @today::date))
-  AND e.id NOT IN (SELECT id FROM under)
-ORDER BY
-    CASE WHEN @sort::text = 'code' THEN lower(e.code) END,
-    CASE WHEN @sort = '-code' THEN lower(e.code) END DESC,
-    CASE WHEN @sort = 'full_name' THEN e.full_name END,
-    CASE WHEN @sort = '-full_name' THEN e.full_name END DESC,
-    CASE WHEN @sort = 'hire_date' THEN e.hire_date END,
-    CASE WHEN @sort = '-hire_date' THEN e.hire_date END DESC,
-    e.id
-LIMIT @lim OFFSET @off;
+       e.hire_date, e.termination_date
+FROM hrm.employees e JOIN iam.org_units u ON u.id = e.org_unit_id;
 
 -- name: GetEmployee :one
 SELECT e.*, u.name AS org_unit_name, m.code AS manager_code, m.full_name AS manager_name, a.login AS user_login
@@ -455,18 +433,13 @@ WHERE p.id = $1;
 -- name: DeletePayroll :exec
 DELETE FROM hrm.payrolls WHERE id = $1;
 
--- name: ListPayrolls :many
-SELECT p.id, d.number, d.status, d.legal_entity_id, u.name AS legal_entity_name, p.period_start, p.period_end,
-       p.computed_at, count(*) OVER () AS total
+-- name: PayrollListBase :many
+-- data:base
+SELECT p.id, d.number, d.status, d.legal_entity_id, u.name AS legal_entity_name,
+       p.period_start, p.period_end, p.computed_at
 FROM hrm.payrolls p
 JOIN record.documents d ON d.id = p.id
-JOIN iam.org_units u ON u.id = d.legal_entity_id
-WHERE (@all_units::bool OR d.legal_entity_id = ANY(@units::bigint[]))
-  AND (@status::text = '' OR d.status = @status)
-  AND (sqlc.narg(legal_entity_id)::bigint IS NULL OR d.legal_entity_id = sqlc.narg(legal_entity_id))
-  AND (sqlc.narg(period_start)::date IS NULL OR p.period_start = sqlc.narg(period_start))
-ORDER BY p.period_start DESC, u.name, p.id DESC
-LIMIT @lim OFFSET @off;
+JOIN iam.org_units u ON u.id = d.legal_entity_id;
 
 -- name: SavePayrollResult :exec
 UPDATE hrm.payrolls SET computed_at = now(), inputs_hash = @inputs_hash WHERE id = @id;

@@ -42,27 +42,27 @@ func (s *Service) employeeRefine(ctx context.Context, id int64, action record.Ac
 // Employees lists the employees within the actor's view scope.
 func (s *Service) Employees(ctx context.Context, f EmployeeFilter) (EmployeeList, error) {
 	out := EmployeeList{Items: []EmployeeListItem{}}
-	sc, err := s.d.IAM.Scope(ctx, "hrm", PermView)
-	if err != nil || !sc.Any() {
+	sc, err := s.d.IAM.DataScope(ctx, "hrm", PermView)
+	if err != nil {
 		return out, err
 	}
 	today, err := s.d.Setting.Today(ctx)
 	if err != nil {
 		return out, err
 	}
-	rows, err := store.New(platform.DBFrom(ctx)).ListEmployees(ctx, store.ListEmployeesParams{
-		AllUnits: sc.All, Units: sc.Units, Q: f.Q, OrgUnitID: pgtype.Int8{Int64: f.OrgUnitID, Valid: f.OrgUnitID != 0},
-		Status: f.Status, ManagerOf: pgtype.Int8{Int64: f.ManagerOf, Valid: f.ManagerOf != 0}, Today: today, Sort: f.Sort, Lim: f.Limit(), Off: f.Offset(),
-	})
-	for _, r := range rows {
-		out.Total = r.Total
+	page, err := employeeList.Run(ctx, employeeQuery(sc, f, today))
+	if err != nil {
+		return out, err
+	}
+	out.Total = page.Total
+	for _, r := range page.Items {
 		out.Items = append(out.Items, EmployeeListItem{
 			ID: r.ID, Code: r.Code, FullName: r.FullName, OrgUnitID: r.OrgUnitID, OrgUnitName: r.OrgUnitName,
 			Email: platform.TextPtr(r.Email), Phone: platform.TextPtr(r.Phone), HireDate: *platform.DatePtr(r.HireDate), TerminationDate: platform.DatePtr(r.TerminationDate),
 			Status: status(r.TerminationDate, today),
 		})
 	}
-	return out, err
+	return out, nil
 }
 
 // EmployeeActions lists what the actor may do with employees before picking one: create
