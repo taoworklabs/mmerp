@@ -5,9 +5,9 @@ description: Add a document type (a record with number, date, legal entity and l
 
 # New document type
 
-The rules live in `documents.md`; this skill is the order to apply them in. Each step ends on its completion criterion.
+The rules live in `docs/documents.md`; this skill is the order to apply them in. Each step ends on its completion criterion.
 
-1. **Specify.** Read `documents.md` (Record types, Document lifecycle, `record` functions, Posting) and the product doc for this type (e.g. `products/hrm.md`).
+1. **Specify.** Read `docs/documents.md` (Record types, Document lifecycle, `record` functions, Posting) and the product doc for this type (e.g. `products/hrm.md`).
    Done when: you can state, for this type, what `posted` means, the date used for the period lock, any affected date range for module-level locks, its approval fields (at most about five, typed), its `OnTransition` effects, and whether it produces posting lines.
 
 2. **Register.** Register the type with `record`: kind, product, `NumberPrefix`, approval fields, the permission declaration `Perms` (at least `View`; `Edit` covers `post`, `cancel` and `create` unless declared apart), `OnDelete` (deletes the module's rows of a deleted draft), `OnTransition`; optionally a relation grant `Grant` (users related to the record, such as the employee's own account; `SubjectCreates` lets the subject named in `Create`'s header create), a refine hook `Refine` (only narrows, e.g. a further sensitive permission), `BeforeSubmit` (rejects sending a draft, e.g. stale sources), `Approvers(ctx, ref, level)` when a step needs module-chosen approvers, and `Subjects(ctx, id)` for users the document is about, who must never approve it.

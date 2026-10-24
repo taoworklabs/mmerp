@@ -14,5 +14,5 @@ Every tenant always has its own database. On-premise and early cloud use A; clou
 
 - Business code is tenant-unaware: no tenant columns, services take no tenant parameter, the DB always comes from the context.
 - Backup, restore and data deletion per tenant are operations on a single database.
-- Under B, migrations run N times and the connection pool grows with the number of tenants (handled as described in [tenancy.md](../../tenancy.md)).
+- Under B, migrations run N times and the connection pool grows with the number of tenants (handled as described in [tenancy.md](../tenancy.md)).
 - C is rejected because forgetting one filter condition leaks data between tenants, and because it does not fit on-premise.

@@ -1,6 +1,6 @@
 # Tokens
 
-Every value below is defined in `web/src/shared/ui/theme.ts` (or `global.css` where noted). If you change one there, change it here and in `ui.md` in the same commit.
+Every value below is defined in `web/src/shared/ui/theme.ts` (or `global.css` where noted). If you change one there, change it here and in `docs/ui.md` in the same commit.
 
 How to reach a token:
 

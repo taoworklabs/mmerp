@@ -6,7 +6,7 @@ Status: accepted · 2026-10-10 · amends [ADR-0010](./0010-org-tree-and-roles.md
 
 `core.admin` was granted only core permissions: the install-time administrator saw no product area until someone granted it product roles one by one (the e2e setup does exactly that for HRM). With a second product, an owner who installs mmerp and signs in as `admin` sees an empty home page and must learn the role catalogue of every product first. The product owner wants `admin` to work as the system's root.
 
-The rule that sensitive fields need their own permission, never implied by a manager role ([platform.md](../../platform.md#personal-data)), still stands: salaries and identity numbers must not open to whoever administers users.
+The rule that sensitive fields need their own permission, never implied by a manager role ([platform.md](../platform.md#personal-data)), still stands: salaries and identity numbers must not open to whoever administers users.
 
 ## Decision
 

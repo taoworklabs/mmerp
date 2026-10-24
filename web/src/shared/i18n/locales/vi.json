@@ -576,7 +576,7 @@
   "shared.devui.overview": "Tổng quan",
   "shared.devui.overview_hint": "Ngôn ngữ thiết kế của mmerp, chạy thật, chia sáu tầng từ nền lên.",
   "shared.devui.overview_rules": "Quy tắc đầy đủ",
-  "shared.devui.overview_rules_text": "Trang này cho xem; quy tắc viết nằm trong skill mmerp-ui và ui.md, gồm cả cách viết chữ trên màn hình và trợ năng.",
+  "shared.devui.overview_rules_text": "Trang này cho xem; quy tắc viết nằm trong skill mmerp-ui và docs/ui.md, gồm cả cách viết chữ trên màn hình và trợ năng.",
   "shared.devui.pattern_filter_search": "Lọc và tìm",
   "shared.devui.pattern_create_edit": "Tạo và sửa",
   "shared.devui.pattern_confirm_delete": "Xác nhận và xóa",

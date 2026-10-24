@@ -20,7 +20,7 @@ The product owner decided to open Sales as the second product, generic across tr
 
 Superseded by [ADR-0039](./0039-shared-master-data.md).
 
-**Customers and items belong to `sales`**, not to `shared/` (superseded by ADR-0039: partners, items and VAT now live in `shared/`; Sales keeps the customer role). No other product uses them; [backend.md](../../backend.md#data-ownership) already says to promote an entity to `shared/` *before* a second product starts using it, with `ALTER TABLE … SET SCHEMA`, ids unchanged. A generic master-data module (partners with roles, an item master with variants and units of measure) is not built ahead of need.
+**Customers and items belong to `sales`**, not to `shared/` (superseded by ADR-0039: partners, items and VAT now live in `shared/`; Sales keeps the customer role). No other product uses them; [backend.md](../backend.md#data-ownership) already says to promote an entity to `shared/` *before* a second product starts using it, with `ALTER TABLE … SET SCHEMA`, ids unchanged. A generic master-data module (partners with roles, an item master with variants and units of measure) is not built ahead of need.
 
 - `sales.customers`: a catalogue record type `sales.customer`. Code (unique in the tenant, case-insensitive), name, optional tax code, address, phone, email, contact person, default payment terms, an **owning org unit** and an active flag. The org unit decides who sees the customer.
 - `sales.items`: code (unique, case-insensitive), name, unit of measure (free text), default unit price, default VAT rate, active flag. Tenant-wide: one catalogue for every org unit. Not a record type: no lifecycle, attachments or discussion are needed yet; changes are audited.
@@ -43,7 +43,7 @@ Superseded by [ADR-0039](./0039-shared-master-data.md).
 `record` status says only whether the document is in effect. Sales progress is not stored in any status column:
 
 - A quotation is **ordered** while a non-cancelled order points to it (`quote_id`), and **expired** once its `valid_until` is before today in the tenant time zone. Both are computed on read.
-- An order has no progress yet. Delivery and payment progress arrive with those products, as module status columns ([documents.md](../../documents.md#progress-status-owned-by-the-module)).
+- An order has no progress yet. Delivery and payment progress arrive with those products, as module status columns ([documents.md](../documents.md#progress-status-owned-by-the-module)).
 
 So there is no module status column to keep in step and no transition function to guard; issue #11 holds.
 

@@ -4,7 +4,7 @@ Status: accepted · 2026-10-05 · `Can` is amended by [ADR-0034](./0034-record-t
 
 ## Context
 
-The employee profile is the first record type. There are no documents yet, so `record` only needs registration and the permission question ([documents.md](../../documents.md#record-types)). The document lifecycle (ADR-0002) is added to this module in a later milestone.
+The employee profile is the first record type. There are no documents yet, so `record` only needs registration and the permission question ([documents.md](../documents.md#record-types)). The document lifecycle (ADR-0002) is added to this module in a later milestone.
 
 ## Decision
 
