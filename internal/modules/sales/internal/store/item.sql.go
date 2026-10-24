@@ -71,3 +71,36 @@ func (q *Queries) ItemsByID(ctx context.Context, ids []int64) ([]ItemItem, error
 	}
 	return items, nil
 }
+
+const lineItemsBase = `-- name: LineItemsBase :many
+SELECT id, code, name, unit, price, vat_rate, active FROM item.items
+`
+
+// data:base
+func (q *Queries) LineItemsBase(ctx context.Context) ([]ItemItem, error) {
+	rows, err := q.db.Query(ctx, lineItemsBase)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ItemItem
+	for rows.Next() {
+		var i ItemItem
+		if err := rows.Scan(
+			&i.ID,
+			&i.Code,
+			&i.Name,
+			&i.Unit,
+			&i.Price,
+			&i.VatRate,
+			&i.Active,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}

@@ -21,8 +21,8 @@ test.beforeAll(async ({ baseURL }) => {
   for (const [type, action] of touched) original.set(`${type}:${action}`, rules.find((r) => r.doc_type === type && r.action === action)?.rule ?? null)
   const company = await created(api.post('/api/org-units', { data: { parent_id: null, kind: 'company', name: `Công ty AA ${run}`, legal_name: `Công ty TNHH AA ${run}` } }))
   const unit = await created(api.post('/api/org-units', { data: { parent_id: company, kind: 'department', name: `Kinh doanh AA ${run}` } }))
-  await createUser(api, login.staff, [{ role: 'sales.staff', unit }, { role: 'partner.editor', unit }, { role: 'item.viewer', unit }])
-  await createUser(api, login.manager, [{ role: 'sales.manager', unit }, { role: 'partner.editor', unit }, { role: 'item.viewer', unit }])
+  await createUser(api, login.staff, [{ role: 'sales.staff', unit }, { role: 'partner.editor', unit }])
+  await createUser(api, login.manager, [{ role: 'sales.manager', unit }, { role: 'partner.editor', unit }])
   const item = await created(api.post('/api/items', { data: { code: `AA${run}`, name: `Giấy A4 ${run}`, unit: 'ram', price: 78_000, vat_rate: '10', active: true } }))
   const customer = await created(
     api.post('/api/sales/customers', {

@@ -1494,6 +1494,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/sales/line-items": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["list-line-items"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/sales/orders": {
         parameters: {
             query?: never;
@@ -2787,6 +2803,26 @@ export interface components {
             unit_price: number;
             /** @enum {string} */
             vat_rate: "none" | "0" | "5" | "8" | "10";
+        };
+        LineItem: {
+            code: string;
+            /** Format: int64 */
+            id: number;
+            name: string;
+            /** Format: int64 */
+            price: number;
+            unit: string;
+            /** @enum {string} */
+            vat_rate: "none" | "0" | "5" | "8" | "10";
+        };
+        LineItemList: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example /api/schemas/LineItemList.json
+             */
+            readonly $schema?: string;
+            items: components["schemas"]["LineItem"][];
         };
         ListColumn: {
             hidden: boolean;
@@ -7962,6 +7998,37 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "list-line-items": {
+        parameters: {
+            query?: {
+                q?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LineItemList"];
+                };
             };
             /** @description Error */
             default: {

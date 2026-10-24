@@ -31,6 +31,7 @@ export const salesKeys = {
   items: {
     all: () => ['sales', 'items'] as const,
     list: (q: ItemQuery) => ['sales', 'items', 'list', q] as const,
+    picker: (q: string) => ['sales', 'items', 'picker', q] as const,
   },
   docs: {
     all: (k: Kind) => ['sales', k] as const,
