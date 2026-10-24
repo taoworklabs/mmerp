@@ -79,7 +79,7 @@ Every choice below must satisfy these three constraints:
 
 ## Development tools
 
-Everything goes through `make`; the full list (`gen`, `lint`, `test`, `e2e`, `db`, `dev`, `reset-db`, `seed`, `image`, `smoke`) is in the command table of `CLAUDE.md`. `make lint` covers golangci-lint, `tsc`, ESLint, the colour-literal scan ([ui.md](./ui.md#enforcement)), dependency-cruiser and ESLint (no errors on `web/src`; every planted violation on `web/lint-fixtures`), the translation key check, and the `queries/*.sql` scan.
+Everything goes through `make`; the full list (`gen`, `lint`, `test`, `e2e`, `db`, `dev`, `reset-db`, `seed`, `image`, `smoke`) is in the command table of `AGENTS.md`. `make lint` covers golangci-lint, `tsc`, ESLint, the colour-literal scan ([ui.md](./ui.md#enforcement)), dependency-cruiser and ESLint (no errors on `web/src`; every planted violation on `web/lint-fixtures`), the translation key check, and the `queries/*.sql` scan.
 
 CI runs `make gen` and fails if the generated code differs from the committed code.
 
