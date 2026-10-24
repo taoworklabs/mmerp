@@ -12,6 +12,8 @@ import { FormSection } from './FormSection.tsx'
 const meta: Meta<typeof FormSection> = {
   title: 'Blocks/FormSection',
   component: FormSection,
+  // React elements, not values to edit.
+  argTypes: { badge: { control: false }, children: { control: false }, icon: { control: false } },
 }
 
 export default meta

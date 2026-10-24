@@ -9,7 +9,9 @@ import { Dialog, type DialogProps } from './Dialog.tsx'
 const meta: Meta<typeof Dialog> = {
   title: 'Overlay/Dialog',
   component: Dialog,
-  args: { closeLabel: 'Close', onClose: fn() },
+  args: { closeLabel: 'Đóng', onClose: fn() },
+  // React elements, not values to edit.
+  argTypes: { children: { control: false } },
 }
 
 export default meta
@@ -20,7 +22,7 @@ function Demo(props: Omit<DialogProps, 'opened'>) {
   const [opened, setOpened] = useState(false)
   return (
     <>
-      <Button onClick={() => setOpened(true)}>Open dialog</Button>
+      <Button onClick={() => setOpened(true)}>Mở hộp thoại</Button>
       <Dialog
         {...props}
         opened={opened}
@@ -34,63 +36,76 @@ function Demo(props: Omit<DialogProps, 'opened'>) {
 }
 
 export const Default: Story = {
-  args: { title: 'Dialog title', children: 'Dialog content' },
+  args: { title: 'Gửi duyệt đơn nghỉ phép', children: 'Đơn nghỉ phép sẽ được gửi tới quản lý trực tiếp để phê duyệt.' },
   render: (args) => <Demo {...args} />,
 }
 
 export const SizeSm: Story = {
-  args: { title: 'Small dialog', size: 'sm', children: 'Small content' },
+  args: { title: 'Xóa nhân viên?', size: 'sm', children: 'Thao tác này không thể hoàn tác.' },
   render: (args) => <Demo {...args} />,
 }
 
 export const SizeLg: Story = {
-  args: { title: 'Large dialog', size: 'lg', children: 'Large content' },
+  args: { title: 'Chi tiết đơn bán hàng', size: 'lg', children: 'Nội dung đơn bán hàng SO-0001.' },
   render: (args) => <Demo {...args} />,
 }
 
 export const SizeXl: Story = {
-  args: { title: 'Extra large dialog', size: 'xl', children: 'Extra large content' },
+  args: { title: 'Bảng lương tháng 10/2026', size: 'xl', children: 'Nội dung bảng lương của toàn bộ nhân viên.' },
   render: (args) => <Demo {...args} />,
 }
 
 export const WithoutCloseButton: Story = {
-  args: { title: 'No close button', withCloseButton: false, children: 'Content without a close button' },
+  args: { title: 'Đang tính lương', withCloseButton: false, children: 'Vui lòng chờ trong giây lát, không đóng cửa sổ này.' },
   render: (args) => <Demo {...args} />,
 }
 
 export const ScrollingBody: Story = {
   args: {
-    title: 'Scrolling body',
-    children: Array.from({ length: 40 }, (_, i) => <p key={i}>Line {i + 1}</p>),
+    title: 'Điều khoản hợp đồng',
+    children: Array.from({ length: 40 }, (_, i) => <p key={i}>Điều {i + 1}</p>),
   },
   render: (args) => <Demo {...args} />,
 }
 
 export const WithForm: Story = {
   args: {
-    title: 'Edit profile',
+    title: 'Sửa hồ sơ nhân viên',
     children: (
       <>
-        <TextInput label="Name" placeholder="Your name" />
-        <Button type="submit" style={{ marginTop: 16 }}>
-          Save
-        </Button>
+        <TextInput label="Họ và tên" placeholder="Nhập họ và tên" />
+        <Dialog.Actions>
+          <Button variant="subtle" color="gray">
+            Hủy
+          </Button>
+          <Button type="submit">Lưu</Button>
+        </Dialog.Actions>
       </>
     ),
   },
   render: (args) => <Demo {...args} />,
   play: async ({ canvasElement, args }) => {
     const canvas = within(canvasElement)
-    const trigger = canvas.getByRole('button', { name: 'Open dialog' })
+    const trigger = canvas.getByRole('button', { name: 'Mở hộp thoại' })
     await userEvent.click(trigger)
 
     const body = within(canvasElement.ownerDocument.body)
-    const dialog = body.getByRole('dialog', { name: 'Edit profile' })
+    const dialog = body.getByRole('dialog', { name: 'Sửa hồ sơ nhân viên' })
     expect(dialog.contains(document.activeElement)).toBe(true)
 
-    const input = body.getByRole('textbox', { name: 'Name' })
+    const input = body.getByRole('textbox', { name: 'Họ và tên' })
     expect(getComputedStyle(input.closest('[data-mmerp-control]') as Element).height).toBe('40px')
 
+    // The actions sit together at the right edge, the primary last, below the fields.
+    const save = body.getByRole('button', { name: 'Lưu' }).getBoundingClientRect()
+    const cancel = body.getByRole('button', { name: 'Hủy' }).getBoundingClientRect()
+    const field = input.closest('[data-mmerp-control]')!.getBoundingClientRect()
+    expect(save.right).toBeCloseTo(field.right, 0)
+    expect(cancel.right).toBeLessThan(save.left)
+    expect(save.left - cancel.right).toBeLessThanOrEqual(16)
+    expect(save.top - field.bottom).toBeGreaterThanOrEqual(16)
+
+    await userEvent.tab()
     await userEvent.tab()
     await userEvent.tab()
     await userEvent.tab()
@@ -106,14 +121,15 @@ export const WithForm: Story = {
 }
 
 export const DialogWithMenu: Story = {
+  tags: ['!dev', '!autodocs'],
   args: {
-    title: 'Dialog with a menu',
+    title: 'Tệp đính kèm',
     children: (
       <Menu.Root>
-        <Menu.Trigger render={<Button>Open menu</Button>} />
+        <Menu.Trigger render={<Button>Mở menu</Button>} />
         <Menu.Popup>
-          <Menu.Item>Rename</Menu.Item>
-          <Menu.Item color="danger">Delete</Menu.Item>
+          <Menu.Item>Đổi tên</Menu.Item>
+          <Menu.Item color="danger">Xóa</Menu.Item>
         </Menu.Popup>
       </Menu.Root>
     ),
@@ -121,16 +137,16 @@ export const DialogWithMenu: Story = {
   render: (args) => <Demo {...args} />,
   play: async ({ canvasElement, args }) => {
     const canvas = within(canvasElement)
-    await userEvent.click(canvas.getByRole('button', { name: 'Open dialog' }))
+    await userEvent.click(canvas.getByRole('button', { name: 'Mở hộp thoại' }))
 
     const body = within(canvasElement.ownerDocument.body)
-    await userEvent.click(body.getByRole('button', { name: 'Open menu' }))
+    await userEvent.click(body.getByRole('button', { name: 'Mở menu' }))
     expect(body.getByRole('menu')).toBeInTheDocument()
 
     await userEvent.keyboard('{Escape}')
     // The menu popup unmounts only once its own closing transition finishes.
     await waitFor(() => expect(body.queryByRole('menu')).not.toBeInTheDocument())
-    expect(body.getByRole('dialog', { name: 'Dialog with a menu' })).toBeInTheDocument()
+    expect(body.getByRole('dialog', { name: 'Tệp đính kèm' })).toBeInTheDocument()
     expect(args.onClose).not.toHaveBeenCalled()
   },
 }

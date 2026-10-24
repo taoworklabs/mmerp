@@ -25,5 +25,8 @@
 }
 
 .separator {
+  /* Flex, so an icon separator is centred on the text instead of sitting on its baseline. */
+  display: flex;
+  align-items: center;
   color: var(--mmerp-color-dimmed);
 }

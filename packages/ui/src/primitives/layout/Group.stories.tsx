@@ -7,6 +7,8 @@ import { Group } from './Group.tsx'
 const meta: Meta<typeof Group> = {
   title: 'Layout/Group',
   component: Group,
+  // React elements, not values to edit.
+  argTypes: { children: { control: false } },
 }
 
 export default meta
@@ -21,8 +23,8 @@ export const Default: Story = {
   args: {
     children: (
       <>
-        <Item label="First" />
-        <Item label="Second" />
+        <Item label="Mục thứ nhất" />
+        <Item label="Mục thứ hai" />
       </>
     ),
   },
@@ -33,8 +35,8 @@ export const Align: Story = {
     align: 'start',
     children: (
       <>
-        <Item label="Short" />
-        <Item label="A taller item" />
+        <Item label="Ngắn" />
+        <Item label="Mục cao hơn" />
       </>
     ),
   },
@@ -43,8 +45,8 @@ export const Align: Story = {
 export const Justify: Story = {
   render: () => (
     <Group justify="space-between" style={{ width: 240 }}>
-      <Item label="Left" />
-      <Item label="Right" />
+      <Item label="Trái" />
+      <Item label="Phải" />
     </Group>
   ),
 }
@@ -54,13 +56,13 @@ export const Wrap: Story = {
     wrap: false,
     children: (
       <>
-        <Item label="First" />
-        <Item label="Second" />
+        <Item label="Mục thứ nhất" />
+        <Item label="Mục thứ hai" />
       </>
     ),
   },
   play: async ({ canvasElement }) => {
-    const group = within(canvasElement).getByText('First').parentElement
+    const group = within(canvasElement).getByText('Mục thứ nhất').parentElement
     expect(group).not.toBeNull()
     expect(getComputedStyle(group as HTMLElement).flexWrap).toBe('nowrap')
   },
@@ -69,8 +71,8 @@ export const Wrap: Story = {
 export const Grow: Story = {
   render: () => (
     <Group grow style={{ width: 240 }}>
-      <Item label="First" />
-      <Item label="Second" />
+      <Item label="Mục thứ nhất" />
+      <Item label="Mục thứ hai" />
     </Group>
   ),
 }
@@ -80,15 +82,15 @@ export const ShrinkTruncates: Story = {
     <div style={{ width: 300 }}>
       <Group wrap={false} data-testid="outer">
         <Group shrink>
-          <Text truncate>{'x'.repeat(200)}</Text>
+          <Text truncate>{'Phiếu đề nghị thanh toán tạm ứng công tác phí cho chuyến khảo sát thị trường miền Trung của phòng Kinh doanh quý IV năm 2026'}</Text>
         </Group>
-        <Button>A</Button>
+        <Button>Lưu</Button>
       </Group>
     </div>
   ),
   play: async ({ canvasElement }) => {
     const outerGroup = within(canvasElement).getByTestId('outer')
-    const text = within(canvasElement).getByText('x'.repeat(200))
+    const text = within(canvasElement).getByText('Phiếu đề nghị thanh toán tạm ứng công tác phí cho chuyến khảo sát thị trường miền Trung của phòng Kinh doanh quý IV năm 2026')
     expect(outerGroup.scrollWidth).toBeLessThanOrEqual(300)
     expect(text.scrollWidth).toBeGreaterThan(text.clientWidth)
   },
@@ -100,13 +102,13 @@ export const Render: Story = {
     gap: 'md',
     children: (
       <>
-        <li>First</li>
-        <li>Second</li>
+        <li>Mục thứ nhất</li>
+        <li>Mục thứ hai</li>
       </>
     ),
   },
   play: async ({ canvasElement }) => {
-    const group = within(canvasElement).getByText('First').parentElement as HTMLElement
+    const group = within(canvasElement).getByText('Mục thứ nhất').parentElement as HTMLElement
     expect(group.tagName).toBe('UL')
     expect(getComputedStyle(group).columnGap).toBe('16px')
   },

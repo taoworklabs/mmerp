@@ -12,39 +12,40 @@ export default meta
 type Story = StoryObj<typeof Anchor>
 
 export const Default: Story = {
-  args: { href: '#', children: 'A link' },
+  args: { href: '#', children: 'Xem chi tiết' },
 }
 
 export const Tone: Story = {
-  args: { href: '#', tone: 'danger', children: 'A danger-toned link' },
+  args: { href: '#', tone: 'danger', children: 'Hủy đơn hàng' },
 }
 
 export const UnderlineAlways: Story = {
-  args: { href: '#', underline: 'always', children: 'Always underlined' },
+  args: { href: '#', underline: 'always', children: 'Luôn gạch chân' },
 }
 
 export const UnderlineNever: Story = {
-  args: { href: '#', underline: 'never', children: 'Never underlined' },
+  args: { href: '#', underline: 'never', children: 'Không gạch chân' },
 }
 
 export const RenderAsButton: Story = {
-  args: { render: <button type="button" />, children: 'Acts like an anchor, renders a button' },
+  args: { render: <button type="button" />, children: 'Trông như liên kết, hiển thị là nút' },
   play: async ({ canvasElement }) => {
-    const element = within(canvasElement).getByText('Acts like an anchor, renders a button')
+    const element = within(canvasElement).getByText('Trông như liên kết, hiển thị là nút')
     expect(element.tagName).toBe('BUTTON')
   },
 }
 
 export const AsButton: Story = {
+  tags: ['!dev', '!autodocs'],
   render: () => (
     <>
       <Anchor render={<button type="button" />}>+ Bổ sung</Anchor>
-      <p>Reference text</p>
+      <p>Văn bản đối chiếu</p>
     </>
   ),
   play: async ({ canvasElement }) => {
     const button = within(canvasElement).getByText('+ Bổ sung')
-    const reference = within(canvasElement).getByText('Reference text')
+    const reference = within(canvasElement).getByText('Văn bản đối chiếu')
     const buttonStyle = getComputedStyle(button)
     expect(buttonStyle.borderTopWidth).toBe('0px')
     // Checked by channel, not as a literal colour string: this file may not contain colour literals.

@@ -5,6 +5,8 @@ import { NavLink } from './NavLink.tsx'
 const meta: Meta<typeof NavLink> = {
   title: 'Navigation/NavLink',
   component: NavLink,
+  // React elements, not values to edit.
+  argTypes: { children: { control: false } },
 }
 
 export default meta
@@ -12,13 +14,13 @@ export default meta
 type Story = StoryObj<typeof NavLink>
 
 export const Default: Story = {
-  args: { label: 'Dashboard', href: '#' },
+  args: { label: 'Tổng quan', href: '#' },
 }
 
 export const Active: Story = {
-  args: { label: 'Dashboard', href: '#', active: true },
+  args: { label: 'Tổng quan', href: '#', active: true },
   play: async ({ canvasElement }) => {
-    const link = within(canvasElement).getByRole('link', { name: 'Dashboard' })
+    const link = within(canvasElement).getByRole('link', { name: 'Tổng quan' })
     const probe = document.createElement('div')
     probe.style.backgroundColor = 'var(--mmerp-color-primary-light)'
     canvasElement.appendChild(probe)
@@ -28,11 +30,11 @@ export const Active: Story = {
 }
 
 export const WithSections: Story = {
-  args: { label: 'Settings', description: 'Workspace preferences', href: '#', leftSection: '⚙', rightSection: '3' },
+  args: { label: 'Cài đặt', description: 'Tùy chọn của doanh nghiệp', href: '#', leftSection: '⚙', rightSection: '3' },
 }
 
 export const Long: Story = {
-  args: { label: 'A very long navigation label that should truncate instead of widening the navbar', href: '#' },
+  args: { label: 'Báo cáo tổng hợp công nợ phải thu theo khách hàng và nhân viên kinh doanh', href: '#' },
   render: (args) => (
     <div style={{ width: 200 }}>
       <NavLink {...args} />
@@ -40,7 +42,7 @@ export const Long: Story = {
   ),
   play: async ({ canvasElement }) => {
     const link = within(canvasElement).getByRole('link')
-    const label = within(link).getByText(/A very long/)
+    const label = within(link).getByText(/Báo cáo tổng hợp/)
     expect(label.scrollWidth).toBeGreaterThan(label.clientWidth)
     expect(link.getBoundingClientRect().width).toBe(200)
   },
@@ -49,8 +51,8 @@ export const Long: Story = {
 export const Compact: Story = {
   render: () => (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-      <NavLink label="Inactive" href="#inactive" leftSection="⚙" compact />
-      <NavLink label="Active" href="#active" leftSection="⚙" active compact />
+      <NavLink label="Báo giá" href="#inactive" leftSection="⚙" compact />
+      <NavLink label="Đơn bán hàng" href="#active" leftSection="⚙" active compact />
     </div>
   ),
   play: async ({ canvasElement }) => {
@@ -73,21 +75,21 @@ export const Compact: Story = {
 
 export const Nested: Story = {
   args: {
-    label: 'Products',
+    label: 'Hàng hóa',
     children: (
       <>
-        <NavLink label="Items" href="#items" />
-        <NavLink label="Categories" href="#categories" />
+        <NavLink label="Mặt hàng" href="#items" />
+        <NavLink label="Nhóm hàng" href="#categories" />
       </>
     ),
   },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
-    expect(canvas.queryByRole('link', { name: 'Items' })).not.toBeInTheDocument()
+    expect(canvas.queryByRole('link', { name: 'Mặt hàng' })).not.toBeInTheDocument()
 
-    await userEvent.click(canvas.getByRole('button', { name: 'Products' }))
-    expect(canvas.getByRole('link', { name: 'Items' })).toBeVisible()
-    expect(canvas.getByRole('link', { name: 'Categories' })).toBeVisible()
+    await userEvent.click(canvas.getByRole('button', { name: 'Hàng hóa' }))
+    expect(canvas.getByRole('link', { name: 'Mặt hàng' })).toBeVisible()
+    expect(canvas.getByRole('link', { name: 'Nhóm hàng' })).toBeVisible()
   },
 }
 

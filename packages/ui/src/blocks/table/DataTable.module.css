@@ -2,10 +2,18 @@
    A table that is part of a page (a tab, a section, a document, a modal) sits in a frame; the
    table that is a list page's whole content drops it there. */
 .root {
+  /* A column, so the scroll area's height is the room the parent leaves it: a percentage
+     max-height alone never resolves against an auto-height box. */
+  display: flex;
+  flex-direction: column;
   min-height: 0;
   border: 1px solid var(--mmerp-color-border);
   border-radius: var(--mmerp-radius-md);
   overflow: hidden;
+}
+
+.root > * {
+  min-height: 0;
 }
 
 /* The checkbox column has no sticky cell of its own: it scrolls away, and the identifier column

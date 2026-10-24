@@ -1,7 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import { useState } from 'react'
 import { expect, userEvent, waitFor, within } from 'storybook/test'
-import { page } from 'vitest/browser'
 import { Burger } from '../navigation/Burger.tsx'
 import { AppShell } from './AppShell.tsx'
 
@@ -18,11 +17,11 @@ function Demo() {
   const [opened, setOpened] = useState(false)
   return (
     <AppShell
-      header={<Burger opened={opened} onClick={() => setOpened((o) => !o)} aria-label="Toggle navigation" />}
-      navbar={<div>Navbar content</div>}
+      header={<Burger opened={opened} onClick={() => setOpened((o) => !o)} aria-label="Mở/đóng menu" />}
+      navbar={<div>Nội dung thanh điều hướng</div>}
       navbarOpened={opened}
     >
-      <div>Page content</div>
+      <div>Nội dung trang</div>
     </AppShell>
   )
 }
@@ -31,7 +30,7 @@ export const Default: Story = {
   render: () => <Demo />,
   play: async ({ canvasElement }) => {
     // The header centres and pads its content; it never stretches a lone child to fill its width.
-    const burger = within(canvasElement).getByRole('button', { name: 'Toggle navigation' })
+    const burger = within(canvasElement).getByRole('button', { name: 'Mở/đóng menu' })
     expect(burger.getBoundingClientRect().width).toBeLessThan(100)
   },
 }
@@ -40,33 +39,34 @@ function CollapsedDemo() {
   const [collapsed, setCollapsed] = useState(true)
   return (
     <AppShell
-      header={<button onClick={() => setCollapsed((c) => !c)}>Toggle rail</button>}
-      navbar={<div>Navbar content</div>}
+      header={<button onClick={() => setCollapsed((c) => !c)}>Thu gọn/mở rộng thanh bên</button>}
+      navbar={<div>Nội dung thanh điều hướng</div>}
       navbarCollapsed={collapsed}
     >
-      <div style={{ flex: 1, minHeight: 0 }}>Page content filling main</div>
+      <div style={{ flex: 1, minHeight: 0 }}>Nội dung trang lấp đầy vùng chính</div>
     </AppShell>
   )
 }
 
 export const CollapsedRail: Story = {
   render: () => <CollapsedDemo />,
+  globals: { viewport: { value: 'desktop' } },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
 
-    await page.viewport(1280, 800)
-    const navbar = canvas.getByText('Navbar content').closest('nav')!
+    const navbar = canvas.getByText('Nội dung thanh điều hướng').closest('nav')!
     await waitFor(() => expect(navbar.getBoundingClientRect().width).toBe(56))
 
-    await userEvent.click(canvas.getByRole('button', { name: 'Toggle rail' }))
+    await userEvent.click(canvas.getByRole('button', { name: 'Thu gọn/mở rộng thanh bên' }))
     await waitFor(() => expect(navbar.getBoundingClientRect().width).toBe(240))
   },
 }
 
 export const HeaderPadding: Story = {
+  tags: ['!dev', '!autodocs'],
   render: () => (
-    <AppShell header={<div data-testid="header-content">Header</div>}>
-      <div>Page content</div>
+    <AppShell header={<div data-testid="header-content">Thanh đầu trang</div>}>
+      <div>Nội dung trang</div>
     </AppShell>
   ),
   play: async ({ canvasElement }) => {
@@ -86,8 +86,8 @@ export const HeaderPadding: Story = {
 
 function FooterDemo() {
   return (
-    <AppShell header={<div>Header</div>} navbar={<div>Navbar content</div>} navbarFooter={<button>Collapse</button>} navbarOpened>
-      <div>Page content</div>
+    <AppShell header={<div>Thanh đầu trang</div>} navbar={<div>Nội dung thanh điều hướng</div>} navbarFooter={<button>Thu gọn</button>} navbarOpened>
+      <div>Nội dung trang</div>
     </AppShell>
   )
 }
@@ -103,26 +103,48 @@ export const NavbarFooter: Story = {
 
 export const OffCanvasBelowBreakpoint: Story = {
   render: () => <Demo />,
+  globals: { viewport: { value: 'drawer' } },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
 
-    await page.viewport(800, 600)
-    const navbar = canvas.getByText('Navbar content').closest('nav')!
+    const navbar = canvas.getByText('Nội dung thanh điều hướng').closest('nav')!
     await waitFor(() => expect(navbar.getBoundingClientRect().right).toBeLessThanOrEqual(0.5))
     // Off-screen but still in the tab order would trap keyboard users in an invisible menu.
     await expect(navbar).toHaveAttribute('inert')
 
-    const toggle = canvas.getByRole('button', { name: 'Toggle navigation' })
+    const toggle = canvas.getByRole('button', { name: 'Mở/đóng menu' })
     await userEvent.click(toggle)
     await waitFor(() => expect(navbar.getBoundingClientRect().left).toBeGreaterThanOrEqual(-0.5))
     await expect(navbar).not.toHaveAttribute('inert')
 
-    // Close it again so the desktop assertion below checks the breakpoint itself, not a flag left over from mobile.
     await userEvent.click(toggle)
     await waitFor(() => expect(navbar.getBoundingClientRect().right).toBeLessThanOrEqual(0.5))
+  },
+}
 
-    await page.viewport(1280, 800)
+// Same closed shell as OffCanvasBelowBreakpoint: at desktop widths the navbar shows without being opened.
+export const NavbarShownAtDesktop: Story = {
+  tags: ['!dev', '!autodocs'],
+  render: () => <Demo />,
+  globals: { viewport: { value: 'desktop' } },
+  play: async ({ canvasElement }) => {
+    const navbar = within(canvasElement).getByText('Nội dung thanh điều hướng').closest('nav')!
     await waitFor(() => expect(navbar.getBoundingClientRect().left).toBeGreaterThanOrEqual(-0.5))
     await expect(navbar).not.toHaveAttribute('inert')
+  },
+}
+
+// Header content wider than the window must not widen the whole page.
+export const WideHeaderOnMobile: Story = {
+  tags: ['!dev', '!autodocs'],
+  globals: { viewport: { value: 'mobile' } },
+  render: () => (
+    <AppShell header={<div style={{ flex: 'none', width: 600 }}>Tiêu đề rất rộng</div>}>
+      <div>Nội dung trang</div>
+    </AppShell>
+  ),
+  play: async ({ canvasElement }) => {
+    const main = canvasElement.querySelector('main')!
+    expect(main.getBoundingClientRect().width).toBeLessThanOrEqual(canvasElement.ownerDocument.documentElement.clientWidth)
   },
 }

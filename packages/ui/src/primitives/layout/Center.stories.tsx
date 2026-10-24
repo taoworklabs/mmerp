@@ -11,9 +11,9 @@ export default meta
 type Story = StoryObj<typeof Center>
 
 export const Default: Story = {
-  args: { children: 'Centred', style: { height: 120, border: '1px dashed currentColor' } },
+  args: { children: 'Căn giữa', style: { height: 120, border: '1px dashed currentColor' } },
 }
 
 export const Inline: Story = {
-  args: { inline: true, children: 'Inline centred' },
+  args: { inline: true, children: 'Căn giữa trong dòng' },
 }

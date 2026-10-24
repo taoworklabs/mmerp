@@ -6,7 +6,7 @@ import { FileInput, type FileInputProps } from './FileInput.tsx'
 const meta: Meta<typeof FileInput> = {
   title: 'Input/FileInput',
   component: FileInput,
-  args: { label: 'Attachment', clearLabel: 'Clear', onChange: fn() },
+  args: { label: 'Tệp đính kèm', clearLabel: 'Xóa tệp', onChange: fn() },
 }
 
 export default meta
@@ -33,12 +33,12 @@ export const Default: Story = {
 }
 
 export const Placeholder: Story = {
-  args: { value: null, placeholder: 'No file selected' },
+  args: { value: null, placeholder: 'Chưa chọn tệp' },
   render: (args) => <Controlled {...args} />,
 }
 
 export const WithDescription: Story = {
-  args: { value: null, description: 'PDF up to 10 MB' },
+  args: { value: null, description: 'Tệp PDF, tối đa 10 MB' },
   render: (args) => <Controlled {...args} />,
 }
 
@@ -48,64 +48,66 @@ export const Required: Story = {
 }
 
 export const Error: Story = {
-  args: { value: null, error: 'A file is required' },
+  args: { value: null, error: 'Vui lòng đính kèm hợp đồng' },
   render: (args) => <Controlled {...args} />,
   play: async ({ canvasElement }) => {
-    const trigger = within(canvasElement).getByRole('button', { name: 'Attachment' })
+    const trigger = within(canvasElement).getByRole('button', { name: 'Tệp đính kèm' })
     expect(trigger).toHaveAttribute('aria-invalid', 'true')
     const describedBy = trigger.getAttribute('aria-describedby')
     expect(describedBy).toBeTruthy()
     const errorText = canvasElement.querySelector(`#${describedBy}`)
-    expect(errorText).toHaveTextContent('A file is required')
+    expect(errorText).toHaveTextContent('Vui lòng đính kèm hợp đồng')
   },
 }
 
 export const WithAriaLabel: Story = {
-  args: { value: null, label: undefined, 'aria-label': 'Attachment file' },
+  tags: ['!dev', '!autodocs'],
+  args: { value: null, label: undefined, 'aria-label': 'Tệp hợp đồng lao động' },
   render: (args) => <Controlled {...args} />,
   play: async ({ canvasElement }) => {
-    expect(within(canvasElement).getByRole('button', { name: 'Attachment file' })).toBeInTheDocument()
+    expect(within(canvasElement).getByRole('button', { name: 'Tệp hợp đồng lao động' })).toBeInTheDocument()
   },
 }
 
 export const Disabled: Story = {
-  args: { value: new File(['content'], 'report.pdf', { type: 'application/pdf' }), disabled: true },
+  args: { value: new File(['content'], 'Hợp đồng lao động - Nguyễn Văn An.pdf', { type: 'application/pdf' }), disabled: true },
   render: (args) => <Controlled {...args} />,
   play: async ({ canvasElement }) => {
-    expect(within(canvasElement).queryByRole('button', { name: 'Clear' })).not.toBeInTheDocument()
+    expect(within(canvasElement).queryByRole('button', { name: 'Xóa tệp' })).not.toBeInTheDocument()
   },
 }
 
 export const ReadOnly: Story = {
-  args: { value: new File(['content'], 'report.pdf', { type: 'application/pdf' }), readOnly: true },
+  args: { value: new File(['content'], 'Hợp đồng lao động - Nguyễn Văn An.pdf', { type: 'application/pdf' }), readOnly: true },
   render: (args) => <Controlled {...args} />,
   play: async ({ canvasElement }) => {
-    expect(within(canvasElement).queryByRole('button', { name: 'Clear' })).not.toBeInTheDocument()
+    expect(within(canvasElement).queryByRole('button', { name: 'Xóa tệp' })).not.toBeInTheDocument()
   },
 }
 
 export const Filled: Story = {
-  args: { value: new File(['content'], 'report.pdf', { type: 'application/pdf' }) },
+  args: { value: new File(['content'], 'Hợp đồng lao động - Nguyễn Văn An.pdf', { type: 'application/pdf' }) },
   render: (args) => <Controlled {...args} />,
   play: async ({ canvasElement }) => {
-    expect(within(canvasElement).getByText('report.pdf')).toBeInTheDocument()
+    expect(within(canvasElement).getByText('Hợp đồng lao động - Nguyễn Văn An.pdf')).toBeInTheDocument()
   },
 }
 
 export const UploadAndClear: Story = {
+  tags: ['!dev', '!autodocs'],
   args: { value: null },
   render: (args) => <Controlled {...args} />,
   play: async ({ canvasElement, args }) => {
-    const file = new File(['content'], 'photo.png', { type: 'image/png' })
+    const file = new File(['content'], 'Ảnh thẻ nhân viên.png', { type: 'image/png' })
     const input = canvasElement.querySelector<HTMLInputElement>('input[type="file"]')
     if (!input) throw new TypeError('file input not found')
     await userEvent.upload(input, file)
-    expect(within(canvasElement).getByText('photo.png')).toBeInTheDocument()
+    expect(within(canvasElement).getByText('Ảnh thẻ nhân viên.png')).toBeInTheDocument()
 
-    const clear = within(canvasElement).getByRole('button', { name: 'Clear' })
+    const clear = within(canvasElement).getByRole('button', { name: 'Xóa tệp' })
     await userEvent.click(clear)
-    expect(within(canvasElement).queryByText('photo.png')).not.toBeInTheDocument()
-    expect(within(canvasElement).getByRole('button', { name: 'Attachment' })).toHaveFocus()
+    expect(within(canvasElement).queryByText('Ảnh thẻ nhân viên.png')).not.toBeInTheDocument()
+    expect(within(canvasElement).getByRole('button', { name: 'Tệp đính kèm' })).toHaveFocus()
 
     // The same file again must still register as a change.
     await userEvent.upload(input, file)

@@ -4,6 +4,8 @@ import { SimpleGrid } from './SimpleGrid.tsx'
 const meta: Meta<typeof SimpleGrid> = {
   title: 'Layout/SimpleGrid',
   component: SimpleGrid,
+  // React elements, not values to edit.
+  argTypes: { children: { control: false } },
 }
 
 export default meta

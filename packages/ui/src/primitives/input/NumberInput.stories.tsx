@@ -6,7 +6,7 @@ import { NumberInput, type NumberInputProps } from './NumberInput.tsx'
 const meta: Meta<typeof NumberInput> = {
   title: 'Input/NumberInput',
   component: NumberInput,
-  args: { label: 'Quantity', onChange: fn() },
+  args: { label: 'Số lượng', onChange: fn() },
 }
 
 export default meta
@@ -38,12 +38,12 @@ export const Filled: Story = {
 }
 
 export const Placeholder: Story = {
-  args: { value: null, placeholder: 'Enter a quantity' },
+  args: { value: null, placeholder: 'Nhập số lượng' },
   render: (args) => <Controlled {...args} />,
 }
 
 export const WithDescription: Story = {
-  args: { value: null, description: 'Whole units only' },
+  args: { value: null, description: 'Chỉ nhập số nguyên' },
   render: (args) => <Controlled {...args} />,
 }
 
@@ -51,20 +51,20 @@ export const Required: Story = {
   args: { value: null, required: true },
   render: (args) => <Controlled {...args} />,
   play: async ({ canvasElement }) => {
-    expect(within(canvasElement).getByRole('textbox', { name: 'Quantity' })).toHaveAttribute('aria-required', 'true')
+    expect(within(canvasElement).getByRole('textbox', { name: 'Số lượng' })).toHaveAttribute('aria-required', 'true')
   },
 }
 
 export const Error: Story = {
-  args: { value: null, error: 'Quantity must be positive' },
+  args: { value: null, error: 'Số lượng phải lớn hơn 0' },
   render: (args) => <Controlled {...args} />,
   play: async ({ canvasElement }) => {
-    const input = within(canvasElement).getByRole('textbox', { name: 'Quantity' })
+    const input = within(canvasElement).getByRole('textbox', { name: 'Số lượng' })
     expect(input).toHaveAttribute('aria-invalid', 'true')
     const describedBy = input.getAttribute('aria-describedby')
     expect(describedBy).toBeTruthy()
     const errorText = canvasElement.querySelector(`#${describedBy}`)
-    expect(errorText).toHaveTextContent('Quantity must be positive')
+    expect(errorText).toHaveTextContent('Số lượng phải lớn hơn 0')
   },
 }
 
@@ -82,7 +82,7 @@ export const Stepping: Story = {
   args: { value: 5 },
   render: (args) => <Controlled {...args} />,
   play: async ({ canvasElement, args }) => {
-    const input = within(canvasElement).getByRole('textbox', { name: 'Quantity' })
+    const input = within(canvasElement).getByRole('textbox', { name: 'Số lượng' })
     input.focus()
     await userEvent.keyboard('{ArrowUp}')
     expect(input).toHaveValue('6')
@@ -95,9 +95,10 @@ export const Stepping: Story = {
 }
 
 export const AriaLabelOnly: Story = {
-  args: { value: null, label: undefined, 'aria-label': 'Amount' },
+  tags: ['!dev', '!autodocs'],
+  args: { value: null, label: undefined, 'aria-label': 'Thành tiền' },
   render: (args) => <Controlled {...args} />,
   play: async ({ canvasElement }) => {
-    expect(within(canvasElement).getByRole('textbox', { name: 'Amount' })).toBeInTheDocument()
+    expect(within(canvasElement).getByRole('textbox', { name: 'Thành tiền' })).toBeInTheDocument()
   },
 }

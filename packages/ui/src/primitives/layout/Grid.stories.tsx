@@ -13,8 +13,8 @@ type Story = StoryObj<typeof Grid>
 export const Default: Story = {
   render: () => (
     <Grid>
-      <Grid.Col span={6}>Left</Grid.Col>
-      <Grid.Col span={6}>Right</Grid.Col>
+      <Grid.Col span={6}>Cột trái</Grid.Col>
+      <Grid.Col span={6}>Cột phải</Grid.Col>
     </Grid>
   ),
 }
@@ -33,8 +33,8 @@ export const Columns: Story = {
 export const Gap: Story = {
   render: () => (
     <Grid gap="xl">
-      <Grid.Col span={6}>Left</Grid.Col>
-      <Grid.Col span={6}>Right</Grid.Col>
+      <Grid.Col span={6}>Cột trái</Grid.Col>
+      <Grid.Col span={6}>Cột phải</Grid.Col>
     </Grid>
   ),
 }
@@ -42,8 +42,8 @@ export const Gap: Story = {
 export const ColSpanAuto: Story = {
   render: () => (
     <Grid>
-      <Grid.Col span="auto">Auto</Grid.Col>
-      <Grid.Col span={6}>Fixed</Grid.Col>
+      <Grid.Col span="auto">Tự động</Grid.Col>
+      <Grid.Col span={6}>Cố định</Grid.Col>
     </Grid>
   ),
 }
@@ -52,7 +52,7 @@ export const Responsive: Story = {
   render: () => (
     <Grid>
       <Grid.Col span={{ base: 12, md: 4 }} data-testid="c">
-        Responsive
+        Co giãn theo màn hình
       </Grid.Col>
     </Grid>
   ),

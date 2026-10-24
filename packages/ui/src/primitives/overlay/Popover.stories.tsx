@@ -16,9 +16,9 @@ type Story = StoryObj
 function Demo({ side }: { side: 'top' | 'bottom' | 'left' | 'right' }) {
   return (
     <Popover.Root>
-      <Popover.Trigger render={<Button>Open popover</Button>} />
-      <Popover.Popup side={side} aria-label="Popover example">
-        Popover content
+      <Popover.Trigger render={<Button>Xem số ngày phép</Button>} />
+      <Popover.Popup side={side} aria-label="Số ngày phép">
+        Còn 8 ngày phép năm 2026
       </Popover.Popup>
     </Popover.Root>
   )
@@ -26,9 +26,9 @@ function Demo({ side }: { side: 'top' | 'bottom' | 'left' | 'right' }) {
 
 async function openAndCheck(canvasElement: HTMLElement) {
   const canvas = within(canvasElement)
-  await userEvent.click(canvas.getByRole('button', { name: 'Open popover' }))
+  await userEvent.click(canvas.getByRole('button', { name: 'Xem số ngày phép' }))
   const body = within(canvasElement.ownerDocument.body)
-  expect(body.getByText('Popover content')).toBeInTheDocument()
+  expect(body.getByText('Còn 8 ngày phép năm 2026')).toBeInTheDocument()
 }
 
 export const SideTop: Story = {
@@ -52,9 +52,9 @@ export const TargetWidth: Story = {
   render: () => (
     <div style={{ width: 240 }}>
       <Popover.Root>
-        <Popover.Trigger render={<Button fullWidth>Open</Button>} />
-        <Popover.Popup width="target" aria-label="Popover example">
-          Matches trigger width
+        <Popover.Trigger render={<Button fullWidth>Mở</Button>} />
+        <Popover.Popup width="target" aria-label="Số ngày phép">
+          Rộng bằng nút mở
         </Popover.Popup>
       </Popover.Root>
     </div>
@@ -70,16 +70,16 @@ function AnchoredDemo() {
     <>
       <TextInput
         ref={inputRef}
-        label="Date"
-        placeholder="Pick a date"
+        label="Ngày chứng từ"
+        placeholder="Chọn ngày"
         onFocus={() => setOpen(true)}
         onKeyDown={(event) => {
           if (event.key === 'ArrowDown') setOpen(true)
         }}
       />
       <Popover.Root open={open} onOpenChange={setOpen}>
-        <Popover.Popup anchor={inputRef} initialFocus={false} finalFocus={false} aria-label="Date picker">
-          Calendar placeholder
+        <Popover.Popup anchor={inputRef} initialFocus={false} finalFocus={false} aria-label="Lịch chọn ngày">
+          Lịch tháng 10/2026
         </Popover.Popup>
       </Popover.Root>
     </>
@@ -90,16 +90,16 @@ export const AnchoredToInput: Story = {
   render: () => <AnchoredDemo />,
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
-    const input = canvas.getByRole('textbox', { name: 'Date' })
+    const input = canvas.getByRole('textbox', { name: 'Ngày chứng từ' })
 
     await userEvent.click(input)
     const body = within(canvasElement.ownerDocument.body)
-    await waitFor(() => expect(body.getByText('Calendar placeholder')).toBeInTheDocument())
+    await waitFor(() => expect(body.getByText('Lịch tháng 10/2026')).toBeInTheDocument())
     expect(input).toHaveFocus()
     // Proves the input was never wrapped by a Trigger (which would merge type="button" onto it).
     expect((input as HTMLInputElement).type).toBe('text')
 
     await userEvent.keyboard('{Escape}')
-    await waitFor(() => expect(body.queryByText('Calendar placeholder')).not.toBeInTheDocument())
+    await waitFor(() => expect(body.queryByText('Lịch tháng 10/2026')).not.toBeInTheDocument())
   },
 }

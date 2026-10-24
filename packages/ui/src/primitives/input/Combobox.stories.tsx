@@ -5,15 +5,15 @@ import { Combobox, type ComboboxProps } from './Combobox.tsx'
 import type { SelectItem } from './Select.tsx'
 
 const data: SelectItem[] = [
-  { value: 'a', label: 'Nguyễn Văn A' },
+  { value: 'a', label: 'Nguyễn Văn An' },
   { value: 'b', label: 'Đặng Thị Bích' },
-  { value: 'c', label: 'Trần Văn C' },
+  { value: 'c', label: 'Trần Văn Cường' },
 ]
 
 const meta: Meta<typeof Combobox> = {
   title: 'Input/Combobox',
   component: Combobox,
-  args: { label: 'Assignee', data, nothingFound: 'No people found', onChange: fn() },
+  args: { label: 'Người phụ trách', data, nothingFound: 'Không tìm thấy nhân viên', onChange: fn() },
 }
 
 export default meta
@@ -35,7 +35,7 @@ function Controlled(props: ComboboxProps) {
 }
 
 export const Default: Story = {
-  args: { value: null, placeholder: 'Search a person' },
+  args: { value: null, placeholder: 'Tìm nhân viên' },
   render: (args) => <Controlled {...args} />,
 }
 
@@ -45,33 +45,33 @@ export const WithValue: Story = {
 }
 
 export const Disabled: Story = {
-  args: { value: 'a', disabled: true, clearable: true, clearLabel: 'Clear selection' },
+  args: { value: 'a', disabled: true, clearable: true, clearLabel: 'Bỏ chọn' },
   render: (args) => <Controlled {...args} />,
   play: async ({ canvasElement }) => {
-    expect(within(canvasElement).queryByRole('button', { name: 'Clear selection' })).not.toBeInTheDocument()
+    expect(within(canvasElement).queryByRole('button', { name: 'Bỏ chọn' })).not.toBeInTheDocument()
   },
 }
 
 export const ReadOnly: Story = {
-  args: { value: 'a', readOnly: true, clearable: true, clearLabel: 'Clear selection' },
+  args: { value: 'a', readOnly: true, clearable: true, clearLabel: 'Bỏ chọn' },
   render: (args) => <Controlled {...args} />,
   play: async ({ canvasElement }) => {
-    expect(within(canvasElement).queryByRole('button', { name: 'Clear selection' })).not.toBeInTheDocument()
+    expect(within(canvasElement).queryByRole('button', { name: 'Bỏ chọn' })).not.toBeInTheDocument()
   },
 }
 
 export const Error: Story = {
-  args: { value: null, error: 'Pick someone', placeholder: 'Search a person' },
+  args: { value: null, error: 'Vui lòng chọn người phụ trách', placeholder: 'Tìm nhân viên' },
   render: (args) => <Controlled {...args} />,
 }
 
 export const Clearable: Story = {
-  args: { value: 'a', clearable: true, clearLabel: 'Clear selection' },
+  args: { value: 'a', clearable: true, clearLabel: 'Bỏ chọn' },
   render: (args) => <Controlled {...args} />,
   play: async ({ canvasElement, args }) => {
     const canvas = within(canvasElement)
-    const input = canvas.getByRole('combobox', { name: 'Assignee' })
-    const clear = canvas.getByRole('button', { name: 'Clear selection' })
+    const input = canvas.getByRole('combobox', { name: 'Người phụ trách' })
+    const clear = canvas.getByRole('button', { name: 'Bỏ chọn' })
     // A control, so it grows to the touch target on small screens.
     expect(clear).toHaveAttribute('data-mmerp-control')
     await userEvent.click(clear)
@@ -97,11 +97,12 @@ function RemoteResults(props: ComboboxProps) {
 }
 
 export const RemoteResultsDropSelection: Story = {
+  tags: ['!dev', '!autodocs'],
   args: { value: 'a' },
   render: (args) => <RemoteResults {...args} />,
   play: async ({ canvasElement }) => {
-    const input = within(canvasElement).getByRole('combobox', { name: 'Assignee' })
-    expect(input).toHaveValue('Nguyễn Văn A')
+    const input = within(canvasElement).getByRole('combobox', { name: 'Người phụ trách' })
+    expect(input).toHaveValue('Nguyễn Văn An')
     // Replace the selected label by typing over it, as a user starting a new search would.
     await userEvent.tripleClick(input)
     await userEvent.keyboard('ng')
@@ -110,44 +111,47 @@ export const RemoteResultsDropSelection: Story = {
 }
 
 export const TypingMatches: Story = {
-  args: { value: null, placeholder: 'Search a person' },
+  tags: ['!dev', '!autodocs'],
+  args: { value: null, placeholder: 'Tìm nhân viên' },
   render: (args) => <Controlled {...args} />,
   play: async ({ canvasElement }) => {
-    const input = within(canvasElement).getByRole('combobox', { name: 'Assignee' })
+    const input = within(canvasElement).getByRole('combobox', { name: 'Người phụ trách' })
     await userEvent.type(input, 'nguyen')
     const options = within(canvasElement.ownerDocument.body).getAllByRole('option')
     expect(options).toHaveLength(1)
-    expect(options[0]).toHaveTextContent('Nguyễn Văn A')
+    expect(options[0]).toHaveTextContent('Nguyễn Văn An')
   },
 }
 
 export const NothingFound: Story = {
-  args: { value: null, placeholder: 'Search a person' },
+  args: { value: null, placeholder: 'Tìm nhân viên' },
   render: (args) => <Controlled {...args} />,
   play: async ({ canvasElement }) => {
-    const input = within(canvasElement).getByRole('combobox', { name: 'Assignee' })
+    const input = within(canvasElement).getByRole('combobox', { name: 'Người phụ trách' })
     await userEvent.type(input, 'zzz')
-    expect(within(canvasElement.ownerDocument.body).getByText('No people found')).toBeInTheDocument()
+    expect(within(canvasElement.ownerDocument.body).getByText('Không tìm thấy nhân viên')).toBeInTheDocument()
   },
 }
 
 export const EscapeReverts: Story = {
-  args: { value: 'c', placeholder: 'Search a person' },
+  tags: ['!dev', '!autodocs'],
+  args: { value: 'c', placeholder: 'Tìm nhân viên' },
   render: (args) => <Controlled {...args} />,
   play: async ({ canvasElement, args }) => {
-    const input = within(canvasElement).getByRole('combobox', { name: 'Assignee' })
+    const input = within(canvasElement).getByRole('combobox', { name: 'Người phụ trách' })
     await userEvent.type(input, 'x')
     await userEvent.keyboard('{Escape}')
-    expect(input).toHaveValue('Trần Văn C')
+    expect(input).toHaveValue('Trần Văn Cường')
     expect(args.onChange).not.toHaveBeenCalled()
   },
 }
 
 export const KeyboardSelect: Story = {
-  args: { value: null, placeholder: 'Search a person' },
+  tags: ['!dev', '!autodocs'],
+  args: { value: null, placeholder: 'Tìm nhân viên' },
   render: (args) => <Controlled {...args} />,
   play: async ({ canvasElement, args }) => {
-    const input = within(canvasElement).getByRole('combobox', { name: 'Assignee' })
+    const input = within(canvasElement).getByRole('combobox', { name: 'Người phụ trách' })
     input.focus()
     await userEvent.keyboard('{ArrowDown}')
     await userEvent.keyboard('{ArrowDown}')
@@ -160,6 +164,6 @@ export const Required: Story = {
   args: { value: null, required: true },
   render: (args) => <Controlled {...args} />,
   play: async ({ canvasElement }) => {
-    expect(within(canvasElement).getByRole('combobox', { name: 'Assignee' })).toHaveAttribute('aria-required', 'true')
+    expect(within(canvasElement).getByRole('combobox', { name: 'Người phụ trách' })).toHaveAttribute('aria-required', 'true')
   },
 }

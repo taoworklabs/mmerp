@@ -7,7 +7,7 @@ import { Drawer, type DrawerProps } from './Drawer.tsx'
 const meta: Meta<typeof Drawer> = {
   title: 'Overlay/Drawer',
   component: Drawer,
-  args: { closeLabel: 'Close', onClose: fn() },
+  args: { closeLabel: 'Đóng', onClose: fn() },
 }
 
 export default meta
@@ -18,7 +18,7 @@ function Demo(props: Omit<DrawerProps, 'opened'>) {
   const [opened, setOpened] = useState(false)
   return (
     <>
-      <Button onClick={() => setOpened(true)}>Open drawer</Button>
+      <Button onClick={() => setOpened(true)}>Mở bảng bên</Button>
       <Drawer
         {...props}
         opened={opened}
@@ -32,13 +32,13 @@ function Demo(props: Omit<DrawerProps, 'opened'>) {
 }
 
 export const PositionLeft: Story = {
-  args: { title: 'Left drawer', position: 'left', children: 'Left drawer content' },
+  args: { title: 'Bộ lọc nâng cao', position: 'left', children: 'Lọc theo phòng ban, chức danh và ngày vào làm.' },
   render: (args) => <Demo {...args} />,
   play: async ({ canvasElement, args }) => {
     const canvas = within(canvasElement)
-    await userEvent.click(canvas.getByRole('button', { name: 'Open drawer' }))
+    await userEvent.click(canvas.getByRole('button', { name: 'Mở bảng bên' }))
     const body = within(canvasElement.ownerDocument.body)
-    const dialog = body.getByRole('dialog', { name: 'Left drawer' })
+    const dialog = body.getByRole('dialog', { name: 'Bộ lọc nâng cao' })
     expect(dialog).toBeInTheDocument()
     await userEvent.keyboard('{Escape}')
     expect(args.onClose).toHaveBeenCalledTimes(1)
@@ -46,6 +46,6 @@ export const PositionLeft: Story = {
 }
 
 export const PositionRight: Story = {
-  args: { title: 'Right drawer', position: 'right', children: 'Right drawer content' },
+  args: { title: 'Chi tiết nhân viên', position: 'right', children: 'Nguyễn Văn An – Phòng Kế toán.' },
   render: (args) => <Demo {...args} />,
 }
