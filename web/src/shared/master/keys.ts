@@ -8,10 +8,6 @@ export const masterKeys = {
     picker: (q: string) => ['partner', 'picker', q] as const,
     detail: (id: number) => ['partner', 'detail', id] as const,
   },
-  items: {
-    all: () => ['item'] as const,
-    picker: (q: string) => ['item', 'picker', q] as const,
-  },
 }
 
 // usePartner: one partner with what the user may do to it; off until there is an id.

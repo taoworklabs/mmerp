@@ -14,9 +14,9 @@ test.beforeAll(async ({ baseURL }) => {
   )
   const a = await created(api.post('/api/org-units', { data: { parent_id: company, kind: 'department', name: team } }))
   const b = await created(api.post('/api/org-units', { data: { parent_id: company, kind: 'department', name: `Kinh doanh B ${run}` } }))
-  await createUser(api, login.staff, [{ role: 'sales.staff', unit: a }, { role: 'partner.editor', unit: a }, { role: 'item.viewer', unit: a }])
-  await createUser(api, login.manager, [{ role: 'sales.manager', unit: a }, { role: 'partner.editor', unit: a }, { role: 'item.viewer', unit: a }])
-  await createUser(api, login.other, [{ role: 'sales.staff', unit: b }, { role: 'partner.editor', unit: b }, { role: 'item.viewer', unit: b }])
+  await createUser(api, login.staff, [{ role: 'sales.staff', unit: a }, { role: 'partner.editor', unit: a }])
+  await createUser(api, login.manager, [{ role: 'sales.manager', unit: a }, { role: 'partner.editor', unit: a }])
+  await createUser(api, login.other, [{ role: 'sales.staff', unit: b }, { role: 'partner.editor', unit: b }])
   await createUser(api, login.catalog, [{ role: 'item.admin', unit: null }])
   const rule = await api.put('/api/approval-rules/sales.quote', {
     data: {

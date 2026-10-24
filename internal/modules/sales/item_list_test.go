@@ -80,3 +80,28 @@ func TestItemsApprovalFieldAfterMove(t *testing.T) {
 		t.Fatalf("labels: %v", got)
 	}
 }
+
+// TestLineItems: whoever writes quotations or orders picks active items without any item
+// role, at most 20 by code; a viewer of quotations gets forbidden.
+func TestLineItems(t *testing.T) {
+	f := newFixture(t)
+	itemsFixture(t, f)
+	staff := f.ctxFor("line_staff", "staff@A")
+	l, err := f.sales.LineItems(staff, "")
+	f.check(err)
+	if len(l.Items) != 20 || l.Items[0].Code != "BUT" || l.Items[1].Code != "I001" {
+		t.Fatalf("first page %+v", l.Items[:2])
+	}
+	l, err = f.sales.LineItems(staff, "Hàng 007")
+	f.check(err)
+	if len(l.Items) != 0 {
+		t.Fatalf("a retired item is offered: %+v", l.Items)
+	}
+	l, err = f.sales.LineItems(staff, "BUT")
+	f.check(err)
+	if len(l.Items) != 1 || l.Items[0].Price != 10_005 || l.Items[0].VatRate != "8" || l.Items[0].Unit != "hộp" || l.Items[0].Name != "Bút bi" {
+		t.Fatalf("pen %+v", l.Items)
+	}
+	_, err = f.sales.LineItems(f.ctxFor("line_viewer", "viewer@A"), "")
+	wantCode(t, err, "forbidden")
+}

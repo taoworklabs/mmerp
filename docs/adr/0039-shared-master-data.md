@@ -36,7 +36,7 @@ A `shared` module registers roles, permissions and record types under its **own 
 | `item.view` | Anywhere | Reading the item catalogue |
 | `item.manage` | Tenant-wide | Creating and editing items |
 
-Roles: `partner.viewer`, `partner.editor`, `item.viewer`, `item.admin` (tenant-wide only). The Sales role `catalog_admin` and the permissions `sales.item.view` and `sales.item.manage` are removed.
+Roles: `partner.viewer`, `partner.editor`, `item.viewer`, `item.admin` (tenant-wide only). The Sales role `catalog_admin` and the permissions `sales.item.view` and `sales.item.manage` are removed. Picking an item on a quotation or order line is part of writing the document: Sales serves active items to its line editor under its own edit permissions, so document writers need no item role.
 
 ### Frontend
 
