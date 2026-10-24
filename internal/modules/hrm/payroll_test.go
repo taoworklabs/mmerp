@@ -24,7 +24,7 @@ func payrollRef(id int64) record.Ref { return record.Ref{Type: "hrm.payroll", ID
 func (f *fixture) heldBy(id int64) int {
 	f.t.Helper()
 	var n int
-	f.check(f.pool.QueryRow(f.admin, `SELECT count(*) FROM hrm.payroll_periods WHERE posted_payroll_id = $1`, id).Scan(&n))
+	f.check(f.system.QueryRow(f.admin, `SELECT count(*) FROM hrm.payroll_periods WHERE posted_payroll_id = $1`, id).Scan(&n))
 	return n
 }
 
@@ -65,7 +65,7 @@ func TestPayrollRecordContract(t *testing.T) {
 			},
 			PostingLines: func(_ *testing.T, r record.Ref) int {
 				var n int
-				f.check(f.pool.QueryRow(f.admin, `SELECT count(*) FROM posting.lines WHERE doc_type = $1 AND doc_id = $2 AND voided_at IS NULL`,
+				f.check(f.system.QueryRow(f.admin, `SELECT count(*) FROM posting.lines WHERE doc_type = $1 AND doc_id = $2 AND voided_at IS NULL`,
 					r.Type, r.ID).Scan(&n))
 				return n
 			},
@@ -165,7 +165,7 @@ func TestPayrollLifecycle(t *testing.T) {
 	}
 	// A one-person department's totals are that person's pay: nothing stored in clear.
 	var row string
-	f.check(f.pool.QueryRow(f.admin, `SELECT row_to_json(p)::text FROM hrm.payrolls p WHERE id = $1`, first).Scan(&row))
+	f.check(f.system.QueryRow(f.admin, `SELECT row_to_json(p)::text FROM hrm.payrolls p WHERE id = $1`, first).Scan(&row))
 	if strings.Contains(row, "22000000") {
 		t.Fatalf("payroll row %s", row)
 	}
@@ -195,7 +195,7 @@ func TestPayrollLifecycle(t *testing.T) {
 		sum  int64
 	}
 	var lines []line
-	rows, err := f.pool.Query(f.admin, `SELECT kind, org_unit_id, amount FROM posting.lines WHERE doc_type = 'hrm.payroll' AND doc_id = $1 AND voided_at IS NULL ORDER BY id`, first)
+	rows, err := f.system.Query(f.admin, `SELECT kind, org_unit_id, amount FROM posting.lines WHERE doc_type = 'hrm.payroll' AND doc_id = $1 AND voided_at IS NULL ORDER BY id`, first)
 	f.check(err)
 	for rows.Next() {
 		var l line
@@ -224,14 +224,14 @@ func TestPayrollLifecycle(t *testing.T) {
 	// Cancelling reopens the period and voids the lines; then the second one posts.
 	f.check(errOf(f.rec.Transition(f.pay, payrollRef(first), f.payrollDoc(first).Version, record.Cancelled)))
 	var voided int
-	f.check(f.pool.QueryRow(f.admin, `SELECT count(*) FROM posting.lines WHERE doc_id = $1 AND voided_at IS NOT NULL`, first).Scan(&voided))
+	f.check(f.system.QueryRow(f.admin, `SELECT count(*) FROM posting.lines WHERE doc_id = $1 AND voided_at IS NOT NULL`, first).Scan(&voided))
 	if voided != 5 || f.heldBy(first) != 0 {
 		t.Fatalf("voided %d, held %d", voided, f.heldBy(first))
 	}
 	f.check(f.send(second))
 	// A posted payroll not holding its period (only through bad data) cannot be cancelled.
 	third := f.payroll("2026-04")
-	f.check(f.pool.QueryRow(f.admin, `UPDATE hrm.payroll_periods SET posted_payroll_id = $1 RETURNING id`, third).Scan(new(int64)))
+	f.check(f.system.QueryRow(f.admin, `UPDATE hrm.payroll_periods SET posted_payroll_id = $1 RETURNING id`, third).Scan(new(int64)))
 	wantErr(t, errOf(f.rec.Transition(f.pay, payrollRef(second), f.payrollDoc(second).Version, record.Cancelled)), "payroll_not_holding_period")
 }
 
@@ -331,7 +331,7 @@ func (f *payrollFixture) closing(id int64, other func() error) (otherErr error) 
 	f.check(platform.InTx(f.pay, func(ctx context.Context) error {
 		f.check(errOf(f.rec.Transition(ctx, payrollRef(id), f.payrollDoc(id).Version, record.Posted)))
 		wg.Go(func() { otherErr = other() })
-		pgtest.AwaitLockWait(f.t, f.pool)
+		pgtest.AwaitLockWait(f.t, f.system)
 		return nil
 	}))
 	wg.Wait()
@@ -367,7 +367,7 @@ func TestSourceApprovedWhilePayrollCloses(t *testing.T) {
 	f.check(platform.InTx(f.pay, func(ctx context.Context) error {
 		f.check(errOf(f.rec.Transition(ctx, ot, 1, record.Posted)))
 		wg.Go(func() { sent = f.send(second) })
-		pgtest.AwaitLockWait(t, f.pool)
+		pgtest.AwaitLockWait(t, f.system)
 		return nil
 	}))
 	wg.Wait()

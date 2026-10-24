@@ -17,7 +17,7 @@ internal/
 ├── modules/          # business modules of each product, including accounting
 │   └── <module>/
 └── integration/      # one package per external provider (see platform.md)
-migrations/           # one directory, global ordering, file names prefixed by module
+migrations/           # one directory, global ordering by file name: YYYYMMDDHHMMSS_<module>_<description>.sql (UTC creation time, `make migration`), starting from one baseline
 ```
 
 | Layer | Always on | Knows business logic | Has tables |
@@ -70,15 +70,17 @@ Every module in `core`, `shared` and `modules` has the same shape:
 ```
 internal/modules/sales/
 ├── module.go       # Module(svc) → platform.Module: the manifest internal/app registers
-├── service.go      # exported methods other modules may call; a large service splits into service_<part>.go
+├── service.go      # Service, NewService and exported methods other modules may call
 ├── types.go        # exported types used in those methods
 ├── deps.go         # Deps struct: core/shared modules passed in, and interfaces for other products
 ├── hooks.go        # hook interfaces this module EMITS
 ├── handler.go      # HTTP, not exported
-├── queries.sql
+├── queries/        # one .sql file per business area (customer.sql, item.sql, …); sqlc generates one <file>.sql.go each
 └── internal/
     └── store/      # sqlc-generated code; Go forbids any package outside the module from importing it
 ```
+
+A module with several business areas splits them area first, so each area's files sort together: `<area>.go` (its service methods), `<area>_types.go`, `<area>_list.go`, `<area>_handler.go`, `<area>_test.go` (HRM: `leave.go`, `leave_types.go`, `leave_list.go`, `leave_handler.go`, `leave_test.go`). `service.go`, `types.go` and `handler.go` then keep only what spans areas. An area with few types keeps them in `<area>.go`.
 
 A file with no content is left out, never created empty: a module without routes has no `handler.go` or `module.go`, a module that emits no hooks has no `hooks.go`. The files that do exist always have the names and roles above.
 
@@ -123,12 +125,14 @@ Rules a tool can enforce are enforced by a tool. For rules no tool can enforce, 
 | Level | Rule | What enforces it |
 | --- | --- | --- |
 | Code | Other modules cannot touch the store | Go's `internal/` directory: compile error |
-| Code | Exports only in `service.go`, the `service_<part>.go` files and `types.go`, plus `Deps` (`deps.go`), `Module` (`module.go`) and hook types (`hooks.go`). Go controls exports per package, not per file, so any exported identifier in another file is also visible from outside | Convention, checked in review |
+| Code | Exports only in `service.go`, `types.go` and the `<area>.go` and `<area>_types.go` files, plus `Deps` (`deps.go`), `Module` (`module.go`) and hook types (`hooks.go`). Go controls exports per package, not per file, so any exported identifier in another file is also visible from outside | Convention, checked in review |
 | Dependencies | The layer direction above; modules in `modules/` do not import each other | `depguard` in golangci-lint, run in CI |
 | Cross-product calls | Through interfaces in `deps.go` or `hooks.go`, wired in `internal/app` | If it cannot be imported, it has to go through an interface |
-| Database | One Postgres schema per module, named after the module (`sales.orders`, `iam.users`). Module X's `queries.sql` may only INSERT/UPDATE/DELETE into schema X, and only read the permitted schemas ([Rules between modules](#rules-between-modules)) | A CI script scans the writes and reads in `queries.sql`. SQL written outside `queries.sql` is not caught |
+| Database | One Postgres schema per module, named after the module (`sales.orders`, `iam.users`). Module X's `queries/*.sql` may only INSERT/UPDATE/DELETE into schema X, and only read the permitted schemas ([Rules between modules](#rules-between-modules)) | A CI script scans the writes and reads in `queries/*.sql`. SQL written outside `queries/` is not caught |
 | Documents | Call `record` before writing document tables | The `recordtest` contract suite (see [documents.md](./documents.md#guarantees)) |
-| Transactions | Services get the DB only through `platform.DBFrom(ctx)` | `depguard` (`no-pool`) forbids importing `pgxpool` in `core`, `shared`, `modules`; `forbidigo` forbids `pgx.Connect`. Package-level DB variables: checked in review |
+| Data access | Services query only through the data engine (`internal/platform/data`) | `forbidigo` forbids `store.New` and `platform.DBFrom` outside infrastructure, tests and `recordtest`; `depguard` (`no-pool`) forbids importing `pgxpool` in `core`, `shared`, `modules`; `forbidigo` forbids `pgx.Connect`. Package-level DB variables: checked in review |
+| Transactions | A write outside `platform.InTx` fails instead of committing on its own | The app pool is read-only outside a transaction; Postgres rejects the write with `25006` |
+| Data engine | List scopes come from `iam.DataScope`, so a module cannot widen its own visibility | `data.Scope`'s fields are unexported; only `iam.(*Service).DataScope` builds a non-zero one |
 
 Dependencies between products are always interfaces, so when testing a module, the other products are replaced with fakes. Dependencies down to `core` and `shared` are direct imports, so tests use the real ones on the same Postgres.
 
@@ -151,22 +155,38 @@ This tree is not a business model. Which store a warehouse belongs to, which dep
 
 - Each table has exactly one owning module and sits in that module's schema. Only the owning module's service may write to the table.
 - No module creates sign-in accounts itself. Business person records (employees, customers…) are owned by business modules and link to `iam.users.id` when needed.
-- **Promoting an entity to shared.** When an entity of one product is about to be used by a second product, move it to `shared/` *before* the second product starts using it. This means moving the package and moving the table to a new schema (`ALTER TABLE … SET SCHEMA`); ids and foreign keys stay unchanged.
+- **Promoting an entity to shared.** When an entity of one product is about to be used by a second product, move it to `shared/` *before* the second product starts using it. This means moving the package and moving the table to a new schema (`ALTER TABLE … SET SCHEMA`); ids and foreign keys stay unchanged. When the entity has product-specific fields or ownership, split identity from the product's role instead (`shared/partner` holds identity, `sales.customers` is Sales' role over it): `SET SCHEMA` alone cannot make one company both customer and supplier.
+- **Shared namespaces.** A `shared` module may own roles, permissions and record types under its own namespace (`partner.`, `item.`), as `core` does with `core.`; a namespace is not a product. Its record types set `Shared` (never refused by `ProductGate`, ignored by `products_with_data`) and, with no org-unit scope, `Anywhere` (a permission held at any org unit covers every record; `Locate` returns org unit 0). No role grants another namespace's permissions, so a product's users also get the shared roles they need (`partner.viewer`, `item.viewer`, ...) from their own role tables.
+
+## Data access
+
+Services never build a sqlc store. `make gen` writes a descriptor for every query into the module's `internal/store/data.gen.go`, and services call it:
+
+```go
+c, err := store.GetCustomer.Run(ctx, id)
+err = store.DeleteLines.Run(ctx, docID)
+```
+
+`Run` takes the connection from `ctx`, names the query in the logs and normalizes the error. `pgx.ErrNoRows` passes through unchanged.
+
+- **Filterable, paginated lists** are a `data.List` over a `-- data:base` query: scope rule, search columns, sorts and tiebreak are declared once, filters are `data.Eq/Gte/Lte/In/…` conditions, and the scope comes from `iam.DataScope`. Dynamic SQL is built only from code-declared fragments (`data.SQL(…).Arg(v)`).
+- **Constraints with one meaning everywhere** are mapped once, in `NewService`, with `data.RegisterConstraints` (`"item.items_code_key": ErrCodeTaken`). A constraint whose meaning depends on the caller stays unmapped and keeps `platform.Violates` at its call site.
+- **Many rows at once** are one statement (`INSERT … SELECT unnest(@a::…[]), …`), not one call per row.
 
 ## Transactions
 
 A single rule:
 
-- A service gets a connection with `platform.DBFrom(ctx)`. If ctx holds a transaction, that transaction is returned; otherwise the pool is returned. A service never keeps the pool (`*pgxpool.Pool`) or a `platform.Conn` in a field, and never creates a sqlc store in its constructor.
+- The data engine gets its connection from `ctx`. If ctx holds a transaction, that transaction is used; otherwise the pool is, and the pool is read-only outside a transaction: a write on it fails with `25006` instead of committing on its own. A service never keeps the pool (`*pgxpool.Pool`) or a `platform.Conn` in a field.
 - A service opens a transaction with `platform.InTx(ctx, func(ctx) error)`. If ctx already holds a transaction, that transaction is reused. Every service called inside automatically shares the transaction; only `ctx` needs to be passed.
-- Never pass a `pgx.Tx`, or a sqlc store bound to a transaction, as a parameter. A helper running in a transaction takes `ctx` and calls `store.New(platform.DBFrom(ctx))` itself; otherwise an audit write inside can easily use the outer ctx by mistake and fall outside the transaction.
+- Never pass a `pgx.Tx`, or a sqlc store bound to a transaction, as a parameter. A helper running in a transaction takes `ctx` and passes it to every query; otherwise an audit write inside can easily use the outer ctx by mistake and fall outside the transaction.
 - Never use a ctx holding a transaction in another goroutine: a transaction can only be used sequentially, and is no longer valid after commit.
 - The audit log of a change is written in the same transaction as the change.
 
 ## Rules between modules
 
 - **Writes must go through the owning module's service.**
-- **Reads may join with SQL along the dependency direction**, and the query must live in the reading module's `queries.sql`. A module may join its own schema, those of its layer and of the lower layers (`core`, `shared`). A module in `modules/` may also join the schemas of the other modules of its own product and of the products its product has declared as dependencies; joining the schema of an undeclared product fails CI. `scripts/check-queries.mjs` reads the dependency map from the composition root, so the check and the running app cannot disagree, and it fails a module whose product the map does not list. Its own rules are kept honest by `scripts/query-fixtures`, a tree with one planted violation per rule. A cross read is a real dependency, so it must be declared like any other dependency. That way, when the owning module renames or drops a table or column, `make gen` fails on every query that references it. `make gen` cannot detect a change in a column's meaning, so changing a meaning requires a new column.
+- **Reads may join with SQL along the dependency direction**, and the query must live in the reading module's `queries/`. A module may join its own schema, those of its layer and of the lower layers (`core`, `shared`). A module in `modules/` may also join the schemas of the other modules of its own product and of the products its product has declared as dependencies; joining the schema of an undeclared product fails CI. `scripts/check-queries.mjs` reads the dependency map from the composition root, so the check and the running app cannot disagree, and it fails a module whose product the map does not list. Its own rules are kept honest by `scripts/query-fixtures`, a tree with one planted violation per rule. A cross read is a real dependency, so it must be declared like any other dependency. That way, when the owning module renames or drops a table or column, `make gen` fails on every query that references it. `make gen` cannot detect a change in a column's meaning, so changing a meaning requires a new column.
 - **What you need goes in `deps.go`: required dependencies.** A module calling a lower layer (`shared`, `core`) imports it directly. A module calling another product declares an interface in its own `deps.go`; `internal/app` passes the implementation in. **A dependency never has a no-op version**, because a required operation that "succeeds but does nothing" (for example reserving stock) is wrong data. A product that needs another product requires both to be enabled: dependencies between products are declared in code, and the app refuses to start when a dependency product is missing. If only one feature of the product needs the other product, the implementation returns `ErrUnavailable` when the other product is not enabled, and the frontend hides that feature.
 - **What you emit goes in `hooks.go`: optional reactions.** When another module needs to react to this module's actions, this module defines a hook interface and calls it at the right moment. `internal/app` wires it. If no module reacts, or the reacting product is not enabled, the hook is a no-op. The emitting module must work correctly when the hook is a no-op.
 - **A hook failure does not break the main operation, unless explicitly chosen.** By default, a hook only puts a River job on the queue with `platform.Enqueue` in the same transaction: the job is guaranteed to be written if the main operation succeeds, and a failure while processing the job is retried without rolling back the main operation. Synchronous hooks (whose failure rolls back the whole operation) are used only for invariants that must be strictly consistent, and the reason must be recorded in an ADR.
@@ -185,8 +205,8 @@ A product module reaches the core only through these entry points. A need none o
 | Writes while a product is disabled | `platform.ProductGate`; `record`, the route middleware, settings, jobs, prints, imports and exports apply it by the registered product |
 | Audit | `audit.Record` / `RecordFor` / `RecordChanges` in the change's transaction; `record.RestrictHistory` keeps an entry off a record's timeline for who may not see it |
 | Today and settings | `setting.Today`; `setting.GetFor`; a product's legal-entity settings registered with `RegisterLegalEntityKey(product, …)` |
-| Errors | `*platform.Error` sentinels with stable codes; `platform.Violates(err, constraint)` maps a constraint to one; any other error answers `internal_error` and is logged |
-| Lists | Filters embed `platform.Paging` |
+| Errors | `*platform.Error` sentinels with stable codes; `data.RegisterConstraints` maps a constraint with one meaning, `platform.Violates(err, constraint)` the others at their call site; any other error answers `internal_error` and is logged |
+| Lists | A `data.List` scoped by `iam.DataScope` ([Data access](#data-access)); filters embed `platform.Paging` |
 | Jobs, prints, imports, exports | `platform.Enqueue`; `printing.Register`; `dataio.RegisterImport` / `RegisterExport` |
 | Attachments, discussion, notifications | Come with the record type; `notification.Send` for a module's own events |
 | A disabled product stays shown | Documents count by themselves; a catalog type answers `HasData` |
@@ -225,7 +245,7 @@ Terms live in [CONTEXT.md](./CONTEXT.md): one section for the core and one per p
    - the record types and shared features enabled;
    - the business lines used for posting.
 2. Add terminology entries to `CONTEXT.md`.
-3. Migration creating the schema and tables, `queries.sql`, the sqlc entry in `sqlc.yaml`.
+3. Migration creating the schema and tables, `queries/`, the sqlc entry in `sqlc.yaml`.
 4. Write the service, handler and `module.go`. Wire it in `internal/app`, including deps and hooks (a hook no module implements gets a no-op). Add the product's `depguard` rule, the same shape as the others (lax mode: allow the product's own package, deny `internal/modules`), so no existing rule changes. If the module has document types, run the `recordtest` suite for each.
 5. Run `make gen`, then build the frontend area (see [frontend.md](./frontend.md#adding-an-area)).
 6. Attach the module to a product, and declare which products that product depends on (see [platform.md](./platform.md#enabled-products)).

@@ -51,6 +51,9 @@
   "shared.error.unknown_role": "This role does not exist.",
   "shared.error.role_tenant_wide": "This role is granted for the whole company, not per unit.",
   "shared.error.role_already_granted": "The user already has this role at that unit.",
+  "shared.error.partner_code_taken": "This partner code is already used.",
+  "shared.error.partner_tax_code_taken": "This tax code already belongs to another partner.",
+  "shared.error.item_code_taken": "This item code is already used.",
   "shared.error.org_unit_cycle": "A unit cannot be placed under one of its own sub-units.",
   "shared.error.org_unit_misplaced": "Invalid position: legal entities and groups cannot sit under a legal entity; branches and departments must sit under one.",
   "shared.error.legal_fields_company_only": "Tax code, legal name and address are for legal entities only.",
@@ -853,5 +856,12 @@
   "shared.approval.done.withdraw": "Request withdrawn.",
   "shared.document.sent_for_approval": "Approval request sent for {{number}}.",
   "shared.error.awaiting_approval": "The document awaits approval of a request.",
-  "shared.error.submitter_forbidden": "The submitter no longer has permission for this action; reject the request."
+  "shared.error.submitter_forbidden": "The submitter no longer has permission for this action; reject the request.",
+  "shared.partner.name": "Partner name",
+  "shared.partner.code": "Partner code",
+  "shared.partner.tax_code": "Tax code",
+  "shared.partner.contact_name": "Contact person",
+  "shared.partner.phone": "Phone",
+  "shared.partner.email": "Email",
+  "shared.partner.address": "Address"
 }

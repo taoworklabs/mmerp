@@ -21,12 +21,12 @@ test.beforeAll(async ({ baseURL }) => {
   for (const [type, action] of touched) original.set(`${type}:${action}`, rules.find((r) => r.doc_type === type && r.action === action)?.rule ?? null)
   const company = await created(api.post('/api/org-units', { data: { parent_id: null, kind: 'company', name: `Công ty AA ${run}`, legal_name: `Công ty TNHH AA ${run}` } }))
   const unit = await created(api.post('/api/org-units', { data: { parent_id: company, kind: 'department', name: `Kinh doanh AA ${run}` } }))
-  await createUser(api, login.staff, [{ role: 'sales.staff', unit }])
-  await createUser(api, login.manager, [{ role: 'sales.manager', unit }])
-  const item = await created(api.post('/api/sales/items', { data: { code: `AA${run}`, name: `Giấy A4 ${run}`, unit: 'ram', price: 78_000, vat_rate: '10', active: true } }))
+  await createUser(api, login.staff, [{ role: 'sales.staff', unit }, { role: 'partner.editor', unit }])
+  await createUser(api, login.manager, [{ role: 'sales.manager', unit }, { role: 'partner.editor', unit }])
+  const item = await created(api.post('/api/items', { data: { code: `AA${run}`, name: `Giấy A4 ${run}`, unit: 'ram', price: 78_000, vat_rate: '10', active: true } }))
   const customer = await created(
     api.post('/api/sales/customers', {
-      data: { code: `KHAA${run}`, name: `Công ty Bình Minh ${run}`, tax_code: null, address: null, phone: null, email: null, contact_name: null, payment_terms: null, org_unit_id: unit, active: true },
+      data: { code: `KHAA${run}`, partner: { name: `Công ty Bình Minh ${run}`, tax_code: null, address: null, phone: null, email: null, contact_name: null }, payment_terms: null, org_unit_id: unit, active: true },
     }),
   )
   ids = { unit, customer, item }
@@ -49,7 +49,7 @@ async function as(browser: Browser, user: string, path: string) {
   await page.getByLabel('Tên đăng nhập').fill(user)
   await page.getByLabel(/^Mật khẩu/).fill(user === admin.login ? admin.password : password)
   await page.getByRole('button', { name: 'Đăng nhập' }).click()
-  await expect(page.getByRole('button', { name: 'Tài khoản' })).toBeVisible()
+  await expect(page.getByRole('button', { name: /^Tài khoản:/ })).toBeVisible()
   return page
 }
 

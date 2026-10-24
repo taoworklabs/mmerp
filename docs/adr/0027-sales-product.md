@@ -1,6 +1,6 @@
 # 0027. The Sales product
 
-Status: accepted · 2026-10-09 · replaces the "probe product" row of the roadmap's "Not in this roadmap" table; amends [ADR-0023](./0023-build-core-first.md) ("a second product remains outside the roadmap") and the sentence "VAT is computed in `shared/tax`" of [ADR-0006](./0006-money-rounding.md)
+Status: accepted · 2026-10-09 · partly superseded by ADR-0039 (customers, items and VAT moved to shared) · replaces the "probe product" row of the roadmap's "Not in this roadmap" table; amends [ADR-0023](./0023-build-core-first.md) ("a second product remains outside the roadmap") and the sentence "VAT is computed in `shared/tax`" of [ADR-0006](./0006-money-rounding.md)
 
 ## Context
 
@@ -18,7 +18,9 @@ The product owner decided to open Sales as the second product, generic across tr
 
 ### Who owns customers and items
 
-**Customers and items belong to `sales`**, not to `shared/`. No other product uses them; [backend.md](../../backend.md#data-ownership) already says to promote an entity to `shared/` *before* a second product starts using it, with `ALTER TABLE … SET SCHEMA`, ids unchanged. A generic master-data module (partners with roles, an item master with variants and units of measure) is not built ahead of need.
+Superseded by [ADR-0039](./0039-shared-master-data.md).
+
+**Customers and items belong to `sales`**, not to `shared/` (superseded by ADR-0039: partners, items and VAT now live in `shared/`; Sales keeps the customer role). No other product uses them; [backend.md](../../backend.md#data-ownership) already says to promote an entity to `shared/` *before* a second product starts using it, with `ALTER TABLE … SET SCHEMA`, ids unchanged. A generic master-data module (partners with roles, an item master with variants and units of measure) is not built ahead of need.
 
 - `sales.customers`: a catalogue record type `sales.customer`. Code (unique in the tenant, case-insensitive), name, optional tax code, address, phone, email, contact person, default payment terms, an **owning org unit** and an active flag. The org unit decides who sees the customer.
 - `sales.items`: code (unique, case-insensitive), name, unit of measure (free text), default unit price, default VAT rate, active flag. Tenant-wide: one catalogue for every org unit. Not a record type: no lifecycle, attachments or discussion are needed yet; changes are audited.
@@ -81,11 +83,11 @@ Saving refuses an inactive customer (`customer_inactive`) or item (`item_inactiv
 | `sales.customer.view`, `sales.customer.edit` | Org unit | Customers whose owning org unit is in scope |
 | `sales.quote.view`, `sales.quote.edit` | Org unit | Quotations whose org unit is in scope; edit also sends, withdraws, cancels and attaches |
 | `sales.order.view`, `sales.order.edit` | Org unit | The same for orders |
-| `sales.item.view` | Anywhere | Reading the item catalogue |
-| `sales.item.manage` | Tenant-wide | Creating and editing items |
+| `sales.item.view` | Anywhere | Reading the item catalogue (superseded by ADR-0039: `item.view`) |
+| `sales.item.manage` | Tenant-wide | Creating and editing items (superseded by ADR-0039: `item.manage`) |
 | `sales.approval.manage` | Tenant-wide | Sales approval rules ([ADR-0022](./0022-approval-rule-permissions-per-product.md)) |
 
-Roles: `staff` and `manager` (customers, quotations and orders, view and edit; read items: the same permissions, two names so approval rules can route to managers), `viewer` (read everything), `catalog_admin` (items; tenant-wide only), `approval_admin` (tenant-wide only).
+Roles: `staff` and `manager` (customers, quotations and orders, view and edit; read items: the same permissions, two names so approval rules can route to managers), `viewer` (read everything), `catalog_admin` (items; tenant-wide only; superseded by ADR-0039: now `item.admin`), `approval_admin` (tenant-wide only).
 
 - Nobody sees every customer or document by default: a user sees what lies under the org units where they hold a role. A sales team is an org unit (`department` or `branch`); a person who should see only their own work is granted at a node of their own.
 - Creating a document needs edit permission at its org unit **and** view permission on the customer. A document's org unit may differ from the customer's; the document then shows the customer details it copied, even to someone who cannot open the customer.

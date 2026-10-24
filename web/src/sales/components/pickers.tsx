@@ -1,8 +1,6 @@
-import { api, unwrap, type CustomerListItem, type Item } from '@/shared/api/sales'
-import { RemoteSelectField } from '@/shared/ui/form'
+import { api, unwrap, type CustomerListItem, type LineItem } from '@/shared/api/sales'
+import { RemoteSelectField, type RemoteRow } from '@/shared/ui/form'
 import { salesKeys } from '../keys'
-
-type Current = { id: number; code: string; name: string }
 
 // CustomerField picks an active customer the user can see, by code, name or tax code.
 export function CustomerField({
@@ -14,7 +12,7 @@ export function CustomerField({
 }: {
   name: string
   label: string
-  current?: Current
+  current?: RemoteRow
   readOnly?: boolean
   onPicked?: (c: CustomerListItem) => void
 }) {
@@ -32,7 +30,8 @@ export function CustomerField({
   )
 }
 
-// ItemField picks an active item of the catalogue by code or name.
+// ItemField picks an active item for a document line by code or name; writing quotations or
+// orders is enough, no item role needed.
 export function ItemField({
   name,
   label,
@@ -43,10 +42,10 @@ export function ItemField({
 }: {
   name: string
   label: string
-  current?: Current
+  current?: RemoteRow
   readOnly?: boolean
   bare?: boolean
-  onPicked?: (i: Item) => void
+  onPicked?: (i: LineItem) => void
 }) {
   return (
     <RemoteSelectField
@@ -58,7 +57,7 @@ export function ItemField({
       bare={bare}
       onPicked={onPicked}
       queryKey={salesKeys.items.picker}
-      search={async (q) => (await unwrap(api.GET('/sales/items', { params: { query: { q: q || undefined, active: 'true', page_size: 20 } } }))).items}
+      search={async (q) => (await unwrap(api.GET('/sales/line-items', { params: { query: { q: q || undefined } } }))).items}
     />
   )
 }

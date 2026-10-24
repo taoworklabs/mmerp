@@ -51,6 +51,9 @@
   "shared.error.unknown_role": "Vai trò không tồn tại.",
   "shared.error.role_tenant_wide": "Vai trò này chỉ cấp cho toàn công ty, không theo đơn vị.",
   "shared.error.role_already_granted": "Người dùng đã có vai trò này tại đơn vị đó.",
+  "shared.error.partner_code_taken": "Mã đối tác đã được dùng.",
+  "shared.error.partner_tax_code_taken": "Mã số thuế đã thuộc về một đối tác khác.",
+  "shared.error.item_code_taken": "Mã hàng đã được dùng.",
   "shared.error.org_unit_cycle": "Không thể đặt một đơn vị dưới chính đơn vị con của nó.",
   "shared.error.org_unit_misplaced": "Vị trí không hợp lệ: pháp nhân và nhóm không nằm dưới pháp nhân; chi nhánh và phòng ban phải nằm dưới một pháp nhân.",
   "shared.error.legal_fields_company_only": "Mã số thuế, tên pháp lý và địa chỉ chỉ dành cho pháp nhân.",
@@ -853,5 +856,12 @@
   "shared.approval.done.withdraw": "Đã rút yêu cầu.",
   "shared.document.sent_for_approval": "Đã gửi yêu cầu duyệt cho {{number}}.",
   "shared.error.awaiting_approval": "Chứng từ đang chờ duyệt một yêu cầu.",
-  "shared.error.submitter_forbidden": "Người gửi không còn quyền thực hiện thao tác này; hãy từ chối yêu cầu."
+  "shared.error.submitter_forbidden": "Người gửi không còn quyền thực hiện thao tác này; hãy từ chối yêu cầu.",
+  "shared.partner.name": "Tên đối tác",
+  "shared.partner.code": "Mã đối tác",
+  "shared.partner.tax_code": "Mã số thuế",
+  "shared.partner.contact_name": "Người liên hệ",
+  "shared.partner.phone": "Điện thoại",
+  "shared.partner.email": "Email",
+  "shared.partner.address": "Địa chỉ"
 }

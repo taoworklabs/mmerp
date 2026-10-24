@@ -256,7 +256,7 @@ func TestOverlappingRequestsApprovedAtOnce(t *testing.T) {
 	f.check(platform.InTx(f.m, func(ctx context.Context) error {
 		f.check(f.appr.Approve(ctx, ta, 1))
 		wg.Go(func() { second = f.appr.Approve(f.m, tb, 1) })
-		pgtest.AwaitLockWait(t, f.pool)
+		pgtest.AwaitLockWait(t, f.system)
 		return nil
 	}))
 	wg.Wait()

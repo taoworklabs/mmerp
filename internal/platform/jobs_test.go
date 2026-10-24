@@ -6,9 +6,12 @@ import (
 	"net/http"
 	"testing"
 
+	"github.com/riverqueue/river"
+	"github.com/riverqueue/river/riverdriver/riverpgxv5"
 	"github.com/riverqueue/river/rivertype"
 
 	"github.com/taoworklabs/mmerp/internal/platform"
+	"github.com/taoworklabs/mmerp/internal/platform/pgtest"
 )
 
 // A declaring job tells its requester once it fails for good: a coded error at once, any
@@ -40,5 +43,44 @@ func TestJobFailureNotified(t *testing.T) {
 	run(6, `{}`, 3, plain)
 	if len(got) != 2 || got[0] != (told{2, 7, true}) || got[1] != (told{3, 7, true}) {
 		t.Fatalf("told %+v", got)
+	}
+}
+
+type noopArgs struct{}
+
+func (noopArgs) Kind() string           { return "test.noop" }
+func (noopArgs) Spec() platform.JobSpec { return platform.JobSpec{System: true} }
+
+// A job enqueued with no transaction in ctx would exist even if the business write
+// it belongs to rolled back, so Enqueue refuses it.
+func TestEnqueueRequiresTx(t *testing.T) {
+	pool := pgtest.New(t)
+	jobs, err := river.NewClient(riverpgxv5.New(pgtest.System(t, pool)), &river.Config{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	ctx := platform.WithJobs(platform.WithDB(t.Context(), pool), jobs)
+	jobCount := func() (n int) {
+		t.Helper()
+		if err := pool.QueryRow(t.Context(), `SELECT count(*) FROM river_job`).Scan(&n); err != nil {
+			t.Fatal(err)
+		}
+		return n
+	}
+
+	if _, err := platform.Enqueue(ctx, noopArgs{}); !errors.Is(err, platform.ErrEnqueueOutsideTx) {
+		t.Fatalf("err = %v, want ErrEnqueueOutsideTx", err)
+	}
+	if n := jobCount(); n != 0 {
+		t.Fatalf("%d jobs, want 0", n)
+	}
+	if err := platform.InTx(ctx, func(ctx context.Context) error {
+		_, err := platform.Enqueue(ctx, noopArgs{})
+		return err
+	}); err != nil {
+		t.Fatal(err)
+	}
+	if n := jobCount(); n != 1 {
+		t.Fatalf("%d jobs, want 1", n)
 	}
 }

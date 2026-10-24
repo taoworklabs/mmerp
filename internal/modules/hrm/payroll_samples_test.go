@@ -117,7 +117,7 @@ func newPayrollFixture(t *testing.T) *payrollFixture {
 	f := &payrollFixture{leaveFixture: newLeaveFixture(t), employees: map[string]int64{}}
 	f.pay = f.ctxFor("pay", "payroll@*", "hr@*", "sensitive_viewer@*", "leave_admin@*")
 	f.fixed = must(t)(f.hrm.SaveContractType(f.hr, 0, hrm.ContractTypeInput{Name: "Xác định thời hạn", FixedTerm: true, Active: true}))
-	f.check(f.pool.QueryRow(f.admin, `UPDATE hrm.leave_types SET paid = true WHERE id = $1 RETURNING id`, f.annual).Scan(new(int64)))
+	f.check(f.system.QueryRow(f.admin, `UPDATE hrm.leave_types SET paid = true WHERE id = $1 RETURNING id`, f.annual).Scan(new(int64)))
 	f.sick = must(t)(f.hrm.SaveLeaveType(f.hr, 0, hrm.LeaveTypeInput{Name: "Nghỉ ốm", Active: true}))
 	f.unpaid = must(t)(f.hrm.SaveLeaveType(f.hr, 0, hrm.LeaveTypeInput{Name: "Nghỉ không lương", Active: true}))
 	f.check(f.hrm.SaveHoliday(f.pay, f.c, hrm.Holiday{Date: "2026-04-27", Name: "Nghỉ bù Giỗ Tổ"}))

@@ -4,8 +4,8 @@ import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tansta
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { useTranslation } from 'react-i18next'
-import { useCan, useProductOn } from '@/shared/auth/me'
-import { api, unwrap, type Item, type ItemList, type ItemSort } from '@/shared/api/sales'
+import { api, unwrap, type Item, type ItemList, type ItemSort } from '@/shared/api/core'
+import { useCan } from '@/shared/auth/me'
 import { errorText, formatNumber } from '@/shared/i18n'
 import { type Column } from '@/shared/ui/DataTable'
 import { CheckboxField, CodeField, FilterChip, Form, FormActions, MoneyField, SearchInput, SelectField, TextField } from '@/shared/ui/form'
@@ -29,10 +29,8 @@ export function ItemsPage() {
   const { t } = useTranslation()
   const qc = useQueryClient()
   const vat = useVatOptions()
-  // Catalogue writes have no allowed_actions; a disabled product is read-only.
-  const canManage = useCan('sales.item.manage')
-  const on = useProductOn('sales')
-  const writable = canManage && on
+  // Catalogue writes have no allowed_actions; items belong to no product, so nothing gates them.
+  const writable = useCan('item.manage')
   const [editing, setEditing] = useState<Item | 'new' | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [params, set, filterBar] = useListParams(defaults)
@@ -42,7 +40,7 @@ export function ItemsPage() {
     queryKey: salesKeys.items.list(query),
     queryFn: () =>
       unwrap(
-        api.GET('/sales/items', {
+        api.GET('/items', {
           params: {
             query: {
               q: q || undefined,
@@ -60,7 +58,7 @@ export function ItemsPage() {
   // Retiring is reversible and touches no document, so it applies at once and offers Undo.
   const toggle = useMutation({
     // undo marks the way back, which offers no Undo of its own.
-    mutationFn: ({ item: x }: { item: Item; undo?: boolean }) => unwrap(api.PUT('/sales/items/{id}', { params: { path: { id: x.id } }, body: { ...fieldsOf(x), active: !x.active } })),
+    mutationFn: ({ item: x }: { item: Item; undo?: boolean }) => unwrap(api.PUT('/items/{id}', { params: { path: { id: x.id } }, body: { ...fieldsOf(x), active: !x.active } })),
     onMutate: async ({ item: x }) => {
       setError(null)
       await qc.cancelQueries({ queryKey: salesKeys.items.all() })
@@ -175,8 +173,9 @@ function ItemModal({ item, onClose }: { item: Item | null; onClose: () => void }
       vat_rate: v.vat_rate as Item['vat_rate'],
       active: v.active,
     }
-    if (item) await unwrap(api.PUT('/sales/items/{id}', { params: { path: { id: item.id } }, body }))
-    else await unwrap(api.POST('/sales/items', { body: { ...body, code: v.code.trim() } }))
+    if (item) await unwrap(api.PUT('/items/{id}', { params: { path: { id: item.id } }, body }))
+    else await unwrap(api.POST('/items', { body: { ...body, code: v.code.trim() } }))
+    // The pickers too: an item's name and price fill new lines.
     await qc.invalidateQueries({ queryKey: salesKeys.items.all() })
     notifySuccess(t('sales.items.saved'))
     onClose()

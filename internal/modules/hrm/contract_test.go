@@ -140,7 +140,7 @@ func TestContractAt(t *testing.T) {
 	_, _, err := f.hrm.ContractAt(f.admin, f.emp, "2026-06-15")
 	f.check(err)
 	var doc int64
-	f.check(f.pool.QueryRow(f.admin, `SELECT doc_id FROM audit.log WHERE action = 'hrm.contract_terms_viewed' ORDER BY id DESC LIMIT 1`).Scan(&doc))
+	f.check(f.system.QueryRow(f.admin, `SELECT doc_id FROM audit.log WHERE action = 'hrm.contract_terms_viewed' ORDER BY id DESC LIMIT 1`).Scan(&doc))
 	if n := f.auditCount("hrm.contract_terms_viewed"); n != before+1 || doc != june {
 		t.Fatalf("audited %d reads of %d, want 1 of %d", n-before, doc, june)
 	}
@@ -232,7 +232,7 @@ func TestContractPermissions(t *testing.T) {
 	}
 	// The audit of a write keeps the terms encrypted.
 	var data string
-	f.check(f.pool.QueryRow(f.admin, `SELECT data::text FROM audit.log WHERE action = 'hrm.contract_created' AND doc_id = $1`, id).Scan(&data))
+	f.check(f.system.QueryRow(f.admin, `SELECT data::text FROM audit.log WHERE action = 'hrm.contract_created' AND doc_id = $1`, id).Scan(&data))
 	if strings.Contains(data, "10000000") || !strings.Contains(data, `"sensitive": true`) {
 		t.Fatalf("audit %s", data)
 	}
@@ -241,7 +241,7 @@ func TestContractPermissions(t *testing.T) {
 func (f *fixture) auditCount(action string) int {
 	f.t.Helper()
 	var n int
-	if err := f.pool.QueryRow(f.admin, `SELECT count(*) FROM audit.log WHERE action = $1`, action).Scan(&n); err != nil {
+	if err := f.system.QueryRow(f.admin, `SELECT count(*) FROM audit.log WHERE action = $1`, action).Scan(&n); err != nil {
 		f.t.Fatal(err)
 	}
 	return n
@@ -407,7 +407,7 @@ func TestOverlappingContractsPostedAtOnce(t *testing.T) {
 	f.check(platform.InTx(f.pay, func(ctx context.Context) error {
 		f.check(errOf(f.rec.Transition(ctx, record.Ref{Type: "hrm.contract", ID: a}, 1, record.Posted)))
 		wg.Go(func() { second = f.post(b) })
-		pgtest.AwaitLockWait(t, f.pool)
+		pgtest.AwaitLockWait(t, f.system)
 		return nil
 	}))
 	wg.Wait()

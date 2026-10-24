@@ -66,6 +66,13 @@ linters:
           deny:
             - pkg: github.com/jackc/pgx/v5/pgxpool
               desc: get the connection from platform.DBFrom(ctx)
+        # The driver is only needed to construct a River client; business code reaches
+        # jobs through platform.Enqueue/platform.JobsFrom, never a client of its own.
+        river-client:
+          files: ["**/internal/**", "**/scripts/lint-fixtures/go/**", "!**/internal/platform/**", "!**/internal/app/**", "!$test"]
+          deny:
+            - pkg: github.com/riverqueue/river/riverdriver/riverpgxv5
+              desc: construct the River client only in internal/app
     forbidigo:
       analyze-types: true
       forbid:
@@ -77,6 +84,19 @@ linters:
           msg: get the connection from platform.DBFrom(ctx)
         - pattern: ^float(32|64)$
           msg: money is int64 in minor units; rates use shopspring/decimal
+        # Data access; infrastructure exceptions are in the exclusions below.
+        - pattern: ^store\.New$
+          msg: query through the data engine (internal/platform/data)
+        - pattern: ^platform\.DBFrom$
+          msg: query through the data engine; platform.DBFrom is for infrastructure only
+        - pattern: \.Begin(Tx)?$
+          msg: start transactions with platform.InTx; it is the only way to open one
+        - pattern: ^pgx\.Begin(Tx)?Func$
+          msg: start transactions with platform.InTx; it is the only way to open one
+        - pattern: ^river\.Client\.Insert(Tx)?$
+          msg: enqueue through platform.Enqueue; it applies the product gate and records the requester
+        - pattern: ^data\.(Static|GrantAll|GrantUnits)$
+          msg: Static and Grant* are sealed to the data engine and iam; get a Scope from iam.DataScope
   exclusions:
     rules:
       - path: internal/platform/(config|pgtest/pgtest)\.go
@@ -92,6 +112,28 @@ linters:
       - path: internal/core/printing/page\.go
         linters: [forbidigo]
         text: float
+      # Data access. Begin*, River Insert/InsertTx and Static/Grant* stay
+      # allowed in infrastructure: internal/platform/**, internal/app/**,
+      # cmd/**, pgtest/**, coretest/**, generated *.gen.go and sqlc's *.sql.go.
+      - path: ^internal/platform/|^internal/app/|^cmd/|/pgtest/|/coretest/|\.gen\.go$|/internal/store/[^/]+\.sql\.go$
+        linters: [forbidigo]
+        text: \.Begin(Tx)?
+      - path: ^internal/platform/|^internal/app/|^cmd/|/pgtest/|/coretest/|\.gen\.go$|/internal/store/[^/]+\.sql\.go$
+        linters: [forbidigo]
+        text: pgx\.Begin(Tx)?Func
+      - path: ^internal/platform/|^internal/app/|^cmd/|/pgtest/|/coretest/|\.gen\.go$|/internal/store/[^/]+\.sql\.go$
+        linters: [forbidigo]
+        text: \.Insert(Tx)?
+      # Static and Grant* additionally stay allowed in core/iam, their only caller.
+      - path: ^internal/platform/|^internal/app/|^cmd/|/pgtest/|/coretest/|\.gen\.go$|/internal/store/[^/]+\.sql\.go$|^internal/core/iam/
+        linters: [forbidigo]
+        text: Static|GrantAll|GrantUnits
+      # store.New and platform.DBFrom bypass the data engine; they stay allowed
+      # in infrastructure, and in tests and the recordtest suite, which inspect
+      # the database directly.
+      - path: ^internal/platform/|^internal/app/|^cmd/|/pgtest/|/coretest/|/recordtest/|_test\.go$|\.gen\.go$|/internal/store/[^/]+\.sql\.go$
+        linters: [forbidigo]
+        text: store\.New|platform\.DBFrom
 
 formatters:
   enable:

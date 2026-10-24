@@ -6,7 +6,7 @@ Selling goods and services, for any trade: customers, a catalogue of items, quot
 
 | In the first release | Not yet |
 | --- | --- |
-| Customers, with an owning org unit | CRM pipeline, leads, activities |
+| Customers (Sales' partner role over a shared partner), with an owning org unit | CRM pipeline, leads, activities |
 | Item catalogue (goods and services alike) with default price and VAT rate | Stock, warehouses, units of measure conversion, price lists |
 | Quotations: approval, PDF print, turning into an order | Delivery, payment, invoices and e-invoices |
 | Sales orders, from a quotation or entered directly | Accounting, business lines |
@@ -16,14 +16,14 @@ Nothing is specific to a trade: an item is anything sold with a unit and a price
 
 ## Module
 
-A single module `internal/modules/sales`, schema `sales`, product `sales`. Depends on no other product. Uses `iam`, `record`, `audit`, `setting`, `printing` and `numbering` (customer and item codes) directly; `approval`, document numbers, `attachment`, `discussion` and `notification` work through `record` with nothing to add. Emits no hooks.
+A single module `internal/modules/sales`, schema `sales`, product `sales`. Depends on no other product. Uses `iam`, `record`, `audit`, `setting`, `printing` and `numbering` (customer codes) and the shared `partner`, `item` and `tax` modules directly (identity, catalogue, VAT); `approval`, document numbers, `attachment`, `discussion` and `notification` work through `record` with nothing to add. Emits no hooks.
 
 ## Entities
 
 | Table | Meaning |
 | --- | --- |
-| `sales.customers` | Customers; `org_unit_id` is the owning org unit that decides who sees them |
-| `sales.items` | Item catalogue, tenant-wide |
+| `sales.customers` | Customers, Sales' partner role: `partner_id`, `org_unit_id` (the owning org unit that decides who sees them), payment terms, active flag; one per partner per org unit at most. Identity is in `partner.partners` |
+| `partner.partners`, `item.items` | Shared, read by Sales: partner identity and the item catalogue (tenant-wide). Not Sales tables |
 | `sales.headers` | Quotations and orders (`kind`), one row per document, keyed by the `record.documents` id: customer details as copied, terms, totals |
 | `sales.lines` | Lines of a quotation or order, in order: item, copied code and unit, description, quantity, unit price, discount, VAT rate, and the computed amounts |
 
@@ -93,22 +93,32 @@ An inactive customer or item cannot be put on a draft (`customer_inactive`, `ite
 
 ## Duplicate creates
 
-Create forms send a `request_id` generated when the form opens. Sending the same form twice (double click, retry after a timeout) returns the document created the first time. Customer and item codes are unique, so a duplicate customer or item is refused with `customer_code_taken` or `item_code_taken`.
+Create forms send a `request_id` generated when the form opens. Sending the same form twice (double click, retry after a timeout) returns the document created the first time. Customer codes are unique, so a duplicate customer is refused with `customer_code_taken`; item codes and partner codes are unique in their shared modules (`item_code_taken`, `partner_code_taken`), and a customer for a partner already customer of the same org unit is refused too.
 
 ## Permissions
 
 | Role | Permissions | Granted |
 | --- | --- | --- |
-| `staff`, `manager` | `sales.customer.view`, `sales.customer.edit`, `sales.quote.view`, `sales.quote.edit`, `sales.order.view`, `sales.order.edit`, `sales.item.view` | At an org unit or tenant-wide |
+| `staff`, `manager` | `sales.customer.view`, `sales.customer.edit`, `sales.quote.view`, `sales.quote.edit`, `sales.order.view`, `sales.order.edit` | At an org unit or tenant-wide |
 | `viewer` | The `view` permissions above | At an org unit or tenant-wide |
-| `catalog_admin` | `sales.item.view`, `sales.item.manage` | Tenant-wide only |
 | `approval_admin` | `sales.approval.manage` | Tenant-wide only |
 
 `staff` and `manager` carry the same permissions; approval rules route steps to `manager`.
 
+Partners and items have their own roles in the shared modules; a Sales user needs them too, as Sales roles no longer grant them:
+
+| Role | Permissions | Granted |
+| --- | --- | --- |
+| `partner.viewer` | `partner.view` | Anywhere |
+| `partner.editor` | `partner.view`, `partner.edit` | Anywhere |
+| `item.viewer` | `item.view` | Anywhere |
+| `item.admin` | `item.view`, `item.manage` | Tenant-wide only |
+
+The migration granted them to existing holders of Sales roles (customer view: `partner.viewer`; customer edit: `partner.editor`; item view: `item.viewer`; `catalog_admin`: `item.admin`), scopes copied.
+
 - Customers, quotations and orders are seen only under the org units where the user holds a role (subtrees included). A user granted at "Phòng kinh doanh 1" sees neither the customers nor the documents of "Phòng kinh doanh 2"; one granted at the company sees both.
 - Creating a quotation or order needs `edit` at its org unit and `view` on its customer. Turning a quotation into an order needs `sales.quote.view` on the quotation and `sales.order.edit` at its org unit.
-- Items are one catalogue for the tenant: whoever holds `sales.item.view` anywhere reads all of it.
+- Items are one catalogue for the tenant: whoever holds `item.view` anywhere reads all of it. Writing a quotation or order needs no item role: the line's item cell reads active items through `GET /sales/line-items`, open to whoever holds `sales.quote.edit` or `sales.order.edit` anywhere; `item.view` is for the catalogue screen. Partner identity is the same: whoever holds `partner.view` anywhere reads every partner, while customers stay scoped to their org unit. Identity fields on a customer are editable only with `partner.edit`.
 - A record the user cannot view answers not found everywhere, including from attachments, discussion, print and conversion.
 
 With Sales disabled, everything stays readable; printing and attachment downloads still work; every write action disappears.

@@ -736,7 +736,7 @@ func TestClosedInstancesCancelTheirSteps(t *testing.T) {
 	d, err = f.send("1", "a")
 	f.check(err)
 	// The document moved on behind the instance's back.
-	if _, err := platform.DBFrom(f.admin).Exec(f.admin, `UPDATE record.documents SET version = version + 1 WHERE id = $1`, d.ID); err != nil {
+	if _, err := f.core.System.Exec(f.admin, `UPDATE record.documents SET version = version + 1 WHERE id = $1`, d.ID); err != nil {
 		t.Fatal(err)
 	}
 	if !errors.Is(f.appr.Approve(f.as("boss"), *d.ApprovalTicket, 1), record.ErrApprovalStale) {

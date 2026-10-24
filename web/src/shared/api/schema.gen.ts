@@ -1005,6 +1005,38 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/items": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["list-items"];
+        put?: never;
+        post: operations["create-item"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/items/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put: operations["update-item"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/jobs": {
         parameters: {
             query?: never;
@@ -1233,6 +1265,38 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/partners": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["list-partners"];
+        put?: never;
+        post: operations["create-partner"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/partners/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["get-partner"];
+        put: operations["update-partner"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/period-locks": {
         parameters: {
             query?: never;
@@ -1430,31 +1494,15 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/sales/items": {
+    "/sales/line-items": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        get: operations["list-items"];
+        get: operations["list-line-items"];
         put?: never;
-        post: operations["create-item"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/sales/items/{id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put: operations["update-item"];
         post?: never;
         delete?: never;
         options?: never;
@@ -1954,24 +2002,23 @@ export interface components {
              */
             readonly $schema?: string;
             active: boolean;
-            address: string | null;
             allowed_actions: string[];
             code: string;
-            contact_name: string | null;
-            email: string | null;
             /** Format: int64 */
             id: number;
-            name: string;
             /**
              * Format: int64
              * @description Owning org unit: who may see the customer
              */
             org_unit_id: number;
             org_unit_name: string;
+            partner: components["schemas"]["PartnerFields"];
+            partner_actions: string[];
+            partner_code: string;
+            /** Format: int64 */
+            partner_id: number;
             /** @description Prefilled on new quotations and orders */
             payment_terms: string | null;
-            phone: string | null;
-            tax_code: string | null;
         };
         CustomerCopy: {
             address: string | null;
@@ -1981,28 +2028,6 @@ export interface components {
             /** Format: int64 */
             id: number;
             name: string;
-            phone: string | null;
-            tax_code: string | null;
-        };
-        CustomerFields: {
-            /**
-             * Format: uri
-             * @description A URL to the JSON Schema for this object.
-             * @example /api/schemas/CustomerFields.json
-             */
-            readonly $schema?: string;
-            active: boolean;
-            address: string | null;
-            contact_name: string | null;
-            email: string | null;
-            name: string;
-            /**
-             * Format: int64
-             * @description Owning org unit: who may see the customer
-             */
-            org_unit_id: number;
-            /** @description Prefilled on new quotations and orders */
-            payment_terms: string | null;
             phone: string | null;
             tax_code: string | null;
         };
@@ -2027,6 +2052,24 @@ export interface components {
             payment_terms: string | null;
             phone: string | null;
             tax_code: string | null;
+        };
+        CustomerUpdate: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example /api/schemas/CustomerUpdate.json
+             */
+            readonly $schema?: string;
+            active: boolean;
+            /**
+             * Format: int64
+             * @description Owning org unit: who may see the customer
+             */
+            org_unit_id: number;
+            /** @description Absent: the identity is left as it is */
+            partner?: components["schemas"]["PartnerFields"];
+            /** @description Prefilled on new quotations and orders */
+            payment_terms: string | null;
         };
         Delegation: {
             active: boolean;
@@ -2761,6 +2804,26 @@ export interface components {
             /** @enum {string} */
             vat_rate: "none" | "0" | "5" | "8" | "10";
         };
+        LineItem: {
+            code: string;
+            /** Format: int64 */
+            id: number;
+            name: string;
+            /** Format: int64 */
+            price: number;
+            unit: string;
+            /** @enum {string} */
+            vat_rate: "none" | "0" | "5" | "8" | "10";
+        };
+        LineItemList: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example /api/schemas/LineItemList.json
+             */
+            readonly $schema?: string;
+            items: components["schemas"]["LineItem"][];
+        };
         ListColumn: {
             hidden: boolean;
             key: string;
@@ -2890,21 +2953,22 @@ export interface components {
              */
             readonly $schema?: string;
             active: boolean;
-            address: string | null;
             /** @description Empty or absent: issued from the sales.customer code series */
             code?: string;
-            contact_name: string | null;
-            email: string | null;
-            name: string;
             /**
              * Format: int64
              * @description Owning org unit: who may see the customer
              */
             org_unit_id: number;
+            /** @description A new partner's identity */
+            partner?: components["schemas"]["PartnerFields"];
+            /**
+             * Format: int64
+             * @description An existing partner
+             */
+            partner_id?: number;
             /** @description Prefilled on new quotations and orders */
             payment_terms: string | null;
-            phone: string | null;
-            tax_code: string | null;
         };
         NewDoc: {
             /**
@@ -2970,7 +3034,7 @@ export interface components {
              */
             readonly $schema?: string;
             active: boolean;
-            /** @description Empty or absent: issued from the sales.item code series */
+            /** @description Empty or absent: issued from the item.item code series */
             code?: string;
             name: string;
             /**
@@ -3032,6 +3096,22 @@ export interface components {
              * @description Generated once per form: sending it again returns the first document
              */
             request_id?: string;
+        };
+        NewPartner: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example /api/schemas/NewPartner.json
+             */
+            readonly $schema?: string;
+            address: string | null;
+            /** @description Empty or absent: issued from the partner.partner code series */
+            code?: string;
+            contact_name: string | null;
+            email: string | null;
+            name: string;
+            phone: string | null;
+            tax_code: string | null;
         };
         NewPayroll: {
             /**
@@ -3220,6 +3300,60 @@ export interface components {
             items: components["schemas"]["Notification"][];
             /** Format: int64 */
             next_before: number | null;
+        };
+        Partner: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example /api/schemas/Partner.json
+             */
+            readonly $schema?: string;
+            address: string | null;
+            allowed_actions: string[];
+            code: string;
+            contact_name: string | null;
+            email: string | null;
+            /** Format: int64 */
+            id: number;
+            name: string;
+            phone: string | null;
+            tax_code: string | null;
+        };
+        PartnerFields: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example /api/schemas/PartnerFields.json
+             */
+            readonly $schema?: string;
+            address: string | null;
+            contact_name: string | null;
+            email: string | null;
+            name: string;
+            phone: string | null;
+            tax_code: string | null;
+        };
+        PartnerList: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example /api/schemas/PartnerList.json
+             */
+            readonly $schema?: string;
+            items: components["schemas"]["PartnerListItem"][];
+            /** Format: int64 */
+            total: number;
+        };
+        PartnerListItem: {
+            address: string | null;
+            code: string;
+            contact_name: string | null;
+            email: string | null;
+            /** Format: int64 */
+            id: number;
+            name: string;
+            phone: string | null;
+            tax_code: string | null;
         };
         Payroll: {
             /**
@@ -6541,6 +6675,107 @@ export interface operations {
             };
         };
     };
+    "list-items": {
+        parameters: {
+            query?: {
+                q?: string;
+                active?: "true" | "false";
+                sort?: "code" | "-code" | "name" | "-name";
+                page?: number;
+                page_size?: 20 | 50 | 100;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ItemList"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "create-item": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NewItem"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CreatedOutputBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "update-item": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ItemFields"];
+            };
+        };
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
     "list-jobs": {
         parameters: {
             query?: {
@@ -7125,6 +7360,139 @@ export interface operations {
             };
         };
     };
+    "list-partners": {
+        parameters: {
+            query?: {
+                q?: string;
+                /** @description Exact, trimmed and case-insensitive */
+                tax_code?: string;
+                sort?: "code" | "-code" | "name" | "-name";
+                page?: number;
+                page_size?: 20 | 50 | 100;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PartnerList"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "create-partner": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NewPartner"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CreatedOutputBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "get-partner": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Partner"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "update-partner": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PartnerFields"];
+            };
+        };
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
     "list-period-locks": {
         parameters: {
             query?: never;
@@ -7486,6 +7854,7 @@ export interface operations {
                 q?: string;
                 active?: "true" | "false";
                 sort?: "code" | "-code" | "name" | "-name";
+                partner_id?: number;
                 page?: number;
                 page_size?: 20 | 50 | 100;
             };
@@ -7619,7 +7988,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["CustomerFields"];
+                "application/json": components["schemas"]["CustomerUpdate"];
             };
         };
         responses: {
@@ -7641,14 +8010,10 @@ export interface operations {
             };
         };
     };
-    "list-items": {
+    "list-line-items": {
         parameters: {
             query?: {
                 q?: string;
-                active?: "true" | "false";
-                sort?: "code" | "-code" | "name" | "-name";
-                page?: number;
-                page_size?: 20 | 50 | 100;
             };
             header?: never;
             path?: never;
@@ -7662,74 +8027,8 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ItemList"];
+                    "application/json": components["schemas"]["LineItemList"];
                 };
-            };
-            /** @description Error */
-            default: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Error"];
-                };
-            };
-        };
-    };
-    "create-item": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["NewItem"];
-            };
-        };
-        responses: {
-            /** @description Created */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["CreatedOutputBody"];
-                };
-            };
-            /** @description Error */
-            default: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Error"];
-                };
-            };
-        };
-    };
-    "update-item": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: number;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["ItemFields"];
-            };
-        };
-        responses: {
-            /** @description No Content */
-            204: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
             };
             /** @description Error */
             default: {

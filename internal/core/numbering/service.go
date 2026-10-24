@@ -34,7 +34,7 @@ func NewService(d Deps) *Service { return &Service{d: d, series: map[string]seri
 // Next returns the next number of a document type for a legal entity and year.
 // Call it inside the transaction that creates the document.
 func (s *Service) Next(ctx context.Context, docType string, legalEntity int64, year int32) (int64, error) {
-	return store.New(platform.DBFrom(ctx)).Next(ctx, store.NextParams{DocType: docType, LegalEntityID: legalEntity, Year: year})
+	return store.Next.Run(ctx, store.NextParams{DocType: docType, LegalEntityID: legalEntity, Year: year})
 }
 
 // RegisterSeries adds a code series of product while wiring modules, before serving.
@@ -56,7 +56,7 @@ func (s *Service) Code(ctx context.Context, code, typed string, taken func(conte
 		return "", fmt.Errorf("numbering: unknown series %q", code)
 	}
 	for {
-		r, err := store.New(platform.DBFrom(ctx)).NextInSeries(ctx, store.NextInSeriesParams{Code: code, Prefix: sr.prefix})
+		r, err := store.NextInSeries.Run(ctx, store.NextInSeriesParams{Code: code, Prefix: sr.prefix})
 		if err != nil {
 			return "", err
 		}
@@ -73,7 +73,7 @@ func (s *Service) Series(ctx context.Context) ([]CodeSeries, error) {
 	if err := s.d.IAM.RequireCore(ctx, iam.PermManageCodeSeries); err != nil {
 		return nil, err
 	}
-	rows, err := store.New(platform.DBFrom(ctx)).ListSeries(ctx)
+	rows, err := store.ListSeries.Run(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -113,15 +113,14 @@ func (s *Service) SetPrefix(ctx context.Context, code, prefix string) error {
 		return err
 	}
 	return platform.InTx(ctx, func(ctx context.Context) error {
-		q := store.New(platform.DBFrom(ctx))
 		old := sr.prefix
-		r, err := q.LockSeries(ctx, code)
+		r, err := store.LockSeries.Run(ctx, code)
 		if err == nil {
 			old = r.Prefix
 		} else if !errors.Is(err, pgx.ErrNoRows) {
 			return err
 		}
-		if err := q.SetPrefix(ctx, store.SetPrefixParams{Code: code, Prefix: prefix}); err != nil {
+		if err := store.SetPrefix.Run(ctx, store.SetPrefixParams{Code: code, Prefix: prefix}); err != nil {
 			return err
 		}
 		return s.d.Audit.Record(ctx, "numbering.prefix_changed", map[string]any{"series": code, "old": old, "new": prefix})

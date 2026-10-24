@@ -23,7 +23,7 @@ The rules live in `documents.md`; this skill is the order to apply them in. Each
 4. **Posting.** If the type produces business lines, call `posting.Record` on `posted` and `posting.Void` on `cancelled` inside `OnTransition`. Aggregate any per-person sensitive amount before it reaches `posting`.
    Done when: posting lines carry no per-person sensitive amount.
 
-5. **API.** Every response that returns a document includes `allowed_actions` from `record.Actions` (passing the module's own extra actions); the list's `create`/`import` come from `record.TypeActions`; failures return stable error codes with parameters.
+5. **API.** Every response that returns a document includes `allowed_actions` from `record.Actions` (passing the module's own extra actions); the list is a `data.List` over a `-- data:base` query, scoped by the document's `org_unit_id` through `iam.DataScope`, and its `create`/`import` come from `record.TypeActions`; document lines are written in one `unnest` statement; failures return stable error codes with parameters.
    Done when: the handler tests assert `allowed_actions` for each status.
 
 6. **Prove it.** Run `recordtest` for the type, and add tests for the module's own concurrent cases (e.g. two approvals racing on the same balance row).

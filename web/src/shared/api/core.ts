@@ -1,5 +1,5 @@
 // The core API as areas see it; areas import nothing else from shared/api.
-import type { components } from './schema.gen'
+import type { components, operations } from './schema.gen'
 
 export { coreClient as api, unwrap } from './client'
 export { ApiError } from './error'
@@ -33,3 +33,9 @@ export type RuleInput = components['schemas']['RuleInput']
 export type Flow = components['schemas']['Element'][]
 export type FlowElement = components['schemas']['Element']
 export type FlowCondition = components['schemas']['Expr']
+export type Item = components['schemas']['Item']
+export type ItemList = components['schemas']['ItemList']
+export type ItemSort = NonNullable<NonNullable<operations['list-items']['parameters']['query']>['sort']>
+export type Partner = components['schemas']['Partner']
+export type PartnerIdentity = components['schemas']['PartnerFields']
+export type PartnerListItem = components['schemas']['PartnerListItem']

@@ -12,6 +12,7 @@ import (
 	"github.com/taoworklabs/mmerp/internal/core/record"
 	"github.com/taoworklabs/mmerp/internal/modules/hrm/internal/store"
 	"github.com/taoworklabs/mmerp/internal/platform"
+	"github.com/taoworklabs/mmerp/internal/platform/data"
 )
 
 const (
@@ -43,6 +44,11 @@ func NewService(d Deps) *Service {
 		panic(err) // embedded files: broken only by a bad build
 	}
 	s := &Service{d: d}
+	data.RegisterConstraints(data.Constraints{
+		"hrm.leave_types_name_key":           ErrLeaveTypeTaken,
+		"hrm.contract_types_name_key":        ErrContractTypeTaken,
+		"hrm.timesheets_org_unit_period_key": ErrTimesheetExists,
+	})
 	d.Setting.RegisterLegalEntityKey("hrm", SettingWageRegion, "1", []string{"1", "2", "3", "4"})
 	d.IAM.RegisterRoles("hrm", map[string][]string{
 		"hr": {PermView, PermEdit, PermLeaveView, PermLeaveEdit, PermOvertimeView, PermOvertimeEdit,
@@ -63,7 +69,7 @@ func NewService(d Deps) *Service {
 		// Papers on a profile (an ID card) show what the sensitive fields hold.
 		Perms:  record.Perms{View: PermView, Edit: PermEdit, ViewFiles: PermView, Attach: PermEdit},
 		Locate: employeeUnit, Refine: s.employeeRefine,
-		HasData: func(ctx context.Context) (bool, error) { return store.New(platform.DBFrom(ctx)).AnyEmployee(ctx) }})
+		HasData: func(ctx context.Context) (bool, error) { return store.AnyEmployee.Run(ctx) }})
 	// A profile's viewer sees neither leave balances nor what sensitive data was read or changed;
 	// on an employee, ViewFiles is view plus the sensitive permission.
 	d.Record.RestrictHistory("hrm.leave_balance_adjusted", "")
@@ -143,7 +149,7 @@ func (s *Service) payrollRefine(ctx context.Context, id int64, a record.Action) 
 	if a != record.Print && a != record.Export {
 		return true, nil
 	}
-	p, err := store.New(platform.DBFrom(ctx)).GetPayroll(ctx, id)
+	p, err := store.GetPayroll.Run(ctx, id)
 	if err != nil || !p.ComputedAt.Valid {
 		return false, err
 	}

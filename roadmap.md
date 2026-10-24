@@ -98,6 +98,8 @@ M11 Attachments and discussion ─► M12 Notifications ─► M13 PDF printing 
 
 **Goal:** a business of any trade keeps its customers and item catalogue, and issues quotations and sales orders through the same lifecycle, approval, printing, attachments and notifications as HRM ([ADR-0027](./docs/adr/0027-sales-product.md), [products/sales.md](./products/sales.md)).
 
+**Since 2026-10-23** the item catalogue, partner identity and VAT live in `shared/` ([ADR-0039](./docs/adr/0039-shared-master-data.md)): items are `item.items` under `item.view`/`item.manage` (role `item.admin` replaces `catalog_admin`), and a customer is Sales' role of a partner. The slices below keep their original wording.
+
 Vertical slices, each from migration to screen:
 
 1. **Sales area and customers.** Product `sales` (startup check, `depguard`, query scan), roles, the `sales` area with its API client (issue #14), customers: list with search, create, edit, deactivate, scoped by owning org unit; attachments and discussion on a customer.

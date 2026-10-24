@@ -40,14 +40,20 @@ func run() error {
 	}
 	log := platform.NewLogger(cfg.LogLevel)
 
-	pool, err := pgxpool.New(ctx, cfg.DatabaseURL)
+	tracer := platform.NewQueryTracer(log, cfg.SlowQuery)
+	pool, err := platform.NewPool(ctx, cfg.DatabaseURL, platform.AppPool, tracer)
 	if err != nil {
 		return fmt.Errorf("database: %w", err)
 	}
 	defer pool.Close()
+	system, err := platform.NewPool(ctx, cfg.DatabaseURL, platform.SystemPool, tracer)
+	if err != nil {
+		return fmt.Errorf("database: %w", err)
+	}
+	defer system.Close()
 
 	// HTTP opens only after the schema is current.
-	if err := platform.Migrate(ctx, pool, migrations.FS); err != nil {
+	if err := platform.Migrate(ctx, system, migrations.FS); err != nil {
 		return fmt.Errorf("migrate: %w", err)
 	}
 	log.Info("migrations applied")
@@ -59,7 +65,7 @@ func run() error {
 	if err := os.MkdirAll(cfg.FilesDir, 0o750); err != nil {
 		return fmt.Errorf("files: %w", err)
 	}
-	env := app.Env{Pool: pool, Log: log, Products: cfg.Products, Keys: cfg.Keys, Files: platform.Files{Dir: cfg.FilesDir}}
+	env := app.Env{Pool: pool, SystemPool: system, Log: log, Products: cfg.Products, Keys: cfg.Keys, Files: platform.Files{Dir: cfg.FilesDir}}
 	modules := app.Modules()
 	if env.Jobs, err = app.NewJobs(env, modules); err != nil {
 		return fmt.Errorf("jobs: %w", err)

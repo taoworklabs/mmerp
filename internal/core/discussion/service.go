@@ -38,7 +38,7 @@ func (s *Service) List(ctx context.Context, ref record.Ref) (Discussion, error) 
 	if open {
 		out.AllowedActions = append(out.AllowedActions, actionComment)
 	}
-	rows, err := store.New(platform.DBFrom(ctx)).ListComments(ctx, store.ListCommentsParams{DocType: ref.Type, DocID: ref.ID})
+	rows, err := store.ListComments.Run(ctx, store.ListCommentsParams{DocType: ref.Type, DocID: ref.ID})
 	if err != nil {
 		return out, err
 	}
@@ -68,7 +68,7 @@ func (s *Service) Add(ctx context.Context, ref record.Ref, body string) error {
 			return err
 		}
 		actor, _ := platform.ActorFrom(ctx)
-		id, err := store.New(platform.DBFrom(ctx)).CreateComment(ctx, store.CreateCommentParams{DocType: ref.Type, DocID: ref.ID, AuthorID: actor, Body: body})
+		id, err := store.CreateComment.Run(ctx, store.CreateCommentParams{DocType: ref.Type, DocID: ref.ID, AuthorID: actor, Body: body})
 		if err != nil {
 			return err
 		}
@@ -94,7 +94,7 @@ func (s *Service) mention(ctx context.Context, ref record.Ref, body string) erro
 	if len(logins) == 0 {
 		return nil
 	}
-	ids, err := store.New(platform.DBFrom(ctx)).UsersByLogin(ctx, logins)
+	ids, err := store.UsersByLogin.Run(ctx, logins)
 	if err != nil {
 		return err
 	}
@@ -126,7 +126,7 @@ func (s *Service) Mentionable(ctx context.Context, ref record.Ref) ([]Mentionabl
 	if err := s.d.Record.Visible(ctx, ref, record.View); err != nil {
 		return nil, err
 	}
-	rows, err := store.New(platform.DBFrom(ctx)).Users(ctx)
+	rows, err := store.Users.Run(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -149,5 +149,5 @@ func (s *Service) Mentionable(ctx context.Context, ref record.Ref) ([]Mentionabl
 
 // Deleted removes the comments of a deleted draft, in its transaction.
 func (s *Service) Deleted(ctx context.Context, ref record.Ref) error {
-	return store.New(platform.DBFrom(ctx)).DeleteRecordComments(ctx, store.DeleteRecordCommentsParams{DocType: ref.Type, DocID: ref.ID})
+	return store.DeleteRecordComments.Run(ctx, store.DeleteRecordCommentsParams{DocType: ref.Type, DocID: ref.ID})
 }

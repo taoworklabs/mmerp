@@ -1,4 +1,4 @@
-// Package sales owns customers, the item catalogue, quotations and sales orders.
+// Package sales owns customers, quotations and sales orders.
 package sales
 
 import (
@@ -14,14 +14,13 @@ import (
 	"github.com/taoworklabs/mmerp/internal/core/record"
 	"github.com/taoworklabs/mmerp/internal/modules/sales/internal/store"
 	"github.com/taoworklabs/mmerp/internal/platform"
+	"github.com/taoworklabs/mmerp/internal/platform/data"
 )
 
 const (
 	customerType = "sales.customer"
-	// The code series of items; an item is not a record type.
-	itemCodeSeries = "sales.item"
-	quoteType      = "sales.quote"
-	orderType      = "sales.order"
+	quoteType    = "sales.quote"
+	orderType    = "sales.order"
 
 	actionCreateOrder record.Action = "create_order"
 )
@@ -56,23 +55,25 @@ func NewService(d Deps) *Service {
 		panic(err) // embedded files: broken only by a bad build
 	}
 	s := &Service{d: d}
-	work := []string{PermCustomerView, PermCustomerEdit, PermQuoteView, PermQuoteEdit, PermOrderView, PermOrderEdit, PermItemView}
+	data.RegisterConstraints(data.Constraints{
+		"sales.customers_code_key":             ErrCustomerCodeTaken,
+		"sales.customers_partner_org_unit_key": ErrCustomerExists,
+	})
+	work := []string{PermCustomerView, PermCustomerEdit, PermQuoteView, PermQuoteEdit, PermOrderView, PermOrderEdit}
 	d.IAM.RegisterRoles("sales", map[string][]string{
 		// The same permissions under two names, so approval rules can route steps to managers.
 		"staff":   work,
 		"manager": work,
-		"viewer":  {PermCustomerView, PermQuoteView, PermOrderView, PermItemView},
-		// The catalogue and the approval rules apply to every org unit.
-		"catalog_admin":  {PermItemView, PermItemManage},
+		"viewer":  {PermCustomerView, PermQuoteView, PermOrderView},
+		// The approval rules apply to every org unit.
 		"approval_admin": {PermApprovalManage},
-	}, "catalog_admin", "approval_admin")
+	}, "approval_admin")
 	d.Numbering.RegisterSeries(customerType, "sales", "KH")
-	d.Numbering.RegisterSeries(itemCodeSeries, "sales", "HH")
 	// A customer's files are as open as the customer.
 	d.Record.Register(record.Type{Code: customerType, Product: "sales", Kind: record.Catalog,
 		Perms:   record.Perms{View: PermCustomerView, Edit: PermCustomerEdit, ViewFiles: PermCustomerView, Attach: PermCustomerEdit},
 		Locate:  locateCustomer,
-		HasData: func(ctx context.Context) (bool, error) { return store.New(platform.DBFrom(ctx)).AnyCatalog(ctx) }})
+		HasData: func(ctx context.Context) (bool, error) { return store.AnyCatalog.Run(ctx) }})
 	for _, k := range []kind{quoteKind, orderKind} {
 		var actions map[record.Action]record.ModuleAction
 		if k == quoteKind {
@@ -103,14 +104,13 @@ func (s *Service) require(ctx context.Context, perm string, unit int64, more ...
 // transition keeps posted documents to active customers, and a quotation with a live
 // order from being cancelled; the quotation's row lock orders this against making the order.
 func (s *Service) transition(ctx context.Context, d record.Doc, _ record.Status) error {
-	q := store.New(platform.DBFrom(ctx))
 	switch d.Status {
 	case record.Posted:
-		h, err := q.GetHeader(ctx, d.ID)
+		h, err := store.GetHeader.Run(ctx, d.ID)
 		if err != nil {
 			return err
 		}
-		active, err := q.CustomerActive(ctx, h.CustomerID)
+		active, err := store.CustomerActive.Run(ctx, h.CustomerID)
 		if err != nil {
 			return err
 		}
@@ -121,7 +121,7 @@ func (s *Service) transition(ctx context.Context, d record.Doc, _ record.Status)
 		if d.Type != quoteType {
 			return nil
 		}
-		_, err := q.LiveOrder(ctx, pgtype.Int8{Int64: d.ID, Valid: true})
+		_, err := store.LiveOrder.Run(ctx, pgtype.Int8{Int64: d.ID, Valid: true})
 		if err == nil {
 			return ErrQuoteHasOrder
 		}
@@ -135,7 +135,7 @@ func (s *Service) transition(ctx context.Context, d record.Doc, _ record.Status)
 // beforeSubmit copies the customer's current details onto a draft being sent, so what goes to
 // approval, and what posts, is the customer as it is at sending; an inactive one keeps it a draft.
 func (s *Service) beforeSubmit(ctx context.Context, d record.Doc) error {
-	active, err := store.New(platform.DBFrom(ctx)).CopyCustomer(ctx, d.ID)
+	active, err := store.CopyCustomer.Run(ctx, d.ID)
 	if err != nil {
 		return err
 	}

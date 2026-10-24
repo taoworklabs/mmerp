@@ -40,14 +40,15 @@ The design docs are written in English; keep them in English when you edit them.
 - `core`: always-on, business-agnostic modules (`iam`, `setting`, `numbering`, `audit`, `record`, `approval`, `dataio`, …).
 - `shared`: master data and cross-product modules (e.g. `posting`).
 - `modules`: product modules (e.g. `hrm`). They **never import each other**; cross-product calls go through interfaces in `deps.go` (required, never no-op) or `hooks.go` (optional reactions, no-op allowed), wired in `internal/app`. No events or event bus.
-- Every module has the same shape: `module.go` (manifest), `service.go`/`types.go` (public surface; a large service splits into `service_<part>.go`), `deps.go`, `hooks.go`, `handler.go`, `queries.sql`, `internal/store` (sqlc). A file that would be empty is left out (a module without routes has no `handler.go` or `module.go`). `NewService(d Deps)` registers roles and record types; `Module(svc)` returns the manifest. Each module owns one Postgres schema named after it and only it writes there. SQL reads may join its own schema, its tier and lower tiers, and the schemas of products its product declares as dependencies; nothing else.
+- Every module has the same shape: `module.go` (manifest), `service.go`/`types.go` (public surface; a module with several business areas splits them area first: `<area>.go`, `<area>_types.go`, `<area>_list.go`, `<area>_handler.go`, `<area>_test.go`), `deps.go`, `hooks.go`, `handler.go`, `queries/` (one `.sql` file per business area, e.g. `employee.sql`, `leave.sql`; sqlc generates one `<file>.sql.go` each), `internal/store` (sqlc). A file that would be empty is left out (a module without routes has no `handler.go` or `module.go`). `NewService(d Deps)` registers roles and record types; `Module(svc)` returns the manifest. Each module owns one Postgres schema named after it and only it writes there. SQL reads may join its own schema, its tier and lower tiers, and the schemas of products its product declares as dependencies; nothing else.
 - `platform.Module` must never reference `core` types; modules register record types and roles by calling `core` registration functions received through deps.
 
 ### Transactions and locking
 
-- Services get a connection only via `platform.DBFrom(ctx)` and open transactions with `platform.InTx(ctx, fn)`. Never pass `pgx.Tx`, or a store bound to one, as a parameter: helpers take the tx `ctx`, so audit rows land in the same transaction.
+- Services query only through the data engine (`store.<Query>.Run(ctx, …)`, `data.List` for lists; never `store.New` or `platform.DBFrom`) and open transactions with `platform.InTx(ctx, fn)`. Never pass `pgx.Tx`, or a store bound to one, as a parameter: helpers take the tx `ctx`, so audit rows land in the same transaction.
 - Document writes follow one lock order: in `Create` with a `request_id`, the advisory lock on that key, taken first and only when nothing is locked yet → legal-entity row in `record.period_locks` (`FOR SHARE`; `FOR UPDATE` only to move the lock date) → document row in `record.documents` (`FOR UPDATE`; in `Create`, the `numbering` counter row, then the insert) → module-owned rows (e.g. `hrm.payroll_locks`, then leave balances).
 - One transaction writes exactly one document. Bulk operations are jobs that process each document in its own transaction.
+- App pool sessions are read-only, so any write outside `platform.InTx` fails (SQLSTATE `25006`); `platform.Enqueue` requires a transaction in ctx. River and migrations use the system pool.
 
 ### Documents (`record`, `approval`, `posting`)
 
@@ -69,18 +70,19 @@ The design docs are written in English; keep them in English when you edit them.
 
 ## Commands
 
-Tools: Go, Node 24+ with pnpm, Docker. The server reads `DATABASE_URL`, `PRODUCTS`, `ENCRYPTION_KEYS`, `HTTP_ADDR` (`:8080`), `FILES_DIR` (`data/files`), `RUN_JOBS` (`true`) and `LOG_LEVEL` (`info`) (`platform.LoadConfig`). Postgres from compose listens on `localhost:5433`. To use a Postgres 18 already running on the machine instead, set `TEST_DATABASE_URL` (and `DATABASE_URL` if it differs from the default) in a gitignored `local.mk`; make then never starts compose.
+Tools: Go, Node 24+ with pnpm, Docker. The server reads `DATABASE_URL`, `PRODUCTS`, `ENCRYPTION_KEYS`, `HTTP_ADDR` (`:8080`), `FILES_DIR` (`data/files`), `RUN_JOBS` (`true`), `SLOW_QUERY_MS` (`500`) and `LOG_LEVEL` (`info`) (`platform.LoadConfig`). Postgres from compose listens on `localhost:5433`. To use a Postgres 18 already running on the machine instead, set `TEST_DATABASE_URL` (and `DATABASE_URL` if it differs from the default) in a gitignored `local.mk`; make then never starts compose.
 
 | Command | Does |
 | --- | --- |
 | `make gen` | sqlc (`sqlc.yaml`, one entry per module; pinned via `go run`, needs cgo), OpenAPI spec from Huma (`api/openapi.json`), TypeScript types (`web/src/shared/api/schema.gen.ts`); the per-product clients in `shared/api/<product>.ts` are typed views of it |
-| `make lint` | golangci-lint (pinned via `go run`; depguard, forbidigo), `tsc`, ESLint, dependency-cruiser on `web/src` and `web/lint-fixtures` (must report exactly `web/lint-fixtures/expected.json`; ESLint on `web/lint-fixtures/eslint`, exactly its `expected.json`), colour-literal scan, i18n key check, `queries.sql` schema scan (`scripts/check-queries.mjs`, which must also report exactly `scripts/query-fixtures/expected.json`) |
+| `make lint` | golangci-lint (pinned via `go run`; depguard, forbidigo), the Go lint-fixture check (`scripts/check-go-lint-fixtures.sh`, `scripts/lint-fixtures/go` must report exactly its `expected.txt`), `tsc`, ESLint, dependency-cruiser on `web/src` and `web/lint-fixtures` (must report exactly `web/lint-fixtures/expected.json`; ESLint on `web/lint-fixtures/eslint`, exactly its `expected.json`), colour-literal scan, i18n key check, `queries/*.sql` schema scan (`scripts/check-queries.mjs`, which must also report exactly `scripts/query-fixtures/expected.json`) |
 | `make test` | `go test ./...` and Vitest; starts Postgres via compose unless `TEST_DATABASE_URL` is set |
 | `make e2e` | Playwright (`web/e2e`): builds the app, recreates the `mmerp_e2e` database (psql through the `postgres:18` image), creates the admin, serves `:8090` with `PRODUCTS=hrm,sales` and `:8091` with none (`scripts/e2e-server.sh`) |
 | `make db` | Postgres via compose unless `TEST_DATABASE_URL` is set; `make` exports a dev `ENCRYPTION_KEYS` |
 | `make dev` | Postgres via compose, backend (`go run ./cmd/server`, `:8080`) and Vite dev server (proxies `/api`, `/healthz`) |
 | `make ui-dev` | Vite dev server alone, opening the design system catalogue `/dev/ui` (foundations read live from the theme, then every component and page template) (`web/src/app/devui`, dev builds only; no session; every API call is answered in the browser from samples (`app/devui/api.ts`), so no backend or Postgres) |
 | `make storybook` | Storybook of the `@mmerp/ui` primitives (`packages/ui`, a standalone package with its own lockfile; `:6006`), installing its dependencies first |
+| `make migration name=<module>_<description>` | Creates an empty `migrations/YYYYMMDDHHMMSS_<module>_<description>.sql` named after the current UTC time, so parallel branches never pick the same name |
 | `make reset-db` | Drops and recreates the dev database, then creates `admin` (password `e2e password`); a running `make dev` reconnects |
 | `make seed` | Builds the Demo demo company (org chart, accounts, employees, contracts, leave, overtime, timesheets, payrolls; then Sales: catalogue, customers, quotations, orders, `web/e2e/sales.seed.ts`) through the API of a running `make dev` on an empty database (`make reset-db` first; Playwright project `seed`, `web/e2e/demo.seed.ts`); accounts other than `admin` use password `Demo@2026`; `E2E_ADMIN_LOGIN`/`E2E_ADMIN_PASSWORD` name a tenant administrator |
 | `make image` | Runtime image `mmerp:dev`; the frontend is embedded with `-tags embedweb` |
@@ -107,7 +109,7 @@ CI (GitHub Actions, `.github/workflows/ci.yml`) runs `make gen` (fails on diff),
 - **Comments are short.** Explain why, not what, in a line or two. Never reference repository documents, ADRs or roadmap milestones in comments.
 - APIs return stable error codes with parameters, never sentences.
 - Business dates are `date`; instants are `timestamptz`; "today" uses the tenant time zone.
-- Migrations are SQL only, never edited after release, and never down-migrated.
+- Migrations are SQL only, never edited after release, and never down-migrated. New ones are created with `make migration` (timestamp names); the schema before 2026-10-23 is one baseline, `20261023000000_all_baseline.sql`. Parallel branches may land out of creation order: two migrations touching the same table must be coordinated by their authors.
 
 ## Workflow
 

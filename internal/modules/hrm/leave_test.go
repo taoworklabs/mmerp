@@ -40,7 +40,7 @@ func newLeaveFixture(t *testing.T) *leaveFixture {
 	f.annual = must(t)(f.hrm.SaveLeaveType(f.hr, 0, hrm.LeaveTypeInput{Name: "Phép năm", DeductsBalance: true, Active: true}))
 	// The payroll lock row exists in any running company. Created on first use instead, its
 	// insert would serialize the first two transactions of every concurrency test by itself.
-	if _, err := f.pool.Exec(f.admin, `INSERT INTO hrm.payroll_locks (legal_entity_id) VALUES ($1)`, f.c); err != nil {
+	if _, err := f.system.Exec(f.admin, `INSERT INTO hrm.payroll_locks (legal_entity_id) VALUES ($1)`, f.c); err != nil {
 		t.Fatal(err)
 	}
 	return f
@@ -190,7 +190,7 @@ func TestLeaveSampleFlow(t *testing.T) {
 	f.check(platform.InTx(f.admin, func(ctx context.Context) error {
 		f.check(f.rec.SetPeriodLock(ctx, f.c, str("2026-03-31")))
 		wg.Go(func() { _, cancelled = f.rec.Transition(f.hr, ref, 5, record.Cancelled) })
-		pgtest.AwaitLockWait(t, f.pool)
+		pgtest.AwaitLockWait(t, f.system)
 		return nil
 	}))
 	wg.Wait()
@@ -201,7 +201,7 @@ func TestLeaveSampleFlow(t *testing.T) {
 	f.check(platform.InTx(f.hr, func(ctx context.Context) error {
 		f.check(errOf(f.rec.Transition(ctx, ref, 5, record.Cancelled)))
 		wg.Go(func() { locked = f.rec.SetPeriodLock(f.admin, f.c, str("2026-03-31")) })
-		pgtest.AwaitLockWait(t, f.pool)
+		pgtest.AwaitLockWait(t, f.system)
 		return nil
 	}))
 	wg.Wait()
@@ -535,7 +535,7 @@ func TestLeaveAuditIgnoresNumberSpelling(t *testing.T) {
 	in.Reason = str("ốm")
 	f.check(f.hrm.UpdateLeave(f.e, id, hrm.LeaveUpdate{Version: 1, LeaveFields: in}))
 	var data string
-	f.check(f.pool.QueryRow(f.admin, `SELECT data::text FROM audit.log WHERE action = 'hrm.leave_request_updated' AND doc_id = $1`, id).Scan(&data))
+	f.check(f.system.QueryRow(f.admin, `SELECT data::text FROM audit.log WHERE action = 'hrm.leave_request_updated' AND doc_id = $1`, id).Scan(&data))
 	if strings.Contains(data, `"days"`) || !strings.Contains(data, `"reason"`) {
 		t.Fatalf("diff %s", data)
 	}
@@ -554,7 +554,7 @@ func TestAdjustBalanceIsGuardedAndAudited(t *testing.T) {
 	}
 	hrID, err := f.iam.UserIDByLogin(f.admin, "hr")
 	f.check(err)
-	rows, err := f.pool.Query(f.admin, `SELECT actor_id, data->>'delta', data->>'days', data->>'reason' FROM audit.log
+	rows, err := f.system.Query(f.admin, `SELECT actor_id, data->>'delta', data->>'days', data->>'reason' FROM audit.log
 		WHERE action = 'hrm.leave_balance_adjusted' AND doc_type = 'hrm.employee' AND doc_id = $1 ORDER BY id`, f.emp)
 	f.check(err)
 	var got []string

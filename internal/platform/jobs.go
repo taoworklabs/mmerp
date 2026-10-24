@@ -44,6 +44,9 @@ type JobOutput struct {
 	Error *Error `json:"error,omitempty"`
 }
 
+// ErrEnqueueOutsideTx is a wiring bug: the caller forgot InTx.
+var ErrEnqueueOutsideTx = errors.New("platform: job enqueued outside a transaction")
+
 type jobsKey struct{}
 
 // JobNotifier tells a requester that their job ended; internal/app wires it to the
@@ -87,9 +90,13 @@ func JobsFrom(ctx context.Context) *river.Client[pgx.Tx] {
 }
 
 // Enqueue is the only way to create a job: it applies the product gate for the
-// job's class and records the requester of a user job. It joins the transaction
-// in ctx, so the job exists only if that transaction commits.
+// job's class and records the requester of a user job. It needs the transaction in
+// ctx, so the job exists only if that transaction commits.
 func Enqueue(ctx context.Context, args JobArgs) (int64, error) {
+	tx := txFrom(ctx)
+	if tx == nil {
+		return 0, ErrEnqueueOutsideTx
+	}
 	spec := args.Spec()
 	if err := ProductGate(ctx, spec.Product, spec.Class); err != nil {
 		return 0, err
@@ -106,14 +113,7 @@ func Enqueue(ctx context.Context, args JobArgs) (int64, error) {
 	if err != nil {
 		return 0, err
 	}
-	opts := &river.InsertOpts{Metadata: b}
-	c := JobsFrom(ctx)
-	var res *rivertype.JobInsertResult
-	if tx := txFrom(ctx); tx != nil {
-		res, err = c.InsertTx(ctx, tx, args, opts)
-	} else {
-		res, err = c.Insert(ctx, args, opts)
-	}
+	res, err := JobsFrom(ctx).InsertTx(ctx, tx, args, &river.InsertOpts{Metadata: b})
 	if err != nil {
 		return 0, err
 	}

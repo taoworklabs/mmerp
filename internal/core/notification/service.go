@@ -71,8 +71,7 @@ func (s *Service) Send(ctx context.Context, kind Kind, ref record.Ref, users []i
 	if len(users) == 0 {
 		return nil
 	}
-	q := store.New(platform.DBFrom(ctx))
-	ids, err := q.Insert(ctx, store.InsertParams{
+	ids, err := store.Insert.Run(ctx, store.InsertParams{
 		Users: users, Kind: string(kind),
 		DocType: pgtype.Text{String: ref.Type, Valid: true}, DocID: pgtype.Int8{Int64: ref.ID, Valid: true},
 		ActorID: pgtype.Int8{Int64: actor, Valid: actor != 0},
@@ -81,7 +80,7 @@ func (s *Service) Send(ctx context.Context, kind Kind, ref record.Ref, users []i
 		return err
 	}
 	// Queued in the event's transaction; sending happens later, so a dead server stops nothing.
-	mail, err := q.Mailable(ctx, ids)
+	mail, err := store.Mailable.Run(ctx, ids)
 	if err != nil {
 		return err
 	}
@@ -97,7 +96,7 @@ func (s *Service) Send(ctx context.Context, kind Kind, ref record.Ref, users []i
 // when given. Whatever names a record is left out once the actor may no longer view it.
 func (s *Service) List(ctx context.Context, before *int64) (Page, error) {
 	actor, _ := platform.ActorFrom(ctx)
-	rows, err := store.New(platform.DBFrom(ctx)).List(ctx, store.ListParams{UserID: actor, Before: platform.NullInt8(before), Lim: pageSize + 1})
+	rows, err := store.List.Run(ctx, store.ListParams{UserID: actor, Before: platform.NullInt8(before), Lim: pageSize + 1})
 	if err != nil {
 		return Page{}, err
 	}
@@ -139,33 +138,40 @@ func (s *Service) canView(ctx context.Context, ref record.Ref) (bool, error) {
 // Unread counts the actor's unread notifications.
 func (s *Service) Unread(ctx context.Context) (int64, error) {
 	actor, _ := platform.ActorFrom(ctx)
-	return store.New(platform.DBFrom(ctx)).Unread(ctx, actor)
+	return store.Unread.Run(ctx, actor)
 }
 
 // MarkRead marks one of the actor's notifications read; anyone else's does not exist.
 func (s *Service) MarkRead(ctx context.Context, id int64) error {
 	actor, _ := platform.ActorFrom(ctx)
-	n, err := store.New(platform.DBFrom(ctx)).MarkRead(ctx, store.MarkReadParams{ID: id, UserID: actor})
-	if err == nil && n == 0 {
-		return platform.ErrNotFound
-	}
-	return err
+	return platform.InTx(ctx, func(ctx context.Context) error {
+		n, err := store.MarkRead.Run(ctx, store.MarkReadParams{ID: id, UserID: actor})
+		if err == nil && n == 0 {
+			return platform.ErrNotFound
+		}
+		return err
+	})
 }
 
 func (s *Service) MarkAllRead(ctx context.Context) error {
 	actor, _ := platform.ActorFrom(ctx)
-	return store.New(platform.DBFrom(ctx)).MarkAllRead(ctx, actor)
+	return platform.InTx(ctx, func(ctx context.Context) error {
+		return store.MarkAllRead.Run(ctx, actor)
+	})
 }
 
 // JobEnded tells a requester that their job ended; it is the platform's job notifier. Unlike
-// Send it keeps the actor, who is the requester the job runs as.
+// Send it keeps the actor, who is the requester the job runs as. It joins the job's
+// completion transaction when there is one; a failed job has none.
 func JobEnded(ctx context.Context, jobID, requester int64, failed bool) error {
 	kind := JobCompleted
 	if failed {
 		kind = JobFailed
 	}
-	_, err := store.New(platform.DBFrom(ctx)).Insert(ctx, store.InsertParams{
-		Users: []int64{requester}, Kind: string(kind), JobID: pgtype.Int8{Int64: jobID, Valid: true},
+	return platform.InTx(ctx, func(ctx context.Context) error {
+		_, err := store.Insert.Run(ctx, store.InsertParams{
+			Users: []int64{requester}, Kind: string(kind), JobID: pgtype.Int8{Int64: jobID, Valid: true},
+		})
+		return err
 	})
-	return err
 }

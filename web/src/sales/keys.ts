@@ -4,6 +4,8 @@ import type { Doc } from '@/shared/api/sales'
 export const quoteDocType = 'sales.quote'
 export const orderDocType = 'sales.order'
 export const customerDocType = 'sales.customer'
+// Shared master data, opened in this area.
+export const partnerType = 'partner.partner'
 
 // A quotation or a sales order: the two share every screen.
 export type Kind = Doc['kind']
@@ -22,6 +24,8 @@ export const salesKeys = {
     lists: () => ['sales', 'customers', 'list'] as const,
     list: (q: CustomerQuery) => ['sales', 'customers', 'list', q] as const,
     picker: (q: string) => ['sales', 'customers', 'picker', q] as const,
+    // Under lists, so whatever refreshes the lists refreshes it too.
+    partner: (partner: number) => ['sales', 'customers', 'list', 'partner', partner] as const,
     detail: (id: number) => ['sales', 'customers', id] as const,
   },
   items: {
