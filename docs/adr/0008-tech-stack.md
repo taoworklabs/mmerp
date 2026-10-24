@@ -4,7 +4,7 @@ Status: accepted · 2026-10-05
 
 ## Context
 
-Three constraints drive the choices: on-premise has only the app and Postgres; one binary that migrates and backs up by itself; no dependency on the Internet in business flows. The full list and usage conventions are in [techstack.md](../../techstack.md). This ADR only records the hard-to-reverse decisions.
+Three constraints drive the choices: on-premise has only the app and Postgres; one binary that migrates and backs up by itself; no dependency on the Internet in business flows. The full list and usage conventions are in [techstack.md](../techstack.md). This ADR only records the hard-to-reverse decisions.
 
 ## Decision
 

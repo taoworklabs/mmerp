@@ -1,6 +1,6 @@
 # Tenancy and deployment
 
-A **tenant** is an organisation (company) using the system, with its own users, org units and data. **Each tenant always has its own database.** This is a settled decision ([ADR-0001](./docs/adr/0001-one-database-per-tenant.md)).
+A **tenant** is an organisation (company) using the system, with its own users, org units and data. **Each tenant always has its own database.** This is a settled decision ([ADR-0001](./adr/0001-one-database-per-tenant.md)).
 
 ## Two places to run, one binary
 
@@ -23,7 +23,7 @@ A **tenant** is an organisation (company) using the system, with its own users, 
    - Sessions live in the tenant's database, so one tenant's cookie is worthless at another tenant.
    - Each tenant's connection pool is small and is created only when the tenant gets its first request. If the total number of connections hits Postgres's limit, put PgBouncer in front.
    - On deploy, migrate each tenant database before switching traffic. A tenant whose migration fails is put in the `maintenance` status (answers 503) and reported; the new binary never runs on an old schema.
-   - The River queue lives in each tenant's database, so enqueuing in the same business transaction stays correct, just as in single-tenant mode. The app always runs one River client for every tenant with status `active` in the registry, even when the tenant has no requests: if clients were created only on request, retried and periodic jobs of a quiet tenant would never run. When the number of tenants exceeds what one instance can handle, split tenants across several app instances by registry ([ADR-0004](./docs/adr/0004-job-queue-in-tenant-database.md)). No queue shared across tenants: a queue in another database cannot be enqueued in the same transaction, and would need an outbox.
+   - The River queue lives in each tenant's database, so enqueuing in the same business transaction stays correct, just as in single-tenant mode. The app always runs one River client for every tenant with status `active` in the registry, even when the tenant has no requests: if clients were created only on request, retried and periodic jobs of a quiet tenant would never run. When the number of tenants exceeds what one instance can handle, split tenants across several app instances by registry ([ADR-0004](./adr/0004-job-queue-in-tenant-database.md)). No queue shared across tenants: a queue in another database cannot be enqueued in the same transaction, and would need an outbox.
    - A tenant's list of enabled products comes from the registry and is checked per request, as on-premise (see [platform.md](./platform.md#enabled-products)). Tenants with different enabled products share one app without mounting separate routes.
    - Files are stored under a prefix of their own for each tenant.
 

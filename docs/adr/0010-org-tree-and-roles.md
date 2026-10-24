@@ -4,7 +4,7 @@ Status: accepted · 2026-10-05
 
 ## Context
 
-The employee profile is the first screen that needs permissions per org unit. `iam` (ADR-0009) only has users and sessions so far; the org tree, legal entities and roles are added to this same module, following [backend.md](../../backend.md#org-units) and [platform.md](../../platform.md#identity-and-permissions).
+The employee profile is the first screen that needs permissions per org unit. `iam` (ADR-0009) only has users and sessions so far; the org tree, legal entities and roles are added to this same module, following [backend.md](../backend.md#org-units) and [platform.md](../platform.md#identity-and-permissions).
 
 ## Decision
 

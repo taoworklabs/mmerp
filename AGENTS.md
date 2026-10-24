@@ -4,7 +4,7 @@ Guidance for coding agents (Claude Code, Codex and others) working in this repos
 
 ## Project status
 
-mmerp is a modular business-management suite for Vietnamese SMBs. Implementation follows `roadmap.md` (Phase 1). Since 2026-10-07 the core is built out first (M11 attachments and discussion, M12 notifications, M13 PDF printing, all done), each capability proven by an HRM screen; since 2026-10-09 Sales is the second product (M14: customers, items, quotations, sales orders; ADR-0027); M10 (on-premise operations) and the production-readiness gate are on hold (ADR-0023). Phase 0 ended at M9 (home page of product tiles, a header title per area, grouped HRM menu, HRM overview counts; a disabled product with data stays readable), after M8 (every signed-in user reads the org tree; tenant-wide-only roles; approval rules configured per product, inside each product's area) and M6 (payroll computed by a job from captured inputs, checked against the 28 payroll samples; work calendar, legal parameters, legal-entity settings, money rounding, `shared/posting`). M7 is obsolete. HRM is the first product and Sales the second; accounting, custom fields and cloud model B are out of scope until the roadmap says otherwise.
+mmerp is a modular business-management suite for Vietnamese SMBs. Implementation follows `docs/roadmap.md` (Phase 1). Since 2026-10-07 the core is built out first (M11 attachments and discussion, M12 notifications, M13 PDF printing, all done), each capability proven by an HRM screen; since 2026-10-09 Sales is the second product (M14: customers, items, quotations, sales orders; ADR-0027); M10 (on-premise operations) and the production-readiness gate are on hold (ADR-0023). Phase 0 ended at M9 (home page of product tiles, a header title per area, grouped HRM menu, HRM overview counts; a disabled product with data stays readable), after M8 (every signed-in user reads the org tree; tenant-wide-only roles; approval rules configured per product, inside each product's area) and M6 (payroll computed by a job from captured inputs, checked against the 28 payroll samples; work calendar, legal parameters, legal-entity settings, money rounding, `shared/posting`). M7 is obsolete. HRM is the first product and Sales the second; accounting, custom fields and cloud model B are out of scope until the roadmap says otherwise.
 
 The design docs are written in English; keep them in English when you edit them. `docs/archive/` holds documents of finished phases (the Phase 0 roadmap, decided proposals): do not read them unless the user asks; current docs and ADRs already carry everything still in force.
 
@@ -12,16 +12,16 @@ The design docs are written in English; keep them in English when you edit them.
 
 | Before you… | Read |
 | --- | --- |
-| Need the big picture | `architecture.md` (diagrams; detailed docs win on conflict) |
-| Touch any backend module | `backend.md`, `documents.md` |
-| Build or change any screen | `ui.md` (finish with its checklist), `frontend.md` |
-| Add a library or tool | `techstack.md` ("Adding a new library" section) |
+| Need the big picture | `docs/architecture.md` (diagrams; detailed docs win on conflict) |
+| Touch any backend module | `docs/backend.md`, `docs/documents.md` |
+| Build or change any screen | `docs/ui.md` (finish with its checklist), `docs/frontend.md` |
+| Add a library or tool | `docs/techstack.md` ("Adding a new library" section) |
 | Work on HRM | `products/hrm.md` |
 | Work on Sales | `products/sales.md` |
 | Name anything | `CONTEXT.md` (domain glossary; use its terms exactly) |
 | Make a hard-to-reverse decision | Existing ADRs in `docs/adr/` — do not re-litigate them |
 
-`roadmap.md` defines what each milestone builds and its exit criteria. Build only what the current milestone needs.
+`docs/roadmap.md` defines what each milestone builds and its exit criteria. Build only what the current milestone needs.
 
 ## Hard constraints
 
@@ -98,7 +98,7 @@ CI (GitHub Actions, `.github/workflows/ci.yml`) runs `make gen` (fails on diff),
 - `go install golang.org/x/tools/gopls@latest`
 - `npm install -g typescript-language-server typescript`
 
-`.mcp.json` adds the Mantine MCP server (`@mantine/mcp-server`: search docs, component props); Claude Code asks to enable it on first open. Mantine's own skills (`mantine-combobox`, `mantine-custom-components`, `mantine-form`) are vendored in `.claude/skills`, pinned in `skills-lock.json`; update with `npx skills update -p`. `mantine-form` covers `@mantine/form`, but forms here use React Hook Form (`techstack.md`): take only its Mantine input patterns.
+`.mcp.json` adds the Mantine MCP server (`@mantine/mcp-server`: search docs, component props); Claude Code asks to enable it on first open. Mantine's own skills (`mantine-combobox`, `mantine-custom-components`, `mantine-form`) are vendored in `.claude/skills`, pinned in `skills-lock.json`; update with `npx skills update -p`. `mantine-form` covers `@mantine/form`, but forms here use React Hook Form (`docs/techstack.md`): take only its Mantine input patterns.
 
 `ui-ux-pro-max` is a user-level skill, not part of the repo; install it separately to use it.
 
@@ -119,7 +119,7 @@ CI (GitHub Actions, `.github/workflows/ci.yml`) runs `make gen` (fails on diff),
   - `mattpocock-skills:diagnosing-bugs` when debugging;
   - `mattpocock-skills:codebase-design` when shaping a module interface or seam;
   - `mmerp-ui` (the project's design system: tokens, components, screen patterns, UI text, checklist) for any change to a screen, component, styling or layout;
-  - `ui-ux-pro-max` when building or reviewing a screen, together with `ui.md`;
+  - `ui-ux-pro-max` when building or reviewing a screen, together with `docs/ui.md`;
   - `mattpocock-skills:domain-modeling` when adding a term to `CONTEXT.md` or writing an ADR;
   - `code-review` or `simplify` before finishing a change, and the `pr-review-toolkit` agents when reviewing a PR.
 

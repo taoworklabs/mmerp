@@ -1,6 +1,6 @@
 # HRM product
 
-Human resources management: employee profiles, contracts, leave and overtime, timekeeping, payroll. HRM is the first product, and every core capability is proven by an HRM flow ([backend.md](../backend.md#layers), [ADR-0023](../docs/adr/0023-build-core-first.md)). Hard-to-reverse decisions are in [ADR-0007](../docs/adr/0007-hrm-product.md); terminology is in the HRM section of [CONTEXT.md](../CONTEXT.md#hrm).
+Human resources management: employee profiles, contracts, leave and overtime, timekeeping, payroll. HRM is the first product, and every core capability is proven by an HRM flow ([backend.md](../docs/backend.md#layers), [ADR-0023](../docs/adr/0023-build-core-first.md)). Hard-to-reverse decisions are in [ADR-0007](../docs/adr/0007-hrm-product.md); terminology is in the HRM section of [CONTEXT.md](../CONTEXT.md#hrm).
 
 ## Scope
 
@@ -14,7 +14,7 @@ Human resources management: employee profiles, contracts, leave and overtime, ti
 
 ## Module
 
-A single module `internal/modules/hrm`, schema `hrm`, belonging to the `hrm` product. It is not split into several modules: all four parts share employees and pay periods. If it were split, then, because modules in `modules/` may not import each other, payroll would have to call timekeeping through an interface. Split only when another product needs one part on its own. Then apply the "promote an entity to shared" rule ([backend.md](../backend.md#data-ownership)), e.g. employees move to `shared/`.
+A single module `internal/modules/hrm`, schema `hrm`, belonging to the `hrm` product. It is not split into several modules: all four parts share employees and pay periods. If it were split, then, because modules in `modules/` may not import each other, payroll would have to call timekeeping through an interface. Split only when another product needs one part on its own. Then apply the "promote an entity to shared" rule ([backend.md](../docs/backend.md#data-ownership)), e.g. employees move to `shared/`.
 
 ### Dependencies
 
@@ -80,12 +80,12 @@ Departments and branches are nodes in the `iam` permission-scope tree, with `kin
 
 `day_kind` is entered by hand but must be the kind the legal entity's work calendar gives the date (a public holiday wins over a weekly day off), checked on save and again when the request goes into force; otherwise `overtime_day_kind_mismatch` names the right kind. Deriving it from the calendar comes later. Overtime requests record day-shift and night-shift hours separately; `hours` is their sum.
 
-This lets tenants configure rules such as "leave over 3 days needs director approval" or "public-holiday overtime needs an extra approval step" ([documents.md](../documents.md#shared-features)). HRM approval rules are configured inside the HRM area and need `hrm.approval.manage` (role `approval_admin`, grantable only tenant-wide) or `core.approval.manage`, both at tenant-wide scope.
+This lets tenants configure rules such as "leave over 3 days needs director approval" or "public-holiday overtime needs an extra approval step" ([documents.md](../docs/documents.md#shared-features)). HRM approval rules are configured inside the HRM area and need `hrm.approval.manage` (role `approval_admin`, grantable only tenant-wide) or `core.approval.manage`, both at tenant-wide scope.
 
 ### Direct manager
 
 - The direct manager may not form a cycle: you cannot choose the employee themselves, or anyone under that employee (directly or indirectly). The manager picker does not list these people (`GET /hrm/employees?manager_of=<id>`); the backend still checks on save and returns `manager_cycle` with the name of the chosen person.
-- `hrm` implements `Approvers` ([documents.md](../documents.md#record-functions)) for leave requests and overtime requests (not for contracts and timesheets: approval rules for those two types go by role): `level = 1` returns the user of the direct manager, `level = 2` returns that person's manager, and so on up through `manager_id`.
+- `hrm` implements `Approvers` ([documents.md](../docs/documents.md#record-functions)) for leave requests and overtime requests (not for contracts and timesheets: approval rules for those two types go by role): `level = 1` returns the user of the direct manager, `level = 2` returns that person's manager, and so on up through `manager_id`.
 - A manager without an account, or an employee without a manager: that step goes to the fallback role in the rule.
 - An employee submits their own request and is themselves the manager for that step: `approval` excludes the submitter and moves up to the next level.
 
@@ -154,7 +154,7 @@ Sources can change while the payroll is still `draft` or pending approval: cance
 - Submitting for approval is refused until the user clicks **Recalculate**.
 - If sources change while the payroll is pending approval, the final approval step detects it (see below) and fails to complete. The approval instance stays open; the submitter withdraws, recalculates, then resubmits.
 - **Recalculate** can only be done while the payroll is `draft`, and is an explicit user action. Every recalculation is audited. Never recalculate automatically.
-- Payroll calculation and recalculation run as a **job on behalf of the user**, because they must decrypt and compute for each employee. The screen tracks progress with `useJobStatus` ([frontend.md](../frontend.md#refreshing-after-writes)).
+- Payroll calculation and recalculation run as a **job on behalf of the user**, because they must decrypt and compute for each employee. The screen tracks progress with `useJobStatus` ([frontend.md](../docs/frontend.md#refreshing-after-writes)).
 
 ### Payroll lock
 
@@ -172,7 +172,7 @@ The payroll lock guarantees two things: sources cannot change between the check 
 
 So a contract that was used to compute pay for a closed period cannot be cancelled. To change terms from an unclosed period onward, create an addendum effective from that period.
 
-**Lock per legal entity.** Follows the same pattern as `record.period_locks`, and sits at the third step of the common lock order ([documents.md](../documents.md#record-functions)), before any other row HRM locks. Within that step HRM's own order is `hrm.payroll_locks`, then the employee row (contracts and leave requests take it `FOR UPDATE` to serialize one employee's approvals), then leave balances:
+**Lock per legal entity.** Follows the same pattern as `record.period_locks`, and sits at the third step of the common lock order ([documents.md](../docs/documents.md#record-functions)), before any other row HRM locks. Within that step HRM's own order is `hrm.payroll_locks`, then the employee row (contracts and leave requests take it `FOR UPDATE` to serialize one employee's approvals), then leave balances:
 
 - `hrm.payroll_locks (legal_entity_id)`: one row per legal entity, used only for locking. The lock is at legal-entity level, not period level: pay periods are created on demand, and a contract without an end date affects infinitely many periods. If locking per period row, a source transaction that started before the period row existed could not lock it.
 - **Source documents** (in `OnTransition` of contracts, leave requests, overtime requests, timesheets; and when editing legal parameters): take `FOR SHARE` on the legal entity's row, then look in `hrm.payroll_periods` for periods with a non-null `posted_payroll_id` that overlap the affected date range. If any exist, reject with code `payroll_period_closed`, listing those periods.
@@ -253,7 +253,7 @@ To be settled before loading real data (the production-readiness gate in the roa
 - Adding or editing a version needs tenant-wide `hrm.legal_param.manage`, and is rejected if the range from the effective date until before the next version overlaps a closed pay period of any legal entity.
 - Overtime multipliers are fixed law and live in code.
 - Each legal entity's minimum wage region is a setting, because the BHTN cap depends on the region.
-- Parameter names are stored as translation keys ([techstack.md](../techstack.md#i18n)).
+- Parameter names are stored as translation keys ([techstack.md](../docs/techstack.md#i18n)).
 
 ## Rounding
 
@@ -294,7 +294,7 @@ Dedicated view permissions: `hrm.employee.sensitive` (role `sensitive_viewer`) f
 | `hrm.contracts`, `hrm.payroll_lines`, `hrm.payroll_adjustments`, captured inputs | Column encryption |
 | `posting.lines`, ledger | Only amounts aggregated by department or legal entity |
 | `record.documents.amount` of a payroll | Only the total cost of the whole legal entity |
-| Audit log | Sensitive field values are stored encrypted ([documents.md](../documents.md#permissions)) |
+| Audit log | Sensitive field values are stored encrypted ([documents.md](../docs/documents.md#permissions)) |
 | Export files, payslips | Need the salary view permission; temporary files expire; every export is audited |
 | Contract attachments | Need the salary view permission; every download re-checks the permission and is audited |
 | Logs, heartbeat, error reports | Never contain per-person amounts |
@@ -303,7 +303,7 @@ Because salaries are encrypted, SQL cannot sum them. Every aggregation (payroll 
 
 ## Frontend
 
-The `web/src/hrm` area follows the pattern in [frontend.md](../frontend.md). The manifest declares `recordTypes` for leave requests, overtime requests, contracts, timesheets and payrolls. When a leave request changes, including when it is approved from the `core` approval inbox, `invalidate` refreshes the request detail, the request list and the leave balance.
+The `web/src/hrm` area follows the pattern in [frontend.md](../docs/frontend.md). The manifest declares `recordTypes` for leave requests, overtime requests, contracts, timesheets and payrolls. When a leave request changes, including when it is approved from the `core` approval inbox, `invalidate` refreshes the request detail, the request list and the leave balance.
 
 - The menu is grouped: overview; people (employees, org structure, contracts); time (timesheets, leave requests, overtime requests); payroll; configuration (collapsible: contract types, leave types, work calendar, legal parameters, approval rules).
 - The overview page is the area's entry page and shows counts.
@@ -312,4 +312,4 @@ The `web/src/hrm` area follows the pattern in [frontend.md](../frontend.md). The
 
 ## Proving flow
 
-The sample flow "leave and payroll" in [documents.md](../documents.md#sample-flow-leave-and-payroll) is the scenario set that proves the core with HRM. The first milestone when writing code is completing the leave request flow end to end across frontend and API.
+The sample flow "leave and payroll" in [documents.md](../docs/documents.md#sample-flow-leave-and-payroll) is the scenario set that proves the core with HRM. The first milestone when writing code is completing the leave request flow end to end across frontend and API.

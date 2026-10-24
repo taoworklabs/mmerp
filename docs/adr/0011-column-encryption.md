@@ -4,7 +4,7 @@ Status: accepted · 2026-10-05
 
 ## Context
 
-Sensitive fields (citizen ID number (CCCD), social insurance (BHXH) book, personal tax code, bank account, salary, dependants) must be encrypted in the database, with the key kept outside the database ([platform.md](../../platform.md#personal-data)).
+Sensitive fields (citizen ID number (CCCD), social insurance (BHXH) book, personal tax code, bank account, salary, dependants) must be encrypted in the database, with the key kept outside the database ([platform.md](../platform.md#personal-data)).
 
 ## Decision
 

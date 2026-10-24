@@ -576,7 +576,7 @@
   "shared.devui.overview": "Overview",
   "shared.devui.overview_hint": "mmerp's design language, live, in six layers from the base up.",
   "shared.devui.overview_rules": "The full rules",
-  "shared.devui.overview_rules_text": "This page shows; the written rules live in the mmerp-ui skill and ui.md, including UI text and accessibility.",
+  "shared.devui.overview_rules_text": "This page shows; the written rules live in the mmerp-ui skill and docs/ui.md, including UI text and accessibility.",
   "shared.devui.pattern_filter_search": "Filter and search",
   "shared.devui.pattern_create_edit": "Create and edit",
   "shared.devui.pattern_confirm_delete": "Confirm and delete",

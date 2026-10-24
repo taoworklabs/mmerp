@@ -222,7 +222,7 @@ flowchart LR
   hook -- "no accounting yet (current)" --> noop
 ```
 
-- Business lines are captured once, in the same transaction as the status transition, even before accounting exists ([ADR-0003](./docs/adr/0003-business-lines-are-data.md)).
+- Business lines are captured once, in the same transaction as the status transition, even before accounting exists ([ADR-0003](./adr/0003-business-lines-are-data.md)).
 - Business lines never carry per-person sensitive amounts.
 
 ## 9. Enabled products and background jobs
@@ -272,8 +272,8 @@ flowchart TB
   end
 ```
 
-- Each tenant always has its own database; business code is tenant-unaware ([ADR-0001](./docs/adr/0001-one-database-per-tenant.md)).
-- The job queue lives in each tenant's database ([ADR-0004](./docs/adr/0004-job-queue-in-tenant-database.md)).
+- Each tenant always has its own database; business code is tenant-unaware ([ADR-0001](./adr/0001-one-database-per-tenant.md)).
+- The job queue lives in each tenant's database ([ADR-0004](./adr/0004-job-queue-in-tenant-database.md)).
 - Moving to model B needs no service changes, because services already take the DB from the context ([tenancy.md](./tenancy.md#cloud-path-from-a-to-b)).
 
 ## 11. Frontend
@@ -303,8 +303,8 @@ flowchart LR
 
 | To learn about | Read |
 | --- | --- |
-| Principles and non-goals | [README.md](./README.md) |
-| Glossary | [CONTEXT.md](./CONTEXT.md) |
+| Principles and non-goals | [README.md](../README.md) |
+| Glossary | [CONTEXT.md](../CONTEXT.md) |
 | Modules, layers, transactions, isolation | [backend.md](./backend.md) |
 | Documents, approval, period locks, posting | [documents.md](./documents.md) |
 | Frontend, manifests, cache | [frontend.md](./frontend.md) |
@@ -312,6 +312,6 @@ flowchart LR
 | Identity, enabled products, operations, personal data | [platform.md](./platform.md) |
 | Tenancy, migrations, backups | [tenancy.md](./tenancy.md) |
 | Technology | [techstack.md](./techstack.md) |
-| HRM product | [products/hrm.md](./products/hrm.md) |
+| HRM product | [products/hrm.md](../products/hrm.md) |
 | Plan | [roadmap.md](./roadmap.md) |
-| Decisions made | [docs/adr/](./docs/adr/) |
+| Decisions made | [docs/adr/](./adr) |

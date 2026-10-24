@@ -34,7 +34,7 @@ modules ──► shared ──► core ──► platform
 
 Dependencies only point down. Within the `core` or `shared` layer, a module may import another module directly if the dependencies form a DAG (for example `approval → record → audit, numbering, iam`). When a lower module needs to call up into a higher one (such as `record` asking `approval` whether approval is needed), the lower module defines an interface in `hooks.go` and `internal/app` wires it, just as between products. Because the higher module is created later, this wiring uses setters called after construction, for example `rec.SetApprovalGate(appr)`, `rec.OnDeleted(att)` (the higher module registers itself at construction), `ids.SetTreeHook(rec)`, `ids.SetDataProducts(rec)`, `set.SetAuthz(ids)`. In the `modules` layer, modules **never import each other**.
 
-A module is created when it first starts being used, not ahead of time. The first three waves built exactly the modules HRM needed; from wave 4 on, the core is built ahead of demand but still proven by HRM ([ADR-0023](./docs/adr/0023-build-core-first.md)):
+A module is created when it first starts being used, not ahead of time. The first three waves built exactly the modules HRM needed; from wave 4 on, the core is built ahead of demand but still proven by HRM ([ADR-0023](./adr/0023-build-core-first.md)):
 
 | Wave | Modules | Proven by HRM flow |
 | --- | --- | --- |
@@ -51,7 +51,7 @@ A module is created when it first starts being used, not ahead of time. The firs
 | --- | --- |
 | `iam` | users, sessions, roles and permissions, org units, legal entities; API keys when needed (not yet) |
 | `setting` | settings per module and legal entity; keys prefixed by the module name (`<module>.<key>`) |
-| `numbering` | document number sequences; fixed numbering scope `(doc_type, legal entity, year)`, called by `record`. Code series for catalogue codes, tenant-wide, called by modules when a code is left empty ([ADR-0032](./docs/adr/0032-code-series.md)) |
+| `numbering` | document number sequences; fixed numbering scope `(doc_type, legal entity, year)`, called by `record`. Code series for catalogue codes, tenant-wide, called by modules when a code is left empty ([ADR-0032](./adr/0032-code-series.md)) |
 | `audit` | audit log and change history; `action` prefixed by the module name |
 | `record` | record type registration, document status and lifecycle, period lock |
 | `approval` | approval rules and flows; the adapter for `record`'s approval gate |
@@ -110,7 +110,7 @@ func Module(s *Service) platform.Module {
 
 Every job's args implement `Spec() platform.JobSpec{Product, Class, System, Notify}`, and jobs are created only through `platform.Enqueue` (applies the product gate by class, records the job's requester for jobs run on behalf of a user, then inserts in the transaction of `ctx`). A job run on behalf of a user that declares `Notify` notifies the requester when the job finishes or fails; such a job must complete with `platform.CompleteJob`, so the "done" notification commits together with the job. System jobs never send notifications.
 
-A module tells a user about an event with `notification.Send(ctx, kind, ref, users)`, called in the event's transaction. Core kinds are built in; a product sends its own after registering it while wiring with `notification.RegisterKind("<product>.<name>", emailed)`, and `Send` refuses a kind nobody registered. An emailed product kind has `<kind>.email.subject` and `<kind>.email.body` in the product's server translations, and its inbox label is `<kind>.notification` in the product's area i18n. Notifications do not carry the record's content; email (if the tenant has a mail server) goes through the system job `notification.email` enqueued in the same transaction ([ADR-0025](./docs/adr/0025-notifications.md)).
+A module tells a user about an event with `notification.Send(ctx, kind, ref, users)`, called in the event's transaction. Core kinds are built in; a product sends its own after registering it while wiring with `notification.RegisterKind("<product>.<name>", emailed)`, and `Send` refuses a kind nobody registered. An emailed product kind has `<kind>.email.subject` and `<kind>.email.body` in the product's server translations, and its inbox label is `<kind>.notification` in the product's area i18n. Notifications do not carry the record's content; email (if the tenant has a mail server) goes through the system job `notification.email` enqueued in the same transaction ([ADR-0025](./adr/0025-notifications.md)).
 
 `internal/app` calls each module's `NewService`, then `Module(svc)`; other modules receive that same `*Service` through `Deps`, so there is only one copy of each registry (roles, record types).
 
@@ -140,7 +140,7 @@ Every tenant's database has the tables of every module, whether or not that prod
 
 ## Org units
 
-`iam` owns the table `iam.org_units (id, parent_id, kind, name, tax_code, legal_name, address)` ([ADR-0010](./docs/adr/0010-org-tree-and-roles.md)). This is the **permission scope tree**: a node is a place where a role can be assigned to a user, and a permission assigned at a node applies to its whole subtree. `kind` is stored as a string; for now `iam` accepts `group`, `company`, `branch`, `department`. The core only understands the meaning of `company` (legal entity) and `group` (grouping node); other kinds are added to the list when a product needs them.
+`iam` owns the table `iam.org_units (id, parent_id, kind, name, tax_code, legal_name, address)` ([ADR-0010](./adr/0010-org-tree-and-roles.md)). This is the **permission scope tree**: a node is a place where a role can be assigned to a user, and a permission assigned at a node applies to its whole subtree. `kind` is stored as a string; for now `iam` accepts `group`, `company`, `branch`, `department`. The core only understands the meaning of `company` (legal entity) and `group` (grouping node); other kinds are added to the list when a product needs them.
 
 This tree is not a business model. Which store a warehouse belongs to, which department an employee belongs to, which project a site belongs to are relations owned by business modules, in their own tables. Those tables may reference `org_unit_id` when the object needs to fall within a permission scope, but not every object needs to be a node in the tree. For example, a warehouse that needs no permissions of its own does not need to be a node.
 
@@ -199,7 +199,7 @@ A product module reaches the core only through these entry points. A need none o
 | Need | Entry point |
 | --- | --- |
 | Permission at org units | `iam.Allowed` / `iam.Require(ctx, product, perm, unit, more...)` (every unit must be in scope); lists filter with `iam.Scope`; tenant-wide catalogues use `iam.RequireTenantWide` |
-| Who may do what with a record | The record type's permission declaration, with an optional relation grant and refine hook; modules ask `record.Can`, or `record.Visible` to answer not found ([ADR-0034](./docs/adr/0034-record-types-declare-permissions.md)) |
+| Who may do what with a record | The record type's permission declaration, with an optional relation grant and refine hook; modules ask `record.Can`, or `record.Visible` to answer not found ([ADR-0034](./adr/0034-record-types-declare-permissions.md)) |
 | Document lifecycle | `record.Create` / `Edit` before the module's own rows, in the same transaction; drafts are deleted through the core route, which calls the type's delete hook; status changes through `record`'s routes, reacting in `OnTransition` and `BeforeSubmit`; `record.Touch` before changing only a draft's child rows; `record.Lock` (module-facing, checks nothing) before a write that depends on a document without changing it |
 | `allowed_actions` | `record.Actions(ctx, doc, extra...)` for a record (lifecycle actions by status, `print`, `export`, then the module's own extras; a catalog record passes only its `Ref` and gets `edit`); `record.TypeActions` for `create` and `import` before a record exists |
 | Writes while a product is disabled | `platform.ProductGate`; `record`, the route middleware, settings, jobs, prints, imports and exports apply it by the registered product |
@@ -233,7 +233,7 @@ There is no tenant-specific code. A tenant-specific need that configuration cann
 
 ## Terminology
 
-Terms live in [CONTEXT.md](./CONTEXT.md): one section for the core and one per product. A term used by two products must have the same meaning, or there must be two different names.
+Terms live in [CONTEXT.md](../CONTEXT.md): one section for the core and one per product. A term used by two products must have the same meaning, or there must be two different names.
 
 ## Adding a module
 
