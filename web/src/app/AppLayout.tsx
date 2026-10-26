@@ -1,5 +1,4 @@
-import { ActionIcon, Box, Group, Menu, ScrollArea, Stack, Text, ThemeIcon, Tooltip, UnstyledButton, cx, useDisclosure, useLocalStorage, useMediaQuery } from '@mmerp/ui'
-import { AppShell, Burger, Indicator, NavLink } from '@mantine/core'
+import { ActionIcon, AppShell, Box, Burger, Group, Indicator, Menu, NavLink, Stack, Text, ThemeIcon, Tooltip, UnstyledButton, cx, useDisclosure, useLocalStorage, useMediaQuery } from '@mmerp/ui'
 import { IconBell, IconBuildingSkyscraper, IconCheck, IconHourglass, IconInbox, IconChevronDown, IconChevronRight, IconLayoutSidebarLeftCollapse, IconLayoutSidebarLeftExpand, IconLogout } from '@tabler/icons-react'
 import { useQuery } from '@tanstack/react-query'
 import { Suspense, useEffect, useState, type ReactNode } from 'react'
@@ -81,16 +80,12 @@ export function AppLayout({ areas }: { areas: AreaManifest[] }) {
 
   return (
     <AppShell
-      header={{ height: 48 }}
-      navbar={nav.length > 0 ? { width: collapsed ? 56 : 240, breakpoint: 'md', collapsed: { mobile: !drawer } } : undefined}
-      padding={0}
-    >
-      <AppShell.Header px="md">
+      header={
         <Group className={classes.bar} justify="space-between" wrap={false}>
           <Group gap="xs" wrap={false} shrink>
             {nav.length > 0 && (
               <Tooltip label={t('core.shell.menu')}>
-                <Burger opened={drawer} onClick={toggleDrawer} hiddenFrom="md" size="sm" aria-label={t('core.shell.menu')} aria-expanded={drawer} />
+                <Burger opened={drawer} onClick={toggleDrawer} className={classes.burger} aria-label={t('core.shell.menu')} />
               </Tooltip>
             )}
             {/* The logo goes home, where the products are. */}
@@ -106,7 +101,7 @@ export function AppLayout({ areas }: { areas: AreaManifest[] }) {
           <Group gap="xs" wrap={false} className={classes.noShrink}>
             {/* Every user has notifications, an inbox and background jobs, wherever they are. */}
             <Tooltip label={t('core.nav.notifications')}>
-              <Indicator label={unread} size={16} disabled={unread === 0} offset={4}>
+              <Indicator label={unread} disabled={unread === 0} offset={4}>
                 <ActionIcon
                   render={<Link to={own('notifications')} />}
                   variant={pathname === own('notifications') ? 'light' : 'subtle'}
@@ -118,7 +113,7 @@ export function AppLayout({ areas }: { areas: AreaManifest[] }) {
               </Indicator>
             </Tooltip>
             <Tooltip label={t('core.nav.inbox')}>
-              <Indicator label={waiting} size={16} disabled={waiting === 0} offset={4}>
+              <Indicator label={waiting} disabled={waiting === 0} offset={4}>
                 <ActionIcon
                   render={<Link to={own('inbox')} />}
                   variant={pathname === own('inbox') ? 'light' : 'subtle'}
@@ -174,57 +169,57 @@ export function AppLayout({ areas }: { areas: AreaManifest[] }) {
             </Menu.Root>
           </Group>
         </Group>
-      </AppShell.Header>
-
-      {nav.length > 0 && area && (
-        <AppShell.Navbar>
-          <AppShell.Section grow component={ScrollArea} p="xs">
-            {/* Only the open area's menu; other areas are reached from home. Ungrouped items
-                first, then each group in manifest order; a group emptied by permissions is gone. */}
-            <Stack gap={0}>
-              {[...new Set(nav.map((item) => item.group))].map((group) => {
-                const links = nav.filter((item) => item.group === group).map((item) => <AreaLink key={item.path} area={area} item={item} narrow={narrow} onClick={closeDrawer} />)
-                return group && !narrow ? (
-                  <NavGroup key={group} userId={me.id} group={group} collapsible={area.collapsibleGroups?.includes(group) ?? false}>
-                    {links}
-                  </NavGroup>
-                ) : (
-                  links
-                )
-              })}
-            </Stack>
-          </AppShell.Section>
-          <AppShell.Section p="xs" visibleFrom="md">
-            <Tooltip label={t(collapsed ? 'core.shell.expand' : 'core.shell.collapse')} side="right">
-              <ActionIcon
-                variant="subtle"
-                color="gray"
-                aria-label={t(collapsed ? 'core.shell.expand' : 'core.shell.collapse')}
-                onClick={() => setPref(!collapsed)}
-              >
-                {collapsed ? <IconLayoutSidebarLeftExpand {...icon.button} /> : <IconLayoutSidebarLeftCollapse {...icon.button} />}
-              </ActionIcon>
-            </Tooltip>
-          </AppShell.Section>
-        </AppShell.Navbar>
+      }
+      // Only the open area's menu; other areas are reached from home. Ungrouped items first, then
+      // each group in manifest order; a group emptied by permissions is gone.
+      navbar={
+        nav.length > 0 &&
+        area && (
+          <Stack gap={0}>
+            {[...new Set(nav.map((item) => item.group))].map((group) => {
+              const links = nav.filter((item) => item.group === group).map((item) => <AreaLink key={item.path} area={area} item={item} narrow={narrow} onClick={closeDrawer} />)
+              return group && !narrow ? (
+                <NavGroup key={group} userId={me.id} group={group} collapsible={area.collapsibleGroups?.includes(group) ?? false}>
+                  {links}
+                </NavGroup>
+              ) : (
+                links
+              )
+            })}
+          </Stack>
+        )
+      }
+      navbarOpened={drawer}
+      navbarCollapsed={collapsed}
+      navbarFooter={
+        nav.length > 0 && (
+          <Tooltip label={t(collapsed ? 'core.shell.expand' : 'core.shell.collapse')} side="right">
+            <ActionIcon
+              variant="subtle"
+              color="gray"
+              aria-label={t(collapsed ? 'core.shell.expand' : 'core.shell.collapse')}
+              onClick={() => setPref(!collapsed)}
+            >
+              {collapsed ? <IconLayoutSidebarLeftExpand {...icon.button} /> : <IconLayoutSidebarLeftCollapse {...icon.button} />}
+            </ActionIcon>
+          </Tooltip>
+        )
+      }
+    >
+      {error && (
+        <Box className={classes.banner}>
+          <ErrorState message={error} />
+        </Box>
       )}
-
-      <AppShell.Main>
-        {error && (
-          <Box className={classes.banner}>
-            <ErrorState message={error} />
-          </Box>
-        )}
-        {area && !onOwn && area.product !== 'core' && !me.products.includes(area.product) && (
-          <Box className={cx(classes.banner, classes.bannerFramed)}>
-            <ReadOnlyBanner />
-          </Box>
-        )}
-        {/* Keyed by area, so entering one shows the skeleton rather than the previous page. */}
-        <Suspense key={pathname.split('/')[1]} fallback={<PageSkeleton />}>
-          <Outlet />
-        </Suspense>
-      </AppShell.Main>
+      {area && !onOwn && area.product !== 'core' && !me.products.includes(area.product) && (
+        <Box className={cx(classes.banner, classes.bannerFramed)}>
+          <ReadOnlyBanner />
+        </Box>
+      )}
+      {/* Keyed by area, so entering one shows the skeleton rather than the previous page. */}
+      <Suspense key={pathname.split('/')[1]} fallback={<PageSkeleton />}>
+        <Outlet />
+      </Suspense>
     </AppShell>
   )
 }
@@ -236,14 +231,12 @@ function AreaLink({ area, item, narrow, onClick }: { area: AreaManifest; item: N
   const label = t(item.label)
   const link = (
     <NavLink
-      component={Link}
-      to={to}
+      render={<Link to={to} />}
       label={narrow ? undefined : label}
       aria-label={label}
       leftSection={<item.icon {...icon.text} />}
       active={pathname === to || pathname.startsWith(`${to}/`)}
-      variant="light"
-      classNames={{ root: classes.item, section: classes.section }}
+      compact
       onClick={onClick}
     />
   )

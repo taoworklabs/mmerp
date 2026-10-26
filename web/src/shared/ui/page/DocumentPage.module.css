@@ -1,0 +1,6 @@
+/* A side-column part shown as a tab keeps the reading width, centred. */
+.sidePanel {
+  width: 100%;
+  max-width: var(--mmerp-content-width);
+  margin-inline: auto;
+}

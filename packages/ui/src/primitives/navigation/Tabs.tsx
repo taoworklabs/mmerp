@@ -26,9 +26,11 @@ export interface TabsListProps extends React.ComponentPropsWithRef<'div'> {
   scroll?: boolean
   // Sits on a PageHeader's own rule instead of drawing one of its own.
   onRule?: boolean
+  // Few tabs on a narrow screen: they share the width evenly.
+  grow?: boolean
 }
 
-function List({ scroll, onRule, tabIndex, className, ...props }: TabsListProps) {
+function List({ scroll, onRule, grow, tabIndex, className, ...props }: TabsListProps) {
   // Automatic activation on arrow focus: a user browsing tabs expects the panel to follow immediately.
   // scroll makes the list itself the scrollable region, so it needs its own tab stop for the a11y
   // rule that every scrollable region must be reachable by keyboard; callers may still override it.
@@ -38,6 +40,7 @@ function List({ scroll, onRule, tabIndex, className, ...props }: TabsListProps) 
       className={cx(styles.list, className)}
       data-scroll={scroll ? '' : undefined}
       data-on-rule={onRule ? '' : undefined}
+      data-grow={grow ? '' : undefined}
       tabIndex={tabIndex ?? (scroll ? 0 : undefined)}
       {...props}
     />

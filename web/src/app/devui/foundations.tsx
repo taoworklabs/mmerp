@@ -1,5 +1,4 @@
-import { Box, Button, Code, Grid, Group, List, Paper, SimpleGrid, Stack, Text, TextInput, Title } from '@mmerp/ui'
-import { useMantineTheme } from '@mantine/core'
+import { Box, Button, Code, Grid, Group, List, Paper, SimpleGrid, Stack, Text, TextInput, Title, tokens } from '@mmerp/ui'
 import { IconCheck, IconInbox, IconPlus, IconX } from '@tabler/icons-react'
 import { useEffect, useState, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -8,7 +7,7 @@ import { icon } from '@/shared/ui/theme'
 import { Demo } from './Demo'
 import devui from './DevUi.module.css'
 
-// Values are read from the live theme, so this page never drifts from theme.ts.
+// Values are read from the kit's tokens, so this page never drifts from them.
 const px = (v: string) => {
   const m = /([\d.]+)rem/.exec(v)
   return m ? `${Number(m[1]) * 16}px` : v
@@ -89,7 +88,7 @@ export function Principles() {
   )
 }
 
-const ramps = ['primary', 'success', 'warning', 'danger', 'discovery', 'gray']
+const ramps = ['primary', 'success', 'warning', 'danger', 'discovery', 'gray'] as const
 
 // kind says how a semantic token shows: as text, as an edge, or as a fill.
 const semantic: { name: string; kind: 'text' | 'border' | 'fill' }[] = [
@@ -119,7 +118,6 @@ function Patch({ background, width, height, radius, border }: { background?: str
 
 export function Colour() {
   const { t } = useTranslation()
-  const theme = useMantineTheme()
   return (
     <Demo title={t('shared.devui.colour')} description={t('shared.devui.colour_hint')}>
       <Section title={t('shared.devui.colour_ramps')} description={t('shared.devui.colour_steps')}>
@@ -132,7 +130,7 @@ export function Colour() {
               </Text>
             </Group>
             <SimpleGrid cols={{ base: 5, sm: 10 }} spacing="xxs">
-              {theme.colors[name]!.map((hex, i) => (
+              {tokens.color.ramp[name].map((hex, i) => (
                 <Stack key={i} gap="xxxs">
                   <Swatch bg={`var(--mmerp-color-${name}-${i})`} />
                   <Text size="xs" tone="dimmed" truncate>
@@ -176,7 +174,6 @@ const weights = [400, 500, 600, 650] as const
 
 export function Typography() {
   const { t } = useTranslation()
-  const theme = useMantineTheme()
   return (
     <Demo title={t('shared.devui.typography')} description={t('shared.devui.typography_hint')}>
       <Section title={t('shared.devui.type_headings')}>
@@ -184,7 +181,7 @@ export function Typography() {
           <Spec
             key={h}
             name={h}
-            value={`${px(theme.headings.sizes[h].fontSize)} / ${theme.headings.sizes[h].lineHeight} · ${theme.headings.fontWeight}`}
+            value={`${tokens.heading[h].size}px / ${tokens.heading[h].lineHeight} · ${tokens.fontWeight.heading}`}
             use={t(`shared.devui.type_${h}`)}
             sample={<Title order={(i + 1) as 1 | 2 | 3}>{t('shared.devui.type_sample')}</Title>}
           />
@@ -195,7 +192,7 @@ export function Typography() {
           <Spec
             key={s}
             name={s}
-            value={`${px(theme.fontSizes[s])} / ${theme.lineHeights[s]}`}
+            value={`${tokens.fontSize[s]}px / ${tokens.lineHeight[s]}`}
             use={t(`shared.devui.type_${s}`)}
             sample={<Text size={s}>{t('shared.devui.type_sample')}</Text>}
           />
@@ -203,7 +200,7 @@ export function Typography() {
       </Section>
       <Section title={t('shared.devui.type_weights')}>
         {weights.map((w) => (
-          <Spec key={w} name={String(w)} value={theme.fontFamily ?? ''} use={t(`shared.devui.weight_${w}`)} sample={<Text weight={w}>{t('shared.devui.type_sample')}</Text>} />
+          <Spec key={w} name={String(w)} value={tokens.fontFamily} use={t(`shared.devui.weight_${w}`)} sample={<Text weight={w}>{t('shared.devui.type_sample')}</Text>} />
         ))}
       </Section>
     </Demo>
@@ -214,12 +211,11 @@ const sizes = ['--mmerp-control-height', '--mmerp-side-width', '--mmerp-aside-wi
 
 export function Spacing() {
   const { t } = useTranslation()
-  const theme = useMantineTheme()
   return (
     <Demo title={t('shared.devui.spacing')} description={t('shared.devui.spacing_hint')}>
       <Section title={t('shared.devui.spacing')}>
-        {Object.entries(theme.spacing).map(([k, v]) => (
-          <Spec key={k} name={k} value={px(v)} use={t(`shared.devui.space_${k}`)} sample={<Patch background="var(--mmerp-color-primary-2)" height="var(--mmerp-space-xs)" width={`var(--mmerp-space-${k})`} />} />
+        {Object.entries(tokens.space).map(([k, v]) => (
+          <Spec key={k} name={k} value={`${v}px`} use={t(`shared.devui.space_${k}`)} sample={<Patch background="var(--mmerp-color-primary-2)" height="var(--mmerp-space-xs)" width={`var(--mmerp-space-${k})`} />} />
         ))}
       </Section>
       <Section title={t('shared.devui.sizes')}>
@@ -245,7 +241,6 @@ const radii: { key: string; value: string }[] = [
 
 export function Surfaces() {
   const { t } = useTranslation()
-  const theme = useMantineTheme()
   return (
     <Demo title={t('shared.devui.surfaces')} description={t('shared.devui.surfaces_hint')}>
       <Section title={t('shared.devui.radius')}>
@@ -253,7 +248,7 @@ export function Surfaces() {
           <Spec
             key={key}
             name={key}
-            value={key === 'round' ? value : px(theme.radius[key as keyof typeof theme.radius] ?? '')}
+            value={key === 'round' ? value : `${tokens.radius[key as keyof typeof tokens.radius]}px`}
             use={t(`shared.devui.radius_${key}`)}
             sample={<Patch width="var(--mmerp-space-xxl)" height="var(--mmerp-space-xxl)" radius={value} background="var(--mmerp-color-elevation-surface-sunken)" border="1px solid var(--mmerp-color-border)" />}
           />

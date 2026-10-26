@@ -51,4 +51,34 @@ describe('AppShell', () => {
     const filler = container.querySelector('[data-testid="filler"]') as HTMLElement
     await expect.poll(() => filler.getBoundingClientRect().height).toBe(800 - 48)
   })
+
+  it('scrolls a long navbar and a long page inside themselves, never the window', async () => {
+    const { container } = await render(
+      <AppShell header={<div>Header</div>} navbar={<div style={{ height: 3000 }}>Navbar</div>}>
+        <div style={{ height: 3000, flex: 'none' }}>Content</div>
+      </AppShell>,
+    )
+
+    await page.viewport(1300, 800)
+    const navbar = container.querySelector('nav') as HTMLElement
+    const main = container.querySelector('main') as HTMLElement
+    await expect.poll(() => navbar.getBoundingClientRect().height).toBe(800 - 48)
+    expect(main.getBoundingClientRect().height).toBe(800 - 48)
+    expect(main.scrollHeight).toBeGreaterThan(main.clientHeight)
+    const content = navbar.firstElementChild as HTMLElement
+    expect(content.scrollHeight).toBeGreaterThan(content.clientHeight)
+  })
+
+  it('gives main the whole width when there is no navbar', async () => {
+    const { container } = await render(
+      <AppShell header={<div>Header</div>}>
+        <div>Content</div>
+      </AppShell>,
+    )
+
+    await page.viewport(1300, 800)
+    const main = container.querySelector('main') as HTMLElement
+    await expect.poll(() => main.getBoundingClientRect().left).toBe(0)
+    expect(main.getBoundingClientRect().width).toBe(1300)
+  })
 })

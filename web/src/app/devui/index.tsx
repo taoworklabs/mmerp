@@ -1,9 +1,8 @@
-import { Anchor, Group, ScrollArea, Stack, Text, ThemeIcon, useDisclosure } from '@mmerp/ui'
-import { AppShell, Burger, NavLink } from '@mantine/core'
+import { Anchor, AppShell, Burger, Group, NavLink, Stack, Text, ThemeIcon, useDisclosure } from '@mmerp/ui'
 import { IconComponents } from '@tabler/icons-react'
-import type { ComponentType, ReactNode } from 'react'
+import { useEffect, type ComponentType, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
-import { createBrowserRouter, Link, Navigate, Outlet, ScrollRestoration, useLocation } from 'react-router'
+import { createBrowserRouter, Link, Navigate, Outlet, useLocation } from 'react-router'
 import { client } from '@/shared/api/client'
 import type { Me } from '@/shared/api/core'
 import { MeProvider } from '@/shared/auth/me'
@@ -128,12 +127,18 @@ function DevUiLayout() {
   const [drawer, { toggle, close }] = useDisclosure()
   const title = useEntryTitle()
   const template = all.find((e) => e.layer === 'templates' && pathname === `/dev/ui/${e.path}`)
+  // Each page opens at its top; opening a side panel (a search param) keeps the scroll.
+  useEffect(() => {
+    document.querySelector('main')?.scrollTo(0, 0)
+  }, [pathname])
   return (
     <MeProvider me={me}>
-      <AppShell header={{ height: 48 }} navbar={{ width: 280, breakpoint: 'md', collapsed: { mobile: !drawer } }} padding={0}>
-        <AppShell.Header px="md">
+      <AppShell
+        navbarWidth={280}
+        navbarOpened={drawer}
+        header={
           <Group gap="xs" wrap={false} className={devui.bar}>
-            <Burger opened={drawer} onClick={toggle} hiddenFrom="md" size="sm" aria-label={t('core.shell.menu')} aria-expanded={drawer} />
+            <Burger opened={drawer} onClick={toggle} className={classes.burger} aria-label={t('core.shell.menu')} />
             <ThemeIcon size={28} aria-hidden>
               <IconComponents {...icon.text} />
             </ThemeIcon>
@@ -141,47 +146,33 @@ function DevUiLayout() {
               {t('shared.devui.title')}
             </Text>
           </Group>
-        </AppShell.Header>
-        <AppShell.Navbar>
-          <AppShell.Section grow component={ScrollArea} p="xs">
-            <Stack gap="md">
-              {layers.map((l, i) => (
-                <Stack key={l} gap="xxs" role="group" aria-label={t(`shared.devui.layer_${l}`)}>
-                  <Stack gap={0} className={devui.layerHead}>
-                    <Text size="xs" weight={600}>
-                      {`${i + 1} · ${t(`shared.devui.layer_${l}`)}`}
-                    </Text>
-                    <Text size="xs" tone="dimmed">
-                      {t(`shared.devui.layer_${l}_note`)}
-                    </Text>
-                  </Stack>
-                  <Stack gap={0} className={devui.entries}>
-                    {all
-                      .filter((e) => e.layer === l)
-                      .map((e) => (
-                        <NavLink
-                          key={e.path}
-                          className={classes.item}
-                          component={Link}
-                          to={e.path}
-                          label={title(e)}
-                          active={pathname === `/dev/ui/${e.path}`}
-                          variant="light"
-                          onClick={close}
-                        />
-                      ))}
-                  </Stack>
+        }
+        navbar={
+          <Stack gap="md">
+            {layers.map((l, i) => (
+              <Stack key={l} gap="xxs" role="group" aria-label={t(`shared.devui.layer_${l}`)}>
+                <Stack gap={0} className={devui.layerHead}>
+                  <Text size="xs" weight={600}>
+                    {`${i + 1} · ${t(`shared.devui.layer_${l}`)}`}
+                  </Text>
+                  <Text size="xs" tone="dimmed">
+                    {t(`shared.devui.layer_${l}_note`)}
+                  </Text>
                 </Stack>
-              ))}
-            </Stack>
-          </AppShell.Section>
-        </AppShell.Navbar>
-        <AppShell.Main>
-          {template && <TemplateNote entry={template} />}
-          <Outlet />
-          {/* Keyed by path, so opening a side panel (a search param) keeps the scroll. */}
-          <ScrollRestoration getKey={(location) => location.pathname} />
-        </AppShell.Main>
+                <Stack gap={0} className={devui.entries}>
+                  {all
+                    .filter((e) => e.layer === l)
+                    .map((e) => (
+                      <NavLink key={e.path} compact render={<Link to={e.path} />} label={title(e)} active={pathname === `/dev/ui/${e.path}`} onClick={close} />
+                    ))}
+                </Stack>
+              </Stack>
+            ))}
+          </Stack>
+        }
+      >
+        {template && <TemplateNote entry={template} />}
+        <Outlet />
       </AppShell>
     </MeProvider>
   )

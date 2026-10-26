@@ -1,5 +1,4 @@
-import { Anchor, Badge, Box, Code, Group, SimpleGrid, Stack, Text, Title } from '@mmerp/ui'
-import { TableOfContents } from '@mantine/core'
+import { Anchor, Badge, Box, Code, Group, SimpleGrid, Stack, TableOfContents, Text, Title } from '@mmerp/ui'
 import type { ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router'
@@ -28,7 +27,7 @@ export function useEntryTitle() {
 function DocSection({ id, title, children }: { id: string; title: string; children: ReactNode }) {
   return (
     <Stack gap="sm" render={<section />} aria-labelledby={id}>
-      <Title order={2} id={id} data-devui-section className={classes.heading}>
+      <Title order={2} id={id} className={classes.heading}>
         {title}
       </Title>
       {children}
@@ -67,44 +66,37 @@ export function DocPage({ path, example, variants, doDont, code }: { path: Path;
       )}
     </>
   )
-  return (
-    <Page centered title={title(entry)} status={tag} description={description} breadcrumbs={[{ label: t('shared.devui.title'), to: '/dev/ui' }]}>
-      <Group align="start" wrap={false} gap="xl">
-        <Stack gap="xl" fill>
-          <DocSection id="example" title={t('shared.devui.sec_example')}>
-            {example}
-          </DocSection>
-          <DocSection id="usage" title={t('shared.devui.sec_usage')}>
-            <Text size="sm">
-              <Text render={<span />} weight={600}>
-                {t('shared.devui.use_when')}
-              </Text>{' '}
-              {t(`shared.devui.use_${k}`)}
-            </Text>
-            <Text size="sm">
-              <Text render={<span />} weight={600}>
-                {t('shared.devui.avoid_when')}
-              </Text>{' '}
-              <Linked text={t(`shared.devui.avoid_${k}`)} />
-            </Text>
-          </DocSection>
-          {variants && (
-            <DocSection id="variants" title={t('shared.devui.sec_variants')}>
-              {variants}
-            </DocSection>
-          )}
-          {doDont && (
-            <DocSection id="do-dont" title={t('shared.devui.sec_do_dont')}>
-              {doDont}
-            </DocSection>
-          )}
-          {snippet && (
-            <DocSection id="code" title={t('shared.devui.sec_code')}>
-              <Code block>{snippet}</Code>
-            </DocSection>
-          )}
-          {entry.related && entry.related.length > 0 && (
-            <DocSection id="related" title={t(component ? 'shared.devui.sec_related' : 'shared.devui.sec_uses')}>
+  const sections: { id: string; title: string; content: ReactNode }[] = [
+    { id: 'example', title: t('shared.devui.sec_example'), content: example },
+    {
+      id: 'usage',
+      title: t('shared.devui.sec_usage'),
+      content: (
+        <>
+          <Text size="sm">
+            <Text render={<span />} weight={600}>
+              {t('shared.devui.use_when')}
+            </Text>{' '}
+            {t(`shared.devui.use_${k}`)}
+          </Text>
+          <Text size="sm">
+            <Text render={<span />} weight={600}>
+              {t('shared.devui.avoid_when')}
+            </Text>{' '}
+            <Linked text={t(`shared.devui.avoid_${k}`)} />
+          </Text>
+        </>
+      ),
+    },
+    ...(variants ? [{ id: 'variants', title: t('shared.devui.sec_variants'), content: variants }] : []),
+    ...(doDont ? [{ id: 'do-dont', title: t('shared.devui.sec_do_dont'), content: doDont }] : []),
+    ...(snippet ? [{ id: 'code', title: t('shared.devui.sec_code'), content: <Code block>{snippet}</Code> }] : []),
+    ...(entry.related?.length
+      ? [
+          {
+            id: 'related',
+            title: t(component ? 'shared.devui.sec_related' : 'shared.devui.sec_uses'),
+            content: (
               <Group gap="md">
                 {entry.related.map((p) => (
                   <Anchor key={p} render={<Link to={`/dev/ui/${p}`} />} size="sm">
@@ -112,19 +104,26 @@ export function DocPage({ path, example, variants, doDont, code }: { path: Path;
                   </Anchor>
                 ))}
               </Group>
+            ),
+          },
+        ]
+      : []),
+  ]
+  return (
+    <Page centered title={title(entry)} status={tag} description={description} breadcrumbs={[{ label: t('shared.devui.title'), to: '/dev/ui' }]}>
+      <Group align="start" wrap={false} gap="xl">
+        <Stack gap="xl" fill>
+          {sections.map((x) => (
+            <DocSection key={x.id} id={x.id} title={x.title}>
+              {x.content}
             </DocSection>
-          )}
+          ))}
         </Stack>
         <Box className={classes.toc}>
           <Text size="xs" weight={600} tone="dimmed" className={classes.tocTitle}>
             {t('shared.devui.on_this_page')}
           </Text>
-          <TableOfContents
-            size="sm"
-            variant="light"
-            scrollSpyOptions={{ selector: '[data-devui-section]' }}
-            getControlProps={({ data }) => ({ onClick: () => data.getNode().scrollIntoView({ behavior: 'smooth' }), children: data.value })}
-          />
+          <TableOfContents items={sections.map((x) => ({ id: x.id, label: x.title }))} aria-label={t('shared.devui.on_this_page')} />
         </Box>
       </Group>
     </Page>

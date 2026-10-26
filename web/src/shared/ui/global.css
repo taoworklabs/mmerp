@@ -21,8 +21,7 @@
 @media (max-width: 63.99em) {
   .mantine-Input-input,
   .mantine-Button-root,
-  .mantine-ActionIcon-root,
-  .mantine-Burger-root {
+  .mantine-ActionIcon-root {
     min-height: 44px;
     min-width: 44px;
   }

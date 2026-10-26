@@ -10,7 +10,7 @@ const meta: Meta<typeof Toaster> = {
   decorators: [
     (Story, { args }) => (
       <>
-        <Toaster closeLabel={args.closeLabel} />
+        <Toaster closeLabel={args.closeLabel} position={args.position} />
         <Story />
       </>
     ),
@@ -112,5 +112,21 @@ export const Colours: Story = {
       expect(getComputedStyle(item as Element).borderLeftColor).toBe(getComputedStyle(probe).borderColor)
       probe.remove()
     }
+  },
+}
+
+export const TopCenter: Story = {
+  args: { position: 'top-center' },
+  render: () => <Button onClick={() => toast.show({ message: 'Đã gửi đơn nghỉ phép', timeout: null })}>Hiện thông báo phía trên</Button>,
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    await userEvent.click(canvas.getByRole('button', { name: 'Hiện thông báo phía trên' }))
+
+    const body = within(canvasElement.ownerDocument.body)
+    const item = await body.findByRole('status')
+    const box = item.getBoundingClientRect()
+    expect(box.top).toBeLessThan(window.innerHeight / 2)
+    expect(Math.abs(box.left + box.width / 2 - window.innerWidth / 2)).toBeLessThan(2)
+    await userEvent.click(body.getByRole('button', { name: 'Đóng' }))
   },
 }

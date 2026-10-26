@@ -1,5 +1,4 @@
-import { ActionBar, Panel, useMediaQuery } from '@mmerp/ui'
-import { Tabs } from '@mantine/core'
+import { ActionBar, Panel, Tabs, useMediaQuery } from '@mmerp/ui'
 import type { ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useSearchParams } from 'react-router'
@@ -7,7 +6,8 @@ import { UnsavedProvider } from '../form'
 import { Notice } from '../Notice'
 import { Activity, type DocumentSection } from './Activity'
 import { DetailPage } from './DetailPage'
-import { Page, tabsList, type PageHeaderProps } from './Page'
+import classes from './DocumentPage.module.css'
+import { Page, type PageHeaderProps } from './Page'
 
 // maxGrownTabs is how many tabs share a phone's width evenly; more scroll in one row.
 const maxGrownTabs = 3
@@ -85,21 +85,20 @@ function DocumentLayout({ actions, error, approval, activity, sections = [], ful
   return (
     <Tabs
       value={tab}
-      onChange={(v) => {
+      onValueChange={(v) => {
         const next = new URLSearchParams(search)
         if (!v || v === 'details') next.delete('tab')
         else next.set('tab', v)
         // Replaced, not pushed: Back leaves the record rather than walking back through its tabs.
         setSearch(next, { replace: true })
       }}
-      keepMounted={false}
     >
       <Page
         {...header}
         withBack
         actions={wide ? actions : undefined}
         tabs={
-          <Tabs.List grow={!wide && tabs.length + 1 <= maxGrownTabs} className={tabsList}>
+          <Tabs.List scroll onRule grow={!wide && tabs.length + 1 <= maxGrownTabs}>
             <Tabs.Tab value="details">{t('shared.document.tab.details')}</Tabs.Tab>
             {tabs.map((p) => (
               <Tabs.Tab key={p.key} value={p.key}>
@@ -112,7 +111,7 @@ function DocumentLayout({ actions, error, approval, activity, sections = [], ful
         {banner}
         <Tabs.Panel value="details">{children}</Tabs.Panel>
         {tabs.map((p) => (
-          <Tabs.Panel key={p.key} value={p.key} w="100%" maw="var(--mmerp-content-width)" mx="auto">
+          <Tabs.Panel key={p.key} value={p.key} className={classes.sidePanel}>
             {p.content}
           </Tabs.Panel>
         ))}

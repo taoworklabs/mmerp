@@ -1,5 +1,5 @@
 import { breakpoint, type ColorName, icon as kitIcon, tokens } from '@mmerp/ui'
-import { createTheme, NavLink, rem, Tabs, type CSSVariablesResolver, type MantineColorsTuple } from '@mantine/core'
+import { createTheme, rem, type CSSVariablesResolver, type MantineColorsTuple } from '@mantine/core'
 
 // The numbers live in @mmerp/ui; this file only hands them to Mantine until Mantine is gone.
 const { ramp, semantic } = tokens.color
@@ -27,10 +27,6 @@ export const theme = createTheme({
   defaultRadius: 'md',
   shadows: { xs: tokens.shadow.xs, sm: tokens.shadow.sm, md: tokens.shadow.md, lg: tokens.shadow.lg, xl: tokens.shadow.xl },
   // md is where the navigation becomes a drawer (1024px), lg where it stops auto-collapsing (1280px).
-  components: {
-    Tabs: Tabs.extend({ styles: { tab: { fontWeight: 500 } } }),
-    NavLink: NavLink.extend({ styles: { root: { borderRadius: 'var(--mantine-radius-md)', minHeight: 'var(--mmerp-control-height)' }, label: { fontWeight: 500 } } }),
-  },
   breakpoints: { ...breakpoint },
   headings: {
     fontWeight: String(tokens.fontWeight.heading),

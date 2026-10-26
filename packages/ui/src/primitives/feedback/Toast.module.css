@@ -7,6 +7,16 @@
   gap: var(--mmerp-space-sm);
   width: 320px;
   max-width: calc(100vw - var(--mmerp-space-lg) * 2);
+  /* Over dialogs and the narrow-screen action bar. */
+  z-index: var(--mmerp-z-index-popup);
+}
+
+.viewport[data-position='top-center'] {
+  top: var(--mmerp-space-lg);
+  bottom: auto;
+  right: 50%;
+  transform: translateX(50%);
+  flex-direction: column;
 }
 
 .root {

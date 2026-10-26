@@ -14,6 +14,8 @@ export const mantineMigrated = [
   'TextInput', 'PasswordInput', 'Textarea', 'NumberInput', 'Checkbox', 'Select', 'MultiSelect', 'Combobox', 'useCombobox',
   'SegmentedControl', 'FileInput', 'FileButton', 'Input', 'InputWrapper',
   'Modal', 'Drawer', 'Menu', 'Popover', 'Tooltip', 'ScrollArea',
+  'Tabs', 'NavLink', 'Breadcrumbs', 'Pagination', 'Burger', 'AppShell', 'Table', 'Timeline', 'Avatar', 'Indicator', 'Alert',
+  'Notification', 'TableOfContents', 'Collapse', 'useMantineTheme',
 ]
 const migratedPath = mantineMigrated.length
   ? [{ name: '@mantine/core', importNames: mantineMigrated, message: 'Import it from @mmerp/ui.' }]
@@ -49,7 +51,19 @@ export default tseslint.config(
   },
   {
     files: ['src/**/*.{ts,tsx}'],
-    rules: { 'no-restricted-imports': ['error', { paths: [...migratedPath, { name: '@mantine/hooks', message: 'Import the hook from @mmerp/ui.' }], patterns: [baseUi] }] },
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          paths: [
+            ...migratedPath,
+            { name: '@mantine/hooks', message: 'Import the hook from @mmerp/ui.' },
+            { name: '@mantine/notifications', message: 'Use the toast helpers in shared/ui/notify.' },
+          ],
+          patterns: [baseUi],
+        },
+      ],
+    },
   },
   {
     files: areaFiles,
@@ -61,8 +75,7 @@ export default tseslint.config(
           patterns: [baseUi],
           paths: [
             ...migratedPath,
-            // Tooltip is the one overlay areas still take from Mantine.
-            { name: '@mantine/core', allowImportNames: ['Tooltip'], message: 'Use the shared/ui component, or the @mmerp/ui primitive when it is on the areas\' list.' },
+            { name: '@mantine/core', message: 'Use the shared/ui component, or the @mmerp/ui primitive when it is on the areas\' list.' },
             { name: '@mantine/hooks', message: 'Import the hook from @mmerp/ui.' },
             {
               // Areas compose screens from shared/ui; only these layout and text primitives and look-only blocks come from the kit directly.

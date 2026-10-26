@@ -31,7 +31,13 @@
   border-top: 1px solid var(--mmerp-color-border);
 }
 
-.framed :global(.mantine-NavLink-root) {
+/* A row reads its item's two lines, so it grows past the control height. Scoped to the list to
+   outrank the nav link's own padding whatever order the CSS loads in. */
+.items .row {
+  padding-block: var(--mmerp-space-xs);
+}
+
+.items.framed .row {
   border-radius: 0;
   padding-block: var(--mmerp-space-sm);
 }

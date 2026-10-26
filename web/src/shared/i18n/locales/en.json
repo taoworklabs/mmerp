@@ -875,5 +875,6 @@
   "shared.partner.contact_name": "Contact person",
   "shared.partner.phone": "Phone",
   "shared.partner.email": "Email",
-  "shared.partner.address": "Address"
+  "shared.partner.address": "Address",
+  "shared.toast.close": "Close notification"
 }

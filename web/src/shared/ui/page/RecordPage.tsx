@@ -1,11 +1,10 @@
-import { Anchor, Group, Stack } from '@mmerp/ui'
-import { Tabs } from '@mantine/core'
+import { Anchor, Group, Stack, Tabs } from '@mmerp/ui'
 import type { ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link, useSearchParams } from 'react-router'
 import { MoreActions } from '../MoreActions'
 import { Notice } from '../Notice'
-import { Page, tabsList, type PageHeaderProps } from './Page'
+import { Page, type PageHeaderProps } from './Page'
 
 // A part of the record: its tab's value on the URL, label (a count once known) and content.
 export type RecordTab = { value: string; label: string; content: ReactNode }
@@ -39,14 +38,13 @@ export function RecordPage({ more, actions, tabs, aliases, children, ...header }
   return (
     <Tabs
       value={tab}
-      onChange={(v) => {
+      onValueChange={(v) => {
         const next = new URLSearchParams(search)
         if (!v || v === first) next.delete('tab')
         else next.set('tab', v)
         // Replaced, not pushed: Back leaves the record rather than walking back through its tabs.
         setSearch(next, { replace: true })
       }}
-      keepMounted={false}
     >
       <Page
         {...header}
@@ -54,7 +52,7 @@ export function RecordPage({ more, actions, tabs, aliases, children, ...header }
         actions={all}
         centered="detail"
         tabs={
-          <Tabs.List className={tabsList}>
+          <Tabs.List scroll onRule>
             {tabs.map((x) => (
               <Tabs.Tab key={x.value} value={x.value}>
                 {x.label}

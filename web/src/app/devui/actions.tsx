@@ -1,5 +1,4 @@
 import { Button, FieldList, Group, Menu, Stack, Text } from '@mmerp/ui'
-import { Notification } from '@mantine/core'
 import { IconDownload, IconPencil, IconTrash } from '@tabler/icons-react'
 import type { UseQueryResult } from '@tanstack/react-query'
 import { useState } from 'react'
@@ -10,13 +9,12 @@ import { useConfirm } from '@/shared/ui/confirm'
 import { MenuAction } from '@/shared/ui/MenuAction'
 import { MoreActions } from '@/shared/ui/MoreActions'
 import { Notice } from '@/shared/ui/Notice'
-import { notifyError, notifySuccess, notifyUndo, UndoMessage } from '@/shared/ui/notify'
+import { notifyError, notifySuccess, notifyUndo } from '@/shared/ui/notify'
 import { QueryView } from '@/shared/ui/QueryView'
 import { SidePanel } from '@/shared/ui/SidePanel'
 import { ContentSkeleton, EmptyState, ErrorState, ForbiddenPage, NotFoundPage, PageSkeleton, ReadOnlyBanner } from '@/shared/ui/states'
 import { useAction } from '@/shared/ui/useAction'
 import { Case, rows, type Row } from './Demo'
-import devui from './DevUi.module.css'
 import { DocPage, DoDont } from './DocPage'
 
 // The main props of each component; data, not interface text.
@@ -160,7 +158,7 @@ export function NoticeDoc() {
   )
 }
 
-// Each case shows the toast at rest, then a button that raises the real one.
+// Each case has a button that raises the real toast.
 export function NotifyDoc() {
   const { t } = useTranslation()
   const undo = () => notifySuccess(t('shared.devui.toast_undone'))
@@ -169,9 +167,6 @@ export function NotifyDoc() {
       path="mmerp/notify"
       example={
         <Case>
-          <Notification color="success" className={devui.toast}>
-            {t('shared.devui.toast_saved')}
-          </Notification>
           <Group>
             <Button variant="default" onClick={() => notifySuccess(t('shared.devui.toast_saved'))}>
               {t('shared.devui.show_toast')}
@@ -182,9 +177,6 @@ export function NotifyDoc() {
       variants={
         <>
           <Case label={t('shared.devui.case_toast_error')}>
-            <Notification color="danger" className={devui.toast}>
-              {t('shared.devui.toast_job_failed')}
-            </Notification>
             <Group>
               <Button variant="default" onClick={() => notifyError(t('shared.devui.toast_job_failed'))}>
                 {t('shared.devui.show_toast')}
@@ -192,9 +184,6 @@ export function NotifyDoc() {
             </Group>
           </Case>
           <Case label={t('shared.devui.case_toast_undo')}>
-            <Notification color="success" className={devui.toast}>
-              <UndoMessage message={t('shared.devui.undo_done')} undoLabel={t('shared.undo')} onUndo={undo} />
-            </Notification>
             <Group>
               <Button variant="default" onClick={() => notifyUndo(t('shared.devui.undo_done'), t('shared.undo'), undo)}>
                 {t('shared.devui.show_toast')}

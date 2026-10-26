@@ -1,5 +1,4 @@
-import { Box, Button, Group, Stack, Text, ThemeIcon, type ThemeIconProps, useMediaQuery, VisuallyHidden } from '@mmerp/ui'
-import { NavLink } from '@mantine/core'
+import { Box, Button, Group, NavLink, Stack, Text, ThemeIcon, type ThemeIconProps, useMediaQuery, VisuallyHidden } from '@mmerp/ui'
 import { IconArrowLeft, type Icon as TablerIcon } from '@tabler/icons-react'
 import type { ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -106,10 +105,10 @@ export function InboxRow({
   return (
     <li>
       <NavLink
-        component="button"
+        render={<button type="button" />}
         active={active}
         onClick={onClick}
-        classNames={{ label: unread ? classes.unread : undefined }}
+        className={classes.row}
         leftSection={lead}
         rightSection={
           (aside || unread) && (
@@ -120,10 +119,10 @@ export function InboxRow({
           )
         }
         label={
-          <>
+          <span className={unread ? classes.unread : undefined}>
             {unread && <VisuallyHidden>{t('shared.inbox.unread')}: </VisuallyHidden>}
             {label}
-          </>
+          </span>
         }
         description={description}
       />

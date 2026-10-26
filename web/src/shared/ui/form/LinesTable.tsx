@@ -1,5 +1,4 @@
-import { ActionIcon, Button, FieldList, Group, Paper, ScrollArea, SimpleGrid, Stack, Text, Tooltip, useMediaQuery } from '@mmerp/ui'
-import { Table } from '@mantine/core'
+import { ActionIcon, Button, FieldList, Group, Paper, ScrollArea, SimpleGrid, Stack, Table, Text, Tooltip, useMediaQuery } from '@mmerp/ui'
 import { IconPlus, IconTrash } from '@tabler/icons-react'
 import type { KeyboardEvent, ReactNode } from 'react'
 import { useFieldArray, useFormContext } from 'react-hook-form'
@@ -105,7 +104,7 @@ function EditLines<L extends object>({ name, label, columns: all, newLine, addLa
     <Stack gap="sm">
       <Paper withBorder className={classes.frame}>
         <ScrollArea>
-          <Table aria-label={label} className={classes.table} onKeyDown={nextCellOnEnter} verticalSpacing="xxs">
+          <Table aria-label={label} className={classes.table} onKeyDown={nextCellOnEnter} appearance={{ density: 'compact' }}>
             <Head columns={columns} />
             <Table.Tbody>
               {lines.fields.map((line, i) => (
@@ -142,7 +141,7 @@ function ReadOnlyLines<L extends object>({ label, columns: all, lines, lineLabel
                   <Table.Tr key={i}>
                     <Table.Td className={classes.n}>{i + 1}</Table.Td>
                     {columns.map((c) => (
-                      <Table.Td key={c.key} ta={c.numeric ? 'right' : undefined}>
+                      <Table.Td key={c.key} look={c.numeric ? 'numeric' : undefined}>
                         {c.value?.(line, i)}
                       </Table.Td>
                     ))}
@@ -176,7 +175,7 @@ function Head<L extends object>({ columns, readOnly }: { columns: LineColumn<L>[
       <Table.Tr>
         <Table.Th className={classes.n}>#</Table.Th>
         {columns.map((c) => (
-          <Table.Th key={c.key} miw={readOnly ? undefined : (c.width ?? 200)} ta={c.numeric ? 'right' : undefined}>
+          <Table.Th key={c.key} style={readOnly ? undefined : { minWidth: c.width ?? 200 }} look={c.numeric ? 'numeric' : undefined}>
             {c.header}
             {c.required && !readOnly && (
               <Text render={<span />} tone="danger" aria-hidden>

@@ -1,5 +1,4 @@
-import { Badge, Button, Group, Stack, Text, type BadgeProps } from '@mmerp/ui'
-import { Timeline } from '@mantine/core'
+import { Badge, Button, Group, Stack, Text, Timeline, type BadgeProps } from '@mmerp/ui'
 import { IconArrowBackUp, IconCheck, IconUserShare, IconX, type Icon as TablerIcon } from '@tabler/icons-react'
 import { useQuery } from '@tanstack/react-query'
 import type { TFunction } from 'i18next'
@@ -252,7 +251,7 @@ function Instance({ docType, id, inst, onDone, sticky, subject, decideElsewhere 
           {t('shared.approval.no_steps')}
         </Text>
       )}
-      <Timeline active={top.length - 1} bulletSize={20} lineWidth={2} role="list" aria-label={t('shared.approval.steps')}>
+      <Timeline role="list" aria-label={t('shared.approval.steps')}>
         {top.map((node, i) => {
           const status = nodeStatus(node, byPos)
           const look = stepLook[status]
@@ -260,6 +259,7 @@ function Instance({ docType, id, inst, onDone, sticky, subject, decideElsewhere 
             <Timeline.Item
               key={i}
               role="listitem"
+              active
               aria-current={status === 'open' ? 'step' : undefined}
               color={look.color}
               bullet={look.icon && <look.icon size={12} stroke={2.5} aria-hidden />}

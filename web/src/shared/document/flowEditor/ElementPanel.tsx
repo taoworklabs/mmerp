@@ -1,5 +1,4 @@
 import { Anchor, Button, Group, Panel, SegmentedControl, Stack, Text } from '@mmerp/ui'
-import { Collapse } from '@mantine/core'
 import { IconChevronDown, IconChevronRight, IconPlus } from '@tabler/icons-react'
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { useFormContext, useWatch } from 'react-hook-form'
@@ -110,9 +109,9 @@ function StepPanel({ path }: { path: string }) {
             {t('shared.rule.advanced')}
           </Group>
         </Anchor>
-        <Collapse expanded={advanced}>
+        {advanced && (
           <IntegerField readOnly={readOnly} name={`${path}.rejections`} label={t('shared.rule.rejections')} description={t('shared.rule.rejections_hint')} required min={1} max={20} error={problems.rejections} />
-        </Collapse>
+        )}
         {!readOnly && (
           <Group gap="xs">
             {!first && (

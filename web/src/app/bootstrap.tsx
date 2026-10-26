@@ -1,6 +1,5 @@
 import '@mmerp/ui/styles.css'
 import '@mantine/core/styles.css'
-import '@mantine/notifications/styles.css'
 import '@/shared/ui/global.css'
 
 import { MantineProvider } from '@mantine/core'

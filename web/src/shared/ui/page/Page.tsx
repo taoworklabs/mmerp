@@ -2,7 +2,6 @@ import { Page as KitPage, PageHeader as KitPageHeader } from '@mmerp/ui'
 import type { ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link, useLocation, useNavigate } from 'react-router'
-import classes from './Page.module.css'
 
 export type Crumb = { label: string; to: string }
 
@@ -30,10 +29,6 @@ export type PageHeaderProps = {
   // breadcrumb already leads back.
   current?: boolean
 }
-
-// tabsList is for a Mantine Tabs.List in the header: sits on the header's rule, scrolls sideways
-// when the tabs do not fit.
-export const tabsList = classes.tabs
 
 // readingWidth is the width of a side panel (approval, attachments) shown full width as a tab.
 export const readingWidth = 480

@@ -78,6 +78,21 @@ export const OnRule: Story = {
   },
 }
 
+export const Grow: Story = {
+  render: () => (
+    <Tabs defaultValue="details">
+      <Tabs.List grow>
+        <Tabs.Tab value="details">Chi tiết</Tabs.Tab>
+        <Tabs.Tab value="activity">Hoạt động</Tabs.Tab>
+      </Tabs.List>
+    </Tabs>
+  ),
+  play: async ({ canvasElement }) => {
+    const [a, b] = within(canvasElement).getAllByRole('tab')
+    expect(Math.abs(a!.offsetWidth - b!.offsetWidth)).toBeLessThan(2)
+  },
+}
+
 export const ArrowRightSelectsNextTab: Story = {
   tags: ['!dev', '!autodocs'],
   render: () => <Demo />,

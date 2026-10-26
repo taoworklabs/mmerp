@@ -37,7 +37,8 @@ export function AppShell({
 }: AppShellProps) {
   const isMobile = useMediaQuery(mobileQuery)
   // The rail only applies at desktop widths; on mobile the navbar is always the full-width drawer.
-  const effectiveNavbarWidth = !isMobile && navbarCollapsed ? navbarCollapsedWidth : navbarWidth
+  // Without a navbar (a home page) main takes the whole width.
+  const effectiveNavbarWidth = !navbar ? 0 : !isMobile && navbarCollapsed ? navbarCollapsedWidth : navbarWidth
   const vars: StyleVars = {
     ...style,
     '--mmerp-appshell-header-height': `${headerHeight}px`,

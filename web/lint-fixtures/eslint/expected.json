@@ -5,6 +5,7 @@
   ["no-restricted-imports", "hrm/MantineHooks.ts"],
   ["no-restricted-imports", "sales/MantineNotifications.ts"],
   ["no-restricted-imports", "shared/BaseUi.ts"],
+  ["no-restricted-imports", "shared/MantineNotifications.ts"],
   ["no-restricted-syntax", "hrm/InlineStyle.tsx"],
   ["no-restricted-syntax", "app/InlineStyle.tsx"],
   ["i18next/no-literal-string", "sales/Literal.tsx"]

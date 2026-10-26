@@ -27,3 +27,15 @@ export const Label: Story = {
 export const Disabled: Story = {
   args: { disabled: true, children: <Avatar alt="Nguyễn Văn A">NA</Avatar> },
 }
+
+export const Offset: Story = {
+  args: { label: 5, offset: 4, children: <Avatar alt="Nguyễn Văn A">NA</Avatar> },
+  play: async ({ canvasElement }) => {
+    const badge = within(canvasElement).getByText('5')
+    const root = badge.parentElement!.getBoundingClientRect()
+    const box = badge.getBoundingClientRect()
+    // Centred 4px in from the top-right corner.
+    expect(Math.round(box.top + box.height / 2 - root.top)).toBe(4)
+    expect(Math.round(root.right - (box.left + box.width / 2))).toBe(4)
+  },
+}

@@ -106,3 +106,11 @@
   line-height: var(--mmerp-line-height-xs);
   color: var(--mmerp-color-dimmed);
 }
+
+/* Below 1024px a nav row is a 44px touch target, compact or not. */
+@media (max-width: 63.99em) {
+  .root,
+  .root[data-compact] {
+    min-height: var(--mmerp-touch-target);
+  }
+}

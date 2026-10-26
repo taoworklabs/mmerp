@@ -9,7 +9,8 @@
   overflow: hidden;
   background: var(--mmerp-avatar-bg);
   color: var(--mmerp-avatar-color);
-  font-size: var(--mmerp-font-size-xs);
+  /* Initials grow with the circle, never below the smallest text size. */
+  font-size: max(var(--mmerp-font-size-xs), calc(var(--mmerp-avatar-size) * 0.4));
   font-weight: var(--mmerp-font-weight-medium);
 }
 

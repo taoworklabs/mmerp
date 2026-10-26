@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
-import { IconAlertTriangle, IconCircleCheck, IconInfoCircle } from '@tabler/icons-react'
+import { IconAlertTriangle, IconCircleCheck, IconInfoCircle, IconSparkles } from '@tabler/icons-react'
 import { expect, within } from 'storybook/test'
 import { icon } from '../../tokens/tokens.ts'
 import { Alert } from './Alert.tsx'
@@ -52,5 +52,14 @@ export const Danger: Story = {
   play: async ({ canvasElement }) => {
     const alert = within(canvasElement).getByRole('alert')
     expect(alert).toBeInTheDocument()
+  },
+}
+
+export const Discovery: Story = {
+  args: {
+    color: 'discovery',
+    title: 'Mới',
+    icon: <IconSparkles size={icon.text.size} stroke={icon.text.stroke} />,
+    children: 'Bạn có thể in phiếu lương thành PDF.',
   },
 }
