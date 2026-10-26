@@ -1,4 +1,4 @@
-import { Button as BaseButton } from '@base-ui/react/button'
+import { ButtonBase } from '../../internal/ButtonBase.tsx'
 import type * as React from 'react'
 import { cx } from '../../internal/cx.ts'
 import type { RenderProp } from '../../internal/render.ts'
@@ -30,8 +30,8 @@ export function ActionIcon({
 }: ActionIconProps) {
   const vars: StyleVars = { ...style, ...buttonColorVars(variant, color) }
   return (
-    <BaseButton
-      render={render as React.ComponentProps<typeof BaseButton>['render']}
+    <ButtonBase
+      render={render}
       disabled={disabled || loading}
       aria-busy={loading ? true : undefined}
       data-mmerp-control=""
@@ -47,6 +47,6 @@ export function ActionIcon({
       ) : (
         children
       )}
-    </BaseButton>
+    </ButtonBase>
   )
 }
