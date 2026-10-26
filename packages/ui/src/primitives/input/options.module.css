@@ -48,3 +48,8 @@
   font-size: var(--mmerp-font-size-sm);
   color: var(--mmerp-color-dimmed);
 }
+
+/* Above any dialog or drawer the popup opens from. */
+.positioner {
+  z-index: var(--mmerp-z-index-popup);
+}

@@ -70,6 +70,7 @@ function sizeLines(): string[] {
   }
   lines.push(`--mmerp-motion-duration: ${tokens.motionDuration}ms;`)
   lines.push(`--mmerp-touch-target: ${tokens.touchTarget}px;`)
+  lines.push(`--mmerp-z-index-popup: ${tokens.zIndexPopup};`)
   return lines
 }
 

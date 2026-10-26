@@ -1,5 +1,4 @@
-import { Button, FieldList, Group, KeyFacts, Panel, RecordColumns, Stack, Text } from '@mmerp/ui'
-import { PasswordInput, TextInput } from '@mantine/core'
+import { Button, FieldList, Group, KeyFacts, Panel, PasswordInput, RecordColumns, Stack, Text, TextInput } from '@mmerp/ui'
 import { IconAlertTriangle, IconAt, IconCircleCheck, IconHourglassHigh, IconUsersGroup } from '@tabler/icons-react'
 import { useTranslation } from 'react-i18next'
 import { Fragment } from 'react'
@@ -300,7 +299,12 @@ export function AuthTemplate() {
     <AuthPage title="AuthPage">
       <Stack gap="md">
         <TextInput label={t('core.login.login')} autoComplete="off" required />
-        <PasswordInput label={t('core.login.password')} autoComplete="off" required />
+        <PasswordInput
+          label={t('core.login.password')}
+          autoComplete="off"
+          required
+          visibilityLabels={{ show: t('shared.form.show_password'), hide: t('shared.form.hide_password') }}
+        />
         <Button>{t('core.login.submit')}</Button>
       </Stack>
     </AuthPage>

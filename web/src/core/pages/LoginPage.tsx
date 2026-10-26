@@ -1,29 +1,28 @@
 import { Button, Stack } from '@mmerp/ui'
-// eslint-disable-next-line no-restricted-imports -- raw inputs: the login screen renders before the router that Form needs.
-import { PasswordInput, TextInput } from '@mantine/core'
-import { useState, type FormEvent } from 'react'
+import { useState } from 'react'
+import { FormProvider, useForm } from 'react-hook-form'
 import { useTranslation } from 'react-i18next'
 import { api, ApiError, unwrap } from '@/shared/api/core'
 import { announceSessionStarted } from '@/shared/auth/session'
 import { errorText } from '@/shared/i18n'
+import { PasswordField, TextField } from '@/shared/ui/form'
 import { AuthPage } from '@/shared/ui/page'
 import { ErrorState } from '@/shared/ui/states'
 import { nextFromLocation } from '../login'
 
-// Plain state, not shared/ui/form: the login screen renders before the router exists, and Form needs it.
+// The fields without Form: the login screen renders before the router exists, and Form needs it.
 export function LoginPage() {
   const { t } = useTranslation()
-  const [login, setLogin] = useState('')
-  const [password, setPassword] = useState('')
+  const form = useForm({ defaultValues: { login: '', password: '' } })
+  const [login, password] = form.watch(['login', 'password'])
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
 
-  async function submit(e: FormEvent) {
-    e.preventDefault()
+  async function submit(values: { login: string; password: string }) {
     setBusy(true)
     setError(null)
     try {
-      await unwrap(api.POST('/auth/login', { body: { login, password } }))
+      await unwrap(api.POST('/auth/login', { body: values }))
     } catch (err) {
       setError(err instanceof ApiError && err.code === 'invalid_credentials' ? t('core.login.invalid_credentials') : errorText(t, err))
       setBusy(false)
@@ -37,29 +36,18 @@ export function LoginPage() {
 
   return (
     <AuthPage title={t('core.login.title')}>
-      <form onSubmit={submit} noValidate>
-        <Stack gap="md">
-          {error && <ErrorState message={error} />}
-          <TextInput
-            label={t('core.login.login')}
-            autoComplete="username"
-            required
-            value={login}
-            onChange={(e) => setLogin(e.currentTarget.value)}
-          />
-          <PasswordInput
-            label={t('core.login.password')}
-            autoComplete="current-password"
-            required
-            value={password}
-            onChange={(e) => setPassword(e.currentTarget.value)}
-            visibilityToggleButtonProps={{ 'aria-label': t('core.login.toggle_password'), tabIndex: 0 }}
-          />
-          <Button type="submit" loading={busy} disabled={!login || !password}>
-            {t('core.login.submit')}
-          </Button>
-        </Stack>
-      </form>
+      <FormProvider {...form}>
+        <form onSubmit={(e) => void form.handleSubmit(submit)(e)} noValidate>
+          <Stack gap="md">
+            {error && <ErrorState message={error} />}
+            <TextField name="login" label={t('core.login.login')} autoComplete="username" required />
+            <PasswordField name="password" label={t('core.login.password')} autoComplete="current-password" required />
+            <Button type="submit" loading={busy} disabled={!login || !password}>
+              {t('core.login.submit')}
+            </Button>
+          </Stack>
+        </form>
+      </FormProvider>
     </AuthPage>
   )
 }

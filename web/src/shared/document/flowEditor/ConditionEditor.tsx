@@ -1,5 +1,5 @@
-import { ActionIcon, Button, Group, Paper, SimpleGrid, Stack, Text } from '@mmerp/ui'
-import { SegmentedControl, Tooltip } from '@mantine/core'
+import { ActionIcon, Button, Group, Paper, SegmentedControl, SimpleGrid, Stack, Text } from '@mmerp/ui'
+import { Tooltip } from '@mantine/core'
 import { IconPlus, IconX } from '@tabler/icons-react'
 import { useQuery } from '@tanstack/react-query'
 import { useState } from 'react'
@@ -40,16 +40,18 @@ export function ConditionEditor({ path, ctx, depth, onEmpty }: { path: string; c
       )}
       {/* With one row there is nothing to combine. */}
       {fields.length > 1 && (
-        <SegmentedControl
-          w="fit-content"
-          readOnly={readOnly}
-          value={mode.field.value}
-          onChange={mode.field.onChange}
-          data={[
-            { value: 'all', label: t('shared.rule.cond_all') },
-            { value: 'any', label: t('shared.rule.cond_any') },
-          ]}
-        />
+        <Group>
+          <SegmentedControl
+            aria-label={t('shared.rule.cond_mode')}
+            disabled={readOnly}
+            value={mode.field.value}
+            onChange={mode.field.onChange}
+            data={[
+              { value: 'all', label: t('shared.rule.cond_all') },
+              { value: 'any', label: t('shared.rule.cond_any') },
+            ]}
+          />
+        </Group>
       )}
       {fields.map((r, i) => {
         const rp = `${path}.rows.${i}`

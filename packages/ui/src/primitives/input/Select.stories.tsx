@@ -139,3 +139,45 @@ export const Required: Story = {
     expect(within(canvasElement).getByRole('combobox', { name: 'Người phụ trách' })).toHaveAttribute('aria-required', 'true')
   },
 }
+
+// Opened from a layer that stacks itself (a dialog or drawer), the list still lies on top.
+export const AboveOverlay: Story = {
+  tags: ['!dev', '!autodocs'],
+  args: { value: null, placeholder: 'Chọn nhân viên' },
+  render: (args) => (
+    <div style={{ position: 'fixed', inset: 0, zIndex: 200, padding: 16, background: 'var(--mmerp-color-body)' }}>
+      <Controlled {...args} />
+    </div>
+  ),
+  play: async ({ canvasElement }) => {
+    const trigger = within(canvasElement).getByRole('combobox', { name: 'Người phụ trách' })
+    trigger.focus()
+    await userEvent.keyboard('{ArrowDown}')
+    const option = await within(canvasElement.ownerDocument.body).findByRole('option', { name: data[1]!.label })
+    const box = option.getBoundingClientRect()
+    const hit = canvasElement.ownerDocument.elementFromPoint(box.x + box.width / 2, box.y + box.height / 2)
+    expect(option.contains(hit)).toBe(true)
+  },
+}
+
+// Picking moves focus into the list and back; only leaving the field is a blur (a form checks
+// required fields on blur, and would flag the field while the user is still choosing).
+export const BlurOnlyOnLeave: Story = {
+  tags: ['!dev', '!autodocs'],
+  args: { value: null, placeholder: 'Chọn nhân viên', onBlur: fn() },
+  render: (args) => (
+    <>
+      <Controlled {...args} />
+      <button type="button">Sau</button>
+    </>
+  ),
+  play: async ({ canvasElement, args }) => {
+    const trigger = within(canvasElement).getByRole('combobox', { name: 'Người phụ trách' })
+    await userEvent.click(trigger)
+    await userEvent.click(await within(canvasElement.ownerDocument.body).findByRole('option', { name: data[1]!.label }))
+    await waitFor(() => expect(trigger).toHaveFocus())
+    expect(args.onBlur).not.toHaveBeenCalled()
+    await userEvent.tab()
+    expect(args.onBlur).toHaveBeenCalledTimes(1)
+  },
+}

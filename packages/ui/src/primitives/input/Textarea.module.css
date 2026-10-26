@@ -34,3 +34,10 @@
   cursor: not-allowed;
   opacity: 0.6;
 }
+
+/* Read-only: the same grey, edgeless box as TextInput's. */
+[data-read-only] .root {
+  border-color: transparent;
+  background: var(--mmerp-color-gray-0);
+  cursor: default;
+}

@@ -118,7 +118,6 @@ export function FormDoc() {
                 <MultiSelectField
                   name="many"
                   label={t('shared.devui.multi_choice')}
-                  searchable
                   data={[
                     { value: 'a', label: 'A' },
                     { value: 'b', label: 'B' },

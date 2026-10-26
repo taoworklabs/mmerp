@@ -171,4 +171,5 @@
   --mmerp-filter-width-menu: 15rem;
   --mmerp-motion-duration: 150ms;
   --mmerp-touch-target: 44px;
+  --mmerp-z-index-popup: 300;
 }

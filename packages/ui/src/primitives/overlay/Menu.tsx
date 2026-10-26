@@ -15,7 +15,7 @@ export interface MenuPopupProps extends Omit<React.ComponentPropsWithRef<'div'>,
 function MenuPopup({ side = 'bottom', align = 'start', className, children, ...props }: MenuPopupProps) {
   return (
     <BaseMenu.Portal>
-      <BaseMenu.Positioner side={side} align={align} sideOffset={4}>
+      <BaseMenu.Positioner side={side} align={align} sideOffset={4} className={styles.positioner}>
         <BaseMenu.Popup className={cx(styles.popup, className)} {...props}>
           {children}
         </BaseMenu.Popup>

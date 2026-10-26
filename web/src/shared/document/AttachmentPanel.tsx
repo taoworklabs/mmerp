@@ -1,5 +1,4 @@
 import { ActionIcon, Anchor, Button, Group, Loader, Paper, Stack, Text, ThemeIcon, type ThemeIconProps, UnstyledButton } from '@mmerp/ui'
-import { FileButton } from '@mantine/core'
 import {
   IconFile,
   IconFileTypeDocx,
@@ -12,7 +11,7 @@ import {
   type Icon as TablerIcon,
 } from '@tabler/icons-react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { useState, type DragEvent, type ReactNode } from 'react'
+import { useRef, useState, type DragEvent, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { api, unwrap, type Attachment } from '@/shared/api/core'
 import { useMe } from '@/shared/auth/me'
@@ -67,6 +66,7 @@ function AttachmentPanel({ docType, id }: { docType: string; id: number }) {
   const [busy, setBusy] = useState(false)
   const [dragging, setDragging] = useState(false)
   const [ask, confirm] = useConfirm()
+  const fileInput = useRef<HTMLInputElement>(null)
   if (q.isPending) return <ContentSkeleton />
   if (q.isError) return <ErrorState message={errorText(t, q.error)} onRetry={() => void q.refetch()} />
   if (q.data.hidden)
@@ -151,9 +151,22 @@ function AttachmentPanel({ docType, id }: { docType: string; id: number }) {
     : {}
 
   const picker = (child: (open: () => void) => ReactNode) => (
-    <FileButton multiple onChange={(files) => void addAll(files)} accept={accept.join(',')}>
-      {(props) => child(props.onClick)}
-    </FileButton>
+    <>
+      <input
+        ref={fileInput}
+        type="file"
+        multiple
+        hidden
+        accept={accept.join(',')}
+        onChange={(e) => {
+          const files = [...(e.currentTarget.files ?? [])]
+          // Emptied, so picking the same file again still fires a change.
+          e.currentTarget.value = ''
+          void addAll(files)
+        }}
+      />
+      {child(() => fileInput.current?.click())}
+    </>
   )
 
   return (

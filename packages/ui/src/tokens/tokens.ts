@@ -72,6 +72,8 @@ export const tokens = {
   filterWidth: { search: 280, searchMin: 160, chip: 320, menu: 240 },
   motionDuration: 150,
   touchTarget: 44,
+  // Floating lists, menus and tooltips sit above any dialog or drawer they open from.
+  zIndexPopup: 300,
 } as const
 
 // md is where navigation becomes a drawer (1024px), lg where it stops auto-collapsing (1280px).

@@ -48,3 +48,14 @@
   align-items: center;
   color: var(--mmerp-color-dimmed);
 }
+
+/* Read-only: a grey fill without an edge, so the value stays framed and the layout does not move
+   between viewing and editing, with nothing that invites typing. Shared by every boxed input. */
+[data-read-only] .wrapper {
+  border-color: transparent;
+  background: var(--mmerp-color-gray-0);
+}
+
+[data-read-only] .input {
+  cursor: default;
+}

@@ -239,7 +239,7 @@ test('the employee page tabs live on the URL and survive a reload', async ({ pag
   // Links to the activity card it replaced open the activity tab.
   await page.goto(`/hrm/employees/${ids.ea}?tab=discussion`)
   await expect(page.getByRole('tab', { name: 'Hoạt động' })).toHaveAttribute('aria-selected', 'true')
-  await expect(page.getByRole('radiogroup', { name: 'Lọc hoạt động' })).toBeVisible()
+  await expect(page.getByRole('group', { name: 'Lọc hoạt động' })).toBeVisible()
 })
 
 test('recent activity on the overview leaves reads out; the activity tab keeps them', async ({ page }) => {
@@ -249,7 +249,7 @@ test('recent activity on the overview leaves reads out; the activity tab keeps t
   await page.reload()
   const recent = page.getByRole('region', { name: 'Hoạt động gần đây' })
   await expect(recent.getByLabel('Bình luận', { exact: true })).toBeVisible()
-  await expect(recent.getByRole('radiogroup', { name: 'Lọc hoạt động' })).toHaveCount(0)
+  await expect(recent.getByRole('group', { name: 'Lọc hoạt động' })).toHaveCount(0)
   await expect(recent.getByText('xem thông tin nhạy cảm')).toHaveCount(0)
   await recent.getByRole('link', { name: 'Xem tất cả' }).click()
   await expect(page).toHaveURL(/tab=activity/)

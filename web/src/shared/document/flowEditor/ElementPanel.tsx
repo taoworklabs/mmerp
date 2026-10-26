@@ -1,5 +1,5 @@
-import { Anchor, Button, Group, Panel, Stack, Text } from '@mmerp/ui'
-import { Collapse, SegmentedControl } from '@mantine/core'
+import { Anchor, Button, Group, Panel, SegmentedControl, Stack, Text } from '@mmerp/ui'
+import { Collapse } from '@mantine/core'
 import { IconChevronDown, IconChevronRight, IconPlus } from '@tabler/icons-react'
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { useFormContext, useWatch } from 'react-hook-form'
@@ -99,7 +99,7 @@ function StepPanel({ path }: { path: string }) {
         />
         {kind === 'role' && <SelectField readOnly={readOnly} name={`${path}.role`} label={t('shared.rule.role')} required data={ctx.roleOptions} error={problems.role} />}
         {kind === 'user' && (
-          <MultiSelectField readOnly={readOnly} name={`${path}.users`} label={t('shared.rule.user')} required searchable max={maxUsers} data={ctx.userOptions} error={problems.users} />
+          <MultiSelectField readOnly={readOnly} name={`${path}.users`} label={t('shared.rule.user')} required max={maxUsers} data={ctx.userOptions} error={problems.users} />
         )}
         {/* One chosen user approves alone, unless the count still asks for more and must be fixed. */}
         {(kind !== 'user' || users.length > 1 || String(approvals) !== '1') && <IntegerField readOnly={readOnly} name={`${path}.approvals`} label={t('shared.rule.approvals')} required min={1} max={20} error={problems.approvals} />}
@@ -165,7 +165,8 @@ function SplitPanel({ path }: { path: string }) {
         <IssueAlert name={`${path}.issue`} />
         <SegmentedControl
           fullWidth
-          readOnly={ctx.readOnly}
+          aria-label={t('shared.rule.split_kind')}
+          disabled={ctx.readOnly}
           value={type}
           onChange={(v) => void changeType(v)}
           data={[

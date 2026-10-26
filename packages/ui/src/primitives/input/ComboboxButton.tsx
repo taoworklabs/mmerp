@@ -75,7 +75,7 @@ export function ComboboxButton({
     >
       <BaseCombobox.Trigger id={triggerId} render={trigger} />
       <BaseCombobox.Portal>
-        <BaseCombobox.Positioner sideOffset={4}>
+        <BaseCombobox.Positioner sideOffset={4} className={optionStyles.positioner}>
           {/* The popup takes the role of a dialog around the input (see `inputInsidePopup` in the
               Combobox primitive); a dialog needs its own accessible name, borrowed from the trigger. */}
           <BaseCombobox.Popup className={optionStyles.popup} style={{ width: popupWidth }} aria-labelledby={triggerId}>

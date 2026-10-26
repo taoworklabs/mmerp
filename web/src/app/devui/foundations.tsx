@@ -1,5 +1,5 @@
-import { Box, Button, Code, Grid, Group, List, Paper, SimpleGrid, Stack, Text, Title } from '@mmerp/ui'
-import { TextInput, useMantineTheme } from '@mantine/core'
+import { Box, Button, Code, Grid, Group, List, Paper, SimpleGrid, Stack, Text, TextInput, Title } from '@mmerp/ui'
+import { useMantineTheme } from '@mantine/core'
 import { IconCheck, IconInbox, IconPlus, IconX } from '@tabler/icons-react'
 import { useEffect, useState, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'

@@ -1,10 +1,15 @@
 /* Amounts line their digits up. */
-.money {
+.money input {
   font-variant-numeric: tabular-nums;
   text-align: right;
 }
 
-/* A read-only field keeps its box as a grey fill without an edge, so its value stays framed and
+/* Long text spans the whole row of a FormSection grid. */
+.wide {
+  grid-column: 1 / -1;
+}
+
+/* Date inputs only, until they leave Mantine. A read-only field keeps its box as a grey fill without an edge, so its value stays framed and
    the layout does not move between viewing and editing; it shows nothing that invites typing.
    Doubled to outrank the input's own rule whatever order the CSS loads in. */
 [data-readonly][data-readonly] :global(.mantine-Input-input) {

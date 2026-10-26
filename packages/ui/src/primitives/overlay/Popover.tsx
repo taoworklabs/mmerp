@@ -35,7 +35,7 @@ function PopoverPopup({
 }: PopoverPopupProps) {
   return (
     <BasePopover.Portal>
-      <BasePopover.Positioner side={side} align={align} sideOffset={4} anchor={anchor}>
+      <BasePopover.Positioner side={side} align={align} sideOffset={4} anchor={anchor} className={styles.positioner}>
         <BasePopover.Popup
           initialFocus={initialFocus}
           finalFocus={finalFocus}

@@ -25,6 +25,9 @@ export type ComboboxProps = FieldProps &
     onSearchChange?(query: string): void
     loading?: boolean
     loadingLabel?: string
+    // Inside the box before the typed text, e.g. an icon for the chosen value.
+    leftSection?: React.ReactNode
+    renderOption?: (item: SelectItem) => React.ReactNode
   }
 
 function defaultFilter(item: SelectItem, query: string) {
@@ -47,6 +50,8 @@ export function Combobox({
   onSearchChange,
   loading,
   loadingLabel,
+  leftSection,
+  renderOption,
   clearable,
   clearLabel,
   className,
@@ -107,6 +112,7 @@ export function Combobox({
           data-error={error ? '' : undefined}
           data-disabled={disabled ? '' : undefined}
         >
+          {leftSection && <span className={textInputStyles.section}>{leftSection}</span>}
           <BaseCombobox.Input
             placeholder={placeholder}
             className={textInputStyles.input}
@@ -116,8 +122,11 @@ export function Combobox({
             aria-required={required || undefined}
             onKeyDown={(event) => {
               onKeyDown?.(event)
+              if (event.key !== 'Escape') return
+              // With the list shut Base UI would clear the value; leaving a field must not lose it.
+              if (!open) event.preventBaseUIHandler()
               // Base UI only closes the popup on Escape; restoring the label is ours to do.
-              if (event.key === 'Escape') setQuery(selectedLabel)
+              setQuery(selectedLabel)
             }}
             onBlur={(event) => {
               onBlur?.(event)
@@ -150,14 +159,14 @@ export function Combobox({
           )}
         </BaseCombobox.InputGroup>
         <BaseCombobox.Portal>
-          <BaseCombobox.Positioner sideOffset={4}>
+          <BaseCombobox.Positioner sideOffset={4} className={optionStyles.positioner}>
             <BaseCombobox.Popup className={optionStyles.popup}>
               <BaseCombobox.Status>{loading ? loadingLabel : null}</BaseCombobox.Status>
               <BaseCombobox.Empty className={optionStyles.empty}>{nothingFound}</BaseCombobox.Empty>
               <BaseCombobox.List>
                 {(item: SelectItem) => (
                   <BaseCombobox.Item key={item.value} value={item.value} disabled={item.disabled} className={optionStyles.option}>
-                    {item.label}
+                    {renderOption ? renderOption(item) : item.label}
                   </BaseCombobox.Item>
                 )}
               </BaseCombobox.List>

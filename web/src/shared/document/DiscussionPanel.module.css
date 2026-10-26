@@ -3,3 +3,18 @@
   white-space: pre-wrap;
   overflow-wrap: anywhere;
 }
+
+/* The people offered after @, under the comment box. */
+.mentions {
+  padding: var(--mmerp-space-xxs);
+}
+
+.mention {
+  padding: var(--mmerp-space-xxs) var(--mmerp-space-sm);
+  border-radius: var(--mmerp-radius-md);
+  cursor: pointer;
+}
+
+.mention[aria-selected='true'] {
+  background: var(--mmerp-color-gray-light);
+}

@@ -16,7 +16,7 @@ export function Tooltip({ label, side = 'top', disabled, children }: TooltipProp
     <BaseTooltip.Root disabled={disabled}>
       <BaseTooltip.Trigger render={children} />
       <BaseTooltip.Portal>
-        <BaseTooltip.Positioner side={side} sideOffset={6}>
+        <BaseTooltip.Positioner side={side} sideOffset={6} className={styles.positioner}>
           {/* Base UI leaves tooltips visual-only; role="tooltip" is ours to add. */}
           <BaseTooltip.Popup role="tooltip" className={styles.popup}>
             {label}

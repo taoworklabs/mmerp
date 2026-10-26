@@ -1,5 +1,5 @@
-import { ActionIcon, Group, Stack, Text, UnstyledButton } from '@mmerp/ui'
-import { TextInput, Tooltip } from '@mantine/core'
+import { ActionIcon, Group, Stack, Text, TextInput, UnstyledButton } from '@mmerp/ui'
+import { Tooltip } from '@mantine/core'
 import { IconCheck, IconX } from '@tabler/icons-react'
 import { useId, useState } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -71,10 +71,10 @@ export function InlineEditField({ label, value, onSave, validate, readOnly, maxL
         <Group gap="xxs" wrap={false} align="start">
           <TextInput
             id={id}
-            flex={1}
+            className={classes.input}
             value={draft}
             maxLength={maxLength}
-            error={error}
+            error={error ?? undefined}
             autoFocus
             onChange={(e) => setDraft(e.currentTarget.value)}
             onKeyDown={(e) => {

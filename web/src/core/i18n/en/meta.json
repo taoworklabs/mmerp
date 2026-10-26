@@ -13,7 +13,6 @@
   "core.shell.account": "Account",
   "core.shell.language": "Language",
   "core.shell.logout": "Sign out",
-  "core.login.toggle_password": "Show or hide password",
   "core.nav.org_units": "Organisation tree",
   "core.nav.users": "Users",
   "core.nav.inbox": "Approval inbox",

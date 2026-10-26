@@ -1,5 +1,4 @@
-import { Anchor, Button, Stack, Text, UnstyledButton } from '@mmerp/ui'
-import { SegmentedControl } from '@mantine/core'
+import { Anchor, Button, Group, SegmentedControl, Stack, Text, UnstyledButton } from '@mmerp/ui'
 import { IconChevronDown, IconEye } from '@tabler/icons-react'
 import { Fragment, useId, useState, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -91,17 +90,19 @@ export function ActivityFeed({ docType, id, recent }: { docType: string; id: num
   return (
     <Stack gap="lg" className={classes.feed}>
       {talk.data.allowed_actions.includes('comment') && <CommentBox docType={docType} id={id} maxLength={talk.data.max_length} />}
+      {/* In a Group, so the control keeps its own width. */}
       {!recent && (
-        <SegmentedControl
-          value={filter}
-          onChange={(v) => {
-            setFilter(v as Filter)
-            setShown(page)
-          }}
-          aria-label={t('shared.activity.filter')}
-          data={(['all', 'comments', 'changes', 'views'] as const).map((f) => ({ value: f, label: t(`shared.activity.${f}`) }))}
-          w="fit-content"
-        />
+        <Group>
+          <SegmentedControl
+            value={filter}
+            onChange={(v) => {
+              setFilter(v as Filter)
+              setShown(page)
+            }}
+            aria-label={t('shared.activity.filter')}
+            data={(['all', 'comments', 'changes', 'views'] as const).map((f) => ({ value: f, label: t(`shared.activity.${f}`) }))}
+          />
+        </Group>
       )}
       {days.length === 0 ? (
         <Text size="sm" tone="dimmed">

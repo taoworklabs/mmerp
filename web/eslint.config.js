@@ -11,6 +11,8 @@ const nonAreas = ['src/app/**', 'src/shared/**']
 export const mantineMigrated = [
   'Box', 'Stack', 'Group', 'Flex', 'Grid', 'SimpleGrid', 'Center', 'Divider', 'Paper', 'Text', 'Title', 'Anchor', 'Code', 'List',
   'Button', 'ActionIcon', 'UnstyledButton', 'Badge', 'ThemeIcon', 'Loader', 'Skeleton', 'VisuallyHidden',
+  'TextInput', 'PasswordInput', 'Textarea', 'NumberInput', 'Checkbox', 'Select', 'MultiSelect', 'Combobox', 'useCombobox',
+  'SegmentedControl', 'FileInput', 'FileButton', 'Input', 'InputWrapper',
 ]
 const migratedPath = mantineMigrated.length
   ? [{ name: '@mantine/core', importNames: mantineMigrated, message: 'Import it from @mmerp/ui.' }]

@@ -1,5 +1,5 @@
-import { Button, Group, Stack, Text } from '@mmerp/ui'
-import { Checkbox, Menu, Popover } from '@mantine/core'
+import { Button, Checkbox, Group, Stack, Text } from '@mmerp/ui'
+import { Menu, Popover } from '@mantine/core'
 import { IconColumns3, IconDeviceFloppy, IconLayoutList, IconTrash } from '@tabler/icons-react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
@@ -120,7 +120,7 @@ function ColumnsMenu<T>({ columns, settings, onChange }: { columns: Column<T>[];
             {t('shared.views.columns_hint')}
           </Text>
           {columns.slice(1).map((c) => (
-            <Checkbox key={c.key} label={c.header} checked={!hidden.has(c.key)} onChange={(e) => onChange(withColumn(settings, c.key, { hidden: !e.currentTarget.checked }))} />
+            <Checkbox key={c.key} label={c.header} checked={!hidden.has(c.key)} onChange={(checked) => onChange(withColumn(settings, c.key, { hidden: !checked }))} />
           ))}
           <Group>
             <Button variant="subtle" onClick={() => onChange({ ...settings, columns: [] })}>

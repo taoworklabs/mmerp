@@ -1,7 +1,6 @@
-import { Button, Group, Stack, Text } from '@mmerp/ui'
-import { Combobox, Textarea, useCombobox } from '@mantine/core'
+import { Button, Group, Popover, Stack, Text, Textarea } from '@mmerp/ui'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { useEffect, useRef, useState } from 'react'
+import { useId, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { api, unwrap } from '@/shared/api/core'
 import { useMe } from '@/shared/auth/me'
@@ -101,9 +100,11 @@ function MentionTextarea({
   onSubmit: () => void
 }) {
   const { t } = useTranslation()
-  const combobox = useCombobox({ onDropdownClose: () => combobox.resetSelectedOption() })
+  const listId = useId()
   const ref = useRef<HTMLTextAreaElement>(null)
   const [token, setToken] = useState<{ start: number; query: string } | null>(null)
+  // The highlighted option; the first one whenever the typed name changes.
+  const [active, setActive] = useState(0)
   // One line until the writer comes to it, so the box does not push the feed down.
   const [focused, setFocused] = useState(false)
   const users = useQuery({
@@ -114,18 +115,12 @@ function MentionTextarea({
   const query = token?.query.toLowerCase() ?? ''
   const options = (users.data ?? []).filter((u) => u.login.toLowerCase().includes(query) || u.name.toLowerCase().includes(query)).slice(0, 8)
   const open = token !== null && options.length > 0
-
-  // Not on combobox: it is a new object every render, and re-selecting the first option would undo the arrow keys.
-  useEffect(() => {
-    if (open) {
-      combobox.openDropdown()
-      combobox.selectFirstOption()
-    } else combobox.closeDropdown()
-  }, [open, query])
+  const highlighted = Math.min(active, options.length - 1)
 
   const follow = (text: string, caret: number) => {
     onChange(text)
     setToken(mentionAt(text, caret))
+    setActive(0)
   }
   const pick = (login: string) => {
     if (!token) return
@@ -138,48 +133,65 @@ function MentionTextarea({
   }
 
   return (
-    <Combobox store={combobox} onOptionSubmit={pick} position="bottom-start">
-      <Combobox.Target>
-        <Textarea
-          ref={ref}
-          aria-label={t('shared.discussion.input')}
-          placeholder={t('shared.discussion.placeholder')}
-          description={hint ? t('shared.discussion.mention_hint') : undefined}
-          autosize
-          minRows={focused || value ? 3 : 1}
-          maxRows={8}
-          maxLength={maxLength}
-          value={value}
-          error={error}
-          onChange={(e) => follow(e.currentTarget.value, e.currentTarget.selectionStart)}
-          onClick={(e) => setToken(mentionAt(value, e.currentTarget.selectionStart))}
-          onFocus={() => setFocused(true)}
-          onBlur={() => {
-            setToken(null)
-            setFocused(false)
-          }}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
-              e.preventDefault()
-              onSubmit()
-            }
-          }}
-        />
-      </Combobox.Target>
-      <Combobox.Dropdown>
-        <Combobox.Options aria-label={t('shared.discussion.mention')}>
-          {options.map((u) => (
-            <Combobox.Option value={u.login} key={u.login}>
+    // Escape or a click elsewhere closes the list; the typing stays in the box throughout.
+    <Popover.Root open={open} onOpenChange={(next) => !next && setToken(null)}>
+      <Textarea
+        ref={ref}
+        aria-label={t('shared.discussion.input')}
+        aria-controls={open ? listId : undefined}
+        aria-activedescendant={open ? `${listId}-${highlighted}` : undefined}
+        placeholder={t('shared.discussion.placeholder')}
+        description={hint ? t('shared.discussion.mention_hint') : undefined}
+        autosize
+        minRows={focused || value ? 3 : 1}
+        maxRows={8}
+        maxLength={maxLength}
+        value={value}
+        error={error ?? undefined}
+        onChange={(e) => follow(e.currentTarget.value, e.currentTarget.selectionStart)}
+        onClick={(e) => setToken(mentionAt(value, e.currentTarget.selectionStart))}
+        onFocus={() => setFocused(true)}
+        onBlur={() => {
+          setToken(null)
+          setFocused(false)
+        }}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+            e.preventDefault()
+            onSubmit()
+          } else if (open && (e.key === 'ArrowDown' || e.key === 'ArrowUp')) {
+            e.preventDefault()
+            setActive((highlighted + (e.key === 'ArrowDown' ? 1 : options.length - 1)) % options.length)
+          } else if (open && e.key === 'Enter') {
+            e.preventDefault()
+            pick(options[highlighted]!.login)
+          }
+        }}
+      />
+      <Popover.Popup anchor={ref} side="bottom" align="start" initialFocus={false} finalFocus={false} className={classes.mentions}>
+        <div id={listId} role="listbox" aria-label={t('shared.discussion.mention')}>
+          {options.map((u, i) => (
+            <div
+              key={u.login}
+              id={`${listId}-${i}`}
+              role="option"
+              aria-selected={i === highlighted}
+              className={classes.mention}
+              // Keeps the focus, and the caret, in the comment box.
+              onMouseDown={(e) => e.preventDefault()}
+              onMouseEnter={() => setActive(i)}
+              onClick={() => pick(u.login)}
+            >
               <Text size="sm">
                 {u.name}{' '}
                 <Text render={<span />} size="xs" tone="dimmed">
                   @{u.login}
                 </Text>
               </Text>
-            </Combobox.Option>
+            </div>
           ))}
-        </Combobox.Options>
-      </Combobox.Dropdown>
-    </Combobox>
+        </div>
+      </Popover.Popup>
+    </Popover.Root>
   )
 }

@@ -1,5 +1,5 @@
-import { ActionIcon, Anchor, Group, Text, VisuallyHidden } from '@mmerp/ui'
-import { Input, TextInput, Tooltip } from '@mantine/core'
+import { ActionIcon, Anchor, Field, Group, Text, TextInput, VisuallyHidden } from '@mmerp/ui'
+import { Tooltip } from '@mantine/core'
 import { IconEye, IconEyeOff } from '@tabler/icons-react'
 import { useEffect, useState } from 'react'
 import { useController, useFormContext } from 'react-hook-form'
@@ -32,9 +32,9 @@ export function SensitiveField({ name, label, present, canView, canEdit, reveal 
 
   if (!canView) {
     return (
-      <Input.Wrapper label={label} id={fieldId(name)}>
+      <Field label={label} id={fieldId(name)}>
         <Text tone="dimmed">{t('shared.sensitive.no_permission')}</Text>
-      </Input.Wrapper>
+      </Field>
     )
   }
 
@@ -51,21 +51,21 @@ export function SensitiveField({ name, label, present, canView, canEdit, reveal 
       }
     }
     return (
-      <Input.Wrapper label={label} id={fieldId(name)} error={error}>
+      <Field label={label} id={fieldId(name)} error={error ?? undefined}>
         <Group gap="sm" wrap={false}>
           <Text aria-hidden>••••••</Text>
           <VisuallyHidden>{t('shared.sensitive.masked')}</VisuallyHidden>
           <RevealLink label={label} busy={busy} onClick={() => void show()} />
         </Group>
-      </Input.Wrapper>
+      </Field>
     )
   }
 
   if (!canEdit && !present) {
     return (
-      <Input.Wrapper label={label} id={fieldId(name)}>
+      <Field label={label} id={fieldId(name)}>
         <Text tone="dimmed">—</Text>
-      </Input.Wrapper>
+      </Field>
     )
   }
 

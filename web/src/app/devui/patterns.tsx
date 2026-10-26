@@ -1,5 +1,4 @@
-import { Button, FieldList, Group, Panel, RecordColumns, Stack, Text } from '@mmerp/ui'
-import { SegmentedControl } from '@mantine/core'
+import { Button, FieldList, Group, Panel, RecordColumns, SegmentedControl, Stack, Text } from '@mmerp/ui'
 import { IconCircleDot, IconDownload, IconTrash } from '@tabler/icons-react'
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
@@ -158,7 +157,14 @@ export function LoadingEmptyErrorPattern() {
       path="patterns/loading-empty-error"
       example={
         <Case>
-          <SegmentedControl w="fit-content" value={state} onChange={(v) => setState(v as QueryCase)} data={queryStates.map((s) => ({ value: s, label: t(`shared.devui.query_${s}`) }))} />
+          <Group>
+            <SegmentedControl
+              aria-label={t('shared.devui.query_state')}
+              value={state}
+              onChange={(v) => setState(v as QueryCase)}
+              data={queryStates.map((s) => ({ value: s, label: t(`shared.devui.query_${s}`) }))}
+            />
+          </Group>
           <QueryView
             query={fakeQuery(state)}
             select={(data) => (state === 'no_results' ? [] : data)}

@@ -1,6 +1,6 @@
 import { breakpoint, type ColorName, icon as kitIcon, tokens } from '@mmerp/ui'
-import { Combobox, createTheme, Drawer, InputWrapper, Menu, Modal, NavLink, Popover, rem, ScrollArea, SegmentedControl, Select, Tabs, Tooltip, type CSSVariablesResolver, type MantineColorsTuple } from '@mantine/core'
-import segmented from './SegmentedControl.module.css'
+// eslint-disable-next-line no-restricted-imports -- InputWrapper still styles the Mantine date inputs.
+import { createTheme, Drawer, InputWrapper, Menu, Modal, NavLink, Popover, rem, ScrollArea, Tabs, Tooltip, type CSSVariablesResolver, type MantineColorsTuple } from '@mantine/core'
 
 // The numbers live in @mmerp/ui; this file only hands them to Mantine until Mantine is gone.
 const { ramp, semantic } = tokens.color
@@ -34,8 +34,6 @@ export const theme = createTheme({
       defaultProps: { inputWrapperOrder: ['label', 'input', 'description', 'error'] },
       styles: { label: { fontSize: 'var(--mantine-font-size-xs)', fontWeight: 600, lineHeight: 'var(--mantine-line-height-xs)', color: 'var(--mantine-color-dimmed)', marginBottom: 'var(--mantine-spacing-xxs)' } },
     }),
-    // The chosen option is tinted, without a check mark that pushes every label sideways.
-    Select: Select.extend({ defaultProps: { withCheckIcon: false } }),
     // A modal is its own small page: a 20px heading in a header band set off by a rule (its footer
     // band is ModalFooter), 24px of room at the sides and 16px above and below. Its fields are
     // 40px, like a form section's; ModalFooter keeps its buttons at 30px.
@@ -49,9 +47,7 @@ export const theme = createTheme({
     }),
     Drawer: Drawer.extend({ styles: { title: { fontWeight: 650, fontSize: 'var(--mantine-font-size-lg)' } } }),
     Popover: Popover.extend({ defaultProps: { radius: 'lg' } }),
-    Combobox: Combobox.extend({ defaultProps: { radius: 'lg' } }),
     Menu: Menu.extend({ defaultProps: { radius: 'lg' } }),
-    SegmentedControl: SegmentedControl.extend({ classNames: segmented }),
     Tooltip: Tooltip.extend({ defaultProps: { radius: 'sm' } }),
     // Thin scrollbars, so they do not compete with the content.
     ScrollArea: ScrollArea.extend({ defaultProps: { scrollbarSize: 8 } }),
