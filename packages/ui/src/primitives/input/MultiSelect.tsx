@@ -8,6 +8,7 @@ import { matchesQuery } from './matchesQuery.ts'
 import optionStyles from './options.module.css'
 import type { SelectItem } from './Select.tsx'
 import textInputStyles from './TextInput.module.css'
+import styles from './MultiSelect.module.css'
 
 export interface MultiSelectProps extends FieldProps, Omit<React.ComponentPropsWithRef<'input'>, 'value' | 'onChange' | 'size'> {
   data: SelectItem[]
@@ -20,26 +21,6 @@ export interface MultiSelectProps extends FieldProps, Omit<React.ComponentPropsW
 
 function filterByLabel(item: SelectItem, query: string) {
   return matchesQuery(item.label, query)
-}
-
-const wrapperStyle: React.CSSProperties = {
-  height: 'auto',
-  flexWrap: 'wrap',
-  paddingBlock: 'var(--mmerp-space-xxs)',
-  rowGap: 'var(--mmerp-space-xxs)',
-}
-
-const chipsStyle: React.CSSProperties = { display: 'contents' }
-
-const chipStyle: React.CSSProperties = {
-  display: 'inline-flex',
-  alignItems: 'center',
-  gap: 'var(--mmerp-space-xxs)',
-  padding: '0 var(--mmerp-space-xxs) 0 var(--mmerp-space-xs)',
-  borderRadius: 'var(--mmerp-radius-sm)',
-  background: 'var(--mmerp-color-gray-light)',
-  color: 'var(--mmerp-color-gray-light-color)',
-  fontSize: 'var(--mmerp-font-size-xs)',
 }
 
 export function MultiSelect({
@@ -85,30 +66,31 @@ export function MultiSelect({
         readOnly={readOnly}
       >
         <BaseCombobox.InputGroup
-          className={textInputStyles.wrapper}
-          style={wrapperStyle}
+          className={cx(textInputStyles.wrapper, styles.wrapper)}
           data-mmerp-control=""
           data-error={error ? '' : undefined}
           data-disabled={disabled ? '' : undefined}
         >
-          <BaseCombobox.Chips style={chipsStyle}>
+          <BaseCombobox.Chips className={styles.chips}>
             {value.map((itemValue) => {
               const item = data.find((candidate) => candidate.value === itemValue)
               if (!item) return null
               return (
-                <BaseCombobox.Chip key={itemValue} style={chipStyle} aria-readonly={undefined}>
-                  {item.label}
-                  <BaseCombobox.ChipRemove aria-label={removeLabel(item.label)}>
-                    <CloseIcon size={8} />
-                  </BaseCombobox.ChipRemove>
+                <BaseCombobox.Chip key={itemValue} className={styles.chip} aria-readonly={undefined}>
+                  <span className={styles.label}>{item.label}</span>
+                  {!disabled && !readOnly && (
+                    <BaseCombobox.ChipRemove className={styles.remove} aria-label={removeLabel(item.label)}>
+                      <CloseIcon />
+                    </BaseCombobox.ChipRemove>
+                  )}
                 </BaseCombobox.Chip>
               )
             })}
           </BaseCombobox.Chips>
           <BaseCombobox.Input
             placeholder={value.length === 0 ? placeholder : undefined}
-            className={textInputStyles.input}
-            style={{ ...style, flex: '1 1 auto', minWidth: '4ch' }}
+            className={cx(textInputStyles.input, styles.input)}
+            style={style}
             aria-describedby={describedBy}
             aria-invalid={error ? true : undefined}
             aria-required={required || undefined}

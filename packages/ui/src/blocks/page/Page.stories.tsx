@@ -162,7 +162,11 @@ export const List: Story = {
     // The separator rides with the docked column headers: a collapsed table border would scroll
     // away with the rows, so every header cell draws its bottom rule itself.
     for (const cell of th.closest('tr')!.querySelectorAll('th')) {
-      expect(getComputedStyle(cell).boxShadow).toMatch(/0px -1px 0px 0px inset/)
+      const rule = getComputedStyle(cell, '::after')
+      expect(rule.position).toBe('absolute')
+      expect(rule.bottom).toBe('0px')
+      expect(rule.borderBottomWidth).toBe('1px')
+      expect(rule.borderBottomStyle).toBe('solid')
     }
   },
 }

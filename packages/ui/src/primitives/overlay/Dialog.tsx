@@ -2,6 +2,7 @@ import { Dialog as BaseDialog } from '@base-ui/react/dialog'
 import type * as React from 'react'
 import { cx } from '../../internal/cx.ts'
 import { CloseIcon } from '../../internal/icons.tsx'
+import type { StyleVars } from '../../internal/style.ts'
 import { ActionIcon } from '../input/ActionIcon.tsx'
 import styles from './Dialog.module.css'
 
@@ -32,6 +33,7 @@ function DialogRoot({
   ...props
 }: DialogProps) {
   const width = typeof size === 'number' ? size : sizeWidths[size]
+  const vars: StyleVars = { '--mmerp-dialog-width': `${width}px`, ...style }
   return (
     <BaseDialog.Root
       open={opened}
@@ -41,7 +43,7 @@ function DialogRoot({
     >
       <BaseDialog.Portal>
         <BaseDialog.Backdrop className={styles.backdrop} />
-        <BaseDialog.Popup className={cx(styles.popup, className)} style={{ ...style, width }} {...props}>
+        <BaseDialog.Popup className={cx(styles.popup, className)} style={vars} {...props}>
           <div className={styles.header}>
             <BaseDialog.Title className={styles.title}>{title}</BaseDialog.Title>
             {withCloseButton && (

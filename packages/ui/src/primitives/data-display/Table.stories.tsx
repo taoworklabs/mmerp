@@ -1,7 +1,9 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import { useState } from 'react'
 import { expect, userEvent, waitFor, within } from 'storybook/test'
-import { Table } from './Table.tsx'
+import { Table, type TableAppearance, type TableProps } from './Table.tsx'
+import { tableEmployees } from './tableSamples.ts'
+import { ScrollArea } from '../layout/ScrollArea.tsx'
 
 const meta: Meta<typeof Table> = {
   title: 'Data display/Table',
@@ -12,9 +14,9 @@ export default meta
 
 type Story = StoryObj<typeof Table>
 
-function Demo() {
+function Demo(props: TableProps) {
   return (
-    <Table>
+    <Table {...props}>
       <Table.Thead>
         <Table.Tr>
           <Table.Th>Họ tên</Table.Th>
@@ -22,14 +24,12 @@ function Demo() {
         </Table.Tr>
       </Table.Thead>
       <Table.Tbody>
-        <Table.Tr>
-          <Table.Td>Nguyễn Văn A</Table.Td>
-          <Table.Td>Kế toán viên</Table.Td>
-        </Table.Tr>
-        <Table.Tr>
-          <Table.Td>Trần Thị B</Table.Td>
-          <Table.Td>Nhân viên kinh doanh</Table.Td>
-        </Table.Tr>
+        {tableEmployees.map((employee) => (
+          <Table.Tr key={employee.id}>
+            <Table.Td>{employee.full_name}</Table.Td>
+            <Table.Td>{employee.role}</Table.Td>
+          </Table.Tr>
+        ))}
       </Table.Tbody>
     </Table>
   )
@@ -47,26 +47,18 @@ export const Default: Story = {
     expect(getComputedStyle(header.closest('thead')!).backgroundColor).toBe(getComputedStyle(probe).backgroundColor)
     probe.remove()
 
-    const row = canvas.getByText('Kế toán viên').closest('tr')!
+    const row = canvas.getAllByText('Kế toán viên')[0]!.closest('tr')!
     expect(row.getBoundingClientRect().height).toBe(40)
   },
 }
 
 export const HighlightOnHover: Story = {
-  render: () => (
-    <Table highlightOnHover>
-      <Table.Tbody>
-        <Table.Tr>
-          <Table.Td>Dòng 1</Table.Td>
-        </Table.Tr>
-      </Table.Tbody>
-    </Table>
-  ),
+  render: () => <Demo highlightOnHover />,
 }
 
 export const StickyHeader: Story = {
   render: () => (
-    <div style={{ height: 120, overflow: 'auto' }} tabIndex={0}>
+    <ScrollArea style={{ height: 360 }}>
       <Table stickyHeader>
         <Table.Thead>
           <Table.Tr>
@@ -74,14 +66,14 @@ export const StickyHeader: Story = {
           </Table.Tr>
         </Table.Thead>
         <Table.Tbody>
-          {Array.from({ length: 10 }, (_, i) => (
+          {Array.from({ length: 60 }, (_, i) => (
             <Table.Tr key={i}>
               <Table.Td>Dòng {i + 1}</Table.Td>
             </Table.Tr>
           ))}
         </Table.Tbody>
       </Table>
-    </div>
+    </ScrollArea>
   ),
 }
 
@@ -100,6 +92,19 @@ function SortableDemo() {
           <Table.SortHeader label="Ngày vào làm" state={state('start')} onSort={() => toggle('start')} />
         </Table.Tr>
       </Table.Thead>
+      <Table.Tbody>
+        {[...tableEmployees].sort((a, b) => {
+          if (!sort) return 0
+          const key = sort.key === 'name' ? 'full_name' : sort.key === 'start' ? 'hire_date' : 'role'
+          return a[key].localeCompare(b[key], 'vi') * (sort.dir === 'ascending' ? 1 : -1)
+        }).map((employee) => (
+          <Table.Tr key={employee.id}>
+            <Table.Td>{employee.full_name}</Table.Td>
+            <Table.Td>{employee.role}</Table.Td>
+            <Table.Td look="secondary">{employee.hire_date}</Table.Td>
+          </Table.Tr>
+        ))}
+      </Table.Tbody>
     </Table>
   )
 }
@@ -127,10 +132,13 @@ export const CellLooks: Story = {
   render: () => (
     <Table>
       <Table.Tbody>
-        <Table.Tr>
-          <Table.Td look="numeric">1.234.000</Table.Td>
-          <Table.Td look="secondary">HĐ-0001</Table.Td>
-        </Table.Tr>
+        {tableEmployees.map((employee, index) => (
+          <Table.Tr key={employee.id}>
+            <Table.Td>{employee.full_name}</Table.Td>
+            <Table.Td look="numeric">{new Intl.NumberFormat('vi-VN').format(1234000 + index * 250000)}</Table.Td>
+            <Table.Td look="secondary">HĐ-{String(employee.id).padStart(4, '0')}</Table.Td>
+          </Table.Tr>
+        ))}
       </Table.Tbody>
     </Table>
   ),
@@ -151,31 +159,33 @@ export const CellLooks: Story = {
 
 export const StickyFirstColumn: Story = {
   render: () => (
-    <div style={{ width: 400, overflow: 'auto' }} data-testid="scrollbox" tabIndex={0}>
+    <ScrollArea style={{ width: 600, maxWidth: '100%', height: 360 }} data-testid="scrollbox">
       <Table style={{ width: 1200 }}>
         <Table.Thead>
           <Table.Tr>
             <Table.Th sticky>Họ tên</Table.Th>
-            {Array.from({ length: 6 }, (_, i) => (
-              <Table.Th key={i}>Cột {i + 2}</Table.Th>
+            {['Mã', 'Chức danh', 'Phòng ban', 'Ngày vào làm', 'Trạng thái', 'Hợp đồng'].map((label) => (
+              <Table.Th key={label}>{label}</Table.Th>
             ))}
           </Table.Tr>
         </Table.Thead>
         <Table.Tbody>
-          <Table.Tr>
-            <Table.Td sticky>Dòng 1</Table.Td>
-            {Array.from({ length: 6 }, (_, i) => (
-              <Table.Td key={i}>Cột {i + 2}</Table.Td>
-            ))}
-          </Table.Tr>
+          {tableEmployees.map((employee) => (
+            <Table.Tr key={employee.id}>
+              <Table.Td sticky>{employee.full_name}</Table.Td>
+              {[employee.code, employee.role, employee.org_unit, employee.hire_date, employee.status === 'active' ? 'Đang làm' : 'Đã nghỉ', `HĐ-${String(employee.id).padStart(4, '0')}`].map((value, index) => (
+                <Table.Td key={index}>{value}</Table.Td>
+              ))}
+            </Table.Tr>
+          ))}
         </Table.Tbody>
       </Table>
-    </div>
+    </ScrollArea>
   ),
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
-    const box = canvas.getByTestId('scrollbox')
-    const cell = canvas.getByText('Dòng 1')
+    const box = canvas.getByTestId('scrollbox').querySelector<HTMLElement>('[data-scroll-area-viewport]')!
+    const cell = canvas.getByText(tableEmployees[0]!.full_name)
 
     box.scrollLeft = 200
     await waitFor(() => expect(Math.abs(cell.getBoundingClientRect().left - box.getBoundingClientRect().left)).toBeLessThanOrEqual(1))
@@ -194,10 +204,12 @@ export const SelectedRow: Story = {
   render: () => (
     <Table>
       <Table.Tbody>
-        <Table.Tr aria-selected="true">
-          <Table.Td sticky>Dòng đang chọn</Table.Td>
-          <Table.Td>Ô khác</Table.Td>
-        </Table.Tr>
+        {tableEmployees.map((employee, index) => (
+          <Table.Tr key={employee.id} aria-selected={index === 3 ? true : undefined}>
+            <Table.Td sticky>{index === 3 ? 'Dòng đang chọn' : employee.full_name}</Table.Td>
+            <Table.Td>{employee.role}</Table.Td>
+          </Table.Tr>
+        ))}
       </Table.Tbody>
     </Table>
   ),
@@ -215,4 +227,33 @@ export const SelectedRow: Story = {
     expect(getComputedStyle(stickyCell).backgroundColor).toBe(getComputedStyle(probe).backgroundColor)
     probe.remove()
   },
+}
+
+export const Striped: Story = { render: () => <Demo appearance={{ striped: true }} /> }
+export const Grid: Story = { render: () => <Demo appearance={{ borders: 'grid', withBorder: true }} /> }
+export const ColumnBorders: Story = { render: () => <Demo appearance={{ borders: 'columns', withBorder: true }} /> }
+export const Borderless: Story = { render: () => <Demo appearance={{ borders: 'none', headerColor: 'plain' }} /> }
+export const DashedBorders: Story = { render: () => <Demo appearance={{ borderStyle: 'dashed', borderColor: 'primary' }} /> }
+export const DottedGrid: Story = { render: () => <Demo appearance={{ borders: 'grid', borderStyle: 'dotted', withBorder: true }} /> }
+export const StrongBorder: Story = { render: () => <Demo appearance={{ borders: 'grid', borderWidth: 2, borderColor: 'gray', withBorder: true }} /> }
+export const TintedHeader: Story = { render: () => <Demo appearance={{ headerColor: 'primary' }} /> }
+export const TintedStripes: Story = { render: () => <Demo highlightOnHover appearance={{ headerColor: 'primary', striped: true, stripeColor: 'primary', hoverColor: 'primary', borderColor: 'primary' }} /> }
+export const Compact: Story = { render: () => <Demo appearance={{ density: 'compact', striped: true }} /> }
+export const Comfortable: Story = { render: () => <Demo appearance={{ density: 'comfortable', borders: 'none', striped: true }} /> }
+
+export const AppearancePlayground: StoryObj<TableAppearance> = {
+  args: { borders: 'grid', withBorder: true, borderColor: 'primary', borderStyle: 'solid', borderWidth: 1, headerColor: 'primary', striped: true, stripeColor: 'gray', hoverColor: 'primary', density: 'standard' },
+  argTypes: {
+    borders: { control: 'select', options: ['rows', 'columns', 'grid', 'none'] },
+    withBorder: { control: 'boolean' },
+    borderColor: { control: 'select', options: ['gray', 'primary', 'info', 'success', 'warning', 'danger', 'discovery'] },
+    borderStyle: { control: 'select', options: ['solid', 'dashed', 'dotted'] },
+    borderWidth: { control: 'select', options: [1, 2] },
+    headerColor: { control: 'select', options: ['neutral', 'plain', 'gray', 'primary', 'info', 'success', 'warning', 'danger', 'discovery'] },
+    striped: { control: 'boolean' },
+    stripeColor: { control: 'select', options: ['gray', 'primary', 'info', 'success', 'warning', 'danger', 'discovery'] },
+    hoverColor: { control: 'select', options: ['gray', 'primary', 'info', 'success', 'warning', 'danger', 'discovery'] },
+    density: { control: 'select', options: ['compact', 'standard', 'comfortable'] },
+  },
+  render: (appearance) => <Demo highlightOnHover appearance={appearance} />,
 }

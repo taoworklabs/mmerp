@@ -175,6 +175,25 @@ Use `<DataTable>` from `shared/ui`, not Mantine's `Table` directly.
   - Zero is shown as "–" in the secondary colour, so the eye stops on cells that hold numbers.
   - A group's total row says only "Tổng" (Total); the group's name is already on the group's first row.
 
+### Standalone UI kit table variants
+
+`@mmerp/ui` exports a shared `TableAppearance` object for the `appearance` prop of `Table` and `DataTable`. The defaults retain the neutral header, 40px rows and horizontal separators; `DataTable` has an outer frame by default, while `Table` does not.
+
+| Option | Values |
+| --- | --- |
+| `borders` | `rows` (default), `columns`, `grid`, `none` |
+| `withBorder` | Show or hide the outer frame independently of cell borders |
+| `borderColor` | A semantic colour name; omitted uses the standard border token |
+| `borderStyle`, `borderWidth` | `solid`, `dashed`, `dotted`; 1 or 2 pixels |
+| `headerColor` | `neutral` (default), `plain`, or a semantic colour name |
+| `striped`, `stripeColor` | Alternate row backgrounds; neutral stripes by default |
+| `hoverColor` | A semantic colour name; omitted uses the standard sunken surface |
+| `density` | `compact` (32px rows), `standard` (40px), `comfortable` (48px) |
+
+Colours use the kit's `ColorName` tokens. Semantic colours retain their meaning; the primary tint remains the selection colour regardless of stripes or hover. Sticky cells use opaque matching backgrounds, and the overlay scrollbars remain above the table. These options style the desktop table; the responsive card list keeps its existing card presentation.
+
+Storybook includes individual variants and `Data display/Table/Appearance playground`, whose controls combine these options against 24 sample rows. `Blocks/DataTable/Styled overlay` demonstrates stripes, a tinted header and grid borders together with two-axis scrolling and sticky content.
+
 ## Forms
 
 Use the fields of `shared/ui/form`, already wired to React Hook Form.

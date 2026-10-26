@@ -18,6 +18,8 @@ interface FieldComponentProps extends FieldProps, Omit<React.ComponentPropsWithR
   // own `aria-describedby` at these, instead of the id Base UI would otherwise generate internally.
   descriptionId?: string
   errorId?: string
+  labelId?: string
+  controlId?: string
 }
 
 export function Field({
@@ -31,6 +33,8 @@ export function Field({
   children,
   descriptionId,
   errorId,
+  labelId,
+  controlId,
   ...props
 }: FieldComponentProps) {
   return (
@@ -42,7 +46,7 @@ export function Field({
       {...props}
     >
       {label !== undefined && (
-        <BaseField.Label className={styles.label}>
+        <BaseField.Label id={labelId} htmlFor={controlId} className={styles.label}>
           {label}
           {required && (
             <span aria-hidden="true" className={styles.required}>

@@ -1,6 +1,9 @@
 .popup {
   box-sizing: border-box;
   min-width: 180px;
+  max-width: var(--available-width);
+  max-height: var(--available-height);
+  overflow-y: auto;
   padding: var(--mmerp-space-xxs);
   border-radius: var(--mmerp-radius-lg);
   box-shadow: var(--mmerp-shadow-md);
@@ -27,6 +30,14 @@
   font-size: var(--mmerp-font-size-sm);
   color: var(--mmerp-color-text);
   cursor: default;
+  overflow-wrap: anywhere;
+  padding-block: var(--mmerp-space-xxs);
+}
+
+@media (max-width: 63.99em) {
+  .item {
+    min-height: var(--mmerp-touch-target);
+  }
 }
 
 .item[data-highlighted] {

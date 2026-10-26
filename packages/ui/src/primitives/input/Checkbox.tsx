@@ -25,12 +25,18 @@ export function Checkbox({
   error,
   disabled,
   className,
+  'aria-label': ariaLabel,
+  'aria-labelledby': ariaLabelledBy,
+  'aria-describedby': ariaDescribedBy,
   ...props
 }: CheckboxProps) {
   return (
     <BaseField.Root invalid={!!error} disabled={disabled} className={cx(styles.root, className)} {...props}>
       <BaseField.Label className={styles.label} data-disabled={disabled ? '' : undefined}>
         <BaseCheckbox.Root
+          aria-label={ariaLabel}
+          aria-labelledby={ariaLabelledBy}
+          aria-describedby={ariaDescribedBy}
           checked={checked}
           defaultChecked={defaultChecked}
           indeterminate={indeterminate}

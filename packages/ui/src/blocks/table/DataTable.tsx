@@ -19,6 +19,7 @@ import { breakpoint } from '../../tokens/tokens.ts'
 import { MoreActions } from '../list/MoreActions.tsx'
 import { bandStart, bandWidth, clampWidth, fits, grouped, look, maxWidth, minWidth, type Column } from './columns.ts'
 import styles from './DataTable.module.css'
+import { tableAppearanceVars, type TableAppearance } from '../../primitives/data-display/tableAppearance.ts'
 
 export type { Column, ColumnKind, ColumnRole } from './columns.ts'
 
@@ -33,6 +34,7 @@ export interface DataTableLabels {
 }
 
 export type DataTableProps<T> = Omit<React.ComponentPropsWithRef<'div'>, 'children'> & {
+  appearance?: TableAppearance
   columns: Column<T>[]
   rows: T[]
   rowKey: (row: T) => string | number
@@ -65,6 +67,7 @@ export type DataTableProps<T> = Omit<React.ComponentPropsWithRef<'div'>, 'childr
 
 // DataTable is the only table areas use: compact, sortable on the server, a card list below 1024px.
 export function DataTable<T>({
+  appearance,
   columns,
   rows,
   rowKey,
@@ -124,14 +127,14 @@ export function DataTable<T>({
   }
 
   const head = (rowSpan: number) => ({ columns, sort, onSort, onResize, labels, rowSpan })
-  const vars: StyleVars = { ...style, '--mmerp-head-height': `${thead.height}px`, '--mmerp-foot-height': `${tfoot.height}px` }
+  const vars: StyleVars = { ...tableAppearanceVars(appearance, true), ...style, '--mmerp-head-height': `${thead.height}px`, '--mmerp-foot-height': `${tfoot.height}px` }
 
   return (
     // data-table: ListPage looks for this to drop its own frame when the table is a page's whole content.
     <div ref={ref} data-table="" className={cx(styles.root, selection && styles.selectable, className)} style={vars} data-scrolled={scrolled ? '' : undefined} {...rest}>
       {/* Without maxHeight the table takes the room its parent gives it, e.g. a list page's frame. */}
       <ScrollArea viewportRef={onViewport} style={{ maxHeight: maxHeight ?? '100%' }}>
-        <Table highlightOnHover stickyHeader scrolled={scrolled} aria-label={label}>
+        <Table appearance={{ ...appearance, withBorder: false }} highlightOnHover stickyHeader scrolled={scrolled} aria-label={label}>
           <Table.Thead ref={thead.ref}>
             {banded && (
               <Table.Tr>
