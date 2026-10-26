@@ -2,14 +2,14 @@
    edged in the primary colour, like a selected chip. */
 .root {
   background: transparent;
-  border: 1px solid var(--mantine-color-default-border);
-  padding: var(--mantine-spacing-xxxs);
+  border: 1px solid var(--mmerp-color-border);
+  padding: var(--mmerp-space-xxxs);
 }
 
 .indicator {
-  background: var(--mantine-color-primary-light);
-  box-shadow: inset 0 0 0 1px var(--mantine-color-primary-filled);
-  border-radius: var(--mantine-radius-sm);
+  background: var(--mmerp-color-primary-light);
+  box-shadow: inset 0 0 0 1px var(--mmerp-color-primary-6);
+  border-radius: var(--mmerp-radius-sm);
 }
 
 /* No rules between the labels: the frame and the chosen one say enough. */
@@ -18,10 +18,10 @@
 }
 
 .label {
-  color: var(--mantine-color-text);
+  color: var(--mmerp-color-text);
   font-weight: 400;
 }
 
 .label[data-active] {
-  color: var(--mantine-color-primary-light-color);
+  color: var(--mmerp-color-primary-light-color);
 }

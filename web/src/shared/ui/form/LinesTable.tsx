@@ -180,7 +180,7 @@ function Head<L extends object>({ columns, readOnly }: { columns: LineColumn<L>[
           <Table.Th key={c.key} miw={readOnly ? undefined : (c.width ?? 200)} ta={c.numeric ? 'right' : undefined}>
             {c.header}
             {c.required && !readOnly && (
-              <Text component="span" c="var(--mantine-color-error)" aria-hidden>
+              <Text component="span" c="var(--mmerp-color-error)" aria-hidden>
                 {' *'}
               </Text>
             )}

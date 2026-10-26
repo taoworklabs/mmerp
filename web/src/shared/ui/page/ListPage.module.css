@@ -1,17 +1,17 @@
 /* Filters read like the tool buttons beside them: light edge, button weight, button hover. */
 .filters :global(.mantine-Input-input):not([data-error]) {
-  border-color: var(--mantine-color-default-border);
+  border-color: var(--mmerp-color-border);
   font-weight: 500;
 }
 
 .filters :global(.mantine-Input-input):hover {
-  background: var(--mantine-color-default-hover);
+  background: var(--mmerp-color-gray-0);
 }
 
 .filters :global(.mantine-Input-input):focus,
 .filters :global(.mantine-Input-input):focus-within,
 .filters :global(.mantine-Input-input)[data-expanded] {
-  border-color: var(--mantine-primary-color-filled);
+  border-color: var(--mmerp-color-primary-6);
 }
 
 /* A wide list fills the window below the app header, so title, filters and paging stay put and
@@ -39,7 +39,7 @@
 .content {
   display: flex;
   flex-direction: column;
-  gap: var(--mantine-spacing-lg);
+  gap: var(--mmerp-space-lg);
 }
 
 .frame .content {
@@ -53,7 +53,7 @@
   display: grid;
   grid-template-columns: 1fr auto 1fr;
   align-items: center;
-  gap: var(--mantine-spacing-sm);
+  gap: var(--mmerp-space-sm);
 }
 
 /* Page numbers are round, so they read as positions rather than buttons. */
@@ -73,5 +73,5 @@
 }
 
 .ghost:hover:not([data-active], :disabled) {
-  background: var(--mantine-color-default-hover);
+  background: var(--mmerp-color-gray-0);
 }

@@ -3,8 +3,8 @@
    table that is a list page's whole content drops it there (ListPage.module.css). */
 .root {
   min-height: 0;
-  border: 1px solid var(--mantine-color-default-border);
-  border-radius: var(--mantine-radius-md);
+  border: 1px solid var(--mmerp-color-border);
+  border-radius: var(--mmerp-radius-md);
   overflow: hidden;
 }
 
@@ -24,7 +24,7 @@
   left: 0;
   z-index: 1;
   white-space: nowrap;
-  background: var(--mmerp-elevation-surface);
+  background: var(--mmerp-color-elevation-surface);
 }
 
 /* The cell is opaque, so it takes the row's hover tint itself. */
@@ -36,12 +36,12 @@
 
 /* Its edge shows only while columns slide under it. */
 .scrolled .sticky {
-  box-shadow: inset -1px 0 0 var(--mantine-color-default-border);
+  box-shadow: inset -1px 0 0 var(--mmerp-color-border);
 }
 
 /* A band of related columns opens with a rule. */
 .bandStart {
-  border-left: 1px solid var(--mantine-color-default-border);
+  border-left: 1px solid var(--mmerp-color-border);
 }
 
 .strong {
@@ -54,7 +54,7 @@
 
 /* Codes, dates and empty cells step back so names and figures lead. */
 .secondary {
-  color: var(--mantine-color-dimmed);
+  color: var(--mmerp-color-dimmed);
 }
 
 /* On one line, never squeezed; the room a table has to spare goes to every column in proportion
@@ -93,7 +93,7 @@
 /* The last column keeps clear of the vertical scrollbar laid over the table's right edge. */
 .compact th:last-child,
 .compact td:last-child {
-  padding-inline-end: var(--mantine-spacing-md);
+  padding-inline-end: var(--mmerp-space-md);
 }
 
 /* Rows are 40px whatever the cell holds; the row menu button is 34px. */
@@ -104,9 +104,9 @@
 /* Column titles: small, secondary colour, semibold, on the header tone over a rule. */
 .compact th {
   height: 36px;
-  background: var(--mmerp-table-header);
-  color: var(--mantine-color-dimmed);
-  font-size: var(--mantine-font-size-xs);
+  background: var(--mmerp-color-table-header);
+  color: var(--mmerp-color-dimmed);
+  font-size: var(--mmerp-font-size-xs);
   font-weight: 600;
 }
 
@@ -117,8 +117,8 @@
 /* Mantine draws the header rule as a box-shadow; keep it next to the sticky column's edge. */
 .scrolled .compact th.sticky {
   box-shadow:
-    inset -1px 0 0 var(--mantine-color-default-border),
-    inset 0 -1px 0 var(--mantine-color-default-border);
+    inset -1px 0 0 var(--mmerp-color-border),
+    inset 0 -1px 0 var(--mmerp-color-border);
 }
 
 /* In a scroll area of capped height the grand total stays at its bottom. */
@@ -126,8 +126,8 @@
   position: sticky;
   bottom: 0;
   z-index: 1;
-  background: var(--mmerp-elevation-surface);
-  box-shadow: inset 0 1px 0 var(--mantine-color-default-border);
+  background: var(--mmerp-color-elevation-surface);
+  box-shadow: inset 0 1px 0 var(--mmerp-color-border);
 }
 
 .compact tfoot td.sticky {
@@ -136,8 +136,8 @@
 
 .scrolled .compact tfoot td.sticky {
   box-shadow:
-    inset -1px 0 0 var(--mantine-color-default-border),
-    inset 0 1px 0 var(--mantine-color-default-border);
+    inset -1px 0 0 var(--mmerp-color-border),
+    inset 0 1px 0 var(--mmerp-color-border);
 }
 
 /* The identifier reads as the row's name, linked or not. */
@@ -147,7 +147,7 @@
 
 /* The identifier reads as the row's name; it underlines on hover like any link. */
 .idLink {
-  color: var(--mantine-color-text);
+  color: var(--mmerp-color-text);
   font-weight: 500;
   text-decoration: none;
 }
@@ -158,14 +158,14 @@
 
 /* A group's name row and the total rows read as headings of the figures around them. */
 .groupRow td {
-  background: var(--mmerp-elevation-surface-sunken);
+  background: var(--mmerp-color-elevation-surface-sunken);
   font-weight: 600;
 }
 
 /* The name stays in view when the row scrolls sideways. */
 .groupName {
   position: sticky;
-  left: var(--mantine-spacing-sm);
+  left: var(--mmerp-space-sm);
 }
 
 .totalRow td {
@@ -173,12 +173,12 @@
 }
 
 .totalRow td.sticky {
-  background: var(--mmerp-elevation-surface);
+  background: var(--mmerp-color-elevation-surface);
 }
 
 /* A total card stands apart from the rows it sums. */
 .totalCard {
-  background: var(--mmerp-elevation-surface-sunken);
+  background: var(--mmerp-color-elevation-surface-sunken);
 }
 
 /* The checkbox column of a selectable table; the identifier column sticks right after it. */
@@ -208,6 +208,6 @@
 
 .resize:hover,
 .resize:focus-visible {
-  box-shadow: inset -2px 0 0 var(--mantine-primary-color-filled);
+  box-shadow: inset -2px 0 0 var(--mmerp-color-primary-6);
   outline: none;
 }

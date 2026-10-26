@@ -1,14 +1,14 @@
 /* A group's entries hang under its heading on a guide line, so the two levels read apart. */
 .entries {
-  margin-inline-start: var(--mantine-spacing-sm);
-  padding-inline-start: var(--mantine-spacing-xxs);
-  border-inline-start: 1px solid var(--mantine-color-default-border);
+  margin-inline-start: var(--mmerp-space-sm);
+  padding-inline-start: var(--mmerp-space-xxs);
+  border-inline-start: 1px solid var(--mmerp-color-border);
 }
 
 /* A template's usage note is catalogue chrome, so it reads apart from the page below it. */
 .usage {
-  background: var(--mmerp-elevation-surface-sunken);
-  border-bottom: 1px solid var(--mantine-color-default-border);
+  background: var(--mmerp-color-elevation-surface-sunken);
+  border-bottom: 1px solid var(--mmerp-color-border);
 }
 
 /* A toast at rest, as wide as the toast stack (Mantine's default container width). */
@@ -18,45 +18,45 @@
 
 /* A catalogue example: a bordered block, its label in a sunken strip above the canvas. */
 .case {
-  border: 1px solid var(--mantine-color-default-border);
-  border-radius: var(--mantine-radius-md);
+  border: 1px solid var(--mmerp-color-border);
+  border-radius: var(--mmerp-radius-md);
   overflow: hidden;
 }
 
 .label {
-  padding: var(--mantine-spacing-xs) var(--mantine-spacing-md);
-  background: var(--mmerp-elevation-surface-sunken);
-  border-bottom: 1px solid var(--mantine-color-default-border);
+  padding: var(--mmerp-space-xs) var(--mmerp-space-md);
+  background: var(--mmerp-color-elevation-surface-sunken);
+  border-bottom: 1px solid var(--mmerp-color-border);
 }
 
 .canvas {
-  padding: var(--mantine-spacing-lg);
+  padding: var(--mmerp-space-lg);
 }
 
 /* A Do/Don't example: the top border says which side it is on, besides the label. */
 .do,
 .dont {
-  padding: var(--mantine-spacing-md);
-  border: 1px solid var(--mantine-color-default-border);
-  border-radius: var(--mantine-radius-md);
+  padding: var(--mmerp-space-md);
+  border: 1px solid var(--mmerp-color-border);
+  border-radius: var(--mmerp-radius-md);
 }
 
 .do {
-  border-top: 3px solid var(--mantine-color-success-6);
+  border-top: 3px solid var(--mmerp-color-success-6);
 }
 
 .dont {
-  border-top: 3px solid var(--mantine-color-danger-6);
+  border-top: 3px solid var(--mmerp-color-danger-6);
 }
 
 /* "On this page" stays in view while the page scrolls. */
 .toc {
   position: sticky;
-  top: calc(var(--app-shell-header-height) + var(--mantine-spacing-md));
+  top: calc(var(--app-shell-header-height) + var(--mmerp-space-md));
   flex-shrink: 0;
 }
 
 /* A heading the table of contents jumps to stops below the fixed header, not under it. */
 .heading {
-  scroll-margin-top: calc(var(--app-shell-header-height) + var(--mantine-spacing-md));
+  scroll-margin-top: calc(var(--app-shell-header-height) + var(--mmerp-space-md));
 }

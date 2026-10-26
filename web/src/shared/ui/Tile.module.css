@@ -2,11 +2,11 @@
   display: block;
   color: inherit;
   text-decoration: none;
-  background: var(--mmerp-elevation-surface);
+  background: var(--mmerp-color-elevation-surface);
 }
 
 .tile:hover {
-  background: var(--mmerp-elevation-surface-sunken);
+  background: var(--mmerp-color-elevation-surface-sunken);
 }
 
 .value {

@@ -7,6 +7,14 @@ import tseslint from 'typescript-eslint'
 const areaFiles = ['src/*/**/*.{ts,tsx}']
 const nonAreas = ['src/app/**', 'src/shared/**']
 
+// @mantine/core names already replaced by @mmerp/ui; banned everywhere in src. Each migration task appends here.
+export const mantineMigrated = []
+const migratedPath = mantineMigrated.length
+  ? [{ name: '@mantine/core', importNames: mantineMigrated, message: 'Import it from @mmerp/ui.' }]
+  : []
+// Only the kit touches Base UI.
+const baseUi = { group: ['@base-ui/react', '@base-ui/react/*'], message: 'Import from @mmerp/ui; only the kit uses Base UI.' }
+
 export default tseslint.config(
   { ignores: ['dist', 'lint-fixtures', 'src/shared/api/*.gen.ts'] },
   js.configs.recommended,
@@ -34,13 +42,19 @@ export default tseslint.config(
     },
   },
   {
+    files: ['src/**/*.{ts,tsx}'],
+    rules: { 'no-restricted-imports': ['error', { paths: migratedPath, patterns: [baseUi] }] },
+  },
+  {
     files: areaFiles,
     ignores: nonAreas,
     rules: {
       'no-restricted-imports': [
         'error',
         {
+          patterns: [baseUi],
           paths: [
+            ...migratedPath,
             {
               // Areas compose screens from shared/ui; only these layout and text primitives come from Mantine directly.
               name: '@mantine/core',

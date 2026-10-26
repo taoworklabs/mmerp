@@ -2,7 +2,7 @@
 .columns {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-  gap: var(--mantine-spacing-xl);
+  gap: var(--mmerp-space-xl);
   align-items: start;
 }
 
@@ -14,7 +14,7 @@
 
 /* The side column's parts are unframed, so the values in the cards read first; rules part them. */
 .side > * + * {
-  border-top: 1px solid var(--mantine-color-default-border);
+  border-top: 1px solid var(--mmerp-color-border);
   border-radius: 0;
 }
 
@@ -23,9 +23,9 @@
   position: fixed;
   inset: auto 0 0 0;
   z-index: 100;
-  padding: var(--mantine-spacing-sm) var(--mantine-spacing-md);
-  background: var(--mantine-color-body);
-  border-top: 1px solid var(--mantine-color-default-border);
+  padding: var(--mmerp-space-sm) var(--mmerp-space-md);
+  background: var(--mmerp-color-body);
+  border-top: 1px solid var(--mmerp-color-border);
 }
 
 .barSpace {

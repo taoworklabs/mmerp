@@ -1,5 +1,5 @@
 /* Sections follow each other separated by a rule, not boxed. */
 .section + .section {
-  border-top: 1px solid var(--mantine-color-default-border);
-  padding-top: var(--mantine-spacing-lg);
+  border-top: 1px solid var(--mmerp-color-border);
+  padding-top: var(--mmerp-space-lg);
 }

@@ -11,7 +11,7 @@
 }
 /* Fields are outlined in the quieter input tone; error and focus edges still win over it. */
 [data-mantine-color-scheme='light'] .mantine-Input-wrapper[data-variant='default'] {
-  --input-bd: var(--mmerp-input-border);
+  --input-bd: var(--mmerp-color-input-border);
 }
 .mantine-Pagination-root {
   --pagination-control-size-input-sm: var(--mmerp-control-height);
@@ -38,6 +38,6 @@
 /* The chosen option of a dropdown or menu is tinted, like any selected item. */
 .mantine-Menu-item[data-active],
 [data-combobox-option][data-checked] {
-  background: var(--mantine-primary-color-light);
-  color: var(--mantine-primary-color-light-color);
+  background: var(--mmerp-color-primary-light);
+  color: var(--mmerp-color-primary-light-color);
 }

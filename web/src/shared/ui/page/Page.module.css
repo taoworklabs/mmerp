@@ -1,6 +1,6 @@
 .header {
-  padding-bottom: var(--mantine-spacing-md);
-  border-bottom: 1px solid var(--mantine-color-default-border);
+  padding-bottom: var(--mmerp-space-md);
+  border-bottom: 1px solid var(--mmerp-color-border);
 }
 
 .header[data-plain] {
@@ -14,7 +14,7 @@
 }
 
 .tabs {
-  margin-top: var(--mantine-spacing-xs);
+  margin-top: var(--mmerp-space-xs);
   margin-bottom: -1px;
 }
 

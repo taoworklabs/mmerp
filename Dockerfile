@@ -1,5 +1,8 @@
 FROM node:24-slim AS web
 RUN npm install -g pnpm@11
+WORKDIR /src
+COPY packages/ui/ packages/ui/
+RUN pnpm -C packages/ui install --frozen-lockfile
 WORKDIR /src/web
 COPY web/package.json web/pnpm-lock.yaml ./
 RUN pnpm install --frozen-lockfile

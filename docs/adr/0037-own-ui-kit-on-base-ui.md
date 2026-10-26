@@ -1,6 +1,6 @@
 # 0037. The frontend uses its own UI kit, `@mmerp/ui`, built on Base UI; Mantine is removed
 
-Status: proposed · 2026-10-20 · supersedes the "Mantine" part of [ADR-0008](./0008-tech-stack.md)
+Status: accepted · 2026-10-26 · supersedes the "Mantine" part of [ADR-0008](./0008-tech-stack.md)
 
 Amended 2026-10-21: layout blocks move into the kit (see docs/superpowers/specs/2026-10-21-ui-kit-layout-blocks-design.md).
 

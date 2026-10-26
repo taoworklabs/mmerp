@@ -2,7 +2,7 @@
   display: grid;
   /* A container may fix the label width, so lists stacked in it line their values up. */
   grid-template-columns: var(--field-list-label, minmax(8rem, max-content)) minmax(0, 1fr);
-  gap: var(--mantine-spacing-xs) var(--mantine-spacing-lg);
+  gap: var(--mmerp-space-xs) var(--mmerp-space-lg);
   margin: 0;
 }
 
@@ -18,7 +18,7 @@
 /* Stacked: each pair a cell, label over value, two cells to a row from 768px. */
 .fields[data-stacked] {
   grid-template-columns: minmax(0, 1fr);
-  gap: var(--mantine-spacing-md) var(--mantine-spacing-lg);
+  gap: var(--mmerp-space-md) var(--mmerp-space-lg);
 }
 
 @media (min-width: 48em) {

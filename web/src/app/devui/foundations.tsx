@@ -71,11 +71,11 @@ export function Principles() {
         <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="md">
           {examples.flatMap((k) => [
             <Group key={`${k}-do`} gap="xs" wrap="nowrap">
-              <IconCheck {...icon.text} color="var(--mantine-color-success-6)" aria-label={t('shared.devui.do')} />
+              <IconCheck {...icon.text} color="var(--mmerp-color-success-6)" aria-label={t('shared.devui.do')} />
               <Text size="sm">{t(`shared.devui.example_${k}_do`)}</Text>
             </Group>,
             <Group key={`${k}-dont`} gap="xs" wrap="nowrap">
-              <IconX {...icon.text} color="var(--mantine-color-danger-6)" aria-label={t('shared.devui.dont')} />
+              <IconX {...icon.text} color="var(--mmerp-color-danger-6)" aria-label={t('shared.devui.dont')} />
               <Text size="sm" c="dimmed">
                 {t(`shared.devui.example_${k}_dont`)}
               </Text>
@@ -91,22 +91,22 @@ const ramps = ['primary', 'success', 'warning', 'danger', 'discovery', 'gray']
 
 // kind says how a semantic token shows: as text, as an edge, or as a fill.
 const semantic: { name: string; kind: 'text' | 'border' | 'fill' }[] = [
-  { name: '--mantine-color-text', kind: 'text' },
-  { name: '--mantine-color-dimmed', kind: 'text' },
-  { name: '--mantine-color-placeholder', kind: 'text' },
-  { name: '--mantine-color-error', kind: 'text' },
-  { name: '--mantine-color-default-border', kind: 'border' },
-  { name: '--mmerp-input-border', kind: 'border' },
-  { name: '--mmerp-elevation-surface', kind: 'fill' },
-  { name: '--mmerp-elevation-surface-sunken', kind: 'fill' },
-  { name: '--mmerp-table-header', kind: 'fill' },
-  { name: '--mantine-color-disabled', kind: 'fill' },
-  { name: '--mantine-primary-color-light', kind: 'fill' },
+  { name: '--mmerp-color-text', kind: 'text' },
+  { name: '--mmerp-color-dimmed', kind: 'text' },
+  { name: '--mmerp-color-placeholder', kind: 'text' },
+  { name: '--mmerp-color-error', kind: 'text' },
+  { name: '--mmerp-color-border', kind: 'border' },
+  { name: '--mmerp-color-input-border', kind: 'border' },
+  { name: '--mmerp-color-elevation-surface', kind: 'fill' },
+  { name: '--mmerp-color-elevation-surface-sunken', kind: 'fill' },
+  { name: '--mmerp-color-table-header', kind: 'fill' },
+  { name: '--mmerp-color-disabled', kind: 'fill' },
+  { name: '--mmerp-color-primary-light', kind: 'fill' },
 ]
 
 // Swatch is a framed patch of one colour, so the palest steps still show on white.
 function Swatch({ bg }: { bg: string }) {
-  return <Box bg={bg} h="xl" bdrs="md" bd="1px solid var(--mantine-color-default-border)" />
+  return <Box bg={bg} h="xl" bdrs="md" bd="1px solid var(--mmerp-color-border)" />
 }
 
 export function Colour() {
@@ -210,7 +210,7 @@ export function Spacing() {
     <Demo title={t('shared.devui.spacing')} description={t('shared.devui.spacing_hint')}>
       <Section title={t('shared.devui.spacing')}>
         {Object.entries(theme.spacing).map(([k, v]) => (
-          <Spec key={k} name={k} value={px(v)} use={t(`shared.devui.space_${k}`)} sample={<Box bg="primary.2" h="xs" w={`var(--mantine-spacing-${k})`} />} />
+          <Spec key={k} name={k} value={px(v)} use={t(`shared.devui.space_${k}`)} sample={<Box bg="primary.2" h="xs" w={`var(--mmerp-space-${k})`} />} />
         ))}
       </Section>
       <Section title={t('shared.devui.sizes')}>
@@ -246,13 +246,13 @@ export function Surfaces() {
             name={key}
             value={key === 'round' ? value : px(theme.radius[key as keyof typeof theme.radius] ?? '')}
             use={t(`shared.devui.radius_${key}`)}
-            sample={<Box w="xxl" h="xxl" bdrs={value} bg="var(--mmerp-elevation-surface-sunken)" bd="1px solid var(--mantine-color-default-border)" />}
+            sample={<Box w="xxl" h="xxl" bdrs={value} bg="var(--mmerp-color-elevation-surface-sunken)" bd="1px solid var(--mmerp-color-border)" />}
           />
         ))}
       </Section>
       <Section title={t('shared.devui.elevation')}>
         <SimpleGrid cols={{ base: 1, sm: 2, lg: 4 }} spacing="lg">
-          <Paper p="md" bg="var(--mmerp-elevation-surface-sunken)">
+          <Paper p="md" bg="var(--mmerp-color-elevation-surface-sunken)">
             <Text size="sm">{t('shared.devui.elevation_sunken')}</Text>
           </Paper>
           <Paper p="md" withBorder>

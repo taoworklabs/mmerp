@@ -3,9 +3,9 @@
   position: fixed;
   inset: auto 0 0 0;
   z-index: 100;
-  padding: var(--mantine-spacing-sm) var(--mantine-spacing-md);
-  background: var(--mantine-color-body);
-  border-top: 1px solid var(--mantine-color-default-border);
+  padding: var(--mmerp-space-sm) var(--mmerp-space-md);
+  background: var(--mmerp-color-body);
+  border-top: 1px solid var(--mmerp-color-border);
 }
 
 .barSpace {

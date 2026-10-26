@@ -3,7 +3,7 @@
   --indent: 24px;
   --toggle: 22px;
   --row: 36px;
-  --line: var(--mantine-color-default-border);
+  --line: var(--mmerp-color-border);
   list-style: none;
   margin: 0;
   padding: 0;
@@ -38,7 +38,7 @@
   height: calc(var(--row) / 2);
   border-left: 1px solid var(--line);
   border-bottom: 1px solid var(--line);
-  border-bottom-left-radius: var(--mantine-radius-sm);
+  border-bottom-left-radius: var(--mmerp-radius-sm);
 }
 
 .group > .node[data-leaf]::before {
@@ -59,15 +59,15 @@
 .row {
   display: flex;
   align-items: center;
-  gap: var(--mantine-spacing-xs);
+  gap: var(--mmerp-space-xs);
   height: var(--row);
-  padding-right: var(--mantine-spacing-xxs);
-  border-radius: var(--mantine-radius-sm);
+  padding-right: var(--mmerp-space-xxs);
+  border-radius: var(--mmerp-radius-sm);
 }
 
 @media (hover: hover) {
   .row:hover {
-    background: var(--mantine-color-default-hover);
+    background: var(--mmerp-color-gray-0);
   }
 }
 
@@ -78,12 +78,12 @@
   justify-content: center;
   width: var(--toggle);
   height: var(--toggle);
-  border-radius: var(--mantine-radius-sm);
-  color: var(--mantine-color-dimmed);
+  border-radius: var(--mmerp-radius-sm);
+  color: var(--mmerp-color-dimmed);
 }
 
 .toggle:hover {
-  background: var(--mantine-color-default-hover);
+  background: var(--mmerp-color-gray-0);
 }
 
 /* The name shrinks and truncates instead of pushing the menu out of the row. */

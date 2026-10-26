@@ -125,7 +125,7 @@ function Grid({ timesheet: ts, editable }: { timesheet: Timesheet; editable: boo
         }}
       />
       {fieldState.error && (
-        <Text id={errorId} size="sm" c="var(--mantine-color-error)">
+        <Text id={errorId} size="sm" c="var(--mmerp-color-error)">
           {fieldState.error.message}
         </Text>
       )}

@@ -162,7 +162,7 @@ export function FormSection({ title, description, icon: Icon, wide, compact, chi
         <Grid.Col span={{ base: 12, lg: top ? 12 : 4 }}>
           <Group gap="xs" wrap="nowrap">
             {Icon && <Icon {...icon.text} aria-hidden />}
-            <Text component="legend" fz="h2" lh="h2" fw="var(--mantine-h2-font-weight)">
+            <Text component="legend" fz="h2" lh="h2" fw="var(--mmerp-font-weight-heading)">
               {title}
             </Text>
             {count > 0 && (

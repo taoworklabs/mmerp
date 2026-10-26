@@ -6,9 +6,9 @@
 }
 
 .item:not([data-active]) {
-  color: var(--mantine-color-dimmed);
+  color: var(--mmerp-color-dimmed);
 }
 
 .section {
-  margin-inline-end: var(--mantine-spacing-xs);
+  margin-inline-end: var(--mmerp-space-xs);
 }

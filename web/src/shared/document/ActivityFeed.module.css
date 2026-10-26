@@ -10,11 +10,11 @@
 .day {
   display: flex;
   align-items: center;
-  gap: var(--mantine-spacing-xs);
+  gap: var(--mmerp-space-xs);
   width: 100%;
   text-transform: uppercase;
   letter-spacing: 0.02em;
-  color: var(--mantine-color-dimmed);
+  color: var(--mmerp-color-dimmed);
 }
 
 .chevron {
@@ -29,13 +29,13 @@
 /* A day's events sit in from its heading, under the label rather than the chevron. Doubled to
    outrank the history list's own padding whatever order the CSS loads in. */
 .events.events {
-  padding-inline-start: var(--mantine-spacing-lg);
+  padding-inline-start: var(--mmerp-space-lg);
 }
 
 .day::after {
   content: '';
   flex: 1;
-  margin-inline-start: var(--mantine-spacing-xs);
+  margin-inline-start: var(--mmerp-space-xs);
   height: 1px;
-  background: var(--mantine-color-default-border);
+  background: var(--mmerp-color-border);
 }

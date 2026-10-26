@@ -25,7 +25,7 @@ export function OrgUnitIcon({ kind, size = 24 }: { kind: OrgUnit['kind']; size?:
 // Legal entities and groups are bold, as the roots of what sits under them.
 export function OrgUnitName({ unit, depth = 0 }: { unit: Pick<OrgUnit, 'kind' | 'name'>; depth?: number }) {
   return (
-    <Group gap="xs" wrap="nowrap" pl={`calc(var(--mantine-spacing-lg) * ${depth})`}>
+    <Group gap="xs" wrap="nowrap" pl={`calc(var(--mmerp-space-lg) * ${depth})`}>
       <OrgUnitIcon kind={unit.kind} />
       <Text inherit fw={unit.kind === 'company' || unit.kind === 'group' ? 600 : undefined} truncate>
         {unit.name}

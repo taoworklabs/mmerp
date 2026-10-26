@@ -1,4 +1,4 @@
-import '@fontsource-variable/inter'
+import '@mmerp/ui/styles.css'
 import '@mantine/core/styles.css'
 import '@mantine/dates/styles.css'
 import '@mantine/notifications/styles.css'

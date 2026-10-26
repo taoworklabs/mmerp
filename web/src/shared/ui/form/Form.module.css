@@ -4,13 +4,13 @@
   max-width: var(--mmerp-content-width);
   border: 0;
   margin: 0;
-  padding: 0 0 var(--mantine-spacing-lg);
+  padding: 0 0 var(--mmerp-space-lg);
   min-width: 0;
 }
 
 .section + .section {
-  border-top: 1px solid var(--mantine-color-default-border);
-  padding-top: var(--mantine-spacing-lg);
+  border-top: 1px solid var(--mmerp-color-border);
+  padding-top: var(--mmerp-space-lg);
 }
 
 /* Amounts line their digits up. */
@@ -27,7 +27,7 @@
   --mmerp-control-height: 40px;
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-  gap: var(--mantine-spacing-md);
+  gap: var(--mmerp-space-md);
 }
 
 @media (min-width: 80em) {
@@ -62,7 +62,7 @@
    the layout does not move between viewing and editing; it shows nothing that invites typing. */
 .fields [data-readonly] :global(.mantine-Input-input) {
   border-color: transparent;
-  background: var(--mantine-color-default-hover);
+  background: var(--mmerp-color-gray-0);
   cursor: default;
 }
 
@@ -88,9 +88,9 @@
   position: sticky;
   bottom: -1px;
   z-index: 1;
-  padding: var(--mantine-spacing-sm) 0;
-  background: var(--mantine-color-body);
-  border-top: 1px solid var(--mantine-color-default-border);
+  padding: var(--mmerp-space-sm) 0;
+  background: var(--mmerp-color-body);
+  border-top: 1px solid var(--mmerp-color-border);
 }
 
 .bar[data-stuck] {
@@ -101,5 +101,5 @@
   width: 8px;
   height: 8px;
   border-radius: 100%;
-  background: var(--mantine-color-primary-filled);
+  background: var(--mmerp-color-primary-6);
 }

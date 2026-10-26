@@ -3,11 +3,11 @@
   overflow: auto;
   min-height: 24rem;
   max-height: calc(100dvh - 15rem);
-  padding: var(--mantine-spacing-lg);
-  border: 1px solid var(--mantine-color-default-border);
-  border-radius: var(--mantine-radius-md);
-  background-color: var(--mmerp-elevation-surface-sunken);
-  background-image: radial-gradient(var(--mantine-color-gray-3) 1px, transparent 1px);
+  padding: var(--mmerp-space-lg);
+  border: 1px solid var(--mmerp-color-border);
+  border-radius: var(--mmerp-radius-md);
+  background-color: var(--mmerp-color-elevation-surface-sunken);
+  background-image: radial-gradient(var(--mmerp-color-gray-3) 1px, transparent 1px);
   background-size: 16px 16px;
 }
 
@@ -28,23 +28,23 @@
 .line {
   width: 2px;
   height: 10px;
-  background: var(--mantine-color-gray-4);
+  background: var(--mmerp-color-gray-4);
 }
 
 .fill {
   flex: 1;
   width: 2px;
   min-height: 10px;
-  background: var(--mantine-color-gray-4);
+  background: var(--mmerp-color-gray-4);
 }
 
 .plus {
   width: 30px;
   height: 30px;
   border-radius: 50%;
-  border: 1px solid var(--mantine-color-primary-3);
-  background: var(--mmerp-elevation-surface);
-  color: var(--mantine-color-primary-6);
+  border: 1px solid var(--mmerp-color-primary-3);
+  background: var(--mmerp-color-elevation-surface);
+  color: var(--mmerp-color-primary-6);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -55,7 +55,7 @@
 .plus:focus-visible,
 .plus[data-expanded] {
   opacity: 1;
-  background: var(--mantine-color-primary-0);
+  background: var(--mmerp-color-primary-0);
 }
 
 .plus[data-big] {
@@ -67,16 +67,16 @@
 .node {
   min-width: 180px;
   max-width: 240px;
-  padding: var(--mantine-spacing-xs) var(--mantine-spacing-sm);
-  border: 1px solid var(--mantine-color-default-border);
-  border-radius: var(--mantine-radius-md);
-  background: var(--mmerp-elevation-surface);
+  padding: var(--mmerp-space-xs) var(--mmerp-space-sm);
+  border: 1px solid var(--mmerp-color-border);
+  border-radius: var(--mmerp-radius-md);
+  background: var(--mmerp-color-elevation-surface);
   text-align: center;
   position: relative;
 }
 
 .node:hover {
-  border-color: var(--mantine-color-primary-4);
+  border-color: var(--mmerp-color-primary-4);
 }
 
 
@@ -87,20 +87,20 @@
 
 .start {
   composes: terminal;
-  background: var(--mantine-color-primary-0);
-  border-color: var(--mantine-color-primary-2);
+  background: var(--mmerp-color-primary-0);
+  border-color: var(--mmerp-color-primary-2);
 }
 
 .end {
   composes: terminal;
-  background: var(--mantine-color-success-0);
-  border-color: var(--mantine-color-success-2);
+  background: var(--mmerp-color-success-0);
+  border-color: var(--mmerp-color-success-2);
 }
 
 .skip {
   composes: terminal;
   border-style: dashed;
-  color: var(--mantine-color-dimmed);
+  color: var(--mmerp-color-dimmed);
   background: transparent;
   min-width: 140px;
 }
@@ -110,13 +110,13 @@
   min-width: 140px;
   border-radius: 999px;
   font-weight: 600;
-  background: var(--mantine-color-warning-0);
-  border-color: var(--mantine-color-warning-3);
+  background: var(--mmerp-color-warning-0);
+  border-color: var(--mmerp-color-warning-3);
 }
 
 .pill[data-mode='all'] {
-  background: var(--mantine-color-discovery-0);
-  border-color: var(--mantine-color-discovery-3);
+  background: var(--mmerp-color-discovery-0);
+  border-color: var(--mmerp-color-discovery-3);
 }
 
 .split {
@@ -134,7 +134,7 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding-inline: var(--mantine-spacing-sm);
+  padding-inline: var(--mmerp-space-sm);
 }
 
 /* The horizontal bar joining the branches, above and below them; it stops at the outer branches' centres. */
@@ -147,9 +147,9 @@
 .join::before {
   content: '';
   position: absolute;
-  left: calc(-1 * var(--mantine-spacing-sm));
-  right: calc(-1 * var(--mantine-spacing-sm));
-  border-top: 2px solid var(--mantine-color-gray-4);
+  left: calc(-1 * var(--mmerp-space-sm));
+  right: calc(-1 * var(--mmerp-space-sm));
+  border-top: 2px solid var(--mmerp-color-gray-4);
 }
 
 .join[data-at='top']::before {
@@ -178,41 +178,41 @@
   left: calc(50% - 1px);
   top: 0;
   bottom: 0;
-  border-left: 2px solid var(--mantine-color-gray-4);
+  border-left: 2px solid var(--mmerp-color-gray-4);
 }
 
 .cond {
   composes: node;
   min-width: 0;
   max-width: 220px;
-  padding: 2px var(--mantine-spacing-xs);
-  font-size: var(--mantine-font-size-xs);
-  background: var(--mantine-color-warning-0);
-  border-color: var(--mantine-color-warning-2);
-  color: var(--mantine-color-warning-9);
+  padding: 2px var(--mmerp-space-xs);
+  font-size: var(--mmerp-font-size-xs);
+  background: var(--mmerp-color-warning-0);
+  border-color: var(--mmerp-color-warning-2);
+  color: var(--mmerp-color-warning-9);
 }
 
 .cond[data-quiet] {
-  background: var(--mantine-color-gray-1);
-  border-color: var(--mantine-color-gray-3);
-  color: var(--mantine-color-gray-7);
+  background: var(--mmerp-color-gray-1);
+  border-color: var(--mmerp-color-gray-3);
+  color: var(--mmerp-color-gray-7);
 }
 
 /* Selected and invalid come last, so they win over a box's own tone (split kinds, quiet chips). */
 .node[aria-pressed='true'] {
-  background: var(--mantine-color-primary-0);
-  border-color: var(--mantine-color-primary-6);
+  background: var(--mmerp-color-primary-0);
+  border-color: var(--mmerp-color-primary-6);
 }
 
 .node[aria-invalid='true'] {
-  border-color: var(--mantine-color-danger-5);
-  background: var(--mantine-color-danger-0);
+  border-color: var(--mmerp-color-danger-5);
+  background: var(--mmerp-color-danger-0);
 }
 
 /* The editor: the diagram, and beside it from lg up the panel of what is selected. */
 .workspace {
   display: flex;
-  gap: var(--mantine-spacing-md);
+  gap: var(--mmerp-space-md);
   align-items: flex-start;
 }
 
@@ -225,7 +225,7 @@
   width: var(--mmerp-side-width);
   flex: none;
   position: sticky;
-  top: var(--mantine-spacing-md);
+  top: var(--mmerp-space-md);
   max-height: calc(100dvh - 15rem);
   overflow: auto;
 }

@@ -358,7 +358,7 @@ function SortButton<T>({ column, sort, onSort }: { column: Column<T>; sort?: str
   const Icon = state === 'ascending' ? IconArrowUp : state === 'descending' ? IconArrowDown : IconArrowsSort
   return (
     // Weight and size follow the header cell, so sortable titles read like the others.
-    <UnstyledButton onClick={() => onSort(state === 'ascending' ? `-${column.key}` : column.key)} fw="inherit" fz="inherit" c={state ? 'var(--mantine-color-text)' : undefined}>
+    <UnstyledButton onClick={() => onSort(state === 'ascending' ? `-${column.key}` : column.key)} fw="inherit" fz="inherit" c={state ? 'var(--mmerp-color-text)' : undefined}>
       <Group gap="xxs" wrap="nowrap">
         {column.header}
         <Icon {...icon.text} />

@@ -13,7 +13,7 @@
 .columns {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-  gap: var(--mantine-spacing-xl);
+  gap: var(--mmerp-space-xl);
   align-items: start;
 }
 
@@ -24,6 +24,6 @@
 }
 
 .side > * + * {
-  border-top: 1px solid var(--mantine-color-default-border);
+  border-top: 1px solid var(--mmerp-color-border);
   border-radius: 0;
 }

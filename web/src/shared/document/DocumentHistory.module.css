@@ -2,7 +2,7 @@
 .list {
   display: flex;
   flex-direction: column;
-  gap: var(--mantine-spacing-md);
+  gap: var(--mmerp-space-md);
   margin: 0;
   padding: 0;
   list-style: none;
@@ -13,7 +13,7 @@
   --feed-line: 1.25rem;
   display: grid;
   grid-template-columns: 3rem var(--feed-line) minmax(0, 1fr);
-  column-gap: var(--mantine-spacing-sm);
+  column-gap: var(--mmerp-space-sm);
   align-items: start;
 }
 
@@ -38,11 +38,11 @@
 .row[data-detail] .bullet::after {
   content: '';
   position: absolute;
-  top: calc(var(--feed-line) + var(--mantine-spacing-xxs));
+  top: calc(var(--feed-line) + var(--mmerp-space-xxs));
   bottom: 0;
   left: calc(50% - 0.5px);
   width: 1px;
-  background: var(--mantine-color-default-border);
+  background: var(--mmerp-color-border);
 }
 
 .body {
@@ -52,10 +52,10 @@
 
 /* What the event carries (a comment, the fields it changed) in a well on the sunken tone under the sentence. */
 .detail {
-  margin-top: var(--mantine-spacing-xs);
-  padding: var(--mantine-spacing-xs) var(--mantine-spacing-sm);
-  background: var(--mmerp-elevation-surface-sunken);
-  border-radius: var(--mantine-radius-md);
+  margin-top: var(--mmerp-space-xs);
+  padding: var(--mmerp-space-xs) var(--mmerp-space-sm);
+  background: var(--mmerp-color-elevation-surface-sunken);
+  border-radius: var(--mmerp-radius-md);
   overflow-wrap: anywhere;
 }
 
@@ -63,7 +63,7 @@
 .changes {
   display: grid;
   grid-template-columns: auto 1fr;
-  gap: var(--mantine-spacing-xxs) var(--mantine-spacing-sm);
+  gap: var(--mmerp-space-xxs) var(--mmerp-space-sm);
   margin: 0;
 }
 
@@ -78,6 +78,6 @@
 
 /* Inline between the two values, on their line. */
 .arrow {
-  margin-inline: var(--mantine-spacing-xxs);
+  margin-inline: var(--mmerp-space-xxs);
   vertical-align: -0.125em;
 }

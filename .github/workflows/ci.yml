@@ -37,7 +37,9 @@ jobs:
         with:
           node-version: 24
           cache: pnpm
-          cache-dependency-path: web/pnpm-lock.yaml
+          cache-dependency-path: |
+            web/pnpm-lock.yaml
+            packages/ui/pnpm-lock.yaml
       - run: make gen
       - name: Generated code is committed
         run: |
