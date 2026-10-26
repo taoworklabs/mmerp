@@ -1,4 +1,4 @@
-// Seeded verbatim from web/src/shared/ui/theme.ts and its cssVariablesResolver/global.css.
+// Every colour, size and spacing of the app; gen-tokens turns these into the --mmerp-* CSS variables.
 // Ramps run from palest (0) to darkest (9). Index 6 is the shade filled components use,
 // 7 the text on a tinted background, 0 the tint itself.
 const primary = ['#E9F2FE', '#CFE1FD', '#8FB8F6', '#669DF1', '#4688EC', '#357DE8', '#1868DB', '#1558BC', '#123263', '#1C2B42'] as const

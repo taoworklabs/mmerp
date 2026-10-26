@@ -32,11 +32,11 @@ export function AnchorDoc() {
   const { t } = useTranslation()
   return (
     <DocPage
-      path="mantine/anchor"
+      path="kit/anchor"
       example={
         <Case>
           <Group>
-            <Anchor render={<Link to="/dev/ui/mantine/anchor" />} size="sm">
+            <Anchor render={<Link to="/dev/ui/kit/anchor" />} size="sm">
               {sample.person}
             </Anchor>
           </Group>
@@ -46,7 +46,7 @@ export function AnchorDoc() {
         <>
           <Case label={t('shared.devui.case_link_record')}>
             <Group>
-              <Anchor render={<Link to="/dev/ui/mantine/anchor" />} size="sm">
+              <Anchor render={<Link to="/dev/ui/kit/anchor" />} size="sm">
                 {sample.person}
               </Anchor>
             </Group>
@@ -79,7 +79,7 @@ export function ButtonDoc() {
   const { t } = useTranslation()
   return (
     <DocPage
-      path="mantine/button"
+      path="kit/button"
       example={
         <Case>
           <Group justify="end">
@@ -158,7 +158,7 @@ export function LayoutTextDoc() {
   const { t } = useTranslation()
   return (
     <DocPage
-      path="mantine/layout-text"
+      path="kit/layout-text"
       example={
         <Case>
           <Stack gap="xs">
@@ -212,7 +212,7 @@ export function LoaderDoc() {
   const { t } = useTranslation()
   return (
     <DocPage
-      path="mantine/loader"
+      path="kit/loader"
       example={
         <Case>
           <Group gap="xs">
@@ -247,7 +247,7 @@ export function SkeletonDoc() {
   const { t } = useTranslation()
   return (
     <DocPage
-      path="mantine/skeleton"
+      path="kit/skeleton"
       example={
         <Case>
           <Group gap="xs">
@@ -282,7 +282,7 @@ export function TooltipDoc() {
   const { t } = useTranslation()
   return (
     <DocPage
-      path="mantine/tooltip"
+      path="kit/tooltip"
       example={
         <Case>
           <Group>

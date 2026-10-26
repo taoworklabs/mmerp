@@ -111,7 +111,7 @@ Do:
 
 ```tsx
 <Button>{t('sales.common.save')}</Button>
-<Text size="sm" c="dimmed">{t('shared.list.total', { total: formatNumber(total) })}</Text>
+<Text size="sm" tone="dimmed">{t('shared.list.total', { total: formatNumber(total) })}</Text>
 ```
 
 Don't:

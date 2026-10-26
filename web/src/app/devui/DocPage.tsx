@@ -6,6 +6,9 @@ import { Page } from '@/shared/ui/page'
 import { type Entry, entryByPath, key, type Path, splitNames } from './catalogue'
 import classes from './DevUi.module.css'
 
+// Where `make storybook` serves the kit's primitives, every prop and state of each.
+const storybook = 'http://localhost:6006/'
+
 // Linked shows a text with every catalogued component it names as a link to that component's page.
 export function Linked({ text }: { text: string }) {
   return splitNames(text).map((part, i) =>
@@ -42,13 +45,13 @@ export function DocPage({ path, example, variants, doDont, code }: { path: Path;
   const title = useEntryTitle()
   const entry = entryByPath(path)
   const k = key(entry)
-  const component = entry.layer === 'mantine' || entry.layer === 'mmerp'
+  const component = entry.layer === 'kit' || entry.layer === 'mmerp'
   const imports = entry.source ? `import { ${(entry.exports ?? [entry.name]).join(', ')} } from '${entry.source}'` : ''
   const snippet = [imports, code].filter(Boolean).join('\n\n')
   const tag =
-    entry.layer === 'mantine' ? (
+    entry.layer === 'kit' ? (
       <Badge variant="light" color="gray">
-        {t('shared.devui.source_mantine')}
+        {t('shared.devui.source_kit')}
       </Badge>
     ) : entry.layer === 'mmerp' ? (
       <Badge variant="light">{t('shared.devui.source_mmerp')}</Badge>
@@ -56,11 +59,11 @@ export function DocPage({ path, example, variants, doDont, code }: { path: Path;
   const description = (
     <>
       {t(`shared.devui.about_${k}`)}
-      {entry.layer === 'mantine' && !entry.kit && (
+      {entry.layer === 'kit' && (
         <>
           {' '}
-          <Anchor href={`https://mantine.dev/core/${(entry.covers?.[0] ?? entry.name ?? '').toLowerCase()}/`} target="_blank" rel="noreferrer">
-            {t('shared.devui.mantine_docs')}
+          <Anchor href={storybook} target="_blank" rel="noreferrer">
+            {t('shared.devui.storybook')}
           </Anchor>
         </>
       )}

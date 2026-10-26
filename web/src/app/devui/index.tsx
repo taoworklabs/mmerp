@@ -18,7 +18,7 @@ import { BulkBarDoc, MoreActionsDoc, NoticeDoc, NotifyDoc, QueryViewDoc, SidePan
 import { BulkPattern, ConfirmDeletePattern, CreateEditPattern, DocumentApprovalPattern, FilterSearchPattern, LoadingEmptyErrorPattern } from './patterns'
 import { EditablePanelDoc, FiltersDoc, FormDoc, FormModalDoc, InlineEditFieldDoc, LinesTableDoc } from './forms'
 import { CellGridDoc, DataTableDoc, FieldListDoc, KeyFactsDoc, PanelDoc, PersonAvatarDoc, SectionDoc, StatusBadgeDoc, TilesDoc, TreeListDoc } from './display'
-import { AnchorDoc, ButtonDoc, LayoutTextDoc, LoaderDoc, SkeletonDoc, TooltipDoc } from './mantine'
+import { AnchorDoc, ButtonDoc, LayoutTextDoc, LoaderDoc, SkeletonDoc, TooltipDoc } from './kit'
 import { Colour, Icons, Principles, Spacing, Surfaces, Typography } from './foundations'
 import { AuthTemplate, DocumentTemplate, InboxTemplate, ListTemplate, PageTemplate, RecordTemplate } from './templates'
 
@@ -31,12 +31,12 @@ const pages: Record<Path, ComponentType> = {
   'foundations/spacing': Spacing,
   'foundations/surfaces': Surfaces,
   'foundations/icons': Icons,
-  'mantine/anchor': AnchorDoc,
-  'mantine/button': ButtonDoc,
-  'mantine/layout-text': LayoutTextDoc,
-  'mantine/loader': LoaderDoc,
-  'mantine/skeleton': SkeletonDoc,
-  'mantine/tooltip': TooltipDoc,
+  'kit/anchor': AnchorDoc,
+  'kit/button': ButtonDoc,
+  'kit/layout-text': LayoutTextDoc,
+  'kit/loader': LoaderDoc,
+  'kit/skeleton': SkeletonDoc,
+  'kit/tooltip': TooltipDoc,
   'mmerp/activity-feed': ActivityFeedDoc,
   'mmerp/approval-panel': ApprovalPanelDoc,
   'mmerp/attachment-panel': AttachmentPanelDoc,
@@ -46,17 +46,17 @@ const pages: Record<Path, ComponentType> = {
   'mmerp/document-preview': DocumentPreviewDoc,
   'mmerp/document-status': DocumentStatusDoc,
   'mmerp/editable-panel': EditablePanelDoc,
-  'mantine/field-list': FieldListDoc,
+  'kit/field-list': FieldListDoc,
   'mmerp/filters': FiltersDoc,
   'mmerp/form': FormDoc,
   'mmerp/form-modal': FormModalDoc,
   'mmerp/inline-edit-field': InlineEditFieldDoc,
-  'mantine/key-facts': KeyFactsDoc,
+  'kit/key-facts': KeyFactsDoc,
   'mmerp/lines-table': LinesTableDoc,
   'mmerp/more-actions': MoreActionsDoc,
   'mmerp/notice': NoticeDoc,
   'mmerp/notify': NotifyDoc,
-  'mantine/panel': PanelDoc,
+  'kit/panel': PanelDoc,
   'mmerp/person-avatar': PersonAvatarDoc,
   'mmerp/query-view': QueryViewDoc,
   'mmerp/section': SectionDoc,

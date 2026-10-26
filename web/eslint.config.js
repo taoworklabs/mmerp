@@ -7,19 +7,6 @@ import tseslint from 'typescript-eslint'
 const areaFiles = ['src/*/**/*.{ts,tsx}']
 const nonAreas = ['src/app/**', 'src/shared/**']
 
-// @mantine/core names already replaced by @mmerp/ui; banned everywhere in src. Each migration task appends here.
-export const mantineMigrated = [
-  'Box', 'Stack', 'Group', 'Flex', 'Grid', 'SimpleGrid', 'Center', 'Divider', 'Paper', 'Text', 'Title', 'Anchor', 'Code', 'List',
-  'Button', 'ActionIcon', 'UnstyledButton', 'Badge', 'ThemeIcon', 'Loader', 'Skeleton', 'VisuallyHidden',
-  'TextInput', 'PasswordInput', 'Textarea', 'NumberInput', 'Checkbox', 'Select', 'MultiSelect', 'Combobox', 'useCombobox',
-  'SegmentedControl', 'FileInput', 'FileButton', 'Input', 'InputWrapper',
-  'Modal', 'Drawer', 'Menu', 'Popover', 'Tooltip', 'ScrollArea',
-  'Tabs', 'NavLink', 'Breadcrumbs', 'Pagination', 'Burger', 'AppShell', 'Table', 'Timeline', 'Avatar', 'Indicator', 'Alert',
-  'Notification', 'TableOfContents', 'Collapse', 'useMantineTheme',
-]
-const migratedPath = mantineMigrated.length
-  ? [{ name: '@mantine/core', importNames: mantineMigrated, message: 'Import it from @mmerp/ui.' }]
-  : []
 // Only the kit touches Base UI.
 const baseUi = { group: ['@base-ui/react', '@base-ui/react/*'], message: 'Import from @mmerp/ui; only the kit uses Base UI.' }
 
@@ -55,11 +42,6 @@ export default tseslint.config(
       'no-restricted-imports': [
         'error',
         {
-          paths: [
-            ...migratedPath,
-            { name: '@mantine/hooks', message: 'Import the hook from @mmerp/ui.' },
-            { name: '@mantine/notifications', message: 'Use the toast helpers in shared/ui/notify.' },
-          ],
           patterns: [baseUi],
         },
       ],
@@ -74,9 +56,6 @@ export default tseslint.config(
         {
           patterns: [baseUi],
           paths: [
-            ...migratedPath,
-            { name: '@mantine/core', message: 'Use the shared/ui component, or the @mmerp/ui primitive when it is on the areas\' list.' },
-            { name: '@mantine/hooks', message: 'Import the hook from @mmerp/ui.' },
             {
               // Areas compose screens from shared/ui; only these layout and text primitives and look-only blocks come from the kit directly.
               name: '@mmerp/ui',
@@ -84,8 +63,6 @@ export default tseslint.config(
               message:
                 'Use the shared/ui component (DataTable, FormModal, Notice, MenuAction, QueryView, StatusBadge, the form fields…); add one there if none fits.',
             },
-            { name: '@mantine/notifications', message: 'Use the shared/ui notification helpers.' },
-            { name: '@mantine/dates', message: 'Mantine is going; use DateField from shared/ui or the date inputs from @mmerp/ui.' },
           ],
         },
       ],

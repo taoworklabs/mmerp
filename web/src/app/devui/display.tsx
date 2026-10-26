@@ -146,14 +146,14 @@ export function FieldListDoc() {
   const { t } = useTranslation()
   return (
     <DocPage
-      path="mantine/field-list"
+      path="kit/field-list"
       example={
         <Case>
           <FieldList
             rows={[
               [
                 'Nhân viên',
-                <Anchor key="p" render={<Link to="/dev/ui/mantine/field-list" />}>
+                <Anchor key="p" render={<Link to="/dev/ui/kit/field-list" />}>
                   {person}
                 </Anchor>,
               ],
@@ -178,7 +178,7 @@ export function FieldListDoc() {
 export function KeyFactsDoc() {
   return (
     <DocPage
-      path="mantine/key-facts"
+      path="kit/key-facts"
       example={
         <Case>
           <KeyFacts facts={facts} />
@@ -379,7 +379,7 @@ export function PanelDoc() {
   const { t } = useTranslation()
   return (
     <DocPage
-      path="mantine/panel"
+      path="kit/panel"
       example={
         <Case>
           <Panel

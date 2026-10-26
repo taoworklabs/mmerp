@@ -4,9 +4,9 @@ Run every item against the change before calling it done. An item that does not 
 
 ## Tokens
 
-- [ ] No colour code, `rgb(`, `hsl(` outside `theme.ts` (`make lint` checks).
-- [ ] No pixel or rem number for spacing, font size or radius in a component; only theme keys (`gap="xs"`, `fz="xs"`, `radius="lg"`) or `var(--mantine-…)` / `var(--mmerp-…)`. A component-specific size sits in a `shared/ui` CSS module with a comment.
-- [ ] Colours named by meaning (`color="danger"`, `c="dimmed"`), never by hue (`"red"`, `"orange"`) or step (`"gray.6"`); accent hues only name a kind (avatars, org unit kinds, file types), never a state.
+- [ ] No colour code, `rgb(`, `hsl(` in `web/src`; colours live in the `@mmerp/ui` tokens (`make lint` checks).
+- [ ] No pixel or rem number for spacing, font size or radius in a component; only token keys (`gap="xs"`, `size="xs"`) or `var(--mmerp-…)`. A component-specific size sits in a `shared/ui` CSS module with a comment.
+- [ ] Colours named by meaning (`color="danger"`, `tone="dimmed"`), never by hue (`"red"`, `"orange"`) or step (`"gray.6"`); accent hues only name a kind (avatars, org unit kinds, file types), never a state.
 - [ ] Icons through `icon.text` / `icon.button` / `icon.empty`.
 - [ ] No `style` attribute and no CSS file in an area.
 
@@ -81,4 +81,4 @@ Run every item against the change before calling it done. An item that does not 
 ## Finish
 
 - [ ] `make lint` and `make test` are green.
-- [ ] A changed token or rule is updated in `theme.ts`, `references/tokens.md` and `docs/ui.md` together.
+- [ ] A changed token or rule is updated in the kit tokens (`packages/ui/src/tokens/tokens.ts`), `references/tokens.md` and `docs/ui.md` together.

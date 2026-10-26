@@ -98,7 +98,7 @@ CI (GitHub Actions, `.github/workflows/ci.yml`) runs `make gen` (fails on diff),
 - `go install golang.org/x/tools/gopls@latest`
 - `npm install -g typescript-language-server typescript`
 
-`.mcp.json` adds the Mantine MCP server (`@mantine/mcp-server`: search docs, component props); Claude Code asks to enable it on first open. Mantine's own skills (`mantine-combobox`, `mantine-custom-components`, `mantine-form`) are vendored in `.claude/skills`, pinned in `skills-lock.json`; update with `npx skills update -p`. `mantine-form` covers `@mantine/form`, but forms here use React Hook Form (`docs/techstack.md`): take only its Mantine input patterns.
+The reference for every `@mmerp/ui` primitive (props, variants, states) is its Storybook: `make storybook`, then `:6006`.
 
 `ui-ux-pro-max` is a user-level skill, not part of the repo; install it separately to use it.
 

@@ -96,6 +96,6 @@ notifySuccess(t('sales.customer.created'))
 notifyError(errorText(t, err))           // the current action's error in a toast
 await unwrap(api.DELETE(…))              // no try/catch: a failure shows nothing
 {list.isPending && <Loader />}           // spinner where the table's skeleton belongs
-<Text c="dimmed">{t('…empty')}</Text>    // a hand-made empty state
+<Text tone="dimmed">{t('…empty')}</Text>    // a hand-made empty state
 if (list.isPending) body = <ContentSkeleton /> … // hand-written loading/error/empty: use QueryView
 ```
