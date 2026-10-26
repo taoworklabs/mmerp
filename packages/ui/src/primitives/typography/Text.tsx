@@ -8,7 +8,8 @@ import type { FontSize } from '../../tokens/tokens.ts'
 import styles from './Text.module.css'
 
 export interface TextProps extends React.ComponentPropsWithRef<'p'> {
-  size?: FontSize
+  // `inherit` takes the font size and line height of the surrounding text, for a span inside a sentence.
+  size?: FontSize | 'inherit'
   tone?: Tone
   weight?: 400 | 500 | 600 | 650
   align?: 'start' | 'center' | 'end'
@@ -38,8 +39,8 @@ export function Text({
 }: TextProps) {
   const vars: StyleVars = {
     ...style,
-    fontSize: `var(--mmerp-font-size-${size})`,
-    lineHeight: `var(--mmerp-line-height-${size})`,
+    fontSize: size === 'inherit' ? 'inherit' : `var(--mmerp-font-size-${size})`,
+    lineHeight: size === 'inherit' ? 'inherit' : `var(--mmerp-line-height-${size})`,
     color: toneColor(tone, 'var(--mmerp-color-text)'),
     textAlign: align,
     fontWeight: weight === undefined ? undefined : fontWeight[weight],

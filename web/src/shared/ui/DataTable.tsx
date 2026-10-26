@@ -1,5 +1,5 @@
-import { Checkbox, Group, Paper, ScrollArea, Stack, Table, Text, UnstyledButton } from '@mantine/core'
-import { useElementSize, useMediaQuery } from '@mantine/hooks'
+import { Group, Paper, Stack, Text, UnstyledButton, useElementSize, useMediaQuery } from '@mmerp/ui'
+import { Checkbox, ScrollArea, Table } from '@mantine/core'
 import { IconArrowDown, IconArrowUp, IconArrowsSort } from '@tabler/icons-react'
 import { Fragment, useRef, useState, type CSSProperties, type KeyboardEvent, type PointerEvent, type ReactNode, type RefObject } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -358,8 +358,8 @@ function SortButton<T>({ column, sort, onSort }: { column: Column<T>; sort?: str
   const Icon = state === 'ascending' ? IconArrowUp : state === 'descending' ? IconArrowDown : IconArrowsSort
   return (
     // Weight and size follow the header cell, so sortable titles read like the others.
-    <UnstyledButton onClick={() => onSort(state === 'ascending' ? `-${column.key}` : column.key)} fw="inherit" fz="inherit" c={state ? 'var(--mmerp-color-text)' : undefined}>
-      <Group gap="xxs" wrap="nowrap">
+    <UnstyledButton onClick={() => onSort(state === 'ascending' ? `-${column.key}` : column.key)} style={state ? { color: 'var(--mmerp-color-text)' } : undefined}>
+      <Group gap="xxs" wrap={false}>
         {column.header}
         <Icon {...icon.text} />
       </Group>
@@ -378,7 +378,7 @@ function Cards<T>({ columns, rows, rowKey, href, menu, label, group, footer }: O
       {grouped(rows, group?.of).map((g) => (
         <Fragment key={`group:${g.name}`}>
           {group && (
-            <Text fw={600} size="sm" role="listitem">
+            <Text weight={600} size="sm" role="listitem">
               {g.name}
             </Text>
           )}
@@ -399,14 +399,14 @@ function Card<T>({ columns, row, href, menu, total }: { columns: Column<T>[]; ro
   const status = columns.filter((c) => c.role === 'status')
   const meta = columns.filter((c) => c.role === 'meta')
   return (
-    <Paper withBorder p="sm" role="listitem" className={total ? classes.totalCard : classes.card}>
-      <Group justify="space-between" wrap="nowrap" align="flex-start">
+    <Paper withBorder padding="sm" role="listitem" className={total ? classes.totalCard : classes.card}>
+      <Group justify="space-between" wrap={false} align="start">
         {href ? (
-          <Text fw={600} component={Link} to={href(row)} className={classes.cardLink}>
+          <Text weight={600} render={<Link to={href(row)} />} className={classes.cardLink}>
             {title?.render(row)}
           </Text>
         ) : (
-          <Text fw={600}>{title?.render(row)}</Text>
+          <Text weight={600}>{title?.render(row)}</Text>
         )}
         {status.map((c) => (
           <Text key={c.key} size="sm">
@@ -420,7 +420,7 @@ function Card<T>({ columns, row, href, menu, total }: { columns: Column<T>[]; ro
         )}
       </Group>
       {meta.map((c) => (
-        <Text key={c.key} size="sm" c={total ? undefined : 'dimmed'}>
+        <Text key={c.key} size="sm" tone={total ? undefined : 'dimmed'}>
           {total ? `${c.header}: ` : ''}
           {c.render(row)}
         </Text>

@@ -229,3 +229,11 @@
   max-height: calc(100dvh - 15rem);
   overflow: auto;
 }
+
+.hint {
+  margin-top: var(--mmerp-space-md);
+}
+
+.joinNote {
+  margin-top: var(--mmerp-space-xxs);
+}

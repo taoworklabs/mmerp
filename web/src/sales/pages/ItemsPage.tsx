@@ -1,4 +1,4 @@
-import { Button } from '@mantine/core'
+import { Button } from '@mmerp/ui'
 import { IconArchive, IconArchiveOff, IconCircleDot, IconPencil, IconPlus } from '@tabler/icons-react'
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'

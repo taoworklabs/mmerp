@@ -90,3 +90,18 @@
 .label > * {
   min-width: 0;
 }
+
+/* The row's side notes drop out below 1024px, where the name needs the room. */
+.meta {
+  display: none;
+}
+
+@media (min-width: 64em) {
+  .meta {
+    display: block;
+  }
+}
+
+.fixed {
+  flex: none;
+}

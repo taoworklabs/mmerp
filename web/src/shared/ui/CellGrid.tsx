@@ -1,4 +1,5 @@
-import { Paper, ScrollArea, VisuallyHidden } from '@mantine/core'
+import { Paper, VisuallyHidden } from '@mmerp/ui'
+import { ScrollArea } from '@mantine/core'
 import type { KeyboardEvent, ReactNode } from 'react'
 import classes from './CellGrid.module.css'
 

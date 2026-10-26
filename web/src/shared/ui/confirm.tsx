@@ -1,4 +1,5 @@
-import { Button, Modal, Stack, Text } from '@mantine/core'
+import { Button, Stack, Text } from '@mmerp/ui'
+import { Modal } from '@mantine/core'
 import { useCallback, useRef, useState, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { ModalFooter } from './ModalFooter'

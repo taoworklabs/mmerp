@@ -1,6 +1,7 @@
-import { ActionIcon, Anchor, Box, Breadcrumbs, Flex, Group, Stack, Text, Title, Tooltip } from '@mantine/core'
+import { ActionIcon, Anchor, Box, Group, Stack, Text, Title, cx } from '@mmerp/ui'
+import { Breadcrumbs, Tooltip } from '@mantine/core'
 import { IconArrowLeft, IconChevronRight } from '@tabler/icons-react'
-import type { ReactNode } from 'react'
+import type { CSSProperties, ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link, useLocation, useNavigate } from 'react-router'
 import { icon } from '../theme'
@@ -34,7 +35,7 @@ export type PageHeaderProps = {
 }
 
 // pageFrame is the padding around a page, shared with the page-level skeleton.
-export const pageFrame = { px: { base: 'md', md: 'xl', lg: 'xxl' }, py: 'lg' } as const
+export const pageFrame = classes.frame
 
 // readingWidth is the width of a side panel (approval, attachments) shown full width as a tab.
 export const readingWidth = 480
@@ -46,15 +47,19 @@ export const readingWidth = 480
 export function Page({ children, className, centered, ...header }: PageHeaderProps & { children: ReactNode; className?: string; centered?: boolean | string }) {
   if (centered)
     return (
-      <Box {...pageFrame} className={className}>
-        <Stack gap="lg" w="100%" maw={centered === true ? 'var(--mmerp-content-width)' : centered} mx="auto">
+      <Box className={cx(pageFrame, className)}>
+        <Stack
+          gap="lg"
+          className={classes.centered}
+          style={centered === true ? undefined : ({ '--page-width': typeof centered === 'string' ? centered : undefined } as CSSProperties)}
+        >
           <PageHeader {...header} />
           {children}
         </Stack>
       </Box>
     )
   return (
-    <Stack gap="lg" {...pageFrame} className={className}>
+    <Stack gap="lg" className={cx(pageFrame, className)}>
       <PageHeader {...header} />
       {children}
     </Stack>
@@ -68,39 +73,39 @@ function PageHeader({ title, breadcrumbs, description, leading, status, actions,
       {breadcrumbs && breadcrumbs.length > 0 && (
         <Breadcrumbs separator={<IconChevronRight {...icon.text} />} separatorMargin="xxs">
           {breadcrumbs.map((c) => (
-            <Anchor key={c.to} component={Link} to={c.to} size="sm" c="dimmed">
+            <Anchor key={c.to} render={<Link to={c.to} />} size="sm" tone="dimmed">
               {c.label}
             </Anchor>
           ))}
           {(withBack || current) && (
-            <Text size="sm" fw={500} aria-current="page" truncate>
+            <Text size="sm" weight={500} aria-current="page" truncate>
               {title}
             </Text>
           )}
         </Breadcrumbs>
       )}
       {/* Narrow screens stack the actions under the title instead of squeezing them. */}
-      <Flex direction={{ base: 'column', sm: 'row' }} justify="space-between" align={{ base: 'stretch', sm: 'center' }} gap="sm">
-        <Group gap="md" wrap="nowrap" miw={0}>
+      <div className={classes.titleRow}>
+        <Group gap="md" wrap={false} shrink>
           {withBack && parent && <BackButton to={parent.to} />}
           {leading}
-          <Stack gap={0} miw={0}>
+          <Stack gap={0} shrink>
             {/* The status drops under a long title rather than squeezing it. */}
-            <Group gap="xs" miw={0}>
-              <Title order={1} lineClamp={1}>
+            <Group gap="xs" shrink>
+              <Title order={1} className={classes.title}>
                 {title}
               </Title>
               {status}
             </Group>
             {description && (
-              <Text size="sm" c="dimmed" component="div">
+              <Text size="sm" tone="dimmed" render={<div />}>
                 {description}
               </Text>
             )}
           </Stack>
         </Group>
         {actions}
-      </Flex>
+      </div>
       {summary}
       {tabs && <div className={classes.tabs}>{tabs}</div>}
     </Stack>
@@ -118,11 +123,9 @@ function BackButton({ to }: { to: string }) {
   return (
     <Tooltip label={label}>
       <ActionIcon
-        component={Link}
-        to={to}
+        render={<Link to={to} />}
         variant="default"
-        radius={1000}
-        size="input-sm"
+        className={classes.back}
         aria-label={label}
         onClick={(e) => {
           // The first entry of the session has the default key: there is nothing in the app to go back to.

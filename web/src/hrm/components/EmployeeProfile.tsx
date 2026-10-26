@@ -1,4 +1,4 @@
-import { Anchor, Button } from '@mantine/core'
+import { Anchor, Button } from '@mmerp/ui'
 import { IconAddressBook, IconEye, IconEyeOff, IconLock, IconUser } from '@tabler/icons-react'
 import { useState, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -83,9 +83,9 @@ export function EmployeeProfile({ employee: e, onSaved }: { employee: Employee; 
               [t('hrm.employee.gender'), or(open, t('hrm.employee.gender'), e.gender && t(`hrm.employee.gender.${e.gender}`))],
               [
                 t('hrm.employee.phone'),
-                or(open, t('hrm.employee.phone'), e.phone && <Anchor href={`tel:${e.phone.replace(/\s/g, '')}`} size="sm" inherit>{e.phone}</Anchor>),
+                or(open, t('hrm.employee.phone'), e.phone && <Anchor href={`tel:${e.phone.replace(/\s/g, '')}`}>{e.phone}</Anchor>),
               ],
-              [t('hrm.employee.email'), or(open, t('hrm.employee.email'), e.email && <Anchor href={`mailto:${e.email}`} size="sm" inherit>{e.email}</Anchor>)],
+              [t('hrm.employee.email'), or(open, t('hrm.employee.email'), e.email && <Anchor href={`mailto:${e.email}`}>{e.email}</Anchor>)],
               [t('hrm.employee.address'), or(open, t('hrm.employee.address'), e.address), 'wide'],
             ]}
           />

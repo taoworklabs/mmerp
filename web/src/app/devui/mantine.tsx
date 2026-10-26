@@ -1,4 +1,5 @@
-import { Anchor, Button, Divider, Group, List, Loader, Skeleton, Stack, Text, Tooltip } from '@mantine/core'
+import { Anchor, Button, Divider, Group, List, Loader, Skeleton, Stack, Text } from '@mmerp/ui'
+import { Tooltip } from '@mantine/core'
 import { IconDownload, IconPlus } from '@tabler/icons-react'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router'
@@ -16,13 +17,13 @@ const code = {
 <Button variant="default">            // secondary
 <Button variant="subtle" color="gray"> // the way out beside a primary
 <Button color="danger">               // destructive, after a confirmation`,
-  anchor: `<Anchor component={Link} to={path}>  // a record or page
+  anchor: `<Anchor render={<Link to={path} />}>  // a record or page
 <Anchor href="tel:…">                 // a phone number or email
-<Anchor component="button">           // only for "show more" inside text`,
+<Anchor render={<button />}>           // only for "show more" inside text`,
   layout: `<Group gap="xs">  <Stack gap="md">   // gaps are theme keys, never numbers
-<Text size="sm" c="dimmed">          // sizes and colours are theme keys too`,
-  loader: `<Loader size="sm" />   // beside the text of what is loading`,
-  skeleton: `<Skeleton h="1em" w="4ch" />   // the shape of one small value`,
+<Text size="sm" tone="dimmed">          // sizes and colours are theme keys too`,
+  loader: `<Loader size="sm" label={t('shared.state.loading')} />   // beside the text of what is loading`,
+  skeleton: `<Skeleton height="1em" width="4ch" />   // the shape of one small value`,
   tooltip: `<Tooltip label={t('…')}>
   <Button variant="subtle" color="gray" aria-label={t('…')}>{icon}</Button>
 </Tooltip>`,
@@ -36,7 +37,7 @@ export function AnchorDoc() {
       example={
         <Case>
           <Group>
-            <Anchor component={Link} to="/dev/ui/mantine/anchor" size="sm">
+            <Anchor render={<Link to="/dev/ui/mantine/anchor" />} size="sm">
               {sample.person}
             </Anchor>
           </Group>
@@ -46,7 +47,7 @@ export function AnchorDoc() {
         <>
           <Case label={t('shared.devui.case_link_record')}>
             <Group>
-              <Anchor component={Link} to="/dev/ui/mantine/anchor" size="sm">
+              <Anchor render={<Link to="/dev/ui/mantine/anchor" />} size="sm">
                 {sample.person}
               </Anchor>
             </Group>
@@ -63,7 +64,7 @@ export function AnchorDoc() {
           </Case>
           <Case label={t('shared.devui.case_link_action')}>
             <Group>
-              <Anchor component="button" type="button" size="sm">
+              <Anchor render={<button />} type="button" size="sm">
                 {t('shared.devui.show_more')}
               </Anchor>
             </Group>
@@ -82,7 +83,7 @@ export function ButtonDoc() {
       path="mantine/button"
       example={
         <Case>
-          <Group justify="flex-end">
+          <Group justify="end">
             <Button variant="subtle" color="gray">
               {t('shared.form.cancel')}
             </Button>
@@ -142,7 +143,7 @@ export function ButtonDoc() {
                 <Button>{t('shared.devui.secondary')}</Button>
                 <Button>{t('shared.devui.primary')}</Button>
               </Group>
-              <Text size="sm" c="dimmed">
+              <Text size="sm" tone="dimmed">
                 {t('shared.devui.dont_two_primary')}
               </Text>
             </>
@@ -162,8 +163,8 @@ export function LayoutTextDoc() {
       example={
         <Case>
           <Stack gap="xs">
-            <Text fw={600}>{t('shared.devui.section_staff')}</Text>
-            <Text size="sm" c="dimmed">
+            <Text weight={600}>{t('shared.devui.section_staff')}</Text>
+            <Text size="sm" tone="dimmed">
               {t('shared.devui.section_hint')}
             </Text>
           </Stack>
@@ -187,17 +188,17 @@ export function LayoutTextDoc() {
             <Text size="sm">{t('shared.devui.section_staff')}</Text>
           </Case>
           <Case label={t('shared.devui.case_list')}>
-            <List size="sm" spacing="xs">
+            <List spacing="xs">
               <List.Item>{t('shared.devui.name')}</List.Item>
               <List.Item>{t('shared.devui.code')}</List.Item>
             </List>
           </Case>
           <Case label={t('shared.devui.case_text')}>
             <Text size="sm">{t('shared.devui.page_content')}</Text>
-            <Text size="sm" c="dimmed">
+            <Text size="sm" tone="dimmed">
               {t('shared.devui.hint')}
             </Text>
-            <Text size="xs" c="dimmed">
+            <Text size="xs" tone="dimmed">
               {t('shared.devui.hint')}
             </Text>
           </Case>
@@ -216,8 +217,8 @@ export function LoaderDoc() {
       example={
         <Case>
           <Group gap="xs">
-            <Loader size="sm" />
-            <Text size="sm" c="dimmed">
+            <Loader size="sm" label={t('shared.state.loading')} />
+            <Text size="sm" tone="dimmed">
               {t('shared.devui.loading')}
             </Text>
           </Group>
@@ -229,9 +230,9 @@ export function LoaderDoc() {
           bad={
             <>
               <Group justify="center">
-                <Loader />
+                <Loader label={t('shared.state.loading')} />
               </Group>
-              <Text size="sm" c="dimmed">
+              <Text size="sm" tone="dimmed">
                 {t('shared.devui.dont_loader_region')}
               </Text>
             </>
@@ -252,7 +253,7 @@ export function SkeletonDoc() {
         <Case>
           <Group gap="xs">
             <Text size="sm">{t('shared.devui.name')}</Text>
-            <Skeleton h="1em" w="4ch" />
+            <Skeleton height="1em" width="4ch" />
           </Group>
         </Case>
       }
@@ -262,11 +263,11 @@ export function SkeletonDoc() {
           bad={
             <>
               <Stack gap="xs">
-                <Skeleton h="1em" />
-                <Skeleton h="1em" w="70%" />
-                <Skeleton h="1em" w="40%" />
+                <Skeleton height="1em" />
+                <Skeleton height="1em" width="70%" />
+                <Skeleton height="1em" width="40%" />
               </Stack>
-              <Text size="sm" c="dimmed">
+              <Text size="sm" tone="dimmed">
                 {t('shared.devui.dont_skeleton_stack')}
               </Text>
             </>
@@ -312,7 +313,7 @@ export function TooltipDoc() {
                   <Button variant="default">{t('shared.devui.export')}</Button>
                 </Tooltip>
               </Group>
-              <Text size="sm" c="dimmed">
+              <Text size="sm" tone="dimmed">
                 {t('shared.devui.dont_tooltip_repeat')}
               </Text>
             </>

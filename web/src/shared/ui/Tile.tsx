@@ -1,4 +1,4 @@
-import { Group, Paper, SimpleGrid, Skeleton, Stack, Text, ThemeIcon } from '@mantine/core'
+import { Group, Paper, SimpleGrid, Skeleton, Stack, Text, ThemeIcon } from '@mmerp/ui'
 import type { ComponentType, ReactNode } from 'react'
 import { Link } from 'react-router'
 import { formatNumber } from '@/shared/i18n'
@@ -16,13 +16,13 @@ export function TileGrid({ children }: { children: ReactNode }) {
 export function StatTile(props: { label: string; value: number | undefined; to: string; error?: string; onRetry?: () => void }) {
   const { label, value, to, error, onRetry } = props
   const heading = (
-    <Text size="sm" c="dimmed">
+    <Text size="sm" tone="dimmed">
       {label}
     </Text>
   )
   if (error)
     return (
-      <Paper withBorder p="md">
+      <Paper withBorder padding="md">
         <Stack gap="xs">
           {heading}
           <ErrorState message={error} onRetry={onRetry} />
@@ -30,13 +30,13 @@ export function StatTile(props: { label: string; value: number | undefined; to: 
       </Paper>
     )
   return (
-    <Paper withBorder p="md" component={Link} to={to} className={classes.tile} aria-busy={value === undefined}>
+    <Paper withBorder padding="md" render={<Link to={to} />} className={classes.tile} aria-busy={value === undefined}>
       <Stack gap="xxs">
         {heading}
         {value === undefined ? (
           <Skeleton className={classes.loading} />
         ) : (
-          <Text fz="xl" fw={600} className={classes.value}>
+          <Text size="xl" weight={600} className={classes.value}>
             {formatNumber(value)}
           </Text>
         )}
@@ -48,12 +48,12 @@ export function StatTile(props: { label: string; value: number | undefined; to: 
 // LinkTile is a destination: an icon and a name, e.g. a product on the home page.
 export function LinkTile({ icon: Icon, title, to }: { icon: ComponentType<{ size?: number; stroke?: number }>; title: string; to: string }) {
   return (
-    <Paper withBorder p="md" component={Link} to={to} className={classes.tile}>
-      <Group gap="sm" wrap="nowrap">
-        <ThemeIcon variant="light" size="lg" aria-hidden>
+    <Paper withBorder padding="md" render={<Link to={to} />} className={classes.tile}>
+      <Group gap="sm" wrap={false}>
+        <ThemeIcon variant="light" size={36} aria-hidden>
           <Icon {...icon.button} />
         </ThemeIcon>
-        <Text fw={600}>{title}</Text>
+        <Text weight={600}>{title}</Text>
       </Group>
     </Paper>
   )

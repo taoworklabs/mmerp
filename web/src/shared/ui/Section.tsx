@@ -1,4 +1,4 @@
-import { Group, Stack, Text, Title } from '@mantine/core'
+import { Group, Stack, Text, Title } from '@mmerp/ui'
 import { useId, type ReactNode } from 'react'
 import classes from './Section.module.css'
 
@@ -7,20 +7,20 @@ import classes from './Section.module.css'
 export function Section({ title, description, actions, children }: { title: string; description?: ReactNode; actions?: ReactNode; children: ReactNode }) {
   const id = useId()
   return (
-    <Stack component="section" gap="sm" className={classes.section} aria-labelledby={id}>
-      <Group justify="space-between" align="flex-start" wrap="nowrap" gap="md">
-        <Stack gap="xxxs" miw={0}>
+    <Stack render={<section />} gap="sm" className={classes.section} aria-labelledby={id}>
+      <Group justify="space-between" align="start" wrap={false} gap="md">
+        <Stack gap="xxxs" shrink>
           <Title order={2} id={id}>
             {title}
           </Title>
           {description && (
-            <Text size="sm" c="dimmed" component="div">
+            <Text size="sm" tone="dimmed" render={<div />}>
               {description}
             </Text>
           )}
         </Stack>
         {actions && (
-          <Group gap="xs" wrap="nowrap">
+          <Group gap="xs" wrap={false}>
             {actions}
           </Group>
         )}

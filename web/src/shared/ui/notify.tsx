@@ -1,4 +1,4 @@
-import { Button, Group } from '@mantine/core'
+import { Button, Group } from '@mmerp/ui'
 import { notifications } from '@mantine/notifications'
 
 // notifySuccess is the toast after a save: bottom right, gone after 3 seconds.
@@ -33,7 +33,7 @@ export function notifyUndo(message: string, undoLabel: string, onUndo: () => voi
 // UndoMessage is the body of an undo toast, exported so the catalogue can show it at rest.
 export function UndoMessage({ message, undoLabel, onUndo }: { message: string; undoLabel: string; onUndo: () => void }) {
   return (
-    <Group justify="space-between" wrap="nowrap" gap="sm">
+    <Group justify="space-between" wrap={false} gap="sm">
       <span>{message}</span>
       <Button variant="subtle" onClick={onUndo}>
         {undoLabel}

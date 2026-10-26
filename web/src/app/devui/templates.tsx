@@ -1,4 +1,5 @@
-import { Button, Group, PasswordInput, Stack, Text, TextInput } from '@mantine/core'
+import { Button, Group, Stack, Text } from '@mmerp/ui'
+import { PasswordInput, TextInput } from '@mantine/core'
 import { IconAlertTriangle, IconAt, IconCircleCheck, IconHourglassHigh, IconUsersGroup } from '@tabler/icons-react'
 import { useTranslation } from 'react-i18next'
 import { Fragment } from 'react'
@@ -48,7 +49,7 @@ const crumbs = [
 function Body() {
   const { t } = useTranslation()
   return (
-    <Text size="sm" c="dimmed">
+    <Text size="sm" tone="dimmed">
       {t('shared.devui.page_content')}
     </Text>
   )
@@ -248,7 +249,7 @@ const inboxLooks = [
   { Icon: IconCircleCheck, color: 'success' },
   { Icon: IconAt, color: 'info' },
   { Icon: IconAlertTriangle, color: 'danger' },
-]
+] as const
 
 export function InboxTemplate() {
   const { t } = useTranslation()
@@ -271,11 +272,11 @@ export function InboxTemplate() {
                   onClick={() => setSearch({ item: String(r.id) })}
                   icon={<InboxIcon icon={look.Icon} color={look.color} />}
                   label={
-                    <Group justify="space-between" wrap="nowrap">
-                      <Text size="sm" fw="inherit">
+                    <Group justify="space-between" wrap={false}>
+                      <Text size="sm">
                         {r.code}
                       </Text>
-                      <Text size="xs" c="dimmed">
+                      <Text size="xs" tone="dimmed">
                         {t('shared.devui.ago')}
                       </Text>
                     </Group>

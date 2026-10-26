@@ -1,4 +1,4 @@
-import { Button } from '@mantine/core'
+import { Button } from '@mmerp/ui'
 import { IconCircleDot, IconPlus } from '@tabler/icons-react'
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
@@ -59,7 +59,7 @@ export function CustomersPage() {
       description={t('sales.customers.description')}
       action={
         canCreate && (
-          <Button component={Link} to="/sales/customers/new" leftSection={<IconPlus {...icon.button} />}>
+          <Button render={<Link to="/sales/customers/new" />} leftSection={<IconPlus {...icon.button} />}>
             {t('sales.customers.create')}
           </Button>
         )

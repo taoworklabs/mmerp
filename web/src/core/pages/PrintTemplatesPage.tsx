@@ -1,4 +1,4 @@
-import { Stack, Text } from '@mantine/core'
+import { Stack, Text } from '@mmerp/ui'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
@@ -95,7 +95,7 @@ function BlocksForm({ template, onClose }: { template: PrintTemplateBlocks; onCl
 
   return (
     <Form form={form} onSubmit={save}>
-      <Text size="sm" c="dimmed">
+      <Text size="sm" tone="dimmed">
         {t('core.print.hint')}
       </Text>
       {template.blocks.map((b) => {

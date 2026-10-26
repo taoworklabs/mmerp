@@ -1,4 +1,4 @@
-import { Anchor, Group, Stack, Text } from '@mantine/core'
+import { Anchor, Group, Stack, Text } from '@mmerp/ui'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router'
 import { ApiError, type Employee } from '@/shared/api/hrm'
@@ -30,18 +30,18 @@ export function EmployeeDigest({ employee: e }: { employee: Employee }) {
             <ContentSkeleton />
           ) : current ? (
             <Stack gap="xxs">
-              <Group gap="sm" justify="space-between" wrap="nowrap">
-                <Anchor component={Link} to={`/hrm/contracts/${current.id}`} fw={600}>
+              <Group gap="sm" justify="space-between" wrap={false}>
+                <Anchor render={<Link to={`/hrm/contracts/${current.id}`} />} weight={600}>
                   {current.number}
                 </Anchor>
                 <DocumentStatus docType={contractDocType} status={current.status} />
               </Group>
-              <Text size="sm" c="dimmed">
+              <Text size="sm" tone="dimmed">
                 {t('hrm.employee.contract_since', { type: current.contract_type_name, date: formatDate(current.start_date) })}
               </Text>
             </Stack>
           ) : (
-            <Text size="sm" c="dimmed">
+            <Text size="sm" tone="dimmed">
               {t('hrm.employee.no_current_contract')}
             </Text>
           )}
@@ -52,7 +52,7 @@ export function EmployeeDigest({ employee: e }: { employee: Employee }) {
           {balances.isPending ? (
             <ContentSkeleton />
           ) : (
-            <Text fw={600}>{left ? t('hrm.leave.balance_left', { left: formatDecimal(left.days) }) : <Text span c="dimmed" size="sm">{t('hrm.balance.empty')}</Text>}</Text>
+            <Text weight={600}>{left ? t('hrm.leave.balance_left', { left: formatDecimal(left.days) }) : <Text render={<span />} tone="dimmed" size="sm">{t('hrm.balance.empty')}</Text>}</Text>
           )}
         </Panel>
       )}

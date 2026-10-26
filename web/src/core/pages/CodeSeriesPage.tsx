@@ -1,4 +1,4 @@
-import { Text } from '@mantine/core'
+import { Text } from '@mmerp/ui'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'

@@ -1,4 +1,4 @@
-import { Text } from '@mantine/core'
+import { Text } from '@mmerp/ui'
 import { IconCash, IconFileText, IconListDetails } from '@tabler/icons-react'
 import { Fragment } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -32,7 +32,7 @@ export function ContractDetails({ contract: c }: { contract: Contract }) {
       </EditablePanel>
       <EditablePanel title={t('hrm.contract.section_terms')} icon={IconCash} editable={canEdit && !hidden} edit={edit('terms')}>
         {hidden ? (
-          <Text size="sm" c="dimmed">
+          <Text size="sm" tone="dimmed">
             {t('hrm.contract.terms_hidden')}
           </Text>
         ) : (

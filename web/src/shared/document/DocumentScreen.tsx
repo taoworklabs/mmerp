@@ -1,4 +1,4 @@
-import { Group } from '@mantine/core'
+import { Group } from '@mmerp/ui'
 import { Fragment, useState, type ReactNode } from 'react'
 import { DocumentPage, type Crumb, type DocumentSection } from '@/shared/ui/page'
 import { ActivityFeed } from './ActivityFeed'
@@ -50,13 +50,13 @@ function Screen({ docType, doc: d, list, facts, badges, subject, fullWidth, extr
       title={d.number}
       breadcrumbs={[list]}
       status={
-        <Group gap="xs" wrap="nowrap">
+        <Group gap="xs" wrap={false}>
           <DocumentStatus docType={docType} status={d.status} />
           {badges}
         </Group>
       }
       description={
-        <Group gap="xs" component="span">
+        <Group gap="xs" render={<span />}>
           {facts
             .filter((f) => f !== null && f !== undefined && f !== false && f !== '')
             .map((f, i) => (
@@ -69,7 +69,7 @@ function Screen({ docType, doc: d, list, facts, badges, subject, fullWidth, extr
       }
       error={error}
       actions={
-        <Group gap="xs" justify="flex-end">
+        <Group gap="xs" justify="end">
           <ApprovalDecision docType={docType} id={d.id} onError={setError} />
           {extraActions?.(setError)}
           <DocumentActions

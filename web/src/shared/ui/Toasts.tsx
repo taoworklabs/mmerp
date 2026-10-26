@@ -1,4 +1,4 @@
-import { useMediaQuery } from '@mantine/hooks'
+import { useMediaQuery } from '@mmerp/ui'
 import { Notifications } from '@mantine/notifications'
 
 // Toasts sit bottom right; below 1024px they go to the top, clear of a document's action bar.

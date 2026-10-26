@@ -8,9 +8,10 @@ export interface ThemeIconProps extends React.ComponentPropsWithRef<'div'> {
   color?: ColorName
   variant?: 'light' | 'filled'
   size?: number
+  circle?: boolean
 }
 
-export function ThemeIcon({ color = 'primary', variant = 'light', size = 30, className, style, children, ...props }: ThemeIconProps) {
+export function ThemeIcon({ color = 'primary', variant = 'light', size = 30, circle, className, style, children, ...props }: ThemeIconProps) {
   const vars: StyleVars = {
     ...style,
     '--mmerp-theme-icon-size': `${size}px`,
@@ -18,7 +19,7 @@ export function ThemeIcon({ color = 'primary', variant = 'light', size = 30, cla
     '--mmerp-theme-icon-color': variant === 'filled' ? 'var(--mmerp-color-body)' : `var(--mmerp-color-${color}-light-color)`,
   }
   return (
-    <div className={cx(styles.root, className)} style={vars} {...props}>
+    <div className={cx(styles.root, className)} style={vars} data-circle={circle ? '' : undefined} {...props}>
       {children}
     </div>
   )

@@ -1,4 +1,4 @@
-import { Button, Group } from '@mantine/core'
+import { Button, Group } from '@mmerp/ui'
 import { IconPencil, type Icon as TablerIcon } from '@tabler/icons-react'
 import { useRef, useState, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -40,7 +40,7 @@ export function EditablePanel({ title, icon: Icon, editable, actions, edit, chil
       icon={Icon}
       actions={
         !editing && (
-          <Group gap="xs" wrap="nowrap">
+          <Group gap="xs" wrap={false}>
             {actions}
             {editable && (
               <Button ref={button} variant="subtle" leftSection={<IconPencil {...icon.button} />} onClick={open} aria-label={t('shared.inline.edit', { label: title })}>

@@ -1,5 +1,5 @@
-import { ActionIcon, Button, Group, Paper, ScrollArea, SimpleGrid, Stack, Table, Text, Tooltip } from '@mantine/core'
-import { useMediaQuery } from '@mantine/hooks'
+import { ActionIcon, Button, Group, Paper, SimpleGrid, Stack, Text, useMediaQuery } from '@mmerp/ui'
+import { ScrollArea, Table, Tooltip } from '@mantine/core'
 import { IconPlus, IconTrash } from '@tabler/icons-react'
 import type { KeyboardEvent, ReactNode } from 'react'
 import { useFieldArray, useFormContext } from 'react-hook-form'
@@ -64,7 +64,7 @@ function EditLines<L extends object>({ name, label, columns: all, newLine, addLa
   const removable = lines.fields.length > minLines
   const remove = (i: number) => (
     <Tooltip label={removeLabel(i + 1)}>
-      <ActionIcon variant="subtle" color="gray" size="input-sm" aria-label={removeLabel(i + 1)} onClick={() => lines.remove(i)}>
+      <ActionIcon variant="subtle" color="gray" aria-label={removeLabel(i + 1)} onClick={() => lines.remove(i)}>
         <IconTrash {...icon.button} />
       </ActionIcon>
     </Tooltip>
@@ -81,10 +81,10 @@ function EditLines<L extends object>({ name, label, columns: all, newLine, addLa
     return (
       <Stack gap="sm">
         {lines.fields.map((line, i) => (
-          <Paper key={line.id} withBorder p="sm">
+          <Paper key={line.id} withBorder padding="sm">
             <Stack gap="sm">
-              <Group justify="space-between" wrap="nowrap">
-                <Text fw={600} size="sm">
+              <Group justify="space-between" wrap={false}>
+                <Text weight={600} size="sm">
                   {lineLabel(i + 1)}
                 </Text>
                 {removable && remove(i)}
@@ -155,9 +155,9 @@ function ReadOnlyLines<L extends object>({ label, columns: all, lines, lineLabel
         </Paper>
       ) : (
         lines.map((line, i) => (
-          <Paper key={i} withBorder p="sm">
+          <Paper key={i} withBorder padding="sm">
             <Stack gap="xs">
-              <Text fw={600} size="sm">
+              <Text weight={600} size="sm">
                 {lineLabel(i + 1)}
               </Text>
               <FieldList rows={columns.map((c) => [c.header, c.value?.(line, i)])} />
@@ -180,7 +180,7 @@ function Head<L extends object>({ columns, readOnly }: { columns: LineColumn<L>[
           <Table.Th key={c.key} miw={readOnly ? undefined : (c.width ?? 200)} ta={c.numeric ? 'right' : undefined}>
             {c.header}
             {c.required && !readOnly && (
-              <Text component="span" c="var(--mmerp-color-error)" aria-hidden>
+              <Text render={<span />} tone="danger" aria-hidden>
                 {' *'}
               </Text>
             )}
@@ -206,9 +206,9 @@ function nextCellOnEnter(e: KeyboardEvent<HTMLTableElement>) {
 // note says where the figures come from (the server computes them when the draft is saved).
 export function LinesTotals({ rows, note }: { rows: [string, string][]; note?: string }) {
   return (
-    <Stack gap="xxs" align="flex-end">
+    <Stack gap="xxs" align="end">
       {note && (
-        <Text size="sm" c="dimmed">
+        <Text size="sm" tone="dimmed">
           {note}
         </Text>
       )}

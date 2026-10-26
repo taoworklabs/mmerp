@@ -1,4 +1,4 @@
-import { Button, Group, Stack, Text } from '@mantine/core'
+import { Button, Group, Stack, Text } from '@mmerp/ui'
 import { IconCircleDot, IconUsersGroup } from '@tabler/icons-react'
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
@@ -132,7 +132,7 @@ export function FormDoc() {
                 </InputRow>
                 <CheckboxField name="flag" label={t('shared.devui.checkbox')} description={t('shared.devui.hint')} />
                 <FormRow>
-                  <Text size="sm" c="dimmed">
+                  <Text size="sm" tone="dimmed">
                     {t('shared.devui.hint')}
                   </Text>
                 </FormRow>

@@ -3,6 +3,7 @@
   "shared.locale.vi": "Tiếng Việt",
   "shared.locale.en": "English",
   "shared.state.retry": "Try again",
+  "shared.state.loading": "Loading",
   "shared.notfound.title": "Page not found",
   "shared.notfound.description": "The link does not exist or has changed.",
   "shared.error.unexpected_error": "Something went wrong. Try again in a few minutes; if it persists, contact your administrator.",

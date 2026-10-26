@@ -1,4 +1,5 @@
-import { Button, Drawer, Group, Stack } from '@mantine/core'
+import { Button, Group, Stack } from '@mmerp/ui'
+import { Drawer } from '@mantine/core'
 import { IconArrowRight } from '@tabler/icons-react'
 import type { ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -26,7 +27,7 @@ export function SidePanel({ title, href, opened, onClose, children }: { title: s
     >
       <Stack gap="md">
         <Group>
-          <Button component={Link} to={href} variant="default" rightSection={<IconArrowRight {...icon.button} />}>
+          <Button render={<Link to={href} />} variant="default" rightSection={<IconArrowRight {...icon.button} />}>
             {t('shared.panel.open')}
           </Button>
         </Group>

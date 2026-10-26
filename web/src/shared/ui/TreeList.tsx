@@ -1,4 +1,4 @@
-import { Group, Text, UnstyledButton } from '@mantine/core'
+import { Group, Text, UnstyledButton, cx } from '@mmerp/ui'
 import { IconChevronDown, IconChevronRight } from '@tabler/icons-react'
 import { useState, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -54,15 +54,15 @@ function Node<T>({ node, folded, toggle, render, meta, menu, toggleLabel }: Omit
             {closed ? <IconChevronRight {...icon.text} /> : <IconChevronDown {...icon.text} />}
           </UnstyledButton>
         )}
-        <Group gap="sm" wrap="nowrap" miw={0} flex={1} className={classes.label}>
+        <Group gap="sm" wrap={false} className={classes.label} fill>
           {render(node.item)}
           {meta && (
-            <Text size="sm" c="dimmed" truncate visibleFrom="md">
+            <Text size="sm" tone="dimmed" truncate className={classes.meta}>
               {meta(node.item)}
             </Text>
           )}
           {closed && (
-            <Text size="sm" c="dimmed" flex="none" visibleFrom="md">
+            <Text size="sm" tone="dimmed" className={cx(classes.meta, classes.fixed)}>
               {t('shared.tree.hidden', { count: node.children.length })}
             </Text>
           )}

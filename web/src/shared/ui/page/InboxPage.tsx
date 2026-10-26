@@ -1,5 +1,5 @@
-import { Box, Button, Flex, Group, NavLink, Stack, Text, ThemeIcon, VisuallyHidden, type MantineColor } from '@mantine/core'
-import { useMediaQuery } from '@mantine/hooks'
+import { Box, Button, Group, Stack, Text, ThemeIcon, type ThemeIconProps, useMediaQuery, VisuallyHidden } from '@mmerp/ui'
+import { NavLink } from '@mantine/core'
 import { IconArrowLeft, type Icon as TablerIcon } from '@tabler/icons-react'
 import type { ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -40,16 +40,16 @@ export function InboxPage({ list, detail, onBack, ...header }: Props) {
     )
   return (
     <Page {...header}>
-      <Flex align="stretch">
+      <Group align="stretch">
         <Box className={classes.list}>{list}</Box>
-        <Box flex={1} miw={0} pl="xl">
+        <Box className={classes.detail}>
           {detail ?? (
-            <Text c="dimmed" ta="center" py="xl">
+            <Text tone="dimmed" align="center" className={classes.pick}>
               {t('shared.inbox.pick')}
             </Text>
           )}
         </Box>
-      </Flex>
+      </Group>
     </Page>
   )
 }
@@ -58,7 +58,7 @@ export function InboxPage({ list, detail, onBack, ...header }: Props) {
 // (notifications), they sit in one frame ruled apart, like a table inside a page.
 export function InboxList({ label, framed = false, children }: { label: string; framed?: boolean; children: ReactNode }) {
   return (
-    <Stack gap={framed ? 0 : 'xxxs'} component="ul" className={framed ? `${classes.items} ${classes.framed}` : classes.items} aria-label={label}>
+    <Stack gap={framed ? 0 : 'xxxs'} render={<ul />} className={framed ? `${classes.items} ${classes.framed}` : classes.items} aria-label={label}>
       {children}
     </Stack>
   )
@@ -67,16 +67,16 @@ export function InboxList({ label, framed = false, children }: { label: string; 
 // InboxGroup heads the rows that follow it in a framed list, e.g. a day.
 export function InboxGroup({ label }: { label: string }) {
   return (
-    <Text component="li" size="xs" fw={600} c="dimmed" className={classes.group}>
+    <Text render={<li />} size="xs" weight={600} tone="dimmed" className={classes.group}>
       {label}
     </Text>
   )
 }
 
 // InboxIcon is the kind of an InboxRow's item: its icon tinted in the kind's colour, in a circle.
-export function InboxIcon({ icon: Icon, color }: { icon: TablerIcon; color: MantineColor }) {
+export function InboxIcon({ icon: Icon, color }: { icon: TablerIcon; color: ThemeIconProps['color'] }) {
   return (
-    <ThemeIcon variant="light" color={color} size={36} radius={1000} aria-hidden>
+    <ThemeIcon variant="light" color={color} size={36} circle aria-hidden>
       <Icon {...icon.button} />
     </ThemeIcon>
   )
@@ -113,7 +113,7 @@ export function InboxRow({
         leftSection={lead}
         rightSection={
           (aside || unread) && (
-            <Group gap="sm" wrap="nowrap">
+            <Group gap="sm" wrap={false}>
               {aside}
               <span className={classes.dot} data-unread={unread || undefined} aria-hidden />
             </Group>

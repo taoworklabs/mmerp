@@ -1,4 +1,4 @@
-import { Button, Loader, Stack, Text } from '@mantine/core'
+import { Button, Loader, Stack, Text } from '@mmerp/ui'
 import { IconCalculator, IconPrinter } from '@tabler/icons-react'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -107,7 +107,7 @@ function PayrollState({ payroll: p, computing, failed }: { payroll: Payroll; com
   const me = useMe()
   if (computing)
     return (
-      <Notice tone="info" icon={<Loader size="sm" />} announce="polite">
+      <Notice tone="info" icon={<Loader size="sm" label={t('shared.state.loading')} />} announce="polite">
         {t('hrm.payroll.computing')}
       </Notice>
     )
@@ -133,7 +133,7 @@ function PayrollState({ payroll: p, computing, failed }: { payroll: Payroll; com
         </Notice>
       )}
       {p.computed_at && (
-        <Text size="sm" c="dimmed">
+        <Text size="sm" tone="dimmed">
           {t('hrm.payroll.computed_at', { at: formatDateTime(p.computed_at, me.timezone) })}
         </Text>
       )}

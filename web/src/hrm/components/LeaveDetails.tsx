@@ -1,4 +1,4 @@
-import { Group, Stack, Text } from '@mantine/core'
+import { Group, Stack, Text } from '@mmerp/ui'
 import { IconCalendarEvent, IconUsers } from '@tabler/icons-react'
 import { useTranslation } from 'react-i18next'
 import type { Leave, LeaveListItem } from '@/shared/api/hrm'
@@ -68,9 +68,9 @@ export function LeaveImpact({ overlapping }: { overlapping: LeaveListItem[] | un
             ) : (
               <Stack gap="xxs">
                 {overlapping.map((x) => (
-                  <Group key={x.id} gap="xs" wrap="nowrap">
+                  <Group key={x.id} gap="xs" wrap={false}>
                     <EmployeeLink id={x.employee_id}>{x.employee_name}</EmployeeLink>
-                    <Text size="sm" c="dimmed">
+                    <Text size="sm" tone="dimmed">
                       {`${formatDate(x.start_date)} – ${formatDate(x.end_date)}`}
                     </Text>
                     <DocumentStatus docType={leaveDocType} status={x.status} />

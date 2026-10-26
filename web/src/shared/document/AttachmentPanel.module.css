@@ -28,3 +28,17 @@
 .drop:hover {
   background: var(--mmerp-color-gray-0);
 }
+
+.row {
+  padding: var(--mmerp-space-sm);
+}
+
+.name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.add {
+  width: fit-content;
+}

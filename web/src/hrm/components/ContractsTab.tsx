@@ -1,4 +1,4 @@
-import { Button } from '@mantine/core'
+import { Button } from '@mmerp/ui'
 import { IconFilePlus, IconPlus } from '@tabler/icons-react'
 import { useTranslation } from 'react-i18next'
 import { Link, useNavigate } from 'react-router'
@@ -58,7 +58,7 @@ export function ContractsTab({ employee }: { employee: Employee }) {
     <TabContent
       actions={
         canCreate && (
-          <Button component={Link} to={newPath} leftSection={<IconPlus {...icon.button} />}>
+          <Button render={<Link to={newPath} />} leftSection={<IconPlus {...icon.button} />}>
             {t('hrm.contract.create')}
           </Button>
         )

@@ -29,3 +29,7 @@ export const ShadowXs: Story = {
 export const ShadowSm: Story = {
   args: { shadow: 'sm', children: 'Bề mặt nổi hơn' },
 }
+
+export const Render: Story = {
+  args: { render: <a href="#" />, withBorder: true, padding: 'md', children: 'Thẻ là một liên kết' },
+}

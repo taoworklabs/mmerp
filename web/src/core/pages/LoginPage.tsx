@@ -1,5 +1,6 @@
+import { Button, Stack } from '@mmerp/ui'
 // eslint-disable-next-line no-restricted-imports -- raw inputs: the login screen renders before the router that Form needs.
-import { Button, PasswordInput, Stack, TextInput } from '@mantine/core'
+import { PasswordInput, TextInput } from '@mantine/core'
 import { useState, type FormEvent } from 'react'
 import { useTranslation } from 'react-i18next'
 import { api, ApiError, unwrap } from '@/shared/api/core'

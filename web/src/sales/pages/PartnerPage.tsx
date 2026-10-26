@@ -1,4 +1,4 @@
-import { Anchor } from '@mantine/core'
+import { Anchor } from '@mmerp/ui'
 import { IconAddressBook } from '@tabler/icons-react'
 import { useQuery } from '@tanstack/react-query'
 import type { ReactNode } from 'react'
@@ -128,9 +128,9 @@ function PartnerProfile({ partner: p, onSaved }: { partner: Partner; onSaved: ()
             [t('shared.partner.contact_name'), or(open, t('shared.partner.contact_name'), p.contact_name)],
             [
               t('shared.partner.phone'),
-              or(open, t('shared.partner.phone'), p.phone && <Anchor href={`tel:${p.phone.replace(/\s/g, '')}`} size="sm" inherit>{p.phone}</Anchor>),
+              or(open, t('shared.partner.phone'), p.phone && <Anchor href={`tel:${p.phone.replace(/\s/g, '')}`}>{p.phone}</Anchor>),
             ],
-            [t('shared.partner.email'), or(open, t('shared.partner.email'), p.email && <Anchor href={`mailto:${p.email}`} size="sm" inherit>{p.email}</Anchor>)],
+            [t('shared.partner.email'), or(open, t('shared.partner.email'), p.email && <Anchor href={`mailto:${p.email}`}>{p.email}</Anchor>)],
             [t('shared.partner.address'), or(open, t('shared.partner.address'), p.address), 'wide'],
           ]}
         />

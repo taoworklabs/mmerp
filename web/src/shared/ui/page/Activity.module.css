@@ -1,0 +1,7 @@
+.plain.plain {
+  padding-inline: 0;
+}
+
+.head {
+  min-height: var(--mmerp-control-height);
+}

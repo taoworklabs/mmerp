@@ -1,4 +1,4 @@
-import { Skeleton } from '@mantine/core'
+import { Skeleton } from '@mmerp/ui'
 import type { ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { ApiError, type Employee } from '@/shared/api/hrm'
@@ -10,7 +10,7 @@ import { currentContract, useEmployeeContracts, useLeaveBalances } from '../hook
 import { tenure } from '../tenure'
 import { EmployeeLink } from './EmployeeLink'
 
-const loading = <Skeleton h="1lh" w="6em" />
+const loading = <Skeleton height="1lh" width="6em" />
 
 // useTenureText is how long the employee has served, to their last day once they have left.
 export function useTenureText(e: Employee): string {

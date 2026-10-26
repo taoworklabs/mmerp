@@ -1,4 +1,4 @@
-import { Button, Stack, Text } from '@mantine/core'
+import { Button, Stack, Text } from '@mmerp/ui'
 import { IconMail, IconPlus, IconTrash, IconUserCircle } from '@tabler/icons-react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
@@ -87,15 +87,15 @@ function RolesDigest({ userId }: { userId: number }) {
       ) : grants.isError ? (
         <ErrorState message={errorText(t, grants.error)} onRetry={() => void grants.refetch()} />
       ) : grants.data.length === 0 ? (
-        <Text size="sm" c="dimmed">
+        <Text size="sm" tone="dimmed">
           {t('core.user.no_roles')}
         </Text>
       ) : (
         <Stack gap="sm">
           {grants.data.slice(0, 5).map((g) => (
             <Stack key={g.id} gap={0}>
-              <Text fw={600}>{roleLabel(t, g.product, g.role)}</Text>
-              <Text size="sm" c="dimmed">
+              <Text weight={600}>{roleLabel(t, g.product, g.role)}</Text>
+              <Text size="sm" tone="dimmed">
                 {g.org_unit_name ?? t('core.user.tenant_wide')}
               </Text>
             </Stack>
@@ -230,7 +230,7 @@ function UserProfile({ userId, login, name, email }: { userId: number; login: st
               await qc.invalidateQueries({ queryKey: coreKeys.users.detail(userId) })
             }}
           />
-          <Text size="xs" c="dimmed">
+          <Text size="xs" tone="dimmed">
             {t('core.user.email_hint')}
           </Text>
         </Stack>

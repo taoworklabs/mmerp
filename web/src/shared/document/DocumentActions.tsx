@@ -1,4 +1,4 @@
-import { Button, Group } from '@mantine/core'
+import { Button, Group } from '@mmerp/ui'
 import { IconArrowBackUp, IconPrinter, IconSend, IconTrash, IconX } from '@tabler/icons-react'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -78,7 +78,7 @@ export function DocumentActions({ docType, id, version, number, actions, listPat
 
   const has = (a: string) => actions.includes(a)
   return (
-    <Group gap="xs" justify="flex-end">
+    <Group gap="xs" justify="end">
       {has('print') && (
         <ExportButton kind={printKind ?? `printing.${docType}`} params={{ id }} label={printLabel ?? t('shared.document.action.print')} icon={IconPrinter} />
       )}

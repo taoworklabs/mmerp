@@ -1,4 +1,5 @@
-import { Button, Combobox, Group, Stack, Text, Textarea, useCombobox } from '@mantine/core'
+import { Button, Group, Stack, Text } from '@mmerp/ui'
+import { Combobox, Textarea, useCombobox } from '@mantine/core'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -23,7 +24,7 @@ export function CommentText({ body }: { body: string }) {
     <Text size="sm" className={classes.body}>
       {splitMentions(body).map((part, i) =>
         part.mention ? (
-          <Text key={i} span fw={600} c="primary">
+          <Text key={i} render={<span />} weight={600} tone="primary">
             {part.text}
           </Text>
         ) : (
@@ -61,12 +62,12 @@ export function CommentBox({ docType, id, maxLength }: { docType: string; id: nu
   }
 
   return (
-    <Group align="flex-start" gap="sm" wrap="nowrap">
+    <Group align="start" gap="sm" wrap={false}>
       <PersonAvatar name={me.name} size="md" />
-      <Stack gap="xs" miw={0} flex={1}>
+      <Stack gap="xs" fill>
         <MentionTextarea docType={docType} id={id} maxLength={maxLength} value={body} error={error} hint={typed} onChange={setBody} onSubmit={() => void send()} />
         {typed && (
-          <Group justify="flex-end">
+          <Group justify="end">
             <Button variant="default" loading={busy} onClick={() => void send()}>
               {t('shared.discussion.send')}
             </Button>
@@ -171,7 +172,7 @@ function MentionTextarea({
             <Combobox.Option value={u.login} key={u.login}>
               <Text size="sm">
                 {u.name}{' '}
-                <Text span size="xs" c="dimmed">
+                <Text render={<span />} size="xs" tone="dimmed">
                   @{u.login}
                 </Text>
               </Text>

@@ -1,4 +1,5 @@
-import { Button, Group, SegmentedControl, Stack, Text } from '@mantine/core'
+import { Button, Group, Stack, Text } from '@mmerp/ui'
+import { SegmentedControl } from '@mantine/core'
 import { IconCircleDot, IconDownload, IconTrash } from '@tabler/icons-react'
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
@@ -191,7 +192,7 @@ export function BulkPattern() {
             </BulkBar>
           ) : (
             <Group justify="space-between">
-              <Text size="sm" c="dimmed">
+              <Text size="sm" tone="dimmed">
                 {t('shared.devui.bulk_none')}
               </Text>
               {view.tools}

@@ -1,4 +1,5 @@
-import { Anchor, Button, Group, Menu, Text } from '@mantine/core'
+import { Anchor, Button, Group, Text } from '@mmerp/ui'
+import { Menu } from '@mantine/core'
 import { IconDownload, IconFileDescription, IconPencil, IconPlus, IconUsersGroup } from '@tabler/icons-react'
 import { type ReactNode, useState } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -93,7 +94,7 @@ export function DataTableDoc() {
             />
           </Case>
           <Case label={t('shared.devui.case_column_tools')}>
-            <Group justify="flex-end">{view.tools}</Group>
+            <Group justify="end">{view.tools}</Group>
             <DataTable label={t('shared.devui.table')} columns={view.columns} rows={rows} rowKey={(r) => r.id} onResize={view.onResize} />
           </Case>
         </>
@@ -150,7 +151,7 @@ export function FieldListDoc() {
             rows={[
               [
                 'Nhân viên',
-                <Anchor key="p" component={Link} to="/dev/ui/mmerp/field-list" size="sm" inherit>
+                <Anchor key="p" render={<Link to="/dev/ui/mmerp/field-list" />}>
                   {person}
                 </Anchor>,
               ],
@@ -251,7 +252,7 @@ export function StatusBadgeDoc() {
               <Group>
                 <StatusBadge tone="positive">{t('shared.devui.status_neutral')}</StatusBadge>
               </Group>
-              <Text size="sm" c="dimmed">
+              <Text size="sm" tone="dimmed">
                 {t('shared.devui.dont_badge_tone')}
               </Text>
             </>

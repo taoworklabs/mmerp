@@ -1,4 +1,4 @@
-import { Anchor, Badge, Box, Button, Grid, Group, Stack, Text } from '@mantine/core'
+import { Anchor, Badge, Button, Grid, Group, Stack, Text } from '@mmerp/ui'
 import { IconAlertCircle, type Icon as TablerIcon } from '@tabler/icons-react'
 import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from 'react'
 import { FormProvider, useFormContext, useFormState, type FieldErrors, type FieldValues, type UseFormReturn } from 'react-hook-form'
@@ -157,23 +157,21 @@ export function FormSection({ title, description, icon: Icon, wide, compact, chi
   useEffect(() => setCount(submitCount > 0 ? invalidInputs(errors).filter((el) => ref.current?.contains(el)).length : 0))
   const top = wide || compact
   return (
-    <Box component="fieldset" className={classes.section} ref={ref}>
-      <Grid gap={{ base: 'sm', lg: 'xl' }}>
+    <fieldset className={classes.section} ref={ref}>
+      <Grid gap="sm" className={classes.grid}>
         <Grid.Col span={{ base: 12, lg: top ? 12 : 4 }}>
-          <Group gap="xs" wrap="nowrap">
+          <Group gap="xs" wrap={false}>
             {Icon && <Icon {...icon.text} aria-hidden />}
-            <Text component="legend" fz="h2" lh="h2" fw="var(--mmerp-font-weight-heading)">
-              {title}
-            </Text>
+            <legend className={classes.legend}>{title}</legend>
             {count > 0 && (
-              <Badge color="danger" size="sm" circle aria-label={t('shared.form.section_invalid', { count })}>
+              <Badge color="danger" className={classes.count} aria-label={t('shared.form.section_invalid', { count })}>
                 {count}
               </Badge>
             )}
           </Group>
           {/* Quieter than the field labels, so the fields lead. */}
           {description && (
-            <Text size="xs" c="dimmed" mt="xxs">
+            <Text size="xs" tone="dimmed" className={classes.description}>
               {description}
             </Text>
           )}
@@ -184,7 +182,7 @@ export function FormSection({ title, description, icon: Icon, wide, compact, chi
           </div>
         </Grid.Col>
       </Grid>
-    </Box>
+    </fieldset>
   )
 }
 
@@ -207,7 +205,7 @@ export function FormRow({ children }: { children: ReactNode }) {
 // it in a FormSection, rather than with their labels.
 export function InputRow({ children }: { children: ReactNode }) {
   return (
-    <Group justify="space-between" wrap="nowrap" className={classes.inputRow}>
+    <Group justify="space-between" wrap={false} className={classes.inputRow}>
       {children}
     </Group>
   )
@@ -248,18 +246,18 @@ export function FormActions({ submitLabel, onCancel, cancelLabel, cancelTo }: { 
   }
   // Cancel is quiet beside the primary button; the buttons keep together, the error line wraps first.
   const alert = invalid > 0 && (
-    <Group gap="xxs" role="alert" wrap="nowrap" c="danger">
+    <Group gap="xxs" role="alert" wrap={false} className={classes.alert}>
       <IconAlertCircle {...icon.text} aria-hidden />
-      <Text size="sm">
+      <Text size="sm" tone="danger">
         {t('shared.form.invalid', { count: invalid })} ·
       </Text>
-      <Anchor component="button" type="button" size="sm" onClick={() => (last.current = focusInvalid(errors, last.current) ?? null)}>
+      <Anchor render={<button />} type="button" size="sm" onClick={() => (last.current = focusInvalid(errors, last.current) ?? null)}>
         {t('shared.form.next_invalid')}
       </Anchor>
     </Group>
   )
   const actions = (
-    <Group gap="sm" wrap="nowrap">
+    <Group gap="sm" wrap={false}>
       {dirty && (
         <Button variant="default" onClick={() => void discard()}>
           {t('shared.form.discard')}
@@ -271,7 +269,7 @@ export function FormActions({ submitLabel, onCancel, cancelLabel, cancelTo }: { 
         </Button>
       )}
       {page && cancelTo && (
-        <Button variant="subtle" color="gray" component={Link} to={cancelTo}>
+        <Button variant="subtle" color="gray" render={<Link to={cancelTo} />}>
           {t('shared.form.cancel')}
         </Button>
       )}
@@ -288,7 +286,7 @@ export function FormActions({ submitLabel, onCancel, cancelLabel, cancelTo }: { 
       </ModalFooter>
     )
   const buttons = (
-    <Group justify="flex-end">
+    <Group justify="end">
       {alert}
       {actions}
     </Group>
@@ -296,9 +294,9 @@ export function FormActions({ submitLabel, onCancel, cancelLabel, cancelTo }: { 
   if (!cancelTo && !dirty && invalid === 0) return null
   // The state sits beside the buttons it is about; the error line, when shown, says more.
   return (
-    <Group ref={pinned} justify="flex-end" gap="lg" className={classes.bar} data-stuck={stuck || undefined}>
+    <Group ref={pinned} justify="end" gap="lg" className={classes.bar} data-stuck={stuck || undefined}>
       {dirty && invalid === 0 && (
-        <Group gap="xs" wrap="nowrap" role="status">
+        <Group gap="xs" wrap={false} role="status">
           <span className={classes.dot} aria-hidden />
           <Text size="sm">{t('shared.form.unsaved')}</Text>
         </Group>

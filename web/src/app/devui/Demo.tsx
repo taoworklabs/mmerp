@@ -1,4 +1,4 @@
-import { Stack, Text } from '@mantine/core'
+import { Stack, Text } from '@mmerp/ui'
 import type { ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Page } from '@/shared/ui/page'
@@ -37,7 +37,7 @@ export function Case({ label, children }: { label?: string; children: ReactNode 
   return (
     <section className={classes.case} aria-label={label}>
       {label && (
-        <Text size="sm" fw={600} className={classes.label}>
+        <Text size="sm" weight={600} className={classes.label}>
           {label}
         </Text>
       )}

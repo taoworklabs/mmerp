@@ -1,4 +1,5 @@
-import { Button, Combobox, Tooltip, useCombobox } from '@mantine/core'
+import { Button } from '@mmerp/ui'
+import { Combobox, Tooltip, useCombobox } from '@mantine/core'
 import { IconChevronDown, IconX, type Icon as TablerIcon } from '@tabler/icons-react'
 import { useState, type ReactElement, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -36,8 +37,7 @@ export function ChipShell({ label, icon: Icon, chosen, clearable, onClear, onTog
           variant={variant}
           leftSection={<Icon {...icon.button} />}
           rightSection={!active && <IconChevronDown {...icon.text} />}
-          maw={filterWidth.chip}
-          classNames={{ label: classes.label }}
+          style={{ maxWidth: filterWidth.chip }}
           title={chosen !== null ? text : undefined}
           onClick={onToggle}
         >
@@ -46,7 +46,7 @@ export function ChipShell({ label, icon: Icon, chosen, clearable, onClear, onTog
       )}
       {active && (
         <Tooltip label={clear}>
-          <Button variant={variant} px="xs" className={classes.clear} aria-label={clear} onClick={onClear}>
+          <Button variant={variant} className={classes.clear} aria-label={clear} onClick={onClear}>
             <IconX {...icon.button} />
           </Button>
         </Tooltip>

@@ -1,4 +1,4 @@
-import { useDebouncedValue } from '@mantine/hooks'
+import { useDebouncedValue } from '@mmerp/ui'
 import { useQuery, type QueryKey } from '@tanstack/react-query'
 import { useState } from 'react'
 import { SelectField, type Option } from './fields'

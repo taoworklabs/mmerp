@@ -1,4 +1,4 @@
-import { Text } from '@mantine/core'
+import { Text } from '@mmerp/ui'
 import type { ReactNode } from 'react'
 import classes from './KeyFacts.module.css'
 
@@ -9,10 +9,10 @@ export function KeyFacts({ facts }: { facts: [string, ReactNode][] }) {
     <dl className={classes.facts}>
       {facts.map(([label, value]) => (
         <div key={label} className={classes.fact}>
-          <Text component="dt" size="xs" c="dimmed">
+          <Text render={<dt />} size="xs" tone="dimmed">
             {label}
           </Text>
-          <Text component="dd" fw={500}>
+          <Text render={<dd />} weight={500}>
             {value}
           </Text>
         </div>

@@ -1,0 +1,9 @@
+.root {
+  min-height: 100vh;
+  padding: var(--mmerp-space-md);
+}
+
+.card {
+  width: 100%;
+  max-width: 25rem;
+}

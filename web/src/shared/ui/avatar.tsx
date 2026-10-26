@@ -1,4 +1,5 @@
-import { Avatar, Group, Text, type AvatarProps } from '@mantine/core'
+import { Group, Text } from '@mmerp/ui'
+import { Avatar, type AvatarProps } from '@mantine/core'
 
 // Accent colours for avatars: decorative, never carrying meaning.
 const colors = ['blue', 'teal', 'violet', 'orange', 'pink', 'cyan', 'grape', 'indigo']
@@ -25,9 +26,9 @@ export function PersonAvatar({ name, size = 'sm' }: { name: string; size?: Avata
 // PersonName is an avatar and a name on one line, for table cells and lists.
 export function PersonName({ name }: { name: string }) {
   return (
-    <Group gap="xs" wrap="nowrap" component="span">
+    <Group gap="xs" wrap={false} render={<span />}>
       <PersonAvatar name={name} size={24} />
-      <Text component="span" inherit truncate>
+      <Text render={<span />} size="inherit" truncate>
         {name}
       </Text>
     </Group>

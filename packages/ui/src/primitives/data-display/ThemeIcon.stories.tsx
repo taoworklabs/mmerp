@@ -19,3 +19,7 @@ export const Light: Story = {
 export const Filled: Story = {
   args: { variant: 'filled', children: <IconCheck size={icon.text.size} stroke={icon.text.stroke} /> },
 }
+
+export const Circle: Story = {
+  args: { circle: true, children: <IconCheck size={icon.text.size} stroke={icon.text.stroke} /> },
+}

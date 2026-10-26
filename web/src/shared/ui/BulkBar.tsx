@@ -1,4 +1,4 @@
-import { Button, Group, Text } from '@mantine/core'
+import { Button, Group, Text } from '@mmerp/ui'
 import { IconX } from '@tabler/icons-react'
 import type { ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -11,7 +11,7 @@ export function BulkBar({ count, onClear, children }: { count: number; onClear: 
   const { t } = useTranslation()
   return (
     <Group gap="xs" role="toolbar" aria-label={t('shared.bulk.label')}>
-      <Text size="sm" fw={600}>
+      <Text size="sm" weight={600}>
         {t('shared.bulk.selected', { count, n: formatNumber(count) })}
       </Text>
       {children}

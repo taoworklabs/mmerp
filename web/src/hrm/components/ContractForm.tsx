@@ -1,4 +1,4 @@
-import { Text } from '@mantine/core'
+import { Text } from '@mmerp/ui'
 import { IconCash, IconFileText, IconListDetails } from '@tabler/icons-react'
 import { useState } from 'react'
 import type { TFunction } from 'i18next'
@@ -139,7 +139,7 @@ export function ContractForm({ contract, employeeId, parent, onCreated, part, on
       </FormSection>
       <FormSection title={t('hrm.contract.section_terms')} description={t('hrm.contract.section_terms_hint')} icon={IconCash}>
         {terms === null && contract ? (
-          <Text size="sm" c="dimmed">
+          <Text size="sm" tone="dimmed">
             {t('hrm.contract.terms_hidden')}
           </Text>
         ) : (
@@ -221,7 +221,7 @@ export function SavedLines({ lines }: { lines: Line[] }) {
   const { t } = useTranslation()
   if (lines.length === 0)
     return (
-      <Text size="sm" c="dimmed">
+      <Text size="sm" tone="dimmed">
         {t('hrm.contract.no_lines')}
       </Text>
     )

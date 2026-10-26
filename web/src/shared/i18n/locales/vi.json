@@ -3,6 +3,7 @@
   "shared.locale.vi": "Tiếng Việt",
   "shared.locale.en": "English",
   "shared.state.retry": "Thử lại",
+  "shared.state.loading": "Đang tải",
   "shared.notfound.title": "Không tìm thấy trang",
   "shared.notfound.description": "Đường dẫn không tồn tại hoặc đã bị đổi.",
   "shared.error.unexpected_error": "Có lỗi xảy ra. Thử lại sau ít phút; nếu vẫn lỗi, liên hệ quản trị hệ thống.",

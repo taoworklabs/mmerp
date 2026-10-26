@@ -1,4 +1,4 @@
-import { Anchor, Group, Stack, Text } from '@mantine/core'
+import { Anchor, Group, Stack, Text } from '@mmerp/ui'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router'
 import { Page } from '@/shared/ui/page'
@@ -21,7 +21,7 @@ export function Overview() {
                 {(entries as readonly Entry[])
                   .filter((e) => e.layer === l)
                   .map((e) => (
-                    <Anchor key={e.path} component={Link} to={`/dev/ui/${e.path}`} size="sm">
+                    <Anchor key={e.path} render={<Link to={`/dev/ui/${e.path}`} />} size="sm">
                       {title(e)}
                     </Anchor>
                   ))}

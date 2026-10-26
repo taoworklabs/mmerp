@@ -1,16 +1,16 @@
-import { Badge } from '@mantine/core'
+import { Badge, type BadgeProps } from '@mmerp/ui'
 import type { ReactNode } from 'react'
 
 // Tone of a catalog record's state; document states use DocumentStatus instead.
 export type StatusTone = 'positive' | 'neutral' | 'info' | 'warning' | 'negative'
 
-const color: Record<StatusTone, string> = { positive: 'success', neutral: 'gray', info: 'info', warning: 'warning', negative: 'danger' }
+const color: Record<StatusTone, NonNullable<BadgeProps['color']>> = { positive: 'success', neutral: 'gray', info: 'info', warning: 'warning', negative: 'danger' }
 
 // StatusBadge shows a state as tinted text; the label always names the state, so colour is never the only signal.
 // A span, since it also sits inside sentences (the activity feed's "moved to Pending").
 export function StatusBadge({ tone, children }: { tone: StatusTone; children: ReactNode }) {
   return (
-    <Badge component="span" color={color[tone]} size="md">
+    <Badge color={color[tone]}>
       {children}
     </Badge>
   )

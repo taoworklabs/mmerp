@@ -1,7 +1,8 @@
-import { Group, Paper, SimpleGrid, Stack, Text } from '@mantine/core'
+import { Group, Paper, SimpleGrid, Stack, Text } from '@mmerp/ui'
 import type { Icon as TablerIcon } from '@tabler/icons-react'
 import type { ReactNode } from 'react'
 import { icon } from '../theme'
+import classes from './Activity.module.css'
 
 // DocumentSection is one more part of a document's side column (attachments), its title
 // also the tab's label on a narrow screen.
@@ -12,13 +13,13 @@ export type DocumentSection = { key: string; title: string; content: ReactNode }
 // plain drops the frame, for the history in a full-width document's activity tab.
 export function Panel({ title, icon: Icon, actions, plain, children }: { title: string; icon?: TablerIcon; actions?: ReactNode; plain?: boolean; children: ReactNode }) {
   return (
-    <Paper component="section" aria-label={title} withBorder={!plain} p="md" px={plain ? 0 : undefined}>
+    <Paper render={<section />} aria-label={title} withBorder={!plain} padding="md" className={plain ? classes.plain : undefined}>
       <Stack gap="sm">
         {/* On a narrow card the actions drop under the title rather than squeezing it. */}
-        <Group justify="space-between" gap="xs" mih="var(--mmerp-control-height)">
-          <Group gap="xs" wrap="nowrap">
+        <Group justify="space-between" gap="xs" className={classes.head}>
+          <Group gap="xs" wrap={false}>
             {Icon && <Icon {...icon.text} aria-hidden />}
-            <Text fw={600}>{title}</Text>
+            <Text weight={600}>{title}</Text>
           </Group>
           {actions}
         </Group>

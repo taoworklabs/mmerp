@@ -1,4 +1,4 @@
-import { Button } from '@mantine/core'
+import { Button } from '@mmerp/ui'
 import { IconPencil } from '@tabler/icons-react'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router'
@@ -18,7 +18,7 @@ export function OrgStructurePage() {
       description={t('hrm.org.description')}
       action={
         canEdit && (
-          <Button component={Link} to="/admin/org-units" variant="default" leftSection={<IconPencil {...icon.button} />}>
+          <Button render={<Link to="/admin/org-units" />} variant="default" leftSection={<IconPencil {...icon.button} />}>
             {t('hrm.org.edit')}
           </Button>
         )

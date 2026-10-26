@@ -1,4 +1,4 @@
-import { Anchor, Button } from '@mantine/core'
+import { Anchor, Button } from '@mmerp/ui'
 import { IconShoppingCartPlus } from '@tabler/icons-react'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -37,7 +37,7 @@ export function DocPage({ kind }: { kind: Kind }) {
         <>
           <DocProgress doc={d} />
           {linked && (
-            <Anchor component={Link} to={`/sales/${d.order ? 'orders' : 'quotes'}/${linked.id}`} size="sm">
+            <Anchor render={<Link to={`/sales/${d.order ? 'orders' : 'quotes'}/${linked.id}`} />} size="sm">
               {t(d.order ? 'sales.quote.order_link' : 'sales.order.quote_link', { number: linked.number })}
             </Anchor>
           )}

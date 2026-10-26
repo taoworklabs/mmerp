@@ -39,3 +39,7 @@
   height: 1px;
   background: var(--mmerp-color-border);
 }
+
+.more {
+  width: fit-content;
+}

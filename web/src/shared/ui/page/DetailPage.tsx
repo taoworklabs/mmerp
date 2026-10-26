@@ -1,5 +1,4 @@
-import { Group, Stack } from '@mantine/core'
-import { useMediaQuery } from '@mantine/hooks'
+import { Group, Stack, useMediaQuery } from '@mmerp/ui'
 import type { ReactNode } from 'react'
 import { MoreActions } from '../MoreActions'
 import classes from './DetailPage.module.css'
@@ -26,7 +25,7 @@ export function DetailPage({ more, banner, side, narrowActions, actions, childre
   // Rendered in one place only, so each action exists once on the page.
   const bar = !wide && narrowActions
   const all = !bar && (actions || more) && (
-    <Group gap="xs" justify="flex-end" wrap="nowrap">
+    <Group gap="xs" justify="end" wrap={false}>
       {actions}
       {more && <MoreActions place="page">{more}</MoreActions>}
     </Group>
@@ -35,10 +34,10 @@ export function DetailPage({ more, banner, side, narrowActions, actions, childre
     <Page {...header} withBack actions={all} centered="var(--mmerp-detail-width)">
       {banner}
       <div className={classes.columns}>
-        <Stack gap="md" miw={0}>
+        <Stack gap="md" shrink>
           {children}
         </Stack>
-        <Stack gap={0} miw={0} className={classes.side}>
+        <Stack gap={0} className={classes.side} shrink>
           {side}
         </Stack>
       </div>

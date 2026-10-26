@@ -1,4 +1,5 @@
-import { ActionIcon, Anchor, Button, FileButton, Group, Loader, Paper, Stack, Text, ThemeIcon, UnstyledButton } from '@mantine/core'
+import { ActionIcon, Anchor, Button, Group, Loader, Paper, Stack, Text, ThemeIcon, type ThemeIconProps, UnstyledButton } from '@mmerp/ui'
+import { FileButton } from '@mantine/core'
 import {
   IconFile,
   IconFileTypeDocx,
@@ -44,14 +45,14 @@ export function useAttachmentSection(docType: string, id: number): DocumentSecti
 }
 
 // Each kind of file has its own icon and accent colour, so a list of them reads at a glance.
-const photo = { Icon: IconPhoto, color: 'teal' }
-const fileLooks: Record<string, { Icon: TablerIcon; color: string }> = {
-  pdf: { Icon: IconFileTypePdf, color: 'red' },
+const photo = { Icon: IconPhoto, color: 'success' as const }
+const fileLooks: Record<string, { Icon: TablerIcon; color: ThemeIconProps['color'] }> = {
+  pdf: { Icon: IconFileTypePdf, color: 'danger' },
   png: photo,
   jpg: photo,
   jpeg: photo,
-  docx: { Icon: IconFileTypeDocx, color: 'blue' },
-  xlsx: { Icon: IconFileTypeXls, color: 'green' },
+  docx: { Icon: IconFileTypeDocx, color: 'primary' },
+  xlsx: { Icon: IconFileTypeXls, color: 'success' },
 }
 const fileLook = (name: string) => fileLooks[name.toLowerCase().split('.').pop() ?? ''] ?? { Icon: IconFile, color: 'gray' }
 
@@ -70,7 +71,7 @@ function AttachmentPanel({ docType, id }: { docType: string; id: number }) {
   if (q.isError) return <ErrorState message={errorText(t, q.error)} onRetry={() => void q.refetch()} />
   if (q.data.hidden)
     return (
-      <Text size="sm" c="dimmed">
+      <Text size="sm" tone="dimmed">
         {t('shared.attachments.forbidden')}
       </Text>
     )
@@ -159,7 +160,7 @@ function AttachmentPanel({ docType, id }: { docType: string; id: number }) {
     <Stack gap="sm" {...drop}>
       {confirm}
       {error && (
-        <Text size="xs" c="danger" role="alert">
+        <Text size="xs" tone="danger" role="alert">
           {error}
         </Text>
       )}
@@ -167,16 +168,16 @@ function AttachmentPanel({ docType, id }: { docType: string; id: number }) {
         // The empty list is where files go: click it to pick them, or drop them on it.
         picker((open) => (
           <UnstyledButton onClick={open} disabled={busy} className={classes.drop} data-active={dragging || undefined}>
-            <Group gap="xs" justify="center" wrap="nowrap">
-              {busy ? <Loader size="xs" /> : <IconPaperclip {...icon.text} aria-hidden />}
-              <Text size="sm" c="dimmed">
+            <Group gap="xs" justify="center" wrap={false}>
+              {busy ? <Loader size="xs" label={t('shared.state.loading')} /> : <IconPaperclip {...icon.text} aria-hidden />}
+              <Text size="sm" tone="dimmed">
                 {t(dragging ? 'shared.attachments.drop' : 'shared.attachments.drop_hint')}
               </Text>
             </Group>
           </UnstyledButton>
         ))
       ) : empty ? (
-        <Text size="sm" c="dimmed">
+        <Text size="sm" tone="dimmed">
           {t('shared.attachments.none')}
         </Text>
       ) : (
@@ -185,20 +186,20 @@ function AttachmentPanel({ docType, id }: { docType: string; id: number }) {
           {q.data.items.map((a) => {
             const { Icon, color } = fileLook(a.name)
             return (
-              <Group key={a.id} gap="sm" wrap="nowrap" align="center" p="sm" className={classes.row}>
-                <ThemeIcon variant="light" color={color} size={36} radius="md" aria-hidden>
+              <Group key={a.id} gap="sm" wrap={false} align="center" className={classes.row}>
+                <ThemeIcon variant="light" color={color} size={36} aria-hidden>
                   <Icon {...icon.button} />
                 </ThemeIcon>
-                <Stack gap={0} miw={0} flex={1}>
-                  <Anchor href={`/api/attachments/${a.id}`} size="sm" truncate="end">
+                <Stack gap={0} fill>
+                  <Anchor href={`/api/attachments/${a.id}`} size="sm" className={classes.name}>
                     {a.name}
                   </Anchor>
-                  <Text size="xs" c="dimmed">
+                  <Text size="xs" tone="dimmed">
                     {[formatFileSize(a.size), a.uploaded_by_name, formatDateTime(a.uploaded_at, me.timezone)].join(' · ')}
                   </Text>
                 </Stack>
                 {a.allowed_actions.includes('delete') && (
-                  <ActionIcon variant="subtle" color="gray" size="lg" aria-label={t('shared.attachments.remove_named', { name: a.name })} onClick={() => void remove(a)}>
+                  <ActionIcon variant="subtle" color="gray" aria-label={t('shared.attachments.remove_named', { name: a.name })} onClick={() => void remove(a)}>
                     <IconTrash {...icon.text} />
                   </ActionIcon>
                 )}
@@ -210,7 +211,7 @@ function AttachmentPanel({ docType, id }: { docType: string; id: number }) {
       {!empty &&
         canAttach &&
         picker((open) => (
-          <Button variant="subtle" onClick={open} loading={busy} leftSection={<IconPlus {...icon.button} />} w="fit-content">
+          <Button variant="subtle" onClick={open} loading={busy} leftSection={<IconPlus {...icon.button} />} className={classes.add}>
             {t('shared.attachments.add')}
           </Button>
         ))}

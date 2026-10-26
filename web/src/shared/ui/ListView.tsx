@@ -1,4 +1,5 @@
-import { Button, Checkbox, Group, Menu, Popover, Stack, Text } from '@mantine/core'
+import { Button, Group, Stack, Text } from '@mmerp/ui'
+import { Checkbox, Menu, Popover } from '@mantine/core'
 import { IconColumns3, IconDeviceFloppy, IconLayoutList, IconTrash } from '@tabler/icons-react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
@@ -37,7 +38,7 @@ export function useListView<T>(listKey: string, columns: Column<T>[]) {
     columns: shownColumns(columns, settings.data),
     onResize: (column: string, width: number) => save.mutate(withColumn(current, column, { width })),
     tools: (
-      <Group gap="xs" wrap="nowrap">
+      <Group gap="xs" wrap={false}>
         <ViewsMenu settings={current} onChange={(next) => save.mutateAsync(next)} />
         <ColumnsMenu columns={columns} settings={current} onChange={(next) => save.mutate(next)} />
       </Group>
@@ -115,7 +116,7 @@ function ColumnsMenu<T>({ columns, settings, onChange }: { columns: Column<T>[];
       </Popover.Target>
       <Popover.Dropdown>
         <Stack gap="xs">
-          <Text size="xs" fw={600} c="dimmed">
+          <Text size="xs" weight={600} tone="dimmed">
             {t('shared.views.columns_hint')}
           </Text>
           {columns.slice(1).map((c) => (

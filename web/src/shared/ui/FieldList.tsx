@@ -1,4 +1,4 @@
-import { Anchor, Text } from '@mantine/core'
+import { Anchor, Text } from '@mmerp/ui'
 import type { ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router'
@@ -15,10 +15,10 @@ export function FieldList({ rows, stacked }: { rows: FieldRow[]; stacked?: boole
     <dl className={classes.fields} data-stacked={stacked || undefined}>
       {rows.map(([label, value, wide], i) => (
         <div key={i} className={classes.row} data-wide={wide && true}>
-          <Text component="dt" size="sm" c="dimmed">
+          <Text render={<dt />} size="sm" tone="dimmed">
             {label}
           </Text>
-          <Text component="dd">{value}</Text>
+          <Text render={<dd />}>{value}</Text>
         </div>
       ))}
     </dl>
@@ -33,18 +33,18 @@ export function MissingValue({ onAdd, to, label }: { onAdd?: () => void; to?: st
   const name = t('shared.field.add_label', { label })
   if (to)
     return (
-      <Anchor component={Link} to={to} size="sm" aria-label={name}>
+      <Anchor render={<Link to={to} />} size="sm" aria-label={name}>
         {text}
       </Anchor>
     )
   if (onAdd)
     return (
-      <Anchor component="button" type="button" size="sm" onClick={onAdd} aria-label={name}>
+      <Anchor render={<button />} type="button" size="sm" onClick={onAdd} aria-label={name}>
         {text}
       </Anchor>
     )
   return (
-    <Text span size="sm" c="dimmed">
+    <Text render={<span />} size="sm" tone="dimmed">
       {t('shared.field.missing')}
     </Text>
   )

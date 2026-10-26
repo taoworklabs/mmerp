@@ -7,6 +7,7 @@
 
 /* A template's usage note is catalogue chrome, so it reads apart from the page below it. */
 .usage {
+  padding: var(--mmerp-space-xs) var(--mmerp-space-md);
   background: var(--mmerp-color-elevation-surface-sunken);
   border-bottom: 1px solid var(--mmerp-color-border);
 }
@@ -51,12 +52,54 @@
 
 /* "On this page" stays in view while the page scrolls. */
 .toc {
+  display: none;
+  width: 10rem;
   position: sticky;
   top: calc(var(--app-shell-header-height) + var(--mmerp-space-md));
   flex-shrink: 0;
 }
 
+@media (min-width: 80em) {
+  .toc {
+    display: block;
+  }
+}
+
 /* A heading the table of contents jumps to stops below the fixed header, not under it. */
 .heading {
   scroll-margin-top: calc(var(--app-shell-header-height) + var(--mmerp-space-md));
+}
+
+.spec {
+  align-items: center;
+}
+
+.sunken {
+  background: var(--mmerp-color-elevation-surface-sunken);
+}
+
+.overlay {
+  border-radius: var(--mmerp-radius-lg);
+  box-shadow: var(--mmerp-shadow-md);
+}
+
+.footer {
+  border-radius: 0;
+  box-shadow: var(--mmerp-shadow-footer);
+}
+
+.related.related {
+  display: inline-flex;
+}
+
+.bar {
+  height: 100%;
+}
+
+.layerHead {
+  padding-inline: var(--mmerp-space-xs);
+}
+
+.tocTitle {
+  margin-bottom: var(--mmerp-space-xs);
 }

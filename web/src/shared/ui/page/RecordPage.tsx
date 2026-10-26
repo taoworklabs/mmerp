@@ -1,4 +1,5 @@
-import { Anchor, Group, Stack, Tabs } from '@mantine/core'
+import { Anchor, Group, Stack } from '@mmerp/ui'
+import { Tabs } from '@mantine/core'
 import type { ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link, useSearchParams } from 'react-router'
@@ -31,7 +32,7 @@ export function RecordPage({ more, actions, tabs, aliases, children, ...header }
   const wanted = aliases?.[asked] ?? asked
   const tab = tabs.some((x) => x.value === wanted) ? wanted : first
   const all = (actions || more) && (
-    <Group gap="xs" justify="flex-end" wrap="nowrap">
+    <Group gap="xs" justify="end" wrap={false}>
       {actions}
       {more && <MoreActions place="page">{more}</MoreActions>}
     </Group>
@@ -80,10 +81,10 @@ export function RecordPage({ more, actions, tabs, aliases, children, ...header }
 export function RecordColumns({ main, side }: { main: ReactNode; side: ReactNode }) {
   return (
     <div className={classes.columns}>
-      <Stack gap="md" miw={0}>
+      <Stack gap="md" shrink>
         {main}
       </Stack>
-      <Stack gap={0} miw={0} className={classes.side}>
+      <Stack gap={0} className={classes.side} shrink>
         {side}
       </Stack>
     </div>
@@ -94,7 +95,7 @@ export function RecordColumns({ main, side }: { main: ReactNode; side: ReactNode
 export function SeeAll({ tab }: { tab: string }) {
   const { t } = useTranslation()
   return (
-    <Anchor component={Link} to={`?tab=${tab}`} replace size="sm">
+    <Anchor render={<Link to={`?tab=${tab}`} replace />} size="sm">
       {t('shared.record.see_all')}
     </Anchor>
   )
@@ -105,7 +106,7 @@ export function SeeAll({ tab }: { tab: string }) {
 export function TabContent({ actions, error, children }: { actions?: ReactNode; error?: string | null; children: ReactNode }) {
   return (
     <Stack gap="md">
-      {actions && <Group justify="flex-end">{actions}</Group>}
+      {actions && <Group justify="end">{actions}</Group>}
       {error && <Notice tone="danger">{error}</Notice>}
       {children}
     </Stack>

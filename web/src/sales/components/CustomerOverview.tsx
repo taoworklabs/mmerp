@@ -1,4 +1,4 @@
-import { Anchor, Group, Stack, Text } from '@mantine/core'
+import { Anchor, Group, Stack, Text } from '@mmerp/ui'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router'
 import type { Customer } from '@/shared/api/sales'
@@ -59,20 +59,20 @@ function Latest({ customer: c, kind }: { customer: Customer; kind: Kind }) {
       {list.isPending ? (
         <ContentSkeleton />
       ) : list.data.items.length === 0 ? (
-        <Text size="sm" c="dimmed">
+        <Text size="sm" tone="dimmed">
           {t(`sales.${pathOf(kind)}.empty`)}
         </Text>
       ) : (
         <Stack gap="sm">
           {list.data.items.slice(0, 3).map((d) => (
             <Stack key={d.id} gap={0}>
-              <Group gap="sm" justify="space-between" wrap="nowrap">
-                <Anchor component={Link} to={`/sales/${pathOf(kind)}/${d.id}`} fw={600}>
+              <Group gap="sm" justify="space-between" wrap={false}>
+                <Anchor render={<Link to={`/sales/${pathOf(kind)}/${d.id}`} />} weight={600}>
                   {d.number}
                 </Anchor>
                 <DocumentStatus docType={docTypeOf(kind)} status={d.status} />
               </Group>
-              <Text size="sm" c="dimmed">
+              <Text size="sm" tone="dimmed">
                 {t('sales.customer.doc_line', { date: formatDate(d.date), total: formatNumber(d.total) })}
               </Text>
             </Stack>

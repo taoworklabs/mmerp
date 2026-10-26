@@ -1,4 +1,4 @@
-import { Button, Paper, Skeleton, Stack, Text, ThemeIcon } from '@mantine/core'
+import { Button, Paper, Skeleton, Stack, Text, ThemeIcon } from '@mmerp/ui'
 import { IconInbox, type Icon as TablerIcon } from '@tabler/icons-react'
 import type { ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -11,14 +11,14 @@ import { icon } from './theme'
 // EmptyState explains why a region is empty and offers the next step.
 export function EmptyState({ title, description, action, icon: Icon = IconInbox }: { title: string; description?: string; action?: ReactNode; icon?: TablerIcon }) {
   return (
-    <Paper withBorder p="xl" className={classes.empty}>
+    <Paper withBorder padding="xl" className={classes.empty}>
       <Stack align="center" gap="xs">
-        <ThemeIcon variant="light" color="gray" size={48} radius={1000} aria-hidden>
+        <ThemeIcon variant="light" color="gray" size={48} circle aria-hidden>
           <Icon {...icon.empty} />
         </ThemeIcon>
-        <Text fw={600}>{title}</Text>
+        <Text weight={600}>{title}</Text>
         {description && (
-          <Text c="dimmed" size="sm" ta="center" maw={420}>
+          <Text tone="dimmed" size="sm" align="center" className={classes.hint}>
             {description}
           </Text>
         )}
@@ -33,7 +33,7 @@ export function ErrorState({ message, onRetry }: { message: string; onRetry?: ()
   const { t } = useTranslation()
   return (
     <Notice tone="danger">
-      <Stack gap="xs" align="flex-start">
+      <Stack gap="xs" align="start">
         <Text>{message}</Text>
         {onRetry && (
           <Button variant="default" onClick={onRetry}>
@@ -48,7 +48,7 @@ export function ErrorState({ message, onRetry }: { message: string; onRetry?: ()
 // PageSkeleton stands in for a whole page while its code or data loads, framed like Page.
 export function PageSkeleton() {
   return (
-    <Stack gap="lg" {...pageFrame} aria-busy="true">
+    <Stack gap="lg" className={pageFrame} aria-busy="true">
       <Skeleton height={30} width="30%" />
       <Skeleton height={200} />
     </Stack>
@@ -78,7 +78,7 @@ function BlockedPage({ kind, back }: { kind: 'notfound' | 'forbidden'; back?: { 
       <EmptyState
         title={t(`shared.${kind}.description`)}
         action={
-          <Button component={Link} to={back?.to ?? '/'} variant="default">
+          <Button render={<Link to={back?.to ?? '/'} />} variant="default">
             {back?.label ?? t('shared.state.home')}
           </Button>
         }

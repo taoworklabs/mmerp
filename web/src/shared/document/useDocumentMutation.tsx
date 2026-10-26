@@ -1,4 +1,5 @@
-import { Button, Modal, Stack, Text } from '@mantine/core'
+import { Button, Stack, Text } from '@mmerp/ui'
+import { Modal } from '@mantine/core'
 import { useState, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { ApiError } from '@/shared/api/error'

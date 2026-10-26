@@ -1,4 +1,5 @@
-import { ActionIcon, Menu, Tooltip } from '@mantine/core'
+import { ActionIcon } from '@mmerp/ui'
+import { Menu, Tooltip } from '@mantine/core'
 import { IconDots } from '@tabler/icons-react'
 import type { ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -15,7 +16,7 @@ export function MoreActions({ children, place = 'row' }: { children: ReactNode; 
     <Menu position="bottom-end">
       <Menu.Target>
         <Tooltip label={label}>
-          <ActionIcon variant={place === 'page' ? 'default' : 'subtle'} color="gray" size="input-sm" aria-label={label}>
+          <ActionIcon variant={place === 'page' ? 'default' : 'subtle'} color="gray" aria-label={label}>
             <IconDots {...icon.button} />
           </ActionIcon>
         </Tooltip>

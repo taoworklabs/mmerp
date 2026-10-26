@@ -102,7 +102,7 @@ export function OrgUnitField({
       data={tree.data}
       renderOption={tree.renderOption}
       // The chosen unit keeps the kind icon it has in the list.
-      leftSection={chosen && <OrgUnitIcon kind={chosen.kind} size="sm" />}
+      leftSection={chosen && <OrgUnitIcon kind={chosen.kind} size={20} />}
       leftSectionPointerEvents="none"
       id={fieldId(name)}
       ref={field.ref}

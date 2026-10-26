@@ -1,4 +1,4 @@
-import { Button } from '@mantine/core'
+import { Button } from '@mmerp/ui'
 import { IconAddressBook, IconLock, IconPlus, IconUser } from '@tabler/icons-react'
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'

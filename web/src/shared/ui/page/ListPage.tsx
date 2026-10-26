@@ -1,5 +1,5 @@
-import { Button, Group, Pagination, Select, Text } from '@mantine/core'
-import { useMediaQuery } from '@mantine/hooks'
+import { Button, Group, Text, useMediaQuery } from '@mmerp/ui'
+import { Pagination, Select } from '@mantine/core'
 import type { ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { errorText, formatNumber } from '@/shared/i18n'
@@ -55,8 +55,8 @@ export function ListPage<T>({
       {wide && bulk
         ? bulk
         : (filters || (wide && tools)) && (
-            <Group gap="xs" align="flex-start" justify="space-between" wrap="nowrap">
-              <Group gap="xs" align="flex-end" flex={1} miw={0} role="search" className={classes.filters}>
+            <Group gap="xs" align="start" justify="space-between" wrap={false}>
+              <Group gap="xs" align="end" role="search" className={classes.filters} fill>
                 {filters}
                 {onClearFilters && (
                   <Button variant="default" onClick={onClearFilters}>
@@ -106,7 +106,7 @@ function PagingBar({ page, pageSize, total, onPage, onPageSize }: Paging) {
   const { t } = useTranslation()
   return (
     <div className={classes.paging}>
-      <Text size="sm" c="dimmed">
+      <Text size="sm" tone="dimmed">
         {t('shared.list.total', { total: formatNumber(total) })}
       </Text>
       <Pagination

@@ -1,4 +1,4 @@
-import { Button } from '@mantine/core'
+import { Button } from '@mmerp/ui'
 import { IconPlus } from '@tabler/icons-react'
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
@@ -68,7 +68,7 @@ export function LeavesPage() {
       description={t('hrm.leaves.description')}
       action={
         canCreate && (
-          <Button component={Link} to="/hrm/leaves/new" leftSection={<IconPlus {...icon.button} />}>
+          <Button render={<Link to="/hrm/leaves/new" />} leftSection={<IconPlus {...icon.button} />}>
             {t('hrm.leaves.create')}
           </Button>
         )

@@ -57,3 +57,13 @@
 .dot[data-unread] {
   background: var(--mmerp-color-primary-6);
 }
+
+.detail {
+  flex: 1;
+  min-width: 0;
+  padding-left: var(--mmerp-space-xl);
+}
+
+.pick {
+  padding-block: var(--mmerp-space-xl);
+}

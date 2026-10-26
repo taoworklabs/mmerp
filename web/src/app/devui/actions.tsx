@@ -1,4 +1,5 @@
-import { Button, Group, Menu, Notification, Stack, Text } from '@mantine/core'
+import { Button, Group, Stack, Text } from '@mmerp/ui'
+import { Menu, Notification } from '@mantine/core'
 import { IconDownload, IconPencil, IconTrash } from '@tabler/icons-react'
 import type { UseQueryResult } from '@tanstack/react-query'
 import { useState } from 'react'
@@ -126,7 +127,7 @@ export function MoreActionsDoc() {
                   <Items dangerFirst />
                 </MoreActions>
               </Group>
-              <Text size="sm" c="dimmed">
+              <Text size="sm" tone="dimmed">
                 {t('shared.devui.dont_danger_first')}
               </Text>
             </>
@@ -287,7 +288,7 @@ export function UseActionDoc() {
       example={
         <Case>
           <Stack gap="md">
-            <Group justify="flex-end">
+            <Group justify="end">
               <Button variant="default" onClick={() => void run(async () => undefined, { success: t('shared.devui.toast_test_sent') })}>
                 {t('shared.devui.send_test')}
               </Button>
@@ -307,7 +308,7 @@ export function UseActionDoc() {
               </Button>
             </Group>
             {error && <Notice tone="danger">{error}</Notice>}
-            <Text size="sm" c="dimmed">
+            <Text size="sm" tone="dimmed">
               {t('shared.devui.use_action_region')}
             </Text>
           </Stack>
@@ -341,7 +342,7 @@ export function UseConfirmDoc() {
       doDont={
         <DoDont
           good={
-            <Group justify="flex-end">
+            <Group justify="end">
               <Button variant="subtle" color="gray">
                 {t('shared.form.cancel')}
               </Button>
@@ -350,13 +351,13 @@ export function UseConfirmDoc() {
           }
           bad={
             <>
-              <Group justify="flex-end">
+              <Group justify="end">
                 <Button variant="subtle" color="gray">
                   {t('shared.form.cancel')}
                 </Button>
                 <Button color="danger">{t('shared.devui.yes')}</Button>
               </Group>
-              <Text size="sm" c="dimmed">
+              <Text size="sm" tone="dimmed">
                 {t('shared.devui.dont_confirm_yes')}
               </Text>
             </>

@@ -1,5 +1,5 @@
-import { Anchor, AppShell, Burger, Group, NavLink, ScrollArea, Stack, Text, ThemeIcon } from '@mantine/core'
-import { useDisclosure } from '@mantine/hooks'
+import { Anchor, Group, Stack, Text, ThemeIcon, useDisclosure } from '@mmerp/ui'
+import { AppShell, Burger, NavLink, ScrollArea } from '@mantine/core'
 import { IconComponents } from '@tabler/icons-react'
 import type { ComponentType, ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -95,23 +95,23 @@ function TemplateNote({ entry }: { entry: Entry }) {
   const title = useEntryTitle()
   const line = (label: string, text: ReactNode) => (
     <Text size="sm">
-      <Text span fw={600}>
+      <Text render={<span />} weight={600}>
         {label}
       </Text>{' '}
       {text}
     </Text>
   )
   return (
-    <Stack gap="xxxs" px="md" py="xs" className={devui.usage}>
+    <Stack gap="xxxs" className={devui.usage}>
       <Text size="sm">{t(`shared.devui.about_${k}`)}</Text>
       {line(t('shared.devui.use_when'), t(`shared.devui.use_${k}`))}
       {line(t('shared.devui.avoid_when'), <Linked text={t(`shared.devui.avoid_${k}`)} />)}
       {entry.related &&
         line(
           t('shared.devui.built_from'),
-          <Group component="span" gap="xs" display="inline-flex">
+          <Group render={<span />} gap="xs" className={devui.related}>
             {entry.related.map((p) => (
-              <Anchor key={p} component={Link} to={`/dev/ui/${p}`} size="sm">
+              <Anchor key={p} render={<Link to={`/dev/ui/${p}`} />} size="sm">
                 {title(entryByPath(p))}
               </Anchor>
             ))}
@@ -132,12 +132,12 @@ function DevUiLayout() {
     <MeProvider me={me}>
       <AppShell header={{ height: 48 }} navbar={{ width: 280, breakpoint: 'md', collapsed: { mobile: !drawer } }} padding={0}>
         <AppShell.Header px="md">
-          <Group h="100%" gap="xs" wrap="nowrap">
+          <Group gap="xs" wrap={false} className={devui.bar}>
             <Burger opened={drawer} onClick={toggle} hiddenFrom="md" size="sm" aria-label={t('core.shell.menu')} aria-expanded={drawer} />
-            <ThemeIcon size={28} radius="sm" aria-hidden>
+            <ThemeIcon size={28} aria-hidden>
               <IconComponents {...icon.text} />
             </ThemeIcon>
-            <Text fw={600} truncate>
+            <Text weight={600} truncate>
               {t('shared.devui.title')}
             </Text>
           </Group>
@@ -147,11 +147,11 @@ function DevUiLayout() {
             <Stack gap="md">
               {layers.map((l, i) => (
                 <Stack key={l} gap="xxs" role="group" aria-label={t(`shared.devui.layer_${l}`)}>
-                  <Stack gap={0} px="xs">
-                    <Text size="xs" fw={600}>
+                  <Stack gap={0} className={devui.layerHead}>
+                    <Text size="xs" weight={600}>
                       {`${i + 1} · ${t(`shared.devui.layer_${l}`)}`}
                     </Text>
-                    <Text size="xs" c="dimmed">
+                    <Text size="xs" tone="dimmed">
                       {t(`shared.devui.layer_${l}_note`)}
                     </Text>
                   </Stack>

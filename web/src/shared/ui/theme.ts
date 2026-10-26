@@ -1,5 +1,5 @@
-import { breakpoint, tokens, icon as kitIcon, type ColorName } from '@mmerp/ui'
-import { Badge, Button, Combobox, createTheme, Drawer, InputWrapper, Menu, Modal, NavLink, Paper, Popover, rem, ScrollArea, SegmentedControl, Select, Tabs, Tooltip, type CSSVariablesResolver, type MantineColorsTuple } from '@mantine/core'
+import { breakpoint, type ColorName, icon as kitIcon, tokens } from '@mmerp/ui'
+import { Combobox, createTheme, Drawer, InputWrapper, Menu, Modal, NavLink, Popover, rem, ScrollArea, SegmentedControl, Select, Tabs, Tooltip, type CSSVariablesResolver, type MantineColorsTuple } from '@mantine/core'
 import segmented from './SegmentedControl.module.css'
 
 // The numbers live in @mmerp/ui; this file only hands them to Mantine until Mantine is gone.
@@ -28,25 +28,14 @@ export const theme = createTheme({
   defaultRadius: 'md',
   shadows: { xs: tokens.shadow.xs, sm: tokens.shadow.sm, md: tokens.shadow.md, lg: tokens.shadow.lg, xl: tokens.shadow.xl },
   // md is where the navigation becomes a drawer (1024px), lg where it stops auto-collapsing (1280px).
-  // Content regions sit on the surface colour, not the app background.
   components: {
-    Paper: Paper.extend({ defaultProps: { bg: 'var(--mmerp-elevation-surface)', radius: 'md' } }),
     // Labels are quieter than the values they name.
     InputWrapper: InputWrapper.extend({
       defaultProps: { inputWrapperOrder: ['label', 'input', 'description', 'error'] },
       styles: { label: { fontSize: 'var(--mantine-font-size-xs)', fontWeight: 600, lineHeight: 'var(--mantine-line-height-xs)', color: 'var(--mantine-color-dimmed)', marginBottom: 'var(--mantine-spacing-xxs)' } },
     }),
-    Button: Button.extend({ styles: { root: { fontWeight: 500 } } }),
     // The chosen option is tinted, without a check mark that pushes every label sideways.
     Select: Select.extend({ defaultProps: { withCheckIcon: false } }),
-    // Tags stand out from the rows around them: a tint one step deeper than other tinted parts
-    // (two for neutral, whose first step is the sunken surface), with the darkest readable text.
-    Badge: Badge.extend({
-      defaultProps: { variant: 'light', radius: 'sm' },
-      styles: { root: { textTransform: 'none', fontWeight: 500, fontSize: 'var(--mantine-font-size-xs)' } },
-      vars: (_, { color = 'primary', variant = 'light' }) =>
-        variant === 'light' ? { root: { '--badge-bg': `var(--mantine-color-${color}-${color === 'gray' ? 2 : 1})`, '--badge-color': `var(--mantine-color-${color}-8)` } } : { root: {} },
-    }),
     // A modal is its own small page: a 20px heading in a header band set off by a rule (its footer
     // band is ModalFooter), 24px of room at the sides and 16px above and below. Its fields are
     // 40px, like a form section's; ModalFooter keeps its buttons at 30px.

@@ -1,4 +1,4 @@
-import { Stack } from '@mantine/core'
+import { Stack } from '@mmerp/ui'
 import type { UseQueryResult } from '@tanstack/react-query'
 import type { ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'

@@ -1,5 +1,5 @@
+import { useMediaQuery } from '@mmerp/ui'
 import { Tabs } from '@mantine/core'
-import { useMediaQuery } from '@mantine/hooks'
 import type { ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useSearchParams } from 'react-router'

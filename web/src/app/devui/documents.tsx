@@ -1,4 +1,4 @@
-import { Group } from '@mantine/core'
+import { Group } from '@mmerp/ui'
 import type { UseQueryResult } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { ActivityFeed, ApprovalPanel, DocumentPreview, DocumentStatus, type DocStatus, useAttachmentSection } from '@/shared/document'

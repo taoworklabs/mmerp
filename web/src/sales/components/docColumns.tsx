@@ -1,4 +1,4 @@
-import { Group } from '@mantine/core'
+import { Group } from '@mmerp/ui'
 import { useTranslation } from 'react-i18next'
 import type { DocListItem } from '@/shared/api/sales'
 import { DocumentStatus } from '@/shared/document'
@@ -26,7 +26,7 @@ export function useDocColumns(kind: Kind, { customer = true } = {}): Column<DocL
       role: 'status',
       kind: 'status',
       render: (d) => (
-        <Group gap="xs" wrap="nowrap">
+        <Group gap="xs" wrap={false}>
           <DocumentStatus docType={docType} status={d.status} />
           <DocProgress doc={d} />
         </Group>
