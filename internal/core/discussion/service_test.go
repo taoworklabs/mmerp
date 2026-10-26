@@ -19,7 +19,7 @@ func TestDeletedWithTheDraft(t *testing.T) {
 	pool := pgtest.New(t)
 	ctx := platform.WithProducts(platform.WithDB(t.Context(), pool), []string{"test"})
 	var actor int64
-	if err := pool.QueryRow(ctx, `INSERT INTO iam.users (login, name, password_hash) VALUES ('u', 'U', '') RETURNING id`).Scan(&actor); err != nil {
+	if err := pgtest.System(t, pool).QueryRow(ctx, `INSERT INTO iam.users (login, name, password_hash) VALUES ('u', 'U', '') RETURNING id`).Scan(&actor); err != nil {
 		t.Fatal(err)
 	}
 	ctx = platform.WithActor(ctx, actor)
@@ -50,7 +50,7 @@ func TestDeletedWithTheDraft(t *testing.T) {
 	if d, err := s.List(ctx, thing); err != nil || len(d.Items) != 1 {
 		t.Fatalf("after a rolled-back deletion: %+v %v", d, err)
 	}
-	if err := s.Deleted(ctx, thing); err != nil {
+	if err := platform.InTx(ctx, func(ctx context.Context) error { return s.Deleted(ctx, thing) }); err != nil {
 		t.Fatal(err)
 	}
 	if d, err := s.List(ctx, thing); err != nil || len(d.Items) != 0 {

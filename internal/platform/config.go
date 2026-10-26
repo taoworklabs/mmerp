@@ -5,7 +5,9 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
+	"strconv"
 	"strings"
+	"time"
 )
 
 // Config is read from the environment once at startup.
@@ -19,6 +21,8 @@ type Config struct {
 	// RunJobs false: this instance enqueues jobs but never works them, e.g. a second
 	// instance in tests that runs with other products on the same database.
 	RunJobs bool
+	// SlowQuery is the query tracer's warn threshold.
+	SlowQuery time.Duration
 }
 
 // LoadConfig reads and validates every variable, reporting all problems at once.
@@ -44,6 +48,11 @@ func LoadConfig() (Config, error) {
 	}
 	if err := cfg.LogLevel.UnmarshalText([]byte(envOr("LOG_LEVEL", "info"))); err != nil {
 		errs = append(errs, fmt.Errorf("LOG_LEVEL: %w", err))
+	}
+	if ms, err := strconv.Atoi(envOr("SLOW_QUERY_MS", "500")); err != nil {
+		errs = append(errs, fmt.Errorf("SLOW_QUERY_MS: %w", err))
+	} else {
+		cfg.SlowQuery = time.Duration(ms) * time.Millisecond
 	}
 	return cfg, errors.Join(errs...)
 }

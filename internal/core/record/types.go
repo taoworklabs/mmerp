@@ -101,6 +101,12 @@ type Type struct {
 	Code    string // <module>.<type>, e.g. hrm.employee
 	Product string
 	Kind    Kind
+	// Shared: Product names a shared module's namespace (e.g. partner), never
+	// product-gated and never listed among products with data.
+	Shared bool
+	// Anywhere, catalogs only: the permission held at any org unit covers every record;
+	// Locate then only reports existence, returning 0.
+	Anywhere bool
 	// Perms declares the permission of each action, held at the record's org unit.
 	Perms Perms
 	// Grant, the relation grant, may still grant a declared action the permission did

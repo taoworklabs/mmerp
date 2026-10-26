@@ -1,4 +1,4 @@
-// Every internal/<tier>/<module>/queries.sql writes only its own schema and reads only
+// Every internal/<tier>/<module>/queries/*.sql writes only its own schema and reads only
 // its own schema, the modules of its tier and of the tiers below. A module in modules/
 // also reads the other modules of its own product and of the products that product
 // declares as dependencies in the composition root.
@@ -49,16 +49,14 @@ function scan(root, { app, manifest }) {
   const errors = []
   for (const [i, tier] of tiers.entries()) {
     for (const mod of all[tier]) {
-      const file = new URL(`${tier}/${mod}/queries.sql`, root)
-      if (!existsSync(file)) continue
-      const where = `internal/${tier}/${mod}/queries.sql`
-      const sql = readFileSync(file, 'utf8').replace(/--.*$/gm, '')
+      const dir = new URL(`${tier}/${mod}/queries/`, root)
+      if (!existsSync(dir)) continue
 
       let readable
       if (tier === 'modules') {
         const mine = product[mod]
         if (!(mine in deps)) {
-          errors.push(`${where}: product ${mine} is not in the dependency map of the composition root`)
+          errors.push(`internal/${tier}/${mod}: product ${mine} is not in the dependency map of the composition root`)
         }
         const reachable = new Set([mine, ...(deps[mine] ?? [])])
         readable = new Set([...all.modules.filter((m) => reachable.has(product[m])), ...all.core, ...all.shared])
@@ -66,11 +64,15 @@ function scan(root, { app, manifest }) {
         readable = new Set(tiers.slice(0, i + 1).flatMap((t) => all[t]))
       }
 
-      for (const [, schema] of sql.matchAll(/\b(?:INSERT\s+INTO|UPDATE|DELETE\s+FROM)\s+([a-z_]+)\./gi)) {
-        if (schema !== mod) errors.push(`${where}: writes schema ${schema}`)
-      }
-      for (const [, schema] of sql.matchAll(/\b([a-z_]+)\.[a-z_]+/gi)) {
-        if (schemas.has(schema) && !readable.has(schema)) errors.push(`${where}: reads schema ${schema}`)
+      for (const name of readdirSync(dir).filter((f) => f.endsWith('.sql')).sort()) {
+        const where = `internal/${tier}/${mod}/queries/${name}`
+        const sql = readFileSync(new URL(name, dir), 'utf8').replace(/--.*$/gm, '')
+        for (const [, schema] of sql.matchAll(/\b(?:INSERT\s+INTO|UPDATE|DELETE\s+FROM)\s+([a-z_]+)\./gi)) {
+          if (schema !== mod) errors.push(`${where}: writes schema ${schema}`)
+        }
+        for (const [, schema] of sql.matchAll(/\b([a-z_]+)\.[a-z_]+/gi)) {
+          if (schemas.has(schema) && !readable.has(schema)) errors.push(`${where}: reads schema ${schema}`)
+        }
       }
     }
   }
@@ -93,4 +95,4 @@ for (const e of missed) console.error(`query-fixtures missed: ${e}`)
 for (const e of extra) console.error(`query-fixtures unexpected: ${e}`)
 
 if (real.length || missed.length || extra.length) process.exit(1)
-console.log(`queries.sql: schema access within bounds; all ${want.size} planted violations reported`)
+console.log(`queries: schema access within bounds; all ${want.size} planted violations reported`)

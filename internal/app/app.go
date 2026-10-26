@@ -37,6 +37,8 @@ import (
 	"github.com/taoworklabs/mmerp/internal/modules/hrm"
 	"github.com/taoworklabs/mmerp/internal/modules/sales"
 	"github.com/taoworklabs/mmerp/internal/platform"
+	"github.com/taoworklabs/mmerp/internal/shared/item"
+	"github.com/taoworklabs/mmerp/internal/shared/partner"
 	"github.com/taoworklabs/mmerp/internal/shared/posting"
 )
 
@@ -89,8 +91,10 @@ func Modules() []platform.Module {
 	// No accounting yet: nothing reacts to posting lines.
 	pst := posting.NewService(posting.Hooks{})
 	h := hrm.NewService(hrm.Deps{IAM: ids, Record: rec, Audit: audit.NewService(), Setting: set, DataIO: dio, Printing: prn, Posting: pst, Numbering: num})
-	sal := sales.NewService(sales.Deps{IAM: ids, Record: rec, Audit: audit.NewService(), Setting: set, Printing: prn, Numbering: num})
-	return []platform.Module{iam.Module(ids), setting.Module(set), numbering.Module(num), record.Module(rec), approval.Module(appr), dataio.Module(dio), attachment.Module(att), printing.Module(prn), discussion.Module(dis), notification.Module(ntf), hrm.Module(h), sales.Module(sal)}
+	itm := item.NewService(item.Deps{IAM: ids, Audit: audit.NewService(), Numbering: num})
+	prt := partner.NewService(partner.Deps{IAM: ids, Record: rec, Audit: audit.NewService(), Numbering: num})
+	sal := sales.NewService(sales.Deps{IAM: ids, Record: rec, Audit: audit.NewService(), Setting: set, Printing: prn, Numbering: num, Partner: prt})
+	return []platform.Module{iam.Module(ids), setting.Module(set), numbering.Module(num), record.Module(rec), approval.Module(appr), dataio.Module(dio), attachment.Module(att), printing.Module(prn), discussion.Module(dis), notification.Module(ntf), item.Module(itm), partner.Module(prt), hrm.Module(h), sales.Module(sal)}
 }
 
 // CreateAdmin adds the first administrator at install time.
@@ -101,12 +105,14 @@ func CreateAdmin(ctx context.Context, pool *pgxpool.Pool, login, name, password 
 
 // Env is what every request and job runs with. Single-tenant mode: one database, one product list, one keyring.
 type Env struct {
-	Pool     *pgxpool.Pool
-	Log      *slog.Logger
-	Products []string
-	Keys     *platform.Keyring
-	Files    platform.Files
-	Jobs     *river.Client[pgx.Tx]
+	Pool *pgxpool.Pool // AppPool: read-only outside platform.InTx
+	// SystemPool is River's: it fetches and completes jobs outside our transactions.
+	SystemPool *pgxpool.Pool
+	Log        *slog.Logger
+	Products   []string
+	Keys       *platform.Keyring
+	Files      platform.Files
+	Jobs       *river.Client[pgx.Tx]
 }
 
 func (env Env) context(ctx context.Context) context.Context {
@@ -133,7 +139,7 @@ func NewJobs(env Env, modules []platform.Module) (*river.Client[pgx.Tx], error) 
 		}
 		periodic = append(periodic, m.Periodic...)
 	}
-	client, err := river.NewClient(riverpgxv5.New(env.Pool), &river.Config{
+	client, err := river.NewClient(riverpgxv5.New(env.SystemPool), &river.Config{
 		Queues:                      map[string]river.QueueConfig{river.QueueDefault: {MaxWorkers: 10}},
 		Workers:                     workers,
 		PeriodicJobs:                periodic,

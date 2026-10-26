@@ -17,10 +17,13 @@ import (
 // Arbitrary constant shared by every binary version.
 const migrationLockKey = 7_346_201_001
 
-var migrationName = regexp.MustCompile(`^[0-9]{4}_[a-z]+_[a-z0-9_]+\.sql$`)
+// Migrations are named after their UTC creation time, so parallel branches never pick
+// the same name.
+var migrationName = regexp.MustCompile(`^[0-9]{14}_[a-z]+_[a-z0-9_]+\.sql$`)
 
 // Migrate applies every missing migration in fsys, then River's, in one
-// transaction, so a failure leaves the schema at its previous version.
+// transaction, so a failure leaves the schema at its previous version. pool must be
+// a SystemPool: an AppPool's sessions are read-only.
 // ponytail: transaction-scoped lock; switch to a session lock when backup must run between locking and migrating.
 func Migrate(ctx context.Context, pool *pgxpool.Pool, fsys fs.FS) error {
 	entries, err := fs.ReadDir(fsys, ".")
@@ -33,7 +36,7 @@ func Migrate(ctx context.Context, pool *pgxpool.Pool, fsys fs.FS) error {
 			continue
 		}
 		if !migrationName.MatchString(e.Name()) {
-			return fmt.Errorf("migration %q: name must match NNNN_<module>_<description>.sql", e.Name())
+			return fmt.Errorf("migration %q: name must match YYYYMMDDHHMMSS_<module>_<description>.sql", e.Name())
 		}
 		files = append(files, e.Name())
 	}

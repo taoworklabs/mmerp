@@ -44,8 +44,7 @@ func (s *Service) NotifyOverdue(ctx context.Context) (int, error) {
 	for {
 		found, told := false, false
 		err := platform.InTx(ctx, func(ctx context.Context) error {
-			q := store.New(platform.DBFrom(ctx))
-			st, err := q.ClaimOverdue(ctx)
+			st, err := store.ClaimOverdue.Run(ctx)
 			if errors.Is(err, pgx.ErrNoRows) {
 				return nil
 			}
@@ -68,8 +67,7 @@ func (s *Service) NotifyOverdue(ctx context.Context) (int, error) {
 // announceOverdue tells who is waited on that st is overdue; a submission whose document
 // moved on is stale and tells nobody, though its claim stays so it is not looked at again.
 func (s *Service) announceOverdue(ctx context.Context, st store.ClaimOverdueRow) (bool, error) {
-	q := store.New(platform.DBFrom(ctx))
-	inst, err := q.GetInstance(ctx, st.InstanceID)
+	inst, err := store.GetInstance.Run(ctx, st.InstanceID)
 	if err != nil {
 		return false, err
 	}
@@ -83,7 +81,7 @@ func (s *Service) announceOverdue(ctx context.Context, st store.ClaimOverdueRow)
 	if !current(inst, d) {
 		return false, nil
 	}
-	votes, err := q.CastVotes(ctx, store.CastVotesParams{InstanceID: st.InstanceID, Position: st.Position})
+	votes, err := store.CastVotes.Run(ctx, store.CastVotesParams{InstanceID: st.InstanceID, Position: st.Position})
 	if err != nil {
 		return false, err
 	}

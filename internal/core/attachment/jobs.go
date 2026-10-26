@@ -34,5 +34,5 @@ var periodic = []*river.PeriodicJob{river.NewPeriodicJob(river.PeriodicInterval(
 // uploads whose row was rolled back. A day keeps every file the last daily backup of
 // the database may name.
 func cleanup(ctx context.Context) error {
-	return files(ctx).Sweep(ctx, time.Now().Add(-24*time.Hour), store.New(platform.DBFrom(ctx)).KnownFiles)
+	return files(ctx).Sweep(ctx, time.Now().Add(-24*time.Hour), store.KnownFiles.Run)
 }

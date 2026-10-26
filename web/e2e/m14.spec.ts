@@ -14,10 +14,10 @@ test.beforeAll(async ({ baseURL }) => {
   )
   const a = await created(api.post('/api/org-units', { data: { parent_id: company, kind: 'department', name: team } }))
   const b = await created(api.post('/api/org-units', { data: { parent_id: company, kind: 'department', name: `Kinh doanh B ${run}` } }))
-  await createUser(api, login.staff, [{ role: 'sales.staff', unit: a }])
-  await createUser(api, login.manager, [{ role: 'sales.manager', unit: a }])
-  await createUser(api, login.other, [{ role: 'sales.staff', unit: b }])
-  await createUser(api, login.catalog, [{ role: 'sales.catalog_admin', unit: null }])
+  await createUser(api, login.staff, [{ role: 'sales.staff', unit: a }, { role: 'partner.editor', unit: a }])
+  await createUser(api, login.manager, [{ role: 'sales.manager', unit: a }, { role: 'partner.editor', unit: a }])
+  await createUser(api, login.other, [{ role: 'sales.staff', unit: b }, { role: 'partner.editor', unit: b }])
+  await createUser(api, login.catalog, [{ role: 'item.admin', unit: null }])
   const rule = await api.put('/api/approval-rules/sales.quote', {
     data: {
       flow: toFlow([{ condition: { field: 'max_discount', op: 'gt', value: '10' }, approver: { kind: 'role', product: 'sales', role: 'manager' } }]),
@@ -35,7 +35,7 @@ async function as(browser: Browser, user: string, url: string): Promise<Page> {
   await page.getByLabel('Tên đăng nhập').fill(user)
   await page.getByLabel(/^Mật khẩu/).fill(password)
   await page.getByRole('button', { name: 'Đăng nhập' }).click()
-  await expect(page.getByRole('button', { name: 'Tài khoản' })).toBeVisible()
+  await expect(page.getByRole('button', { name: /^Tài khoản:/ })).toBeVisible()
   return page
 }
 
@@ -63,7 +63,7 @@ test('customer and item, a quotation approved by the manager, printed, then orde
   await staff.getByRole('link', { name: 'Thêm khách hàng' }).click()
   await staff.getByRole('textbox', { name: 'Mã khách hàng' }).fill(`KH${run}`)
   await staff.getByRole('textbox', { name: 'Tên khách hàng' }).fill(`Công ty Ánh Dương ${run}`)
-  await staff.getByRole('textbox', { name: 'Mã số thuế' }).fill('0312345678')
+  await staff.getByRole('textbox', { name: 'Mã số thuế' }).fill(`031234${run}`)
   await staff.getByRole('combobox', { name: 'Đơn vị phụ trách' }).click()
   await staff.getByRole('option', { name: team }).click()
   await staff.getByRole('textbox', { name: 'Điều kiện thanh toán' }).fill('Thanh toán trong 30 ngày')
@@ -157,4 +157,16 @@ test('customer and item, a quotation approved by the manager, printed, then orde
   await expect(staff).toHaveURL(/tab=quotes/)
   await staff.getByRole('table', { name: 'Báo giá' }).getByRole('link', { name: /^BG-\d{4}-/ }).click()
   await expect(staff).toHaveURL(quoteUrl)
+
+  // Team B sells to the same company: its tax code finds the partner instead of a second company.
+  await other.goto('/sales/customers/new')
+  await other.getByRole('textbox', { name: 'Tên khách hàng' }).fill(`Ánh Dương chi nhánh ${run}`)
+  await other.getByRole('textbox', { name: 'Mã số thuế' }).fill(`031234${run}`)
+  await other.getByRole('combobox', { name: 'Đơn vị phụ trách' }).click()
+  await other.getByRole('option', { name: `Kinh doanh B ${run}` }).click()
+  await other.getByRole('button', { name: 'Thêm khách hàng' }).click()
+  await expect(other.getByText('Công ty đã có trong danh sách đối tác')).toBeVisible()
+  await other.getByRole('button', { name: 'Dùng đối tác này' }).click()
+  await expect(other.getByRole('heading', { name: `Công ty Ánh Dương ${run}` })).toBeVisible()
+  expect(other.url()).not.toBe(customerUrl)
 })

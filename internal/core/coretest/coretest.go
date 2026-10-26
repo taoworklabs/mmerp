@@ -26,6 +26,7 @@ import (
 // Core is a wired core on its own database.
 type Core struct {
 	Pool         *pgxpool.Pool
+	System       *pgxpool.Pool   // writable outside a transaction, to seed rows no service writes
 	Ctx          context.Context // database, products and keyring; no actor
 	Admin        context.Context // Ctx acting as the tenant administrator "admin"
 	AdminID      int64
@@ -60,7 +61,7 @@ func New(t *testing.T, products ...string) *Core {
 	rec.SetApprovalGate(appr)
 	dio := dataio.NewService(dataio.Deps{IAM: ids, Audit: aud, Record: rec})
 	c := &Core{
-		Pool: pool, Ctx: ctx, Audit: aud, Setting: set, IAM: ids, Numbering: num, Record: rec,
+		Pool: pool, System: pgtest.System(t, pool), Ctx: ctx, Audit: aud, Setting: set, IAM: ids, Numbering: num, Record: rec,
 		Notification: ntf, Approval: appr, DataIO: dio,
 		Printing:   printing.NewService(printing.Deps{Record: rec, Audit: aud, DataIO: dio, IAM: ids}),
 		Attachment: attachment.NewService(attachment.Deps{Record: rec, Audit: aud}),

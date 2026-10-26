@@ -31,7 +31,7 @@ async function signInAs(page: Page, login: string, url: string) {
   await page.getByLabel('Tên đăng nhập').fill(login)
   await page.getByLabel(/^Mật khẩu/).fill(password)
   await page.getByRole('button', { name: 'Đăng nhập' }).click()
-  await expect(page.getByRole('button', { name: 'Tài khoản' })).toBeVisible()
+  await expect(page.getByRole('button', { name: /^Tài khoản:/ })).toBeVisible()
 }
 
 test('a user sees only employees within their org units, in the API and the UI', async ({ page, baseURL }) => {

@@ -9,12 +9,14 @@ import { DocsPage } from './pages/DocsPage'
 import { ItemsPage } from './pages/ItemsPage'
 import { NewCustomerPage } from './pages/NewCustomerPage'
 import { NewDocPage } from './pages/NewDocPage'
+import { PartnerPage } from './pages/PartnerPage'
 
 export default function SalesRoutes() {
   const canCustomers = useCan('sales.customer.view')
   const canQuotes = useCan('sales.quote.view')
   const canOrders = useCan('sales.order.view')
-  const canItems = useCan('sales.item.view')
+  const canItems = useCan('item.view')
+  const canPartners = useCan('partner.view')
   const canRules = useCan(['sales.approval.manage', 'core.approval.manage'])
   return (
     <Routes>
@@ -23,6 +25,7 @@ export default function SalesRoutes() {
       <Route path="customers/new" element={canCustomers ? <NewCustomerPage /> : <ForbiddenPage />} />
       {/* The API decides per record; one outside the user's reach answers 404. */}
       <Route path="customers/:id" element={canCustomers ? <CustomerPage /> : <ForbiddenPage />} />
+      <Route path="partners/:id" element={canPartners ? <PartnerPage /> : <ForbiddenPage />} />
       <Route path="quotes" element={canQuotes ? <DocsPage key="quote" kind="quote" /> : <ForbiddenPage />} />
       <Route path="quotes/new" element={canQuotes ? <NewDocPage key="quote" kind="quote" /> : <ForbiddenPage />} />
       <Route path="quotes/:id" element={canQuotes ? <DocPage key="quote" kind="quote" /> : <ForbiddenPage />} />

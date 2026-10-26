@@ -30,21 +30,30 @@ func setup(t *testing.T) fixture {
 	return fixture{num, admin, other}
 }
 
+// code issues a code in its own transaction, as every caller of Code runs in one.
+func (f fixture) code(ctx context.Context, series, typed string, taken func(context.Context, string) (bool, error)) (c string, err error) {
+	err = platform.InTx(ctx, func(ctx context.Context) (err error) {
+		c, err = f.num.Code(ctx, series, typed, taken)
+		return err
+	})
+	return c, err
+}
+
 func free(context.Context, string) (bool, error) { return false, nil }
 
 func TestCode(t *testing.T) {
 	f := setup(t)
-	if c, err := f.num.Code(f.admin, "sales.customer", " own ", free); err != nil || c != "own" {
+	if c, err := f.code(f.admin, "sales.customer", " own ", free); err != nil || c != "own" {
 		t.Fatalf("typed code: %q, %v", c, err)
 	}
 	for _, want := range []string{"KH00001", "KH00002"} {
-		if c, err := f.num.Code(f.admin, "sales.customer", "", free); err != nil || c != want {
+		if c, err := f.code(f.admin, "sales.customer", "", free); err != nil || c != want {
 			t.Fatalf("code = %q, %v; want %s", c, err, want)
 		}
 	}
 	// Codes typed by hand are skipped.
 	typed := func(_ context.Context, c string) (bool, error) { return c == "KH00003" || c == "KH00004", nil }
-	if c, err := f.num.Code(f.admin, "sales.customer", "", typed); err != nil || c != "KH00005" {
+	if c, err := f.code(f.admin, "sales.customer", "", typed); err != nil || c != "KH00005" {
 		t.Fatalf("skipping typed codes: %q, %v", c, err)
 	}
 	// A rolled-back transaction gives its number back.
@@ -58,18 +67,18 @@ func TestCode(t *testing.T) {
 	if !errors.Is(err, boom) {
 		t.Fatal(err)
 	}
-	if c, err := f.num.Code(f.admin, "sales.customer", "", free); err != nil || c != "KH00006" {
+	if c, err := f.code(f.admin, "sales.customer", "", free); err != nil || c != "KH00006" {
 		t.Fatalf("after rollback: %q, %v", c, err)
 	}
 	// Series count on their own.
-	if c, err := f.num.Code(f.admin, "hrm.employee", "", free); err != nil || c != "NV00001" {
+	if c, err := f.code(f.admin, "hrm.employee", "", free); err != nil || c != "NV00001" {
 		t.Fatalf("other series: %q, %v", c, err)
 	}
 }
 
 func TestSetPrefix(t *testing.T) {
 	f := setup(t)
-	must2(f.num.Code(f.admin, "sales.customer", "", free))
+	must2(f.code(f.admin, "sales.customer", "", free))
 
 	for _, bad := range []string{"ABCDEFGHIJK", "K H", "KH\t"} {
 		if err := f.num.SetPrefix(f.admin, "sales.customer", bad); errCode(err) != "invalid_code_prefix" {
@@ -92,7 +101,7 @@ func TestSetPrefix(t *testing.T) {
 		t.Fatal(err)
 	}
 	// The count goes on under the new prefix.
-	if c, err := f.num.Code(f.admin, "sales.customer", "", free); err != nil || c != "CUS00002" {
+	if c, err := f.code(f.admin, "sales.customer", "", free); err != nil || c != "CUS00002" {
 		t.Fatalf("after prefix change: %q, %v", c, err)
 	}
 	if err := f.num.SetPrefix(f.admin, "sales.customer", ""); err != nil {

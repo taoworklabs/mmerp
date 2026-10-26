@@ -34,6 +34,13 @@ module.exports = {
       to: { path: `${P}shared/api/(?!(core|$1)\\.)` },
     },
     {
+      name: 'master-api-only-core',
+      comment: 'Shared master-data UI serves every area, so it calls only shared/api/core.',
+      severity: 'error',
+      from: { path: `${P}shared/master/` },
+      to: { path: `${P}shared/api/(?!core\\.)` },
+    },
+    {
       name: 'entry-only-to-app',
       comment: 'Files directly under src (main.tsx) only start app; areas are reached through app.',
       severity: 'error',

@@ -136,5 +136,19 @@
   "sales.customer.latest_order": "Latest orders",
   "sales.customer.doc_line": "{{date}} · {{total}} VND",
   "sales.quotes.title_count": "Quotations ({{count}})",
-  "sales.orders.title_count": "Sales orders ({{count}})"
+  "sales.orders.title_count": "Sales orders ({{count}})",
+  "sales.customer.partner": "Partner",
+  "sales.customer.existing_partner": "Existing partner",
+  "sales.customer.partner_taken_title": "This company is already a partner",
+  "sales.customer.partner_taken": "This tax code belongs to partner {{code}} · {{name}}. Use this partner so the company is not added twice.",
+  "sales.customer.use_partner": "Use this partner",
+  "sales.partner.identity": "Partner details",
+  "sales.partner.saved": "Partner saved.",
+  "sales.partner.customers": "Customers",
+  "sales.partner.customers_count": "Customers ({{count}})",
+  "sales.partner.no_customers": "The partner is not a customer of any unit assigned to you",
+  "sales.customer.field.partner_id": "Partner",
+  "sales.customer.field.payment_terms": "Payment terms",
+  "sales.customer.field.org_unit_id": "Owning org unit",
+  "sales.customer.field.active": "Active"
 }
