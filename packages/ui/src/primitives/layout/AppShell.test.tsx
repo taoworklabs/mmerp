@@ -19,7 +19,7 @@ describe('AppShell', () => {
 
     // Below 64em the navbar is the drawer: the collapsed rail is ignored, drawn at full width instead.
     await page.viewport(800, 900)
-    await expect.poll(() => navbar.getBoundingClientRect().width).toBe(240)
+    await expect.poll(() => navbar.getBoundingClientRect().width).toBe(800)
   })
 
   it('pins navbarFooter at the bottom of the navbar, hidden below the drawer breakpoint', async () => {

@@ -59,7 +59,7 @@
   top: var(--mmerp-appshell-header-height);
   bottom: 0;
   left: 0;
-  width: var(--mmerp-appshell-navbar-width);
+  width: 100%;
   transform: translateX(-100%);
   transition: transform var(--mmerp-motion-duration) ease;
 }

@@ -75,7 +75,7 @@ test('a sensitive field is masked, shown on request, and cleared when the permis
 
   // The next request carries a new X-Authz-Version: the page reloads with nothing stale left.
   const reloaded = page.waitForEvent('load')
-  await page.getByRole('navigation').getByRole('link', { name: 'Nhân viên' }).first().click()
+  await page.getByRole('navigation', { name: 'Điều hướng chính' }).getByRole('link', { name: 'Nhân viên' }).click()
   await reloaded
   await page.goto(`/hrm/employees/${ids.ea}`)
   await expect(page.getByText('Không có quyền xem').first()).toBeVisible()
@@ -283,7 +283,7 @@ test('terminating asks for the last day, then confirms before saving', async ({ 
 
 test('leaving a record asks only when something was edited', async ({ page }) => {
   await signInAs(page, hrA, `/hrm/employees/${ids.ea}`)
-  const nav = page.getByRole('navigation').getByRole('link', { name: 'Nhân viên' }).first()
+  const nav = page.getByRole('navigation', { name: 'Điều hướng chính' }).getByRole('link', { name: 'Nhân viên' })
   await nav.click()
   await expect(page).toHaveURL(/\/hrm\/employees$/)
   await expect(page.getByRole('dialog')).toHaveCount(0)

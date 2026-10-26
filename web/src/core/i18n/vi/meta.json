@@ -8,6 +8,7 @@
   "core.home.title": "Xin chào, {{name}}",
   "core.home.empty": "Bạn chưa được cấp quyền vào phân hệ nào.",
   "core.shell.menu": "Mở thanh điều hướng",
+  "core.shell.nav": "Điều hướng chính",
   "core.shell.collapse": "Thu gọn thanh điều hướng",
   "core.shell.expand": "Mở rộng thanh điều hướng",
   "core.shell.account": "Tài khoản",

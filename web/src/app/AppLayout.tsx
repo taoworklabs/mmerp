@@ -172,6 +172,7 @@ export function AppLayout({ areas }: { areas: AreaManifest[] }) {
       }
       // Only the open area's menu; other areas are reached from home. Ungrouped items first, then
       // each group in manifest order; a group emptied by permissions is gone.
+      navbarLabel={t('core.shell.nav')}
       navbar={
         nav.length > 0 &&
         area && (

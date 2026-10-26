@@ -8,6 +8,7 @@
   "core.home.title": "Hello, {{name}}",
   "core.home.empty": "You have no access to any product yet.",
   "core.shell.menu": "Open navigation",
+  "core.shell.nav": "Main navigation",
   "core.shell.collapse": "Collapse navigation",
   "core.shell.expand": "Expand navigation",
   "core.shell.account": "Account",
