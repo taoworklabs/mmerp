@@ -9,6 +9,8 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/jackc/pgx/v5"
+
 	"github.com/taoworklabs/mmerp/internal/platform"
 )
 
@@ -19,9 +21,10 @@ type Base[R any] struct {
 	cols      []string
 }
 
-// NewBase records a base query; the method is taken only to infer R.
-func NewBase[Q, R any](name, sql string, cols []string, _ func(Q, context.Context) ([]R, error)) Base[R] {
-	return Base[R]{name: name, sql: sql, cols: cols}
+// NewBase records a base query; the method is taken only to infer R. sql is
+// Static so only SQL written in code can become a base.
+func NewBase[Q, R any](name string, sql Static, cols []string, _ func(Q, context.Context) ([]R, error)) Base[R] {
+	return Base[R]{name: name, sql: string(sql), cols: cols}
 }
 
 // Order is one ORDER BY term over a base column.
@@ -138,6 +141,10 @@ func (l List[R]) compiler() *compiler {
 // Compile turns q into the page and count statements. empty means the caller
 // may see nothing, so no statement should run. Values only ever become args.
 func (l List[R]) Compile(q Query, v Viewer, hasViewer bool) (page, count Compiled, empty bool, err error) {
+	// A List built without Register must not run unscoped by accident.
+	if l.Scope == (ScopeRule{}) {
+		return page, count, false, l.wrap(errors.New("missing scope rule"))
+	}
 	orders, key := l.Default, "default"
 	if q.Sort != "" {
 		o, ok := l.Sorts[q.Sort]
@@ -247,7 +254,7 @@ func (c *compiler) col(name string) (string, error) {
 	if !slices.Contains(c.cols, name) {
 		return "", fmt.Errorf("unknown column %q", name)
 	}
-	return `b."` + name + `"`, nil
+	return "b." + pgx.Identifier{name}.Sanitize(), nil
 }
 
 func (c *compiler) order(o Order) (string, error) {

@@ -351,3 +351,18 @@ func TestStaticRejectsVariables(t *testing.T) {
 		t.Fatalf("unexpected build output:\n%s", out)
 	}
 }
+
+func TestCompileRejectsUnregisteredWithoutScope(t *testing.T) {
+	l := fixtureList()
+	l.Scope = ScopeRule{}
+	if _, _, _, err := l.Compile(Query{Scope: GrantAll(), Paging: paging(1, 20)}, Viewer{}, false); err == nil {
+		t.Fatal("Compile ran a list without a scope rule")
+	}
+}
+
+func TestColQuotesIdentifier(t *testing.T) {
+	c := &compiler{cols: []string{`a"b`}}
+	if got, _ := c.col(`a"b`); got != `b."a""b"` {
+		t.Fatalf("col = %s", got)
+	}
+}
