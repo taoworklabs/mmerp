@@ -19,7 +19,7 @@ export interface DialogProps extends Omit<React.ComponentPropsWithRef<'div'>, 'c
   children: React.ReactNode
 }
 
-export function Dialog({
+function DialogRoot({
   opened,
   onClose,
   title,
@@ -56,3 +56,11 @@ export function Dialog({
     </BaseDialog.Root>
   )
 }
+
+// The dialog's buttons: the way out, then the primary, together at the right edge. Placed inside the
+// body (within a form, if any) so a submit button still submits it.
+function DialogActions({ className, ...props }: React.ComponentPropsWithRef<'div'>) {
+  return <div className={cx(styles.actions, className)} {...props} />
+}
+
+export const Dialog = Object.assign(DialogRoot, { Actions: DialogActions })

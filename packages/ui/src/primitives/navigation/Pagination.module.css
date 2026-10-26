@@ -48,3 +48,11 @@
   min-width: var(--mmerp-control-height);
   color: var(--mmerp-color-dimmed);
 }
+
+/* The module's min-width outranks the global touch-target rule, so it repeats it here: square, not a tall oval. */
+@media (max-width: 63.99em) {
+  .control,
+  .dots {
+    min-width: var(--mmerp-touch-target);
+  }
+}

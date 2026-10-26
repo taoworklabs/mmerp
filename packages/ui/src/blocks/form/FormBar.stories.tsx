@@ -1,12 +1,24 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import { expect, waitFor, within } from 'storybook/test'
 import { Button } from '../../primitives/input/Button.tsx'
+import { TextInput } from '../../primitives/input/TextInput.tsx'
 import { Text } from '../../primitives/typography/Text.tsx'
 import { FormBar } from './FormBar.tsx'
 
 const meta: Meta<typeof FormBar> = {
   title: 'Blocks/FormBar',
   component: FormBar,
+  // The bar spans its form; shown below a form-width stand-in so it isn't read as a stray rule.
+  decorators: [
+    (Story) => (
+      <div style={{ maxWidth: 640, display: 'grid', gap: 'var(--mmerp-space-lg)' }}>
+        <TextInput label="Họ tên" defaultValue="Nguyễn Văn An" />
+        <Story />
+      </div>
+    ),
+  ],
+  // React elements, not values to edit.
+  argTypes: { children: { control: false }, status: { control: false } },
 }
 
 export default meta
@@ -38,7 +50,7 @@ export const WithStatus: Story = {
 export const Sticky: Story = {
   render: () => (
     <div data-testid="scrollbox" style={{ height: 300, overflow: 'auto' }} tabIndex={0}>
-      <div style={{ height: 2000 }}>Form content…</div>
+      <div style={{ height: 2000 }}>Nội dung biểu mẫu…</div>
       <FormBar data-testid="bar">
         <Button type="submit">Lưu</Button>
       </FormBar>

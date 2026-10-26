@@ -6,7 +6,7 @@ import { Burger, type BurgerProps } from './Burger.tsx'
 const meta: Meta<typeof Burger> = {
   title: 'Navigation/Burger',
   component: Burger,
-  args: { 'aria-label': 'Toggle navigation' },
+  args: { 'aria-label': 'Mở/đóng menu' },
 }
 
 export default meta
@@ -23,7 +23,7 @@ export const Default: Story = {
   render: (args) => <Controlled {...args} />,
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
-    const button = canvas.getByRole('button', { name: 'Toggle navigation' })
+    const button = canvas.getByRole('button', { name: 'Mở/đóng menu' })
     expect(button).toHaveAttribute('aria-expanded', 'false')
 
     await userEvent.click(button)

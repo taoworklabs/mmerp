@@ -13,7 +13,9 @@
 .root[data-sticky-header] .thead {
   position: sticky;
   top: 0;
-  z-index: 1;
+  /* Above the body's sticky identifier cells (z-index 1): the thead is their sibling stacking
+     context, so a tie would let those later cells paint over the header's corner. */
+  z-index: 2;
 }
 
 .tfoot {
@@ -82,7 +84,7 @@
   background: var(--mmerp-color-elevation-surface);
 }
 
-/* Above the sticky header's own z-index so the corner cell (both sticky) stays on top. */
+/* Above the other header cells, so columns sliding sideways pass under the corner cell. */
 .th[data-sticky] {
   z-index: 2;
   /* Over the shared sticky background: the header cell still reads as part of the header row. */
@@ -106,6 +108,18 @@
 /* Its edge shows only while columns slide under it. */
 .root[data-scrolled] [data-sticky] {
   box-shadow: inset -1px 0 0 var(--mmerp-color-border);
+}
+
+/* A collapsed border belongs to the table and scrolls away with the rows; the docked header draws
+   its bottom rule itself (the corner cell keeps its edge too). */
+.root[data-sticky-header] .thead .th {
+  box-shadow: inset 0 -1px 0 var(--mmerp-color-border);
+}
+
+.root[data-sticky-header][data-scrolled] .thead .th[data-sticky] {
+  box-shadow:
+    inset -1px 0 0 var(--mmerp-color-border),
+    inset 0 -1px 0 var(--mmerp-color-border);
 }
 
 /* On one line, never squeezed by the table's layout. */

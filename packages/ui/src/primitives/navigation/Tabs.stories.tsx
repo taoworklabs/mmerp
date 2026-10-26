@@ -15,13 +15,13 @@ function Demo() {
   return (
     <Tabs defaultValue="profile">
       <Tabs.List>
-        <Tabs.Tab value="profile">Profile</Tabs.Tab>
-        <Tabs.Tab value="settings">Settings</Tabs.Tab>
-        <Tabs.Tab value="billing">Billing</Tabs.Tab>
+        <Tabs.Tab value="profile">Hồ sơ</Tabs.Tab>
+        <Tabs.Tab value="settings">Cài đặt</Tabs.Tab>
+        <Tabs.Tab value="billing">Thanh toán</Tabs.Tab>
       </Tabs.List>
-      <Tabs.Panel value="profile">Profile content</Tabs.Panel>
-      <Tabs.Panel value="settings">Settings content</Tabs.Panel>
-      <Tabs.Panel value="billing">Billing content</Tabs.Panel>
+      <Tabs.Panel value="profile">Nội dung hồ sơ</Tabs.Panel>
+      <Tabs.Panel value="settings">Nội dung cài đặt</Tabs.Panel>
+      <Tabs.Panel value="billing">Nội dung thanh toán</Tabs.Panel>
     </Tabs>
   )
 }
@@ -37,13 +37,13 @@ export const Scroll: Story = {
         <Tabs.List scroll>
           {Array.from({ length: 8 }, (_, index) => (
             <Tabs.Tab key={index} value={`tab-${index}`}>
-              {`Long tab label number ${index + 1}`}
+              {`Nhãn thẻ khá dài số ${index + 1}`}
             </Tabs.Tab>
           ))}
         </Tabs.List>
         {Array.from({ length: 8 }, (_, index) => (
           <Tabs.Panel key={index} value={`tab-${index}`}>
-            {`Panel ${index + 1}`}
+            {`Nội dung thẻ ${index + 1}`}
           </Tabs.Panel>
         ))}
       </Tabs>
@@ -65,11 +65,11 @@ export const OnRule: Story = {
   render: () => (
     <Tabs defaultValue="overview">
       <Tabs.List onRule>
-        <Tabs.Tab value="overview">Overview</Tabs.Tab>
-        <Tabs.Tab value="orders">Orders</Tabs.Tab>
+        <Tabs.Tab value="overview">Tổng quan</Tabs.Tab>
+        <Tabs.Tab value="orders">Đơn bán hàng</Tabs.Tab>
       </Tabs.List>
-      <Tabs.Panel value="overview">Overview content</Tabs.Panel>
-      <Tabs.Panel value="orders">Orders content</Tabs.Panel>
+      <Tabs.Panel value="overview">Nội dung tổng quan</Tabs.Panel>
+      <Tabs.Panel value="orders">Nội dung đơn bán hàng</Tabs.Panel>
     </Tabs>
   ),
   play: async ({ canvasElement }) => {
@@ -79,20 +79,21 @@ export const OnRule: Story = {
 }
 
 export const ArrowRightSelectsNextTab: Story = {
+  tags: ['!dev', '!autodocs'],
   render: () => <Demo />,
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
-    const profile = canvas.getByRole('tab', { name: 'Profile' })
+    const profile = canvas.getByRole('tab', { name: 'Hồ sơ' })
     profile.focus()
     await userEvent.keyboard('{ArrowRight}')
 
-    const settings = canvas.getByRole('tab', { name: 'Settings' })
+    const settings = canvas.getByRole('tab', { name: 'Cài đặt' })
     expect(settings).toHaveFocus()
     expect(settings).toHaveAttribute('data-active', '')
 
-    expect(canvas.getByText('Settings content')).toBeVisible()
+    expect(canvas.getByText('Nội dung cài đặt')).toBeVisible()
     // The outgoing panel unmounts only after its exit phase.
-    await waitFor(() => expect(canvas.queryByText('Profile content')).not.toBeInTheDocument())
-    expect(canvas.queryByText('Billing content')).not.toBeInTheDocument()
+    await waitFor(() => expect(canvas.queryByText('Nội dung hồ sơ')).not.toBeInTheDocument())
+    expect(canvas.queryByText('Nội dung thanh toán')).not.toBeInTheDocument()
   },
 }

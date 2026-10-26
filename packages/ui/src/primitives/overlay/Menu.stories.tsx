@@ -15,32 +15,32 @@ export const Default: StoryObj<{ onRename(): void; onDelete(): void }> = {
   args: { onRename: fn(), onDelete: fn() },
   render: (args) => (
     <Menu.Root>
-      <Menu.Trigger render={<Button>Open menu</Button>} />
+      <Menu.Trigger render={<Button>Mở menu</Button>} />
       <Menu.Popup>
-        <Menu.Item onClick={args.onRename}>Rename</Menu.Item>
-        <Menu.Item>Archive</Menu.Item>
+        <Menu.Item onClick={args.onRename}>Đổi tên</Menu.Item>
+        <Menu.Item>Lưu trữ</Menu.Item>
         <Menu.Item color="danger" onClick={args.onDelete}>
-          Delete
+          Xóa
         </Menu.Item>
       </Menu.Popup>
     </Menu.Root>
   ),
   play: async ({ canvasElement, args }) => {
     const canvas = within(canvasElement)
-    const trigger = canvas.getByRole('button', { name: 'Open menu' })
+    const trigger = canvas.getByRole('button', { name: 'Mở menu' })
     trigger.focus()
     await userEvent.keyboard('{Enter}')
 
     const body = within(canvasElement.ownerDocument.body)
-    const rename = body.getByRole('menuitem', { name: 'Rename' })
+    const rename = body.getByRole('menuitem', { name: 'Đổi tên' })
     expect(rename).toHaveAttribute('data-highlighted', '')
 
     await userEvent.keyboard('{ArrowDown}')
-    const archive = body.getByRole('menuitem', { name: 'Archive' })
+    const archive = body.getByRole('menuitem', { name: 'Lưu trữ' })
     expect(archive).toHaveAttribute('data-highlighted', '')
 
     await userEvent.keyboard('{ArrowDown}')
-    const deleteItem = body.getByRole('menuitem', { name: 'Delete' })
+    const deleteItem = body.getByRole('menuitem', { name: 'Xóa' })
     expect(deleteItem).toHaveAttribute('data-highlighted', '')
 
     await userEvent.keyboard('{Enter}')
@@ -51,25 +51,26 @@ export const Default: StoryObj<{ onRename(): void; onDelete(): void }> = {
 }
 
 export const Typeahead: Story = {
+  tags: ['!dev', '!autodocs'],
   render: () => (
     <Menu.Root>
-      <Menu.Trigger render={<Button>Open menu</Button>} />
+      <Menu.Trigger render={<Button>Mở menu</Button>} />
       <Menu.Popup>
-        <Menu.Item>Rename</Menu.Item>
-        <Menu.Item>Archive</Menu.Item>
-        <Menu.Item color="danger">Delete</Menu.Item>
+        <Menu.Item>Đổi tên</Menu.Item>
+        <Menu.Item>Lưu trữ</Menu.Item>
+        <Menu.Item color="danger">Xóa</Menu.Item>
       </Menu.Popup>
     </Menu.Root>
   ),
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
-    const trigger = canvas.getByRole('button', { name: 'Open menu' })
+    const trigger = canvas.getByRole('button', { name: 'Mở menu' })
     trigger.focus()
     await userEvent.keyboard('{Enter}')
-    await userEvent.keyboard('d')
+    await userEvent.keyboard('x')
 
     const body = within(canvasElement.ownerDocument.body)
-    const deleteItem = body.getByRole('menuitem', { name: 'Delete' })
+    const deleteItem = body.getByRole('menuitem', { name: 'Xóa' })
     expect(deleteItem).toHaveAttribute('data-highlighted', '')
   },
 }
@@ -77,13 +78,13 @@ export const Typeahead: Story = {
 export const WithLabelAndSeparator: Story = {
   render: () => (
     <Menu.Root defaultOpen>
-      <Menu.Trigger render={<Button>Open menu</Button>} />
+      <Menu.Trigger render={<Button>Mở menu</Button>} />
       <Menu.Popup>
-        <Menu.Label>Actions</Menu.Label>
-        <Menu.Item leftSection={<span aria-hidden="true">R</span>}>Rename</Menu.Item>
+        <Menu.Label>Thao tác</Menu.Label>
+        <Menu.Item leftSection={<span aria-hidden="true">Đ</span>}>Đổi tên</Menu.Item>
         <Menu.Separator />
         <Menu.Item color="danger" disabled>
-          Delete
+          Xóa
         </Menu.Item>
       </Menu.Popup>
     </Menu.Root>

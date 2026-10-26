@@ -48,22 +48,17 @@
   display: inline-flex;
 }
 
-.group > *:not(:first-child) {
+/* Positions count controls only: a combobox trigger leaves a hidden input beside it, which must not
+   square off the corners of a chip that is really a lone button. */
+.group > [data-mmerp-control]:not(:nth-child(1 of [data-mmerp-control])) {
   margin-inline-start: -1px;
-}
-
-.group > *:not(:first-child):not(:last-child) {
-  border-radius: 0;
-}
-
-.group > *:first-child:not(:only-child) {
-  border-start-end-radius: 0;
-  border-end-end-radius: 0;
-}
-
-.group > *:last-child:not(:only-child) {
   border-start-start-radius: 0;
   border-end-start-radius: 0;
+}
+
+.group > [data-mmerp-control]:not(:nth-last-child(1 of [data-mmerp-control])) {
+  border-start-end-radius: 0;
+  border-end-end-radius: 0;
 }
 
 /* Otherwise the neighbour's -1px overlap (above) paints over the focused/active button's ring. */

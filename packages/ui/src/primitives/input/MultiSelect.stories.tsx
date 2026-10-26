@@ -5,17 +5,17 @@ import { MultiSelect, type MultiSelectProps } from './MultiSelect.tsx'
 import type { SelectItem } from './Select.tsx'
 
 const data: SelectItem[] = [
-  { value: 'a', label: 'Nguyễn Văn A' },
+  { value: 'a', label: 'Nguyễn Văn An' },
   { value: 'b', label: 'Đặng Thị Bích' },
-  { value: 'c', label: 'Trần Văn C' },
+  { value: 'c', label: 'Trần Văn Cường' },
 ]
 
-const removeLabel = (itemLabel: string) => `Remove ${itemLabel}`
+const removeLabel = (itemLabel: string) => `Bỏ chọn ${itemLabel}`
 
 const meta: Meta<typeof MultiSelect> = {
   title: 'Input/MultiSelect',
   component: MultiSelect,
-  args: { label: 'Reviewers', data, nothingFound: 'No people found', removeLabel, onChange: fn() },
+  args: { label: 'Người duyệt', data, nothingFound: 'Không tìm thấy nhân viên', removeLabel, onChange: fn() },
 }
 
 export default meta
@@ -37,7 +37,7 @@ function Controlled(props: MultiSelectProps) {
 }
 
 export const Default: Story = {
-  args: { value: [], placeholder: 'Search people' },
+  args: { value: [], placeholder: 'Tìm nhân viên' },
   render: (args) => <Controlled {...args} />,
 }
 
@@ -57,36 +57,38 @@ export const ReadOnly: Story = {
 }
 
 export const Error: Story = {
-  args: { value: [], error: 'Pick at least one reviewer', placeholder: 'Search people' },
+  args: { value: [], error: 'Chọn ít nhất một người duyệt', placeholder: 'Tìm nhân viên' },
   render: (args) => <Controlled {...args} />,
 }
 
 export const ChooseTwo: Story = {
-  args: { value: [], placeholder: 'Search people' },
+  tags: ['!dev', '!autodocs'],
+  args: { value: [], placeholder: 'Tìm nhân viên' },
   render: (args) => <Controlled {...args} />,
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
     const body = within(canvasElement.ownerDocument.body)
-    const input = canvas.getByRole('combobox', { name: 'Reviewers' })
+    const input = canvas.getByRole('combobox', { name: 'Người duyệt' })
 
     await userEvent.click(input)
-    await userEvent.click(body.getByRole('option', { name: 'Nguyễn Văn A' }))
+    await userEvent.click(body.getByRole('option', { name: 'Nguyễn Văn An' }))
     await userEvent.click(input)
     await userEvent.click(body.getByRole('option', { name: 'Đặng Thị Bích' }))
     // The popup is modal while open, which makes the rest of the page (the chips) inert.
     await userEvent.keyboard('{Escape}')
 
-    expect(canvas.getByRole('button', { name: 'Remove Nguyễn Văn A' })).toBeInTheDocument()
-    expect(canvas.getByRole('button', { name: 'Remove Đặng Thị Bích' })).toBeInTheDocument()
+    expect(canvas.getByRole('button', { name: 'Bỏ chọn Nguyễn Văn An' })).toBeInTheDocument()
+    expect(canvas.getByRole('button', { name: 'Bỏ chọn Đặng Thị Bích' })).toBeInTheDocument()
   },
 }
 
 export const RemoveChip: Story = {
+  tags: ['!dev', '!autodocs'],
   args: { value: ['a', 'b'] },
   render: (args) => <Controlled {...args} />,
   play: async ({ canvasElement, args }) => {
     const canvas = within(canvasElement)
-    await userEvent.click(canvas.getByRole('button', { name: 'Remove Nguyễn Văn A' }))
+    await userEvent.click(canvas.getByRole('button', { name: 'Bỏ chọn Nguyễn Văn An' }))
     expect(args.onChange).toHaveBeenCalledWith(['b'])
   },
 }
@@ -95,6 +97,6 @@ export const Required: Story = {
   args: { value: [], required: true },
   render: (args) => <Controlled {...args} />,
   play: async ({ canvasElement }) => {
-    expect(within(canvasElement).getByRole('combobox', { name: 'Reviewers' })).toHaveAttribute('aria-required', 'true')
+    expect(within(canvasElement).getByRole('combobox', { name: 'Người duyệt' })).toHaveAttribute('aria-required', 'true')
   },
 }

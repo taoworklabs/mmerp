@@ -81,12 +81,30 @@
   flex: none;
 }
 
-/* PagingBar: the page count sits centred regardless of the widths of the text and select beside it. */
+/* PagingBar: the page count sits centred regardless of the widths of the text and select beside it.
+   On narrow screens the page buttons take their own row above the total and the page size. */
 .paging {
   display: grid;
-  grid-template-columns: 1fr auto 1fr;
+  grid-template-columns: 1fr auto;
   align-items: center;
   gap: var(--mmerp-space-sm);
+}
+
+.pages {
+  grid-column: 1 / -1;
+  order: -1;
+  justify-self: center;
+}
+
+@media (min-width: 48em) {
+  .paging {
+    grid-template-columns: 1fr auto 1fr;
+  }
+
+  .pages {
+    grid-column: auto;
+    order: 0;
+  }
 }
 
 .pageSize {

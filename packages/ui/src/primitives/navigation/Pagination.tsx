@@ -1,4 +1,5 @@
 import type * as React from 'react'
+import { useMediaQuery } from '../../hooks/useMediaQuery.ts'
 import { cx } from '../../internal/cx.ts'
 import { UnstyledButton } from '../input/UnstyledButton.tsx'
 import styles from './Pagination.module.css'
@@ -62,8 +63,12 @@ function NextIcon() {
   )
 }
 
+// Where controls grow to the 44px touch target; with siblings shown the row would outgrow a phone.
+const touchQuery = '(max-width: 63.99em)'
+
 export function Pagination({ total, value, onChange, labels, className, ...props }: PaginationProps) {
-  const items = total > 0 ? paginationRange(total, value) : []
+  const touch = useMediaQuery(touchQuery)
+  const items = total > 0 ? paginationRange(total, value, touch ? 0 : 1) : []
   return (
     <nav className={cx(styles.root, className)} {...props}>
       <ul className={styles.list}>

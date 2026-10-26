@@ -12,13 +12,13 @@ export default meta
 type Story = StoryObj<typeof UnstyledButton>
 
 export const Default: Story = {
-  args: { children: 'Unstyled' },
+  args: { children: 'Xem chi tiết' },
   play: async ({ canvasElement }) => {
-    const button = within(canvasElement).getByText('Unstyled')
+    const button = within(canvasElement).getByText('Xem chi tiết')
     expect(getComputedStyle(button).borderStyle).toBe('none')
   },
 }
 
 export const Disabled: Story = {
-  args: { disabled: true, children: 'Unstyled disabled' },
+  args: { disabled: true, children: 'Xem chi tiết (đã khóa)' },
 }

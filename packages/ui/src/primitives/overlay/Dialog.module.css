@@ -57,3 +57,11 @@
   padding: var(--mmerp-space-lg);
   overflow-y: auto;
 }
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: var(--mmerp-space-sm);
+  margin-top: var(--mmerp-space-lg);
+}

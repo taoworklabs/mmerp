@@ -14,16 +14,16 @@ type Story = StoryObj<typeof Timeline>
 export const Default: Story = {
   render: () => (
     <Timeline>
-      <Timeline.Item title="Order placed" active>
-        2026-10-01
+      <Timeline.Item title="Đã tạo đơn" active>
+        01/10/2026
       </Timeline.Item>
-      <Timeline.Item title="Order shipped">2026-10-03</Timeline.Item>
-      <Timeline.Item title="Order delivered">2026-10-05</Timeline.Item>
+      <Timeline.Item title="Đã giao cho đơn vị vận chuyển">03/10/2026</Timeline.Item>
+      <Timeline.Item title="Khách đã nhận hàng">05/10/2026</Timeline.Item>
     </Timeline>
   ),
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
-    const activeTitle = canvas.getByText('Order placed')
+    const activeTitle = canvas.getByText('Đã tạo đơn')
     const activeItem = activeTitle.closest('[data-active]')
     expect(activeItem).not.toBeNull()
 
@@ -34,6 +34,6 @@ export const Default: Story = {
     expect(getComputedStyle(bullet).borderColor).toBe(getComputedStyle(probe).borderColor)
     probe.remove()
 
-    expect(canvas.getByText('Order shipped').closest('[data-active]')).toBeNull()
+    expect(canvas.getByText('Đã giao cho đơn vị vận chuyển').closest('[data-active]')).toBeNull()
   },
 }
