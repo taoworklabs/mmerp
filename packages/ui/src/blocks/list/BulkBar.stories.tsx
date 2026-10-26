@@ -7,11 +7,13 @@ const meta: Meta<typeof BulkBar> = {
   title: 'Blocks/BulkBar',
   component: BulkBar,
   args: {
-    countText: '3 selected',
-    label: 'Bulk actions',
-    clearLabel: 'Clear selection',
+    countText: 'Đã chọn 3',
+    label: 'Thao tác hàng loạt',
+    clearLabel: 'Bỏ chọn',
     onClear: fn(),
   },
+  // React elements, not values to edit.
+  argTypes: { children: { control: false } },
 }
 
 export default meta
@@ -22,18 +24,18 @@ export const Default: Story = {
   args: {
     children: (
       <>
-        <Button variant="default">Export</Button>
+        <Button variant="default">Xuất file</Button>
         <Button color="danger" variant="outline">
-          Delete
+          Xóa
         </Button>
       </>
     ),
   },
   play: async ({ canvasElement, args }) => {
     const canvas = within(canvasElement)
-    expect(canvas.getByRole('toolbar', { name: 'Bulk actions' })).toBeInTheDocument()
+    expect(canvas.getByRole('toolbar', { name: 'Thao tác hàng loạt' })).toBeInTheDocument()
 
-    const clear = canvas.getByRole('button', { name: 'Clear selection' })
+    const clear = canvas.getByRole('button', { name: 'Bỏ chọn' })
     await userEvent.click(clear)
     expect(args.onClear).toHaveBeenCalledTimes(1)
   },

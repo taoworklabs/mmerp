@@ -14,26 +14,26 @@ export default meta
 type Story = StoryObj<typeof ActionIcon>
 
 export const Default: Story = {
-  args: { 'aria-label': 'Confirm', children: <IconCheck size={icon.button.size} stroke={icon.button.stroke} /> },
+  args: { 'aria-label': 'Xác nhận', children: <IconCheck size={icon.button.size} stroke={icon.button.stroke} /> },
 }
 
 export const Light: Story = {
-  args: { 'aria-label': 'Confirm', variant: 'light', children: <IconCheck size={icon.button.size} stroke={icon.button.stroke} /> },
+  args: { 'aria-label': 'Xác nhận', variant: 'light', children: <IconCheck size={icon.button.size} stroke={icon.button.stroke} /> },
 }
 
 export const Xs: Story = {
-  args: { 'aria-label': 'Confirm', size: 'xs', children: <IconCheck size={icon.text.size} stroke={icon.text.stroke} /> },
+  args: { 'aria-label': 'Xác nhận', size: 'xs', children: <IconCheck size={icon.text.size} stroke={icon.text.stroke} /> },
 }
 
 export const Loading: Story = {
-  args: { 'aria-label': 'Confirm', loading: true, children: <IconCheck size={icon.button.size} stroke={icon.button.stroke} /> },
+  args: { 'aria-label': 'Xác nhận', loading: true, children: <IconCheck size={icon.button.size} stroke={icon.button.stroke} /> },
   play: async ({ canvasElement }) => {
-    const button = within(canvasElement).getByRole('button', { name: 'Confirm' })
+    const button = within(canvasElement).getByRole('button', { name: 'Xác nhận' })
     expect(button).toHaveAttribute('aria-busy', 'true')
     expect(button).toBeDisabled()
   },
 }
 
 export const Disabled: Story = {
-  args: { 'aria-label': 'Confirm', disabled: true, children: <IconCheck size={icon.button.size} stroke={icon.button.stroke} /> },
+  args: { 'aria-label': 'Xác nhận', disabled: true, children: <IconCheck size={icon.button.size} stroke={icon.button.stroke} /> },
 }

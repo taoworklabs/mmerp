@@ -11,5 +11,5 @@ export default meta
 type Story = StoryObj<typeof VisuallyHidden>
 
 export const Default: Story = {
-  args: { children: 'Announced to screen readers only' },
+  args: { children: 'Chỉ trình đọc màn hình mới đọc nội dung này' },
 }

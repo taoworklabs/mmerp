@@ -4,15 +4,15 @@ import { expect, fn, userEvent, within } from 'storybook/test'
 import { SegmentedControl, type SegmentedControlProps } from './SegmentedControl.tsx'
 
 const data = [
-  { value: 'day', label: 'Day' },
-  { value: 'week', label: 'Week' },
-  { value: 'month', label: 'Month' },
+  { value: 'day', label: 'Ngày' },
+  { value: 'week', label: 'Tuần' },
+  { value: 'month', label: 'Tháng' },
 ]
 
 const meta: Meta<typeof SegmentedControl> = {
   title: 'Input/SegmentedControl',
   component: SegmentedControl,
-  args: { data, 'aria-label': 'Period', onChange: fn() },
+  args: { data, 'aria-label': 'Kỳ báo cáo', onChange: fn() },
 }
 
 export default meta
@@ -53,15 +53,16 @@ export const Disabled: Story = {
 }
 
 export const MoveWithArrowsAndSpace: Story = {
+  tags: ['!dev', '!autodocs'],
   args: { value: 'day' },
   render: (args) => <Controlled {...args} />,
   play: async ({ canvasElement, args }) => {
     const canvas = within(canvasElement)
-    const day = canvas.getByRole('button', { name: 'Day' })
+    const day = canvas.getByRole('button', { name: 'Ngày' })
     day.focus()
     await userEvent.keyboard('{ArrowRight}')
     await userEvent.keyboard(' ')
     expect(args.onChange).toHaveBeenCalledWith('week')
-    expect(canvas.getByRole('button', { name: 'Week' })).toHaveAttribute('data-pressed', '')
+    expect(canvas.getByRole('button', { name: 'Tuần' })).toHaveAttribute('data-pressed', '')
   },
 }

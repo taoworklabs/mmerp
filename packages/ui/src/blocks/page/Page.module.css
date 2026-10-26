@@ -1,20 +1,28 @@
+.root,
+.list {
+  /* The page's side margin; a list page's edge-to-edge parts pad their content by it. */
+  --mmerp-page-inline: var(--mmerp-space-md);
+}
+
 .root {
   display: flex;
   flex-direction: column;
   gap: var(--mmerp-space-lg);
-  padding-inline: var(--mmerp-space-md);
+  padding-inline: var(--mmerp-page-inline);
   padding-block: var(--mmerp-space-lg);
 }
 
 @media (min-width: 64em) {
-  .root {
-    padding-inline: var(--mmerp-space-xl);
+  .root,
+  .list {
+    --mmerp-page-inline: var(--mmerp-space-xl);
   }
 }
 
 @media (min-width: 80em) {
-  .root {
-    padding-inline: var(--mmerp-space-xxl);
+  .root,
+  .list {
+    --mmerp-page-inline: var(--mmerp-space-xxl);
   }
 }
 
@@ -47,4 +55,65 @@
   min-height: 0;
   overflow: auto;
   scrollbar-width: thin;
+}
+
+/* A list page: the header block keeps the margins and draws no rule; the column headers' bottom
+   border, running edge to edge, is the separator. From 64em only the table scrolls; below, the
+   page scrolls as a whole. */
+.list {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+
+.listHead {
+  display: flex;
+  flex-direction: column;
+  gap: var(--mmerp-space-md);
+  padding: var(--mmerp-space-lg) var(--mmerp-page-inline) var(--mmerp-space-md);
+}
+
+.listHead [data-page-header] {
+  padding-bottom: 0;
+  border-bottom: 0;
+}
+
+.listBody {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  /* Below 64em the table shows as cards, which keep the page's margins. */
+  padding-inline: var(--mmerp-page-inline);
+  /* The column headers sit on the page's surface, part of the header block. */
+  --mmerp-color-table-header: var(--mmerp-color-body);
+}
+
+.listBody > [data-table] {
+  border: 0;
+  border-radius: 0;
+}
+
+.listBody [data-table] :is(th, td):first-child {
+  padding-inline-start: var(--mmerp-page-inline);
+}
+
+.listBody [data-table] :is(th, td):last-child {
+  padding-inline-end: var(--mmerp-page-inline);
+}
+
+.listFoot {
+  padding: var(--mmerp-space-xs) var(--mmerp-page-inline);
+  border-top: 1px solid var(--mmerp-color-border);
+  background: var(--mmerp-color-body);
+}
+
+@media (min-width: 64em) {
+  .list,
+  .listBody {
+    min-height: 0;
+  }
+
+  .listBody {
+    padding-inline: 0;
+  }
 }

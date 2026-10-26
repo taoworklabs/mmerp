@@ -10,6 +10,8 @@ import { PageHeader } from './PageHeader.tsx'
 const meta: Meta<typeof PageHeader> = {
   title: 'Blocks/PageHeader',
   component: PageHeader,
+  // React elements, not values to edit.
+  argTypes: { actions: { control: false } },
 }
 
 export default meta
@@ -18,14 +20,21 @@ type Story = StoryObj<typeof PageHeader>
 
 export const List: Story = {
   args: {
-    title: 'Customers',
-    description: '128 customers',
+    title: 'Khách hàng',
+    description: '128 khách hàng',
     actions: (
       <>
-        <Button variant="default">Export</Button>
-        <Button>New customer</Button>
+        <Button variant="default">Xuất file</Button>
+        <Button>Thêm khách hàng</Button>
       </>
     ),
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    const secondary = canvas.getByRole('button', { name: 'Xuất file' }).getBoundingClientRect()
+    const primary = canvas.getByRole('button', { name: 'Thêm khách hàng' }).getBoundingClientRect()
+    // The buttons sit together at the end, not spread across the row.
+    expect(primary.left - secondary.right).toBeLessThanOrEqual(16)
   },
 }
 
@@ -39,28 +48,28 @@ export const Record: Story = {
         <PageHeader
           title="Nguyễn Văn A"
           current
-          breadcrumbsLabel="Breadcrumb"
-          breadcrumbs={[{ label: 'Customers', render: <a href="#" /> }]}
+          breadcrumbsLabel="Đường dẫn"
+          breadcrumbs={[{ label: 'Khách hàng', render: <a href="#" /> }]}
           back={
             <PageHeader.BackButton
-              label="Back to customers"
+              label="Quay lại danh sách khách hàng"
               onClick={() => {
                 /* history navigation is the caller's */
               }}
             />
           }
           leading={<Avatar alt="Nguyễn Văn A">NA</Avatar>}
-          status={<Badge color="success">Active</Badge>}
+          status={<Badge color="success">Đang giao dịch</Badge>}
           description="customer@example.com"
           summary={
             <Text size="sm" tone="dimmed">
-              Summary placeholder
+              Khách hàng từ 03/2021 · Công nợ 12.500.000 ₫
             </Text>
           }
           tabs={
             <Tabs.List>
-              <Tabs.Tab value="overview">Overview</Tabs.Tab>
-              <Tabs.Tab value="orders">Orders</Tabs.Tab>
+              <Tabs.Tab value="overview">Tổng quan</Tabs.Tab>
+              <Tabs.Tab value="orders">Đơn bán hàng</Tabs.Tab>
             </Tabs.List>
           }
         />
@@ -69,16 +78,16 @@ export const Record: Story = {
   ),
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
-    const nav = canvas.getByRole('navigation', { name: 'Breadcrumb' })
+    const nav = canvas.getByRole('navigation', { name: 'Đường dẫn' })
     const items = nav.querySelectorAll('li')
     expect(items[items.length - 1]).toHaveAttribute('aria-current', 'page')
 
-    const back = canvas.getByRole('button', { name: 'Back to customers' })
+    const back = canvas.getByRole('button', { name: 'Quay lại danh sách khách hàng' })
     expect(back).toBeInTheDocument()
 
     // A crumb reads like dimmed text, not a default browser link: no underline until hovered,
     // the dimmed token's colour rather than the primitive's own brand blue.
-    const crumb = canvas.getByRole('link', { name: 'Customers' })
+    const crumb = canvas.getByRole('link', { name: 'Khách hàng' })
     expect(getComputedStyle(crumb).textDecorationLine).toBe('none')
 
     const probe = document.createElement('div')
@@ -91,9 +100,9 @@ export const Record: Story = {
 
 export const NewRecord: Story = {
   args: {
-    title: 'New customer',
-    breadcrumbsLabel: 'Breadcrumb',
-    breadcrumbs: [{ label: 'Customers', render: <a href="#" /> }],
+    title: 'Thêm khách hàng',
+    breadcrumbsLabel: 'Đường dẫn',
+    breadcrumbs: [{ label: 'Khách hàng', render: <a href="#" /> }],
   },
   play: async ({ canvasElement }) => {
     // The trail stops at the parent list; the page itself isn't shown yet, so nothing is "current".
@@ -103,10 +112,10 @@ export const NewRecord: Story = {
 
 export const LongTitle: Story = {
   args: {
-    title: 'x'.repeat(200),
+    title: 'Công ty TNHH Thương mại Dịch vụ Xuất nhập khẩu Nguyễn Hoàng Phát – Chi nhánh Thành phố Hồ Chí Minh, Quận Bình Thạnh, Phường 25 (khách hàng thân thiết từ năm 2018)',
     current: true,
-    breadcrumbsLabel: 'Breadcrumb',
-    breadcrumbs: [{ label: 'Customers', render: <a href="#" /> }],
+    breadcrumbsLabel: 'Đường dẫn',
+    breadcrumbs: [{ label: 'Khách hàng', render: <a href="#" /> }],
     style: { width: 320 },
   },
   play: async ({ canvasElement }) => {
@@ -117,7 +126,7 @@ export const LongTitle: Story = {
 
     // The current crumb repeats the same long title; it must truncate to one line rather than
     // wrapping or widening the breadcrumb row.
-    const nav = within(canvasElement).getByRole('navigation', { name: 'Breadcrumb' })
+    const nav = within(canvasElement).getByRole('navigation', { name: 'Đường dẫn' })
     // The li itself never overflows (its content is clipped inside); the truncating span does.
     const crumb = nav.querySelector('li[aria-current="page"] span') as HTMLElement
     expect(crumb.scrollWidth).toBeGreaterThan(crumb.clientWidth)

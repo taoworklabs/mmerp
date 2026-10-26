@@ -32,6 +32,10 @@
   position: fixed;
   inset: auto 0 0 0;
   z-index: 100;
+  /* Laid out like FormBar: buttons spaced and at the right. */
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--mmerp-space-sm);
   padding: var(--mmerp-space-sm) var(--mmerp-space-md);
   background: var(--mmerp-color-body);
   border-top: 1px solid var(--mmerp-color-border);

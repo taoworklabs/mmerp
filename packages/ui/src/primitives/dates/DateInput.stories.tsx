@@ -63,6 +63,7 @@ export const Filled: Story = {
 }
 
 export const PickFromCalendar: Story = {
+  tags: ['!dev', '!autodocs'],
   args: { value: '2026-01-05' },
   render: (args) => <Controlled {...args} />,
   play: async ({ canvasElement, args }) => {
@@ -82,6 +83,7 @@ export const PickFromCalendar: Story = {
 }
 
 export const OpenOnClick: Story = {
+  tags: ['!dev', '!autodocs'],
   args: { value: null },
   render: (args) => <Controlled {...args} />,
   play: async ({ canvasElement }) => {

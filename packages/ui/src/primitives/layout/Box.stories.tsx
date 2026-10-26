@@ -12,13 +12,13 @@ export default meta
 type Story = StoryObj<typeof Box>
 
 export const Default: Story = {
-  args: { children: 'A box' },
+  args: { children: 'Khối nội dung' },
 }
 
 export const Render: Story = {
-  args: { render: <section />, children: 'Rendered as a section' },
+  args: { render: <section />, children: 'Hiển thị dưới dạng section' },
   play: async ({ canvasElement }) => {
-    const section = within(canvasElement).getByText('Rendered as a section')
+    const section = within(canvasElement).getByText('Hiển thị dưới dạng section')
     expect(section.tagName).toBe('SECTION')
   },
 }

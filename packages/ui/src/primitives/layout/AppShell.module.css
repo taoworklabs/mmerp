@@ -1,7 +1,8 @@
 .root {
   display: grid;
   height: 100dvh;
-  grid-template-columns: var(--mmerp-appshell-navbar-width) 1fr;
+  /* minmax(0, …): a plain 1fr never shrinks below its content, so a wide header would widen the page. */
+  grid-template-columns: var(--mmerp-appshell-navbar-width) minmax(0, 1fr);
   grid-template-rows: var(--mmerp-appshell-header-height) 1fr;
   grid-template-areas:
     'header header'
@@ -9,7 +10,7 @@
 }
 
 .root[data-mobile] {
-  grid-template-columns: 1fr;
+  grid-template-columns: minmax(0, 1fr);
   grid-template-areas:
     'header'
     'main';

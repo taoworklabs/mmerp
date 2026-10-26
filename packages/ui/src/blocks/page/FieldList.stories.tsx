@@ -13,9 +13,9 @@ type Story = StoryObj<typeof FieldList>
 export const SideBySide: Story = {
   args: {
     rows: [
-      ['Name', 'Nguyễn Văn A'],
+      ['Họ và tên', 'Nguyễn Văn A'],
       ['Email', 'a@example.com'],
-      ['Phone', '090 123 4567'],
+      ['Điện thoại', '090 123 4567'],
     ],
   },
 }
@@ -24,9 +24,9 @@ export const Stacked: Story = {
   args: {
     stacked: true,
     rows: [
-      ['Name', 'Nguyễn Văn A'],
-      ['Phone', '090 123 4567'],
-      ['Address', '123 Some Street, District 1, Ho Chi Minh City', 'wide'],
+      ['Họ và tên', 'Nguyễn Văn A'],
+      ['Điện thoại', '090 123 4567'],
+      ['Địa chỉ', '123 Nguyễn Thị Minh Khai, Phường Bến Thành, Quận 1, Thành phố Hồ Chí Minh', 'wide'],
     ],
   },
 }

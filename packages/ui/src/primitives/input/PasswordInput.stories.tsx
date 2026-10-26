@@ -5,7 +5,7 @@ import { PasswordInput } from './PasswordInput.tsx'
 const meta: Meta<typeof PasswordInput> = {
   title: 'Input/PasswordInput',
   component: PasswordInput,
-  args: { label: 'Password', visibilityLabels: { show: 'Show password', hide: 'Hide password' } },
+  args: { label: 'Mật khẩu', visibilityLabels: { show: 'Hiện mật khẩu', hide: 'Ẩn mật khẩu' } },
 }
 
 export default meta
@@ -24,11 +24,11 @@ export const Filled: Story = {
 }
 
 export const Placeholder: Story = {
-  args: { placeholder: 'Enter your password' },
+  args: { placeholder: 'Nhập mật khẩu' },
 }
 
 export const WithDescription: Story = {
-  args: { description: 'At least 8 characters' },
+  args: { description: 'Tối thiểu 8 ký tự' },
 }
 
 export const Required: Story = {
@@ -39,7 +39,7 @@ export const Required: Story = {
 }
 
 export const Error: Story = {
-  args: { error: 'Password is too short' },
+  args: { error: 'Mật khẩu quá ngắn' },
 }
 
 export const Disabled: Story = {
@@ -51,12 +51,13 @@ export const ReadOnly: Story = {
 }
 
 export const ToggleVisibility: Story = {
+  tags: ['!dev', '!autodocs'],
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
-    const toggle = canvas.getByRole('button', { name: 'Show password' })
+    const toggle = canvas.getByRole('button', { name: 'Hiện mật khẩu' })
     await userEvent.click(toggle)
     const input = canvasElement.querySelector('input')
     expect(input).toHaveAttribute('type', 'text')
-    expect(canvas.getByRole('button', { name: 'Hide password' })).toBeInTheDocument()
+    expect(canvas.getByRole('button', { name: 'Ẩn mật khẩu' })).toBeInTheDocument()
   },
 }
