@@ -1,4 +1,4 @@
-import { FieldList, Group, Stack, Text } from '@mmerp/ui'
+import { FieldList, Group, Panel, Stack, Text } from '@mmerp/ui'
 import { IconCalendarEvent, IconUsers } from '@tabler/icons-react'
 import type { ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -6,8 +6,8 @@ import type { Leave, LeaveListItem } from '@/shared/api/hrm'
 import { DocumentStatus } from '@/shared/document'
 import { formatDate, formatDecimal } from '@/shared/i18n'
 import { MissingValue } from '@/shared/ui/MissingValue'
+import { icon } from '@/shared/ui/theme'
 import { EditablePanel } from '@/shared/ui/form'
-import { Panel } from '@/shared/ui/page'
 import { leaveDocType } from '../keys'
 import { EmployeeLink } from './EmployeeLink'
 import { LeaveForm } from './LeaveForm'
@@ -55,7 +55,7 @@ export function LeaveDetails({ leave: l, deducts }: { leave: Leave; deducts: boo
 export function LeaveImpact({ overlapping }: { overlapping: LeaveListItem[] | undefined }) {
   const { t } = useTranslation()
   return (
-    <Panel title={t('hrm.leave.impact')} icon={IconUsers}>
+    <Panel title={t('hrm.leave.impact')} icon={<IconUsers {...icon.text} aria-hidden />}>
       <FieldList
         stacked
         rows={[

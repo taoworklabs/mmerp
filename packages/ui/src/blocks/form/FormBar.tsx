@@ -7,7 +7,8 @@ import styles from './FormLayout.module.css'
 
 export interface FormBarProps extends React.ComponentPropsWithRef<'div'> {
   children: React.ReactNode
-  // Sits left of the buttons (an unsaved indicator, an error count); the kit only places it.
+  // Sits left of the buttons (an unsaved indicator, an error count); the kit only places it, and
+  // on a narrow screen it wraps above the buttons rather than pushing them off.
   status?: React.ReactNode
 }
 
@@ -26,7 +27,7 @@ function FormBarRoot({ children, status, className, ref, ...props }: FormBarProp
   // detach and reattach pinned, tearing down and recreating the IntersectionObserver each time.
   const mergedRef = useMemo(() => mergeRefs(ref, pinned), [ref, pinned])
   return (
-    <Group ref={mergedRef} justify="end" gap="lg" wrap={false} className={cx(styles.bar, className)} data-stuck={stuck || undefined} {...props}>
+    <Group ref={mergedRef} justify="end" gap="lg" className={cx(styles.bar, className)} data-stuck={stuck || undefined} {...props}>
       {status}
       <Group gap="sm" wrap={false}>
         {children}

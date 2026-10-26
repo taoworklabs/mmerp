@@ -1,4 +1,3 @@
-export { Panel } from './Activity'
 export { AuthPage } from './AuthPage'
 export { DocumentPage, type DocumentSection } from './DocumentPage'
 export { FormModal } from './FormModal'

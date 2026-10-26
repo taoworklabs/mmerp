@@ -1,8 +1,7 @@
-import { Button, Group } from '@mmerp/ui'
+import { Button, Group, Panel } from '@mmerp/ui'
 import { IconPencil, type Icon as TablerIcon } from '@tabler/icons-react'
 import { useRef, useState, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Panel } from '../page/Activity'
 import { icon } from '../theme'
 
 type Props = {
@@ -37,7 +36,7 @@ export function EditablePanel({ title, icon: Icon, editable, actions, edit, chil
   return (
     <Panel
       title={title}
-      icon={Icon}
+      icon={Icon && <Icon {...icon.text} aria-hidden />}
       actions={
         !editing && (
           <Group gap="xs" wrap={false}>

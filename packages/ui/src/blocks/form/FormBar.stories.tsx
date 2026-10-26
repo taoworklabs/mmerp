@@ -47,6 +47,35 @@ export const WithStatus: Story = {
   },
 }
 
+// A failed submit on a phone: the error line wraps above the buttons instead of overflowing.
+export const ErrorStatusNarrow: Story = {
+  decorators: [(Story) => <div style={{ width: 340 }}><Story /></div>],
+  args: {
+    'data-testid': 'bar',
+    status: (
+      <>
+        <Text size="sm" role="status">
+          <FormBar.UnsavedDot /> Thay đổi chưa lưu
+        </Text>
+        <Text size="sm" tone="danger" role="alert">
+          3 trường cần sửa · Đến trường lỗi tiếp
+        </Text>
+      </>
+    ),
+    children: (
+      <>
+        <Button variant="default">Hủy</Button>
+        <Button type="submit">Lưu</Button>
+      </>
+    ),
+  } as never,
+  play: async ({ canvasElement }) => {
+    const bar = within(canvasElement).getByTestId('bar')
+    expect(bar.scrollWidth).toBeLessThanOrEqual(bar.clientWidth)
+    expect(within(bar).getByRole('button', { name: 'Lưu' }).getBoundingClientRect().right).toBeLessThanOrEqual(bar.getBoundingClientRect().right)
+  },
+}
+
 export const Sticky: Story = {
   render: () => (
     <div data-testid="scrollbox" style={{ height: 300, overflow: 'auto' }} tabIndex={0}>

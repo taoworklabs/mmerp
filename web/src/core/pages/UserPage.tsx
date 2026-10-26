@@ -1,4 +1,4 @@
-import { Button, FieldList, KeyFacts, RecordColumns, Stack, Text } from '@mmerp/ui'
+import { Button, FieldList, KeyFacts, Panel, RecordColumns, Stack, Text } from '@mmerp/ui'
 import { IconMail, IconPlus, IconTrash, IconUserCircle } from '@tabler/icons-react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
@@ -15,7 +15,7 @@ import { MissingValue } from '@/shared/ui/MissingValue'
 import { InlineEditField } from '@/shared/ui/InlineEditField'
 import { MenuAction } from '@/shared/ui/MenuAction'
 import { notifySuccess } from '@/shared/ui/notify'
-import { FormModal, Panel, RecordPage, SeeAll, TabContent } from '@/shared/ui/page'
+import { FormModal, RecordPage, SeeAll, TabContent } from '@/shared/ui/page'
 import { QueryView } from '@/shared/ui/QueryView'
 import { ContentSkeleton, EmptyState, ErrorState, NotFoundPage, PageSkeleton } from '@/shared/ui/states'
 import { icon } from '@/shared/ui/theme'
@@ -208,7 +208,7 @@ function UserProfile({ userId, login, name, email }: { userId: number; login: st
   const qc = useQueryClient()
   return (
     <>
-      <Panel title={t('core.user.account')} icon={IconUserCircle}>
+      <Panel title={t('core.user.account')} icon={<IconUserCircle {...icon.text} aria-hidden />}>
         <FieldList
           stacked
           rows={[
@@ -217,7 +217,7 @@ function UserProfile({ userId, login, name, email }: { userId: number; login: st
           ]}
         />
       </Panel>
-      <Panel title={t('core.user.contact')} icon={IconMail}>
+      <Panel title={t('core.user.contact')} icon={<IconMail {...icon.text} aria-hidden />}>
         <Stack gap="xxs">
           <InlineEditField
             label={t('core.user.email')}

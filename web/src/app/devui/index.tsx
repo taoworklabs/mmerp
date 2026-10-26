@@ -57,7 +57,7 @@ const pages: Record<Path, ComponentType> = {
   'mmerp/more-actions': MoreActionsDoc,
   'mmerp/notice': NoticeDoc,
   'mmerp/notify': NotifyDoc,
-  'mmerp/panel': PanelDoc,
+  'mantine/panel': PanelDoc,
   'mmerp/person-avatar': PersonAvatarDoc,
   'mmerp/query-view': QueryViewDoc,
   'mmerp/section': SectionDoc,

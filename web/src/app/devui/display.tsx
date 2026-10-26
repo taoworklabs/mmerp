@@ -1,4 +1,4 @@
-import { Anchor, Button, FieldList, Group, KeyFacts, Text } from '@mmerp/ui'
+import { Anchor, Button, FieldList, Group, KeyFacts, Panel, Text } from '@mmerp/ui'
 import { Menu } from '@mantine/core'
 import { IconDownload, IconFileDescription, IconPencil, IconPlus, IconUsersGroup } from '@tabler/icons-react'
 import { type ReactNode, useState } from 'react'
@@ -12,7 +12,6 @@ import { useListView } from '@/shared/ui/ListView'
 import { MenuAction } from '@/shared/ui/MenuAction'
 import { MoreActions } from '@/shared/ui/MoreActions'
 import { OrgUnitName } from '@/shared/ui/OrgUnitName'
-import { Panel } from '@/shared/ui/page'
 import { Section } from '@/shared/ui/Section'
 import { StatusBadge } from '@/shared/ui/StatusBadge'
 import { icon } from '@/shared/ui/theme'
@@ -47,7 +46,8 @@ import { OrgUnitName } from '@/shared/ui/OrgUnitName'   // render an org unit`,
 import { PersonName } from '@/shared/ui/avatar'   // avatar and name together`,
   tiles: `<TileGrid><StatTile label value to error? onRetry? /><LinkTile icon title to /></TileGrid>`,
   section: `<Section title description? actions?>{content}</Section>`,
-  panel: `<Panel title icon? actions? plain?>{content}</Panel>`,
+  panel: `import { Panel } from '@mmerp/ui'
+<Panel title icon? actions? plain?>{content}</Panel>`,
 }
 
 const values: [string, ReactNode][] = [
@@ -376,12 +376,12 @@ export function PanelDoc() {
   const { t } = useTranslation()
   return (
     <DocPage
-      path="mmerp/panel"
+      path="mantine/panel"
       example={
         <Case>
           <Panel
             title={t('shared.devui.section_company')}
-            icon={IconFileDescription}
+            icon={<IconFileDescription {...icon.text} aria-hidden />}
             actions={
               <Button variant="subtle" leftSection={<IconPencil {...icon.button} />}>
                 {t('shared.devui.edit')}

@@ -1,11 +1,11 @@
-import { ActionBar, useMediaQuery } from '@mmerp/ui'
+import { ActionBar, Panel, useMediaQuery } from '@mmerp/ui'
 import { Tabs } from '@mantine/core'
 import type { ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useSearchParams } from 'react-router'
 import { UnsavedProvider } from '../form'
 import { Notice } from '../Notice'
-import { Activity, Panel, type DocumentSection } from './Activity'
+import { Activity, type DocumentSection } from './Activity'
 import { DetailPage } from './DetailPage'
 import { Page, tabsList, type PageHeaderProps } from './Page'
 

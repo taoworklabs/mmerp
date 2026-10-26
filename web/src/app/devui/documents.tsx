@@ -1,9 +1,9 @@
-import { Group } from '@mmerp/ui'
+import { Group, Panel } from '@mmerp/ui'
 import type { UseQueryResult } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { ActivityFeed, ApprovalPanel, DocumentPreview, DocumentStatus, type DocStatus, useAttachmentSection } from '@/shared/document'
 import { sample, SampleDocument } from '@/shared/document/samples'
-import { Panel, SeeAll } from '@/shared/ui/page'
+import { SeeAll } from '@/shared/ui/page'
 import { Case } from './Demo'
 import { DocPage } from './DocPage'
 
