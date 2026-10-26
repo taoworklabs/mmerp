@@ -19,7 +19,7 @@ describe('devui catalogue', () => {
   it('mantine layer covers exactly the area allowlist', () => {
     const match = /name: '@mmerp\/ui',\s*allowImportNames:\s*\[([^\]]*)\]/.exec(eslintConfig)
     // The look-only blocks are catalogued with the shared/ui components they replace.
-    const blocks = ['Panel', 'FieldList', 'KeyFacts', 'RecordColumns', 'ActionBar']
+    const blocks = ['Panel', 'RecordColumns', 'ActionBar']
     const allowed = [...match![1]!.matchAll(/'([A-Za-z]+)'/g)].map((m) => m[1]!).filter((n) => !blocks.includes(n))
     const covered = all.filter((e) => e.layer === 'mantine').flatMap((e) => e.covers ?? [e.name!])
     expect([...covered].sort()).toEqual([...allowed].sort())

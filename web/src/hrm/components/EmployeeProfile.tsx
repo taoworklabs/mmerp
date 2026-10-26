@@ -1,4 +1,4 @@
-import { Anchor, Button } from '@mmerp/ui'
+import { Anchor, Button, FieldList } from '@mmerp/ui'
 import { IconAddressBook, IconEye, IconEyeOff, IconLock, IconUser } from '@tabler/icons-react'
 import { useState, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -6,7 +6,7 @@ import { type Employee } from '@/shared/api/hrm'
 import { useInvalidateRecord } from '@/shared/area'
 import { useMe } from '@/shared/auth/me'
 import { formatDate, today } from '@/shared/i18n'
-import { FieldList, MissingValue, type FieldRow } from '@/shared/ui/FieldList'
+import { MissingValue } from '@/shared/ui/MissingValue'
 import { DateField, EditablePanel, Form, FormActions, FormFields, OrgUnitField, SensitiveValue } from '@/shared/ui/form'
 import { FormModal } from '@/shared/ui/page'
 import { icon } from '@/shared/ui/theme'
@@ -66,7 +66,7 @@ export function EmployeeProfile({ employee: e, onSaved }: { employee: Employee; 
               ],
               [t('hrm.employee.user_login'), or(open, t('hrm.employee.user_login'), e.user_login)],
               // Leaving is recorded through "Cho nghỉ việc"; the date shows once there is one.
-              ...(e.termination_date ? [[t('hrm.employee.termination_date'), formatDate(e.termination_date)] as FieldRow] : []),
+              ...(e.termination_date ? [[t('hrm.employee.termination_date'), formatDate(e.termination_date)] as [string, ReactNode]] : []),
             ]}
           />
         )}

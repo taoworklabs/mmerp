@@ -57,7 +57,7 @@ export function DocPage({ path, example, variants, doDont, code }: { path: Path;
   const description = (
     <>
       {t(`shared.devui.about_${k}`)}
-      {entry.layer === 'mantine' && (
+      {entry.layer === 'mantine' && !entry.kit && (
         <>
           {' '}
           <Anchor href={`https://mantine.dev/core/${(entry.covers?.[0] ?? entry.name ?? '').toLowerCase()}/`} target="_blank" rel="noreferrer">

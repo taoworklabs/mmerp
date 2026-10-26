@@ -1,9 +1,8 @@
-import { Stack } from '@mmerp/ui'
+import { FieldList, Stack } from '@mmerp/ui'
 import type { UseQueryResult } from '@tanstack/react-query'
 import type { ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { errorText } from '@/shared/i18n'
-import { FieldList } from '@/shared/ui/FieldList'
 import { ContentSkeleton, ErrorState } from '@/shared/ui/states'
 import { DocumentStatus, type DocStatus } from './DocumentStatus'
 

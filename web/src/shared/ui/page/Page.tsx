@@ -1,10 +1,7 @@
-import { ActionIcon, Anchor, Box, Group, Stack, Text, Title, cx } from '@mmerp/ui'
-import { Breadcrumbs, Tooltip } from '@mantine/core'
-import { IconArrowLeft, IconChevronRight } from '@tabler/icons-react'
-import type { CSSProperties, ReactNode } from 'react'
+import { Page as KitPage, PageHeader as KitPageHeader } from '@mmerp/ui'
+import type { ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link, useLocation, useNavigate } from 'react-router'
-import { icon } from '../theme'
 import classes from './Page.module.css'
 
 export type Crumb = { label: string; to: string }
@@ -34,82 +31,30 @@ export type PageHeaderProps = {
   current?: boolean
 }
 
-// pageFrame is the padding around a page, shared with the page-level skeleton.
-export const pageFrame = classes.frame
+// tabsList is for a Mantine Tabs.List in the header: sits on the header's rule, scrolls sideways
+// when the tabs do not fit.
+export const tabsList = classes.tabs
 
 // readingWidth is the width of a side panel (approval, attachments) shown full width as a tab.
 export const readingWidth = 480
 
 // Page is the frame every page template builds on: header (breadcrumbs, title, at most one
 // primary action), then content. A record's or a form's page is centred at the width it stops at
-// (centered: the content width, or the given one), its header too, so both share a left edge;
-// lists and dashboards use the whole width.
-export function Page({ children, className, centered, ...header }: PageHeaderProps & { children: ReactNode; className?: string; centered?: boolean | string }) {
-  if (centered)
-    return (
-      <Box className={cx(pageFrame, className)}>
-        <Stack
-          gap="lg"
-          className={classes.centered}
-          style={centered === true ? undefined : ({ '--page-width': typeof centered === 'string' ? centered : undefined } as CSSProperties)}
-        >
-          <PageHeader {...header} />
-          {children}
-        </Stack>
-      </Box>
-    )
+// (centered: the content width, or 'detail' for the wider record width), its header too, so both
+// share a left edge; lists and dashboards use the whole width.
+export function Page({ children, className, centered, ...header }: PageHeaderProps & { children: ReactNode; className?: string; centered?: boolean | 'detail' }) {
   return (
-    <Stack gap="lg" className={cx(pageFrame, className)}>
-      <PageHeader {...header} />
+    <KitPage variant={centered === 'detail' ? 'detail' : centered ? 'centered' : 'full'} className={className} header={<PageHeader {...header} />}>
       {children}
-    </Stack>
+    </KitPage>
   )
 }
 
-function PageHeader({ title, breadcrumbs, description, leading, status, actions, summary, tabs, plain, withBack, current }: PageHeaderProps) {
+function PageHeader({ breadcrumbs, withBack, current, ...props }: PageHeaderProps) {
+  const { t } = useTranslation()
   const parent = breadcrumbs?.at(-1)
-  return (
-    <Stack gap="xs" className={classes.header} data-tabs={tabs ? true : undefined} data-plain={plain || undefined}>
-      {breadcrumbs && breadcrumbs.length > 0 && (
-        <Breadcrumbs separator={<IconChevronRight {...icon.text} />} separatorMargin="xxs">
-          {breadcrumbs.map((c) => (
-            <Anchor key={c.to} render={<Link to={c.to} />} size="sm" tone="dimmed">
-              {c.label}
-            </Anchor>
-          ))}
-          {(withBack || current) && (
-            <Text size="sm" weight={500} aria-current="page" truncate>
-              {title}
-            </Text>
-          )}
-        </Breadcrumbs>
-      )}
-      {/* Narrow screens stack the actions under the title instead of squeezing them. */}
-      <div className={classes.titleRow}>
-        <Group gap="md" wrap={false} shrink>
-          {withBack && parent && <BackButton to={parent.to} />}
-          {leading}
-          <Stack gap={0} shrink>
-            {/* The status drops under a long title rather than squeezing it. */}
-            <Group gap="xs" shrink>
-              <Title order={1} className={classes.title}>
-                {title}
-              </Title>
-              {status}
-            </Group>
-            {description && (
-              <Text size="sm" tone="dimmed" render={<div />}>
-                {description}
-              </Text>
-            )}
-          </Stack>
-        </Group>
-        {actions}
-      </div>
-      {summary}
-      {tabs && <div className={classes.tabs}>{tabs}</div>}
-    </Stack>
-  )
+  const crumbs = breadcrumbs?.length ? { breadcrumbs: breadcrumbs.map((c) => ({ label: c.label, render: <Link to={c.to} /> })), breadcrumbsLabel: t('shared.page.breadcrumb') } : {}
+  return <KitPageHeader {...props} {...crumbs} current={withBack || current} back={withBack && parent ? <BackButton to={parent.to} /> : undefined} />
 }
 
 // BackButton returns to where the user came from, the list with its filters and page; opened
@@ -119,23 +64,16 @@ function BackButton({ to }: { to: string }) {
   const { t } = useTranslation()
   const navigate = useNavigate()
   const location = useLocation()
-  const label = t('shared.page.back')
   return (
-    <Tooltip label={label}>
-      <ActionIcon
-        render={<Link to={to} />}
-        variant="default"
-        className={classes.back}
-        aria-label={label}
-        onClick={(e) => {
-          // The first entry of the session has the default key: there is nothing in the app to go back to.
-          if (location.key === 'default' || e.metaKey || e.ctrlKey || e.shiftKey) return
-          e.preventDefault()
-          void navigate(-1)
-        }}
-      >
-        <IconArrowLeft {...icon.button} />
-      </ActionIcon>
-    </Tooltip>
+    <KitPageHeader.BackButton
+      label={t('shared.page.back')}
+      render={<Link to={to} />}
+      onClick={(e) => {
+        // The first entry of the session has the default key: there is nothing in the app to go back to.
+        if (location.key === 'default' || e.metaKey || e.ctrlKey || e.shiftKey) return
+        e.preventDefault()
+        void navigate(-1)
+      }}
+    />
   )
 }

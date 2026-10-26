@@ -1,7 +1,6 @@
-import { Group, Stack, useMediaQuery } from '@mmerp/ui'
+import { ActionBar, Group, RecordColumns, useMediaQuery } from '@mmerp/ui'
 import type { ReactNode } from 'react'
 import { MoreActions } from '../MoreActions'
-import classes from './DetailPage.module.css'
 import { Page, type PageHeaderProps } from './Page'
 
 type Props = Omit<PageHeaderProps, 'tabs' | 'withBack' | 'plain'> & {
@@ -31,22 +30,10 @@ export function DetailPage({ more, banner, side, narrowActions, actions, childre
     </Group>
   )
   return (
-    <Page {...header} withBack actions={all} centered="var(--mmerp-detail-width)">
+    <Page {...header} withBack actions={all} centered="detail">
       {banner}
-      <div className={classes.columns}>
-        <Stack gap="md" shrink>
-          {children}
-        </Stack>
-        <Stack gap={0} className={classes.side} shrink>
-          {side}
-        </Stack>
-      </div>
-      {bar && (
-        <>
-          <div className={classes.barSpace} />
-          <div className={classes.bar}>{narrowActions}</div>
-        </>
-      )}
+      <RecordColumns ratio="document" main={children} side={side} />
+      {bar && <ActionBar>{narrowActions}</ActionBar>}
     </Page>
   )
 }

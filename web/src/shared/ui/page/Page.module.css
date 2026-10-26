@@ -1,73 +1,16 @@
-/* The padding around every page, shared with the page-level skeleton. */
-.frame {
-  padding: var(--mmerp-space-lg) var(--mmerp-space-md);
+/* A Mantine Tabs.List on the header's rule: no rule of its own, and one row that scrolls sideways
+   rather than wrapping when the tabs do not fit. Doubled to outrank Mantine's own list rule
+   whatever order the CSS loads in. */
+.tabs.tabs {
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  scrollbar-width: none;
 }
 
-@media (min-width: 64em) {
-  .frame {
-    padding-inline: var(--mmerp-space-xl);
-  }
-}
-
-@media (min-width: 80em) {
-  .frame {
-    padding-inline: var(--mmerp-space-xxl);
-  }
-}
-
-.centered {
-  width: 100%;
-  max-width: var(--page-width, var(--mmerp-content-width));
-  margin-inline: auto;
-}
-
-/* Narrow screens stack the actions under the title instead of squeezing them. */
-.titleRow {
-  display: flex;
-  flex-direction: column;
-  align-items: stretch;
-  justify-content: space-between;
-  gap: var(--mmerp-space-sm);
-}
-
-@media (min-width: 48em) {
-  .titleRow {
-    flex-direction: row;
-    align-items: center;
-  }
-}
-
-.title {
-  display: -webkit-box;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 1;
-  overflow: hidden;
-}
-
-a.back {
-  border-radius: 50%;
-}
-
-.header {
-  padding-bottom: var(--mmerp-space-md);
-  border-bottom: 1px solid var(--mmerp-color-border);
-}
-
-.header[data-plain] {
-  padding-bottom: 0;
-  border-bottom: 0;
-}
-
-/* Tabs sit on the header's rule instead of drawing their own; the selected tab's bar covers it. */
-.header[data-tabs] {
-  padding-bottom: 0;
-}
-
-.tabs {
-  margin-top: var(--mmerp-space-xs);
-  margin-bottom: -1px;
-}
-
-.tabs :global(.mantine-Tabs-list)::before {
+.tabs.tabs::before {
   display: none;
+}
+
+.tabs.tabs > * {
+  flex-shrink: 0;
 }

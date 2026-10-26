@@ -16,6 +16,8 @@ export type Entry = {
   exports?: readonly string[]
   // mantine: the @mantine/core names the page documents, when more than its name.
   covers?: readonly string[]
+  // mantine: a kit block, with no Mantine page to link.
+  kit?: boolean
   // Paths of the entries a page links to: related components, or what a pattern or template uses.
   related?: readonly string[]
 }
@@ -30,7 +32,9 @@ export const entries = [
   { layer: 'foundations', path: 'foundations/icons', label: 'shared.devui.icons' },
   { layer: 'mantine', path: 'mantine/anchor', name: 'Anchor', related: ['mantine/button'] },
   { layer: 'mantine', path: 'mantine/button', name: 'Button', related: ['mmerp/more-actions', 'patterns/confirm-delete', 'mantine/anchor'] },
+  { layer: 'mantine', path: 'mantine/field-list', name: 'FieldList', kit: true, related: ['mmerp/panel', 'mantine/key-facts'] },
   { layer: 'mantine', path: 'mantine/layout-text', name: 'Group · Stack · Divider · List · Text', covers: ['Group', 'Stack', 'Divider', 'List', 'Text'], related: ['mmerp/section', 'mmerp/panel'] },
+  { layer: 'mantine', path: 'mantine/key-facts', name: 'KeyFacts', kit: true, related: ['templates/record', 'mantine/field-list'] },
   { layer: 'mantine', path: 'mantine/loader', name: 'Loader', related: ['mmerp/states', 'mantine/skeleton'] },
   { layer: 'mantine', path: 'mantine/skeleton', name: 'Skeleton', related: ['mmerp/states', 'mantine/loader'] },
   { layer: 'mantine', path: 'mantine/tooltip', name: 'Tooltip', related: ['mantine/button'] },
@@ -42,12 +46,10 @@ export const entries = [
   { layer: 'mmerp', path: 'mmerp/document-preview', name: 'DocumentPreview', source: '@/shared/document', related: ['templates/inbox', 'mmerp/side-panel'] },
   { layer: 'mmerp', path: 'mmerp/document-status', name: 'DocumentStatus', source: '@/shared/document', related: ['mmerp/status-badge', 'patterns/document-approval'] },
   { layer: 'mmerp', path: 'mmerp/editable-panel', name: 'EditablePanel', source: '@/shared/ui/form', related: ['mmerp/inline-edit-field', 'patterns/create-edit', 'templates/record'] },
-  { layer: 'mmerp', path: 'mmerp/field-list', name: 'FieldList', source: '@/shared/ui/FieldList', related: ['mmerp/panel', 'mmerp/key-facts'] },
   { layer: 'mmerp', path: 'mmerp/filters', name: 'Filters', source: '@/shared/ui/form', exports: ['SearchInput', 'FilterChip', 'OrgUnitFilter', 'LegalEntityFilter', 'MonthFilter', 'YearFilter'], related: ['patterns/filter-search', 'templates/list'] },
   { layer: 'mmerp', path: 'mmerp/form', name: 'Form · fields', source: '@/shared/ui/form', exports: ['Form', 'FormSection', 'FormFields', 'FormActions', 'TextField'], related: ['mmerp/form-modal', 'mmerp/editable-panel', 'patterns/create-edit'] },
   { layer: 'mmerp', path: 'mmerp/form-modal', name: 'FormModal', source: '@/shared/ui/page', related: ['mmerp/form', 'patterns/create-edit', 'mmerp/use-confirm'] },
   { layer: 'mmerp', path: 'mmerp/inline-edit-field', name: 'InlineEditField', source: '@/shared/ui/InlineEditField', related: ['mmerp/editable-panel'] },
-  { layer: 'mmerp', path: 'mmerp/key-facts', name: 'KeyFacts', source: '@/shared/ui/KeyFacts', related: ['templates/record', 'mmerp/field-list'] },
   { layer: 'mmerp', path: 'mmerp/lines-table', name: 'LinesTable', source: '@/shared/ui/form', related: ['mmerp/form', 'mmerp/cell-grid', 'templates/document'] },
   { layer: 'mmerp', path: 'mmerp/more-actions', name: 'MoreActions', source: '@/shared/ui/MoreActions', related: ['patterns/confirm-delete', 'mantine/button'] },
   { layer: 'mmerp', path: 'mmerp/notice', name: 'Notice', source: '@/shared/ui/Notice', related: ['mmerp/notify', 'mmerp/use-action'] },
@@ -74,8 +76,8 @@ export const entries = [
   { layer: 'templates', path: 'templates/document', name: 'DocumentPage', source: '@/shared/ui/page', related: ['mmerp/lines-table', 'mmerp/document-status', 'mmerp/approval-panel', 'mmerp/attachment-panel', 'mmerp/activity-feed'] },
   { layer: 'templates', path: 'templates/inbox', name: 'InboxPage', source: '@/shared/ui/page', related: ['mmerp/document-preview', 'mmerp/states'] },
   { layer: 'templates', path: 'templates/list', name: 'ListPage', source: '@/shared/ui/page', related: ['mmerp/data-table', 'mmerp/filters', 'mmerp/bulk-bar', 'mmerp/side-panel', 'mmerp/query-view'] },
-  { layer: 'templates', path: 'templates/page', name: 'Page', source: '@/shared/ui/page', related: ['mantine/button', 'mmerp/key-facts', 'mmerp/person-avatar', 'mmerp/status-badge'] },
-  { layer: 'templates', path: 'templates/record', name: 'RecordPage', source: '@/shared/ui/page', related: ['mmerp/key-facts', 'mmerp/editable-panel', 'mmerp/field-list', 'mmerp/panel', 'mmerp/activity-feed'] },
+  { layer: 'templates', path: 'templates/page', name: 'Page', source: '@/shared/ui/page', related: ['mantine/button', 'mantine/key-facts', 'mmerp/person-avatar', 'mmerp/status-badge'] },
+  { layer: 'templates', path: 'templates/record', name: 'RecordPage', source: '@/shared/ui/page', related: ['mantine/key-facts', 'mmerp/editable-panel', 'mantine/field-list', 'mmerp/panel', 'mmerp/activity-feed'] },
 ] as const satisfies readonly Entry[]
 
 export type Path = (typeof entries)[number]['path']

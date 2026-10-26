@@ -67,7 +67,7 @@
     grid-column: span 3;
   }
 
-  .fields[data-layout='side'] > .short {
+  .fields[data-layout='side'] > :is(.short, [data-short]) {
     grid-column: span 2;
   }
 }

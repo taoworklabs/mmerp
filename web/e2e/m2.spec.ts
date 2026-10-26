@@ -75,7 +75,7 @@ test('a sensitive field is masked, shown on request, and cleared when the permis
 
   // The next request carries a new X-Authz-Version: the page reloads with nothing stale left.
   const reloaded = page.waitForEvent('load')
-  await page.getByRole('navigation').getByRole('link', { name: 'Nhân viên' }).click()
+  await page.getByRole('navigation').getByRole('link', { name: 'Nhân viên' }).first().click()
   await reloaded
   await page.goto(`/hrm/employees/${ids.ea}`)
   await expect(page.getByText('Không có quyền xem').first()).toBeVisible()

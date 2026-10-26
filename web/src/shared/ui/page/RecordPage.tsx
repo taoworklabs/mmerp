@@ -5,8 +5,7 @@ import { useTranslation } from 'react-i18next'
 import { Link, useSearchParams } from 'react-router'
 import { MoreActions } from '../MoreActions'
 import { Notice } from '../Notice'
-import { Page, type PageHeaderProps } from './Page'
-import classes from './RecordPage.module.css'
+import { Page, tabsList, type PageHeaderProps } from './Page'
 
 // A part of the record: its tab's value on the URL, label (a count once known) and content.
 export type RecordTab = { value: string; label: string; content: ReactNode }
@@ -53,9 +52,9 @@ export function RecordPage({ more, actions, tabs, aliases, children, ...header }
         {...header}
         current
         actions={all}
-        centered="var(--mmerp-detail-width)"
+        centered="detail"
         tabs={
-          <Tabs.List className={classes.tabs}>
+          <Tabs.List className={tabsList}>
             {tabs.map((x) => (
               <Tabs.Tab key={x.value} value={x.value}>
                 {x.label}
@@ -72,22 +71,6 @@ export function RecordPage({ more, actions, tabs, aliases, children, ...header }
         {children}
       </Page>
     </Tabs>
-  )
-}
-
-// RecordColumns lays out a record's overview: its values in cards on the left, digests of its parts
-// on the right, about 1.6 to 1; one column below 1024px, the right one under the left. The digests
-// are plain Panels, unframed so the values read first, parted by rules.
-export function RecordColumns({ main, side }: { main: ReactNode; side: ReactNode }) {
-  return (
-    <div className={classes.columns}>
-      <Stack gap="md" shrink>
-        {main}
-      </Stack>
-      <Stack gap={0} className={classes.side} shrink>
-        {side}
-      </Stack>
-    </div>
   )
 }
 

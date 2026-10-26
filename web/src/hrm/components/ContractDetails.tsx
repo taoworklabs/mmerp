@@ -1,10 +1,9 @@
-import { Text } from '@mmerp/ui'
+import { FieldList, Text } from '@mmerp/ui'
 import { IconCash, IconFileText, IconListDetails } from '@tabler/icons-react'
 import { Fragment } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { Contract } from '@/shared/api/hrm'
 import { formatDate, formatMoney } from '@/shared/i18n'
-import { FieldList } from '@/shared/ui/FieldList'
 import { EditablePanel } from '@/shared/ui/form'
 import { ContractForm, SavedLines, type ContractPart } from './ContractForm'
 

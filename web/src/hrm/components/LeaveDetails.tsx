@@ -1,10 +1,11 @@
-import { Group, Stack, Text } from '@mmerp/ui'
+import { FieldList, Group, Stack, Text } from '@mmerp/ui'
 import { IconCalendarEvent, IconUsers } from '@tabler/icons-react'
+import type { ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { Leave, LeaveListItem } from '@/shared/api/hrm'
 import { DocumentStatus } from '@/shared/document'
 import { formatDate, formatDecimal } from '@/shared/i18n'
-import { FieldList, MissingValue, type FieldRow } from '@/shared/ui/FieldList'
+import { MissingValue } from '@/shared/ui/MissingValue'
 import { EditablePanel } from '@/shared/ui/form'
 import { Panel } from '@/shared/ui/page'
 import { leaveDocType } from '../keys'
@@ -40,7 +41,7 @@ export function LeaveDetails({ leave: l, deducts }: { leave: Leave; deducts: boo
             [t('hrm.leave.type'), l.leave_type_name],
             [t('hrm.leave.period'), period],
             [t('hrm.leave.days'), t('hrm.leave.days_value', { days: formatDecimal(l.days) })],
-            ...(balance ? [[t('hrm.leave.balance'), balance] as FieldRow] : []),
+            ...(balance ? [[t('hrm.leave.balance'), balance] as [string, ReactNode]] : []),
             // A draft offers to fill an empty value in; a decided request just has none.
             [t('hrm.leave.reason'), l.reason || (canEdit ? <MissingValue label={t('hrm.leave.reason')} onAdd={open} /> : '—'), 'wide'],
           ]}

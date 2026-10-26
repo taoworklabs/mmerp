@@ -1,6 +1,6 @@
-import { Anchor, Badge, Button, Grid, Group, Stack, Text } from '@mmerp/ui'
+import { Anchor, Badge, Button, FormBar, FormFields as KitFormFields, FormSection as KitFormSection, Group, Stack, Text } from '@mmerp/ui'
 import { IconAlertCircle, type Icon as TablerIcon } from '@tabler/icons-react'
-import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from 'react'
+import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from 'react'
 import { FormProvider, useFormContext, useFormState, type FieldErrors, type FieldValues, type UseFormReturn } from 'react-hook-form'
 import { useTranslation } from 'react-i18next'
 import { Link, useBlocker } from 'react-router'
@@ -155,60 +155,41 @@ export function FormSection({ title, description, icon: Icon, wide, compact, chi
   const [count, setCount] = useState(0)
   // Which fields are in this section is known only from the page, so count after rendering.
   useEffect(() => setCount(submitCount > 0 ? invalidInputs(errors).filter((el) => ref.current?.contains(el)).length : 0))
-  const top = wide || compact
   return (
-    <fieldset className={classes.section} ref={ref}>
-      <Grid gap="sm" className={classes.grid}>
-        <Grid.Col span={{ base: 12, lg: top ? 12 : 4 }}>
-          <Group gap="xs" wrap={false}>
-            {Icon && <Icon {...icon.text} aria-hidden />}
-            <legend className={classes.legend}>{title}</legend>
-            {count > 0 && (
-              <Badge color="danger" className={classes.count} aria-label={t('shared.form.section_invalid', { count })}>
-                {count}
-              </Badge>
-            )}
-          </Group>
-          {/* Quieter than the field labels, so the fields lead. */}
-          {description && (
-            <Text size="xs" tone="dimmed" className={classes.description}>
-              {description}
-            </Text>
-          )}
-        </Grid.Col>
-        <Grid.Col span={{ base: 12, lg: top ? 12 : 8 }}>
-          <div className={classes.fields} data-wide={wide || undefined} data-compact={compact || undefined}>
-            {children}
-          </div>
-        </Grid.Col>
-      </Grid>
-    </fieldset>
+    <KitFormSection
+      ref={ref}
+      title={title}
+      description={description}
+      layout={wide ? 'wide' : compact ? 'compact' : 'side'}
+      icon={Icon && <Icon {...icon.text} aria-hidden />}
+      badge={
+        count > 0 && (
+          <Badge color="danger" className={classes.count} aria-label={t('shared.form.section_invalid', { count })}>
+            {count}
+          </Badge>
+        )
+      }
+    >
+      {children}
+    </KitFormSection>
   )
 }
 
 // FormFields lays out fields without a section's title: two to a row from 768px, for a group of a
 // record's values edited in place in its card.
 export function FormFields({ children }: { children: ReactNode }) {
-  return (
-    <div className={classes.fields} data-pair>
-      {children}
-    </div>
-  )
+  return <KitFormFields>{children}</KitFormFields>
 }
 
 // FormRow spans the whole row of a FormSection, for what is not one field (a table, totals).
 export function FormRow({ children }: { children: ReactNode }) {
-  return <div className={classes.fullRow}>{children}</div>
+  return <KitFormSection.Row>{children}</KitFormSection.Row>
 }
 
 // InputRow puts controls (a checkbox, a remove button) on one line level with the inputs beside
 // it in a FormSection, rather than with their labels.
 export function InputRow({ children }: { children: ReactNode }) {
-  return (
-    <Group justify="space-between" wrap={false} className={classes.inputRow}>
-      {children}
-    </Group>
-  )
+  return <KitFormSection.InputRow>{children}</KitFormSection.InputRow>
 }
 
 // FormActions is a form's footer: its buttons on the right. The submit button shows its busy
@@ -223,19 +204,11 @@ export function FormActions({ submitLabel, onCancel, cancelLabel, cancelTo }: { 
   const { formState, reset } = useFormContext()
   const { errors, submitCount, dirtyFields } = useFormState()
   const [slow, setSlow] = useState(false)
-  const [stuck, setStuck] = useState(false)
   const last = useRef<HTMLElement | null>(null)
   const [ask, dialog] = useConfirm()
   const invalid = submitCount > 0 ? errorNames(errors).length : 0
   const page = !onCancel
   const dirty = page && !cancelTo && Object.keys(dirtyFields).length > 0
-  // The footer sits 1px past the screen's edge while pinned, so it is then never fully in view.
-  const pinned = useCallback((el: HTMLDivElement | null) => {
-    if (!el) return
-    const io = new IntersectionObserver(([e]) => setStuck((e?.intersectionRatio ?? 1) < 1), { threshold: 1 })
-    io.observe(el)
-    return () => io.disconnect()
-  }, [])
   useEffect(() => {
     if (!formState.isSubmitting) return setSlow(false)
     const timer = setTimeout(() => setSlow(true), 300)
@@ -285,24 +258,26 @@ export function FormActions({ submitLabel, onCancel, cancelLabel, cancelTo }: { 
         {actions}
       </ModalFooter>
     )
-  const buttons = (
-    <Group justify="end">
-      {alert}
-      {actions}
-    </Group>
-  )
   if (!cancelTo && !dirty && invalid === 0) return null
   // The state sits beside the buttons it is about; the error line, when shown, says more.
   return (
-    <Group ref={pinned} justify="end" gap="lg" className={classes.bar} data-stuck={stuck || undefined}>
-      {dirty && invalid === 0 && (
-        <Group gap="xs" wrap={false} role="status">
-          <span className={classes.dot} aria-hidden />
-          <Text size="sm">{t('shared.form.unsaved')}</Text>
-        </Group>
-      )}
-      {buttons}
+    <>
+      <FormBar
+        status={
+          <>
+            {dirty && invalid === 0 && (
+              <Group gap="xs" wrap={false} role="status">
+                <FormBar.UnsavedDot />
+                <Text size="sm">{t('shared.form.unsaved')}</Text>
+              </Group>
+            )}
+            {alert}
+          </>
+        }
+      >
+        {actions}
+      </FormBar>
       {dialog}
-    </Group>
+    </>
   )
 }

@@ -1,4 +1,4 @@
-import { Button, Group, Stack, Text } from '@mmerp/ui'
+import { Button, FieldList, Group, Stack, Text } from '@mmerp/ui'
 import { IconCircleDot, IconUsersGroup } from '@tabler/icons-react'
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
@@ -39,7 +39,7 @@ import {
   YearFilter,
 } from '@/shared/ui/form'
 import { DocumentStatusFilter } from '@/shared/document'
-import { FieldList, MissingValue } from '@/shared/ui/FieldList'
+import { MissingValue } from '@/shared/ui/MissingValue'
 import { InlineEditField } from '@/shared/ui/InlineEditField'
 import { ModalFooter } from '@/shared/ui/ModalFooter'
 import { FormModal } from '@/shared/ui/page'

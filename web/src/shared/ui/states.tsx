@@ -1,9 +1,9 @@
-import { Button, Paper, Skeleton, Stack, Text, ThemeIcon } from '@mmerp/ui'
+import { Button, Page as KitPage, Paper, Skeleton, Stack, Text, ThemeIcon } from '@mmerp/ui'
 import { IconInbox, type Icon as TablerIcon } from '@tabler/icons-react'
 import type { ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router'
-import { Page, pageFrame } from './page'
+import { Page } from './page'
 import { Notice } from './Notice'
 import classes from './states.module.css'
 import { icon } from './theme'
@@ -48,10 +48,9 @@ export function ErrorState({ message, onRetry }: { message: string; onRetry?: ()
 // PageSkeleton stands in for a whole page while its code or data loads, framed like Page.
 export function PageSkeleton() {
   return (
-    <Stack gap="lg" className={pageFrame} aria-busy="true">
-      <Skeleton height={30} width="30%" />
+    <KitPage header={<Skeleton height={30} width="30%" />} aria-busy="true">
       <Skeleton height={200} />
-    </Stack>
+    </KitPage>
   )
 }
 

@@ -1,4 +1,4 @@
-import { useMediaQuery } from '@mmerp/ui'
+import { ActionBar, useMediaQuery } from '@mmerp/ui'
 import { Tabs } from '@mantine/core'
 import type { ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -7,8 +7,7 @@ import { UnsavedProvider } from '../form'
 import { Notice } from '../Notice'
 import { Activity, Panel, type DocumentSection } from './Activity'
 import { DetailPage } from './DetailPage'
-import classes from './DocumentPage.module.css'
-import { Page, type PageHeaderProps } from './Page'
+import { Page, tabsList, type PageHeaderProps } from './Page'
 
 // maxGrownTabs is how many tabs share a phone's width evenly; more scroll in one row.
 const maxGrownTabs = 3
@@ -100,7 +99,7 @@ function DocumentLayout({ actions, error, approval, activity, sections = [], ful
         withBack
         actions={wide ? actions : undefined}
         tabs={
-          <Tabs.List grow={!wide && tabs.length + 1 <= maxGrownTabs} className={classes.tabs}>
+          <Tabs.List grow={!wide && tabs.length + 1 <= maxGrownTabs} className={tabsList}>
             <Tabs.Tab value="details">{t('shared.document.tab.details')}</Tabs.Tab>
             {tabs.map((p) => (
               <Tabs.Tab key={p.key} value={p.key}>
@@ -117,12 +116,7 @@ function DocumentLayout({ actions, error, approval, activity, sections = [], ful
             {p.content}
           </Tabs.Panel>
         ))}
-        {actions && !wide && (
-          <>
-            <div className={classes.barSpace} />
-            <div className={classes.bar}>{actions}</div>
-          </>
-        )}
+        {actions && !wide && <ActionBar>{actions}</ActionBar>}
       </Page>
     </Tabs>
   )

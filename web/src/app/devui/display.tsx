@@ -1,4 +1,4 @@
-import { Anchor, Button, Group, Text } from '@mmerp/ui'
+import { Anchor, Button, FieldList, Group, KeyFacts, Text } from '@mmerp/ui'
 import { Menu } from '@mantine/core'
 import { IconDownload, IconFileDescription, IconPencil, IconPlus, IconUsersGroup } from '@tabler/icons-react'
 import { type ReactNode, useState } from 'react'
@@ -8,8 +8,6 @@ import { formatNumber } from '@/shared/i18n'
 import { PersonAvatar, PersonName } from '@/shared/ui/avatar'
 import { CellGrid } from '@/shared/ui/CellGrid'
 import { type Column, DataTable } from '@/shared/ui/DataTable'
-import { FieldList } from '@/shared/ui/FieldList'
-import { KeyFacts } from '@/shared/ui/KeyFacts'
 import { useListView } from '@/shared/ui/ListView'
 import { MenuAction } from '@/shared/ui/MenuAction'
 import { MoreActions } from '@/shared/ui/MoreActions'
@@ -39,8 +37,9 @@ const code = {
 // column: { key, header, role: 'title' | 'meta', kind?: 'code' | 'number', sortable?, render }`,
   cellGrid: `<CellGrid label corner rows columns value onChange invalid? off? warning? total? />`,
   fieldList: `<FieldList rows={[[label, value, 'wide'?], …]} stacked? />
-import { MissingValue } from '@/shared/ui/FieldList'   // an empty value users can fill`,
-  keyFacts: `<KeyFacts facts={[[label, value], …]} />   // in the page header's summary`,
+import { MissingValue } from '@/shared/ui/MissingValue'   // an empty value users can fill`,
+  keyFacts: `import { KeyFacts } from '@mmerp/ui'
+<KeyFacts facts={[[label, value], …]} />   // in the page header's summary`,
   treeList: `<TreeList label nodes render meta? toggleLabel />
 import { OrgUnitName } from '@/shared/ui/OrgUnitName'   // render an org unit`,
   statusBadge: `<StatusBadge tone="positive" | "neutral" | "info" | "warning" | "negative">{label}</StatusBadge>`,
@@ -144,14 +143,14 @@ export function FieldListDoc() {
   const { t } = useTranslation()
   return (
     <DocPage
-      path="mmerp/field-list"
+      path="mantine/field-list"
       example={
         <Case>
           <FieldList
             rows={[
               [
                 'Nhân viên',
-                <Anchor key="p" render={<Link to="/dev/ui/mmerp/field-list" />}>
+                <Anchor key="p" render={<Link to="/dev/ui/mantine/field-list" />}>
                   {person}
                 </Anchor>,
               ],
@@ -176,7 +175,7 @@ export function FieldListDoc() {
 export function KeyFactsDoc() {
   return (
     <DocPage
-      path="mmerp/key-facts"
+      path="mantine/key-facts"
       example={
         <Case>
           <KeyFacts facts={facts} />

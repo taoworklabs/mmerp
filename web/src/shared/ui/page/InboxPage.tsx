@@ -40,7 +40,7 @@ export function InboxPage({ list, detail, onBack, ...header }: Props) {
     )
   return (
     <Page {...header}>
-      <Group align="stretch">
+      <Group align="stretch" gap={0} wrap={false}>
         <Box className={classes.list}>{list}</Box>
         <Box className={classes.detail}>
           {detail ?? (

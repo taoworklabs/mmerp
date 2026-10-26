@@ -34,12 +34,11 @@ function useField({ name, label, required, bare, short, readOnly, error }: Base,
     field,
     common: {
       id: fieldId(name),
-      className: short ? classes.short : undefined,
       label: bare ? undefined : label,
       'aria-label': bare ? label : undefined,
       withAsterisk: required,
       // A select that cannot be typed into is a readonly input too; this says the field itself is read-only.
-      wrapperProps: { 'data-readonly': readOnly || undefined },
+      wrapperProps: { 'data-readonly': readOnly || undefined, 'data-short': short || undefined },
       error: fieldState.error?.message ?? error,
       onBlur: field.onBlur,
       ref: field.ref,

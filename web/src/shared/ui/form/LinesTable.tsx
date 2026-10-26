@@ -1,9 +1,8 @@
-import { ActionIcon, Button, Group, Paper, SimpleGrid, Stack, Text, useMediaQuery } from '@mmerp/ui'
+import { ActionIcon, Button, FieldList, Group, Paper, SimpleGrid, Stack, Text, useMediaQuery } from '@mmerp/ui'
 import { ScrollArea, Table, Tooltip } from '@mantine/core'
 import { IconPlus, IconTrash } from '@tabler/icons-react'
 import type { KeyboardEvent, ReactNode } from 'react'
 import { useFieldArray, useFormContext } from 'react-hook-form'
-import { FieldList } from '../FieldList'
 import { icon } from '../theme'
 import classes from './LinesTable.module.css'
 

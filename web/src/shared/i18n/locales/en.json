@@ -396,6 +396,7 @@
   "shared.inline.save": "Save",
   "shared.inline.cancel": "Cancel",
   "shared.page.back": "Back",
+  "shared.page.breadcrumb": "Breadcrumb",
   "shared.section.edit": "Edit",
   "shared.undo": "Undo",
   "shared.views.label": "Views",
