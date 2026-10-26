@@ -71,7 +71,7 @@ export default tseslint.config(
                 'Use the shared/ui component (DataTable, FormModal, Notice, MenuAction, QueryView, StatusBadge, the form fields…); add one there if none fits.',
             },
             { name: '@mantine/notifications', message: 'Use the shared/ui notification helpers.' },
-            { name: '@mantine/dates', message: 'Use DateField from shared/ui.' },
+            { name: '@mantine/dates', message: 'Mantine is going; use DateField from shared/ui or the date inputs from @mmerp/ui.' },
           ],
         },
       ],

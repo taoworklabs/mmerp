@@ -1,6 +1,5 @@
 import { breakpoint, type ColorName, icon as kitIcon, tokens } from '@mmerp/ui'
-// eslint-disable-next-line no-restricted-imports -- InputWrapper still styles the Mantine date inputs.
-import { createTheme, Drawer, InputWrapper, Menu, Modal, NavLink, Popover, rem, ScrollArea, Tabs, Tooltip, type CSSVariablesResolver, type MantineColorsTuple } from '@mantine/core'
+import { createTheme, Drawer, Menu, Modal, NavLink, Popover, rem, ScrollArea, Tabs, Tooltip, type CSSVariablesResolver, type MantineColorsTuple } from '@mantine/core'
 
 // The numbers live in @mmerp/ui; this file only hands them to Mantine until Mantine is gone.
 const { ramp, semantic } = tokens.color
@@ -29,11 +28,6 @@ export const theme = createTheme({
   shadows: { xs: tokens.shadow.xs, sm: tokens.shadow.sm, md: tokens.shadow.md, lg: tokens.shadow.lg, xl: tokens.shadow.xl },
   // md is where the navigation becomes a drawer (1024px), lg where it stops auto-collapsing (1280px).
   components: {
-    // Labels are quieter than the values they name.
-    InputWrapper: InputWrapper.extend({
-      defaultProps: { inputWrapperOrder: ['label', 'input', 'description', 'error'] },
-      styles: { label: { fontSize: 'var(--mantine-font-size-xs)', fontWeight: 600, lineHeight: 'var(--mantine-line-height-xs)', color: 'var(--mantine-color-dimmed)', marginBottom: 'var(--mantine-spacing-xxs)' } },
-    }),
     // A modal is its own small page: a 20px heading in a header band set off by a rule (its footer
     // band is ModalFooter), 24px of room at the sides and 16px above and below. Its fields are
     // 40px, like a form section's; ModalFooter keeps its buttons at 30px.
@@ -63,8 +57,6 @@ export const theme = createTheme({
 
 // Icon sizes and filter bar sizes come from the kit.
 export const icon = kitIcon
-
-export const filterWidth = tokens.filterWidth
 
 // A tinted ("light") variant: the palest step behind, a dark step for text, so it reads at 4.5:1.
 function tint(name: string, ramp: MantineColorsTuple, bg = 0) {

@@ -24,6 +24,7 @@ export type MonthPickerInputProps = FieldProps &
     minDate?: string
     maxDate?: string
     placeholder?: string
+    leftSection?: React.ReactNode
   }
 
 export function MonthPickerInput({
@@ -41,6 +42,7 @@ export function MonthPickerInput({
   minDate,
   maxDate,
   placeholder,
+  leftSection,
   clearable,
   clearLabel,
   className,
@@ -71,6 +73,7 @@ export function MonthPickerInput({
       errorId={errorId}
     >
       <div ref={boxRef} className={textInputStyles.wrapper} data-mmerp-control="" data-error={error ? '' : undefined} data-disabled={disabled ? '' : undefined}>
+        {leftSection && <span className={textInputStyles.section}>{leftSection}</span>}
         <Popover.Root open={open && interactive} onOpenChange={setOpen}>
           <Popover.Trigger
             {...props}

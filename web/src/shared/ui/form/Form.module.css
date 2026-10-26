@@ -9,19 +9,6 @@
   grid-column: 1 / -1;
 }
 
-/* Date inputs only, until they leave Mantine. A read-only field keeps its box as a grey fill without an edge, so its value stays framed and
-   the layout does not move between viewing and editing; it shows nothing that invites typing.
-   Doubled to outrank the input's own rule whatever order the CSS loads in. */
-[data-readonly][data-readonly] :global(.mantine-Input-input) {
-  border-color: transparent;
-  background: var(--mmerp-color-gray-0);
-  cursor: default;
-}
-
-[data-readonly][data-readonly] :is(:global(.mantine-InputWrapper-required), :global(.mantine-InputWrapper-description)) {
-  display: none;
-}
-
 /* The number of fields still to fix, in a round badge. */
 .count.count {
   min-width: 1.125rem;

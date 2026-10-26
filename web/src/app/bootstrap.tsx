@@ -1,18 +1,13 @@
 import '@mmerp/ui/styles.css'
 import '@mantine/core/styles.css'
-import '@mantine/dates/styles.css'
 import '@mantine/notifications/styles.css'
 import '@/shared/ui/global.css'
 
 import { MantineProvider } from '@mantine/core'
-import { DatesProvider } from '@mantine/dates'
-import 'dayjs/locale/vi'
-import 'dayjs/locale/en-gb'
 import { QueryClientProvider } from '@tanstack/react-query'
 import { StrictMode, type ReactNode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { RouterProvider } from 'react-router'
-import i18n from 'i18next'
 import { LoginPage, core } from '@/core'
 import { api, type Me } from '@/shared/api/core'
 import { RecordTypesProvider } from '@/shared/area'
@@ -74,10 +69,8 @@ export async function bootstrap(root: HTMLElement) {
   createRoot(root).render(
     <StrictMode>
       <MantineProvider theme={theme} cssVariablesResolver={cssVariablesResolver}>
-        <DatesProvider settings={{ locale: i18n.language === 'en' ? 'en-gb' : 'vi', firstDayOfWeek: 1 }}>
-          <Toasts />
-          <QueryClientProvider client={queryClient}>{page}</QueryClientProvider>
-        </DatesProvider>
+        <Toasts />
+        <QueryClientProvider client={queryClient}>{page}</QueryClientProvider>
       </MantineProvider>
     </StrictMode>,
   )

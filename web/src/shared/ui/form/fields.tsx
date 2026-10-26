@@ -1,9 +1,9 @@
-import { Checkbox, Combobox, FileInput, MultiSelect, NumberInput, PasswordInput, Select, Textarea, TextInput } from '@mmerp/ui'
-import { DateInput, MonthPickerInput } from '@mantine/dates'
+import { Checkbox, Combobox, DateInput, FileInput, MonthPickerInput, MultiSelect, NumberInput, PasswordInput, Select, Textarea, TextInput } from '@mmerp/ui'
 import { IconCalendar } from '@tabler/icons-react'
 import type { ReactElement } from 'react'
 import { useController, useFormContext, type RegisterOptions } from 'react-hook-form'
 import { useTranslation } from 'react-i18next'
+import { calendarLocale, formatDate, formatMonthShort } from '@/shared/i18n'
 import { icon } from '../theme'
 import { fieldId } from './Form'
 import classes from './Form.module.css'
@@ -40,11 +40,6 @@ function useField({ name, label, required, description, bare, short, readOnly, e
     // short takes a third of a FormSection row through the kit's [data-short] hook.
     place: (el: ReactElement) => (short ? <div data-short="">{el}</div> : el),
   }
-}
-
-// mantine maps the common props onto a Mantine dates input.
-function mantine({ required, ...common }: ReturnType<typeof useField>['common'], { readOnly, short }: Base) {
-  return { ...common, withAsterisk: required, wrapperProps: { 'data-readonly': readOnly || undefined, 'data-short': short || undefined } }
 }
 
 export function TextField(
@@ -108,39 +103,45 @@ export function parseDate(input: string): string | null {
 // room for either.
 function dateLook({ bare, readOnly }: Base, format: string) {
   if (bare) return {}
-  return { leftSection: <IconCalendar {...icon.text} />, leftSectionPointerEvents: 'none' as const, placeholder: readOnly ? undefined : format }
+  return { leftSection: <IconCalendar {...icon.text} />, placeholder: readOnly ? undefined : format }
 }
 
 // DateField holds a business date as YYYY-MM-DD; shown in the user's format, weeks start on Monday.
 export function DateField(props: Base & { clearable?: boolean }) {
   const { t } = useTranslation()
-  const { field, common } = useField(props)
-  return (
+  const { field, common, place } = useField(props)
+  const clearing = useClearing(props.clearable, props.label)
+  return place(
     <DateInput
-      {...mantine(common, props)}
+      {...common}
       {...dateLook(props, t('shared.form.date_placeholder'))}
       value={field.value ?? null}
       onChange={(v) => field.onChange(v ?? null)}
-      valueFormat="DD/MM/YYYY"
-      dateParser={parseDate}
-      clearable={props.clearable}
-    />
+      parse={parseDate}
+      format={formatDate}
+      locale={calendarLocale()}
+      labels={{ previousMonth: t('shared.form.previous_month'), nextMonth: t('shared.form.next_month') }}
+      {...clearing}
+    />,
   )
 }
 
 // MonthField holds a month as YYYY-MM, shown as MM/YYYY.
 export function MonthField(props: Base & { clearable?: boolean }) {
   const { t } = useTranslation()
-  const { field, common } = useField(props)
-  return (
+  const { field, common, place } = useField(props)
+  const clearing = useClearing(props.clearable, props.label)
+  return place(
     <MonthPickerInput
-      {...mantine(common, props)}
+      {...common}
       {...dateLook(props, t('shared.form.month_placeholder'))}
-      value={field.value ? `${field.value}-01` : null}
-      onChange={(v) => field.onChange(v ? v.slice(0, 7) : null)}
-      valueFormat="MM/YYYY"
-      clearable={props.clearable}
-    />
+      value={field.value ?? null}
+      onChange={(v) => field.onChange(v)}
+      format={formatMonthShort}
+      locale={calendarLocale()}
+      labels={{ previousYear: t('shared.form.previous_year'), nextYear: t('shared.form.next_year') }}
+      {...clearing}
+    />,
   )
 }
 

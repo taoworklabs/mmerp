@@ -91,6 +91,19 @@ export function formatWeekday(iso: string): string {
   return new Intl.DateTimeFormat(intlLocale(i18n.language), { timeZone: 'UTC', weekday }).format(new Date(`${iso}T00:00:00Z`))
 }
 
+// calendarLocale names weekdays (Sunday first) and months for a date picker; weeks start on Monday.
+export function calendarLocale() {
+  const intl = intlLocale(i18n.language)
+  const weekday = new Intl.DateTimeFormat(intl, { timeZone: 'UTC', weekday: i18n.language === 'en' ? 'short' : 'narrow' })
+  const month = new Intl.DateTimeFormat(intl, { timeZone: 'UTC', month: 'short' })
+  return {
+    // 2026-01-04 is a Sunday.
+    weekdays: Array.from({ length: 7 }, (_, i) => weekday.format(new Date(Date.UTC(2026, 0, 4 + i)))),
+    months: Array.from({ length: 12 }, (_, i) => month.format(new Date(Date.UTC(2026, i, 1)))),
+    firstDayOfWeek: 1 as const,
+  }
+}
+
 // formatNumber groups digits the way the user's language does: 1.234.567 in vi.
 export function formatNumber(n: number): string {
   return new Intl.NumberFormat(intlLocale(i18n.language)).format(n)

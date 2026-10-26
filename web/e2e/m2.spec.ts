@@ -220,7 +220,7 @@ test('HR creates an employee with a sensitive field, edits it and adds a depende
   await page.getByRole('option', { name: 'Con' }).click()
   // Months are picked, not typed: January of the year the picker opens on.
   await dialog.getByRole('button', { name: 'Giảm trừ từ tháng' }).click()
-  await page.getByRole('button', { name: 'Th01' }).click()
+  await page.getByRole('gridcell', { name: /^(thg|Tháng) 1$/i }).click()
   await dialog.getByRole('button', { name: 'Thêm', exact: true }).click()
   await expect(page.getByRole('table', { name: 'Người phụ thuộc' }).getByText('Lê Bé')).toBeVisible()
 })

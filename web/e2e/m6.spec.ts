@@ -61,7 +61,7 @@ test('payroll: computed by a job, refused while sources changed, computed again,
   await create.getByRole('combobox', { name: 'Pháp nhân' }).click()
   await pay.getByRole('option', { name: company }).click()
   await create.getByRole('button', { name: /^Kỳ/ }).click()
-  await pay.getByRole('button', { name: 'Th03' }).click()
+  await pay.getByRole('gridcell', { name: /^(thg|Tháng) 3$/i }).click()
   await create.getByRole('button', { name: 'Lập và tính lương' }).click()
   await expect(pay.getByRole('heading', { name: /^BL-2026-/ })).toBeVisible()
   const lines = pay.getByRole('table', { name: 'Lương từng nhân viên' })
