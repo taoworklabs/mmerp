@@ -28,7 +28,8 @@ async function openAndCheck(canvasElement: HTMLElement) {
   const canvas = within(canvasElement)
   await userEvent.click(canvas.getByRole('button', { name: 'Xem số ngày phép' }))
   const body = within(canvasElement.ownerDocument.body)
-  expect(body.getByText('Còn 8 ngày phép năm 2026')).toBeInTheDocument()
+  // The popup mounts a beat after the click.
+  expect(await body.findByText('Còn 8 ngày phép năm 2026')).toBeInTheDocument()
 }
 
 export const SideTop: Story = {

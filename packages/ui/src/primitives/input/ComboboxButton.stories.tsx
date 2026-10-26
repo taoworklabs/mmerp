@@ -97,6 +97,6 @@ export const Searchable: Story = {
 
     await userEvent.clear(search)
     await userEvent.type(search, 'zzz')
-    expect(body.getByText('Không tìm thấy nhân viên')).toBeInTheDocument()
+    expect(await body.findByText('Không tìm thấy nhân viên')).toBeInTheDocument()
   },
 }

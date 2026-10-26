@@ -140,8 +140,9 @@ export const DialogWithMenu: Story = {
     await userEvent.click(canvas.getByRole('button', { name: 'Mở hộp thoại' }))
 
     const body = within(canvasElement.ownerDocument.body)
-    await userEvent.click(body.getByRole('button', { name: 'Mở menu' }))
-    expect(body.getByRole('menu')).toBeInTheDocument()
+    // The dialog and the menu each mount a beat after their trigger is clicked.
+    await userEvent.click(await body.findByRole('button', { name: 'Mở menu' }))
+    expect(await body.findByRole('menu')).toBeInTheDocument()
 
     await userEvent.keyboard('{Escape}')
     // The menu popup unmounts only once its own closing transition finishes.
