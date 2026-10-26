@@ -1,6 +1,5 @@
-import { Button, Group, Text } from '@mmerp/ui'
+import { Button, Group, Text, Tooltip } from '@mmerp/ui'
 import type { ComponentProps } from 'react'
-import { Tooltip } from '@mantine/core'
 import { IconAlertTriangle, IconAt, IconBell, IconChecks, IconCircleCheck, IconCircleX, IconClockExclamation, IconHourglassHigh, type Icon as TablerIcon } from '@tabler/icons-react'
 import { useInfiniteQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Fragment, useState } from 'react'

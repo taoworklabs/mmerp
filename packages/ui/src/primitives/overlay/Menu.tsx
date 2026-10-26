@@ -5,18 +5,21 @@ import styles from './Menu.module.css'
 
 export type MenuSide = 'top' | 'bottom' | 'left' | 'right'
 export type MenuAlign = 'start' | 'center' | 'end'
+type MenuFocusProp = React.ComponentProps<typeof BaseMenu.Popup>['finalFocus']
 
 export interface MenuPopupProps extends Omit<React.ComponentPropsWithRef<'div'>, 'children'> {
   side?: MenuSide
   align?: MenuAlign
+  // Where focus goes on close; default back to the trigger.
+  finalFocus?: MenuFocusProp
   children: React.ReactNode
 }
 
-function MenuPopup({ side = 'bottom', align = 'start', className, children, ...props }: MenuPopupProps) {
+function MenuPopup({ side = 'bottom', align = 'start', finalFocus, className, children, ...props }: MenuPopupProps) {
   return (
     <BaseMenu.Portal>
       <BaseMenu.Positioner side={side} align={align} sideOffset={4} className={styles.positioner}>
-        <BaseMenu.Popup className={cx(styles.popup, className)} {...props}>
+        <BaseMenu.Popup finalFocus={finalFocus} className={cx(styles.popup, className)} {...props}>
           {children}
         </BaseMenu.Popup>
       </BaseMenu.Positioner>
@@ -26,13 +29,15 @@ function MenuPopup({ side = 'bottom', align = 'start', className, children, ...p
 
 export interface MenuItemProps extends Omit<React.ComponentPropsWithRef<'div'>, 'color' | 'onClick'> {
   leftSection?: React.ReactNode
+  // At the far end, e.g. the check beside the language in use.
+  rightSection?: React.ReactNode
   color?: 'danger'
   disabled?: boolean
   onClick?(): void
   children: React.ReactNode
 }
 
-function MenuItem({ leftSection, color, disabled, onClick, className, children, ...props }: MenuItemProps) {
+function MenuItem({ leftSection, rightSection, color, disabled, onClick, className, children, ...props }: MenuItemProps) {
   return (
     <BaseMenu.Item
       disabled={disabled}
@@ -43,6 +48,7 @@ function MenuItem({ leftSection, color, disabled, onClick, className, children, 
     >
       {leftSection && <span className={styles.section}>{leftSection}</span>}
       {children}
+      {rightSection && <span className={cx(styles.section, styles.end)}>{rightSection}</span>}
     </BaseMenu.Item>
   )
 }

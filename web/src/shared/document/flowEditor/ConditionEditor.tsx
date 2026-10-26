@@ -1,5 +1,4 @@
-import { ActionIcon, Button, Group, Paper, SegmentedControl, SimpleGrid, Stack, Text } from '@mmerp/ui'
-import { Tooltip } from '@mantine/core'
+import { ActionIcon, Button, Group, Paper, SegmentedControl, SimpleGrid, Stack, Text, Tooltip } from '@mmerp/ui'
 import { IconPlus, IconX } from '@tabler/icons-react'
 import { useQuery } from '@tanstack/react-query'
 import { useState } from 'react'

@@ -35,8 +35,7 @@
   }
 }
 
-/* The chosen option of a dropdown or menu is tinted, like any selected item. */
-.mantine-Menu-item[data-active],
+/* The chosen option of a dropdown is tinted, like any selected item. */
 [data-combobox-option][data-checked] {
   background: var(--mmerp-color-primary-light);
   color: var(--mmerp-color-primary-light-color);

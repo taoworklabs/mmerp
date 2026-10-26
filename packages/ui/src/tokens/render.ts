@@ -60,6 +60,7 @@ function sizeLines(): string[] {
     lines.push(`--mmerp-shadow-${key}: ${value};`)
   }
   lines.push(`--mmerp-control-height: ${rem(tokens.controlHeight.sm)};`)
+  lines.push(`--mmerp-control-height-sm: ${rem(tokens.controlHeight.sm)};`)
   lines.push(`--mmerp-control-height-lg: ${rem(tokens.controlHeight.lg)};`)
   lines.push(`--mmerp-content-width: ${rem(tokens.layoutWidth.content)};`)
   lines.push(`--mmerp-side-width: ${rem(tokens.layoutWidth.side)};`)
@@ -70,6 +71,7 @@ function sizeLines(): string[] {
   }
   lines.push(`--mmerp-motion-duration: ${tokens.motionDuration}ms;`)
   lines.push(`--mmerp-touch-target: ${tokens.touchTarget}px;`)
+  lines.push(`--mmerp-z-index-modal: ${tokens.zIndexModal};`)
   lines.push(`--mmerp-z-index-popup: ${tokens.zIndexPopup};`)
   return lines
 }

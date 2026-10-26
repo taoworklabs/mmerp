@@ -1,5 +1,5 @@
 import { breakpoint, type ColorName, icon as kitIcon, tokens } from '@mmerp/ui'
-import { createTheme, Drawer, Menu, Modal, NavLink, Popover, rem, ScrollArea, Tabs, Tooltip, type CSSVariablesResolver, type MantineColorsTuple } from '@mantine/core'
+import { createTheme, NavLink, rem, Tabs, type CSSVariablesResolver, type MantineColorsTuple } from '@mantine/core'
 
 // The numbers live in @mmerp/ui; this file only hands them to Mantine until Mantine is gone.
 const { ramp, semantic } = tokens.color
@@ -28,23 +28,6 @@ export const theme = createTheme({
   shadows: { xs: tokens.shadow.xs, sm: tokens.shadow.sm, md: tokens.shadow.md, lg: tokens.shadow.lg, xl: tokens.shadow.xl },
   // md is where the navigation becomes a drawer (1024px), lg where it stops auto-collapsing (1280px).
   components: {
-    // A modal is its own small page: a 20px heading in a header band set off by a rule (its footer
-    // band is ModalFooter), 24px of room at the sides and 16px above and below. Its fields are
-    // 40px, like a form section's; ModalFooter keeps its buttons at 30px.
-    Modal: Modal.extend({
-      defaultProps: { radius: 'md', padding: 'lg' },
-      styles: {
-        header: { minHeight: 0, paddingBlock: 'var(--mantine-spacing-md)', borderBottom: '1px solid var(--mantine-color-default-border)' },
-        body: { paddingBlock: 'var(--mantine-spacing-md)', '--mmerp-control-height': rem(tokens.controlHeight.lg) },
-        title: { fontWeight: 650, fontSize: 'var(--mantine-font-size-xl)', lineHeight: 'var(--mantine-line-height-xl)' },
-      },
-    }),
-    Drawer: Drawer.extend({ styles: { title: { fontWeight: 650, fontSize: 'var(--mantine-font-size-lg)' } } }),
-    Popover: Popover.extend({ defaultProps: { radius: 'lg' } }),
-    Menu: Menu.extend({ defaultProps: { radius: 'lg' } }),
-    Tooltip: Tooltip.extend({ defaultProps: { radius: 'sm' } }),
-    // Thin scrollbars, so they do not compete with the content.
-    ScrollArea: ScrollArea.extend({ defaultProps: { scrollbarSize: 8 } }),
     Tabs: Tabs.extend({ styles: { tab: { fontWeight: 500 } } }),
     NavLink: NavLink.extend({ styles: { root: { borderRadius: 'var(--mantine-radius-md)', minHeight: 'var(--mmerp-control-height)' }, label: { fontWeight: 500 } } }),
   },

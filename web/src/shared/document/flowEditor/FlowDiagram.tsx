@@ -1,5 +1,4 @@
-import { Text, UnstyledButton } from '@mmerp/ui'
-import { Menu } from '@mantine/core'
+import { Menu, Stack, Text, UnstyledButton } from '@mmerp/ui'
 import { IconPlus } from '@tabler/icons-react'
 import { keepPreviousData, useQueries } from '@tanstack/react-query'
 import { createContext, Fragment, useContext, type ReactNode } from 'react'
@@ -153,36 +152,40 @@ function Edge({ list, at, depth, root }: { list: string; at: number; depth: numb
   const m = ctx.rule.module_approvers
   const item = (title: string, hint: string, make: () => ElementValues) => (
     <Menu.Item onClick={() => insert(list, at, make())}>
-      <Text size="sm" weight={500}>
-        {title}
-      </Text>
-      <Text size="xs" tone="dimmed">
-        {hint}
-      </Text>
+      <Stack gap={0}>
+        <Text size="sm" weight={500}>
+          {title}
+        </Text>
+        <Text size="xs" tone="dimmed">
+          {hint}
+        </Text>
+      </Stack>
     </Menu.Item>
   )
   return (
     <div className={c.edge}>
       <div className={c.line} />
       {/* The new element's panel takes the focus, not this + again. */}
-      <Menu position="right-start" returnFocus={false}>
-        <Menu.Target>
-          <UnstyledButton
-            className={c.plus}
-            id={root ? fieldId('flow.root') : undefined}
-            data-big={root || undefined}
-            aria-invalid={root && issueAt('flow.root') ? true : undefined}
-            aria-label={t('shared.rule.add_here')}
-          >
-            <IconPlus {...(root ? icon.button : icon.text)} aria-hidden />
-          </UnstyledButton>
-        </Menu.Target>
-        <Menu.Dropdown>
+      <Menu.Root>
+        <Menu.Trigger
+          render={
+            <UnstyledButton
+              className={c.plus}
+              id={root ? fieldId('flow.root') : undefined}
+              data-big={root || undefined}
+              aria-invalid={root && issueAt('flow.root') ? true : undefined}
+              aria-label={t('shared.rule.add_here')}
+            >
+              <IconPlus {...(root ? icon.button : icon.text)} aria-hidden />
+            </UnstyledButton>
+          }
+        />
+        <Menu.Popup side="right" align="start" finalFocus={false}>
           {item(t('shared.rule.step'), t('shared.rule.step_hint'), () => newStep(m))}
           {depth < maxDepth && item(t('shared.rule.split.one'), t('shared.rule.split.one_hint'), () => newSplit('one', m))}
           {depth < maxDepth && item(t('shared.rule.split.all'), t('shared.rule.split.all_hint'), () => newSplit('all', m))}
-        </Menu.Dropdown>
-      </Menu>
+        </Menu.Popup>
+      </Menu.Root>
       <div className={c.line} />
     </div>
   )

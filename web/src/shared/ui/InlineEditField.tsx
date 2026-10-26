@@ -1,5 +1,4 @@
-import { ActionIcon, Group, Stack, Text, TextInput, UnstyledButton } from '@mmerp/ui'
-import { Tooltip } from '@mantine/core'
+import { ActionIcon, Group, Stack, Text, TextInput, Tooltip, UnstyledButton } from '@mmerp/ui'
 import { IconCheck, IconX } from '@tabler/icons-react'
 import { useId, useState } from 'react'
 import { useTranslation } from 'react-i18next'

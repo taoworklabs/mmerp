@@ -1,5 +1,4 @@
-import { Anchor, Button, Divider, Group, List, Loader, Skeleton, Stack, Text } from '@mmerp/ui'
-import { Tooltip } from '@mantine/core'
+import { Anchor, Button, Divider, Group, List, Loader, Skeleton, Stack, Text, Tooltip } from '@mmerp/ui'
 import { IconDownload, IconPlus } from '@tabler/icons-react'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router'

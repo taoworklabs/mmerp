@@ -1,6 +1,7 @@
 .backdrop {
   position: fixed;
   inset: 0;
+  z-index: var(--mmerp-z-index-modal);
   background: var(--mmerp-color-overlay-backdrop);
   transition: opacity var(--mmerp-motion-duration) ease;
 }
@@ -13,7 +14,10 @@
 .viewport {
   position: fixed;
   inset: 0;
+  z-index: var(--mmerp-z-index-modal);
   display: flex;
+  /* Clicks beside the panel reach the backdrop, or the page when there is none. */
+  pointer-events: none;
 }
 
 .viewport[data-position='left'] {
@@ -22,6 +26,10 @@
 
 .viewport[data-position='right'] {
   justify-content: flex-end;
+}
+
+.viewport[data-position='bottom'] {
+  align-items: flex-end;
 }
 
 .popup {
@@ -35,12 +43,25 @@
   box-shadow: var(--mmerp-shadow-md);
   outline: 0;
   overflow: hidden;
+  pointer-events: auto;
   transition: transform var(--mmerp-motion-duration) ease;
 }
 
 .popup[data-position='right'][data-starting-style],
 .popup[data-position='right'][data-ending-style] {
   transform: translateX(100%);
+}
+
+.popup[data-position='bottom'] {
+  width: 100%;
+  height: auto;
+  max-height: 100%;
+  border-radius: var(--mmerp-radius-md) var(--mmerp-radius-md) 0 0;
+}
+
+.popup[data-position='bottom'][data-starting-style],
+.popup[data-position='bottom'][data-ending-style] {
+  transform: translateY(100%);
 }
 
 .popup[data-position='left'][data-starting-style],

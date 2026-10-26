@@ -1,5 +1,5 @@
-import { ActionIcon, Button, FieldList, Group, Paper, SimpleGrid, Stack, Text, useMediaQuery } from '@mmerp/ui'
-import { ScrollArea, Table, Tooltip } from '@mantine/core'
+import { ActionIcon, Button, FieldList, Group, Paper, ScrollArea, SimpleGrid, Stack, Text, Tooltip, useMediaQuery } from '@mmerp/ui'
+import { Table } from '@mantine/core'
 import { IconPlus, IconTrash } from '@tabler/icons-react'
 import type { KeyboardEvent, ReactNode } from 'react'
 import { useFieldArray, useFormContext } from 'react-hook-form'
@@ -104,7 +104,7 @@ function EditLines<L extends object>({ name, label, columns: all, newLine, addLa
   return (
     <Stack gap="sm">
       <Paper withBorder className={classes.frame}>
-        <ScrollArea type="auto">
+        <ScrollArea>
           <Table aria-label={label} className={classes.table} onKeyDown={nextCellOnEnter} verticalSpacing="xxs">
             <Head columns={columns} />
             <Table.Tbody>
@@ -134,7 +134,7 @@ function ReadOnlyLines<L extends object>({ label, columns: all, lines, lineLabel
     <Stack gap="sm">
       {wide ? (
         <Paper withBorder className={classes.frame}>
-          <ScrollArea type="auto">
+          <ScrollArea>
             <Table aria-label={label} className={classes.table} data-readonly>
               <Head columns={columns} readOnly />
               <Table.Tbody>

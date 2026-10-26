@@ -1,5 +1,4 @@
-import { breakpoint, useMediaQuery } from '@mmerp/ui'
-import { Drawer } from '@mantine/core'
+import { breakpoint, Drawer, useMediaQuery } from '@mmerp/ui'
 import { useTranslation } from 'react-i18next'
 import { useFlowEditor } from './editor'
 import { ElementPanel } from './ElementPanel'
@@ -27,9 +26,9 @@ export function FlowWorkspace() {
           position="bottom"
           size="85%"
           title={t('shared.rule.panel_title')}
-          closeButtonProps={{ 'aria-label': t('shared.modal.close') }}
+          closeLabel={t('shared.modal.close')}
           // Focus going back to the box would select it and open the drawer again.
-          returnFocus={false}
+          finalFocus={false}
         >
           <ElementPanel />
         </Drawer>

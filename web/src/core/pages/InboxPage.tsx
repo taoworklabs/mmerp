@@ -1,5 +1,4 @@
-import { Anchor, Button, Divider, Group, Stack, Text } from '@mmerp/ui'
-import { Tooltip } from '@mantine/core'
+import { Anchor, Button, Divider, Group, Stack, Text, Tooltip } from '@mmerp/ui'
 import { IconExternalLink, IconUserShare } from '@tabler/icons-react'
 import { useQuery } from '@tanstack/react-query'
 import { useRef } from 'react'

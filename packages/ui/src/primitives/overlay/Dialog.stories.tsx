@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { expect, fn, userEvent, waitFor, within } from 'storybook/test'
 import { Button } from '../input/Button.tsx'
 import { TextInput } from '../input/TextInput.tsx'
@@ -149,5 +149,35 @@ export const DialogWithMenu: Story = {
     await waitFor(() => expect(body.queryByRole('menu')).not.toBeInTheDocument())
     expect(body.getByRole('dialog', { name: 'Tệp đính kèm' })).toBeInTheDocument()
     expect(args.onClose).not.toHaveBeenCalled()
+  },
+}
+
+// A confirmation opens on its confirm button, not on the close button.
+export const InitialFocus: Story = {
+  tags: ['!dev', '!autodocs'],
+  args: { title: 'Xóa tệp?' },
+  render: (args) => {
+    function Confirm() {
+      const confirm = useRef<HTMLButtonElement>(null)
+      return (
+        <Demo {...args} initialFocus={confirm}>
+          <Dialog.Actions>
+            <Button variant="subtle" color="gray">
+              Quay lại
+            </Button>
+            <Button ref={confirm} color="danger">
+              Xóa tệp
+            </Button>
+          </Dialog.Actions>
+        </Demo>
+      )
+    }
+    return <Confirm />
+  },
+  play: async ({ canvasElement }) => {
+    await userEvent.click(within(canvasElement).getByRole('button', { name: 'Mở hộp thoại' }))
+    const body = within(canvasElement.ownerDocument.body)
+    const button = await body.findByRole('button', { name: 'Xóa tệp' })
+    await waitFor(() => expect(button).toHaveFocus())
   },
 }

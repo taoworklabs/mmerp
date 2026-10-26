@@ -13,6 +13,7 @@ export const mantineMigrated = [
   'Button', 'ActionIcon', 'UnstyledButton', 'Badge', 'ThemeIcon', 'Loader', 'Skeleton', 'VisuallyHidden',
   'TextInput', 'PasswordInput', 'Textarea', 'NumberInput', 'Checkbox', 'Select', 'MultiSelect', 'Combobox', 'useCombobox',
   'SegmentedControl', 'FileInput', 'FileButton', 'Input', 'InputWrapper',
+  'Modal', 'Drawer', 'Menu', 'Popover', 'Tooltip', 'ScrollArea',
 ]
 const migratedPath = mantineMigrated.length
   ? [{ name: '@mantine/core', importNames: mantineMigrated, message: 'Import it from @mmerp/ui.' }]

@@ -44,6 +44,12 @@
   background: var(--mmerp-color-gray-light);
 }
 
+/* The chosen entry (e.g. the saved view now shown) is tinted, like any selected item. */
+.item[data-active] {
+  background: var(--mmerp-color-primary-light);
+  color: var(--mmerp-color-primary-light-color);
+}
+
 .item[data-disabled] {
   color: var(--mmerp-color-dimmed);
   cursor: not-allowed;
@@ -56,6 +62,10 @@
 .section {
   display: inline-flex;
   align-items: center;
+}
+
+.end {
+  margin-inline-start: auto;
 }
 
 .separator {

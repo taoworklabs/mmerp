@@ -1,5 +1,4 @@
-import { Button, Group, Stack } from '@mmerp/ui'
-import { Drawer } from '@mantine/core'
+import { Button, Drawer, Group, Stack } from '@mmerp/ui'
 import { IconArrowRight } from '@tabler/icons-react'
 import type { ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -13,18 +12,7 @@ export function SidePanel({ title, href, opened, onClose, children }: { title: s
   const { t } = useTranslation()
   return (
     // Not modal: the list stays usable beside it, so clicking another row switches the panel.
-    <Drawer
-      opened={opened}
-      onClose={onClose}
-      position="right"
-      size={readingWidth}
-      title={title}
-      withOverlay={false}
-      lockScroll={false}
-      trapFocus={false}
-      closeOnClickOutside={false}
-      closeButtonProps={{ 'aria-label': t('shared.modal.close') }}
-    >
+    <Drawer opened={opened} onClose={onClose} position="right" size={readingWidth} title={title} modal={false} closeLabel={t('shared.modal.close')}>
       <Stack gap="md">
         <Group>
           <Button render={<Link to={href} />} variant="default" rightSection={<IconArrowRight {...icon.button} />}>

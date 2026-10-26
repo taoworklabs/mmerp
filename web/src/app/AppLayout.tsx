@@ -1,5 +1,5 @@
-import { ActionIcon, Box, Group, Stack, Text, ThemeIcon, UnstyledButton, cx, useDisclosure, useLocalStorage, useMediaQuery } from '@mmerp/ui'
-import { AppShell, Burger, Indicator, Menu, NavLink, ScrollArea, Tooltip } from '@mantine/core'
+import { ActionIcon, Box, Group, Menu, ScrollArea, Stack, Text, ThemeIcon, Tooltip, UnstyledButton, cx, useDisclosure, useLocalStorage, useMediaQuery } from '@mmerp/ui'
+import { AppShell, Burger, Indicator, NavLink } from '@mantine/core'
 import { IconBell, IconBuildingSkyscraper, IconCheck, IconHourglass, IconInbox, IconChevronDown, IconChevronRight, IconLayoutSidebarLeftCollapse, IconLayoutSidebarLeftExpand, IconLogout } from '@tabler/icons-react'
 import { useQuery } from '@tanstack/react-query'
 import { Suspense, useEffect, useState, type ReactNode } from 'react'
@@ -139,19 +139,21 @@ export function AppLayout({ areas }: { areas: AreaManifest[] }) {
                 <IconHourglass {...icon.button} />
               </ActionIcon>
             </Tooltip>
-            <Menu position="bottom-end">
-              <Menu.Target>
-                <Tooltip label={t('core.shell.account')}>
-                <UnstyledButton aria-label={`${t('core.shell.account')}: ${me.name}`} className={classes.account}>
-                  <Group gap="xs" wrap={false}>
-                    <PersonAvatar name={me.name} />
-                    <Text truncate weight={500} className={classes.accountName}>{me.name}</Text>
-                    <IconChevronDown {...icon.text} />
-                  </Group>
-                </UnstyledButton>
-                </Tooltip>
-              </Menu.Target>
-              <Menu.Dropdown>
+            <Menu.Root>
+              <Tooltip label={t('core.shell.account')}>
+                <Menu.Trigger
+                  render={
+                    <UnstyledButton aria-label={`${t('core.shell.account')}: ${me.name}`} className={classes.account}>
+                      <Group gap="xs" wrap={false}>
+                        <PersonAvatar name={me.name} />
+                        <Text truncate weight={500} className={classes.accountName}>{me.name}</Text>
+                        <IconChevronDown {...icon.text} />
+                      </Group>
+                    </UnstyledButton>
+                  }
+                />
+              </Tooltip>
+              <Menu.Popup align="end">
                 <Menu.Label>{t('core.shell.language')}</Menu.Label>
                 {locales.map((l) => (
                   <Menu.Item
@@ -164,12 +166,12 @@ export function AppLayout({ areas }: { areas: AreaManifest[] }) {
                     {t(`shared.locale.${l}`)}
                   </Menu.Item>
                 ))}
-                <Menu.Divider />
+                <Menu.Separator />
                 <Menu.Item leftSection={<IconLogout {...icon.text} />} onClick={() => void logout()}>
                   {t('core.shell.logout')}
                 </Menu.Item>
-              </Menu.Dropdown>
-            </Menu>
+              </Menu.Popup>
+            </Menu.Root>
           </Group>
         </Group>
       </AppShell.Header>
@@ -193,7 +195,7 @@ export function AppLayout({ areas }: { areas: AreaManifest[] }) {
             </Stack>
           </AppShell.Section>
           <AppShell.Section p="xs" visibleFrom="md">
-            <Tooltip label={t(collapsed ? 'core.shell.expand' : 'core.shell.collapse')} position="right">
+            <Tooltip label={t(collapsed ? 'core.shell.expand' : 'core.shell.collapse')} side="right">
               <ActionIcon
                 variant="subtle"
                 color="gray"
@@ -246,7 +248,7 @@ function AreaLink({ area, item, narrow, onClick }: { area: AreaManifest; item: N
     />
   )
   return narrow ? (
-    <Tooltip label={label} position="right">
+    <Tooltip label={label} side="right">
       {link}
     </Tooltip>
   ) : (

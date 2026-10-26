@@ -1,5 +1,4 @@
-import { Text, ThemeIcon, type ThemeIconProps } from '@mmerp/ui'
-import { Tooltip } from '@mantine/core'
+import { Text, ThemeIcon, type ThemeIconProps, Tooltip } from '@mmerp/ui'
 import {
   IconArrowBackUp,
   IconArrowRight,

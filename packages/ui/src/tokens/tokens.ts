@@ -72,7 +72,9 @@ export const tokens = {
   filterWidth: { search: 280, searchMin: 160, chip: 320, menu: 240 },
   motionDuration: 150,
   touchTarget: 44,
-  // Floating lists, menus and tooltips sit above any dialog or drawer they open from.
+  // Dialogs and drawers sit above the app shell and a page's sticky bars; floating lists, menus and
+  // tooltips sit above any dialog or drawer they open from.
+  zIndexModal: 200,
   zIndexPopup: 300,
 } as const
 

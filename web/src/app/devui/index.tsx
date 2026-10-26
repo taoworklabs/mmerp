@@ -1,5 +1,5 @@
-import { Anchor, Group, Stack, Text, ThemeIcon, useDisclosure } from '@mmerp/ui'
-import { AppShell, Burger, NavLink, ScrollArea } from '@mantine/core'
+import { Anchor, Group, ScrollArea, Stack, Text, ThemeIcon, useDisclosure } from '@mmerp/ui'
+import { AppShell, Burger, NavLink } from '@mantine/core'
 import { IconComponents } from '@tabler/icons-react'
 import type { ComponentType, ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
