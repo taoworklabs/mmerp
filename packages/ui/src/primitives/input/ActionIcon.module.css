@@ -1,4 +1,6 @@
 .root {
+  /* Also rendered as a link; a link-shaped button is never underlined. */
+  text-decoration: none;
   display: inline-flex;
   align-items: center;
   justify-content: center;

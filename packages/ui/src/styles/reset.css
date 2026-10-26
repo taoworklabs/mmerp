@@ -4,8 +4,17 @@
   box-sizing: border-box;
 }
 
+input,
+button,
+textarea,
+select {
+  font: inherit;
+}
+
 body {
   margin: 0;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
   position: relative;
   font-family: var(--mmerp-font-family);
   font-size: var(--mmerp-font-size-sm);

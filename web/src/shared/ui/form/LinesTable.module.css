@@ -62,3 +62,8 @@
   color: var(--mmerp-color-text);
   font-weight: 600;
 }
+
+/* A cell's input takes the column's width instead of widening it to the input's natural size. */
+.table td input:not([type='checkbox']) {
+  width: 0;
+}
