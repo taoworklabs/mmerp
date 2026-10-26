@@ -2,7 +2,7 @@ package platform
 
 // Paging is the page a list asks for; list filters embed it.
 type Paging struct {
-	Page     int `query:"page" minimum:"1" default:"1"`
+	Page     int `query:"page" minimum:"1" maximum:"100000" default:"1"`
 	PageSize int `query:"page_size" enum:"20,50,100" default:"50"`
 }
 
