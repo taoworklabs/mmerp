@@ -11,7 +11,7 @@ import { Page, tabsList, type PageHeaderProps } from './Page'
 export type RecordTab = { value: string; label: string; content: ReactNode }
 
 type Props = Omit<PageHeaderProps, 'tabs' | 'withBack' | 'plain' | 'current'> & {
-  // Menu.Item children: the rarer and the destructive actions, in a "…" menu after the buttons.
+  // MenuAction children: the rarer and the destructive actions, in a "…" menu after the buttons.
   more?: ReactNode
   // The record's parts, the first (its overview) open by default; a label may carry a count.
   tabs: RecordTab[]

@@ -1,5 +1,4 @@
 import { Anchor, Button, FieldList, Group, KeyFacts, Panel, Text } from '@mmerp/ui'
-import { Menu } from '@mantine/core'
 import { IconDownload, IconFileDescription, IconPencil, IconPlus, IconUsersGroup } from '@tabler/icons-react'
 import { type ReactNode, useState } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -73,7 +72,11 @@ export function DataTableDoc() {
             rows={rows}
             rowKey={(r) => r.id}
             href={() => '/dev/ui/mmerp/data-table'}
-            menu={() => <Menu.Item>{t('shared.devui.secondary')}</Menu.Item>}
+            menu={() => (
+              <MenuAction icon={IconPencil} onClick={() => {}}>
+                {t('shared.devui.secondary')}
+              </MenuAction>
+            )}
             sort={sort}
             onSort={setSort}
             columns={columns}

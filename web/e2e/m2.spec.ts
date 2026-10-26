@@ -148,7 +148,7 @@ test('below 1024px the employee list becomes cards and the filters wrap above th
   await expect(page.getByRole('table')).toHaveCount(0)
   const filters = page.getByRole('search')
   await expect(filters.getByLabel('Tìm kiếm')).toBeVisible()
-  await expect(filters.getByRole('button', { name: 'Trạng thái' })).toBeVisible()
+  await expect(filters.getByRole('combobox', { name: 'Trạng thái' })).toBeVisible()
 })
 
 test('an administrator builds the tree and grants a role from the admin screens', async ({ page }) => {
@@ -283,7 +283,7 @@ test('terminating asks for the last day, then confirms before saving', async ({ 
 
 test('leaving a record asks only when something was edited', async ({ page }) => {
   await signInAs(page, hrA, `/hrm/employees/${ids.ea}`)
-  const nav = page.getByRole('navigation').getByRole('link', { name: 'Nhân viên' })
+  const nav = page.getByRole('navigation').getByRole('link', { name: 'Nhân viên' }).first()
   await nav.click()
   await expect(page).toHaveURL(/\/hrm\/employees$/)
   await expect(page.getByRole('dialog')).toHaveCount(0)

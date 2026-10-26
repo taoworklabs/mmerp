@@ -1,5 +1,5 @@
-import { Button, FieldList, Group, Stack, Text } from '@mmerp/ui'
-import { Menu, Notification } from '@mantine/core'
+import { Button, FieldList, Group, Menu, Stack, Text } from '@mmerp/ui'
+import { Notification } from '@mantine/core'
 import { IconDownload, IconPencil, IconTrash } from '@tabler/icons-react'
 import type { UseQueryResult } from '@tanstack/react-query'
 import { useState } from 'react'
@@ -23,7 +23,7 @@ import { DocPage, DoDont } from './DocPage'
 const code = {
   moreActions: `<MoreActions place="page" | "row">
   <MenuAction icon onClick>{label}</MenuAction>
-  <Menu.Divider />
+  <Menu.Separator />
   <MenuAction icon danger onClick>{label}</MenuAction>
 </MoreActions>`,
   notice: `<Notice tone="info" | "success" | "warning" | "danger" | "discovery">{message}</Notice>`,
@@ -77,7 +77,7 @@ function Items({ dangerFirst }: { dangerFirst?: boolean }) {
       </MenuAction>
       {!dangerFirst && (
         <>
-          <Menu.Divider />
+          <Menu.Separator />
           {danger}
         </>
       )}

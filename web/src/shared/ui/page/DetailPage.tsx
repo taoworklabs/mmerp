@@ -4,7 +4,7 @@ import { MoreActions } from '../MoreActions'
 import { Page, type PageHeaderProps } from './Page'
 
 type Props = Omit<PageHeaderProps, 'tabs' | 'withBack' | 'plain'> & {
-  // Menu.Item children: what does not earn a button, in a "…" menu after the actions.
+  // MenuAction children: what does not earn a button, in a "…" menu after the actions.
   more?: ReactNode
   // Under the header, over both columns: a page-level error.
   banner?: ReactNode

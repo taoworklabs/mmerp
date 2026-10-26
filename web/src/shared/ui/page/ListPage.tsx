@@ -1,5 +1,4 @@
-import { Button, Group, Text, useMediaQuery } from '@mmerp/ui'
-import { Pagination, Select } from '@mantine/core'
+import { Button, FilterBar, PagingBar as KitPagingBar, useMediaQuery } from '@mmerp/ui'
 import type { ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { errorText, formatNumber } from '@/shared/i18n'
@@ -52,21 +51,23 @@ export function ListPage<T>({
   const wide = useMediaQuery('(min-width: 64em)', true)
   return (
     <Page {...header} actions={action} tabs={tabs} className={wide ? classes.frame : undefined}>
-      {wide && bulk
-        ? bulk
-        : (filters || (wide && tools)) && (
-            <Group gap="xs" align="start" justify="space-between" wrap={false}>
-              <Group gap="xs" align="end" role="search" className={classes.filters} fill>
-                {filters}
-                {onClearFilters && (
-                  <Button variant="default" onClick={onClearFilters}>
-                    {t('shared.list.clear_filters')}
-                  </Button>
-                )}
-              </Group>
-              {wide && tools}
-            </Group>
-          )}
+      {(filters || (wide && (tools || bulk))) && (
+        <FilterBar
+          label={t('shared.list.filters')}
+          tools={tools}
+          bulk={bulk}
+          filters={
+            <>
+              {filters}
+              {onClearFilters && (
+                <Button variant="default" onClick={onClearFilters}>
+                  {t('shared.list.clear_filters')}
+                </Button>
+              )}
+            </>
+          }
+        />
+      )}
       <div className={classes.content}>
         {children}
         {list && <ListContent list={list} onClearFilters={onClearFilters} />}
@@ -105,29 +106,18 @@ function ListContent<T>({ list, onClearFilters }: { list: ListBody<T>; onClearFi
 function PagingBar({ page, pageSize, total, onPage, onPageSize }: Paging) {
   const { t } = useTranslation()
   return (
-    <div className={classes.paging}>
-      <Text size="sm" tone="dimmed">
-        {t('shared.list.total', { total: formatNumber(total) })}
-      </Text>
-      <Pagination
-        size="input-sm"
-        total={Math.ceil(total / pageSize)}
-        value={page}
-        onChange={onPage}
-        classNames={{ control: `${classes.ghost} ${classes.page}` }}
-        getControlProps={(control) => ({ 'aria-label': t(`shared.list.${control}`) })}
-        getItemProps={(p) => ({ 'aria-label': t('shared.list.page', { page: p }) })}
-      />
-      <Select
-        aria-label={t('shared.list.page_size')}
-        data={pageSizes.map((n) => ({ value: String(n), label: t('shared.list.per_page', { n }) }))}
-        value={String(pageSize)}
-        onChange={(v) => v && onPageSize(Number(v))}
-        allowDeselect={false}
-        w={130}
-        className={classes.pageSize}
-        classNames={{ input: classes.ghost }}
-      />
-    </div>
+    <KitPagingBar
+      total={total}
+      page={page}
+      pageSize={pageSize}
+      pageSizes={pageSizes}
+      onPage={onPage}
+      onPageSize={onPageSize}
+      totalText={t('shared.list.total', { total: formatNumber(total) })}
+      pageSizeText={(n) => t('shared.list.per_page', { n })}
+      pageSizeLabel={t('shared.list.page_size')}
+      labels={{ previous: t('shared.list.previous'), next: t('shared.list.next'), page: (p) => t('shared.list.page', { page: p }) }}
+      navigationLabel={t('shared.list.paging')}
+    />
   )
 }
