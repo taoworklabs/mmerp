@@ -4,8 +4,11 @@ import { cx } from '../../internal/cx.ts'
 import { ArrowDownIcon, ArrowsSortIcon, ArrowUpIcon } from '../../internal/icons.tsx'
 import { UnstyledButton } from '../input/UnstyledButton.tsx'
 import styles from './Table.module.css'
+import { tableAppearanceVars, type TableAppearance } from './tableAppearance.ts'
+export type { TableAppearance } from './tableAppearance.ts'
 
 export interface TableProps extends React.ComponentPropsWithRef<'table'> {
+  appearance?: TableAppearance
   highlightOnHover?: boolean
   stickyHeader?: boolean
   // Set by the caller (DataTable) from the scroll position, so the sticky column's edge shows only
@@ -13,10 +16,14 @@ export interface TableProps extends React.ComponentPropsWithRef<'table'> {
   scrolled?: boolean
 }
 
-function TableRoot({ highlightOnHover, stickyHeader, scrolled, className, ...props }: TableProps) {
+function TableRoot({ appearance, highlightOnHover, stickyHeader, scrolled, className, style, ...props }: TableProps) {
   return (
     <table
       className={cx(styles.root, className)}
+      style={{ ...tableAppearanceVars(appearance), ...style }}
+      data-striped={appearance?.striped ? '' : undefined}
+      data-density={appearance?.density}
+      data-borders={appearance?.borders}
       data-highlight-on-hover={highlightOnHover ? '' : undefined}
       data-sticky-header={stickyHeader ? '' : undefined}
       data-scrolled={scrolled ? '' : undefined}

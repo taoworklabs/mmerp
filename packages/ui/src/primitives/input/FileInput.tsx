@@ -38,7 +38,11 @@ export function FileInput({
   // The trigger isn't a Field control, so Base UI never links it to the description/error text itself.
   const descriptionId = useId()
   const errorId = useId()
-  const describedBy = cx(description !== undefined && descriptionId, error !== undefined && errorId) || undefined
+  const labelId = useId()
+  const valueId = useId()
+  const generatedControlId = useId()
+  const controlId = props.id ?? generatedControlId
+  const describedBy = cx(props['aria-describedby'], description !== undefined && descriptionId, error !== undefined && errorId) || undefined
   const hasOwnName = props['aria-label'] !== undefined || props['aria-labelledby'] !== undefined
   return (
     <Field
@@ -51,24 +55,28 @@ export function FileInput({
       className={className}
       descriptionId={descriptionId}
       errorId={errorId}
+      labelId={labelId}
+      controlId={controlId}
     >
       <div className={styles.wrapper} data-mmerp-control="" data-error={error ? '' : undefined} data-disabled={disabled ? '' : undefined}>
         <button
           {...props}
+          id={controlId}
           ref={mergeRefs(triggerRef, ref)}
           type="button"
           className={styles.trigger}
           disabled={disabled || readOnly}
           aria-describedby={describedBy}
+          aria-labelledby={props['aria-labelledby'] ?? (!hasOwnName && label !== undefined ? cx(labelId, !!visibleText && valueId) : undefined)}
           aria-invalid={error ? true : undefined}
           onClick={(event) => {
             onClick?.(event)
-            inputRef.current?.click()
+            if (!event.defaultPrevented) inputRef.current?.click()
           }}
         >
           {/* No visible text and no caller-supplied name: fall back to the field's own label. */}
           {visibleText ? (
-            <span className={cx(styles.fileName, !value && styles.placeholder)}>{visibleText}</span>
+            <span id={valueId} className={cx(styles.fileName, !value && styles.placeholder)}>{visibleText}</span>
           ) : (
             !hasOwnName && label !== undefined && <VisuallyHidden>{label}</VisuallyHidden>
           )}

@@ -1,9 +1,13 @@
 .root {
   position: relative;
   overflow: hidden;
+  isolation: isolate;
 }
 
 .viewport {
+  /* Keep sticky content below the overlay tracks without changing its scroll container. */
+  position: relative;
+  z-index: 0;
   width: 100%;
   height: 100%;
   /* A percentage height on a child of an auto-height parent resolves to "auto" (the parent isn't
@@ -18,6 +22,15 @@
   touch-action: none;
   padding: 2px;
   background: transparent;
+  z-index: 1;
+  opacity: 0;
+  transition: opacity var(--mmerp-motion-duration) ease;
+}
+
+.scrollbar[data-hovering],
+.scrollbar[data-scrolling],
+.root:focus-within .scrollbar {
+  opacity: 1;
 }
 
 .scrollbar[data-orientation='vertical'] {
@@ -35,6 +48,12 @@
   background: var(--mmerp-color-gray-4);
 }
 
+.scrollbar:hover .thumb,
+.thumb:active {
+  background: var(--mmerp-color-gray-6);
+}
+
 .corner {
   background: transparent;
+  pointer-events: none;
 }

@@ -1,13 +1,14 @@
 .root {
   width: 100%;
   border-collapse: collapse;
+  border: var(--mmerp-table-frame);
   color: var(--mmerp-color-text);
   font-family: var(--mmerp-font-family);
   font-size: var(--mmerp-font-size-sm);
 }
 
 .thead {
-  background: var(--mmerp-color-table-header);
+  background: var(--mmerp-table-header-bg);
 }
 
 .root[data-sticky-header] .thead {
@@ -19,7 +20,7 @@
 }
 
 .tfoot {
-  border-top: 1px solid var(--mmerp-color-border);
+  border-top: var(--mmerp-table-row-rule);
 }
 
 .tr {
@@ -31,10 +32,6 @@
   height: 36px;
 }
 
-.root[data-highlight-on-hover] .tbody .tr:hover {
-  background: var(--mmerp-color-elevation-surface-sunken);
-}
-
 .tr[aria-selected='true'] {
   background: var(--mmerp-color-primary-light);
 }
@@ -42,7 +39,8 @@
 .th,
 .td {
   padding: 0 var(--mmerp-space-sm);
-  border-bottom: 1px solid var(--mmerp-color-border);
+  border-bottom: var(--mmerp-table-row-rule);
+  border-inline-end: var(--mmerp-table-column-rule);
   text-align: start;
   vertical-align: middle;
 }
@@ -50,10 +48,11 @@
 .th:last-child,
 .td:last-child {
   padding-inline-end: var(--mmerp-space-md);
+  border-inline-end: none;
 }
 
 .th {
-  color: var(--mmerp-color-dimmed);
+  color: var(--mmerp-table-header-text);
   font-size: var(--mmerp-font-size-xs);
   font-weight: var(--mmerp-font-weight-semibold);
 }
@@ -88,7 +87,7 @@
 .th[data-sticky] {
   z-index: 2;
   /* Over the shared sticky background: the header cell still reads as part of the header row. */
-  background: var(--mmerp-color-table-header);
+  background: var(--mmerp-table-header-bg);
 }
 
 .td[data-sticky] {
@@ -100,26 +99,23 @@
   background: var(--mmerp-color-primary-light);
 }
 
-/* The cell is opaque, so it takes the row's hover tint itself. */
-.root[data-highlight-on-hover] .tbody .tr:hover [data-sticky] {
-  background: var(--mmerp-color-elevation-surface-sunken);
-}
-
 /* Its edge shows only while columns slide under it. */
 .root[data-scrolled] [data-sticky] {
-  box-shadow: inset -1px 0 0 var(--mmerp-color-border);
+  box-shadow: inset -1px 0 0 var(--mmerp-table-rule-color);
 }
 
-/* A collapsed border belongs to the table and scrolls away with the rows; the docked header draws
-   its bottom rule itself (the corner cell keeps its edge too). */
-.root[data-sticky-header] .thead .th {
-  box-shadow: inset 0 -1px 0 var(--mmerp-color-border);
+/* Paint the rule on each sticky cell so dashed and thick borders stay attached while scrolling. */
+.root[data-sticky-header] .thead .th:not([data-sticky]) {
+  position: relative;
 }
 
-.root[data-sticky-header][data-scrolled] .thead .th[data-sticky] {
-  box-shadow:
-    inset -1px 0 0 var(--mmerp-color-border),
-    inset 0 -1px 0 var(--mmerp-color-border);
+.root[data-sticky-header] .thead .th::after {
+  content: '';
+  position: absolute;
+  inset-inline: 0;
+  bottom: 0;
+  border-bottom: var(--mmerp-table-row-rule);
+  pointer-events: none;
 }
 
 /* On one line, never squeezed by the table's layout. */
@@ -141,4 +137,29 @@
 
 .sortButton[data-sorted] {
   color: var(--mmerp-color-text);
+}
+
+.root[data-density='compact'] .tr { height: 32px; }
+.root[data-density='compact'] .thead .tr { height: 28px; }
+.root[data-density='comfortable'] .tr { height: 48px; }
+.root[data-density='comfortable'] .thead .tr { height: 40px; }
+
+.root[data-striped] .tbody .tr:nth-child(even):not([aria-selected='true']),
+.root[data-striped] .tbody .tr:nth-child(even):not([aria-selected='true']) .td[data-sticky] {
+  background: var(--mmerp-table-stripe-bg);
+}
+
+.root[data-highlight-on-hover] .tbody .tr:hover:not([aria-selected='true']),
+.root[data-highlight-on-hover] .tbody .tr:hover:not([aria-selected='true']) .td[data-sticky] {
+  background: var(--mmerp-table-hover-bg);
+}
+
+/* Selection stays recognizable while a striped or tinted row is hovered. */
+.root .tbody .tr[aria-selected='true'],
+.root .tbody .tr[aria-selected='true'] .td[data-sticky] {
+  background: var(--mmerp-color-primary-light);
+}
+
+.root .thead .th {
+  color: var(--mmerp-table-header-text);
 }

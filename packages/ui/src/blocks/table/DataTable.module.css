@@ -7,7 +7,7 @@
   display: flex;
   flex-direction: column;
   min-height: 0;
-  border: 1px solid var(--mmerp-color-border);
+  border: var(--mmerp-table-frame);
   border-radius: var(--mmerp-radius-md);
   overflow: hidden;
 }
@@ -22,12 +22,10 @@
   --mmerp-table-sticky-left: 40px;
 }
 
-/* The vertical scrollbar runs between the sticky header and footer, not behind them.
-   ponytail: no corner-width var exposed by ScrollArea, so it doesn't dodge the horizontal
-   scrollbar's corner; add one if that overlap turns out to matter. */
-.root [data-orientation='vertical'] {
-  top: var(--mmerp-head-height, 0px);
-  bottom: var(--mmerp-foot-height, 0px);
+/* Leave the sticky headings and totals unobscured; ScrollArea also avoids the shared corner. */
+.root > [data-scroll-area] {
+  --mmerp-scrollbar-inset-top: var(--mmerp-head-height, 0px);
+  --mmerp-scrollbar-inset-bottom: var(--mmerp-foot-height, 0px);
 }
 
 .row {
@@ -45,7 +43,7 @@
 
 /* A band of related columns opens with a rule. */
 .bandStart {
-  border-left: 1px solid var(--mmerp-color-border);
+  border-left: 1px solid var(--mmerp-table-rule-color);
 }
 
 .bandLabel {
@@ -94,7 +92,7 @@
   bottom: 0;
   z-index: 1;
   background: var(--mmerp-color-elevation-surface);
-  box-shadow: inset 0 1px 0 var(--mmerp-color-border);
+
 }
 
 .root tfoot td[data-sticky] {
@@ -102,9 +100,7 @@
 }
 
 .root[data-scrolled] tfoot td[data-sticky] {
-  box-shadow:
-    inset -1px 0 0 var(--mmerp-color-border),
-    inset 0 1px 0 var(--mmerp-color-border);
+  box-shadow: inset -1px 0 0 var(--mmerp-table-rule-color);
 }
 
 /* The checkbox column of a selectable table. */
@@ -172,4 +168,13 @@
 /* A total card stands apart from the rows it sums. */
 .totalCard {
   background: var(--mmerp-color-elevation-surface-sunken);
+}
+
+.root tfoot td::after {
+  content: '';
+  position: absolute;
+  inset-inline: 0;
+  top: 0;
+  border-top: var(--mmerp-table-row-rule);
+  pointer-events: none;
 }

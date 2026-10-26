@@ -1,0 +1,64 @@
+.wrapper {
+  height: auto;
+  min-height: var(--mmerp-control-height);
+  flex-wrap: wrap;
+  padding-block: var(--mmerp-space-xxs);
+  row-gap: var(--mmerp-space-xxs);
+}
+
+.chips {
+  display: contents;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--mmerp-space-xxs);
+  max-width: 100%;
+  padding-inline: var(--mmerp-space-xs) var(--mmerp-space-xxs);
+  border-radius: var(--mmerp-radius-sm);
+  background: var(--mmerp-color-gray-light);
+  color: var(--mmerp-color-gray-light-color);
+  font-size: var(--mmerp-font-size-xs);
+  min-height: 20px;
+}
+
+.label {
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+/* An embedded action stays smaller than the input containing it. */
+.remove {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--mmerp-radius-sm);
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+}
+
+.remove:hover {
+  background: var(--mmerp-color-gray-2);
+}
+
+.input {
+  flex: 1 1 auto;
+  min-width: 4ch;
+  height: auto;
+}
+
+@media (max-width: 63.99em) {
+  .remove {
+    width: 30px;
+    height: 30px;
+  }
+}

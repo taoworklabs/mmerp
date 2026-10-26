@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import { useState } from 'react'
 import { expect, fn, userEvent, waitFor, within } from 'storybook/test'
+import { tableEmployees } from '../../primitives/data-display/tableSamples.ts'
 import { Badge } from '../../primitives/feedback/Badge.tsx'
 import { Menu } from '../../primitives/overlay/Menu.tsx'
 import { DataTable, type Column, type DataTableLabels, type Selection } from './DataTable.tsx'
@@ -21,11 +22,7 @@ const columns: Column<Employee>[] = [
   },
 ]
 
-const rows: Employee[] = [
-  { id: 1, full_name: 'Nguyễn Văn A', code: 'NV001', org_unit: 'Kinh doanh', hire_date: '2023-01-10', status: 'active' },
-  { id: 2, full_name: 'Trần Thị B', code: 'NV002', org_unit: 'Kế toán', hire_date: '2022-05-02', status: 'active' },
-  { id: 3, full_name: 'Lê Văn C', code: 'NV003', org_unit: 'Nhân sự', hire_date: '2021-09-15', status: 'terminated' },
-]
+const rows: Employee[] = tableEmployees
 
 const longName = 'Nguyễn Thị Phương Thảo – Trưởng phòng Kế toán Tổng hợp, Chi nhánh Thành phố Hồ Chí Minh, phụ trách quyết toán thuế thu nhập cá nhân và bảo hiểm xã hội cho toàn bộ nhân viên khối văn phòng'
 
@@ -69,7 +66,7 @@ export const Basic: StoryObj<{ onLinkClick(): void }> = {
     const canvas = within(canvasElement)
     // Clicking a plain cell (not the link itself) still runs the rendered <a>'s own onClick: the
     // kit forwards the click to it instead of navigating itself.
-    await userEvent.click(canvas.getByText('Kinh doanh'))
+    await userEvent.click(canvas.getAllByText('Kinh doanh')[0]!)
     expect(args.onLinkClick).toHaveBeenCalledTimes(1)
   },
 }
@@ -104,7 +101,7 @@ export const RowClickWithoutLink: StoryObj<{ onInnerLinkClick(): void }> = {
   },
   play: async ({ canvasElement, args }) => {
     const canvas = within(canvasElement)
-    await userEvent.click(canvas.getByText('Kinh doanh'))
+    await userEvent.click(canvas.getAllByText('Kinh doanh')[0]!)
     expect(args.onInnerLinkClick).not.toHaveBeenCalled()
   },
 }
@@ -158,7 +155,7 @@ export const RowClickSkipsOtherColumns: StoryObj<{ onFirstLinkClick(): void; onO
   },
   play: async ({ canvasElement, args }) => {
     const canvas = within(canvasElement)
-    await userEvent.click(canvas.getByText('Kinh doanh'))
+    await userEvent.click(canvas.getAllByText('Kinh doanh')[0]!)
     expect(args.onFirstLinkClick).toHaveBeenCalledTimes(1)
     expect(args.onOtherLinkClick).not.toHaveBeenCalled()
   },
@@ -169,7 +166,10 @@ function SortableDemo({ onSort }: { onSort(sort: string): void }) {
   return (
     <DataTable
       columns={columns}
-      rows={rows}
+      rows={sort ? [...rows].sort((a, b) => {
+        const key = sort.replace(/^-/, '') as 'full_name' | 'code' | 'hire_date'
+        return a[key].localeCompare(b[key], 'vi') * (sort.startsWith('-') ? -1 : 1)
+      }) : rows}
       rowKey={(e) => e.id}
       label="Danh sách nhân viên"
       labels={labels}
@@ -324,6 +324,7 @@ export const Banded: Story = {
 
 export const GroupedWithTotals: Story = {
   args: {
+    rows: [...rows].sort((a, b) => a.org_unit.localeCompare(b.org_unit, 'vi')),
     group: {
       of: (e: Employee) => e.org_unit,
       total: (groupRows: Employee[], name: string) => ({ ...groupRows[0]!, full_name: `Tổng ${name}`, code: '', hire_date: '' }),
@@ -379,7 +380,7 @@ export const LongFirstCell: Story = {
     <div style={{ width: 500 }}>
       <DataTable
         columns={columns}
-        rows={[{ ...rows[0]!, full_name: longName }]}
+        rows={[{ ...rows[0]!, full_name: longName }, ...rows.slice(1)]}
         rowKey={(e) => e.id}
         label="Danh sách nhân viên"
         labels={labels}
@@ -432,6 +433,46 @@ export const MaxHeight: Story = {
 
 type EmptyRow = { id: number; name: string | null | undefined; amount: number | string }
 
+export const OverlayScrollbars: Story = {
+  args: {
+    columns: [
+      ...columns,
+      ...Array.from({ length: 6 }, (_, index): Column<Employee> => ({
+        key: `month_${index + 1}`,
+        header: `Tháng ${index + 1}`,
+        role: 'hidden',
+        kind: 'number',
+        render: () => '12.500.000',
+      })),
+    ],
+    maxHeight: '360px',
+    style: { width: 760, maxWidth: '100%' },
+    footer: { id: 0, full_name: 'Tổng: 24 nhân viên', code: '', org_unit: '', hire_date: '', status: 'active' },
+  },
+  play: async ({ canvasElement }) => {
+    const root = canvasElement.querySelector<HTMLElement>('[data-scroll-area]')!
+    const viewport = root.querySelector<HTMLElement>('[data-scroll-area-viewport]')!
+    await waitFor(() => expect(root.querySelectorAll('[data-scroll-area-scrollbar]')).toHaveLength(2))
+    expect(viewport.scrollWidth).toBeGreaterThan(viewport.clientWidth)
+    expect(viewport.scrollHeight).toBeGreaterThan(viewport.clientHeight)
+    // Overlay tracks take no space from either axis of the viewport.
+    expect(viewport.clientWidth).toBe(root.clientWidth)
+    expect(viewport.clientHeight).toBe(root.clientHeight)
+    await userEvent.hover(root)
+    const horizontal = root.querySelector<HTMLElement>('[data-scroll-area-scrollbar][data-orientation="horizontal"]')!
+    const vertical = root.querySelector<HTMLElement>('[data-scroll-area-scrollbar][data-orientation="vertical"]')!
+    await waitFor(() => expect(getComputedStyle(horizontal).opacity).toBe('1'))
+    for (const track of [horizontal, vertical]) {
+      const rect = track.getBoundingClientRect()
+      expect(track.contains(document.elementFromPoint(rect.left + rect.width / 2, rect.top + rect.height / 2))).toBe(true)
+    }
+    const footer = root.querySelector('tfoot')!.getBoundingClientRect()
+    const header = root.querySelector('thead')!.getBoundingClientRect()
+    expect(vertical.getBoundingClientRect().top).toBeGreaterThanOrEqual(header.bottom - 1)
+    expect(vertical.getBoundingClientRect().bottom).toBeLessThanOrEqual(footer.top + 1)
+  },
+}
+
 export const EmptyCells: StoryObj = {
   render: () => {
     const emptyColumns: Column<EmptyRow>[] = [
@@ -443,6 +484,7 @@ export const EmptyCells: StoryObj = {
       { id: 2, name: null, amount: 5 },
       { id: 3, name: undefined, amount: '0' },
       { id: 4, name: 'Bình', amount: 5 },
+      ...tableEmployees.slice(4, 12).map((employee) => ({ id: employee.id, name: employee.full_name, amount: employee.id * 125000 })),
     ]
     return (
       <DataTable
@@ -464,4 +506,16 @@ export const EmptyCells: StoryObj = {
     const footerCells = canvasElement.querySelectorAll('tfoot td')
     expect(footerCells[0]!.textContent).toBe('')
   },
+}
+
+export const Striped: Story = { args: { appearance: { striped: true } } }
+export const Grid: Story = { args: { appearance: { borders: 'grid' } } }
+export const Borderless: Story = { args: { appearance: { borders: 'none', withBorder: false, headerColor: 'plain' } } }
+export const Tinted: Story = { args: { appearance: { headerColor: 'primary', stripeColor: 'primary', striped: true, hoverColor: 'primary', borderColor: 'primary' } } }
+export const Dashed: Story = { args: { appearance: { borderStyle: 'dashed', borderColor: 'gray' } } }
+export const Compact: Story = { args: { appearance: { density: 'compact', striped: true } } }
+export const Comfortable: Story = { args: { appearance: { density: 'comfortable' } } }
+export const StyledOverlay: Story = {
+  ...OverlayScrollbars,
+  args: { ...OverlayScrollbars.args, appearance: { borders: 'grid', headerColor: 'primary', striped: true, stripeColor: 'primary', borderColor: 'primary' } },
 }

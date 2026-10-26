@@ -8,6 +8,12 @@
   outline-offset: 2px;
 }
 
+/* Composite inputs draw their focus ring around the whole control, including its adornments. */
+[data-mmerp-control]:has(input:focus-visible, button:focus-visible) {
+  outline: 2px solid var(--mmerp-color-primary-6);
+  outline-offset: 2px;
+}
+
 @media (max-width: 63.99em) {
   :where([data-mmerp-control]) {
     min-height: var(--mmerp-touch-target);

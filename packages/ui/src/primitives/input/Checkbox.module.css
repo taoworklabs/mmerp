@@ -8,6 +8,15 @@
   align-items: center;
   gap: var(--mmerp-space-xs);
   cursor: pointer;
+  min-height: var(--mmerp-control-height);
+  min-width: var(--mmerp-control-height);
+}
+
+@media (max-width: 63.99em) {
+  .label {
+    min-height: var(--mmerp-touch-target);
+    min-width: var(--mmerp-touch-target);
+  }
 }
 
 .label[data-disabled] {
@@ -34,6 +43,10 @@
 .box[data-indeterminate] {
   background: var(--mmerp-color-primary-6);
   border-color: var(--mmerp-color-primary-6);
+}
+
+.box[data-invalid] {
+  border-color: var(--mmerp-color-error);
 }
 
 .indicator {

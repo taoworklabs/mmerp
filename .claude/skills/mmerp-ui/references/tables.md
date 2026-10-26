@@ -183,3 +183,9 @@ List tables never edit in place. Editing happens on the record's page (its `Edit
 <Select aria-label={…} … />                                   // a Select in the filter bar: use FilterChip
 render: (d) => d.total.toLocaleString()                        // formatting outside shared/i18n
 ```
+
+## Standalone UI kit variants
+
+`Table` and `DataTable` in `@mmerp/ui` accept `appearance: TableAppearance`. Use `borders` (`rows`, `columns`, `grid`, `none`), `withBorder`, `borderColor`, `borderStyle` (`solid`, `dashed`, `dotted`) and `borderWidth` (1 or 2) for separators and frames. `headerColor` accepts `neutral`, `plain` or `ColorName`; `striped`, `stripeColor` and `hoverColor` use semantic colour tokens. `density` is `compact` (32px), `standard` (40px) or `comfortable` (48px). Defaults retain the existing table design.
+
+Selection always stays primary blue, including on hover. Sticky cells must match the surrounding row/header colour. Appearance affects the desktop table; responsive cards keep their existing presentation. Use Storybook's `Data display/Table/Appearance playground` to compare combinations, and `Blocks/DataTable/Styled overlay` to check sticky content and overlay scrollbars together.

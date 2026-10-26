@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import { useState } from 'react'
-import { expect, fn, userEvent, within } from 'storybook/test'
+import { expect, fn, userEvent, waitFor, within } from 'storybook/test'
 import { Select, type SelectItem, type SelectProps } from './Select.tsx'
 
 const data: SelectItem[] = [
@@ -102,9 +102,16 @@ export const KeyboardSelect: Story = {
     const trigger = within(canvasElement).getByRole('combobox', { name: 'Người phụ trách' })
     trigger.focus()
     await userEvent.keyboard('{ArrowDown}')
+    const popup = within(canvasElement.ownerDocument.body)
+    const first = await popup.findByRole('option', { name: data[0]!.label })
+    // Opening moves focus asynchronously; wait before navigating the list.
+    await waitFor(() => expect(first).toHaveFocus())
     await userEvent.keyboard('{ArrowDown}')
+    await waitFor(() => expect(popup.getByRole('option', { name: data[1]!.label })).toHaveFocus())
     await userEvent.keyboard('{Enter}')
-    expect(args.onChange).toHaveBeenCalledWith('b')
+    await waitFor(() => expect(args.onChange).toHaveBeenCalledWith('b'))
+    await waitFor(() => expect(trigger).toHaveAttribute('aria-expanded', 'false'))
+    await waitFor(() => expect(trigger).toHaveFocus())
   },
 }
 

@@ -1,7 +1,7 @@
 .root {
   display: flex;
   flex-direction: row;
-  column-gap: var(--mmerp-gap);
+  gap: var(--mmerp-gap);
 }
 
 .root[data-wrap] {
