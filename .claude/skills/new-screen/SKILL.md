@@ -5,12 +5,12 @@ description: Build or change a frontend screen in web/src. Use when adding a pag
 
 # New screen
 
-The rules live in `ui.md` and `frontend.md`; this skill is the order to apply them in. Each step ends on its completion criterion.
+The rules live in `docs/ui.md` and `docs/frontend.md`; this skill is the order to apply them in. Each step ends on its completion criterion.
 
-1. **Read the rules.** Read `ui.md` end to end and the `mmerp-ui` skill (its table says which references the screen needs), then `frontend.md` → "Cache" and "Permissions: the frontend computes nothing". For a specific UX question (a form pattern, a table behaviour, an accessibility outcome), consult the `ui-ux-pro-max` skill when it is installed; `ui.md` wins where they differ.
-   Done when: you have named the page template from `ui.md` → "Page templates" that this screen uses.
+1. **Read the rules.** Read `docs/ui.md` end to end and the `mmerp-ui` skill (its table says which references the screen needs), then `docs/frontend.md` → "Cache" and "Permissions: the frontend computes nothing". For a specific UX question (a form pattern, a table behaviour, an accessibility outcome), consult the `ui-ux-pro-max` skill when it is installed; `docs/ui.md` wins where they differ.
+   Done when: you have named the page template from `docs/ui.md` → "Page templates" that this screen uses.
 
-2. **Assemble.** Build the screen from that `shared/ui/page` template and `shared/ui` primitives. Business components live in the area; a missing generic primitive goes into `shared/ui` with an entry on `/dev/ui` (`ui.md` → "Where components live").
+2. **Assemble.** Build the screen from that `shared/ui/page` template and `shared/ui` primitives. Business components live in the area; a missing generic primitive goes into `shared/ui` with an entry on `/dev/ui` (`docs/ui.md` → "Where components live").
    Wire it in: add the route to the area's `routes.tsx`, gated with `useCan(…) ? <Page /> : <ForbiddenPage />` when it needs a permission, and a `nav` entry in the area's `index.ts` (label, path, icon, group, permission matching the route) when it is a menu destination.
    A record's page is a `RecordPage` (key facts in `summary`, its parts as tabs, the overview in `RecordColumns`: `EditablePanel` cards on the left with a `FieldList stacked` read view showing every value the form edits and `MissingValue` for empty ones; "Sửa" edits that card in place with `FormFields` and `FormActions onCancel`, never a `FormModal`; digests as `Panel plain` with `SeeAll` on the right; see `hrm/pages/EmployeePage.tsx`, `sales/pages/CustomerPage.tsx`). A document's page is a `DocumentScreen` (`shared/document`): it brings the status beside the number, `ApprovalDecision`, `DocumentActions`, `ApprovalPanel … decideElsewhere`, attachments (`attachments`, for types that take them) and the `ActivityFeed`; the page passes its header facts, its own buttons and its cards or form (see `hrm/components/LeaveDetails.tsx`). A new document's page is a `CreatePage`, a preview a `DocumentPreview` (both `shared/document`).
    Done when: the screen's layout comes entirely from the template, with every colour, size and spacing taken from theme tokens.
@@ -21,8 +21,8 @@ The rules live in `ui.md` and `frontend.md`; this skill is the order to apply th
 4. **Text.** Every string is an i18n key with both `vi` and `en` values, using `CONTEXT.md` terms; numbers, money and dates go through `shared/i18n` formatters.
    Done when: `make lint` passes its literal-string and translation-key checks.
 
-5. **States.** Handle loading, empty, error, forbidden, not found and read-only as listed in `ui.md`.
+5. **States.** Handle loading, empty, error, forbidden, not found and read-only as listed in `docs/ui.md`.
    Done when: each state is reachable and renders the `shared/ui` component for it.
 
-6. **Verify.** Run the checklist at the end of `ui.md` item by item. Check the screen at 1280px and 1024px, and at 375px for self-service flows. For flows where a mistake has serious consequences, add a Playwright test (`techstack.md` → Testing and quality).
+6. **Verify.** Run the checklist at the end of `docs/ui.md` item by item. Check the screen at 1280px and 1024px, and at 375px for self-service flows. For flows where a mistake has serious consequences, add a Playwright test (`docs/techstack.md` → Testing and quality).
    Done when: every checklist item holds and `make lint test` is green.

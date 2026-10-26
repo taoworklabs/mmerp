@@ -1,8 +1,8 @@
 # Roadmap Phase 1: a complete core
 
-Scope: build the core capabilities still missing before production use, each proven by HRM ([ADR-0023](./docs/adr/0023-build-core-first.md)), then open Sales as the second product ([ADR-0027](./docs/adr/0027-sales-product.md)). M10 and the production-readiness gate are on hold. Excludes accounting, custom fields, cloud model B, and products other than HRM and Sales.
+Scope: build the core capabilities still missing before production use, each proven by HRM ([ADR-0023](./adr/0023-build-core-first.md)), then open Sales as the second product ([ADR-0027](./adr/0027-sales-product.md)). M10 and the production-readiness gate are on hold. Excludes accounting, custom fields, cloud model B, and products other than HRM and Sales.
 
-Phase 0 (M0 to M9: foundation, sign-in, organisation and permissions, document lifecycle, contracts, overtime, timekeeping, payroll calculation, administrative permissions, navigation shell) is finished and archived in [docs/archive/roadmap-phase-0.md](./docs/archive/roadmap-phase-0.md). You do not need to read that file when working on Phase 1.
+Phase 0 (M0 to M9: foundation, sign-in, organisation and permissions, document lifecycle, contracts, overtime, timekeeping, payroll calculation, administrative permissions, navigation shell) is finished and archived in [docs/archive/roadmap-phase-0.md](./archive/roadmap-phase-0.md). You do not need to read that file when working on Phase 1.
 
 ## How milestones are split
 
@@ -31,7 +31,7 @@ M11 Attachments and discussion ─► M12 Notifications ─► M13 PDF printing 
 
 ## M11. Attachments and discussion
 
-**Done** (2026-10-07): [ADR-0024](./docs/adr/0024-attachments-and-discussion.md).
+**Done** (2026-10-07): [ADR-0024](./adr/0024-attachments-and-discussion.md).
 
 **Goal:** users attach files and discuss directly on documents and profiles, instead of email and shared folders.
 
@@ -55,7 +55,7 @@ M11 Attachments and discussion ─► M12 Notifications ─► M13 PDF printing 
 
 ## M12. Notifications
 
-**Done** (2026-10-07): [ADR-0025](./docs/adr/0025-notifications.md).
+**Done** (2026-10-07): [ADR-0025](./adr/0025-notifications.md).
 
 **Goal:** users learn about their work straight away without opening every list.
 
@@ -75,7 +75,7 @@ M11 Attachments and discussion ─► M12 Notifications ─► M13 PDF printing 
 
 ## M13. PDF printing
 
-**Done** (2026-10-08): [ADR-0026](./docs/adr/0026-printing.md). The two measurements the ADR defers — rendering a 3,000-employee payroll's payslips, and how much longer the payroll lock is held while snapshots are written — belong to the production-readiness gate.
+**Done** (2026-10-08): [ADR-0026](./adr/0026-printing.md). The two measurements the ADR defers — rendering a 3,000-employee payroll's payslips, and how much longer the payroll lock is held while snapshots are written — belong to the production-readiness gate.
 
 **Goal:** payslips and contracts can be printed from the system.
 
@@ -96,9 +96,9 @@ M11 Attachments and discussion ─► M12 Notifications ─► M13 PDF printing 
 
 ## M14. Sales
 
-**Goal:** a business of any trade keeps its customers and item catalogue, and issues quotations and sales orders through the same lifecycle, approval, printing, attachments and notifications as HRM ([ADR-0027](./docs/adr/0027-sales-product.md), [products/sales.md](./products/sales.md)).
+**Goal:** a business of any trade keeps its customers and item catalogue, and issues quotations and sales orders through the same lifecycle, approval, printing, attachments and notifications as HRM ([ADR-0027](./adr/0027-sales-product.md), [products/sales.md](../products/sales.md)).
 
-**Since 2026-10-23** the item catalogue, partner identity and VAT live in `shared/` ([ADR-0039](./docs/adr/0039-shared-master-data.md)): items are `item.items` under `item.view`/`item.manage` (role `item.admin` replaces `catalog_admin`), and a customer is Sales' role of a partner. The slices below keep their original wording.
+**Since 2026-10-23** the item catalogue, partner identity and VAT live in `shared/` ([ADR-0039](./adr/0039-shared-master-data.md)): items are `item.items` under `item.view`/`item.manage` (role `item.admin` replaces `catalog_admin`), and a customer is Sales' role of a partner. The slices below keep their original wording.
 
 Vertical slices, each from migration to screen:
 
@@ -107,7 +107,7 @@ Vertical slices, each from migration to screen:
 2. **Item catalogue.** Items list and modal editor for `catalog_admin`; read-only for others.
    Done when: a duplicate code is refused with `item_code_taken`; a user without `sales.item.manage` cannot create one through the API.
 3. **Quotations.** Draft with lines, amounts computed by the server in both rounding modes, customer and item details copied, approval with `amount` and `max_discount`, approval rules page, inbox preview, attachments and discussion; duplicate creates return the first document.
-   Done when: `recordtest` passes for `sales.quote`; totals match [products/sales.md](./products/sales.md#amounts) for `line` and `total`; editing the customer after posting leaves the quotation unchanged; a quotation with a 15 % discount waits for the manager under a "discount above 10 %" rule.
+   Done when: `recordtest` passes for `sales.quote`; totals match [products/sales.md](../products/sales.md#amounts) for `line` and `total`; editing the customer after posting leaves the quotation unchanged; a quotation with a 15 % discount waits for the manager under a "discount above 10 %" rule.
 4. **Printing quotations and orders.** Templates `sales.quote` and `sales.order` with editable text blocks.
    Done when: a posted quotation reprints identically after its customer and the legal entity are edited; a user who cannot view it cannot print it.
 5. **Sales orders.** Direct entry and creation from a posted quotation, idempotent; cancelling a quotation with a live order refused; derived "ordered" and "expired" shown on quotations.
@@ -117,7 +117,7 @@ Vertical slices, each from migration to screen:
 
 ## M10. On-premise operations
 
-**On hold** (2026-10-07); nothing is pulled forward ([ADR-0023](./docs/adr/0023-build-core-first.md)).
+**On hold** (2026-10-07); nothing is pulled forward ([ADR-0023](./adr/0023-build-core-first.md)).
 
 **Goal:** install, operate, back up and restore on the organisation's own server without the developers being present.
 
@@ -142,7 +142,7 @@ Vertical slices, each from migration to screen:
 
 Not numbered; the checks before real data goes in. Real data enters the system only after M10 passes and this gate has been passed.
 
-- Payroll calculation: an accountant reviews the payroll samples and their assumptions, and settles the open points ([products/hrm.md](./products/hrm.md#still-open)). Any fix changes both the samples and the payroll code.
+- Payroll calculation: an accountant reviews the payroll samples and their assumptions, and settles the open points ([products/hrm.md](../products/hrm.md#still-open)). Any fix changes both the samples and the payroll code.
 - Performance: settle the reference configuration against the actual production server and measure.
 
 **Reference configuration and performance targets.** Initial proposal, to be settled against the production server:
@@ -162,16 +162,16 @@ Not numbered; the checks before real data goes in. Real data enters the system o
 
 - Every performance target in the table above is met on the settled configuration.
 - The accountant confirms in writing that the payroll samples have been corrected per their feedback; the M6 acceptance test is green on those samples.
-- The accountant confirms the two pending points: the default `line` rounding, and the general ledger not tracking payroll payables per employee ([ADR-0007](./docs/adr/0007-hrm-product.md)).
+- The accountant confirms the two pending points: the default `line` rounding, and the general ledger not tracking payroll payables per employee ([ADR-0007](./adr/0007-hrm-product.md)).
 
 ## Not in this roadmap
 
 | Item | When to revisit |
 | --- | --- |
 | Custom fields | When a tenant needs something specific |
-| Pay periods other than the calendar month, time clocks, salary payment through banks, electronic social insurance (BHXH điện tử) | Per [products/hrm.md](./products/hrm.md#scope) |
-| Accounting, a third product | When there is a real need for it ([README.md](./README.md#principles)) |
-| Sales: CRM pipeline, stock, delivery, payment, invoices and e-invoices, foreign currencies, price lists | Per [products/sales.md](./products/sales.md#scope) |
+| Pay periods other than the calendar month, time clocks, salary payment through banks, electronic social insurance (BHXH điện tử) | Per [products/hrm.md](../products/hrm.md#scope) |
+| Accounting, a third product | When there is a real need for it ([README.md](../README.md#principles)) |
+| Sales: CRM pipeline, stock, delivery, payment, invoices and e-invoices, foreign currencies, price lists | Per [products/sales.md](../products/sales.md#scope) |
 | Cloud model B | When operating cloud model A becomes overloaded ([tenancy.md](./tenancy.md#cloud-path-from-a-to-b)) |
 | Product switcher in the header | When moving between HRM and Sales through the home page proves slow |
 | Shared work page | When users need one place to gather work beyond the approval inbox |

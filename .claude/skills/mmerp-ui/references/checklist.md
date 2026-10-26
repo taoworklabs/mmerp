@@ -81,4 +81,4 @@ Run every item against the change before calling it done. An item that does not 
 ## Finish
 
 - [ ] `make lint` and `make test` are green.
-- [ ] A changed token or rule is updated in `theme.ts`, `references/tokens.md` and `ui.md` together.
+- [ ] A changed token or rule is updated in `theme.ts`, `references/tokens.md` and `docs/ui.md` together.

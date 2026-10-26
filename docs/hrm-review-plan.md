@@ -23,7 +23,7 @@ Tell three kinds of information apart throughout the review:
 | Observation | Behaviour that was actually run, with data, accounts, version and evidence |
 | Proposal or open question | Not settled; it does not automatically become a requirement to implement |
 
-Internal sources: [glossary](../CONTEXT.md), [HRM scope](../products/hrm.md), [document lifecycle](../documents.md), [architecture decisions](adr/). If a proposal changes an accepted decision, name the decision it affects and update the ADR before implementing the architectural change.
+Internal sources: [glossary](../CONTEXT.md), [HRM scope](../products/hrm.md), [document lifecycle](documents.md), [architecture decisions](adr/). If a proposal changes an accepted decision, name the decision it affects and update the ADR before implementing the architectural change.
 
 ## 2. Scope and order
 

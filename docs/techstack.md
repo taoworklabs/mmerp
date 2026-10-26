@@ -1,6 +1,6 @@
 # Tech stack
 
-Decision and rationale: [ADR-0008](./docs/adr/0008-tech-stack.md). This document describes what is used, for what, and the conventions for using it.
+Decision and rationale: [ADR-0008](./adr/0008-tech-stack.md). This document describes what is used, for what, and the conventions for using it.
 
 ## Constraints
 
@@ -18,17 +18,17 @@ Every choice below must satisfy these three constraints:
 | HTTP | [Huma v2](https://huma.rocks) on the [chi](https://go-chi.io) router | Huma generates OpenAPI 3.1 from Go types and validates requests; chi handles routing and middleware. Handlers only translate between HTTP and the service, with no logic |
 | Database | Postgres, pinned to one major | At least version 15 (needs `NULLS NOT DISTINCT`). Pick the newest major that has had at least one patch release |
 | DB access | [pgx v5](https://github.com/jackc/pgx) + [sqlc](https://sqlc.dev) | One `queries/` directory per module, one `.sql` file per business area; generated code lives in the module's `internal/store`. `make gen` also writes a data-engine descriptor per query (`data.gen.go`, plugin `cmd/sqlc-gen-data`); services call those ([backend.md](./backend.md#data-access)) |
-| Jobs | [River](https://riverqueue.com) | Queue in the tenant database, enqueued with `InsertTx` in the same transaction ([ADR-0004](./docs/adr/0004-job-queue-in-tenant-database.md)) |
+| Jobs | [River](https://riverqueue.com) | Queue in the tenant database, enqueued with `InsertTx` in the same transaction ([ADR-0004](./adr/0004-job-queue-in-tenant-database.md)) |
 | Migration | Custom runner in `platform` | SQL files embedded with `embed`; all pending migrations run in one transaction under an advisory lock, and River's migrations run in the same transaction ([tenancy.md](./tenancy.md#versions-and-migrations)) |
 | Sign-in | Cookie + session stored in the DB (`iam`) | Cookie `HttpOnly`, `Secure`, `SameSite=Lax`. Revoking a session takes effect immediately. Third-party API access uses API keys |
 | Password hashing | argon2id (`golang.org/x/crypto/argon2`) | |
 | Column encryption | AES-256-GCM (standard library) | Encrypted data starts with a key version, so keys can be rotated gradually. Keys live outside the database ([platform.md](./platform.md#personal-data)) |
-| Decimals | [`shopspring/decimal`](https://github.com/shopspring/decimal) | For rates, multipliers, fractional quantities. Money is always `int64`/`bigint`; rounding only through the `platform` function ([ADR-0006](./docs/adr/0006-money-rounding.md)). No `float` for money or rates |
+| Decimals | [`shopspring/decimal`](https://github.com/shopspring/decimal) | For rates, multipliers, fractional quantities. Money is always `int64`/`bigint`; rounding only through the `platform` function ([ADR-0006](./adr/0006-money-rounding.md)). No `float` for money or rates |
 | Excel | [excelize](https://github.com/qax-os/excelize) | Only used in `dataio` |
 | File storage | Local disk | The `platform.Files` type (one directory, `FILES_DIR`), no interface. Add an S3-compatible adapter when cloud needs it |
 | Configuration | Environment variables, read with the standard library | Read and validated in full at startup; on error, stop and report the variable name |
 | Logging | `log/slog`, JSON to stdout | Every request log line carries the request id; never log personal data |
-| PDF | [gopdf](https://github.com/signintech/gopdf) | Only used in `printing` ([ADR-0026](./docs/adr/0026-printing.md)): pure Go, embeds and subsets TrueType fonts. Headless Chrome would need a third container, violating the constraints above. Tests read PDF text with [ledongthuc/pdf](https://github.com/ledongthuc/pdf), imported only by tests |
+| PDF | [gopdf](https://github.com/signintech/gopdf) | Only used in `printing` ([ADR-0026](./adr/0026-printing.md)): pure Go, embeds and subsets TrueType fonts. Headless Chrome would need a third container, violating the constraints above. Tests read PDF text with [ledongthuc/pdf](https://github.com/ledongthuc/pdf), imported only by tests |
 | Print font | Noto Sans regular and bold (SIL Open Font License), embedded in the binary | Full Vietnamese coverage, no download at run time |
 
 ## Frontend
@@ -79,7 +79,7 @@ Every choice below must satisfy these three constraints:
 
 ## Development tools
 
-Everything goes through `make`; the full list (`gen`, `lint`, `test`, `e2e`, `db`, `dev`, `reset-db`, `seed`, `image`, `smoke`) is in the command table of `CLAUDE.md`. `make lint` covers golangci-lint, `tsc`, ESLint, the colour-literal scan ([ui.md](./ui.md#enforcement)), dependency-cruiser and ESLint (no errors on `web/src`; every planted violation on `web/lint-fixtures`), the translation key check, and the `queries/*.sql` scan.
+Everything goes through `make`; the full list (`gen`, `lint`, `test`, `e2e`, `db`, `dev`, `reset-db`, `seed`, `image`, `smoke`) is in the command table of `AGENTS.md`. `make lint` covers golangci-lint, `tsc`, ESLint, the colour-literal scan ([ui.md](./ui.md#enforcement)), dependency-cruiser and ESLint (no errors on `web/src`; every planted violation on `web/lint-fixtures`), the translation key check, and the `queries/*.sql` scan.
 
 CI runs `make gen` and fails if the generated code differs from the committed code.
 

@@ -5,9 +5,9 @@ description: Add a document type (a record with number, date, legal entity and l
 
 # New document type
 
-The rules live in `documents.md`; this skill is the order to apply them in. Each step ends on its completion criterion.
+The rules live in `docs/documents.md`; this skill is the order to apply them in. Each step ends on its completion criterion.
 
-1. **Specify.** Read `documents.md` (Record types, Document lifecycle, `record` functions, Posting) and the product doc for this type (e.g. `products/hrm.md`).
+1. **Specify.** Read `docs/documents.md` (Record types, Document lifecycle, `record` functions, Posting) and the product doc for this type (e.g. `products/hrm.md`).
    Done when: you can state, for this type, what `posted` means, the date used for the period lock, any affected date range for module-level locks, its approval fields (at most about five, typed), its `OnTransition` effects, and whether it produces posting lines.
 
 2. **Register.** Register the type with `record`: kind, product, `NumberPrefix`, approval fields, the permission declaration `Perms` (at least `View`; `Edit` covers `post`, `cancel` and `create` unless declared apart), `OnDelete` (deletes the module's rows of a deleted draft), `OnTransition`; optionally a relation grant `Grant` (users related to the record, such as the employee's own account; `SubjectCreates` lets the subject named in `Create`'s header create), a refine hook `Refine` (only narrows, e.g. a further sensitive permission), `BeforeSubmit` (rejects sending a draft, e.g. stale sources), `Approvers(ctx, ref, level)` when a step needs module-chosen approvers, and `Subjects(ctx, id)` for users the document is about, who must never approve it.
@@ -16,7 +16,7 @@ The rules live in `documents.md`; this skill is the order to apply them in. Each
    A type that goes through approval gets its notifications (waiting for approval, approved, rejected) from `approval` with nothing to add.
    Done when: the type appears in `record`'s registry at startup.
 
-3. **Write path.** Every service write calls `record.Create`, `Edit` or `Transition` first, inside the same `InTx`, then writes the module's tables. Drafts are deleted only through the core route `DELETE /documents/{type}/{id}`, which calls the type's `OnDelete` to delete the module's rows; the module has no delete route. `record.Create` checks the declared `create` permission at the header's org unit (or lets the header's `Subject` create when the type sets `SubjectCreates`), so the module does not check it again. Module rows are locked after the `record` rows, following the lock order in `CLAUDE.md`.
+3. **Write path.** Every service write calls `record.Create`, `Edit` or `Transition` first, inside the same `InTx`, then writes the module's tables. Drafts are deleted only through the core route `DELETE /documents/{type}/{id}`, which calls the type's `OnDelete` to delete the module's rows; the module has no delete route. `record.Create` checks the declared `create` permission at the header's org unit (or lets the header's `Subject` create when the type sets `SubjectCreates`), so the module does not check it again. Module rows are locked after the `record` rows, following the lock order in `AGENTS.md`.
    A module-owned status column (e.g. delivery or payment progress) changes only through one transition function, and its column has a `CHECK`.
    Done when: every service method that writes this type's tables has a preceding `record` call in the same transaction, and tests cover each forbidden module-status transition.
 
