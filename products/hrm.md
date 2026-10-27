@@ -231,7 +231,7 @@ How the first release calculates. Every figure below is checked by the **payroll
 
 - Errors in a closed period are corrected with an addition (back pay, truy lĩnh) or a deduction (clawback, truy thu) on the payroll of the open period, with a reason and a reference to the original period. The closed period's payroll is not cancelled, and the old period's insurance and tax are not recalculated.
 - An adjustment increases or decreases the taxable income of the open period.
-- Because a clawback can make an aggregated line negative (e.g. a department with only one person, already terminated, whose money is recovered), amounts in `posting.lines` are **signed**; a negative amount is a reduction.
+- Because a clawback can make an aggregated line negative (e.g. a group of people whose recovered money exceeds their pay), amounts in `posting.lines` are **signed**; a negative amount is a reduction.
 
 ### Rounding
 
@@ -292,7 +292,7 @@ Dedicated view permissions: `hrm.employee.sensitive` (role `sensitive_viewer`) f
 | Where | Protection |
 | --- | --- |
 | `hrm.contracts`, `hrm.payroll_lines`, `hrm.payroll_adjustments`, captured inputs | Column encryption |
-| `posting.lines`, ledger | Only amounts aggregated by department or legal entity |
+| `posting.lines`, ledger | Only amounts aggregated over at least 3 paid people by org unit (a smaller unit rolls up to its parent, up to the legal entity), or by legal entity ([ADR-0040](../docs/adr/0040-payroll-posting-minimum-group.md)) |
 | `record.documents.amount` of a payroll | Only the total cost of the whole legal entity |
 | Audit log | Sensitive field values are stored encrypted ([documents.md](../docs/documents.md#permissions)) |
 | Export files, payslips | Need the salary view permission; temporary files expire; every export is audited |

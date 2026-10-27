@@ -293,6 +293,12 @@ func TestPrintPayslips(t *testing.T) {
 		t.Fatal(err)
 	}
 	rows, _ := x.GetRows("Sheet1", excelize.Options{RawCellValue: true})
+	// The audit says which payroll and how many people left the system, never amounts.
+	var exported string
+	if err := f.system.QueryRow(t.Context(), `SELECT data::text FROM audit.log WHERE action = 'dataio.exported' ORDER BY id DESC LIMIT 1`).Scan(&exported); err != nil ||
+		!strings.Contains(exported, fmt.Sprintf(`"rows": %d`, len(rows)-1)) || !strings.Contains(exported, fmt.Sprintf(`"payroll_id": %d`, id)) {
+		t.Fatalf("export audit %s %v", exported, err)
+	}
 	for _, col := range []string{"Tổng thu nhập", "Thực lĩnh"} {
 		c := slices.Index(rows[0], col)
 		v, _ := strconv.ParseInt(rows[1][c], 10, 64)
@@ -309,9 +315,12 @@ func TestPrintPayslips(t *testing.T) {
 	if j := f.print(pay, "hrm.payslip", fmt.Sprintf(`{"id":%d,"parts":[999999]}`, id)); j.Code == nil || *j.Code != "invalid_request" {
 		t.Fatalf("unknown employee: %+v", j)
 	}
-	var parts string
-	if err := f.system.QueryRow(t.Context(), `SELECT data->>'parts' FROM audit.log WHERE action = 'printing.printed' ORDER BY id DESC LIMIT 1`).Scan(&parts); err != nil || parts != fmt.Sprintf("[%d]", f.e2) {
-		t.Fatalf("audited parts %q %v", parts, err)
+	var parts, keys string
+	var doc int64
+	if err := f.system.QueryRow(t.Context(), `SELECT data->>'parts', doc_id, (SELECT string_agg(k, ',' ORDER BY k) FROM jsonb_object_keys(data) k)
+		FROM audit.log WHERE action = 'printing.printed' ORDER BY id DESC LIMIT 1`).Scan(&parts, &doc, &keys); err != nil ||
+		parts != fmt.Sprintf("[%d]", f.e2) || doc != id || keys != "layout,parts,template" {
+		t.Fatalf("audited print: parts %q, doc %d, keys %q, %v", parts, doc, keys, err)
 	}
 
 	// Department totals only: no print.
