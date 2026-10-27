@@ -178,3 +178,24 @@ func TestLeaveListVisibility(t *testing.T) {
 		})
 	}
 }
+
+// Several statuses filter as a union; none filters nothing.
+func TestLeaveListSeveralStatuses(t *testing.T) {
+	f := newListFixture(t)
+	paging := platform.Paging{Page: 1, PageSize: 100}
+	list := func(status ...string) ([]int64, int64) {
+		return f.newLeaves(f.hr, hrm.LeaveFilter{Status: status, Sort: "-start_date", Paging: paging})
+	}
+	_, all := list()
+	_, draft := list("draft")
+	_, pending := list("pending_approval")
+	_, posted := list("posted")
+	_, cancelled := list("cancelled")
+	if draft == 0 || pending == 0 || posted+cancelled == 0 || draft+pending+posted+cancelled != all {
+		t.Fatalf("single statuses %d+%d+%d+%d vs all %d", draft, pending, posted, cancelled, all)
+	}
+	ids, total := list("pending_approval", "draft")
+	if total != draft+pending || int64(len(ids)) != total {
+		t.Fatalf("union: %d ids, total %d, want %d", len(ids), total, draft+pending)
+	}
+}

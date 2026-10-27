@@ -32,7 +32,7 @@ const blocks: Block[] = [
     permission: 'hrm.leave.view',
     to: '/hrm/leaves?status=pending_approval',
     key: [...hrmKeys.leaves.lists(), 'overview'],
-    total: async () => (await unwrap(api.GET('/hrm/leaves', { params: { query: { status: 'pending_approval', page_size: 20 } } }))).total,
+    total: async () => (await unwrap(api.GET('/hrm/leaves', { params: { query: { status: ['pending_approval'], page_size: 20 } } }))).total,
   },
   {
     label: 'hrm.overview.pending_overtimes',

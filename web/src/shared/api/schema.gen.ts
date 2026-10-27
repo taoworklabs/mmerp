@@ -5810,7 +5810,7 @@ export interface operations {
             query?: {
                 /** @description Number, or the employee's code or name */
                 q?: string;
-                status?: "draft" | "pending_approval" | "posted" | "cancelled";
+                status?: ("draft" | "pending_approval" | "posted" | "cancelled")[] | null;
                 org_unit_id?: number;
                 employee_id?: number;
                 /** @description Requests ending on or after */

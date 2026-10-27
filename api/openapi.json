@@ -9793,17 +9793,23 @@
             }
           },
           {
-            "explode": false,
+            "explode": true,
             "in": "query",
             "name": "status",
             "schema": {
-              "enum": [
-                "draft",
-                "pending_approval",
-                "posted",
-                "cancelled"
-              ],
-              "type": "string"
+              "items": {
+                "enum": [
+                  "draft",
+                  "pending_approval",
+                  "posted",
+                  "cancelled"
+                ],
+                "type": "string"
+              },
+              "type": [
+                "array",
+                "null"
+              ]
             }
           },
           {
