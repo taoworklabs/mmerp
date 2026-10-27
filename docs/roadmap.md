@@ -96,6 +96,8 @@ M11 Attachments and discussion ─► M12 Notifications ─► M13 PDF printing 
 
 ## M14. Sales
 
+**Done** (2026-10-16): [ADR-0027](./adr/0027-sales-product.md).
+
 **Goal:** a business of any trade keeps its customers and item catalogue, and issues quotations and sales orders through the same lifecycle, approval, printing, attachments and notifications as HRM ([ADR-0027](./adr/0027-sales-product.md), [products/sales.md](../products/sales.md)).
 
 **Since 2026-10-23** the item catalogue, partner identity and VAT live in `shared/` ([ADR-0039](./adr/0039-shared-master-data.md)): items are `item.items` under `item.view`/`item.manage` (role `item.admin` replaces `catalog_admin`), and a customer is Sales' role of a partner. The slices below keep their original wording.
@@ -114,6 +116,30 @@ Vertical slices, each from migration to screen:
    Done when: `recordtest` passes for `sales.order`; creating the order twice gives one order; an expired quotation cannot become an order; cancelling the order lets the quotation become an order again.
 6. **End to end.** Playwright for the main flow and the team boundary; HRM suites unchanged and green.
    Done when: Playwright drives customer → item → quotation → manager approval from the inbox → PDF → order → confirmed order, and team B's user sees none of it.
+
+## HRM review
+
+After M14, HRM went through a business review ([docs/hrm-review-plan.md](./hrm-review-plan.md), rounds [one](./hrm-review-round1.md) and [two](./hrm-review-round2.md)). The decisions are settled and built:
+
+- [ADR-0028](./adr/0028-tenant-admin-holds-business-permissions.md): The tenant administrator holds every business permission, sensitive ones excepted
+- [ADR-0029](./adr/0029-withdraw-right-and-tree-lock.md): Withdrawing needs the right that sent; creating a document holds tree moves off
+- [ADR-0030](./adr/0030-leave-day-allocation.md): A leave request places days on dates: the calendar caps the entry and a date holds at most one day
+- [ADR-0031](./adr/0031-personal-list-views.md): Each user keeps their own list views on the server
+- [ADR-0032](./adr/0032-code-series.md): Code series: issued codes for catalogue entries
+- [ADR-0033](./adr/0033-leave-type-limits.md): A leave type may cap the days of one request and require an attachment; both always refuse
+
+## Core work after M14
+
+Core and frontend foundations built once Sales opened:
+
+- [ADR-0034](./adr/0034-record-types-declare-permissions.md): Record types declare their permissions; the core answers `Can`, deletes and creates once
+- [ADR-0035](./adr/0035-sensitive-field-tails.md): The employee detail shows the last four digits of a sensitive field to who may read it, unaudited
+- [ADR-0036](./adr/0036-approval-flows.md): Approval flows: steps, choose-one and parallel splits replace the step chain
+- [ADR-0037](./adr/0037-own-ui-kit-on-base-ui.md): The frontend uses its own UI kit, `@mmerp/ui`, built on Base UI; Mantine is removed
+- [ADR-0038](./adr/0038-data-engine-over-sqlc.md): Data engine over sqlc: dynamic parts compiled from code-declared fragments, no ORM
+- [ADR-0039](./adr/0039-shared-master-data.md): Shared master data: partners, items and tax in `shared/`, with their own namespace
+
+**Next:** not chosen. M10 and the production-readiness gate stay on hold.
 
 ## M10. On-premise operations
 
