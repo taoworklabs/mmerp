@@ -136,7 +136,11 @@ func (s *Service) Employee(ctx context.Context, id int64) (Employee, error) {
 	}
 	var current *CurrentContract
 	if slices.Contains(actions, "view_contracts") {
-		r, err := store.CurrentContract.Run(ctx, store.CurrentContractParams{EmployeeID: id, At: today})
+		sc, err := s.d.IAM.Scope(ctx, "hrm", PermContractView)
+		if err != nil {
+			return Employee{}, err
+		}
+		r, err := store.CurrentContract.Run(ctx, store.CurrentContractParams{EmployeeID: id, At: today, AllUnits: sc.All, Units: sc.Units})
 		if err != nil && !errors.Is(err, pgx.ErrNoRows) {
 			return Employee{}, err
 		}

@@ -84,9 +84,11 @@ WHERE c.employee_id = @employee_id AND c.parent_id IS NULL AND d.status = 'poste
 
 -- name: CurrentContract :one
 -- The posted original covering @at, as the employee page shows it; appendices only amend it.
+-- Scope filter on the document's org unit, which is where the contract was filed.
 SELECT c.id, d.number, t.name AS contract_type_name, c.start_date, c.end_date
 FROM hrm.contracts c
 JOIN record.documents d ON d.id = c.id
 JOIN hrm.contract_types t ON t.id = c.contract_type_id
 WHERE c.employee_id = @employee_id AND c.parent_id IS NULL AND d.status = 'posted'
+  AND (@all_units::bool OR d.org_unit_id = ANY(@units::bigint[]))
   AND c.start_date <= @at::date AND (c.end_date IS NULL OR c.end_date >= @at::date);

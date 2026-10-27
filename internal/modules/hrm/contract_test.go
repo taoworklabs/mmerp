@@ -3,6 +3,7 @@ package hrm_test
 import (
 	"context"
 	"errors"
+	"slices"
 	"strings"
 	"sync"
 	"testing"
@@ -459,5 +460,27 @@ func TestEmployeeCurrentContractNeedsContractView(t *testing.T) {
 	}
 	if e, err := f.hrm.Employee(f.hr, f.emp); err != nil || e.CurrentContract == nil {
 		t.Fatalf("hr: %+v %v", e.CurrentContract, err)
+	}
+}
+
+// A contract stays filed under the unit it was made in when the employee moves; a viewer of
+// the new unit only does not see it as current.
+func TestEmployeeCurrentContractFollowsContractScope(t *testing.T) {
+	f := newContractFixture(t)
+	f.check(f.post(must(t)(f.original("2020-01-01", "", 10_000_000))))
+	e, err := f.hrm.Employee(f.hr, f.emp)
+	f.check(err)
+	moved := employee("E", f.b)
+	moved.UserLogin = str("e")
+	moved.ManagerID = e.ManagerID
+	f.check(f.hrm.UpdateEmployee(f.hr, f.emp, moved.EmployeeInput))
+	newUnit := f.ctxFor("newunit", "hr@B")
+	got, err := f.hrm.Employee(newUnit, f.emp)
+	f.check(err)
+	if !slices.Contains(got.AllowedActions, "view_contracts") || got.CurrentContract != nil {
+		t.Fatalf("actions %v, contract %+v", got.AllowedActions, got.CurrentContract)
+	}
+	if e, err := f.hrm.Employee(f.hr, f.emp); err != nil || e.CurrentContract == nil {
+		t.Fatalf("all units: %+v %v", e.CurrentContract, err)
 	}
 }

@@ -183,11 +183,14 @@ FROM hrm.contracts c
 JOIN record.documents d ON d.id = c.id
 JOIN hrm.contract_types t ON t.id = c.contract_type_id
 WHERE c.employee_id = $1 AND c.parent_id IS NULL AND d.status = 'posted'
-  AND c.start_date <= $2::date AND (c.end_date IS NULL OR c.end_date >= $2::date)
+  AND ($2::bool OR d.org_unit_id = ANY($3::bigint[]))
+  AND c.start_date <= $4::date AND (c.end_date IS NULL OR c.end_date >= $4::date)
 `
 
 type CurrentContractParams struct {
 	EmployeeID int64
+	AllUnits   bool
+	Units      []int64
 	At         pgtype.Date
 }
 
@@ -200,8 +203,14 @@ type CurrentContractRow struct {
 }
 
 // The posted original covering @at, as the employee page shows it; appendices only amend it.
+// Scope filter on the document's org unit, which is where the contract was filed.
 func (q *Queries) CurrentContract(ctx context.Context, arg CurrentContractParams) (CurrentContractRow, error) {
-	row := q.db.QueryRow(ctx, currentContract, arg.EmployeeID, arg.At)
+	row := q.db.QueryRow(ctx, currentContract,
+		arg.EmployeeID,
+		arg.AllUnits,
+		arg.Units,
+		arg.At,
+	)
 	var i CurrentContractRow
 	err := row.Scan(
 		&i.ID,
