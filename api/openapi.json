@@ -3964,6 +3964,43 @@
         ],
         "type": "object"
       },
+      "MonthClose": {
+        "additionalProperties": false,
+        "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "/api/schemas/MonthClose.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
+          "open_payroll_entities": {
+            "format": "int64",
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "open_timesheet_units": {
+            "format": "int64",
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "period_start": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "period_start",
+          "open_timesheet_units",
+          "open_payroll_entities"
+        ],
+        "type": "object"
+      },
       "MyContract": {
         "additionalProperties": false,
         "properties": {
@@ -11311,6 +11348,38 @@
         "responses": {
           "204": {
             "description": "No Content"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "tags": [
+          "hrm",
+          "hrm"
+        ]
+      }
+    },
+    "/hrm/overview/month-close": {
+      "get": {
+        "description": "Org units without a posted timesheet and legal entities without a posted payroll for last month, within the actor's scope.",
+        "operationId": "get-month-close",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MonthClose"
+                }
+              }
+            },
+            "description": "OK"
           },
           "default": {
             "content": {

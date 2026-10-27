@@ -904,6 +904,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/hrm/overview/month-close": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Org units without a posted timesheet and legal entities without a posted payroll for last month, within the actor's scope. */
+        get: operations["get-month-close"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/hrm/payrolls": {
         parameters: {
             query?: never;
@@ -3148,6 +3165,19 @@ export interface components {
         Mentionable: {
             login: string;
             name: string;
+        };
+        MonthClose: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example /api/schemas/MonthClose.json
+             */
+            readonly $schema?: string;
+            /** Format: int64 */
+            open_payroll_entities: number | null;
+            /** Format: int64 */
+            open_timesheet_units: number | null;
+            period_start: string;
         };
         MyContract: {
             /** Format: date */
@@ -6776,6 +6806,35 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "get-month-close": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MonthClose"];
+                };
             };
             /** @description Error */
             default: {
