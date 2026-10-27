@@ -64,8 +64,18 @@ type Employee struct {
 	Status        string            `json:"status" enum:"active,terminated"`
 	Sensitive     SensitivePresence `json:"sensitive"`
 	SensitiveTail SensitiveTails    `json:"sensitive_tail"`
+	// The posted contract in force today; null without one or without hrm.contract.view.
+	CurrentContract *CurrentContract `json:"current_contract"`
 	// view, edit, view_sensitive, adjust_leave_balance, view_contracts, create_contract.
 	AllowedActions []string `json:"allowed_actions" nullable:"false"`
+}
+
+type CurrentContract struct {
+	ID           int64   `json:"id"`
+	Number       string  `json:"number"`
+	ContractType string  `json:"contract_type"`
+	StartDate    string  `json:"start_date"`
+	EndDate      *string `json:"end_date"`
 }
 
 type EmployeeListItem struct {

@@ -859,6 +859,38 @@
         ],
         "type": "object"
       },
+      "CurrentContract": {
+        "additionalProperties": false,
+        "properties": {
+          "contract_type": {
+            "type": "string"
+          },
+          "end_date": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "id": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "number": {
+            "type": "string"
+          },
+          "start_date": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "number",
+          "contract_type",
+          "start_date",
+          "end_date"
+        ],
+        "type": "object"
+      },
       "Customer": {
         "additionalProperties": false,
         "properties": {
@@ -1827,6 +1859,9 @@
           "code": {
             "type": "string"
           },
+          "current_contract": {
+            "$ref": "#/components/schemas/CurrentContract"
+          },
           "date_of_birth": {
             "format": "date",
             "type": [
@@ -1936,6 +1971,7 @@
           "status",
           "sensitive",
           "sensitive_tail",
+          "current_contract",
           "allowed_actions",
           "full_name",
           "date_of_birth",

@@ -177,6 +177,42 @@ func (q *Queries) CreateContractType(ctx context.Context, arg CreateContractType
 	return id, err
 }
 
+const currentContract = `-- name: CurrentContract :one
+SELECT c.id, d.number, t.name AS contract_type_name, c.start_date, c.end_date
+FROM hrm.contracts c
+JOIN record.documents d ON d.id = c.id
+JOIN hrm.contract_types t ON t.id = c.contract_type_id
+WHERE c.employee_id = $1 AND c.parent_id IS NULL AND d.status = 'posted'
+  AND c.start_date <= $2::date AND (c.end_date IS NULL OR c.end_date >= $2::date)
+`
+
+type CurrentContractParams struct {
+	EmployeeID int64
+	At         pgtype.Date
+}
+
+type CurrentContractRow struct {
+	ID               int64
+	Number           string
+	ContractTypeName string
+	StartDate        pgtype.Date
+	EndDate          pgtype.Date
+}
+
+// The posted original covering @at, as the employee page shows it; appendices only amend it.
+func (q *Queries) CurrentContract(ctx context.Context, arg CurrentContractParams) (CurrentContractRow, error) {
+	row := q.db.QueryRow(ctx, currentContract, arg.EmployeeID, arg.At)
+	var i CurrentContractRow
+	err := row.Scan(
+		&i.ID,
+		&i.Number,
+		&i.ContractTypeName,
+		&i.StartDate,
+		&i.EndDate,
+	)
+	return i, err
+}
+
 const deleteContract = `-- name: DeleteContract :exec
 DELETE FROM hrm.contracts WHERE id = $1
 `

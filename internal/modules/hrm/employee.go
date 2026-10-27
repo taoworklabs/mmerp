@@ -134,6 +134,16 @@ func (s *Service) Employee(ctx context.Context, id int64) (Employee, error) {
 	if err != nil {
 		return Employee{}, err
 	}
+	var current *CurrentContract
+	if slices.Contains(actions, "view_contracts") {
+		r, err := store.CurrentContract.Run(ctx, store.CurrentContractParams{EmployeeID: id, At: today})
+		if err != nil && !errors.Is(err, pgx.ErrNoRows) {
+			return Employee{}, err
+		}
+		if err == nil {
+			current = &CurrentContract{ID: r.ID, Number: r.Number, ContractType: r.ContractTypeName, StartDate: *platform.DatePtr(r.StartDate), EndDate: platform.DatePtr(r.EndDate)}
+		}
+	}
 	return Employee{
 		ID: e.ID, Code: e.Code,
 		EmployeeFields: EmployeeFields{
@@ -147,8 +157,9 @@ func (s *Service) Employee(ctx context.Context, id int64) (Employee, error) {
 			NationalID: e.NationalID != nil, SocialInsuranceNo: e.SocialInsuranceNo != nil,
 			TaxCode: e.TaxCode != nil, BankAccount: e.BankAccount != nil,
 		},
-		SensitiveTail:  tails,
-		AllowedActions: actions,
+		SensitiveTail:   tails,
+		CurrentContract: current,
+		AllowedActions:  actions,
 	}, nil
 }
 

@@ -28,6 +28,7 @@ var ContractListBase = data.NewBase("hrm.ContractListBase", contractListBase, []
 var ContractOverlaps = data.OneArg("hrm.ContractOverlaps", newQ, (*Queries).ContractOverlaps)
 var HasPostedAppendix = data.OneArg("hrm.HasPostedAppendix", newQ, (*Queries).HasPostedAppendix)
 var ContractTermsAt = data.OneArg("hrm.ContractTermsAt", newQ, (*Queries).ContractTermsAt)
+var CurrentContract = data.OneArg("hrm.CurrentContract", newQ, (*Queries).CurrentContract)
 var ListDependents = data.ManyArg("hrm.ListDependents", newQ, (*Queries).ListDependents)
 var GetDependent = data.OneArg("hrm.GetDependent", newQ, (*Queries).GetDependent)
 var CreateDependent = data.OneArg("hrm.CreateDependent", newQ, (*Queries).CreateDependent)
