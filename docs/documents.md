@@ -1,6 +1,6 @@
 # Documents and shared features
 
-Customers of a business-management suite expect, by default, features such as approval, attachments, discussion, print templates, Excel import/export and custom fields on every document type. These features are provided once by modules in `core/` (`record`, `approval`, `attachment`, `discussion`, `printing`, `dataio`, `customfield`). Business modules only declare that they use them; they do not rebuild them.
+Customers of a business-management suite expect, by default, features such as approval, attachments, discussion, print templates, Excel import/export and custom fields on every document type. These features are provided once by modules in `core/` (`record`, `approval`, `attachment`, `discussion`, `notification`, `printing`, `dataio`; custom fields come later). Business modules only declare that they use them; they do not rebuild them.
 
 ## Record types
 
@@ -192,7 +192,7 @@ No tool can statically check whether a module calls `record` before writing its 
 | **Notifications** | In-app notifications (approval needed, mentioned). Email and Zalo are sent through integration jobs | — |
 | **Print templates** | Each record type that prints has a template shipped with the module: versioned layouts in code, and named text blocks customers can edit, stored in the DB. A posted document's print data is frozen when it is posted and its template is pinned at the first print ([ADR-0026](./adr/0026-printing.md)) | Templates only display data, they do not run code; customers cannot change the layout |
 | **Excel import/export** | The module declares the columns. `dataio` handles reading, writing, validating data and reporting errors per row. Imported data is always written through the owning module's service | — |
-| **Custom fields** | Field definitions (record type, key, kind, label, required, choice list) are stored by `customfield`. Values are stored in a `custom jsonb` column on the module's table (the module adds this column if it wants to support them). Custom fields appear on forms, lists, filters, print templates and import/export | Customers cannot create new tables or record types |
+| **Custom fields** (not built) | Planned: field definitions (record type, key, kind, label, required, choice list) are stored by `customfield`. Values are stored in a `custom jsonb` column on the module's table (the module adds this column if it wants to support them). Custom fields appear on forms, lists, filters, print templates and import/export | Customers cannot create new tables or record types |
 
 Each feature is only built when the first module needs it. But once built, it must be built for every record type to share, not just for one module.
 
