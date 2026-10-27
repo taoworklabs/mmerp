@@ -129,5 +129,11 @@
   "hrm.error.payroll_already_posted": "Another payroll of this period is posted. Cancel it first.",
   "hrm.error.payroll_not_holding_period": "This payroll does not hold its period, so it cannot be cancelled.",
   "hrm.error.invalid_payroll_adjustment": "Invalid adjustment: a non-zero amount, an original period before the payroll's, an employee of the payroll's legal entity.",
-  "hrm.payslip.name": "Payslip"
+  "hrm.payslip.name": "Payslip",
+  "hrm.me.nav.group": "Personal",
+  "hrm.me.nav.days": "Timekeeping",
+  "hrm.me.nav.payslips": "Payslips",
+  "hrm.me.nav.requests": "Leave & overtime",
+  "hrm.me.nav.profile": "My profile",
+  "hrm.me.nav.org": "Org chart"
 }

@@ -887,5 +887,15 @@
   "shared.partner.phone": "Điện thoại",
   "shared.partner.email": "Email",
   "shared.partner.address": "Địa chỉ",
-  "shared.toast.close": "Đóng thông báo"
+  "shared.toast.close": "Đóng thông báo",
+  "shared.devui.about_day_grid": "Lịch theo ngày, bảy ô một hàng, kèm thanh chọn tháng hoặc tuần; trên điện thoại các ngày xếp thành một cột.",
+  "shared.devui.use_day_grid": "xem từng ngày của một tháng hoặc một tuần, chỉ đọc.",
+  "shared.devui.avoid_day_grid": "nhập giá trị theo ngày: dùng CellGrid; liệt kê bản ghi: dùng DataTable.",
+  "shared.devui.day_note": "Công: {{n}}",
+  "shared.devui.day_month": "Tháng",
+  "shared.devui.day_week": "Tuần",
+  "shared.devui.day_mode": "Chế độ xem",
+  "shared.devui.day_prev": "Trước",
+  "shared.devui.day_next": "Sau",
+  "shared.devui.day_grid": "Lịch ngày"
 }

@@ -6,6 +6,7 @@ import { Link } from 'react-router'
 import { formatNumber } from '@/shared/i18n'
 import { PersonAvatar, PersonName } from '@/shared/ui/avatar'
 import { CellGrid } from '@/shared/ui/CellGrid'
+import { DayGrid, PeriodNav } from '@/shared/ui/DayGrid'
 import { type Column, DataTable } from '@/shared/ui/DataTable'
 import { useListView } from '@/shared/ui/ListView'
 import { MenuAction } from '@/shared/ui/MenuAction'
@@ -33,6 +34,8 @@ const code = {
   dataTable: `<DataTable label rows rowKey columns
   href? onRowClick? menu? sort? onSort? group? footer? selection? onResize? />
 // column: { key, header, role: 'title' | 'meta', kind?: 'code' | 'number', sortable?, render }`,
+  dayGrid: `<PeriodNav modes mode onMode modeLabel title onPrev onNext prevLabel nextLabel />
+<DayGrid label weekdays cells={[{ key, day, weekday, tone?: 'rest' | 'holiday', children }, null, …]} />`,
   cellGrid: `<CellGrid label corner rows columns value onChange invalid? off? warning? total? />`,
   fieldList: `<FieldList rows={[[label, value, 'wide'?], …]} stacked? />
 import { MissingValue } from '@/shared/ui/MissingValue'   // an empty value users can fill`,
@@ -135,6 +138,48 @@ export function CellGridDoc() {
         </Case>
       }
       code={code.cellGrid}
+    />
+  )
+}
+
+export function DayGridDoc() {
+  const { t } = useTranslation()
+  const [mode, setMode] = useState('month')
+  const weekdays = ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN']
+  const cells = [null, null, ...Array.from({ length: 12 }, (_, i) => i + 1)].map((d, i) =>
+    d === null
+      ? null
+      : {
+          key: String(d),
+          day: String(d),
+          weekday: weekdays[i % 7]!,
+          tone: i % 7 === 5 ? ('rest' as const) : i % 7 === 6 ? ('holiday' as const) : undefined,
+          children: <Text size="xs">{t('shared.devui.day_note', { n: d })}</Text>,
+        },
+  )
+  return (
+    <DocPage
+      path="mmerp/day-grid"
+      example={
+        <Case>
+          <PeriodNav
+            modes={[
+              { value: 'month', label: t('shared.devui.day_month') },
+              { value: 'week', label: t('shared.devui.day_week') },
+            ]}
+            mode={mode}
+            onMode={setMode}
+            modeLabel={t('shared.devui.day_mode')}
+            title="10/2026"
+            onPrev={() => undefined}
+            onNext={() => undefined}
+            prevLabel={t('shared.devui.day_prev')}
+            nextLabel={t('shared.devui.day_next')}
+          />
+          <DayGrid label={t('shared.devui.day_grid')} weekdays={weekdays} cells={cells} />
+        </Case>
+      }
+      code={code.dayGrid}
     />
   )
 }

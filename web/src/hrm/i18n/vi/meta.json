@@ -129,5 +129,11 @@
   "hrm.error.payroll_already_posted": "Kỳ lương này đã có một bảng lương được chốt. Hủy bảng lương đó trước.",
   "hrm.error.payroll_not_holding_period": "Bảng lương này không phải bảng lương đang giữ kỳ, nên không hủy được.",
   "hrm.error.invalid_payroll_adjustment": "Khoản điều chỉnh không hợp lệ: số tiền khác 0, kỳ gốc trước kỳ lương, nhân viên thuộc pháp nhân của bảng lương.",
-  "hrm.payslip.name": "Phiếu lương"
+  "hrm.payslip.name": "Phiếu lương",
+  "hrm.me.nav.group": "Cá nhân",
+  "hrm.me.nav.days": "Chấm công",
+  "hrm.me.nav.payslips": "Phiếu lương",
+  "hrm.me.nav.requests": "Nghỉ phép & tăng ca",
+  "hrm.me.nav.profile": "Hồ sơ cá nhân",
+  "hrm.me.nav.org": "Sơ đồ tổ chức"
 }

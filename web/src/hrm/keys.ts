@@ -61,6 +61,9 @@ export const hrmKeys = {
     list: (q: PayrollQuery) => ['hrm', 'payrolls', 'list', q] as const,
     detail: (id: number) => ['hrm', 'payrolls', 'detail', id] as const,
   },
+  me: {
+    days: (month: string) => ['hrm', 'me', 'days', month] as const,
+  },
   leaveTypes: () => ['hrm', 'leave-types'] as const,
   calendar: (legalEntity: number, year: number) => ['hrm', 'calendar', legalEntity, year] as const,
   calendars: () => ['hrm', 'calendar'] as const,
