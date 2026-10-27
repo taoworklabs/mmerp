@@ -24,7 +24,16 @@ export function LoginPage() {
     try {
       await unwrap(api.POST('/auth/login', { body: values }))
     } catch (err) {
-      setError(err instanceof ApiError && err.code === 'invalid_credentials' ? t('core.login.invalid_credentials') : errorText(t, err))
+      const code = err instanceof ApiError ? err.code : undefined
+      setError(
+        code === 'invalid_credentials'
+          ? t('core.login.invalid_credentials')
+          : code === 'account_locked'
+            ? t('core.login.account_locked')
+            : code === 'login_temporarily_locked'
+              ? t('core.login.temporarily_locked')
+              : errorText(t, err),
+      )
       setBusy(false)
       return
     }

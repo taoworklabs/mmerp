@@ -7,20 +7,23 @@ package store
 
 import (
 	"context"
+
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 const createSession = `-- name: CreateSession :exec
-INSERT INTO iam.sessions (token_hash, user_id, expires_at) VALUES ($1, $2, now() + interval '14 days')
+INSERT INTO iam.sessions (token_hash, user_id, user_agent, expires_at) VALUES ($1, $2, $3, now() + interval '14 days')
 `
 
 type CreateSessionParams struct {
 	TokenHash []byte
 	UserID    int64
+	UserAgent pgtype.Text
 }
 
 // Fixed lifetime from login; activity does not extend it.
 func (q *Queries) CreateSession(ctx context.Context, arg CreateSessionParams) error {
-	_, err := q.db.Exec(ctx, createSession, arg.TokenHash, arg.UserID)
+	_, err := q.db.Exec(ctx, createSession, arg.TokenHash, arg.UserID, arg.UserAgent)
 	return err
 }
 
@@ -44,21 +47,92 @@ func (q *Queries) DeleteSession(ctx context.Context, tokenHash []byte) (int64, e
 	return user_id, err
 }
 
+const deleteUserSession = `-- name: DeleteUserSession :execrows
+DELETE FROM iam.sessions WHERE id = $1 AND user_id = $2
+`
+
+type DeleteUserSessionParams struct {
+	ID     pgtype.Int8
+	UserID int64
+}
+
+func (q *Queries) DeleteUserSession(ctx context.Context, arg DeleteUserSessionParams) (int64, error) {
+	result, err := q.db.Exec(ctx, deleteUserSession, arg.ID, arg.UserID)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
+const deleteUserSessions = `-- name: DeleteUserSessions :exec
+DELETE FROM iam.sessions WHERE user_id = $1
+`
+
+func (q *Queries) DeleteUserSessions(ctx context.Context, userID int64) error {
+	_, err := q.db.Exec(ctx, deleteUserSessions, userID)
+	return err
+}
+
 const getSession = `-- name: GetSession :one
-SELECT s.user_id, u.authz_version, (SELECT version FROM iam.authz) AS tenant_version
+SELECT s.user_id, u.authz_version, u.must_change_password, (SELECT version FROM iam.authz) AS tenant_version
 FROM iam.sessions s JOIN iam.users u ON u.id = s.user_id
-WHERE s.token_hash = $1 AND s.expires_at > now()
+WHERE s.token_hash = $1 AND s.expires_at > now() AND u.locked_at IS NULL
 `
 
 type GetSessionRow struct {
-	UserID        int64
-	AuthzVersion  int64
-	TenantVersion int64
+	UserID             int64
+	AuthzVersion       int64
+	MustChangePassword bool
+	TenantVersion      int64
 }
 
 func (q *Queries) GetSession(ctx context.Context, tokenHash []byte) (GetSessionRow, error) {
 	row := q.db.QueryRow(ctx, getSession, tokenHash)
 	var i GetSessionRow
-	err := row.Scan(&i.UserID, &i.AuthzVersion, &i.TenantVersion)
+	err := row.Scan(
+		&i.UserID,
+		&i.AuthzVersion,
+		&i.MustChangePassword,
+		&i.TenantVersion,
+	)
 	return i, err
+}
+
+const listUserSessions = `-- name: ListUserSessions :many
+SELECT id, token_hash, created_at, expires_at, user_agent FROM iam.sessions
+WHERE user_id = $1 AND expires_at > now() ORDER BY created_at DESC, id DESC
+`
+
+type ListUserSessionsRow struct {
+	ID        pgtype.Int8
+	TokenHash []byte
+	CreatedAt pgtype.Timestamptz
+	ExpiresAt pgtype.Timestamptz
+	UserAgent pgtype.Text
+}
+
+func (q *Queries) ListUserSessions(ctx context.Context, userID int64) ([]ListUserSessionsRow, error) {
+	rows, err := q.db.Query(ctx, listUserSessions, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListUserSessionsRow
+	for rows.Next() {
+		var i ListUserSessionsRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.TokenHash,
+			&i.CreatedAt,
+			&i.ExpiresAt,
+			&i.UserAgent,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }

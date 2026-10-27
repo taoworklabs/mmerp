@@ -9,6 +9,8 @@ export TEST_DATABASE_URL
 DATABASE_URL ?= postgres://mmerp:mmerp@localhost:5433/mmerp?sslmode=disable
 # Dev-only key, also used by e2e; never use it for real data.
 export ENCRYPTION_KEYS ?= 1:bW1lcnAgZGV2IGtleSAtIG5ldmVyIHByb2R1Y3Rpb24=
+# Dev-only first password of the root account, also used by e2e.
+export ROOT_PASSWORD ?= e2e password
 
 .PHONY: gen lint test e2e dev ui-dev storybook image smoke db reset-db seed migration
 
@@ -48,10 +50,10 @@ test: db web/node_modules
 e2e: db web/node_modules
 	pnpm -C web e2e
 
-# Empties the dev database and creates the admin (password "e2e password"); a running make dev reconnects.
+# Empties the dev database and creates root (password "e2e password", no forced change); a running make dev reconnects.
 reset-db: db
 	docker run --rm --network host postgres:18 psql -q '$(subst /mmerp?,/postgres?,$(DATABASE_URL))' -c 'DROP DATABASE IF EXISTS mmerp WITH (FORCE)' -c 'CREATE DATABASE mmerp'
-	echo 'e2e password' | DATABASE_URL='$(DATABASE_URL)' go run ./cmd/server create-admin admin 'Quản trị viên'
+	echo 'e2e password' | DATABASE_URL='$(DATABASE_URL)' ROOT_PASSWORD='e2e password' go run ./cmd/server reset-password root
 
 # Creates an empty migration named after the current UTC time: make migration name=hrm_leave_carryover.
 migration:

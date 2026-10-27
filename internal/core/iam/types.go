@@ -3,6 +3,7 @@ package iam
 import (
 	"net/http"
 	"slices"
+	"time"
 
 	"github.com/taoworklabs/mmerp/internal/platform"
 )
@@ -22,14 +23,19 @@ type Me struct {
 	ProductsWithData []string `json:"products_with_data" nullable:"false"`
 	// Every permission the user has at any org unit, by product. Only for hiding menus and pages.
 	Permissions map[string][]string `json:"permissions"`
+	// Set after an administrator's reset or at first sign-in; the API refuses everything but changing it.
+	MustChangePassword bool `json:"must_change_password"`
 }
 
 // User is an account as administrators see it.
 type User struct {
-	ID    int64   `json:"id"`
-	Login string  `json:"login"`
-	Name  string  `json:"name"`
-	Email *string `json:"email" doc:"Where email notifications go; null for none"`
+	ID     int64   `json:"id"`
+	Login  string  `json:"login"`
+	Name   string  `json:"name"`
+	Email  *string `json:"email" doc:"Where email notifications go; null for none"`
+	Locked bool    `json:"locked"`
+	// The account created at startup: it cannot be locked, reset or lose core.admin.
+	Root bool `json:"root"`
 }
 
 // Role is a product role and the permissions it grants.
@@ -78,14 +84,18 @@ func (s Scope) Any() bool { return s.All || len(s.Units) > 0 }
 
 // Session is what a valid session cookie resolves to.
 type Session struct {
-	UserID       int64
-	AuthzVersion string
+	UserID             int64
+	AuthzVersion       string
+	MustChangePassword bool
 }
 
 var (
 	ErrInvalidCredentials = &platform.Error{Status: http.StatusUnauthorized, Code: "invalid_credentials"}
-	ErrPasswordTooShort   = &platform.Error{Status: http.StatusUnprocessableEntity, Code: "password_too_short", Params: map[string]any{"min": MinPasswordLength}}
+	ErrLoginLocked        = &platform.Error{Status: http.StatusTooManyRequests, Code: "login_temporarily_locked"}
+	ErrAccountLocked      = &platform.Error{Status: http.StatusForbidden, Code: "account_locked"}
+	ErrWrongPassword      = &platform.Error{Status: http.StatusUnprocessableEntity, Code: "wrong_password"}
 	ErrLoginTaken         = &platform.Error{Status: http.StatusConflict, Code: "login_taken"}
+	ErrRootProtected      = &platform.Error{Status: http.StatusConflict, Code: "root_protected"}
 	ErrUnknownRole        = &platform.Error{Status: http.StatusUnprocessableEntity, Code: "unknown_role"}
 	ErrRoleTenantWide     = &platform.Error{Status: http.StatusUnprocessableEntity, Code: "role_tenant_wide"}
 	ErrRoleAlreadyGranted = &platform.Error{Status: http.StatusConflict, Code: "role_already_granted"}
@@ -117,4 +127,11 @@ type ListColumn struct {
 	Width  *int   `json:"width" minimum:"48" maximum:"800"`
 }
 
-const MinPasswordLength = 8
+// SessionInfo is one of the actor's open sessions.
+type SessionInfo struct {
+	ID        int64     `json:"id"`
+	CreatedAt time.Time `json:"created_at"`
+	ExpiresAt time.Time `json:"expires_at"`
+	UserAgent string    `json:"user_agent"`
+	Current   bool      `json:"current"`
+}

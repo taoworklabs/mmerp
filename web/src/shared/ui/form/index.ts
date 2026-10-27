@@ -11,3 +11,4 @@ export { RemoteSelectField, rowLabel, type RemoteRow } from './RemoteSelectField
 export { SearchInput } from './SearchInput'
 export { SensitiveField, SensitiveValue } from './SensitiveField'
 export { EditablePanel } from './EditablePanel'
+export { passwordErrorText } from './passwordErrorText'

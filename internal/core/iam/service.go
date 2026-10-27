@@ -2,10 +2,12 @@
 package iam
 
 import (
+	"bytes"
 	"context"
 	"crypto/rand"
 	"crypto/sha256"
 	"errors"
+	"fmt"
 	"maps"
 	"net/http"
 	"net/mail"
@@ -13,6 +15,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"unicode/utf8"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
@@ -53,6 +56,9 @@ func (s *Service) CreateUser(ctx context.Context, login, name, password string) 
 	if err := s.require(ctx, PermManageUsers); err != nil {
 		return 0, err
 	}
+	if strings.EqualFold(login, RootLogin) {
+		return 0, ErrLoginTaken
+	}
 	var id int64
 	err := platform.InTx(ctx, func(ctx context.Context) error {
 		var err error
@@ -64,8 +70,11 @@ func (s *Service) CreateUser(ctx context.Context, login, name, password string) 
 	return id, err
 }
 
-// CreateAdmin adds the first administrator at install time, with the core admin role tenant-wide.
+// CreateAdmin adds an administrator with the core admin role tenant-wide, without a permission check.
 func (s *Service) CreateAdmin(ctx context.Context, login, name, password string) (int64, error) {
+	if strings.EqualFold(login, RootLogin) {
+		return 0, ErrLoginTaken
+	}
 	var id int64
 	err := platform.InTx(ctx, func(ctx context.Context) error {
 		var err error
@@ -81,9 +90,84 @@ func (s *Service) CreateAdmin(ctx context.Context, login, name, password string)
 	return id, err
 }
 
+// RootLogin is the login of the root account, always present once the server has started.
+const RootLogin = "root"
+
+// EnsureRoot creates the root account on first start, with password, which it must change
+// at first sign-in. It does nothing once the root exists.
+func (s *Service) EnsureRoot(ctx context.Context, password string) error {
+	return platform.InTx(ctx, func(ctx context.Context) error {
+		u, err := store.GetUserByLogin.Run(ctx, RootLogin)
+		switch {
+		case err == nil && u.IsRoot:
+			return nil
+		case err == nil:
+			return errors.New("iam: a user named root exists but is not the root account")
+		case !errors.Is(err, pgx.ErrNoRows):
+			return err
+		case password == "":
+			return errors.New("ROOT_PASSWORD must be set to create the root account")
+		}
+		if err := s.checkPassword(ctx, RootLogin, RootLogin, password); err != nil {
+			return plainPasswordError("ROOT_PASSWORD", err)
+		}
+		id, err := store.CreateRoot.Run(ctx, store.CreateRootParams{Login: RootLogin, PasswordHash: hashPassword(password)})
+		if err != nil {
+			return err
+		}
+		if _, err := store.GrantRole.Run(ctx, store.GrantRoleParams{UserID: id, Product: "core", Role: "admin"}); err != nil {
+			return err
+		}
+		// No actor: the server acts at startup, not a user.
+		return s.d.Audit.Record(ctx, "iam.root_created", map[string]any{"id": id})
+	})
+}
+
+// RecoverPassword sets a user's password from the command line, without a permission
+// check, and lifts every lock and forced change so the user can sign in at once.
+func (s *Service) RecoverPassword(ctx context.Context, login, password string) error {
+	return platform.InTx(ctx, func(ctx context.Context) error {
+		u, err := store.GetUserByLogin.Run(ctx, login)
+		if errors.Is(err, pgx.ErrNoRows) {
+			return fmt.Errorf("no user with login %q", login)
+		}
+		if err != nil {
+			return err
+		}
+		full, err := store.GetUser.Run(ctx, u.ID)
+		if err != nil {
+			return err
+		}
+		if err := s.checkPassword(ctx, full.Login, full.Name, password); err != nil {
+			return plainPasswordError("password", err)
+		}
+		if err := store.SetUserPassword.Run(ctx, store.SetUserPasswordParams{ID: u.ID, PasswordHash: hashPassword(password)}); err != nil {
+			return err
+		}
+		if err := store.SetUserLocked.Run(ctx, store.SetUserLockedParams{ID: u.ID, Locked: false}); err != nil {
+			return err
+		}
+		if err := s.clearFailures(ctx, full.Login); err != nil {
+			return err
+		}
+		if err := store.DeleteUserSessions.Run(ctx, u.ID); err != nil {
+			return err
+		}
+		return s.d.Audit.Record(ctx, "iam.password_recovered", map[string]any{"id": u.ID, "login": full.Login})
+	})
+}
+
+// plainPasswordError spells out password_weak for a command-line reader.
+func plainPasswordError(what string, err error) error {
+	if pe, ok := errors.AsType[*platform.Error](err); ok && pe.Code == "password_weak" {
+		return fmt.Errorf("%s is too weak: breaks %v (minimum length %v)", what, pe.Params["rules"], pe.Params["min"])
+	}
+	return err
+}
+
 func (s *Service) createUser(ctx context.Context, login, name, password string) (int64, error) {
-	if len(password) < MinPasswordLength {
-		return 0, ErrPasswordTooShort
+	if err := s.checkPassword(ctx, login, name, password); err != nil {
+		return 0, err
 	}
 	id, err := store.CreateUser.Run(ctx, store.CreateUserParams{Login: login, Name: name, PasswordHash: hashPassword(password)})
 	if pgErr, ok := errors.AsType[*pgconn.PgError](err); ok && pgErr.Code == "23505" {
@@ -93,7 +177,10 @@ func (s *Service) createUser(ctx context.Context, login, name, password string) 
 }
 
 // Login checks the password and opens a session; the returned token goes into the cookie.
-func (s *Service) Login(ctx context.Context, login, password string) (string, error) {
+func (s *Service) Login(ctx context.Context, login, password, userAgent string) (string, error) {
+	if err := s.reserveAttempt(ctx, login); err != nil {
+		return "", err
+	}
 	// Hashing runs outside the transaction so it holds no connection.
 	u, err := store.GetUserByLogin.Run(ctx, login)
 	switch {
@@ -104,18 +191,64 @@ func (s *Service) Login(ctx context.Context, login, password string) (string, er
 		return "", err
 	case !verifyPassword(password, u.PasswordHash):
 		return "", s.loginFailed(ctx, login)
+	case u.LockedAt.Valid:
+		return "", ErrAccountLocked
 	}
 	token := rand.Text()
 	err = platform.InTx(platform.WithActor(ctx, u.ID), func(ctx context.Context) error {
+		// The password was checked outside the transaction; a change or lock since then wins.
+		cur, err := store.LockUserCredentials.Run(ctx, u.ID)
+		switch {
+		case err != nil:
+			return err
+		case cur.PasswordHash != u.PasswordHash:
+			return ErrInvalidCredentials
+		case cur.Locked:
+			return ErrAccountLocked
+		}
 		if err := store.DeleteExpiredSessions.Run(ctx, u.ID); err != nil {
 			return err
 		}
-		if err := store.CreateSession.Run(ctx, store.CreateSessionParams{TokenHash: tokenHash(token), UserID: u.ID}); err != nil {
+		if err := store.CreateSession.Run(ctx, store.CreateSessionParams{TokenHash: tokenHash(token), UserID: u.ID, UserAgent: pgtype.Text{String: truncateRunes(strings.ToValidUTF8(userAgent, ""), 300), Valid: true}}); err != nil {
+			return err
+		}
+		if err := s.clearFailures(ctx, login); err != nil {
 			return err
 		}
 		return s.d.Audit.Record(ctx, "iam.login", nil)
 	})
 	return token, err
+}
+
+// clearFailures forgets the wrong passwords counted and any lock on login.
+func (s *Service) clearFailures(ctx context.Context, login string) error {
+	return store.ClearLoginFailures.Run(ctx, login)
+}
+
+// reserveAttempt counts the attempt before any hashing, so at most MaxFailures
+// attempts per window reach the password check, whatever the concurrency.
+func (s *Service) reserveAttempt(ctx context.Context, login string) error {
+	p, err := s.policy(ctx)
+	if err != nil {
+		return err
+	}
+	return platform.InTx(ctx, func(ctx context.Context) error {
+		if err := store.DeleteStaleLoginFailures.Run(ctx); err != nil {
+			return err
+		}
+		locked, err := store.ReserveLoginAttempt.Run(ctx, store.ReserveLoginAttemptParams{
+			Login: login, MaxFailures: int32(p.MaxFailures), LockMinutes: int32(p.LockMinutes)})
+		if errors.Is(err, pgx.ErrNoRows) {
+			return ErrLoginLocked
+		}
+		if err != nil {
+			return err
+		}
+		if locked {
+			return s.d.Audit.Record(ctx, "iam.login_locked", map[string]any{"login": login})
+		}
+		return nil
+	})
 }
 
 func (s *Service) loginFailed(ctx context.Context, login string) error {
@@ -151,7 +284,7 @@ func (s *Service) Authenticate(ctx context.Context, token string) (sess Session,
 	if err != nil {
 		return Session{}, false, err
 	}
-	return Session{UserID: row.UserID, AuthzVersion: authzVersion(row.AuthzVersion, row.TenantVersion)}, true, nil
+	return Session{UserID: row.UserID, AuthzVersion: authzVersion(row.AuthzVersion, row.TenantVersion), MustChangePassword: row.MustChangePassword}, true, nil
 }
 
 // Me describes the actor in ctx.
@@ -187,7 +320,7 @@ func (s *Service) Me(ctx context.Context) (Me, error) {
 	}
 	return Me{
 		ID: u.ID, Login: u.Login, Name: u.Name, Locale: locale, Timezone: tz,
-		AuthzVersion: authzVersion(u.AuthzVersion, u.TenantVersion), Products: products, ProductsWithData: withData, Permissions: perms,
+		AuthzVersion: authzVersion(u.AuthzVersion, u.TenantVersion), Products: products, ProductsWithData: withData, Permissions: perms, MustChangePassword: u.MustChangePassword,
 	}, nil
 }
 
@@ -207,7 +340,7 @@ func (s *Service) Users(ctx context.Context) ([]User, error) {
 	rows, err := store.ListUsers.Run(ctx)
 	out := make([]User, len(rows))
 	for i, r := range rows {
-		out[i] = User{ID: r.ID, Login: r.Login, Name: r.Name, Email: platform.TextPtr(r.Email)}
+		out[i] = User{ID: r.ID, Login: r.Login, Name: r.Name, Email: platform.TextPtr(r.Email), Locked: r.LockedAt.Valid, Root: r.IsRoot}
 	}
 	return out, err
 }
@@ -218,7 +351,7 @@ func (s *Service) User(ctx context.Context, id int64) (User, error) {
 		return User{}, err
 	}
 	u, err := store.GetUser.Run(ctx, id)
-	return User{ID: u.ID, Login: u.Login, Name: u.Name, Email: platform.TextPtr(u.Email)}, notFound(err)
+	return User{ID: u.ID, Login: u.Login, Name: u.Name, Email: platform.TextPtr(u.Email), Locked: u.LockedAt.Valid, Root: u.IsRoot}, notFound(err)
 }
 
 var errEmail = &platform.Error{Status: http.StatusUnprocessableEntity, Code: "invalid_request", Params: map[string]any{"fields": []string{"email"}}}
@@ -245,6 +378,132 @@ func (s *Service) SetEmail(ctx context.Context, id int64, email *string) error {
 			return platform.ErrNotFound
 		}
 		return s.d.Audit.Record(ctx, "iam.user_email_set", map[string]any{"id": id})
+	})
+}
+
+var errName = &platform.Error{Status: http.StatusUnprocessableEntity, Code: "invalid_request", Params: map[string]any{"fields": []string{"name"}}}
+
+// RenameUser changes a user's display name.
+func (s *Service) RenameUser(ctx context.Context, id int64, name string) error {
+	if err := s.require(ctx, PermManageUsers); err != nil {
+		return err
+	}
+	if name = strings.TrimSpace(name); name == "" || utf8.RuneCountInString(name) > 200 {
+		return errName
+	}
+	return platform.InTx(ctx, func(ctx context.Context) error {
+		u, err := store.GetUser.Run(ctx, id)
+		if err != nil {
+			return notFound(err)
+		}
+		if err := store.SetUserName.Run(ctx, store.SetUserNameParams{ID: id, Name: name}); err != nil {
+			return err
+		}
+		return s.d.Audit.Record(ctx, "iam.user_renamed", map[string]any{"id": id, "from": u.Name, "to": name})
+	})
+}
+
+// LockUser blocks sign-in and ends the user's sessions; locking a locked user changes nothing.
+func (s *Service) LockUser(ctx context.Context, id int64) error {
+	return s.setLocked(ctx, id, true)
+}
+
+// UnlockUser lets a locked user sign in again and forgets any temporary lock on the login.
+func (s *Service) UnlockUser(ctx context.Context, id int64) error {
+	return s.setLocked(ctx, id, false)
+}
+
+func (s *Service) setLocked(ctx context.Context, id int64, locked bool) error {
+	if err := s.require(ctx, PermManageUsers); err != nil {
+		return err
+	}
+	return platform.InTx(ctx, func(ctx context.Context) error {
+		u, err := store.GetUser.Run(ctx, id)
+		if err != nil {
+			return notFound(err)
+		}
+		if locked && u.IsRoot {
+			return ErrRootProtected
+		}
+		if u.LockedAt.Valid == locked {
+			return nil
+		}
+		if err := store.SetUserLocked.Run(ctx, store.SetUserLockedParams{ID: id, Locked: locked}); err != nil {
+			return err
+		}
+		action := "iam.user_unlocked"
+		if locked {
+			action = "iam.user_locked"
+			if err := store.DeleteUserSessions.Run(ctx, id); err != nil {
+				return err
+			}
+		} else if err := s.clearFailures(ctx, u.Login); err != nil {
+			return err
+		}
+		return s.d.Audit.Record(ctx, action, map[string]any{"id": id})
+	})
+}
+
+// ChangePassword sets the actor's own password and ends their other sessions.
+func (s *Service) ChangePassword(ctx context.Context, token, current, next string) error {
+	id, _ := platform.ActorFrom(ctx)
+	u, err := store.GetUser.Run(ctx, id)
+	if err != nil {
+		return notFound(err)
+	}
+	// Before the reservation: a weak next must not burn lockout attempts.
+	if err := s.checkPassword(ctx, u.Login, u.Name, next); err != nil {
+		return err
+	}
+	// Shares the sign-in counter, so a hijacked session cannot guess the password unthrottled.
+	if err := s.reserveAttempt(ctx, u.Login); err != nil {
+		return err
+	}
+	// Verifying current runs outside the write transaction so it holds no connection.
+	hash, err := store.GetUserPassword.Run(ctx, id)
+	if err != nil {
+		return notFound(err)
+	}
+	if !verifyPassword(current, hash) {
+		return ErrWrongPassword
+	}
+	return platform.InTx(ctx, func(ctx context.Context) error {
+		if err := s.clearFailures(ctx, u.Login); err != nil {
+			return err
+		}
+		if err := store.SetUserPassword.Run(ctx, store.SetUserPasswordParams{ID: id, PasswordHash: hashPassword(next)}); err != nil {
+			return err
+		}
+		if _, err := store.DeleteOtherUserSessions.Run(ctx, store.DeleteOtherUserSessionsParams{UserID: id, TokenHash: tokenHash(token)}); err != nil {
+			return err
+		}
+		return s.d.Audit.Record(ctx, "iam.password_changed", nil)
+	})
+}
+
+// ResetPassword gives a user a temporary password they must change at next sign-in.
+func (s *Service) ResetPassword(ctx context.Context, id int64, temporary string) error {
+	if err := s.require(ctx, PermManageUsers); err != nil {
+		return err
+	}
+	return platform.InTx(ctx, func(ctx context.Context) error {
+		u, err := store.GetUser.Run(ctx, id)
+		if err != nil {
+			return notFound(err)
+		}
+		if u.IsRoot {
+			return ErrRootProtected
+		}
+		if err := s.checkPassword(ctx, u.Login, u.Name, temporary); err != nil {
+			return err
+		}
+		if err := store.SetUserPassword.Run(ctx, store.SetUserPasswordParams{ID: id, PasswordHash: hashPassword(temporary), MustChange: true}); err != nil {
+			return err
+		}
+		if err := store.DeleteUserSessions.Run(ctx, id); err != nil {
+			return err
+		}
+		return s.d.Audit.Record(ctx, "iam.password_reset", map[string]any{"id": id})
 	})
 }
 
@@ -546,6 +805,16 @@ func (s *Service) RevokeRole(ctx context.Context, userID, grantID int64) error {
 		if err != nil {
 			return notFound(err)
 		}
+		if g.Product == "core" && g.Role == "admin" && !g.OrgUnitID.Valid {
+			// Rolling back undoes the delete: the root never loses core.admin.
+			u, err := store.GetUser.Run(ctx, userID)
+			if err != nil {
+				return err
+			}
+			if u.IsRoot {
+				return ErrRootProtected
+			}
+		}
 		if err := store.BumpUserAuthz.Run(ctx, userID); err != nil {
 			return err
 		}
@@ -700,4 +969,53 @@ func notFound(err error) error {
 		return platform.ErrNotFound
 	}
 	return err
+}
+
+func truncateRunes(s string, n int) string {
+	if utf8.RuneCountInString(s) <= n {
+		return s
+	}
+	return string([]rune(s)[:n])
+}
+
+// MySessions lists the actor's unexpired sessions, newest first; token marks the current one.
+func (s *Service) MySessions(ctx context.Context, token string) ([]SessionInfo, error) {
+	id, _ := platform.ActorFrom(ctx)
+	rows, err := store.ListUserSessions.Run(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	cur := tokenHash(token)
+	out := make([]SessionInfo, len(rows))
+	for i, r := range rows {
+		out[i] = SessionInfo{ID: r.ID.Int64, CreatedAt: r.CreatedAt.Time, ExpiresAt: r.ExpiresAt.Time, UserAgent: r.UserAgent.String, Current: bytes.Equal(r.TokenHash, cur)}
+	}
+	return out, nil
+}
+
+// EndMySession ends one of the actor's own sessions.
+func (s *Service) EndMySession(ctx context.Context, sessionID int64) error {
+	id, _ := platform.ActorFrom(ctx)
+	return platform.InTx(ctx, func(ctx context.Context) error {
+		n, err := store.DeleteUserSession.Run(ctx, store.DeleteUserSessionParams{ID: pgtype.Int8{Int64: sessionID, Valid: true}, UserID: id})
+		if err != nil {
+			return err
+		}
+		if n == 0 {
+			return platform.ErrNotFound
+		}
+		return s.d.Audit.Record(ctx, "iam.session_ended", map[string]any{"id": sessionID})
+	})
+}
+
+// EndMyOtherSessions ends every session of the actor except the one holding token.
+func (s *Service) EndMyOtherSessions(ctx context.Context, token string) error {
+	id, _ := platform.ActorFrom(ctx)
+	return platform.InTx(ctx, func(ctx context.Context) error {
+		n, err := store.DeleteOtherUserSessions.Run(ctx, store.DeleteOtherUserSessionsParams{UserID: id, TokenHash: tokenHash(token)})
+		if err != nil {
+			return err
+		}
+		return s.d.Audit.Record(ctx, "iam.sessions_ended", map[string]any{"count": n})
+	})
 }

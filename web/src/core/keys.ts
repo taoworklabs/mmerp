@@ -15,6 +15,7 @@ export const coreKeys = {
     meta: () => ['core', 'delegations', 'meta'] as const,
     users: () => ['core', 'delegations', 'users'] as const,
   },
+  sessions: () => ['core', 'me', 'sessions'] as const,
   periodLocks: () => ['core', 'period-locks'] as const,
   codeSeries: () => ['core', 'code-series'] as const,
   settings: (legalEntity: number) => ['core', 'settings', legalEntity] as const,

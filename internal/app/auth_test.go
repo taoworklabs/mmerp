@@ -155,3 +155,37 @@ func TestCheckProducts(t *testing.T) {
 		t.Fatalf("err = %v", err)
 	}
 }
+
+func TestForcedChangeBlocksAPI(t *testing.T) {
+	pool := pgtest.New(t)
+	if err := app.CreateAdmin(t.Context(), pool, "admin", "Quản trị", "correct horse"); err != nil {
+		t.Fatal(err)
+	}
+	h := app.New(env(t, pool, []string{"hrm"}), app.Modules(), nil)
+	admin := &client{t: t, h: h}
+	login := func(c *client, pw string) {
+		rec := c.do("POST", "/api/auth/login", `{"login":"admin","password":"`+pw+`"}`)
+		if rec.Code != 204 {
+			t.Fatalf("login = %d %s", rec.Code, rec.Body)
+		}
+		c.cookie = rec.Result().Cookies()[0]
+	}
+	login(admin, "correct horse")
+	if rec := admin.do("POST", "/api/users/1/password", `{"password":"temporary 1"}`); rec.Code != 204 {
+		t.Fatalf("reset = %d %s", rec.Code, rec.Body)
+	}
+	wantCode(t, admin.do("GET", "/api/me", ""), 401, "unauthenticated")
+
+	login(admin, "temporary 1")
+	wantCode(t, admin.do("GET", "/api/users", ""), 403, "password_change_required")
+	if rec := admin.do("GET", "/api/me", ""); rec.Code != 200 {
+		t.Fatalf("me = %d %s", rec.Code, rec.Body)
+	}
+	wantCode(t, admin.do("POST", "/api/me/password", `{"current":"wrong","next":"another one 1"}`), 422, "wrong_password")
+	if rec := admin.do("POST", "/api/me/password", `{"current":"temporary 1","next":"another one 1"}`); rec.Code != 204 {
+		t.Fatalf("change = %d %s", rec.Code, rec.Body)
+	}
+	if rec := admin.do("GET", "/api/users", ""); rec.Code != 200 {
+		t.Fatalf("users = %d %s", rec.Code, rec.Body)
+	}
+}

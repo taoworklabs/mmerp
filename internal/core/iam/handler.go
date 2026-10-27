@@ -12,7 +12,8 @@ import (
 const cookieName = "session"
 
 type loginInput struct {
-	Body struct {
+	UserAgent string `header:"User-Agent"`
+	Body      struct {
 		Login    string `json:"login" minLength:"1" maxLength:"200"`
 		Password string `json:"password" minLength:"1" maxLength:"200"`
 	}
@@ -26,7 +27,28 @@ type cookieOutput struct {
 	SetCookie http.Cookie `header:"Set-Cookie"`
 }
 
+type changePasswordInput struct {
+	Session string `cookie:"session"`
+	Body    struct {
+		Current string `json:"current" minLength:"1" maxLength:"200"`
+		Next    string `json:"next" minLength:"1" maxLength:"200"`
+	}
+}
+
+type resetPasswordInput struct {
+	ID   int64 `path:"id"`
+	Body struct {
+		Password string `json:"password" minLength:"1" maxLength:"200"`
+	}
+}
+
 type meOutput struct{ Body Me }
+
+type sessionsOutput struct{ Body []SessionInfo }
+
+type endSessionInput struct {
+	ID int64 `path:"id"`
+}
 
 type updateMeInput struct {
 	Body struct {
@@ -44,9 +66,9 @@ func registerHandlers(api huma.API, s *Service) {
 
 	huma.Register(api, huma.Operation{
 		OperationID: "login", Method: http.MethodPost, Path: "/auth/login", Metadata: public,
-		DefaultStatus: http.StatusNoContent, Errors: []int{http.StatusUnauthorized},
+		DefaultStatus: http.StatusNoContent, Errors: []int{http.StatusUnauthorized, http.StatusForbidden, http.StatusTooManyRequests},
 	}, func(ctx context.Context, in *loginInput) (*cookieOutput, error) {
-		token, err := s.Login(ctx, in.Body.Login, in.Body.Password)
+		token, err := s.Login(ctx, in.Body.Login, in.Body.Password, in.UserAgent)
 		if err != nil {
 			return nil, err
 		}
@@ -80,6 +102,34 @@ func registerHandlers(api huma.API, s *Service) {
 		DefaultStatus: http.StatusNoContent,
 	}, func(ctx context.Context, in *updateMeInput) (*struct{}, error) {
 		return nil, s.SetLocale(ctx, in.Body.Locale)
+	})
+
+	huma.Register(api, huma.Operation{
+		OperationID: "change-my-password", Method: http.MethodPost, Path: "/me/password",
+		DefaultStatus: http.StatusNoContent, Errors: []int{http.StatusUnprocessableEntity},
+	}, func(ctx context.Context, in *changePasswordInput) (*struct{}, error) {
+		return nil, s.ChangePassword(ctx, in.Session, in.Body.Current, in.Body.Next)
+	})
+
+	huma.Register(api, huma.Operation{
+		OperationID: "list-my-sessions", Method: http.MethodGet, Path: "/me/sessions",
+	}, func(ctx context.Context, in *sessionInput) (*sessionsOutput, error) {
+		out, err := s.MySessions(ctx, in.Session)
+		return &sessionsOutput{Body: out}, err
+	})
+
+	huma.Register(api, huma.Operation{
+		OperationID: "end-my-session", Method: http.MethodDelete, Path: "/me/sessions/{id}",
+		DefaultStatus: http.StatusNoContent, Errors: []int{http.StatusNotFound},
+	}, func(ctx context.Context, in *endSessionInput) (*struct{}, error) {
+		return nil, s.EndMySession(ctx, in.ID)
+	})
+
+	huma.Register(api, huma.Operation{
+		OperationID: "end-my-other-sessions", Method: http.MethodDelete, Path: "/me/sessions",
+		DefaultStatus: http.StatusNoContent,
+	}, func(ctx context.Context, in *sessionInput) (*struct{}, error) {
+		return nil, s.EndMyOtherSessions(ctx, in.Session)
 	})
 
 	huma.Register(api, huma.Operation{
@@ -119,6 +169,13 @@ type orgUnitsOutput struct{ Body []OrgUnit }
 
 type orgUnitInput struct{ Body OrgUnitInput }
 
+type renameInput struct {
+	ID   int64 `path:"id"`
+	Body struct {
+		Name string `json:"name" maxLength:"200"`
+	}
+}
+
 type emailInput struct {
 	ID   int64 `path:"id"`
 	Body struct {
@@ -142,6 +199,10 @@ type createUserInput struct {
 		Password string `json:"password" minLength:"1" maxLength:"200"`
 	}
 }
+
+type loginPolicyOutput struct{ Body LoginPolicy }
+
+type setLoginPolicyInput struct{ Body LoginPolicy }
 
 type rolesOutput struct{ Body []Role }
 
@@ -194,6 +255,31 @@ func registerAdminHandlers(api huma.API, s *Service) {
 		func(ctx context.Context, in *emailInput) (*struct{}, error) {
 			return nil, s.SetEmail(ctx, in.ID, in.Body.Email)
 		})
+	huma.Register(api, huma.Operation{OperationID: "lock-user", Method: http.MethodPost, Path: "/users/{id}/lock", DefaultStatus: http.StatusNoContent},
+		func(ctx context.Context, in *platform.IDInput) (*struct{}, error) {
+			return nil, s.LockUser(ctx, in.ID)
+		})
+	huma.Register(api, huma.Operation{OperationID: "unlock-user", Method: http.MethodPost, Path: "/users/{id}/unlock", DefaultStatus: http.StatusNoContent},
+		func(ctx context.Context, in *platform.IDInput) (*struct{}, error) {
+			return nil, s.UnlockUser(ctx, in.ID)
+		})
+	huma.Register(api, huma.Operation{OperationID: "reset-user-password", Method: http.MethodPost, Path: "/users/{id}/password", DefaultStatus: http.StatusNoContent},
+		func(ctx context.Context, in *resetPasswordInput) (*struct{}, error) {
+			return nil, s.ResetPassword(ctx, in.ID, in.Body.Password)
+		})
+	huma.Register(api, huma.Operation{OperationID: "rename-user", Method: http.MethodPut, Path: "/users/{id}/name", DefaultStatus: http.StatusNoContent},
+		func(ctx context.Context, in *renameInput) (*struct{}, error) {
+			return nil, s.RenameUser(ctx, in.ID, in.Body.Name)
+		})
+	huma.Register(api, huma.Operation{OperationID: "get-login-policy", Method: http.MethodGet, Path: "/login-policy"},
+		func(ctx context.Context, _ *struct{}) (*loginPolicyOutput, error) {
+			p, err := s.LoginPolicy(ctx)
+			return &loginPolicyOutput{Body: p}, err
+		})
+	huma.Register(api, huma.Operation{OperationID: "set-login-policy", Method: http.MethodPut, Path: "/login-policy", DefaultStatus: http.StatusNoContent},
+		func(ctx context.Context, in *setLoginPolicyInput) (*struct{}, error) {
+			return nil, s.SetLoginPolicy(ctx, in.Body)
+		})
 	huma.Register(api, huma.Operation{OperationID: "list-roles", Method: http.MethodGet, Path: "/roles"},
 		func(ctx context.Context, _ *struct{}) (*rolesOutput, error) {
 			return &rolesOutput{Body: s.Roles()}, nil
@@ -229,6 +315,10 @@ func authenticate(s *Service) func(http.Handler) http.Handler {
 				platform.WriteError(w, &platform.Error{Status: http.StatusInternalServerError, Code: "internal_error"})
 				return
 			}
+			if ok && sess.MustChangePassword && !allowedWhileForced(r) {
+				platform.WriteError(w, &platform.Error{Status: http.StatusForbidden, Code: "password_change_required"})
+				return
+			}
 			if ok {
 				w.Header().Set("X-Authz-Version", sess.AuthzVersion)
 				r = r.WithContext(withScopeCache(platform.WithActor(r.Context(), sess.UserID)))
@@ -236,4 +326,13 @@ func authenticate(s *Service) func(http.Handler) http.Handler {
 			next.ServeHTTP(w, r)
 		})
 	}
+}
+
+// allowedWhileForced lists what a user who must change their password may still call.
+func allowedWhileForced(r *http.Request) bool {
+	switch r.Method + " " + r.URL.Path {
+	case "GET /api/me", "PATCH /api/me", "POST /api/auth/logout", "POST /api/me/password":
+		return true
+	}
+	return false
 }

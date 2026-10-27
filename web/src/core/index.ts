@@ -1,4 +1,4 @@
-import { IconSettings, IconAdjustments, IconHash, IconLock, IconMail, IconPrinter, IconSitemap, IconUserShield } from '@tabler/icons-react'
+import { IconSettings, IconAdjustments, IconHash, IconLock, IconMail, IconPrinter, IconShieldLock, IconSitemap, IconUserShield } from '@tabler/icons-react'
 import { lazy } from 'react'
 import type { AreaManifest } from '@/shared/area'
 
@@ -11,6 +11,7 @@ export const core: AreaManifest = {
   nav: [
     { label: 'core.nav.org_units', path: 'org-units', icon: IconSitemap, permission: 'core.org.manage' },
     { label: 'core.nav.users', path: 'users', icon: IconUserShield, permission: 'core.user.manage' },
+    { label: 'core.nav.login_policy', path: 'login-policy', icon: IconShieldLock, permission: 'core.user.manage' },
     { label: 'core.nav.period_locks', path: 'period-locks', icon: IconLock, permission: 'core.period.manage' },
     { label: 'core.nav.settings', path: 'settings', icon: IconAdjustments, permission: 'core.setting.manage' },
     { label: 'core.nav.mail_server', path: 'mail-server', icon: IconMail, permission: 'core.mail.manage' },
@@ -34,6 +35,9 @@ export const DelegationsPage = lazy(() => import('./pages/DelegationsPage'))
 export const JobsPage = lazy(() => import('./pages/JobsPage'))
 // At the root as well: every user has notifications. Its strings are in meta.
 export const NotificationsPage = lazy(() => import('./pages/NotificationsPage'))
+// At the root as well: every user changes their password and ends their sessions. Strings in meta.
+export const PasswordPage = lazy(() => import('./pages/PasswordPage'))
+export const SessionsPage = lazy(() => import('./pages/SessionsPage'))
 export { notificationKeys } from './notificationKeys'
 // Eager: shown before /me, when nothing else of the app is loaded.
 export { LoginPage } from './pages/LoginPage'

@@ -3,11 +3,11 @@ import { expect, type Page } from '@playwright/test'
 // Tests run in Node; the web tsconfig has no Node types.
 declare const process: { env: Record<string, string | undefined> }
 
-// The install-time administrator; E2E_ADMIN_* point at another one, e.g. on the dev database.
+// The root account created at startup; E2E_ADMIN_* point at another one, e.g. on the dev database.
 export const admin = {
-  login: process.env.E2E_ADMIN_LOGIN ?? 'admin',
+  login: process.env.E2E_ADMIN_LOGIN ?? 'root',
   password: process.env.E2E_ADMIN_PASSWORD ?? 'e2e password',
-  name: process.env.E2E_ADMIN_NAME ?? 'Quản trị viên',
+  name: process.env.E2E_ADMIN_NAME ?? 'root',
 }
 
 export async function signIn(page: Page, password = admin.password) {

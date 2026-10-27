@@ -29,6 +29,22 @@ func (q *Queries) BumpUserAuthz(ctx context.Context, id int64) error {
 	return err
 }
 
+const createRoot = `-- name: CreateRoot :one
+INSERT INTO iam.users (login, name, password_hash, is_root, must_change_password) VALUES ($1, $1, $2, true, true) RETURNING id
+`
+
+type CreateRootParams struct {
+	Login        string
+	PasswordHash string
+}
+
+func (q *Queries) CreateRoot(ctx context.Context, arg CreateRootParams) (int64, error) {
+	row := q.db.QueryRow(ctx, createRoot, arg.Login, arg.PasswordHash)
+	var id int64
+	err := row.Scan(&id)
+	return id, err
+}
+
 const createUser = `-- name: CreateUser :one
 INSERT INTO iam.users (login, name, password_hash) VALUES ($1, $2, $3) RETURNING id
 `
@@ -46,19 +62,39 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (int64, 
 	return id, err
 }
 
+const deleteOtherUserSessions = `-- name: DeleteOtherUserSessions :execrows
+DELETE FROM iam.sessions WHERE user_id = $1 AND token_hash <> $2
+`
+
+type DeleteOtherUserSessionsParams struct {
+	UserID    int64
+	TokenHash []byte
+}
+
+func (q *Queries) DeleteOtherUserSessions(ctx context.Context, arg DeleteOtherUserSessionsParams) (int64, error) {
+	result, err := q.db.Exec(ctx, deleteOtherUserSessions, arg.UserID, arg.TokenHash)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
 const getUser = `-- name: GetUser :one
-SELECT u.id, u.login, u.name, u.email, u.locale, u.authz_version, (SELECT version FROM iam.authz) AS tenant_version
+SELECT u.id, u.login, u.name, u.email, u.locale, u.authz_version, u.must_change_password, u.locked_at, u.is_root, (SELECT version FROM iam.authz) AS tenant_version
 FROM iam.users u WHERE u.id = $1
 `
 
 type GetUserRow struct {
-	ID            int64
-	Login         string
-	Name          string
-	Email         pgtype.Text
-	Locale        pgtype.Text
-	AuthzVersion  int64
-	TenantVersion int64
+	ID                 int64
+	Login              string
+	Name               string
+	Email              pgtype.Text
+	Locale             pgtype.Text
+	AuthzVersion       int64
+	MustChangePassword bool
+	LockedAt           pgtype.Timestamptz
+	IsRoot             bool
+	TenantVersion      int64
 }
 
 func (q *Queries) GetUser(ctx context.Context, id int64) (GetUserRow, error) {
@@ -71,25 +107,46 @@ func (q *Queries) GetUser(ctx context.Context, id int64) (GetUserRow, error) {
 		&i.Email,
 		&i.Locale,
 		&i.AuthzVersion,
+		&i.MustChangePassword,
+		&i.LockedAt,
+		&i.IsRoot,
 		&i.TenantVersion,
 	)
 	return i, err
 }
 
 const getUserByLogin = `-- name: GetUserByLogin :one
-SELECT id, password_hash FROM iam.users WHERE lower(login) = lower($1)
+SELECT id, password_hash, locked_at, is_root FROM iam.users WHERE lower(login) = lower($1)
 `
 
 type GetUserByLoginRow struct {
 	ID           int64
 	PasswordHash string
+	LockedAt     pgtype.Timestamptz
+	IsRoot       bool
 }
 
 func (q *Queries) GetUserByLogin(ctx context.Context, lower string) (GetUserByLoginRow, error) {
 	row := q.db.QueryRow(ctx, getUserByLogin, lower)
 	var i GetUserByLoginRow
-	err := row.Scan(&i.ID, &i.PasswordHash)
+	err := row.Scan(
+		&i.ID,
+		&i.PasswordHash,
+		&i.LockedAt,
+		&i.IsRoot,
+	)
 	return i, err
+}
+
+const getUserPassword = `-- name: GetUserPassword :one
+SELECT password_hash FROM iam.users WHERE id = $1
+`
+
+func (q *Queries) GetUserPassword(ctx context.Context, id int64) (string, error) {
+	row := q.db.QueryRow(ctx, getUserPassword, id)
+	var password_hash string
+	err := row.Scan(&password_hash)
+	return password_hash, err
 }
 
 const listSettings = `-- name: ListSettings :one
@@ -109,14 +166,16 @@ func (q *Queries) ListSettings(ctx context.Context, arg ListSettingsParams) ([]b
 }
 
 const listUsers = `-- name: ListUsers :many
-SELECT id, login, name, email FROM iam.users ORDER BY lower(login)
+SELECT id, login, name, email, locked_at, is_root FROM iam.users ORDER BY lower(login)
 `
 
 type ListUsersRow struct {
-	ID    int64
-	Login string
-	Name  string
-	Email pgtype.Text
+	ID       int64
+	Login    string
+	Name     string
+	Email    pgtype.Text
+	LockedAt pgtype.Timestamptz
+	IsRoot   bool
 }
 
 func (q *Queries) ListUsers(ctx context.Context) ([]ListUsersRow, error) {
@@ -133,6 +192,8 @@ func (q *Queries) ListUsers(ctx context.Context) ([]ListUsersRow, error) {
 			&i.Login,
 			&i.Name,
 			&i.Email,
+			&i.LockedAt,
+			&i.IsRoot,
 		); err != nil {
 			return nil, err
 		}
@@ -142,6 +203,23 @@ func (q *Queries) ListUsers(ctx context.Context) ([]ListUsersRow, error) {
 		return nil, err
 	}
 	return items, nil
+}
+
+const lockUserCredentials = `-- name: LockUserCredentials :one
+SELECT password_hash, locked_at IS NOT NULL AS locked FROM iam.users WHERE id = $1 FOR SHARE
+`
+
+type LockUserCredentialsRow struct {
+	PasswordHash string
+	Locked       interface{}
+}
+
+// Waits for a password change or lock in flight, so a sign-in sees what it committed.
+func (q *Queries) LockUserCredentials(ctx context.Context, id int64) (LockUserCredentialsRow, error) {
+	row := q.db.QueryRow(ctx, lockUserCredentials, id)
+	var i LockUserCredentialsRow
+	err := row.Scan(&i.PasswordHash, &i.Locked)
+	return i, err
 }
 
 const setListSettings = `-- name: SetListSettings :exec
@@ -189,4 +267,47 @@ func (q *Queries) SetUserEmail(ctx context.Context, arg SetUserEmailParams) (int
 		return 0, err
 	}
 	return result.RowsAffected(), nil
+}
+
+const setUserLocked = `-- name: SetUserLocked :exec
+UPDATE iam.users SET locked_at = CASE WHEN $1::boolean THEN now() END, authz_version = authz_version + 1 WHERE id = $2
+`
+
+type SetUserLockedParams struct {
+	Locked bool
+	ID     int64
+}
+
+func (q *Queries) SetUserLocked(ctx context.Context, arg SetUserLockedParams) error {
+	_, err := q.db.Exec(ctx, setUserLocked, arg.Locked, arg.ID)
+	return err
+}
+
+const setUserName = `-- name: SetUserName :exec
+UPDATE iam.users SET name = $2, authz_version = authz_version + 1 WHERE id = $1
+`
+
+type SetUserNameParams struct {
+	ID   int64
+	Name string
+}
+
+func (q *Queries) SetUserName(ctx context.Context, arg SetUserNameParams) error {
+	_, err := q.db.Exec(ctx, setUserName, arg.ID, arg.Name)
+	return err
+}
+
+const setUserPassword = `-- name: SetUserPassword :exec
+UPDATE iam.users SET password_hash = $1, must_change_password = $2, authz_version = authz_version + 1 WHERE id = $3
+`
+
+type SetUserPasswordParams struct {
+	PasswordHash string
+	MustChange   bool
+	ID           int64
+}
+
+func (q *Queries) SetUserPassword(ctx context.Context, arg SetUserPasswordParams) error {
+	_, err := q.db.Exec(ctx, setUserPassword, arg.PasswordHash, arg.MustChange, arg.ID)
+	return err
 }
