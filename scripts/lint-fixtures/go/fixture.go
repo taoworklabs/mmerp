@@ -43,6 +43,8 @@ func Violations(ctx context.Context) {
 	var tx pgx.Tx
 	_, _ = client.InsertTx(ctx, tx, jobArgs{}, nil) // forbidigo: river.Client.InsertTx
 
+	river.AddWorker[jobArgs](river.NewWorkers(), nil) // forbidigo: river.AddWorker
+
 	_ = data.Static("select 1")     // forbidigo: data.Static
 	_ = data.GrantAll()             // forbidigo: data.GrantAll
 	_ = data.GrantUnits([]int64{1}) // forbidigo: data.GrantUnits

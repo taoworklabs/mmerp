@@ -95,6 +95,8 @@ linters:
           msg: start transactions with platform.InTx; it is the only way to open one
         - pattern: ^river\.Client\.Insert(Tx)?$
           msg: enqueue through platform.Enqueue; it applies the product gate and records the requester
+        - pattern: ^river\.AddWorker$
+          msg: register workers with platform.AddWorker; it records whether the kind is a system job
         - pattern: ^data\.(Static|GrantAll|GrantUnits)$
           msg: Static and Grant* are sealed to the data engine and iam; get a Scope from iam.DataScope
   exclusions:
@@ -124,6 +126,9 @@ linters:
       - path: ^internal/platform/|^internal/app/|^cmd/|/pgtest/|/coretest/|\.gen\.go$|/internal/store/[^/]+\.sql\.go$
         linters: [forbidigo]
         text: \.Insert(Tx)?
+      - path: ^internal/platform/
+        linters: [forbidigo]
+        text: river\.AddWorker
       # Static and Grant* additionally stay allowed in core/iam, their only caller.
       - path: ^internal/platform/|^internal/app/|^cmd/|/pgtest/|/coretest/|\.gen\.go$|/internal/store/[^/]+\.sql\.go$|^internal/core/iam/
         linters: [forbidigo]

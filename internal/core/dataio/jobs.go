@@ -83,9 +83,9 @@ func (w *cleanupWorker) Work(ctx context.Context, _ *river.Job[cleanupArgs]) err
 
 func addWorkers(s *Service) func(*river.Workers) {
 	return func(w *river.Workers) {
-		river.AddWorker(w, &importWorker{s: s})
-		river.AddWorker(w, &exportWorker{s: s})
-		river.AddWorker(w, &cleanupWorker{})
+		platform.AddWorker(w, &importWorker{s: s})
+		platform.AddWorker(w, &exportWorker{s: s})
+		platform.AddWorker(w, &cleanupWorker{})
 	}
 }
 

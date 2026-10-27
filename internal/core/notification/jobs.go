@@ -28,5 +28,5 @@ func (w *emailWorker) Work(ctx context.Context, j *river.Job[emailArgs]) error {
 }
 
 func addWorkers(s *Service) func(*river.Workers) {
-	return func(w *river.Workers) { river.AddWorker(w, &emailWorker{s: s}) }
+	return func(w *river.Workers) { platform.AddWorker(w, &emailWorker{s: s}) }
 }
