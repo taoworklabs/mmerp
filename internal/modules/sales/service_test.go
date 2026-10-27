@@ -10,6 +10,7 @@ import (
 	"sync/atomic"
 	"testing"
 
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/taoworklabs/mmerp/internal/core/approval"
 	"github.com/taoworklabs/mmerp/internal/core/coretest"
 	"github.com/taoworklabs/mmerp/internal/core/iam"
@@ -28,6 +29,7 @@ import (
 type fixture struct {
 	t        *testing.T
 	core     *coretest.Core
+	system   *pgxpool.Pool
 	ctx      context.Context
 	admin    context.Context
 	staff    context.Context // staff@A
@@ -51,7 +53,7 @@ func newFixture(t *testing.T) *fixture {
 	ctx, admin, ids, set, rec, num := core.Ctx, core.Admin, core.IAM, core.Setting, core.Record, core.Numbering
 	partners := partner.NewService(partner.Deps{IAM: ids, Record: rec, Audit: core.Audit, Numbering: num})
 	s := sales.NewService(sales.Deps{IAM: ids, Record: rec, Audit: core.Audit, Setting: set, Printing: core.Printing, Numbering: num, Partner: partners})
-	f := &fixture{t: t, core: core, ctx: ctx, admin: admin, set: set, rec: rec, appr: core.Approval, sales: s, num: num, partners: partners}
+	f := &fixture{t: t, core: core, system: core.System, ctx: ctx, admin: admin, set: set, rec: rec, appr: core.Approval, sales: s, num: num, partners: partners}
 	f.c = must(t)(ids.CreateOrgUnit(admin, iam.OrgUnitInput{Kind: "company", Name: "C"}))
 	f.a = must(t)(ids.CreateOrgUnit(admin, iam.OrgUnitInput{ParentID: &f.c, Kind: "department", Name: "A"}))
 	f.b = must(t)(ids.CreateOrgUnit(admin, iam.OrgUnitInput{ParentID: &f.c, Kind: "department", Name: "B"}))
@@ -783,11 +785,14 @@ func TestQuoteExpiredOnlyWhenPostedAndNotOrdered(t *testing.T) {
 	draft := must(t)(f.sales.CreateQuote(f.staff, sales.NewDoc{RequestID: newRequest(), DocFields: old}))
 	posted := must(t)(f.sales.CreateQuote(f.staff, sales.NewDoc{RequestID: newRequest(), DocFields: old}))
 	f.check(f.move(f.staff, "sales.quote", posted, record.Posted))
-	// Valid through today, so it can be ordered; it is never expired.
+	// Ordered while valid, then its validity passes.
 	live := f.fields(todayOf(t, f))
 	ordered := must(t)(f.sales.CreateQuote(f.staff, sales.NewDoc{RequestID: newRequest(), DocFields: live}))
 	f.check(f.move(f.staff, "sales.quote", ordered, record.Posted))
 	must(t)(f.order(f.staff, ordered))
+	if _, err := f.system.Exec(f.ctx, `UPDATE sales.headers SET valid_until = '2026-01-31' WHERE id = $1`, ordered); err != nil {
+		t.Fatal(err)
+	}
 
 	want := map[int64]bool{draft: false, posted: true, ordered: false}
 	list, err := f.sales.Quotes(f.admin, sales.DocFilter{Sort: "-date", Paging: platform.Paging{Page: 1, PageSize: 100}})
