@@ -479,8 +479,13 @@ func TestRenameUser(t *testing.T) {
 	} else if e, ok := errors.AsType[*platform.Error](err); !ok || e.Code != "invalid_request" {
 		t.Fatalf("blank name: %v", err)
 	}
+	tok := must[string](t)(s.Login(ctx, "an", "right password", ""))
+	before, _, _ := s.Authenticate(ctx, tok)
 	if err := s.RenameUser(ctx, id, " Anh "); err != nil {
 		t.Fatal(err)
+	}
+	if after, _, _ := s.Authenticate(ctx, tok); after.AuthzVersion == before.AuthzVersion {
+		t.Fatal("rename did not bump authz version")
 	}
 	if u := must[iam.User](t)(s.User(ctx, id)); u.Name != "Anh" {
 		t.Fatalf("name = %q", u.Name)
@@ -580,6 +585,22 @@ func TestMySessions(t *testing.T) {
 	}
 	if _, ok, _ := s.Authenticate(ctx, tb); ok {
 		t.Fatal("session B still valid")
+	}
+}
+
+func TestChangePasswordWeakDoesNotLock(t *testing.T) {
+	s, ctx := setup(t)
+	id := must[int64](t)(s.CreateUser(ctx, "an", "An", "right password"))
+	token := must[string](t)(s.Login(ctx, "an", "right password", ""))
+	me := platform.WithActor(ctx, id)
+	for range 5 {
+		err := s.ChangePassword(me, token, "right password", "short")
+		if e, ok := errors.AsType[*platform.Error](err); !ok || e.Code != "password_weak" {
+			t.Fatalf("weak next: %v", err)
+		}
+	}
+	if _, err := s.Login(ctx, "an", "right password", ""); err != nil {
+		t.Fatalf("login after weak tries: %v", err)
 	}
 }
 
@@ -721,7 +742,12 @@ func TestEnsureRootRefusesPlainRoot(t *testing.T) {
 	pool := pgtest.New(t)
 	s, _, _ := setupWithPool(t, pool)
 	sys := platform.WithDB(t.Context(), pool)
-	must[int64](t)(s.CreateAdmin(sys, "Root", "Someone", "long enough"))
+	if _, err := s.CreateAdmin(sys, "Root", "Someone", "long enough"); !errors.Is(err, iam.ErrLoginTaken) {
+		t.Fatalf("CreateAdmin root: %v", err)
+	}
+	if _, err := pgtest.System(t, pool).Exec(sys, `INSERT INTO iam.users (login, name, password_hash) VALUES ('Root', 'Someone', 'x')`); err != nil {
+		t.Fatal(err)
+	}
 	if err := s.EnsureRoot(sys, "long enough"); err == nil {
 		t.Fatal("a plain user named root became the root")
 	}

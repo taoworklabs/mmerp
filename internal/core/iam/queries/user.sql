@@ -30,7 +30,7 @@ UPDATE iam.users SET email = $2 WHERE id = $1;
 UPDATE iam.users SET locked_at = CASE WHEN @locked::boolean THEN now() END, authz_version = authz_version + 1 WHERE id = @id;
 
 -- name: SetUserName :exec
-UPDATE iam.users SET name = $2 WHERE id = $1;
+UPDATE iam.users SET name = $2, authz_version = authz_version + 1 WHERE id = $1;
 
 -- name: BumpUserAuthz :exec
 UPDATE iam.users SET authz_version = authz_version + 1 WHERE id = $1;

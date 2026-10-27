@@ -267,7 +267,7 @@ func (q *Queries) SetUserLocked(ctx context.Context, arg SetUserLockedParams) er
 }
 
 const setUserName = `-- name: SetUserName :exec
-UPDATE iam.users SET name = $2 WHERE id = $1
+UPDATE iam.users SET name = $2, authz_version = authz_version + 1 WHERE id = $1
 `
 
 type SetUserNameParams struct {

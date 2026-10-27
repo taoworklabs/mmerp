@@ -70,8 +70,11 @@ func (s *Service) CreateUser(ctx context.Context, login, name, password string) 
 	return id, err
 }
 
-// CreateAdmin adds the first administrator at install time, with the core admin role tenant-wide.
+// CreateAdmin adds an administrator with the core admin role tenant-wide, without a permission check.
 func (s *Service) CreateAdmin(ctx context.Context, login, name, password string) (int64, error) {
+	if strings.EqualFold(login, RootLogin) {
+		return 0, ErrLoginTaken
+	}
 	var id int64
 	err := platform.InTx(ctx, func(ctx context.Context) error {
 		var err error
@@ -438,6 +441,10 @@ func (s *Service) ChangePassword(ctx context.Context, token, current, next strin
 	if err != nil {
 		return notFound(err)
 	}
+	// Before the reservation: a weak next must not burn lockout attempts.
+	if err := s.checkPassword(ctx, u.Login, u.Name, next); err != nil {
+		return err
+	}
 	// Shares the sign-in counter, so a hijacked session cannot guess the password unthrottled.
 	if err := s.reserveAttempt(ctx, u.Login); err != nil {
 		return err
@@ -451,9 +458,6 @@ func (s *Service) ChangePassword(ctx context.Context, token, current, next strin
 		return ErrWrongPassword
 	}
 	return platform.InTx(ctx, func(ctx context.Context) error {
-		if err := s.checkPassword(ctx, u.Login, u.Name, next); err != nil {
-			return err
-		}
 		if err := s.clearFailures(ctx, u.Login); err != nil {
 			return err
 		}

@@ -9,6 +9,7 @@
   "shared.error.unexpected_error": "Something went wrong. Try again in a few minutes; if it persists, contact your administrator.",
   "shared.error.internal_error": "The server hit an error. Try again in a few minutes; if it persists, contact your administrator.",
   "shared.error.network_error": "Cannot reach the server. Check the network and try again.",
+  "shared.error.login_temporarily_locked": "Too many wrong attempts. Try again later.",
   "shared.error.forbidden": "You do not have permission for this action.",
   "shared.error.product_not_enabled": "This product is turned off: data can only be viewed and exported.",
   "shared.error.invalid_request": "The submitted data is not valid. Check the fields you entered.",

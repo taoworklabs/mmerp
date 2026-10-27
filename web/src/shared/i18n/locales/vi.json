@@ -9,6 +9,7 @@
   "shared.error.unexpected_error": "Có lỗi xảy ra. Thử lại sau ít phút; nếu vẫn lỗi, liên hệ quản trị hệ thống.",
   "shared.error.internal_error": "Máy chủ gặp lỗi. Thử lại sau ít phút; nếu vẫn lỗi, liên hệ quản trị hệ thống.",
   "shared.error.network_error": "Không kết nối được tới máy chủ. Kiểm tra mạng rồi thử lại.",
+  "shared.error.login_temporarily_locked": "Nhập sai quá nhiều lần. Vui lòng thử lại sau.",
   "shared.error.forbidden": "Không có quyền thực hiện thao tác này.",
   "shared.error.product_not_enabled": "Phân hệ đang tắt: chỉ xem và xuất được dữ liệu.",
   "shared.error.invalid_request": "Dữ liệu gửi đi không hợp lệ. Kiểm tra lại các trường đã nhập.",
