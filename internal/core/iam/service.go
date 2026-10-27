@@ -117,7 +117,7 @@ func (s *Service) Login(ctx context.Context, login, password, userAgent string) 
 		if err := store.DeleteExpiredSessions.Run(ctx, u.ID); err != nil {
 			return err
 		}
-		if err := store.CreateSession.Run(ctx, store.CreateSessionParams{TokenHash: tokenHash(token), UserID: u.ID, UserAgent: pgtype.Text{String: truncateRunes(userAgent, 300), Valid: true}}); err != nil {
+		if err := store.CreateSession.Run(ctx, store.CreateSessionParams{TokenHash: tokenHash(token), UserID: u.ID, UserAgent: pgtype.Text{String: truncateRunes(strings.ToValidUTF8(userAgent, ""), 300), Valid: true}}); err != nil {
 			return err
 		}
 		if err := s.clearFailures(ctx, login); err != nil {

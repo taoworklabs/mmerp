@@ -5,6 +5,7 @@ import (
 	"errors"
 	"reflect"
 	"slices"
+	"strings"
 	"sync"
 	"testing"
 
@@ -618,5 +619,17 @@ func TestPasswordAuditAndResetPolicy(t *testing.T) {
 		if err := platform.DBFrom(ctx).QueryRow(ctx, `SELECT count(*) FROM audit.log WHERE action = $1`, a).Scan(&n); err != nil || n != 1 {
 			t.Fatalf("%s rows = %d (%v)", a, n, err)
 		}
+	}
+}
+
+func TestLoginUserAgentStored(t *testing.T) {
+	s, ctx := setup(t)
+	id := must[int64](t)(s.CreateUser(ctx, "an", "An", "right password"))
+	me := platform.WithActor(ctx, id)
+	must[string](t)(s.Login(ctx, "an", "right password", "bad\xff\xfeua"))
+	must[string](t)(s.Login(ctx, "an", "right password", strings.Repeat("é", 400)))
+	list := must[[]iam.SessionInfo](t)(s.MySessions(me, ""))
+	if len(list) != 2 || list[0].UserAgent != strings.Repeat("é", 300) || list[1].UserAgent != "badua" {
+		t.Fatalf("user agents = %+v", list)
 	}
 }
