@@ -1,7 +1,7 @@
 import { lazy, type ComponentType } from 'react'
 import { createBrowserRouter, Navigate, type RouteObject } from 'react-router'
 import i18n from 'i18next'
-import { DelegationsPage, HomePage, InboxPage, JobsPage, nextFromLocation, NotificationsPage } from '@/core'
+import { DelegationsPage, HomePage, InboxPage, JobsPage, nextFromLocation, NotificationsPage, PasswordPage, SessionsPage } from '@/core'
 import type { AreaManifest } from '@/shared/area'
 import { addTranslations, type Locale } from '@/shared/i18n'
 import { NotFoundPage } from '@/shared/ui/states'
@@ -27,6 +27,8 @@ const own: RouteObject[] = [
   { path: 'delegations', Component: DelegationsPage },
   { path: 'jobs', Component: JobsPage },
   { path: 'notifications', Component: NotificationsPage },
+  { path: 'account/password', Component: PasswordPage },
+  { path: 'account/sessions', Component: SessionsPage },
 ]
 
 export function createAppRouter(areas: AreaManifest[]) {

@@ -1,10 +1,10 @@
-import { ActionIcon, AppShell, Box, Burger, Group, Indicator, Menu, NavLink, Stack, Text, ThemeIcon, Tooltip, UnstyledButton, cx, useDisclosure, useLocalStorage, useMediaQuery } from '@mmerp/ui'
-import { IconBell, IconBuildingSkyscraper, IconCheck, IconHourglass, IconInbox, IconChevronDown, IconChevronRight, IconLayoutSidebarLeftCollapse, IconLayoutSidebarLeftExpand, IconLogout } from '@tabler/icons-react'
+import { ActionIcon, AppShell, Box, Button, Burger, Group, Indicator, Menu, NavLink, Stack, Text, ThemeIcon, Tooltip, UnstyledButton, cx, useDisclosure, useLocalStorage, useMediaQuery } from '@mmerp/ui'
+import { IconBell, IconBuildingSkyscraper, IconCheck, IconHourglass, IconInbox, IconChevronDown, IconChevronRight, IconLayoutSidebarLeftCollapse, IconLayoutSidebarLeftExpand, IconKey, IconDevices, IconLogout } from '@tabler/icons-react'
 import { useQuery } from '@tanstack/react-query'
 import { Suspense, useEffect, useState, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Link, Outlet, useLocation } from 'react-router'
-import { notificationKeys } from '@/core'
+import { Link, Outlet, useLocation, useNavigate } from 'react-router'
+import { notificationKeys, PasswordPage } from '@/core'
 import { api, unwrap } from '@/shared/api/core'
 import type { AreaManifest, NavItem } from '@/shared/area'
 import { can, useMe } from '@/shared/auth/me'
@@ -19,9 +19,35 @@ import classes from './AppLayout.module.css'
 const join = (base: string, path: string) => `${base.replace(/\/$/, '')}/${path}`
 const inArea = (a: AreaManifest, pathname: string) => pathname === a.basePath || pathname.startsWith(`${a.basePath}/`)
 
+// A temporary password must be changed first: nothing else of the app answers until then.
 export function AppLayout({ areas }: { areas: AreaManifest[] }) {
+  return useMe().must_change_password ? <ForcedChange /> : <Shell areas={areas} />
+}
+
+function ForcedChange() {
+  const { t } = useTranslation()
+  return (
+    <AppShell
+      header={
+        <Group className={classes.bar} justify="space-between" wrap={false}>
+          <Text weight={600}>{t('shared.app.title')}</Text>
+          <Button variant="subtle" color="gray" leftSection={<IconLogout {...icon.button} />} onClick={() => void unwrap(api.POST('/auth/logout')).then(endSession)}>
+            {t('core.shell.logout')}
+          </Button>
+        </Group>
+      }
+    >
+      <Suspense fallback={<PageSkeleton />}>
+        <PasswordPage />
+      </Suspense>
+    </AppShell>
+  )
+}
+
+function Shell({ areas }: { areas: AreaManifest[] }) {
   const { t, i18n } = useTranslation()
   const me = useMe()
+  const navigate = useNavigate()
   const { pathname } = useLocation()
   const area = areas.find((a) => inArea(a, pathname))
   // Notifications, inbox, delegations and jobs open inside the current area; from home, at the root.
@@ -161,6 +187,13 @@ export function AppLayout({ areas }: { areas: AreaManifest[] }) {
                     {t(`shared.locale.${l}`)}
                   </Menu.Item>
                 ))}
+                <Menu.Separator />
+                <Menu.Item leftSection={<IconKey {...icon.text} />} onClick={() => void navigate(own('account/password'))}>
+                  {t('core.shell.password')}
+                </Menu.Item>
+                <Menu.Item leftSection={<IconDevices {...icon.text} />} onClick={() => void navigate(own('account/sessions'))}>
+                  {t('core.shell.sessions')}
+                </Menu.Item>
                 <Menu.Separator />
                 <Menu.Item leftSection={<IconLogout {...icon.text} />} onClick={() => void logout()}>
                   {t('core.shell.logout')}

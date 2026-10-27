@@ -34,6 +34,9 @@ export const DelegationsPage = lazy(() => import('./pages/DelegationsPage'))
 export const JobsPage = lazy(() => import('./pages/JobsPage'))
 // At the root as well: every user has notifications. Its strings are in meta.
 export const NotificationsPage = lazy(() => import('./pages/NotificationsPage'))
+// At the root as well: every user changes their password and ends their sessions. Strings in meta.
+export const PasswordPage = lazy(() => import('./pages/PasswordPage'))
+export const SessionsPage = lazy(() => import('./pages/SessionsPage'))
 export { notificationKeys } from './notificationKeys'
 // Eager: shown before /me, when nothing else of the app is loaded.
 export { LoginPage } from './pages/LoginPage'

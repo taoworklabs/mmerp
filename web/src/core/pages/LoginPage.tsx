@@ -28,9 +28,11 @@ export function LoginPage() {
       setError(
         code === 'invalid_credentials'
           ? t('core.login.invalid_credentials')
-          : code === 'login_temporarily_locked'
-            ? t('core.login.temporarily_locked')
-            : errorText(t, err),
+          : code === 'account_locked'
+            ? t('core.login.account_locked')
+            : code === 'login_temporarily_locked'
+              ? t('core.login.temporarily_locked')
+              : errorText(t, err),
       )
       setBusy(false)
       return
