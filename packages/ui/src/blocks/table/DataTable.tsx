@@ -1,4 +1,4 @@
-import { cloneElement, Fragment, useCallback, useRef, useState } from 'react'
+import { cloneElement, Fragment, useCallback, useEffect, useRef, useState } from 'react'
 import type * as React from 'react'
 import type { KeyboardEvent, PointerEvent, ReactElement, ReactNode, RefObject } from 'react'
 import { useElementSize } from '../../hooks/useElementSize.ts'
@@ -106,6 +106,12 @@ export function DataTable<T>({
   const all = !!selection && keys.length > 0 && keys.every((k) => selection.selected.has(k))
   const some = !!selection && keys.some((k) => selection.selected.has(k))
 
+  // The parent applies a sort a render later; a click before then toggles from the one asked for.
+  const asked = useRef(sort)
+  useEffect(() => {
+    asked.current = sort
+  }, [sort])
+
   if (!wide || cards) {
     return (
       <Cards
@@ -126,7 +132,11 @@ export function DataTable<T>({
     )
   }
 
-  const head = (rowSpan: number) => ({ columns, sort, onSort, onResize, labels, rowSpan })
+  const toggleSort = onSort && ((key: string) => {
+    asked.current = sortState(asked.current, key) === 'ascending' ? `-${key}` : key
+    onSort(asked.current)
+  })
+  const head = (rowSpan: number) => ({ columns, sort, onToggle: toggleSort, onResize, labels, rowSpan })
   const vars: StyleVars = { ...tableAppearanceVars(appearance, true), ...style, '--mmerp-head-height': `${thead.height}px`, '--mmerp-foot-height': `${tfoot.height}px` }
 
   return (
@@ -233,13 +243,13 @@ type HeaderProps<T> = {
   index: number
   columns: Column<T>[]
   sort?: string
-  onSort?: (s: string) => void
+  onToggle?: (key: string) => void
   onResize?: (key: string, width: number) => void
   labels: DataTableLabels
   rowSpan?: number
 }
 
-function Header<T>({ column: c, index, columns, sort, onSort, onResize, labels, rowSpan }: HeaderProps<T>) {
+function Header<T>({ column: c, index, columns, sort, onToggle, onResize, labels, rowSpan }: HeaderProps<T>) {
   const ref = useRef<HTMLTableCellElement>(null)
   return (
     <Table.Th
@@ -252,7 +262,7 @@ function Header<T>({ column: c, index, columns, sort, onSort, onResize, labels, 
       className={cx(c.strong && styles.strong, bandStart(columns, index) && styles.bandStart)}
       aria-sort={sortState(sort, c.key)}
     >
-      {c.sortable && onSort ? <SortButton column={c} sort={sort} onSort={onSort} /> : c.header}
+      {c.sortable && onToggle ? <SortButton column={c} sort={sort} onToggle={onToggle} /> : c.header}
       {onResize && <ResizeHandle column={c} cell={ref} onResize={onResize} labels={labels} />}
     </Table.Th>
   )
@@ -382,11 +392,11 @@ function sortState(sort: string | undefined, key: string) {
   return undefined
 }
 
-function SortButton<T>({ column, sort, onSort }: { column: Column<T>; sort?: string; onSort: (s: string) => void }) {
+function SortButton<T>({ column, sort, onToggle }: { column: Column<T>; sort?: string; onToggle: (key: string) => void }) {
   const state = sortState(sort, column.key)
   const Icon = state === 'ascending' ? ArrowUpIcon : state === 'descending' ? ArrowDownIcon : ArrowsSortIcon
   return (
-    <UnstyledButton onClick={() => onSort(state === 'ascending' ? `-${column.key}` : column.key)} className={styles.sortButton} data-sorted={state ? '' : undefined}>
+    <UnstyledButton onClick={() => onToggle(column.key)} className={styles.sortButton} data-sorted={state ? '' : undefined}>
       {column.header}
       <Icon />
     </UnstyledButton>
