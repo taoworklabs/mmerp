@@ -32,7 +32,5 @@ No sensitive fields yet.
 ## Consequences
 
 - The frontend treats ids as numbers. JSON keeps integers exact up to 2^53, enough for every table.
-- No brute-force protection yet (temporary lockout after repeated failures). It must be added before the app is exposed outside the organisation's internal network.
-
-Changed: temporary lockout, password policy and account locking arrived with [ADR-0041](./0041-account-lifecycle-and-root.md).
+- No brute-force protection yet (temporary lockout after repeated failures). It must be added before the app is exposed outside the organisation's internal network. (Changed: temporary lockout, password policy and account locking arrived with [ADR-0041](./0041-account-lifecycle-and-root.md).)
 - The cookie has the `Secure` flag, so outside `localhost` the app must run behind HTTPS. The on-premise installation docs must say so.
