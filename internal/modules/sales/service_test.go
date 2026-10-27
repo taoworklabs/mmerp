@@ -10,7 +10,6 @@ import (
 	"sync/atomic"
 	"testing"
 
-	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/taoworklabs/mmerp/internal/core/approval"
 	"github.com/taoworklabs/mmerp/internal/core/coretest"
 	"github.com/taoworklabs/mmerp/internal/core/iam"
@@ -29,7 +28,7 @@ import (
 type fixture struct {
 	t        *testing.T
 	core     *coretest.Core
-	system   *pgxpool.Pool
+	system   platform.Conn
 	ctx      context.Context
 	admin    context.Context
 	staff    context.Context // staff@A
