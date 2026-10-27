@@ -60,6 +60,8 @@ export const ReadOnly: Story = {
   render: (args) => <Controlled {...args} />,
   play: async ({ canvasElement }) => {
     expect(within(canvasElement).queryByRole('button', { name: 'Bỏ chọn' })).not.toBeInTheDocument()
+    // It does not open, so no chevron says it would.
+    expect(within(canvasElement).getByRole('combobox').querySelector('svg')).toBeNull()
   },
 }
 

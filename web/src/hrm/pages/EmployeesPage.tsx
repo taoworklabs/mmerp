@@ -1,4 +1,4 @@
-import { Button, Group } from '@mmerp/ui'
+import { Button } from '@mmerp/ui'
 import { IconCircleDot, IconFileImport, IconPlus } from '@tabler/icons-react'
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { useState } from 'react'
@@ -64,7 +64,7 @@ export function EmployeesPage() {
       title={t('hrm.employees.title')}
       description={t('hrm.employees.description')}
       action={
-        <Group gap="xs">
+        <>
           {actions.includes('import_leave_balances') && (
             <Button variant="default" leftSection={<IconFileImport {...icon.button} />} onClick={() => setImporting(true)}>
               {t('hrm.employees.import_balances')}
@@ -75,7 +75,7 @@ export function EmployeesPage() {
               {t('hrm.employees.create')}
             </Button>
           )}
-        </Group>
+        </>
       }
       filters={
         <>

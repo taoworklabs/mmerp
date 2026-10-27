@@ -61,8 +61,9 @@ export const looks: Record<ColumnKind, Look> = {
 }
 export const look = <T,>(c: Column<T>) => looks[c.kind ?? 'text']
 
-// A column the user has not resized stays on one line unless it is text; so does the first column
-// while a text column after it can wrap instead.
+// A column the user has not resized stays on one line unless it is text. The first column is
+// sticky and on one line anyway; marking it fit too, while a text column after it can give room
+// instead, keeps a block inside it (a name with an avatar) at its full width rather than truncated.
 export function fits<T>(columns: Column<T>[], i: number) {
   const c = columns[i]
   if (!c || c.width !== undefined) return false

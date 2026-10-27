@@ -42,10 +42,13 @@ export const Default: Story = {
     const chevron = canvasElement.querySelector<HTMLElement>('[data-combobox-chevron]')
     expect(chevron).not.toBeNull()
     expect(chevron!.querySelector('svg')).not.toBeNull()
+    // Out of the tab order: the input is the control for keyboards.
+    expect(chevron).toHaveAttribute('tabindex', '-1')
     await userEvent.click(chevron!)
     await expect(await within(document.body).findByRole('option', { name: 'Đặng Thị Bích' })).toBeVisible()
     const input = within(canvasElement).getByRole('combobox', { name: 'Người phụ trách' })
     expect(input).not.toHaveAttribute('readonly')
+    expect(document.activeElement).toBe(input)
   },
 }
 
@@ -67,6 +70,7 @@ export const ReadOnly: Story = {
   render: (args) => <Controlled {...args} />,
   play: async ({ canvasElement }) => {
     expect(within(canvasElement).queryByRole('button', { name: 'Bỏ chọn' })).not.toBeInTheDocument()
+    expect(canvasElement.querySelector('[data-combobox-chevron]')).toBeNull()
   },
 }
 

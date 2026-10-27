@@ -60,20 +60,21 @@ describe('DataTable', () => {
       { key: 'key', header: 'Tham số', role: 'title', render: (p) => <span data-testid="key">{p.key}</span> },
       { key: 'value', header: 'Giá trị', role: 'meta', kind: 'number', render: (p) => p.value },
     ]
-    const value = Array.from({ length: 8 }, (_, i) => `đến ${i + 1}.000.000: ${i + 5}%`).join(' · ')
+    // Only the identifier is too wide for the frame: the table overflows only if it stays on one line.
+    const key = Array.from({ length: 6 }, () => 'Biểu thuế thu nhập cá nhân lũy tiến').join(' ')
     const { container } = await render(
       <div style={{ width: 600 }}>
-        <DataTable columns={params} rows={[{ key: 'Biểu thuế thu nhập cá nhân lũy tiến', value }]} rowKey={(p) => p.key} label="Tham số" labels={labels} />
+        <DataTable columns={params} rows={[{ key, value: '5%' }]} rowKey={(p) => p.key} label="Tham số" labels={labels} />
       </div>,
     )
 
     await page.viewport(1300, 900)
     await expect.poll(() => container.querySelector('[data-testid="key"]')).not.toBeNull()
-    const key = container.querySelector('[data-testid="key"]') as HTMLElement
-    const lineHeight = parseFloat(getComputedStyle(key).lineHeight)
-    expect(key.getBoundingClientRect().height).toBeLessThanOrEqual(lineHeight)
+    const cell = container.querySelector('[data-testid="key"]') as HTMLElement
+    const lineHeight = parseFloat(getComputedStyle(cell).lineHeight)
+    expect(cell.getBoundingClientRect().height).toBeLessThanOrEqual(lineHeight)
     const viewport = container.querySelector('[data-scroll-area-viewport]') as HTMLElement
-    expect(viewport.scrollWidth).toBeGreaterThan(viewport.clientWidth)
+    expect(viewport.scrollWidth).toBeGreaterThan(viewport.clientWidth + 600)
   })
 
   it('renders card lines as blocks below 64em, so a column that renders a block stays valid HTML', async () => {

@@ -103,9 +103,12 @@ export function Select({
             {...props}
           >
             <BaseSelect.Value placeholder={placeholder} style={valueStyle} />
-            <BaseSelect.Icon className={textInputStyles.section}>
-              <ChevronIcon />
-            </BaseSelect.Icon>
+            {/* A read-only select does not open, so nothing hints that it would. */}
+            {!readOnly && (
+              <BaseSelect.Icon className={textInputStyles.section}>
+                <ChevronIcon />
+              </BaseSelect.Icon>
+            )}
           </BaseSelect.Trigger>
           <BaseSelect.Portal>
             <BaseSelect.Positioner sideOffset={4} className={optionStyles.positioner}>
