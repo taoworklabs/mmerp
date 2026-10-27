@@ -66,6 +66,7 @@
   "shared.error.org_unit_misplaced": "Vị trí không hợp lệ: pháp nhân và nhóm không nằm dưới pháp nhân; chi nhánh và phòng ban phải nằm dưới một pháp nhân.",
   "shared.error.legal_fields_company_only": "Mã số thuế, tên pháp lý và địa chỉ chỉ dành cho pháp nhân.",
   "shared.error.login_taken": "Tên đăng nhập đã được dùng.",
+  "shared.error.root_protected": "Không thể làm việc này với tài khoản root.",
   "shared.error.password_weak": "Mật khẩu chưa đạt yêu cầu.",
   "shared.error.wrong_password": "Mật khẩu hiện tại không đúng.",
   "shared.error.password_change_required": "Bạn cần đổi mật khẩu trước khi tiếp tục.",

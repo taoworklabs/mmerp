@@ -7,6 +7,7 @@ import (
 	"crypto/rand"
 	"crypto/sha256"
 	"errors"
+	"fmt"
 	"maps"
 	"net/http"
 	"net/mail"
@@ -55,6 +56,9 @@ func (s *Service) CreateUser(ctx context.Context, login, name, password string) 
 	if err := s.require(ctx, PermManageUsers); err != nil {
 		return 0, err
 	}
+	if strings.EqualFold(login, RootLogin) {
+		return 0, ErrLoginTaken
+	}
 	var id int64
 	err := platform.InTx(ctx, func(ctx context.Context) error {
 		var err error
@@ -81,6 +85,81 @@ func (s *Service) CreateAdmin(ctx context.Context, login, name, password string)
 		return s.d.Audit.Record(ctx, "iam.admin_created", map[string]any{"id": id, "login": login})
 	})
 	return id, err
+}
+
+// RootLogin is the login of the root account, always present once the server has started.
+const RootLogin = "root"
+
+// EnsureRoot creates the root account on first start, with password, which it must change
+// at first sign-in. It does nothing once the root exists.
+func (s *Service) EnsureRoot(ctx context.Context, password string) error {
+	return platform.InTx(ctx, func(ctx context.Context) error {
+		u, err := store.GetUserByLogin.Run(ctx, RootLogin)
+		switch {
+		case err == nil && u.IsRoot:
+			return nil
+		case err == nil:
+			return errors.New("iam: a user named root exists but is not the root account")
+		case !errors.Is(err, pgx.ErrNoRows):
+			return err
+		case password == "":
+			return errors.New("ROOT_PASSWORD must be set to create the root account")
+		}
+		if err := s.checkPassword(ctx, RootLogin, RootLogin, password); err != nil {
+			return plainPasswordError("ROOT_PASSWORD", err)
+		}
+		id, err := store.CreateRoot.Run(ctx, store.CreateRootParams{Login: RootLogin, PasswordHash: hashPassword(password)})
+		if err != nil {
+			return err
+		}
+		if _, err := store.GrantRole.Run(ctx, store.GrantRoleParams{UserID: id, Product: "core", Role: "admin"}); err != nil {
+			return err
+		}
+		// No actor: the server acts at startup, not a user.
+		return s.d.Audit.Record(ctx, "iam.root_created", map[string]any{"id": id})
+	})
+}
+
+// RecoverPassword sets a user's password from the command line, without a permission
+// check, and lifts every lock and forced change so the user can sign in at once.
+func (s *Service) RecoverPassword(ctx context.Context, login, password string) error {
+	return platform.InTx(ctx, func(ctx context.Context) error {
+		u, err := store.GetUserByLogin.Run(ctx, login)
+		if errors.Is(err, pgx.ErrNoRows) {
+			return fmt.Errorf("no user with login %q", login)
+		}
+		if err != nil {
+			return err
+		}
+		full, err := store.GetUser.Run(ctx, u.ID)
+		if err != nil {
+			return err
+		}
+		if err := s.checkPassword(ctx, full.Login, full.Name, password); err != nil {
+			return plainPasswordError("password", err)
+		}
+		if err := store.SetUserPassword.Run(ctx, store.SetUserPasswordParams{ID: u.ID, PasswordHash: hashPassword(password)}); err != nil {
+			return err
+		}
+		if err := store.SetUserLocked.Run(ctx, store.SetUserLockedParams{ID: u.ID, Locked: false}); err != nil {
+			return err
+		}
+		if err := s.clearFailures(ctx, full.Login); err != nil {
+			return err
+		}
+		if err := store.DeleteUserSessions.Run(ctx, u.ID); err != nil {
+			return err
+		}
+		return s.d.Audit.Record(ctx, "iam.password_recovered", map[string]any{"id": u.ID, "login": full.Login})
+	})
+}
+
+// plainPasswordError spells out password_weak for a command-line reader.
+func plainPasswordError(what string, err error) error {
+	if pe, ok := errors.AsType[*platform.Error](err); ok && pe.Code == "password_weak" {
+		return fmt.Errorf("%s is too weak: breaks %v (minimum length %v)", what, pe.Params["rules"], pe.Params["min"])
+	}
+	return err
 }
 
 func (s *Service) createUser(ctx context.Context, login, name, password string) (int64, error) {
@@ -248,7 +327,7 @@ func (s *Service) Users(ctx context.Context) ([]User, error) {
 	rows, err := store.ListUsers.Run(ctx)
 	out := make([]User, len(rows))
 	for i, r := range rows {
-		out[i] = User{ID: r.ID, Login: r.Login, Name: r.Name, Email: platform.TextPtr(r.Email), Locked: r.LockedAt.Valid}
+		out[i] = User{ID: r.ID, Login: r.Login, Name: r.Name, Email: platform.TextPtr(r.Email), Locked: r.LockedAt.Valid, Root: r.IsRoot}
 	}
 	return out, err
 }
@@ -259,7 +338,7 @@ func (s *Service) User(ctx context.Context, id int64) (User, error) {
 		return User{}, err
 	}
 	u, err := store.GetUser.Run(ctx, id)
-	return User{ID: u.ID, Login: u.Login, Name: u.Name, Email: platform.TextPtr(u.Email), Locked: u.LockedAt.Valid}, notFound(err)
+	return User{ID: u.ID, Login: u.Login, Name: u.Name, Email: platform.TextPtr(u.Email), Locked: u.LockedAt.Valid, Root: u.IsRoot}, notFound(err)
 }
 
 var errEmail = &platform.Error{Status: http.StatusUnprocessableEntity, Code: "invalid_request", Params: map[string]any{"fields": []string{"email"}}}
@@ -330,6 +409,9 @@ func (s *Service) setLocked(ctx context.Context, id int64, locked bool) error {
 		if err != nil {
 			return notFound(err)
 		}
+		if locked && u.IsRoot {
+			return ErrRootProtected
+		}
 		if u.LockedAt.Valid == locked {
 			return nil
 		}
@@ -394,6 +476,9 @@ func (s *Service) ResetPassword(ctx context.Context, id int64, temporary string)
 		u, err := store.GetUser.Run(ctx, id)
 		if err != nil {
 			return notFound(err)
+		}
+		if u.IsRoot {
+			return ErrRootProtected
 		}
 		if err := s.checkPassword(ctx, u.Login, u.Name, temporary); err != nil {
 			return err
@@ -705,6 +790,16 @@ func (s *Service) RevokeRole(ctx context.Context, userID, grantID int64) error {
 		g, err := store.RevokeRole.Run(ctx, store.RevokeRoleParams{ID: grantID, UserID: userID})
 		if err != nil {
 			return notFound(err)
+		}
+		if g.Product == "core" && g.Role == "admin" && !g.OrgUnitID.Valid {
+			// Rolling back undoes the delete: the root never loses core.admin.
+			u, err := store.GetUser.Run(ctx, userID)
+			if err != nil {
+				return err
+			}
+			if u.IsRoot {
+				return ErrRootProtected
+			}
 		}
 		if err := store.BumpUserAuthz.Run(ctx, userID); err != nil {
 			return err

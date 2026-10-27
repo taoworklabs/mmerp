@@ -633,3 +633,96 @@ func TestLoginUserAgentStored(t *testing.T) {
 		t.Fatalf("user agents = %+v", list)
 	}
 }
+
+func TestRoot(t *testing.T) {
+	pool := pgtest.New(t)
+	s, _, ctx := setupWithPool(t, pool)
+	sys := platform.WithDB(t.Context(), pool)
+
+	if err := s.EnsureRoot(sys, ""); err == nil {
+		t.Fatal("no password: created")
+	}
+	if err := s.EnsureRoot(sys, "root1234"); err == nil || !strings.Contains(err.Error(), "contains_login") {
+		t.Fatalf("weak password: %v", err)
+	}
+	if err := s.EnsureRoot(sys, "long enough"); err != nil {
+		t.Fatal(err)
+	}
+	if err := s.EnsureRoot(sys, "another password"); err != nil {
+		t.Fatalf("second call: %v", err)
+	}
+	root := must[int64](t)(s.UserIDByLogin(ctx, iam.RootLogin))
+	if u := must[iam.User](t)(s.User(ctx, root)); !u.Root || u.Name != "root" {
+		t.Fatalf("root = %+v", u)
+	}
+	if !slices.ContainsFunc(must[[]iam.User](t)(s.Users(ctx)), func(u iam.User) bool { return u.Root && u.ID == root }) {
+		t.Fatal("Users does not mark root")
+	}
+	token := must[string](t)(s.Login(ctx, "ROOT", "long enough", ""))
+	rootCtx := platform.WithActor(ctx, root)
+	if !must[iam.Me](t)(s.Me(rootCtx)).MustChangePassword {
+		t.Fatal("root must change its first password")
+	}
+
+	protected := func(what string, err error) {
+		t.Helper()
+		if !errors.Is(err, iam.ErrRootProtected) {
+			t.Fatalf("%s: %v", what, err)
+		}
+	}
+	protected("lock", s.LockUser(ctx, root))
+	protected("reset", s.ResetPassword(ctx, root, "temporary 1"))
+	grants := must[[]iam.Grant](t)(s.UserRoles(ctx, root))
+	adminGrant := grants[slices.IndexFunc(grants, func(g iam.Grant) bool { return g.Product == "core" && g.Role == "admin" })].ID
+	protected("revoke", s.RevokeRole(ctx, root, adminGrant))
+	protected("revoke own", s.RevokeRole(rootCtx, root, adminGrant))
+	if _, err := s.CreateUser(ctx, "Root", "Someone", "long enough"); !errors.Is(err, iam.ErrLoginTaken) {
+		t.Fatalf("create root: %v", err)
+	}
+	if err := s.RenameUser(ctx, root, "Superuser"); err != nil {
+		t.Fatalf("rename root: %v", err)
+	}
+
+	for range 5 {
+		_, _ = s.Login(ctx, "root", "wrong", "")
+	}
+	if _, err := s.Login(ctx, "root", "long enough", ""); !errors.Is(err, iam.ErrLoginLocked) {
+		t.Fatalf("root is throttled too: %v", err)
+	}
+	if err := s.RecoverPassword(sys, "root", "another long one"); err != nil {
+		t.Fatal(err)
+	}
+	if _, ok, _ := s.Authenticate(ctx, token); ok {
+		t.Fatal("session survived the recovery")
+	}
+	token = must[string](t)(s.Login(ctx, "root", "another long one", ""))
+	if sess, _, _ := s.Authenticate(ctx, token); sess.MustChangePassword {
+		t.Fatal("forced change not cleared")
+	}
+	if err := s.RecoverPassword(sys, "nobody", "another long one"); err == nil || !strings.Contains(err.Error(), "nobody") {
+		t.Fatalf("unknown login: %v", err)
+	}
+}
+
+func TestRecoverPasswordUnlocks(t *testing.T) {
+	pool := pgtest.New(t)
+	s, _, ctx := setupWithPool(t, pool)
+	id := must[int64](t)(s.CreateUser(ctx, "an", "An", "right password"))
+	if err := s.LockUser(ctx, id); err != nil {
+		t.Fatal(err)
+	}
+	if err := s.RecoverPassword(platform.WithDB(t.Context(), pool), "AN", "new password"); err != nil {
+		t.Fatal(err)
+	}
+	must[string](t)(s.Login(ctx, "an", "new password", ""))
+}
+
+func TestEnsureRootRefusesPlainRoot(t *testing.T) {
+	pool := pgtest.New(t)
+	s, _, _ := setupWithPool(t, pool)
+	sys := platform.WithDB(t.Context(), pool)
+	must[int64](t)(s.CreateAdmin(sys, "Root", "Someone", "long enough"))
+	if err := s.EnsureRoot(sys, "long enough"); err == nil {
+		t.Fatal("a plain user named root became the root")
+	}
+}

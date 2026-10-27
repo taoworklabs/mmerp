@@ -1,8 +1,11 @@
 -- name: CreateUser :one
 INSERT INTO iam.users (login, name, password_hash) VALUES ($1, $2, $3) RETURNING id;
 
+-- name: CreateRoot :one
+INSERT INTO iam.users (login, name, password_hash, is_root, must_change_password) VALUES ($1, $1, $2, true, true) RETURNING id;
+
 -- name: GetUserByLogin :one
-SELECT id, password_hash, locked_at FROM iam.users WHERE lower(login) = lower($1);
+SELECT id, password_hash, locked_at, is_root FROM iam.users WHERE lower(login) = lower($1);
 
 -- name: GetUserPassword :one
 SELECT password_hash FROM iam.users WHERE id = $1;
@@ -14,11 +17,11 @@ UPDATE iam.users SET password_hash = @password_hash, must_change_password = @mus
 DELETE FROM iam.sessions WHERE user_id = $1 AND token_hash <> $2;
 
 -- name: GetUser :one
-SELECT u.id, u.login, u.name, u.email, u.locale, u.authz_version, u.must_change_password, u.locked_at, (SELECT version FROM iam.authz) AS tenant_version
+SELECT u.id, u.login, u.name, u.email, u.locale, u.authz_version, u.must_change_password, u.locked_at, u.is_root, (SELECT version FROM iam.authz) AS tenant_version
 FROM iam.users u WHERE u.id = $1;
 
 -- name: ListUsers :many
-SELECT id, login, name, email, locked_at FROM iam.users ORDER BY lower(login);
+SELECT id, login, name, email, locked_at, is_root FROM iam.users ORDER BY lower(login);
 
 -- name: SetUserEmail :execrows
 UPDATE iam.users SET email = $2 WHERE id = $1;

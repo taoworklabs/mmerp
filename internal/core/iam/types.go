@@ -34,6 +34,8 @@ type User struct {
 	Name   string  `json:"name"`
 	Email  *string `json:"email" doc:"Where email notifications go; null for none"`
 	Locked bool    `json:"locked"`
+	// The account created at startup: it cannot be locked, reset or lose core.admin.
+	Root bool `json:"root"`
 }
 
 // Role is a product role and the permissions it grants.
@@ -93,6 +95,7 @@ var (
 	ErrAccountLocked      = &platform.Error{Status: http.StatusForbidden, Code: "account_locked"}
 	ErrWrongPassword      = &platform.Error{Status: http.StatusUnprocessableEntity, Code: "wrong_password"}
 	ErrLoginTaken         = &platform.Error{Status: http.StatusConflict, Code: "login_taken"}
+	ErrRootProtected      = &platform.Error{Status: http.StatusConflict, Code: "root_protected"}
 	ErrUnknownRole        = &platform.Error{Status: http.StatusUnprocessableEntity, Code: "unknown_role"}
 	ErrRoleTenantWide     = &platform.Error{Status: http.StatusUnprocessableEntity, Code: "role_tenant_wide"}
 	ErrRoleAlreadyGranted = &platform.Error{Status: http.StatusConflict, Code: "role_already_granted"}

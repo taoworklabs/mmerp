@@ -29,6 +29,22 @@ func (q *Queries) BumpUserAuthz(ctx context.Context, id int64) error {
 	return err
 }
 
+const createRoot = `-- name: CreateRoot :one
+INSERT INTO iam.users (login, name, password_hash, is_root, must_change_password) VALUES ($1, $1, $2, true, true) RETURNING id
+`
+
+type CreateRootParams struct {
+	Login        string
+	PasswordHash string
+}
+
+func (q *Queries) CreateRoot(ctx context.Context, arg CreateRootParams) (int64, error) {
+	row := q.db.QueryRow(ctx, createRoot, arg.Login, arg.PasswordHash)
+	var id int64
+	err := row.Scan(&id)
+	return id, err
+}
+
 const createUser = `-- name: CreateUser :one
 INSERT INTO iam.users (login, name, password_hash) VALUES ($1, $2, $3) RETURNING id
 `
@@ -64,7 +80,7 @@ func (q *Queries) DeleteOtherUserSessions(ctx context.Context, arg DeleteOtherUs
 }
 
 const getUser = `-- name: GetUser :one
-SELECT u.id, u.login, u.name, u.email, u.locale, u.authz_version, u.must_change_password, u.locked_at, (SELECT version FROM iam.authz) AS tenant_version
+SELECT u.id, u.login, u.name, u.email, u.locale, u.authz_version, u.must_change_password, u.locked_at, u.is_root, (SELECT version FROM iam.authz) AS tenant_version
 FROM iam.users u WHERE u.id = $1
 `
 
@@ -77,6 +93,7 @@ type GetUserRow struct {
 	AuthzVersion       int64
 	MustChangePassword bool
 	LockedAt           pgtype.Timestamptz
+	IsRoot             bool
 	TenantVersion      int64
 }
 
@@ -92,25 +109,32 @@ func (q *Queries) GetUser(ctx context.Context, id int64) (GetUserRow, error) {
 		&i.AuthzVersion,
 		&i.MustChangePassword,
 		&i.LockedAt,
+		&i.IsRoot,
 		&i.TenantVersion,
 	)
 	return i, err
 }
 
 const getUserByLogin = `-- name: GetUserByLogin :one
-SELECT id, password_hash, locked_at FROM iam.users WHERE lower(login) = lower($1)
+SELECT id, password_hash, locked_at, is_root FROM iam.users WHERE lower(login) = lower($1)
 `
 
 type GetUserByLoginRow struct {
 	ID           int64
 	PasswordHash string
 	LockedAt     pgtype.Timestamptz
+	IsRoot       bool
 }
 
 func (q *Queries) GetUserByLogin(ctx context.Context, lower string) (GetUserByLoginRow, error) {
 	row := q.db.QueryRow(ctx, getUserByLogin, lower)
 	var i GetUserByLoginRow
-	err := row.Scan(&i.ID, &i.PasswordHash, &i.LockedAt)
+	err := row.Scan(
+		&i.ID,
+		&i.PasswordHash,
+		&i.LockedAt,
+		&i.IsRoot,
+	)
 	return i, err
 }
 
@@ -142,7 +166,7 @@ func (q *Queries) ListSettings(ctx context.Context, arg ListSettingsParams) ([]b
 }
 
 const listUsers = `-- name: ListUsers :many
-SELECT id, login, name, email, locked_at FROM iam.users ORDER BY lower(login)
+SELECT id, login, name, email, locked_at, is_root FROM iam.users ORDER BY lower(login)
 `
 
 type ListUsersRow struct {
@@ -151,6 +175,7 @@ type ListUsersRow struct {
 	Name     string
 	Email    pgtype.Text
 	LockedAt pgtype.Timestamptz
+	IsRoot   bool
 }
 
 func (q *Queries) ListUsers(ctx context.Context) ([]ListUsersRow, error) {
@@ -168,6 +193,7 @@ func (q *Queries) ListUsers(ctx context.Context) ([]ListUsersRow, error) {
 			&i.Name,
 			&i.Email,
 			&i.LockedAt,
+			&i.IsRoot,
 		); err != nil {
 			return nil, err
 		}

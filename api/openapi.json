@@ -7164,6 +7164,9 @@
           },
           "name": {
             "type": "string"
+          },
+          "root": {
+            "type": "boolean"
           }
         },
         "required": [
@@ -7171,7 +7174,8 @@
           "login",
           "name",
           "email",
-          "locked"
+          "locked",
+          "root"
         ],
         "type": "object"
       },

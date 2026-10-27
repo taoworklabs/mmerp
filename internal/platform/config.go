@@ -23,16 +23,19 @@ type Config struct {
 	RunJobs bool
 	// SlowQuery is the query tracer's warn threshold.
 	SlowQuery time.Duration
+	// RootPassword is the first password of the root account, needed only until it exists.
+	RootPassword string
 }
 
 // LoadConfig reads and validates every variable, reporting all problems at once.
 func LoadConfig() (Config, error) {
 	var errs []error
 	cfg := Config{
-		DatabaseURL: os.Getenv("DATABASE_URL"),
-		HTTPAddr:    envOr("HTTP_ADDR", ":8080"),
-		FilesDir:    envOr("FILES_DIR", "data/files"),
-		RunJobs:     envOr("RUN_JOBS", "true") != "false",
+		DatabaseURL:  os.Getenv("DATABASE_URL"),
+		HTTPAddr:     envOr("HTTP_ADDR", ":8080"),
+		FilesDir:     envOr("FILES_DIR", "data/files"),
+		RunJobs:      envOr("RUN_JOBS", "true") != "false",
+		RootPassword: os.Getenv("ROOT_PASSWORD"),
 	}
 	for p := range strings.SplitSeq(os.Getenv("PRODUCTS"), ",") {
 		if p = strings.TrimSpace(p); p != "" {

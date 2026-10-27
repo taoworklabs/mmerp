@@ -66,6 +66,7 @@
   "shared.error.org_unit_misplaced": "Invalid position: legal entities and groups cannot sit under a legal entity; branches and departments must sit under one.",
   "shared.error.legal_fields_company_only": "Tax code, legal name and address are for legal entities only.",
   "shared.error.login_taken": "This login is already taken.",
+  "shared.error.root_protected": "This cannot be done to the root account.",
   "shared.error.password_weak": "The password does not meet the requirements.",
   "shared.error.wrong_password": "The current password is not correct.",
   "shared.error.password_change_required": "You must change your password before continuing.",

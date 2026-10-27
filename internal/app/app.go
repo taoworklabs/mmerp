@@ -97,10 +97,14 @@ func Modules() []platform.Module {
 	return []platform.Module{iam.Module(ids), setting.Module(set), numbering.Module(num), record.Module(rec), approval.Module(appr), dataio.Module(dio), attachment.Module(att), printing.Module(prn), discussion.Module(dis), notification.Module(ntf), item.Module(itm), partner.Module(prt), hrm.Module(h), sales.Module(sal)}
 }
 
-// CreateAdmin adds the first administrator at install time.
-func CreateAdmin(ctx context.Context, pool *pgxpool.Pool, login, name, password string) error {
-	_, err := newIAM(setting.NewService()).CreateAdmin(platform.WithDB(ctx, pool), login, name, password)
-	return err
+// EnsureRoot creates the root account with password unless it exists.
+func EnsureRoot(ctx context.Context, pool *pgxpool.Pool, password string) error {
+	return newIAM(setting.NewService()).EnsureRoot(platform.WithDB(ctx, pool), password)
+}
+
+// RecoverPassword sets a user's password from the command line and lifts every lock on it.
+func RecoverPassword(ctx context.Context, pool *pgxpool.Pool, login, password string) error {
+	return newIAM(setting.NewService()).RecoverPassword(platform.WithDB(ctx, pool), login, password)
 }
 
 // Env is what every request and job runs with. Single-tenant mode: one database, one product list, one keyring.

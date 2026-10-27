@@ -8,6 +8,8 @@ services:
       # Never defaulted: a missing key must stop the install, not encrypt with a public one. make sets a dev key.
       ENCRYPTION_KEYS: ${ENCRYPTION_KEYS:?ENCRYPTION_KEYS must be set}
       FILES_DIR: /data/files
+      # First password of the root account; needed only until it exists.
+      ROOT_PASSWORD: ${ROOT_PASSWORD:-}
     volumes:
       # Back it up with the database.
       - files:/data/files

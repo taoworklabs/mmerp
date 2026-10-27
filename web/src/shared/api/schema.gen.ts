@@ -4173,6 +4173,7 @@ export interface components {
             locked: boolean;
             login: string;
             name: string;
+            root: boolean;
         };
         WorkCalendar: {
             /**

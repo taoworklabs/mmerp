@@ -57,6 +57,9 @@ func run() error {
 		return fmt.Errorf("migrate: %w", err)
 	}
 	log.Info("migrations applied")
+	if err := app.EnsureRoot(ctx, pool, cfg.RootPassword); err != nil {
+		return fmt.Errorf("root account: %w", err)
+	}
 
 	if len(os.Args) > 1 {
 		return command(ctx, pool, os.Args[1:])
@@ -98,20 +101,20 @@ func run() error {
 	return env.Jobs.Stop(shutdownCtx)
 }
 
-const usage = "usage: mmerp [create-admin <login> <name>]  (password on stdin)"
+const usage = "usage: mmerp [reset-password <login>]  (password on stdin)"
 
 func command(ctx context.Context, pool *pgxpool.Pool, args []string) error {
-	if len(args) != 3 || args[0] != "create-admin" {
+	if len(args) != 2 || args[0] != "reset-password" {
 		return errors.New(usage)
 	}
 	// Read from stdin so the password stays out of shell history and the process list.
 	password, err := bufio.NewReader(os.Stdin).ReadString('\n')
 	if err != nil && password == "" {
-		return fmt.Errorf("create-admin: password on stdin: %w", err)
+		return fmt.Errorf("reset-password: password on stdin: %w", err)
 	}
-	if err := app.CreateAdmin(ctx, pool, args[1], args[2], strings.TrimRight(password, "\r\n")); err != nil {
-		return fmt.Errorf("create-admin: %w", err)
+	if err := app.RecoverPassword(ctx, pool, args[1], strings.TrimRight(password, "\r\n")); err != nil {
+		return fmt.Errorf("reset-password: %w", err)
 	}
-	fmt.Fprintln(os.Stderr, "create-admin: user", args[1], "created")
+	fmt.Fprintln(os.Stderr, "reset-password:", args[1], "done")
 	return nil
 }

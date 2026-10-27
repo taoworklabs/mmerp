@@ -1,6 +1,6 @@
 #!/bin/sh
 # Serves the built app for Playwright on a fresh database: :8090 with PRODUCTS=hrm,sales,
-# :8091 with no product enabled. Creates the e2e admin. Runs until killed.
+# :8091 with no product enabled. Creates root with no forced change. Runs until killed.
 set -eu
 cd "$(dirname "$0")/.."
 
@@ -17,7 +17,7 @@ go build -tags embedweb -o "$bin" ./cmd/server
 # psql from the Postgres image, so the host needs only Docker.
 docker run --rm --network host postgres:18 psql -q "$base" \
   -c 'DROP DATABASE IF EXISTS mmerp_e2e WITH (FORCE)' -c 'CREATE DATABASE mmerp_e2e'
-echo 'e2e password' | DATABASE_URL=$db_url "$bin" create-admin admin 'Quản trị viên'
+echo 'e2e password' | DATABASE_URL=$db_url ROOT_PASSWORD='e2e password' "$bin" reset-password root
 
 trap 'kill 0' EXIT INT TERM
 # Only the :8090 server works jobs, so they run with its products.
