@@ -220,7 +220,7 @@ func (s *Service) runExport(ctx context.Context, j *river.Job[exportArgs]) error
 	if !ok {
 		return platform.ErrNotFound
 	}
-	file, err := export(ctx, exp, a.Params)
+	file, rows, err := export(ctx, exp, a.Params)
 	if err != nil {
 		return err
 	}
@@ -233,7 +233,11 @@ func (s *Service) runExport(ctx context.Context, j *river.Job[exportArgs]) error
 		if err := s.keep(ctx, id, file.Name, export); err != nil {
 			return err
 		}
-		if err := s.d.Audit.Record(ctx, "dataio.exported", map[string]any{"kind": a.Target, "params": a.Params, "file_id": id}); err != nil {
+		data := map[string]any{"kind": a.Target, "params": a.Params, "file_id": id}
+		if rows != nil {
+			data["rows"] = *rows
+		}
+		if err := s.d.Audit.Record(ctx, "dataio.exported", data); err != nil {
 			return err
 		}
 		return platform.CompleteJob(ctx, j, jobOutput{FileID: &id})
@@ -241,19 +245,22 @@ func (s *Service) runExport(ctx context.Context, j *river.Job[exportArgs]) error
 }
 
 // export runs a module's export into a file.
-func export(ctx context.Context, exp Export, params json.RawMessage) (File, error) {
+// export also returns how many data rows a sheet holds, nil for a rendered file.
+func export(ctx context.Context, exp Export, params json.RawMessage) (File, *int, error) {
 	if exp.Render != nil {
-		return exp.Render(ctx, params)
+		f, err := exp.Render(ctx, params)
+		return f, nil, err
 	}
 	sheet, err := exp.Run(ctx, params)
 	if err != nil {
-		return File{}, err
+		return File{}, nil, err
 	}
 	b, err := writeSheet(sheet)
 	if err != nil {
-		return File{}, err
+		return File{}, nil, err
 	}
-	return File{Name: sheet.Name + ".xlsx", Body: b.Bytes()}, nil
+	rows := len(sheet.Rows)
+	return File{Name: sheet.Name + ".xlsx", Body: b.Bytes()}, &rows, nil
 }
 
 // writeSheet writes the header in bold, frozen, and the rows below it.
