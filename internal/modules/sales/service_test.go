@@ -774,3 +774,33 @@ func TestCustomerRoleSaveKeepsPartner(t *testing.T) {
 		t.Fatalf("customer %+v %v", got, err)
 	}
 }
+
+// A quotation shows as expired only while it is posted and has no order.
+func TestQuoteExpiredOnlyWhenPostedAndNotOrdered(t *testing.T) {
+	f := newFixture(t)
+	old := f.fields("2026-01-05")
+	old.ValidUntil = str("2026-01-31")
+	draft := must(t)(f.sales.CreateQuote(f.staff, sales.NewDoc{RequestID: newRequest(), DocFields: old}))
+	posted := must(t)(f.sales.CreateQuote(f.staff, sales.NewDoc{RequestID: newRequest(), DocFields: old}))
+	f.check(f.move(f.staff, "sales.quote", posted, record.Posted))
+	// Valid through today, so it can be ordered; it is never expired.
+	live := f.fields(todayOf(t, f))
+	ordered := must(t)(f.sales.CreateQuote(f.staff, sales.NewDoc{RequestID: newRequest(), DocFields: live}))
+	f.check(f.move(f.staff, "sales.quote", ordered, record.Posted))
+	must(t)(f.order(f.staff, ordered))
+
+	want := map[int64]bool{draft: false, posted: true, ordered: false}
+	list, err := f.sales.Quotes(f.admin, sales.DocFilter{Sort: "-date", Paging: platform.Paging{Page: 1, PageSize: 100}})
+	f.check(err)
+	for _, r := range list.Items {
+		if r.Expired != want[r.ID] {
+			t.Errorf("list: quote %d expired %v", r.ID, r.Expired)
+		}
+	}
+	for id, exp := range want {
+		if q, err := f.sales.Quote(f.staff, id); err != nil || q.Expired != exp {
+			t.Errorf("detail: quote %d expired %v, err %v", id, q.Expired, err)
+		}
+	}
+	wantCode(t, must2(f.order(f.staff, posted)), "quote_expired")
+}
