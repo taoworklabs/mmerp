@@ -7,6 +7,10 @@ INSERT INTO iam.users (login, name, password_hash, is_root, must_change_password
 -- name: GetUserByLogin :one
 SELECT id, password_hash, locked_at, is_root FROM iam.users WHERE lower(login) = lower($1);
 
+-- name: LockUserCredentials :one
+-- Waits for a password change or lock in flight, so a sign-in sees what it committed.
+SELECT password_hash, locked_at IS NOT NULL AS locked FROM iam.users WHERE id = $1 FOR SHARE;
+
 -- name: GetUserPassword :one
 SELECT password_hash FROM iam.users WHERE id = $1;
 

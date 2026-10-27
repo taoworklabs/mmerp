@@ -471,6 +471,55 @@ func TestLockedUserSessionIsDead(t *testing.T) {
 	}
 }
 
+// A sign-in that verified the old password while a password change commits must not open a session.
+func TestLoginRacingPasswordChange(t *testing.T) {
+	pool := pgtest.New(t)
+	s, _, ctx := setupWithPool(t, pool)
+	id := must[int64](t)(s.CreateUser(ctx, "an", "An", "right password"))
+	sys := pgtest.System(t, pool)
+	// The uncommitted change holds the row lock; the sign-in still sees the old hash.
+	updated, release, changed := make(chan struct{}), make(chan struct{}), make(chan error, 1)
+	go func() {
+		changed <- platform.InTx(platform.WithDB(ctx, sys), func(ctx context.Context) error {
+			if _, err := platform.DBFrom(ctx).Exec(ctx, `UPDATE iam.users SET password_hash = 'changed' WHERE id = $1`, id); err != nil {
+				return err
+			}
+			close(updated)
+			<-release
+			return nil
+		})
+	}()
+	select {
+	case <-updated:
+	case err := <-changed:
+		t.Fatal(err)
+	}
+	done := make(chan error, 1)
+	go func() { _, err := s.Login(ctx, "an", "right password", ""); done <- err }()
+	for waiting := false; !waiting; {
+		if err := sys.QueryRow(ctx, `SELECT EXISTS (SELECT 1 FROM pg_stat_activity WHERE wait_event_type = 'Lock' AND datname = current_database())`).Scan(&waiting); err != nil {
+			t.Fatal(err)
+		}
+		select {
+		case err := <-done:
+			close(release)
+			t.Fatalf("login finished without waiting for the change: %v", err)
+		default:
+		}
+	}
+	close(release)
+	if err := <-changed; err != nil {
+		t.Fatal(err)
+	}
+	if err := <-done; !errors.Is(err, iam.ErrInvalidCredentials) {
+		t.Fatalf("login after the change committed: %v", err)
+	}
+	var sessions int
+	if err := sys.QueryRow(ctx, `SELECT count(*) FROM iam.sessions WHERE user_id = $1`, id).Scan(&sessions); err != nil || sessions != 0 {
+		t.Fatalf("sessions=%d err=%v", sessions, err)
+	}
+}
+
 func TestRenameUser(t *testing.T) {
 	s, ctx := setup(t)
 	id := must[int64](t)(s.CreateUser(ctx, "an", "An", "right password"))

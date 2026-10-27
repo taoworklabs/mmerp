@@ -196,6 +196,16 @@ func (s *Service) Login(ctx context.Context, login, password, userAgent string) 
 	}
 	token := rand.Text()
 	err = platform.InTx(platform.WithActor(ctx, u.ID), func(ctx context.Context) error {
+		// The password was checked outside the transaction; a change or lock since then wins.
+		cur, err := store.LockUserCredentials.Run(ctx, u.ID)
+		switch {
+		case err != nil:
+			return err
+		case cur.PasswordHash != u.PasswordHash:
+			return ErrInvalidCredentials
+		case cur.Locked:
+			return ErrAccountLocked
+		}
 		if err := store.DeleteExpiredSessions.Run(ctx, u.ID); err != nil {
 			return err
 		}

@@ -205,6 +205,23 @@ func (q *Queries) ListUsers(ctx context.Context) ([]ListUsersRow, error) {
 	return items, nil
 }
 
+const lockUserCredentials = `-- name: LockUserCredentials :one
+SELECT password_hash, locked_at IS NOT NULL AS locked FROM iam.users WHERE id = $1 FOR SHARE
+`
+
+type LockUserCredentialsRow struct {
+	PasswordHash string
+	Locked       interface{}
+}
+
+// Waits for a password change or lock in flight, so a sign-in sees what it committed.
+func (q *Queries) LockUserCredentials(ctx context.Context, id int64) (LockUserCredentialsRow, error) {
+	row := q.db.QueryRow(ctx, lockUserCredentials, id)
+	var i LockUserCredentialsRow
+	err := row.Scan(&i.PasswordHash, &i.Locked)
+	return i, err
+}
+
 const setListSettings = `-- name: SetListSettings :exec
 INSERT INTO iam.list_settings (user_id, list_key, settings) VALUES ($1, $2, $3)
 ON CONFLICT (user_id, list_key) DO UPDATE SET settings = EXCLUDED.settings

@@ -37,6 +37,7 @@ var DeleteUserSession = data.ExecRowsArg("iam.DeleteUserSession", newQ, (*Querie
 var CreateUser = data.OneArg("iam.CreateUser", newQ, (*Queries).CreateUser)
 var CreateRoot = data.OneArg("iam.CreateRoot", newQ, (*Queries).CreateRoot)
 var GetUserByLogin = data.OneArg("iam.GetUserByLogin", newQ, (*Queries).GetUserByLogin)
+var LockUserCredentials = data.OneArg("iam.LockUserCredentials", newQ, (*Queries).LockUserCredentials)
 var GetUserPassword = data.OneArg("iam.GetUserPassword", newQ, (*Queries).GetUserPassword)
 var SetUserPassword = data.ExecArg("iam.SetUserPassword", newQ, (*Queries).SetUserPassword)
 var DeleteOtherUserSessions = data.ExecRowsArg("iam.DeleteOtherUserSessions", newQ, (*Queries).DeleteOtherUserSessions)
