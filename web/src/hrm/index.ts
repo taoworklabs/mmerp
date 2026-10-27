@@ -49,8 +49,9 @@ export const hrm: AreaManifest = {
     [contractDocType]: {
       path: (id) => `contracts/${id}`,
       preview: () => import('./components/ContractPreview'),
-      // Contracts are listed per employee; the employee is not known from the id alone.
-      invalidate: () => [hrmKeys.contracts.all()],
+      // Contracts are listed per employee, and the employee page shows its current one; the
+      // employee is not known from the id alone.
+      invalidate: () => [hrmKeys.contracts.all(), hrmKeys.employees.all()],
     },
     [timesheetDocType]: {
       path: (id) => `timesheets/${id}`,

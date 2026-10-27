@@ -5,7 +5,7 @@ import { ApiError, type Employee } from '@/shared/api/hrm'
 import { useMe } from '@/shared/auth/me'
 import { currentYear, formatDecimal, today } from '@/shared/i18n'
 import { MissingValue } from '@/shared/ui/MissingValue'
-import { currentContract, useEmployeeContracts, useLeaveBalances } from '../hooks/useEmployeeRecords'
+import { useLeaveBalances } from '../hooks/useEmployeeRecords'
 import { tenure } from '../tenure'
 import { EmployeeLink } from './EmployeeLink'
 
@@ -28,7 +28,6 @@ export function useTenureText(e: Employee): string {
 export function EmployeeSummary({ employee: e, onTransfer }: { employee: Employee; onTransfer: () => void }) {
   const { t } = useTranslation()
   const me = useMe()
-  const contracts = useEmployeeContracts(e)
   const balances = useLeaveBalances(e)
   const can = (a: string) => e.allowed_actions.includes(a)
   const year = currentYear(me.timezone)
@@ -45,14 +44,11 @@ export function EmployeeSummary({ employee: e, onTransfer }: { employee: Employe
     [t('hrm.employee.tenure'), served],
   ]
   if (can('view_contracts')) {
-    const current = currentContract(contracts.data, today(me.timezone))
     facts.push([
       t('hrm.employee.contract_type'),
-      contracts.isPending
-        ? loading
-        : (current?.contract_type_name ?? (
-            <MissingValue label={t('hrm.employee.contract_type')} to={can('create_contract') ? `/hrm/contracts/new?employee=${e.id}` : undefined} />
-          )),
+      e.current_contract?.contract_type ?? (
+        <MissingValue label={t('hrm.employee.contract_type')} to={can('create_contract') ? `/hrm/contracts/new?employee=${e.id}` : undefined} />
+      ),
     ])
   }
   // Without the right to see the balances the API answers 404: the fact is left out.

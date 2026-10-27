@@ -1,24 +1,23 @@
-import { Anchor, Group, Panel, Stack, Text } from '@mmerp/ui'
+import { Anchor, Panel, Stack, Text } from '@mmerp/ui'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router'
 import { ApiError, type Employee } from '@/shared/api/hrm'
 import { useMe } from '@/shared/auth/me'
-import { ActivityFeed, DocumentStatus } from '@/shared/document'
-import { currentYear, formatDate, formatDecimal, today } from '@/shared/i18n'
+import { ActivityFeed } from '@/shared/document'
+import { currentYear, formatDate, formatDecimal } from '@/shared/i18n'
 import { SeeAll } from '@/shared/ui/page'
 import { ContentSkeleton } from '@/shared/ui/states'
-import { currentContract, useEmployeeContracts, useLeaveBalances } from '../hooks/useEmployeeRecords'
-import { contractDocType, employeeDocType } from '../keys'
+import { useLeaveBalances } from '../hooks/useEmployeeRecords'
+import { employeeDocType } from '../keys'
 
 // EmployeeDigest is the overview's right column: the contract in force, this year's leave and the
 // latest comments and changes, each leading to its tab. A part the user may not read is left out.
 export function EmployeeDigest({ employee: e }: { employee: Employee }) {
   const { t } = useTranslation()
   const me = useMe()
-  const contracts = useEmployeeContracts(e)
   const balances = useLeaveBalances(e)
   const year = currentYear(me.timezone)
-  const current = currentContract(contracts.data, today(me.timezone))
+  const current = e.current_contract
   const left = balances.data?.find((b) => b.year === year)
   // Without the right to see the balances the API answers 404.
   const canBalances = !(balances.error instanceof ApiError && balances.error.status === 404)
@@ -26,18 +25,13 @@ export function EmployeeDigest({ employee: e }: { employee: Employee }) {
     <>
       {e.allowed_actions.includes('view_contracts') && (
         <Panel plain title={t('hrm.employee.current_contract')} actions={<SeeAll tab="contracts" />}>
-          {contracts.isPending ? (
-            <ContentSkeleton />
-          ) : current ? (
+          {current ? (
             <Stack gap="xxs">
-              <Group gap="sm" justify="space-between" wrap={false}>
-                <Anchor render={<Link to={`/hrm/contracts/${current.id}`} />} weight={600}>
-                  {current.number}
-                </Anchor>
-                <DocumentStatus docType={contractDocType} status={current.status} />
-              </Group>
+              <Anchor render={<Link to={`/hrm/contracts/${current.id}`} />} weight={600}>
+                {current.number}
+              </Anchor>
               <Text size="sm" tone="dimmed">
-                {t('hrm.employee.contract_since', { type: current.contract_type_name, date: formatDate(current.start_date) })}
+                {t('hrm.employee.contract_since', { type: current.contract_type, date: formatDate(current.start_date) })}
               </Text>
             </Stack>
           ) : (

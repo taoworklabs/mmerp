@@ -3,8 +3,12 @@ package platform_test
 import (
 	"context"
 	"errors"
+	"io"
+	"log/slog"
 	"net/http"
+	"sync/atomic"
 	"testing"
+	"time"
 
 	"github.com/riverqueue/river"
 	"github.com/riverqueue/river/riverdriver/riverpgxv5"
@@ -82,5 +86,77 @@ func TestEnqueueRequiresTx(t *testing.T) {
 	}
 	if n := jobCount(); n != 1 {
 		t.Fatalf("%d jobs, want 1", n)
+	}
+}
+
+type userArgs struct{}
+
+func (userArgs) Kind() string           { return "test.user" }
+func (userArgs) Spec() platform.JobSpec { return platform.JobSpec{Notify: true} }
+
+type flagWorker[T platform.JobArgs] struct {
+	river.WorkerDefaults[T]
+	ran *atomic.Bool
+}
+
+func (w *flagWorker[T]) Work(context.Context, *river.Job[T]) error {
+	w.ran.Store(true)
+	return nil
+}
+
+// workRaw inserts args with empty metadata, as River does for periodic jobs and as jobs
+// queued before requesters were recorded have, works it, and returns the ended job,
+// whether the worker ran and how many notifications were sent.
+func workRaw[T platform.JobArgs](t *testing.T, args T) (*rivertype.JobRow, bool, int) {
+	t.Helper()
+	pool := pgtest.New(t)
+	var ran atomic.Bool
+	var told atomic.Int32
+	workers := river.NewWorkers()
+	platform.AddWorker(workers, &flagWorker[T]{ran: &ran})
+	notifier := func(context.Context, int64, int64, bool) error { told.Add(1); return nil }
+	jobs, err := river.NewClient(riverpgxv5.New(pgtest.System(t, pool)), &river.Config{
+		Queues: map[string]river.QueueConfig{river.QueueDefault: {MaxWorkers: 1}}, Workers: workers,
+		Logger:     slog.New(slog.NewTextHandler(io.Discard, nil)),
+		Middleware: []rivertype.Middleware{platform.JobMiddleware(func(ctx context.Context) context.Context { return platform.WithJobNotifier(ctx, notifier) })},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	res, err := jobs.Insert(t.Context(), args, &river.InsertOpts{Metadata: []byte(`{}`)})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := jobs.Start(t.Context()); err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = jobs.Stop(context.Background()) }()
+	for deadline := time.Now().Add(20 * time.Second); time.Now().Before(deadline); time.Sleep(20 * time.Millisecond) {
+		j, err := jobs.JobGet(t.Context(), res.Job.ID)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if j.FinalizedAt != nil {
+			return j, ran.Load(), int(told.Load())
+		}
+	}
+	t.Fatal("job did not end")
+	return nil, false, 0
+}
+
+// A user job with no requester would run with no actor and skip every permission check,
+// so it is cancelled on its first attempt without running.
+func TestUserJobWithoutRequesterCancelled(t *testing.T) {
+	j, ran, told := workRaw(t, userArgs{})
+	if j.State != rivertype.JobStateCancelled || j.Attempt != 1 || ran || told != 0 {
+		t.Fatalf("state %s, attempt %d, ran %v, told %d", j.State, j.Attempt, ran, told)
+	}
+}
+
+// A system job runs whatever its metadata, including jobs queued before an upgrade.
+func TestSystemJobWithEmptyMetadataRuns(t *testing.T) {
+	j, ran, _ := workRaw(t, noopArgs{})
+	if j.State != rivertype.JobStateCompleted || !ran {
+		t.Fatalf("state %s, ran %v", j.State, ran)
 	}
 }

@@ -38,7 +38,7 @@ export function LeavesPage() {
           params: {
             query: {
               q: q || undefined,
-              status: (status || undefined) as DocStatus | undefined,
+              status: status ? [status as DocStatus] : undefined,
               org_unit_id: org_unit ? Number(org_unit) : undefined,
               ...monthBounds(month),
               sort: params.sort as LeaveSort,

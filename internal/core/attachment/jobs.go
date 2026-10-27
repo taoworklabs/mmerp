@@ -23,7 +23,7 @@ func (w *cleanupWorker) Work(ctx context.Context, _ *river.Job[cleanupArgs]) err
 	return cleanup(ctx)
 }
 
-func addWorkers(w *river.Workers) { river.AddWorker(w, &cleanupWorker{}) }
+func addWorkers(w *river.Workers) { platform.AddWorker(w, &cleanupWorker{}) }
 
 // periodic runs cleanup every hour and at start, so files left while the app was
 // down go at the next start.

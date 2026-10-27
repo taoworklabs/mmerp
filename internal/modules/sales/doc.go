@@ -73,11 +73,16 @@ func (s *Service) docs(ctx context.Context, k kind, f DocFilter) (DocList, error
 		out.Items = append(out.Items, DocListItem{
 			ID: r.ID, Number: r.Number, Status: r.Status, Date: *platform.DatePtr(r.Date), CustomerID: r.CustomerID,
 			CustomerCode: r.CustomerCode, CustomerName: r.CustomerName, OrgUnitName: r.OrgUnitName, Total: r.Total,
-			ValidUntil: platform.DatePtr(r.ValidUntil), Expired: expired(r.ValidUntil, today),
+			ValidUntil: platform.DatePtr(r.ValidUntil), Expired: shownExpired(r.Status, r.Ordered, r.ValidUntil, today),
 			Ordered: r.Ordered, FromQuote: r.FromQuote,
 		})
 	}
 	return out, nil
+}
+
+// shownExpired: only a posted quotation with no order is shown as expired.
+func shownExpired(status string, ordered bool, validUntil, today pgtype.Date) bool {
+	return status == string(record.Posted) && !ordered && expired(validUntil, today)
 }
 
 // expired: a quotation is valid through its validity date, in the tenant time zone.
@@ -133,7 +138,6 @@ func (s *Service) doc(ctx context.Context, k kind, id int64) (Doc, error) {
 		if err != nil {
 			return Doc{}, err
 		}
-		out.Expired = expired(h.ValidUntil, today)
 		o, err := store.LiveOrder.Run(ctx, pgtype.Int8{Int64: id, Valid: true})
 		switch {
 		case err == nil:
@@ -146,6 +150,7 @@ func (s *Service) doc(ctx context.Context, k kind, id int64) (Doc, error) {
 		case !errors.Is(err, pgx.ErrNoRows):
 			return Doc{}, err
 		}
+		out.Expired = shownExpired(string(d.Status), out.Ordered, h.ValidUntil, today)
 		if d.Status == record.Posted && !out.Expired && !out.Ordered {
 			if ok, err := s.canMakeOrder(ctx, h.OrgUnitID); err != nil {
 				return Doc{}, err

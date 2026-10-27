@@ -28,6 +28,7 @@ import (
 type fixture struct {
 	t        *testing.T
 	core     *coretest.Core
+	system   platform.Conn
 	ctx      context.Context
 	admin    context.Context
 	staff    context.Context // staff@A
@@ -51,7 +52,7 @@ func newFixture(t *testing.T) *fixture {
 	ctx, admin, ids, set, rec, num := core.Ctx, core.Admin, core.IAM, core.Setting, core.Record, core.Numbering
 	partners := partner.NewService(partner.Deps{IAM: ids, Record: rec, Audit: core.Audit, Numbering: num})
 	s := sales.NewService(sales.Deps{IAM: ids, Record: rec, Audit: core.Audit, Setting: set, Printing: core.Printing, Numbering: num, Partner: partners})
-	f := &fixture{t: t, core: core, ctx: ctx, admin: admin, set: set, rec: rec, appr: core.Approval, sales: s, num: num, partners: partners}
+	f := &fixture{t: t, core: core, system: core.System, ctx: ctx, admin: admin, set: set, rec: rec, appr: core.Approval, sales: s, num: num, partners: partners}
 	f.c = must(t)(ids.CreateOrgUnit(admin, iam.OrgUnitInput{Kind: "company", Name: "C"}))
 	f.a = must(t)(ids.CreateOrgUnit(admin, iam.OrgUnitInput{ParentID: &f.c, Kind: "department", Name: "A"}))
 	f.b = must(t)(ids.CreateOrgUnit(admin, iam.OrgUnitInput{ParentID: &f.c, Kind: "department", Name: "B"}))
@@ -773,4 +774,37 @@ func TestCustomerRoleSaveKeepsPartner(t *testing.T) {
 	if err != nil || *got.PaymentTerms != "45 ngày" || *got.Partner.Address != "9 Trần Phú, Đà Nẵng" {
 		t.Fatalf("customer %+v %v", got, err)
 	}
+}
+
+// A quotation shows as expired only while it is posted and has no order.
+func TestQuoteExpiredOnlyWhenPostedAndNotOrdered(t *testing.T) {
+	f := newFixture(t)
+	old := f.fields("2026-01-05")
+	old.ValidUntil = str("2026-01-31")
+	draft := must(t)(f.sales.CreateQuote(f.staff, sales.NewDoc{RequestID: newRequest(), DocFields: old}))
+	posted := must(t)(f.sales.CreateQuote(f.staff, sales.NewDoc{RequestID: newRequest(), DocFields: old}))
+	f.check(f.move(f.staff, "sales.quote", posted, record.Posted))
+	// Ordered while valid, then its validity passes.
+	live := f.fields(todayOf(t, f))
+	ordered := must(t)(f.sales.CreateQuote(f.staff, sales.NewDoc{RequestID: newRequest(), DocFields: live}))
+	f.check(f.move(f.staff, "sales.quote", ordered, record.Posted))
+	must(t)(f.order(f.staff, ordered))
+	if _, err := f.system.Exec(f.ctx, `UPDATE sales.headers SET valid_until = '2026-01-31' WHERE id = $1`, ordered); err != nil {
+		t.Fatal(err)
+	}
+
+	want := map[int64]bool{draft: false, posted: true, ordered: false}
+	list, err := f.sales.Quotes(f.admin, sales.DocFilter{Sort: "-date", Paging: platform.Paging{Page: 1, PageSize: 100}})
+	f.check(err)
+	for _, r := range list.Items {
+		if r.Expired != want[r.ID] {
+			t.Errorf("list: quote %d expired %v", r.ID, r.Expired)
+		}
+	}
+	for id, exp := range want {
+		if q, err := f.sales.Quote(f.staff, id); err != nil || q.Expired != exp {
+			t.Errorf("detail: quote %d expired %v, err %v", id, q.Expired, err)
+		}
+	}
+	wantCode(t, must2(f.order(f.staff, posted)), "quote_expired")
 }

@@ -3,11 +3,11 @@ import { created, createUser, employee, password, signedInApi, runId, toFlow } f
 import { signedIn } from './helpers'
 
 // Covers the parts of notifications and the approval inbox the other specs leave out: the
-// notification and job links staying in the area (TB-01), a notification opening its own
-// document with the permission checked as it opens (TB-02), approving something the submitter
-// withdrew (TB-04), a notification whose permission was revoked (TB-05) and going back to a
-// filtered list (TB-07). TB-05 still observes and logs, since what should happen to a
-// notification nobody may read any more is not settled; the rest assert.
+// notification and job links staying in the area, a notification opening its own document
+// with the permission checked as it opens, approving something the submitter withdrew, a
+// notification whose permission was revoked, and going back to a filtered list. The revoked
+// case still observes and logs, since what should happen to a notification nobody may read
+// any more is not settled; the rest assert.
 
 const run = runId()
 const login = { staff: `tbstaff_${run}`, boss: `tbboss_${run}`, peer: `tbpeer_${run}` }
@@ -44,8 +44,8 @@ async function as(browser: Browser, user: string, url: string): Promise<Page> {
   return page
 }
 
-// TB-01 for the two header links no other spec asserts: notifications and background jobs.
-test('TB-01 the notification and job links open inside the current area', async ({ page }) => {
+// The two header links no other spec asserts: notifications and background jobs.
+test('the notification and job links open inside the current area', async ({ page }) => {
   await signedIn(page, '/hrm/leaves')
   const header = page.getByRole('banner')
   const nav = page.getByRole('navigation')
@@ -70,10 +70,10 @@ test('TB-01 the notification and job links open inside the current area', async 
   await expect(nav).toHaveCount(0)
 })
 
-// TB-04: the submitter withdraws while the approver still has the inbox open. The refusal has
+// The submitter withdraws while the approver still has the inbox open. The refusal has
 // to be explained where the approver is looking, and the explanation has to stay put: the
 // request leaves the inbox at that moment, and the panel explaining it must not leave with it.
-test('TB-04 approving a request the submitter already withdrew', async ({ browser }) => {
+test('approving a request the submitter already withdrew', async ({ browser }) => {
   const staff = await as(browser, login.staff, `/hrm/leaves/${leave}`)
   await staff.getByRole('button', { name: 'Gửi duyệt' }).click()
   await expect(staff.getByText('Chờ duyệt').first()).toBeVisible()
@@ -103,8 +103,8 @@ test('TB-04 approving a request the submitter already withdrew', async ({ browse
   expect(calls, 'the click reached the server and was refused').toEqual(['409'])
 })
 
-// TB-04 through the API as well, to pin the answer itself rather than how it is shown.
-test('TB-04 the API refusal when approving a withdrawn request', async ({ baseURL }) => {
+// The same through the API as well, to pin the answer itself rather than how it is shown.
+test('the API refusal when approving a withdrawn request', async ({ baseURL }) => {
   const admin = await signedInApi(baseURL!)
   const type = await created(admin.post('/api/hrm/leave-types', { data: { name: `Nghỉ TB4 ${run}`, deducts_balance: false, paid: true, active: true } }))
   const asStaff = await signedInApi(baseURL!, login.staff, password)
@@ -134,7 +134,7 @@ test('TB-04 the API refusal when approving a withdrawn request', async ({ baseUR
 
 // The same refusal from the document page, which reaches it by a different route than the
 // inbox: here nothing ever removes the panel, so it guards the wording itself.
-test('TB-04 the same refusal seen from the document page', async ({ browser, baseURL }) => {
+test('the same refusal seen from the document page', async ({ browser, baseURL }) => {
   const admin = await signedInApi(baseURL!)
   const type = await created(admin.post('/api/hrm/leave-types', { data: { name: `Nghỉ TB4b ${run}`, deducts_balance: false, paid: true, active: true } }))
   const asStaff = await signedInApi(baseURL!, login.staff, password)
@@ -155,9 +155,9 @@ test('TB-04 the same refusal seen from the document page', async ({ browser, bas
   await expect(boss.getByRole('main').getByText('Nháp').first()).toBeVisible()
 })
 
-// TB-02: a notification opens the document it names, and whether the user may still view it
+// A notification opens the document it names, and whether the user may still view it
 // is decided when it opens, not when the list was loaded.
-test('TB-02 a notification opens its own document and re-checks the permission', async ({ browser, baseURL }) => {
+test('a notification opens its own document and re-checks the permission', async ({ browser, baseURL }) => {
   const admin = await signedInApi(baseURL!)
   const reader = `tbread_${run}`
   const readerId = await createUser(admin, reader, [{ role: 'hrm.hr', unit: dept }])
@@ -191,8 +191,8 @@ test('TB-02 a notification opens its own document and re-checks the permission',
   await expect(page.getByRole('main').getByText(second.number)).toHaveCount(0)
 })
 
-// TB-05: a notification whose record the user may no longer view.
-test('TB-05 a notification after the permission was revoked', async ({ browser, baseURL }) => {
+// A notification whose record the user may no longer view.
+test('a notification after the permission was revoked', async ({ browser, baseURL }) => {
   const staff = await as(browser, login.staff, `/hrm/leaves/${leave}`)
   const box = staff.getByRole('textbox', { name: 'Bình luận' })
   await box.fill('Nhờ anh xem giúp ')
@@ -204,27 +204,27 @@ test('TB-05 a notification after the permission was revoked', async ({ browser, 
   const peer = await as(browser, login.peer, '/notifications')
   // Wait for the mention to arrive, or the before-picture is of an empty list.
   await expect(peer.getByText(/Nhắc tên bạn/).first()).toBeVisible()
-  console.log('TB-05 with permission, the notification reads:', (await peer.getByRole('main').innerText()).replace(/\s+/g, ' ').slice(0, 300))
+  console.log('with permission, the notification reads:', (await peer.getByRole('main').innerText()).replace(/\s+/g, ' ').slice(0, 300))
 
   const api = await signedInApi(baseURL!)
   const grants: { id: number }[] = await (await api.get(`/api/users/${peerId}/roles`)).json()
   for (const g of grants) expect((await api.delete(`/api/users/${peerId}/roles/${g.id}`)).status()).toBe(204)
 
   const after = await as(browser, login.peer, '/notifications')
-  console.log('TB-05 after the role was revoked:', (await after.getByRole('main').innerText()).replace(/\s+/g, ' ').slice(0, 300))
+  console.log('after the role was revoked:', (await after.getByRole('main').innerText()).replace(/\s+/g, ' ').slice(0, 300))
   const item = after.getByRole('button').filter({ hasText: /Nhắc tên|không còn quyền/ }).first()
   if (await item.count()) {
     await item.click()
     await after.waitForTimeout(500)
-    console.log('TB-05 clicking it goes to:', after.url(), '| main:', (await after.getByRole('main').innerText()).replace(/\s+/g, ' ').slice(0, 200))
+    console.log('clicking it goes to:', after.url(), '| main:', (await after.getByRole('main').innerText()).replace(/\s+/g, ' ').slice(0, 200))
   } else {
-    console.log('TB-05 no notification row to click')
+    console.log('no notification row to click')
   }
 })
 
-// TB-07: going back from a document to the list it was opened from.
-test('TB-07 back from a document restores the filtered list', async ({ page }) => {
-  // draft: the request TB-04 withdrew is one, so the filtered list has a row.
+// Going back from a document to the list it was opened from.
+test('back from a document restores the filtered list', async ({ page }) => {
+  // draft: the request withdrawn above is one, so the filtered list has a row.
   await signedIn(page, '/hrm/leaves?status=draft')
   const before = page.url()
   const row = page.getByRole('table').getByRole('link').first()
@@ -232,14 +232,14 @@ test('TB-07 back from a document restores the filtered list', async ({ page }) =
   // The status filter is a chip that names its value ("Trạng thái: Nháp").
   const filter = page.getByRole('combobox', { name: /^Trạng thái/ })
   const shown = async () => `count=${await filter.count()} text=${await filter.first().textContent().catch((e) => `(${e.message.split('\n')[0]})`)}`
-  console.log('TB-07 the filter control before opening:', await shown())
+  console.log('the filter control before opening:', await shown())
   const rowCount = await page.getByRole('table').getByRole('link').count()
   await row.click()
   await expect(page).toHaveURL(/\/hrm\/leaves\/\d+$/)
   await page.goBack()
-  console.log('TB-07 back went to:', page.url(), '| opened from:', before)
+  console.log('back went to:', page.url(), '| opened from:', before)
   await expect(page).toHaveURL(/status=draft/)
   await expect(page.getByRole('table').getByRole('link').first()).toBeVisible()
-  console.log('TB-07 the filter control after going back:', await shown())
-  console.log('TB-07 rows before/after:', rowCount, await page.getByRole('table').getByRole('link').count())
+  console.log('the filter control after going back:', await shown())
+  console.log('rows before/after:', rowCount, await page.getByRole('table').getByRole('link').count())
 })

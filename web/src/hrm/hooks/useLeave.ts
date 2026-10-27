@@ -40,9 +40,9 @@ export function useOverlappingLeaves(leave: Leave | undefined, orgUnitId: number
     queryKey: hrmKeys.leaves.overlapping(leave?.id ?? 0),
     queryFn: async () => {
       const { items } = await unwrap(
-        api.GET('/hrm/leaves', { params: { query: { org_unit_id: orgUnitId, from: leave!.start_date, to: leave!.end_date, sort: 'start_date', page: 1, page_size: 50 } } }),
+        api.GET('/hrm/leaves', { params: { query: { org_unit_id: orgUnitId, status: ['pending_approval', 'posted'], from: leave!.start_date, to: leave!.end_date, sort: 'start_date', page: 1, page_size: 50 } } }),
       )
-      return items.filter((x) => x.id !== leave!.id && (x.status === 'pending_approval' || x.status === 'posted'))
+      return items.filter((x) => x.id !== leave!.id)
     },
     enabled: !!leave && !!orgUnitId,
   })

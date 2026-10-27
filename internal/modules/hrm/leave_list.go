@@ -42,7 +42,7 @@ func leaveQuery(sc data.Scope, f LeaveFilter) data.Query {
 	return data.Query{
 		Scope: sc, Q: f.Q, Sort: f.Sort, Paging: f.Paging,
 		Where: data.And(
-			data.When(f.Status != "", data.Eq("status", f.Status)),
+			data.When(len(f.Status) > 0, data.In("status", f.Status)),
 			data.When(f.OrgUnitID != 0, data.Eq("org_unit_id", f.OrgUnitID)),
 			data.When(f.EmployeeID != 0, data.Eq("employee_id", f.EmployeeID)),
 			data.When(from.Valid, data.Gte("end_date", from)),

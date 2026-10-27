@@ -3,6 +3,7 @@ package hrm_test
 import (
 	"context"
 	"errors"
+	"slices"
 	"strings"
 	"sync"
 	"testing"
@@ -412,4 +413,74 @@ func TestOverlappingContractsPostedAtOnce(t *testing.T) {
 	}))
 	wg.Wait()
 	wantErr(t, second, "contract_overlaps")
+}
+
+func TestEmployeeCurrentContract(t *testing.T) {
+	f := newContractFixture(t)
+	cur := func() *hrm.CurrentContract {
+		e, err := f.hrm.Employee(f.hr, f.emp)
+		f.check(err)
+		return e.CurrentContract
+	}
+	if cur() != nil {
+		t.Fatal("no contract: want nil")
+	}
+	now := time.Now()
+	day := func(d int) string { return now.AddDate(0, 0, d).Format("2006-01-02") }
+	// Drafts and expired contracts are not current.
+	must(t)(f.original(day(-10), "", 10_000_000))
+	if cur() != nil {
+		t.Fatal("draft: want nil")
+	}
+	expired := must(t)(f.original(day(-100), day(-50), 10_000_000))
+	f.check(f.post(expired))
+	if cur() != nil {
+		t.Fatal("expired: want nil")
+	}
+	id := must(t)(f.original(day(-10), day(100), 10_000_000))
+	f.check(f.post(id))
+	c := cur()
+	if c == nil || c.ID != id || c.Number == "" || c.ContractType != "Xác định thời hạn" || c.StartDate != day(-10) || c.EndDate == nil || *c.EndDate != day(100) {
+		t.Fatalf("covering today: %+v", c)
+	}
+	// A posted appendix in force changes the terms, not the contract.
+	f.check(f.post(must(t)(f.appendix(id, day(-5), 12_000_000))))
+	if c := cur(); c == nil || c.ID != id {
+		t.Fatalf("with appendix: %+v", c)
+	}
+}
+
+func TestEmployeeCurrentContractNeedsContractView(t *testing.T) {
+	f := newContractFixture(t)
+	f.check(f.post(must(t)(f.original("2020-01-01", "", 10_000_000))))
+	e, err := f.hrm.Employee(f.ctxFor("viewer", "viewer@*"), f.emp)
+	f.check(err)
+	if e.CurrentContract != nil {
+		t.Fatalf("viewer without contract view: %+v", e.CurrentContract)
+	}
+	if e, err := f.hrm.Employee(f.hr, f.emp); err != nil || e.CurrentContract == nil {
+		t.Fatalf("hr: %+v %v", e.CurrentContract, err)
+	}
+}
+
+// A contract stays filed under the unit it was made in when the employee moves; a viewer of
+// the new unit only does not see it as current.
+func TestEmployeeCurrentContractFollowsContractScope(t *testing.T) {
+	f := newContractFixture(t)
+	f.check(f.post(must(t)(f.original("2020-01-01", "", 10_000_000))))
+	e, err := f.hrm.Employee(f.hr, f.emp)
+	f.check(err)
+	moved := employee("E", f.b)
+	moved.UserLogin = str("e")
+	moved.ManagerID = e.ManagerID
+	f.check(f.hrm.UpdateEmployee(f.hr, f.emp, moved.EmployeeInput))
+	newUnit := f.ctxFor("newunit", "hr@B")
+	got, err := f.hrm.Employee(newUnit, f.emp)
+	f.check(err)
+	if !slices.Contains(got.AllowedActions, "view_contracts") || got.CurrentContract != nil {
+		t.Fatalf("actions %v, contract %+v", got.AllowedActions, got.CurrentContract)
+	}
+	if e, err := f.hrm.Employee(f.hr, f.emp); err != nil || e.CurrentContract == nil {
+		t.Fatalf("all units: %+v %v", e.CurrentContract, err)
+	}
 }

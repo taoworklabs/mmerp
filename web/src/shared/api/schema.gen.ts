@@ -1994,6 +1994,14 @@ export interface components {
             /** Format: int64 */
             id: number;
         };
+        CurrentContract: {
+            contract_type: string;
+            end_date: string | null;
+            /** Format: int64 */
+            id: number;
+            number: string;
+            start_date: string;
+        };
         Customer: {
             /**
              * Format: uri
@@ -2294,6 +2302,7 @@ export interface components {
             address: string | null;
             allowed_actions: string[];
             code: string;
+            current_contract: components["schemas"]["CurrentContract"];
             /** Format: date */
             date_of_birth: string | null;
             email: string | null;
@@ -5810,7 +5819,7 @@ export interface operations {
             query?: {
                 /** @description Number, or the employee's code or name */
                 q?: string;
-                status?: "draft" | "pending_approval" | "posted" | "cancelled";
+                status?: ("draft" | "pending_approval" | "posted" | "cancelled")[] | null;
                 org_unit_id?: number;
                 employee_id?: number;
                 /** @description Requests ending on or after */

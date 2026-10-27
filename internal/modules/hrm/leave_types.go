@@ -73,13 +73,13 @@ type LeaveList struct {
 }
 
 type LeaveFilter struct {
-	Q          string `query:"q" maxLength:"100" doc:"Number, or the employee's code or name"`
-	Status     string `query:"status" enum:"draft,pending_approval,posted,cancelled"`
-	OrgUnitID  int64  `query:"org_unit_id"`
-	EmployeeID int64  `query:"employee_id"`
-	From       string `query:"from" format:"date" doc:"Requests ending on or after"`
-	To         string `query:"to" format:"date" doc:"Requests starting on or before"`
-	Sort       string `query:"sort" enum:"start_date,-start_date,number,-number" default:"-start_date"`
+	Q          string   `query:"q" maxLength:"100" doc:"Number, or the employee's code or name"`
+	Status     []string `query:"status,explode" enum:"draft,pending_approval,posted,cancelled"`
+	OrgUnitID  int64    `query:"org_unit_id"`
+	EmployeeID int64    `query:"employee_id"`
+	From       string   `query:"from" format:"date" doc:"Requests ending on or after"`
+	To         string   `query:"to" format:"date" doc:"Requests starting on or before"`
+	Sort       string   `query:"sort" enum:"start_date,-start_date,number,-number" default:"-start_date"`
 	platform.Paging
 }
 

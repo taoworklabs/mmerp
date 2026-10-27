@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
+	"sync"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/riverqueue/river"
@@ -30,8 +31,21 @@ type JobArgs interface {
 	Spec() JobSpec
 }
 
-// JobMeta is what Enqueue stores in a user job's River metadata; RequestedBy
-// is zero for a system job.
+// systemKinds maps each registered job kind to its Spec().System. The middleware only
+// sees the job row, and metadata cannot say: periodic jobs are inserted with none.
+var systemKinds sync.Map
+
+// AddWorker registers a job kind's worker and records whether the kind is a system job.
+func AddWorker[T JobArgs](w *river.Workers, worker river.Worker[T]) {
+	river.AddWorker(w, worker)
+	var args T
+	systemKinds.Store(args.Kind(), args.Spec().System)
+}
+
+// errJobWithoutRequester cancels a user job that reached a worker with no requester.
+var errJobWithoutRequester = errors.New("platform: user job without a requester")
+
+// JobMeta is what Enqueue stores in a user job's River metadata; a system job has none.
 type JobMeta struct {
 	RequestedBy int64  `json:"requested_by,omitempty"`
 	Product     string `json:"product,omitempty"`
@@ -138,11 +152,12 @@ func CompleteJob[T river.JobArgs](ctx context.Context, job *river.Job[T], output
 	return err
 }
 
-// JobMiddleware runs every job in the ctx base builds (database, products…). A user
-// job runs as its requester and passes the product gate again, since the product may
-// have been turned off while it waited; permissions are checked again by the services
-// it calls. A coded client error cancels the job instead of retrying it, and is kept
-// in the job's output for the API to read back.
+// JobMiddleware runs every job in the ctx base builds (database, products…). Whether a
+// job is a system job comes from its kind's registration, never its metadata. A user
+// job runs as its requester, is cancelled if it has none, and passes the product gate
+// again, since the product may have been turned off while it waited; permissions are
+// checked again by the services it calls. A coded client error cancels the job instead
+// of retrying it, and is kept in the job's output for the API to read back.
 func JobMiddleware(base func(context.Context) context.Context) rivertype.WorkerMiddleware {
 	return river.WorkerMiddlewareFunc(func(ctx context.Context, job *rivertype.JobRow, doInner func(context.Context) error) error {
 		ctx = base(ctx)
@@ -151,8 +166,15 @@ func JobMiddleware(base func(context.Context) context.Context) rivertype.WorkerM
 		if err := json.Unmarshal(job.Metadata, &meta); err != nil {
 			return river.JobCancel(err)
 		}
+		v, _ := systemKinds.Load(job.Kind)
+		system := v == true // an unregistered kind is not a system job
+		if !system && meta.RequestedBy == 0 {
+			// Running it would skip every permission check.
+			LogFrom(ctx).Error("user job without a requester")
+			return river.JobCancel(errJobWithoutRequester)
+		}
 		err := func() error {
-			if meta.RequestedBy == 0 {
+			if system {
 				return doInner(ctx)
 			}
 			ctx = WithActor(ctx, meta.RequestedBy)

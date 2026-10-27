@@ -161,7 +161,7 @@ func (s leavePerfSeed) cases() []leavePerfCase {
 	return []leavePerfCase{
 		admin("no filter", LeaveFilter{}),
 		admin("employee", LeaveFilter{EmployeeID: s.employee}),
-		admin("status draft", LeaveFilter{Status: "draft"}),
+		admin("status draft", LeaveFilter{Status: []string{"draft"}}),
 		admin("q EMP4242", LeaveFilter{Q: "EMP4242"}),
 		admin("sort start_date", LeaveFilter{Sort: "start_date"}),
 		admin("sort number", LeaveFilter{Sort: "number"}),

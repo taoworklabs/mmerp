@@ -6,5 +6,6 @@ scripts/lint-fixtures/go/fixture.go:38 forbidigo
 scripts/lint-fixtures/go/fixture.go:41 forbidigo
 scripts/lint-fixtures/go/fixture.go:44 forbidigo
 scripts/lint-fixtures/go/fixture.go:46 forbidigo
-scripts/lint-fixtures/go/fixture.go:47 forbidigo
 scripts/lint-fixtures/go/fixture.go:48 forbidigo
+scripts/lint-fixtures/go/fixture.go:49 forbidigo
+scripts/lint-fixtures/go/fixture.go:50 forbidigo

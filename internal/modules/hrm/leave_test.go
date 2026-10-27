@@ -597,3 +597,14 @@ func TestRejectedLeaveReturnsToDraft(t *testing.T) {
 		t.Fatalf("resent: %+v, balance %s", f.leave(id), f.balance())
 	}
 }
+
+// The template is refused to whoever the import would refuse.
+func TestLeaveBalanceTemplateNeedsAdjustPermission(t *testing.T) {
+	f := newFixture(t)
+	if _, err := f.core.DataIO.Template(f.ctxFor("viewer", "viewer@*"), "hrm.leave_balance", nil); !errors.Is(err, platform.ErrForbidden) {
+		t.Fatalf("got %v, want forbidden", err)
+	}
+	if b, err := f.core.DataIO.Template(f.ctxFor("hr", "leave_admin@A"), "hrm.leave_balance", nil); err != nil || len(b) == 0 {
+		t.Fatalf("template for HR: %d bytes, %v", len(b), err)
+	}
+}
