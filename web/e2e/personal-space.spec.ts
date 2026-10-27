@@ -64,6 +64,7 @@ async function signInAs(page: Page, url: string) {
   await expect(page.getByRole('button', { name: /^Tài khoản:/ })).toBeVisible()
 }
 
+const overflow = (page: Page) => () => page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth)
 const money = (n: number) => new Intl.NumberFormat('vi-VN').format(n)
 
 test('the personal space: tile, days, payslip with its PDF, and another payroll is not found', async ({ page }) => {
@@ -75,7 +76,6 @@ test('the personal space: tile, days, payslip with its PDF, and another payroll 
   await page.goto('/me/days?mode=month&date=2026-04-01')
   await expect(page.getByRole('heading', { name: 'Chấm công' })).toBeVisible()
   await expect(page.getByText('chưa chốt', { exact: true })).toBeVisible()
-  await page.screenshot({ path: '../.superpowers/sdd/2026-10-27-hrm-menu-and-personal-space/days-month-desktop.png' })
 
   await page.goto('/me/payslips')
   await expect(page.getByRole('heading', { name: 'Phiếu lương' })).toBeVisible()
@@ -93,15 +93,15 @@ test('the personal space: tile, days, payslip with its PDF, and another payroll 
   await expect(page.getByText(/Không tìm thấy/i).first()).toBeVisible()
 })
 
-test('mobile layout screenshots', async ({ browser }) => {
+test('on a phone the days and the payslip do not overflow sideways', async ({ browser }) => {
   const ctx = await browser.newContext({ viewport: { width: 375, height: 800 }, locale: 'vi-VN' })
   const page = await ctx.newPage()
   await signInAs(page, '/me/days?mode=month&date=2026-04-01')
   await expect(page.getByText('chưa chốt', { exact: true })).toBeVisible()
-  await page.screenshot({ path: '../.superpowers/sdd/2026-10-27-hrm-menu-and-personal-space/days-month-375.png', fullPage: true })
+  await expect.poll(overflow(page)).toBe(false)
   await page.goto(`/me/payslips/${payroll}`)
   await expect(page.getByRole('main')).toContainText(money(net))
-  await page.screenshot({ path: '../.superpowers/sdd/2026-10-27-hrm-menu-and-personal-space/payslip-375.png', fullPage: true })
+  await expect.poll(overflow(page)).toBe(false)
 })
 
 test('with no product enabled the tile and payslips still read, and there is no request button', async ({ page }) => {
