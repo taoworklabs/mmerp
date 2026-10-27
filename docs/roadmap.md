@@ -25,7 +25,8 @@ A milestone only passes when what it adds keeps the contract intact from table t
 - **Module-specific status:** each status column has a single transition function, with tests for forbidden transitions.
 
 ```
-M11 Attachments and discussion ─► M12 Notifications ─► M13 PDF printing ─► M14 Sales
+M11 Attachments and discussion ─► M12 Notifications ─► M13 PDF printing ─► M14 Sales   (all done)
+   ─► HRM review ─► Core work after M14   (done) ─► next: not chosen
    ┄► M10 On-premise operations ┄► [Gate: production readiness]   (on hold)
 ```
 
@@ -96,7 +97,7 @@ M11 Attachments and discussion ─► M12 Notifications ─► M13 PDF printing 
 
 ## M14. Sales
 
-**Done** (2026-10-16): [ADR-0027](./adr/0027-sales-product.md).
+**Done** (2026-10-10): [ADR-0027](./adr/0027-sales-product.md).
 
 **Goal:** a business of any trade keeps its customers and item catalogue, and issues quotations and sales orders through the same lifecycle, approval, printing, attachments and notifications as HRM ([ADR-0027](./adr/0027-sales-product.md), [products/sales.md](../products/sales.md)).
 

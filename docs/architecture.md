@@ -59,7 +59,6 @@ flowchart TB
   subgraph mods ["modules: per enabled product"]
     hrm["hrm"]
     sales["sales"]
-    next["later products"]
   end
   subgraph shr ["shared: always on"]
     partner["partner"]
