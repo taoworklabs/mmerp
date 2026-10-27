@@ -89,4 +89,16 @@ describe('DataTable', () => {
     await expect.poll(() => container.querySelector('[role="list"]')).not.toBeNull()
     expect(container.querySelectorAll('p div')).toHaveLength(0)
   })
+
+  // The parent applies a sort a render later; a second click before then must still toggle.
+  it('toggles from the sort it last asked for, not the one still rendered', async () => {
+    const asked: string[] = []
+    const sortable = columns.map((c) => ({ ...c, sortable: true }))
+    await render(<DataTable columns={sortable} rows={rows} rowKey={(e) => e.id} label="Nhân viên" labels={labels} onSort={(s) => asked.push(s)} />)
+    await page.viewport(1300, 900)
+    const button = page.getByRole('button', { name: 'Họ tên' })
+    await button.click()
+    await button.click()
+    expect(asked).toEqual(['full_name', '-full_name'])
+  })
 })
