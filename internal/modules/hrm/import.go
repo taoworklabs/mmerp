@@ -13,6 +13,7 @@ import (
 	"github.com/shopspring/decimal"
 
 	"github.com/taoworklabs/mmerp/internal/core/dataio"
+	"github.com/taoworklabs/mmerp/internal/core/iam"
 	"github.com/taoworklabs/mmerp/internal/core/record"
 	"github.com/taoworklabs/mmerp/internal/modules/hrm/internal/store"
 	"github.com/taoworklabs/mmerp/internal/platform"
@@ -183,7 +184,22 @@ func (s *Service) importTimesheet(ctx context.Context, params json.RawMessage, r
 	return nil, s.SaveTimesheet(ctx, t.ID, TimesheetUpdate{Version: d.Version, Month: t.PeriodStart.Time.Format("2006-01"), Lines: lines})
 }
 
+// requireBalanceAdjust refuses whoever may not adjust any leave balance.
+func (s *Service) requireBalanceAdjust(ctx context.Context) (iam.Scope, error) {
+	sc, err := s.d.IAM.Scope(ctx, "hrm", PermBalanceAdjust)
+	if err != nil {
+		return sc, err
+	}
+	if !sc.Any() {
+		return sc, platform.ErrForbidden
+	}
+	return sc, nil
+}
+
 func (s *Service) leaveBalanceHeader(ctx context.Context, _ json.RawMessage) ([]string, error) {
+	if _, err := s.requireBalanceAdjust(ctx); err != nil {
+		return nil, err
+	}
 	loc, err := s.locale(ctx)
 	if err != nil {
 		return nil, err
@@ -198,12 +214,9 @@ func (s *Service) leaveBalanceHeader(ctx context.Context, _ json.RawMessage) ([]
 // importLeaveBalances adds each row's days to an employee's leave balance of a year,
 // with a reason; the file may not leave any balance below zero.
 func (s *Service) importLeaveBalances(ctx context.Context, _ json.RawMessage, rows [][]string) ([]dataio.RowError, error) {
-	sc, err := s.d.IAM.Scope(ctx, "hrm", PermBalanceAdjust)
+	sc, err := s.requireBalanceAdjust(ctx)
 	if err != nil {
 		return nil, err
-	}
-	if !sc.Any() {
-		return nil, platform.ErrForbidden
 	}
 	known, err := s.knownCodes(ctx, rows)
 	if err != nil {
