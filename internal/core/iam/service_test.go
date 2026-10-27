@@ -489,3 +489,60 @@ func TestRenameUser(t *testing.T) {
 		t.Fatalf("audit rows = %d (%v)", n, err)
 	}
 }
+
+func TestChangePassword(t *testing.T) {
+	s, ctx := setup(t)
+	id := must[int64](t)(s.CreateUser(ctx, "an", "An", "right password"))
+	t1 := must[string](t)(s.Login(ctx, "an", "right password"))
+	t2 := must[string](t)(s.Login(ctx, "an", "right password"))
+	me := platform.WithActor(ctx, id)
+
+	if err := s.ChangePassword(me, t1, "nope", "new password 1"); !errors.Is(err, iam.ErrWrongPassword) {
+		t.Fatalf("wrong current: %v", err)
+	}
+	if e, ok := errors.AsType[*platform.Error](s.ChangePassword(me, t1, "right password", "short")); !ok || e.Code != "password_weak" {
+		t.Fatalf("weak: %v", e)
+	}
+	if err := s.ChangePassword(me, t1, "right password", "new password 1"); err != nil {
+		t.Fatal(err)
+	}
+	if _, ok, _ := s.Authenticate(ctx, t1); !ok {
+		t.Fatal("own session dropped")
+	}
+	if _, ok, _ := s.Authenticate(ctx, t2); ok {
+		t.Fatal("other session survived")
+	}
+	if _, err := s.Login(ctx, "an", "right password"); !errors.Is(err, iam.ErrInvalidCredentials) {
+		t.Fatalf("old password: %v", err)
+	}
+	must[string](t)(s.Login(ctx, "an", "new password 1"))
+}
+
+func TestResetPassword(t *testing.T) {
+	s, ctx := setup(t)
+	id := must[int64](t)(s.CreateUser(ctx, "an", "An", "right password"))
+	token := must[string](t)(s.Login(ctx, "an", "right password"))
+	if err := s.ResetPassword(platform.WithActor(ctx, id), id, "temporary 1"); !errors.Is(err, platform.ErrForbidden) {
+		t.Fatalf("non-admin: %v", err)
+	}
+	if err := s.ResetPassword(ctx, id, "temporary 1"); err != nil {
+		t.Fatal(err)
+	}
+	if _, ok, _ := s.Authenticate(ctx, token); ok {
+		t.Fatal("session survived the reset")
+	}
+	token = must[string](t)(s.Login(ctx, "an", "temporary 1"))
+	sess, ok, _ := s.Authenticate(ctx, token)
+	if !ok || !sess.MustChangePassword {
+		t.Fatalf("session = %+v", sess)
+	}
+	if !must[iam.Me](t)(s.Me(platform.WithActor(ctx, id))).MustChangePassword {
+		t.Fatal("Me does not report the forced change")
+	}
+	if err := s.ChangePassword(platform.WithActor(ctx, id), token, "temporary 1", "chosen password"); err != nil {
+		t.Fatal(err)
+	}
+	if sess, _, _ := s.Authenticate(ctx, token); sess.MustChangePassword {
+		t.Fatal("flag not cleared")
+	}
+}

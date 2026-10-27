@@ -84,7 +84,7 @@ const pages: Record<Path, ComponentType> = {
 const all = entries as readonly Entry[]
 
 // The signed-in user the catalogue pretends to be: components such as the activity feed read it.
-const me: Me = { authz_version: '0', id: 1, locale: 'vi', login: 'an.nguyen', name: 'Nguyễn Văn An', permissions: {}, products: [], products_with_data: [], timezone: 'Asia/Ho_Chi_Minh' }
+const me: Me = { authz_version: '0', id: 1, locale: 'vi', login: 'an.nguyen', name: 'Nguyễn Văn An', permissions: {}, products: [], products_with_data: [], must_change_password: false, timezone: 'Asia/Ho_Chi_Minh' }
 
 // TemplateNote sits above a template, outside it: the problem it solves, when to reach for it and
 // when another fits better, and the components it is built from.

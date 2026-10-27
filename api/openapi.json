@@ -333,6 +333,35 @@
         ],
         "type": "object"
       },
+      "ChangePasswordInputBody": {
+        "additionalProperties": false,
+        "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "/api/schemas/ChangePasswordInputBody.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
+          "current": {
+            "maxLength": 200,
+            "minLength": 1,
+            "type": "string"
+          },
+          "next": {
+            "maxLength": 200,
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "current",
+          "next"
+        ],
+        "type": "object"
+      },
       "CodeSeries": {
         "additionalProperties": false,
         "properties": {
@@ -3871,6 +3900,9 @@
           "login": {
             "type": "string"
           },
+          "must_change_password": {
+            "type": "boolean"
+          },
           "name": {
             "type": "string"
           },
@@ -3911,7 +3943,8 @@
           "authz_version",
           "products",
           "products_with_data",
-          "permissions"
+          "permissions",
+          "must_change_password"
         ],
         "type": "object"
       },
@@ -6126,6 +6159,29 @@
         },
         "required": [
           "name"
+        ],
+        "type": "object"
+      },
+      "ResetPasswordInputBody": {
+        "additionalProperties": false,
+        "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "/api/schemas/ResetPasswordInputBody.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
+          "password": {
+            "maxLength": 200,
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "password"
         ],
         "type": "object"
       },
@@ -12089,6 +12145,59 @@
         ]
       }
     },
+    "/me/password": {
+      "post": {
+        "operationId": "change-my-password",
+        "parameters": [
+          {
+            "in": "cookie",
+            "name": "session",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChangePasswordInputBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "tags": [
+          "core",
+          "core"
+        ]
+      }
+    },
     "/notifications": {
       "get": {
         "description": "The caller's notifications, newest first, a page at a time.",
@@ -14201,6 +14310,51 @@
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/RenameInputBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "tags": [
+          "core",
+          "core"
+        ]
+      }
+    },
+    "/users/{id}/password": {
+      "post": {
+        "operationId": "reset-user-password",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ResetPasswordInputBody"
               }
             }
           },

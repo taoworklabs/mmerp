@@ -6,7 +6,7 @@ INSERT INTO iam.sessions (token_hash, user_id, expires_at) VALUES ($1, $2, now()
 DELETE FROM iam.sessions WHERE user_id = $1 AND expires_at <= now();
 
 -- name: GetSession :one
-SELECT s.user_id, u.authz_version, (SELECT version FROM iam.authz) AS tenant_version
+SELECT s.user_id, u.authz_version, u.must_change_password, (SELECT version FROM iam.authz) AS tenant_version
 FROM iam.sessions s JOIN iam.users u ON u.id = s.user_id
 WHERE s.token_hash = $1 AND s.expires_at > now() AND u.locked_at IS NULL;
 

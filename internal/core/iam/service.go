@@ -191,7 +191,7 @@ func (s *Service) Authenticate(ctx context.Context, token string) (sess Session,
 	if err != nil {
 		return Session{}, false, err
 	}
-	return Session{UserID: row.UserID, AuthzVersion: authzVersion(row.AuthzVersion, row.TenantVersion)}, true, nil
+	return Session{UserID: row.UserID, AuthzVersion: authzVersion(row.AuthzVersion, row.TenantVersion), MustChangePassword: row.MustChangePassword}, true, nil
 }
 
 // Me describes the actor in ctx.
@@ -227,7 +227,7 @@ func (s *Service) Me(ctx context.Context) (Me, error) {
 	}
 	return Me{
 		ID: u.ID, Login: u.Login, Name: u.Name, Locale: locale, Timezone: tz,
-		AuthzVersion: authzVersion(u.AuthzVersion, u.TenantVersion), Products: products, ProductsWithData: withData, Permissions: perms,
+		AuthzVersion: authzVersion(u.AuthzVersion, u.TenantVersion), Products: products, ProductsWithData: withData, Permissions: perms, MustChangePassword: u.MustChangePassword,
 	}, nil
 }
 
@@ -345,6 +345,58 @@ func (s *Service) setLocked(ctx context.Context, id int64, locked bool) error {
 			return err
 		}
 		return s.d.Audit.Record(ctx, action, map[string]any{"id": id})
+	})
+}
+
+// ChangePassword sets the actor's own password and ends their other sessions.
+func (s *Service) ChangePassword(ctx context.Context, token, current, next string) error {
+	id, _ := platform.ActorFrom(ctx)
+	// Hashing runs outside the transaction so it holds no connection.
+	hash, err := store.GetUserPassword.Run(ctx, id)
+	if err != nil {
+		return notFound(err)
+	}
+	if !verifyPassword(current, hash) {
+		return ErrWrongPassword
+	}
+	return platform.InTx(ctx, func(ctx context.Context) error {
+		u, err := store.GetUser.Run(ctx, id)
+		if err != nil {
+			return notFound(err)
+		}
+		if err := s.checkPassword(ctx, u.Login, u.Name, next); err != nil {
+			return err
+		}
+		if err := store.SetUserPassword.Run(ctx, store.SetUserPasswordParams{ID: id, PasswordHash: hashPassword(next)}); err != nil {
+			return err
+		}
+		if err := store.DeleteOtherUserSessions.Run(ctx, store.DeleteOtherUserSessionsParams{UserID: id, TokenHash: tokenHash(token)}); err != nil {
+			return err
+		}
+		return s.d.Audit.Record(ctx, "iam.password_changed", nil)
+	})
+}
+
+// ResetPassword gives a user a temporary password they must change at next sign-in.
+func (s *Service) ResetPassword(ctx context.Context, id int64, temporary string) error {
+	if err := s.require(ctx, PermManageUsers); err != nil {
+		return err
+	}
+	return platform.InTx(ctx, func(ctx context.Context) error {
+		u, err := store.GetUser.Run(ctx, id)
+		if err != nil {
+			return notFound(err)
+		}
+		if err := s.checkPassword(ctx, u.Login, u.Name, temporary); err != nil {
+			return err
+		}
+		if err := store.SetUserPassword.Run(ctx, store.SetUserPasswordParams{ID: id, PasswordHash: hashPassword(temporary), MustChange: true}); err != nil {
+			return err
+		}
+		if err := store.DeleteUserSessions.Run(ctx, id); err != nil {
+			return err
+		}
+		return s.d.Audit.Record(ctx, "iam.password_reset", map[string]any{"id": id})
 	})
 }
 

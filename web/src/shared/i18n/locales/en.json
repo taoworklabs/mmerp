@@ -67,6 +67,8 @@
   "shared.error.legal_fields_company_only": "Tax code, legal name and address are for legal entities only.",
   "shared.error.login_taken": "This login is already taken.",
   "shared.error.password_weak": "The password does not meet the requirements.",
+  "shared.error.wrong_password": "The current password is not correct.",
+  "shared.error.password_change_required": "You must change your password before continuing.",
   "shared.error.password_rule.min_length": "At least {{min}} characters.",
   "shared.error.password_rule.upper": "An uppercase letter.",
   "shared.error.password_rule.lower": "A lowercase letter.",

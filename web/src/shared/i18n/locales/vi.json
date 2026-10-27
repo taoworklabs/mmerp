@@ -67,6 +67,8 @@
   "shared.error.legal_fields_company_only": "Mã số thuế, tên pháp lý và địa chỉ chỉ dành cho pháp nhân.",
   "shared.error.login_taken": "Tên đăng nhập đã được dùng.",
   "shared.error.password_weak": "Mật khẩu chưa đạt yêu cầu.",
+  "shared.error.wrong_password": "Mật khẩu hiện tại không đúng.",
+  "shared.error.password_change_required": "Bạn cần đổi mật khẩu trước khi tiếp tục.",
   "shared.error.password_rule.min_length": "Có ít nhất {{min}} ký tự.",
   "shared.error.password_rule.upper": "Có chữ hoa.",
   "shared.error.password_rule.lower": "Có chữ thường.",

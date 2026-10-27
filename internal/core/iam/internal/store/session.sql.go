@@ -54,20 +54,26 @@ func (q *Queries) DeleteUserSessions(ctx context.Context, userID int64) error {
 }
 
 const getSession = `-- name: GetSession :one
-SELECT s.user_id, u.authz_version, (SELECT version FROM iam.authz) AS tenant_version
+SELECT s.user_id, u.authz_version, u.must_change_password, (SELECT version FROM iam.authz) AS tenant_version
 FROM iam.sessions s JOIN iam.users u ON u.id = s.user_id
 WHERE s.token_hash = $1 AND s.expires_at > now() AND u.locked_at IS NULL
 `
 
 type GetSessionRow struct {
-	UserID        int64
-	AuthzVersion  int64
-	TenantVersion int64
+	UserID             int64
+	AuthzVersion       int64
+	MustChangePassword bool
+	TenantVersion      int64
 }
 
 func (q *Queries) GetSession(ctx context.Context, tokenHash []byte) (GetSessionRow, error) {
 	row := q.db.QueryRow(ctx, getSession, tokenHash)
 	var i GetSessionRow
-	err := row.Scan(&i.UserID, &i.AuthzVersion, &i.TenantVersion)
+	err := row.Scan(
+		&i.UserID,
+		&i.AuthzVersion,
+		&i.MustChangePassword,
+		&i.TenantVersion,
+	)
 	return i, err
 }

@@ -22,6 +22,8 @@ type Me struct {
 	ProductsWithData []string `json:"products_with_data" nullable:"false"`
 	// Every permission the user has at any org unit, by product. Only for hiding menus and pages.
 	Permissions map[string][]string `json:"permissions"`
+	// Set after an administrator's reset or at first sign-in; the API refuses everything but changing it.
+	MustChangePassword bool `json:"must_change_password"`
 }
 
 // User is an account as administrators see it.
@@ -79,14 +81,16 @@ func (s Scope) Any() bool { return s.All || len(s.Units) > 0 }
 
 // Session is what a valid session cookie resolves to.
 type Session struct {
-	UserID       int64
-	AuthzVersion string
+	UserID             int64
+	AuthzVersion       string
+	MustChangePassword bool
 }
 
 var (
 	ErrInvalidCredentials = &platform.Error{Status: http.StatusUnauthorized, Code: "invalid_credentials"}
 	ErrLoginLocked        = &platform.Error{Status: http.StatusTooManyRequests, Code: "login_temporarily_locked"}
 	ErrAccountLocked      = &platform.Error{Status: http.StatusForbidden, Code: "account_locked"}
+	ErrWrongPassword      = &platform.Error{Status: http.StatusUnprocessableEntity, Code: "wrong_password"}
 	ErrLoginTaken         = &platform.Error{Status: http.StatusConflict, Code: "login_taken"}
 	ErrUnknownRole        = &platform.Error{Status: http.StatusUnprocessableEntity, Code: "unknown_role"}
 	ErrRoleTenantWide     = &platform.Error{Status: http.StatusUnprocessableEntity, Code: "role_tenant_wide"}

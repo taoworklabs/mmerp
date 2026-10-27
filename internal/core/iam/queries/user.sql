@@ -4,8 +4,17 @@ INSERT INTO iam.users (login, name, password_hash) VALUES ($1, $2, $3) RETURNING
 -- name: GetUserByLogin :one
 SELECT id, password_hash, locked_at FROM iam.users WHERE lower(login) = lower($1);
 
+-- name: GetUserPassword :one
+SELECT password_hash FROM iam.users WHERE id = $1;
+
+-- name: SetUserPassword :exec
+UPDATE iam.users SET password_hash = @password_hash, must_change_password = @must_change, authz_version = authz_version + 1 WHERE id = @id;
+
+-- name: DeleteOtherUserSessions :exec
+DELETE FROM iam.sessions WHERE user_id = $1 AND token_hash <> $2;
+
 -- name: GetUser :one
-SELECT u.id, u.login, u.name, u.email, u.locale, u.authz_version, u.locked_at, (SELECT version FROM iam.authz) AS tenant_version
+SELECT u.id, u.login, u.name, u.email, u.locale, u.authz_version, u.must_change_password, u.locked_at, (SELECT version FROM iam.authz) AS tenant_version
 FROM iam.users u WHERE u.id = $1;
 
 -- name: ListUsers :many

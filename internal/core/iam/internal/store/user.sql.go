@@ -46,20 +46,35 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (int64, 
 	return id, err
 }
 
+const deleteOtherUserSessions = `-- name: DeleteOtherUserSessions :exec
+DELETE FROM iam.sessions WHERE user_id = $1 AND token_hash <> $2
+`
+
+type DeleteOtherUserSessionsParams struct {
+	UserID    int64
+	TokenHash []byte
+}
+
+func (q *Queries) DeleteOtherUserSessions(ctx context.Context, arg DeleteOtherUserSessionsParams) error {
+	_, err := q.db.Exec(ctx, deleteOtherUserSessions, arg.UserID, arg.TokenHash)
+	return err
+}
+
 const getUser = `-- name: GetUser :one
-SELECT u.id, u.login, u.name, u.email, u.locale, u.authz_version, u.locked_at, (SELECT version FROM iam.authz) AS tenant_version
+SELECT u.id, u.login, u.name, u.email, u.locale, u.authz_version, u.must_change_password, u.locked_at, (SELECT version FROM iam.authz) AS tenant_version
 FROM iam.users u WHERE u.id = $1
 `
 
 type GetUserRow struct {
-	ID            int64
-	Login         string
-	Name          string
-	Email         pgtype.Text
-	Locale        pgtype.Text
-	AuthzVersion  int64
-	LockedAt      pgtype.Timestamptz
-	TenantVersion int64
+	ID                 int64
+	Login              string
+	Name               string
+	Email              pgtype.Text
+	Locale             pgtype.Text
+	AuthzVersion       int64
+	MustChangePassword bool
+	LockedAt           pgtype.Timestamptz
+	TenantVersion      int64
 }
 
 func (q *Queries) GetUser(ctx context.Context, id int64) (GetUserRow, error) {
@@ -72,6 +87,7 @@ func (q *Queries) GetUser(ctx context.Context, id int64) (GetUserRow, error) {
 		&i.Email,
 		&i.Locale,
 		&i.AuthzVersion,
+		&i.MustChangePassword,
 		&i.LockedAt,
 		&i.TenantVersion,
 	)
@@ -93,6 +109,17 @@ func (q *Queries) GetUserByLogin(ctx context.Context, lower string) (GetUserByLo
 	var i GetUserByLoginRow
 	err := row.Scan(&i.ID, &i.PasswordHash, &i.LockedAt)
 	return i, err
+}
+
+const getUserPassword = `-- name: GetUserPassword :one
+SELECT password_hash FROM iam.users WHERE id = $1
+`
+
+func (q *Queries) GetUserPassword(ctx context.Context, id int64) (string, error) {
+	row := q.db.QueryRow(ctx, getUserPassword, id)
+	var password_hash string
+	err := row.Scan(&password_hash)
+	return password_hash, err
 }
 
 const listSettings = `-- name: ListSettings :one
@@ -221,5 +248,20 @@ type SetUserNameParams struct {
 
 func (q *Queries) SetUserName(ctx context.Context, arg SetUserNameParams) error {
 	_, err := q.db.Exec(ctx, setUserName, arg.ID, arg.Name)
+	return err
+}
+
+const setUserPassword = `-- name: SetUserPassword :exec
+UPDATE iam.users SET password_hash = $1, must_change_password = $2, authz_version = authz_version + 1 WHERE id = $3
+`
+
+type SetUserPasswordParams struct {
+	PasswordHash string
+	MustChange   bool
+	ID           int64
+}
+
+func (q *Queries) SetUserPassword(ctx context.Context, arg SetUserPasswordParams) error {
+	_, err := q.db.Exec(ctx, setUserPassword, arg.PasswordHash, arg.MustChange, arg.ID)
 	return err
 }

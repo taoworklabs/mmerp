@@ -1184,6 +1184,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/me/password": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["change-my-password"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/notifications": {
         parameters: {
             query?: never;
@@ -1721,6 +1737,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/users/{id}/password": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["reset-user-password"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/users/{id}/roles": {
         parameters: {
             query?: never;
@@ -1882,6 +1914,16 @@ export interface components {
         Branch: {
             body: components["schemas"]["Element"][];
             condition?: components["schemas"]["Expr"];
+        };
+        ChangePasswordInputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example /api/schemas/ChangePasswordInputBody.json
+             */
+            readonly $schema?: string;
+            current: string;
+            next: string;
         };
         CodeSeries: {
             allowed_actions: string[];
@@ -2994,6 +3036,7 @@ export interface components {
             /** @enum {string} */
             locale: "vi" | "en";
             login: string;
+            must_change_password: boolean;
             name: string;
             permissions: {
                 [key: string]: string[] | null;
@@ -3774,6 +3817,15 @@ export interface components {
              */
             readonly $schema?: string;
             name: string;
+        };
+        ResetPasswordInputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example /api/schemas/ResetPasswordInputBody.json
+             */
+            readonly $schema?: string;
+            password: string;
         };
         Role: {
             permissions: string[] | null;
@@ -7323,6 +7375,48 @@ export interface operations {
             };
         };
     };
+    "change-my-password": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: {
+                session?: string;
+            };
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ChangePasswordInputBody"];
+            };
+        };
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
     "list-notifications": {
         parameters: {
             query?: {
@@ -8744,6 +8838,39 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["RenameInputBody"];
+            };
+        };
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "reset-user-password": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ResetPasswordInputBody"];
             };
         };
         responses: {
