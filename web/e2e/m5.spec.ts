@@ -60,7 +60,7 @@ async function importFile(page: Page, name: string) {
 
 test('HR imports the March timesheet from Excel, fixes a bad file, follows the job and gets it approved', async ({ browser }) => {
   const hr = await as(browser, login.hr, '/hrm/timesheets')
-  await hr.getByRole('button', { name: 'Tạo bảng công' }).click()
+  await hr.getByRole('button', { name: 'Tạo bảng chấm công' }).click()
   const create = hr.getByRole('dialog')
   await create.getByRole('combobox', { name: 'Đơn vị' }).click()
   await hr.getByRole('option', { name: new RegExp(`Phòng P ${run}`) }).click()
@@ -95,8 +95,8 @@ test('HR imports the March timesheet from Excel, fixes a bad file, follows the j
   // Both imports are in the user's own background jobs.
   await hr.getByRole('link', { name: 'Việc chạy nền' }).click()
   const jobs = hr.getByRole('table', { name: 'Việc chạy nền của tôi' })
-  await expect(jobs.getByRole('row', { name: /Nhập Excel.*Bảng công.*Xong.*Đã nhập 3 dòng/ })).toBeVisible()
-  await expect(jobs.getByRole('row', { name: /Nhập Excel.*Bảng công.*Thất bại.*Xem 3 dòng lỗi/ })).toBeVisible()
+  await expect(jobs.getByRole('row', { name: /Nhập Excel.*Bảng chấm công.*Xong.*Đã nhập 3 dòng/ })).toBeVisible()
+  await expect(jobs.getByRole('row', { name: /Nhập Excel.*Bảng chấm công.*Thất bại.*Xem 3 dòng lỗi/ })).toBeVisible()
   await hr.goBack()
 
   await hr.getByRole('button', { name: 'Gửi duyệt' }).click()

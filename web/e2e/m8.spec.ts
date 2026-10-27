@@ -31,9 +31,9 @@ async function signInAs(page: Page, login: string, url: string) {
 
 test('an HRM user reads the whole org tree inside HRM, without edit actions', async ({ page, baseURL }) => {
   await signInAs(page, hr, '/hrm/overview')
-  await page.getByRole('navigation').getByRole('link', { name: 'Cơ cấu tổ chức' }).click()
+  await page.getByRole('navigation').getByRole('link', { name: 'Sơ đồ tổ chức' }).click()
   await expect(page).toHaveURL(/\/hrm\/org$/)
-  await expect(page.getByRole('list', { name: 'Cơ cấu tổ chức' }).getByText(dept)).toBeVisible()
+  await expect(page.getByRole('list', { name: 'Sơ đồ tổ chức' }).getByText(dept)).toBeVisible()
   await expect(page.getByRole('link', { name: 'Sửa cơ cấu' })).toHaveCount(0)
   await expect(page.getByRole('button', { name: 'Thao tác khác' })).toHaveCount(0)
 
@@ -51,7 +51,7 @@ test('an administrator gets a link from the HRM tree to the tree editor', async 
 test('an HRM approval rule administrator edits HRM rules inside HRM', async ({ page }) => {
   await signInAs(page, rules, '/hrm/overview')
   const nav = page.getByRole('navigation')
-  await nav.getByRole('link', { name: 'Quy tắc duyệt' }).click()
+  await nav.getByRole('link', { name: 'Quy trình duyệt' }).click()
   await expect(page).toHaveURL(/\/hrm\/approval-rules$/)
   const table = page.getByRole('table', { name: 'Quy tắc duyệt' })
   await expect(table.getByRole('link', { name: 'Đơn nghỉ phép · Gửi duyệt' })).toBeVisible()
@@ -70,10 +70,10 @@ test('an HRM approval rule administrator edits HRM rules inside HRM', async ({ p
 test('the administrator finds approval rules in the HRM menu, not in administration', async ({ page }) => {
   await signedIn(page, '/hrm/overview')
   const nav = page.getByRole('navigation')
-  await expect(nav.getByRole('link', { name: 'Quy tắc duyệt' })).toHaveAttribute('href', '/hrm/approval-rules')
+  await expect(nav.getByRole('link', { name: 'Quy trình duyệt' })).toHaveAttribute('href', '/hrm/approval-rules')
   await page.goto('/admin/users')
   await expect(nav.getByRole('link', { name: 'Người dùng' })).toBeVisible()
-  await expect(nav.getByRole('link', { name: 'Quy tắc duyệt' })).toHaveCount(0)
+  await expect(nav.getByRole('link', { name: 'Quy trình duyệt' })).toHaveCount(0)
   await page.goto('/admin/approval-rules')
   await expect(page.getByRole('heading', { name: 'Không tìm thấy trang' })).toBeVisible()
 })

@@ -11,7 +11,7 @@ test('wrong password shows the error on the form; the right one opens the app', 
   await page.getByLabel(/^Mật khẩu/).fill(admin.password)
   await page.getByRole('button', { name: 'Đăng nhập' }).click()
   await expect(page.getByRole('heading', { name: `Xin chào, ${admin.name}` })).toBeVisible()
-  await expect(page.getByRole('main').getByRole('link', { name: 'Quản lý nhân sự' })).toBeVisible()
+  await expect(page.getByRole('main').getByRole('link', { name: 'Nhân sự' })).toBeVisible()
 })
 
 test('a session revoked on the server sends every open tab to the login screen once', async ({ context, page, baseURL }) => {
@@ -60,13 +60,13 @@ test('changing the language changes the whole interface, menu included', async (
   await page.getByRole('button', { name: /^Tài khoản:/ }).click()
   await page.getByRole('menuitem', { name: 'English' }).click()
   await expect(page.getByRole('heading', { name: 'Overview' })).toBeVisible()
-  await expect(nav.getByRole('link', { name: 'Employees' })).toBeVisible()
-  await expect(page.getByRole('banner').getByText('Human resource management')).toBeVisible()
+  await expect(nav.getByRole('link', { name: 'Employee records' })).toBeVisible()
+  await expect(page.getByRole('banner').getByText('HR', { exact: true })).toBeVisible()
   await expect(page.locator('html')).toHaveAttribute('lang', 'en')
 
   // Kept on the server: a fresh load is still English.
   await page.reload()
-  await expect(nav.getByRole('link', { name: 'Employees' })).toBeVisible()
+  await expect(nav.getByRole('link', { name: 'Employee records' })).toBeVisible()
 
   await page.getByRole('button', { name: 'Account' }).click()
   await page.getByRole('menuitem', { name: 'Tiếng Việt' }).click()
