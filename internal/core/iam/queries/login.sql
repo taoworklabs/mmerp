@@ -1,9 +1,7 @@
--- name: IsLoginLocked :one
-SELECT EXISTS (SELECT 1 FROM iam.login_failures WHERE login = lower(@login) AND locked_until > now());
-
--- name: RecordLoginFailure :one
--- One atomic upsert, so concurrent attempts cannot both miss the threshold.
--- Returns true only for the call that sets the lock; no row while a lock is active.
+-- name: ReserveLoginAttempt :one
+-- Counts the attempt before the password is checked, in one atomic upsert, so
+-- parallel attempts cannot all slip past the threshold. No row means the login
+-- is locked; otherwise the flag is true only for the call that sets the lock.
 INSERT INTO iam.login_failures AS f (login, failures, last_failed_at)
 VALUES (lower(@login), 1, now())
 ON CONFLICT (login) DO UPDATE SET

@@ -362,11 +362,24 @@ func TestLockout(t *testing.T) {
 	}
 	must[string](t)(s.Login(ctx, "an", "right password"))
 
-	for range 5 {
-		_, _ = s.Login(ctx, "an", "wrong")
+	for i := range 5 {
+		_, err := s.Login(ctx, "an", "wrong")
+		if !errors.Is(err, iam.ErrInvalidCredentials) {
+			t.Fatalf("attempt %d (the 5th sets the lock): %v", i+1, err)
+		}
 	}
+	count := func(action string) (n int) {
+		if err := platform.DBFrom(ctx).QueryRow(ctx, `SELECT count(*) FROM audit.log WHERE action = $1`, action).Scan(&n); err != nil {
+			t.Fatal(err)
+		}
+		return n
+	}
+	failed := count("iam.login_failed")
 	if _, err := s.Login(ctx, "AN", "right password"); !locked(err) {
 		t.Fatalf("locked login: %v", err)
+	}
+	if got := count("iam.login_failed"); got != failed {
+		t.Fatalf("a locked attempt wrote login_failed rows: %d -> %d", failed, got)
 	}
 	for range 5 {
 		_, _ = s.Login(ctx, "ghost", "wrong")
@@ -387,7 +400,7 @@ func TestLockoutCountsAtomically(t *testing.T) {
 	must[int64](t)(s.CreateUser(ctx, "an", "An", "right password"))
 
 	var wg sync.WaitGroup
-	for range 5 {
+	for range 20 {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
@@ -396,6 +409,9 @@ func TestLockoutCountsAtomically(t *testing.T) {
 	}
 	wg.Wait()
 	var n int
+	if err := platform.DBFrom(ctx).QueryRow(ctx, `SELECT count(*) FROM audit.log WHERE action = 'iam.login_failed'`).Scan(&n); err != nil || n != 5 {
+		t.Fatalf("login_failed rows = %d (%v), want 5: the rest are refused before hashing", n, err)
+	}
 	if err := platform.DBFrom(ctx).QueryRow(ctx, `SELECT count(*) FROM audit.log WHERE action = 'iam.login_locked'`).Scan(&n); err != nil || n != 1 {
 		t.Fatalf("login_locked rows = %d (%v)", n, err)
 	}

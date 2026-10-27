@@ -9,8 +9,7 @@ import (
 
 func newQ(c platform.Conn) *Queries { return New(c) }
 
-var IsLoginLocked = data.OneArg("iam.IsLoginLocked", newQ, (*Queries).IsLoginLocked)
-var RecordLoginFailure = data.OneArg("iam.RecordLoginFailure", newQ, (*Queries).RecordLoginFailure)
+var ReserveLoginAttempt = data.OneArg("iam.ReserveLoginAttempt", newQ, (*Queries).ReserveLoginAttempt)
 var DeleteStaleLoginFailures = data.Exec("iam.DeleteStaleLoginFailures", newQ, (*Queries).DeleteStaleLoginFailures)
 var ClearLoginFailures = data.ExecArg("iam.ClearLoginFailures", newQ, (*Queries).ClearLoginFailures)
 var LockOrgUnits = data.Exec("iam.LockOrgUnits", newQ, (*Queries).LockOrgUnits)

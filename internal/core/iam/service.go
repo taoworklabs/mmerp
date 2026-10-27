@@ -95,10 +95,8 @@ func (s *Service) createUser(ctx context.Context, login, name, password string) 
 
 // Login checks the password and opens a session; the returned token goes into the cookie.
 func (s *Service) Login(ctx context.Context, login, password string) (string, error) {
-	if locked, err := store.IsLoginLocked.Run(ctx, login); err != nil {
+	if err := s.reserveAttempt(ctx, login); err != nil {
 		return "", err
-	} else if locked {
-		return "", ErrLoginLocked
 	}
 	// Hashing runs outside the transaction so it holds no connection.
 	u, err := store.GetUserByLogin.Run(ctx, login)
@@ -134,23 +132,21 @@ func (s *Service) clearFailures(ctx context.Context, login string) error {
 	return store.ClearLoginFailures.Run(ctx, login)
 }
 
-func (s *Service) loginFailed(ctx context.Context, login string) error {
-	// Its own transaction: the attempt is recorded although the login fails.
+// reserveAttempt counts the attempt before any hashing, so at most MaxFailures
+// attempts per window reach the password check, whatever the concurrency.
+func (s *Service) reserveAttempt(ctx context.Context, login string) error {
 	p, err := s.policy(ctx)
 	if err != nil {
 		return err
 	}
-	if err := platform.InTx(ctx, func(ctx context.Context) error {
-		if err := s.d.Audit.Record(ctx, "iam.login_failed", map[string]any{"login": login}); err != nil {
-			return err
-		}
+	return platform.InTx(ctx, func(ctx context.Context) error {
 		if err := store.DeleteStaleLoginFailures.Run(ctx); err != nil {
 			return err
 		}
-		locked, err := store.RecordLoginFailure.Run(ctx, store.RecordLoginFailureParams{
+		locked, err := store.ReserveLoginAttempt.Run(ctx, store.ReserveLoginAttemptParams{
 			Login: login, MaxFailures: int32(p.MaxFailures), LockMinutes: int32(p.LockMinutes)})
 		if errors.Is(err, pgx.ErrNoRows) {
-			return nil
+			return ErrLoginLocked
 		}
 		if err != nil {
 			return err
@@ -159,6 +155,13 @@ func (s *Service) loginFailed(ctx context.Context, login string) error {
 			return s.d.Audit.Record(ctx, "iam.login_locked", map[string]any{"login": login})
 		}
 		return nil
+	})
+}
+
+func (s *Service) loginFailed(ctx context.Context, login string) error {
+	// Its own transaction: the attempt is recorded although the login fails.
+	if err := platform.InTx(ctx, func(ctx context.Context) error {
+		return s.d.Audit.Record(ctx, "iam.login_failed", map[string]any{"login": login})
 	}); err != nil {
 		return err
 	}

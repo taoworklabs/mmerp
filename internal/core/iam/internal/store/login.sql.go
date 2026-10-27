@@ -27,18 +27,7 @@ func (q *Queries) DeleteStaleLoginFailures(ctx context.Context) error {
 	return err
 }
 
-const isLoginLocked = `-- name: IsLoginLocked :one
-SELECT EXISTS (SELECT 1 FROM iam.login_failures WHERE login = lower($1) AND locked_until > now())
-`
-
-func (q *Queries) IsLoginLocked(ctx context.Context, login string) (bool, error) {
-	row := q.db.QueryRow(ctx, isLoginLocked, login)
-	var exists bool
-	err := row.Scan(&exists)
-	return exists, err
-}
-
-const recordLoginFailure = `-- name: RecordLoginFailure :one
+const reserveLoginAttempt = `-- name: ReserveLoginAttempt :one
 INSERT INTO iam.login_failures AS f (login, failures, last_failed_at)
 VALUES (lower($1), 1, now())
 ON CONFLICT (login) DO UPDATE SET
@@ -49,16 +38,17 @@ WHERE f.locked_until IS NULL OR f.locked_until <= now()
 RETURNING (f.failures = 0)::boolean AS locked
 `
 
-type RecordLoginFailureParams struct {
+type ReserveLoginAttemptParams struct {
 	Login       string
 	MaxFailures int32
 	LockMinutes int32
 }
 
-// One atomic upsert, so concurrent attempts cannot both miss the threshold.
-// Returns true only for the call that sets the lock; no row while a lock is active.
-func (q *Queries) RecordLoginFailure(ctx context.Context, arg RecordLoginFailureParams) (bool, error) {
-	row := q.db.QueryRow(ctx, recordLoginFailure, arg.Login, arg.MaxFailures, arg.LockMinutes)
+// Counts the attempt before the password is checked, in one atomic upsert, so
+// parallel attempts cannot all slip past the threshold. No row means the login
+// is locked; otherwise the flag is true only for the call that sets the lock.
+func (q *Queries) ReserveLoginAttempt(ctx context.Context, arg ReserveLoginAttemptParams) (bool, error) {
+	row := q.db.QueryRow(ctx, reserveLoginAttempt, arg.Login, arg.MaxFailures, arg.LockMinutes)
 	var locked bool
 	err := row.Scan(&locked)
 	return locked, err
