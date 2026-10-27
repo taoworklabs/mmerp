@@ -143,6 +143,10 @@ type createUserInput struct {
 	}
 }
 
+type loginPolicyOutput struct{ Body LoginPolicy }
+
+type setLoginPolicyInput struct{ Body LoginPolicy }
+
 type rolesOutput struct{ Body []Role }
 
 type grantsOutput struct{ Body []Grant }
@@ -193,6 +197,15 @@ func registerAdminHandlers(api huma.API, s *Service) {
 	huma.Register(api, huma.Operation{OperationID: "set-user-email", Method: http.MethodPut, Path: "/users/{id}/email", DefaultStatus: http.StatusNoContent},
 		func(ctx context.Context, in *emailInput) (*struct{}, error) {
 			return nil, s.SetEmail(ctx, in.ID, in.Body.Email)
+		})
+	huma.Register(api, huma.Operation{OperationID: "get-login-policy", Method: http.MethodGet, Path: "/login-policy"},
+		func(ctx context.Context, _ *struct{}) (*loginPolicyOutput, error) {
+			p, err := s.LoginPolicy(ctx)
+			return &loginPolicyOutput{Body: p}, err
+		})
+	huma.Register(api, huma.Operation{OperationID: "set-login-policy", Method: http.MethodPut, Path: "/login-policy", DefaultStatus: http.StatusNoContent},
+		func(ctx context.Context, in *setLoginPolicyInput) (*struct{}, error) {
+			return nil, s.SetLoginPolicy(ctx, in.Body)
 		})
 	huma.Register(api, huma.Operation{OperationID: "list-roles", Method: http.MethodGet, Path: "/roles"},
 		func(ctx context.Context, _ *struct{}) (*rolesOutput, error) {

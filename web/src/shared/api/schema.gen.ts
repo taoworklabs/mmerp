@@ -1102,6 +1102,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/login-policy": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["get-login-policy"];
+        put: operations["set-login-policy"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/mail-server": {
         parameters: {
             query?: never;
@@ -2862,6 +2878,24 @@ export interface components {
             readonly $schema?: string;
             login: string;
             password: string;
+        };
+        LoginPolicy: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example /api/schemas/LoginPolicy.json
+             */
+            readonly $schema?: string;
+            digit: boolean;
+            /** Format: int64 */
+            lock_minutes: number;
+            lower: boolean;
+            /** Format: int64 */
+            max_failures: number;
+            /** Format: int64 */
+            min_length: number;
+            symbol: boolean;
+            upper: boolean;
         };
         MailServer: {
             /**
@@ -6894,6 +6928,66 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["SetInputBody"];
+            };
+        };
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "get-login-policy": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LoginPolicy"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "set-login-policy": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LoginPolicy"];
             };
         };
         responses: {

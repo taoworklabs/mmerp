@@ -55,7 +55,7 @@ func must[T any](t *testing.T) func(T, error) T {
 func TestCreateUserRules(t *testing.T) {
 	s, ctx := setup(t)
 
-	if _, err := s.CreateUser(ctx, "an", "An", "short"); !errors.Is(err, iam.ErrPasswordTooShort) {
+	if _, err := s.CreateUser(ctx, "an", "An", "short"); !errors.Is(err, &platform.Error{Code: "password_weak"}) {
 		t.Fatalf("short password: %v", err)
 	}
 	an := must[int64](t)(s.CreateUser(ctx, "an", "An", "long enough"))
@@ -67,6 +67,30 @@ func TestCreateUserRules(t *testing.T) {
 	}
 	if _, err := s.CreateUser(platform.WithActor(ctx, an), "binh", "Bình", "long enough"); !errors.Is(err, platform.ErrForbidden) {
 		t.Fatalf("non-admin creates user: %v", err)
+	}
+}
+
+func TestLoginPolicy(t *testing.T) {
+	s, ctx := setup(t)
+
+	got := must[iam.LoginPolicy](t)(s.LoginPolicy(ctx))
+	if want := (iam.LoginPolicy{MinLength: 8, MaxFailures: 5, LockMinutes: 15}); got != want {
+		t.Fatalf("defaults: %+v", got)
+	}
+	if err := s.SetLoginPolicy(ctx, iam.LoginPolicy{MinLength: 10, Digit: true, MaxFailures: 5, LockMinutes: 15}); err != nil {
+		t.Fatal(err)
+	}
+	_, err := s.CreateUser(ctx, "an", "An", "longenough")
+	var pe *platform.Error
+	if !errors.As(err, &pe) || pe.Code != "password_weak" || !reflect.DeepEqual(pe.Params["rules"], []string{"digit"}) {
+		t.Fatalf("weak password: %v", err)
+	}
+	if err := s.SetLoginPolicy(ctx, iam.LoginPolicy{MinLength: 7, MaxFailures: 5, LockMinutes: 15}); !errors.As(err, &pe) || pe.Code != "invalid_request" {
+		t.Fatalf("out of bounds: %v", err)
+	}
+	an := must[int64](t)(s.CreateUser(ctx, "an", "An", "longenough1"))
+	if err := s.SetLoginPolicy(platform.WithActor(ctx, an), got); !errors.Is(err, platform.ErrForbidden) {
+		t.Fatalf("non-admin: %v", err)
 	}
 }
 

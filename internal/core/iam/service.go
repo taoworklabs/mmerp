@@ -82,8 +82,8 @@ func (s *Service) CreateAdmin(ctx context.Context, login, name, password string)
 }
 
 func (s *Service) createUser(ctx context.Context, login, name, password string) (int64, error) {
-	if len(password) < MinPasswordLength {
-		return 0, ErrPasswordTooShort
+	if err := s.checkPassword(ctx, login, name, password); err != nil {
+		return 0, err
 	}
 	id, err := store.CreateUser.Run(ctx, store.CreateUserParams{Login: login, Name: name, PasswordHash: hashPassword(password)})
 	if pgErr, ok := errors.AsType[*pgconn.PgError](err); ok && pgErr.Code == "23505" {

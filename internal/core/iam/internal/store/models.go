@@ -8,6 +8,16 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+type IamLoginPolicy struct {
+	MinLength   int32
+	Upper       bool
+	Lower       bool
+	Digit       bool
+	Symbol      bool
+	MaxFailures int32
+	LockMinutes int32
+}
+
 type IamOrgUnit struct {
 	ID        int64
 	ParentID  pgtype.Int8

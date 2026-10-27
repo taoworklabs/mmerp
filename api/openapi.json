@@ -3673,6 +3673,60 @@
         ],
         "type": "object"
       },
+      "LoginPolicy": {
+        "additionalProperties": false,
+        "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "/api/schemas/LoginPolicy.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
+          "digit": {
+            "type": "boolean"
+          },
+          "lock_minutes": {
+            "format": "int64",
+            "maximum": 1440,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "lower": {
+            "type": "boolean"
+          },
+          "max_failures": {
+            "format": "int64",
+            "maximum": 20,
+            "minimum": 3,
+            "type": "integer"
+          },
+          "min_length": {
+            "format": "int64",
+            "maximum": 64,
+            "minimum": 8,
+            "type": "integer"
+          },
+          "symbol": {
+            "type": "boolean"
+          },
+          "upper": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "min_length",
+          "upper",
+          "lower",
+          "digit",
+          "symbol",
+          "max_failures",
+          "lock_minutes"
+        ],
+        "type": "object"
+      },
       "MailServer": {
         "additionalProperties": false,
         "properties": {
@@ -11641,6 +11695,69 @@
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/SetInputBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "tags": [
+          "core",
+          "core"
+        ]
+      }
+    },
+    "/login-policy": {
+      "get": {
+        "operationId": "get-login-policy",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LoginPolicy"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "tags": [
+          "core",
+          "core"
+        ]
+      },
+      "put": {
+        "operationId": "set-login-policy",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginPolicy"
               }
             }
           },

@@ -84,7 +84,6 @@ type Session struct {
 
 var (
 	ErrInvalidCredentials = &platform.Error{Status: http.StatusUnauthorized, Code: "invalid_credentials"}
-	ErrPasswordTooShort   = &platform.Error{Status: http.StatusUnprocessableEntity, Code: "password_too_short", Params: map[string]any{"min": MinPasswordLength}}
 	ErrLoginTaken         = &platform.Error{Status: http.StatusConflict, Code: "login_taken"}
 	ErrUnknownRole        = &platform.Error{Status: http.StatusUnprocessableEntity, Code: "unknown_role"}
 	ErrRoleTenantWide     = &platform.Error{Status: http.StatusUnprocessableEntity, Code: "role_tenant_wide"}
@@ -116,5 +115,3 @@ type ListColumn struct {
 	Hidden bool   `json:"hidden"`
 	Width  *int   `json:"width" minimum:"48" maximum:"800"`
 }
-
-const MinPasswordLength = 8
