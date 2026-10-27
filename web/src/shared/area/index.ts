@@ -31,6 +31,8 @@ export type AreaManifest = {
   collapsibleGroups?: string[] // groups the user may fold; remembered per user
   // The area's tile on the home page; it opens the first nav item the user may see.
   homeIcon: ComponentType<{ size?: number; stroke?: number }>
+  // A hook that replaces the permission rule for the tile; undefined while loading (no tile yet).
+  useEntitled?: () => boolean | undefined
   i18n: {
     meta: Record<Locale, Bundle> // nav labels; loaded at startup
     main?: Record<Locale, Bundle> // the rest; loaded with the routes
