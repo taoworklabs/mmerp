@@ -1,5 +1,5 @@
 import { Button, FieldList, KeyFacts, Panel, RecordColumns, Stack, Text } from '@mmerp/ui'
-import { IconMail, IconPlus, IconTrash, IconUserCircle } from '@tabler/icons-react'
+import { IconKey, IconLock, IconLockOpen, IconMail, IconPlus, IconTrash, IconUserCircle } from '@tabler/icons-react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
@@ -10,7 +10,7 @@ import { api, ApiError, unwrap, type Grant } from '@/shared/api/core'
 import { errorText } from '@/shared/i18n'
 import { PersonAvatar } from '@/shared/ui/avatar'
 import { DataTable, type Column } from '@/shared/ui/DataTable'
-import { Form, FormActions, OrgUnitField, SelectField } from '@/shared/ui/form'
+import { Form, FormActions, OrgUnitField, PasswordField, SelectField, passwordErrorText } from '@/shared/ui/form'
 import { MissingValue } from '@/shared/ui/MissingValue'
 import { InlineEditField } from '@/shared/ui/InlineEditField'
 import { MenuAction } from '@/shared/ui/MenuAction'
@@ -21,11 +21,16 @@ import { ContentSkeleton, EmptyState, ErrorState, NotFoundPage, PageSkeleton } f
 import { icon } from '@/shared/ui/theme'
 import { useAction } from '@/shared/ui/useAction'
 import { coreKeys } from '../keys'
+import { PasswordRules } from '../components/PasswordRules'
+import { UserBadges } from '../components/UserBadges'
 
 export function UserPage() {
   const { t } = useTranslation()
   const id = Number(useParams().id)
   const [granting, setGranting] = useState(false)
+  const [resetting, setResetting] = useState(false)
+  const qc = useQueryClient()
+  const action = useAction()
   const user = useQuery({ queryKey: coreKeys.users.detail(id), queryFn: () => unwrap(api.GET('/users/{id}', { params: { path: { id } } })) })
   const grants = useGrants(id)
 
@@ -34,11 +39,25 @@ export function UserPage() {
   if (user.isError) return <ErrorState message={errorText(t, user.error)} onRetry={() => void user.refetch()} />
   const u = user.data
   const count = grants.data?.length
+  const toggleLock = () =>
+    action.run(
+      async () => {
+        await unwrap(api.POST(u.locked ? '/users/{id}/unlock' : '/users/{id}/lock', { params: { path: { id } } }))
+        await qc.invalidateQueries({ queryKey: coreKeys.users.all() })
+      },
+      {
+        confirm: u.locked
+          ? undefined
+          : { title: t('core.user.lock_title'), message: t('core.user.lock_confirm', { name: u.name }), confirmLabel: t('core.user.lock'), danger: true },
+        success: u.locked ? t('core.user.unlocked') : t('core.user.locked_done'),
+      },
+    )
   return (
     <RecordPage
       title={u.name}
       description={u.login}
       leading={<PersonAvatar name={u.name} size="lg" />}
+      status={<UserBadges user={u} />}
       breadcrumbs={[{ label: t('core.user.title'), to: '/admin/users' }]}
       summary={
         <KeyFacts
@@ -54,16 +73,31 @@ export function UserPage() {
           {t('core.user.grant')}
         </Button>
       }
+      more={
+        !u.root && (
+          <>
+            <MenuAction icon={IconKey} onClick={() => setResetting(true)}>
+              {t('core.user.reset_password')}
+            </MenuAction>
+            <MenuAction icon={u.locked ? IconLockOpen : IconLock} danger={!u.locked} onClick={() => void toggleLock()}>
+              {u.locked ? t('core.user.unlock') : t('core.user.lock')}
+            </MenuAction>
+          </>
+        )
+      }
       tabs={[
         {
           value: 'overview',
           label: t('shared.record.overview'),
           content: <RecordColumns main={<UserProfile userId={id} login={u.login} name={u.name} email={u.email} />} side={<RolesDigest userId={id} />} />,
         },
-        { value: 'roles', label: count ? t('core.user.roles_count', { count }) : t('core.user.roles'), content: <RolesTab userId={id} /> },
+        { value: 'roles', label: count ? t('core.user.roles_count', { count }) : t('core.user.roles'), content: <RolesTab userId={id} root={u.root} /> },
       ]}
     >
       {granting && <GrantModal userId={id} onClose={() => setGranting(false)} />}
+      {resetting && <ResetPasswordModal userId={id} onClose={() => setResetting(false)} />}
+      {action.error && <ErrorState message={action.error} />}
+      {action.dialog}
     </RecordPage>
   )
 }
@@ -108,7 +142,7 @@ function RolesDigest({ userId }: { userId: number }) {
 // roleLabel names a role by its product's translation, e.g. hrm.role.hr.
 const roleLabel = (t: TFunction, product: string, role: string) => t(`${product}.role.${role}`, { defaultValue: `${product}.${role}` })
 
-function RolesTab({ userId }: { userId: number }) {
+function RolesTab({ userId, root }: { userId: number; root: boolean }) {
   const { t } = useTranslation()
   const qc = useQueryClient()
   const grants = useGrants(userId)
@@ -144,11 +178,14 @@ function RolesTab({ userId }: { userId: number }) {
           columns={columns}
           rows={data}
           rowKey={(g) => g.id}
-          menu={(g) => (
-            <MenuAction icon={IconTrash} danger onClick={() => void revoke(g)}>
-              {t('core.user.revoke')}
-            </MenuAction>
-          )}
+          // Root keeps its tenant-wide administrator grant.
+          menu={(g) =>
+            root && g.product === 'core' && g.role === 'admin' && g.org_unit_id === null ? null : (
+              <MenuAction icon={IconTrash} danger onClick={() => void revoke(g)}>
+                {t('core.user.revoke')}
+              </MenuAction>
+            )
+          }
         />
       )}
     </QueryView>
@@ -209,13 +246,19 @@ function UserProfile({ userId, login, name, email }: { userId: number; login: st
   return (
     <>
       <Panel title={t('core.user.account')} icon={<IconUserCircle {...icon.text} aria-hidden />}>
-        <FieldList
-          stacked
-          rows={[
-            [t('core.user.login'), login],
-            [t('core.user.name'), name],
-          ]}
-        />
+        <Stack gap="xxs">
+          <FieldList stacked rows={[[t('core.user.login'), login]]} />
+          <InlineEditField
+            label={t('core.user.name')}
+            value={name}
+            maxLength={200}
+            validate={(v) => (v.trim() ? null : t('core.user.name_required'))}
+            onSave={async (v) => {
+              await unwrap(api.PUT('/users/{id}/name', { params: { path: { id: userId } }, body: { name: v.trim() } }))
+              await qc.invalidateQueries({ queryKey: coreKeys.users.all() })
+            }}
+          />
+        </Stack>
       </Panel>
       <Panel title={t('core.user.contact')} icon={<IconMail {...icon.text} aria-hidden />}>
         <Stack gap="xxs">
@@ -235,5 +278,38 @@ function UserProfile({ userId, login, name, email }: { userId: number; login: st
         </Stack>
       </Panel>
     </>
+  )
+}
+
+// ResetPasswordModal sets a temporary password; the user must change it at the next sign-in.
+function ResetPasswordModal({ userId, onClose }: { userId: number; onClose: () => void }) {
+  const { t } = useTranslation()
+  const form = useForm<{ password: string }>({ mode: 'onBlur', defaultValues: { password: '' } })
+  const [rules, setRules] = useState<string[]>([])
+
+  async function save(v: { password: string }) {
+    setRules([])
+    try {
+      await unwrap(api.POST('/users/{id}/password', { params: { path: { id: userId } }, body: { password: v.password } }))
+    } catch (err) {
+      if (err instanceof ApiError && err.code === 'password_weak') {
+        setRules(passwordErrorText(t, err))
+        form.setFocus('password')
+        return false
+      }
+      throw err
+    }
+    notifySuccess(t('core.user.password_reset'))
+    onClose()
+  }
+
+  return (
+    <FormModal opened title={t('core.user.reset_password')} onClose={onClose}>
+      <Form form={form} onSubmit={save}>
+        <PasswordField name="password" label={t('core.user.temporary_password')} required description={t('core.user.temporary_password_hint')} />
+        <PasswordRules rules={rules} />
+        <FormActions submitLabel={t('core.user.reset_password')} onCancel={onClose} cancelLabel={t('core.common.cancel')} />
+      </Form>
+    </FormModal>
   )
 }

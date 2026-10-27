@@ -1,4 +1,4 @@
-import { Button, Stack, Text } from '@mmerp/ui'
+import { Button } from '@mmerp/ui'
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { useTranslation } from 'react-i18next'
@@ -6,9 +6,9 @@ import { useNavigate } from 'react-router'
 import { api, ApiError, unwrap } from '@/shared/api/core'
 import { useMe } from '@/shared/auth/me'
 import { Form, FormActions, FormSection, PasswordField, passwordErrorText } from '@/shared/ui/form'
-import { Notice } from '@/shared/ui/Notice'
 import { notifySuccess } from '@/shared/ui/notify'
 import { Page } from '@/shared/ui/page'
+import { PasswordRules } from '../components/PasswordRules'
 
 type Values = { current: string; next: string; confirm: string }
 
@@ -54,17 +54,7 @@ export default function PasswordPage() {
         <FormSection title={t('core.password.title')}>
           <PasswordField name="current" label={t('core.password.current')} autoComplete="current-password" required />
           <PasswordField name="next" label={t('core.password.next')} required />
-          {rules.length > 0 && (
-            <Notice tone="danger">
-              <Stack gap="xxs" role="list">
-                {rules.map((r) => (
-                  <Text key={r} size="sm" role="listitem">
-                    {r}
-                  </Text>
-                ))}
-              </Stack>
-            </Notice>
-          )}
+          <PasswordRules rules={rules} />
           <PasswordField name="confirm" label={t('core.password.confirm')} required />
         </FormSection>
         {forced ? <Button type="submit">{t('core.password.submit')}</Button> : <FormActions submitLabel={t('core.password.submit')} cancelTo="/" />}

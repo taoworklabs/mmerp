@@ -150,5 +150,6 @@
   "core.sessions.end_all": "End other sessions",
   "core.sessions.end_all_confirm": "Every other device will be signed out. This device stays signed in.",
   "core.sessions.ended_all": "Other sessions ended.",
-  "core.sessions.empty": "No sessions."
+  "core.sessions.empty": "No sessions.",
+  "core.nav.login_policy": "Sign-in policy"
 }

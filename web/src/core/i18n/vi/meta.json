@@ -150,5 +150,6 @@
   "core.sessions.end_all": "Kết thúc các phiên khác",
   "core.sessions.end_all_confirm": "Mọi thiết bị khác sẽ bị đăng xuất. Phiên của thiết bị này được giữ lại.",
   "core.sessions.ended_all": "Đã kết thúc các phiên khác.",
-  "core.sessions.empty": "Không có phiên nào."
+  "core.sessions.empty": "Không có phiên nào.",
+  "core.nav.login_policy": "Chính sách đăng nhập"
 }
