@@ -60,12 +60,12 @@ export function TextField(
     maxLength: props.maxLength,
     // A read-only field shows only its value; a sample there would read as data.
     placeholder: props.readOnly ? undefined : props.placeholder,
-    // Long text spans the whole row of a FormSection grid.
-    className: props.wide || props.multiline ? classes.wide : undefined,
     value: field.value ?? '',
   }
-  if (props.multiline) return place(<Textarea {...shared} autosize minRows={2} onChange={(e) => field.onChange(e.currentTarget.value)} />)
-  return place(<TextInput {...shared} type={props.type} autoComplete={props.autoComplete} onChange={(e) => field.onChange(e.currentTarget.value)} />)
+  // Long text spans the whole row of a form grid through the kit's [data-full-row] hook.
+  const row = (el: ReactElement) => (props.wide || props.multiline ? <div data-full-row="">{el}</div> : place(el))
+  if (props.multiline) return row(<Textarea {...shared} autosize minRows={2} onChange={(e) => field.onChange(e.currentTarget.value)} />)
+  return row(<TextInput {...shared} type={props.type} autoComplete={props.autoComplete} onChange={(e) => field.onChange(e.currentTarget.value)} />)
 }
 
 // CodeField: an entry's code, typed or left empty to be issued at creation, read-only after.

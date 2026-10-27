@@ -4,11 +4,6 @@
   text-align: right;
 }
 
-/* Long text spans the whole row of a FormSection grid. */
-.wide {
-  grid-column: 1 / -1;
-}
-
 /* The number of fields still to fix, in a round badge. */
 .count.count {
   min-width: 1.125rem;
