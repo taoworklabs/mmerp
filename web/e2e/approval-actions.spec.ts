@@ -124,7 +124,7 @@ test('cancelling a posted order waits for the manager', async ({ browser }) => {
   await panel.getByRole('combobox', { name: 'Không tìm được người duyệt thì chuyển cho' }).click()
   await admin_.getByRole('option', { name: 'Quản lý bán hàng', exact: true }).click()
   await admin_.getByRole('button', { name: 'Lưu' }).click()
-  await expect(admin_.getByText('Đã lưu quy tắc duyệt.')).toBeVisible()
+  await expect(admin_.getByText('Đã lưu quy trình duyệt.')).toBeVisible()
   // Only the cancel rule changed; the order's post rule is its own.
   const after = await orderRules()
   expect(after.cancel).toBeTruthy()

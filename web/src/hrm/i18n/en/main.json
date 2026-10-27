@@ -172,7 +172,7 @@
   "hrm.contract.line.support": "Support",
   "hrm.contract.line.taxable": "Taxable",
   "hrm.contract_type.title": "Contract kinds",
-  "hrm.contract_type.description": "The kinds used on employment contracts and in approval rules.",
+  "hrm.contract_type.description": "The kinds used on employment contracts and in approval workflows.",
   "hrm.contract_type.name": "Name",
   "hrm.contract_type.active": "In use",
   "hrm.contract_type.active_hint": "Clear to retire it; existing contracts keep it.",

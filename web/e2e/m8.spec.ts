@@ -53,7 +53,7 @@ test('an HRM approval rule administrator edits HRM rules inside HRM', async ({ p
   const nav = page.getByRole('navigation')
   await nav.getByRole('link', { name: 'Quy trình duyệt' }).click()
   await expect(page).toHaveURL(/\/hrm\/approval-rules$/)
-  const table = page.getByRole('table', { name: 'Quy tắc duyệt' })
+  const table = page.getByRole('table', { name: 'Quy trình duyệt' })
   await expect(table.getByRole('link', { name: 'Đơn nghỉ phép · Gửi duyệt' })).toBeVisible()
   // Five document types, each with a post and a cancel rule.
   await expect(table.getByRole('link')).toHaveCount(10)
@@ -63,7 +63,7 @@ test('an HRM approval rule administrator edits HRM rules inside HRM', async ({ p
   await page.getByRole('button', { name: 'Cài đặt chung' }).click()
   await page.getByRole('complementary').getByRole('textbox', { name: /^Khi quản lý trực tiếp lại chính là người gửi/ }).fill('4')
   await page.getByRole('button', { name: 'Lưu' }).click()
-  await expect(page.getByText('Đã lưu quy tắc duyệt.')).toBeVisible()
+  await expect(page.getByText('Đã lưu quy trình duyệt.')).toBeVisible()
   await expect(page).toHaveURL(/\/hrm\//)
 })
 

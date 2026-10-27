@@ -64,7 +64,7 @@ test('an administrator gives a step a due time and it stays after reload', async
   await expect(due).toHaveValue('')
   await due.fill('24')
   await page.getByRole('button', { name: 'Lưu' }).click()
-  await expect(page.getByText('Đã lưu quy tắc duyệt.')).toBeVisible()
+  await expect(page.getByText('Đã lưu quy trình duyệt.')).toBeVisible()
   await page.reload()
   // The box reads the due time without opening it.
   await page.getByRole('main').getByRole('button', { name: 'Bước duyệt: Quản lý trực tiếp' }).click()
