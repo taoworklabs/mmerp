@@ -147,3 +147,12 @@ SELECT employee_id, data FROM hrm.dependents WHERE employee_id = ANY(@ids::bigin
 
 -- name: PayrollLeaveBalances :many
 SELECT employee_id, days::text AS days FROM hrm.leave_balances WHERE employee_id = ANY(@ids::bigint[]) AND year = @year;
+
+-- name: OrgUnitParents :many
+-- The units under a legal entity with their parents, not crossing into another legal entity.
+WITH RECURSIVE down AS (
+    SELECT o.id, o.parent_id FROM iam.org_units o WHERE o.parent_id = @legal_entity_id AND o.kind <> 'company'
+    UNION ALL
+    SELECT o.id, o.parent_id FROM iam.org_units o JOIN down ON o.parent_id = down.id WHERE o.kind <> 'company'
+)
+SELECT down.id, down.parent_id::bigint AS parent_id FROM down;

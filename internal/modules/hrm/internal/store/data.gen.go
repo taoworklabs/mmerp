@@ -104,6 +104,7 @@ var PayrollOvertime = data.ManyArg("hrm.PayrollOvertime", newQ, (*Queries).Payro
 var PayrollContracts = data.ManyArg("hrm.PayrollContracts", newQ, (*Queries).PayrollContracts)
 var PayrollDependents = data.ManyArg("hrm.PayrollDependents", newQ, (*Queries).PayrollDependents)
 var PayrollLeaveBalances = data.ManyArg("hrm.PayrollLeaveBalances", newQ, (*Queries).PayrollLeaveBalances)
+var OrgUnitParents = data.ManyArg("hrm.OrgUnitParents", newQ, (*Queries).OrgUnitParents)
 var CreateTimesheet = data.ExecArg("hrm.CreateTimesheet", newQ, (*Queries).CreateTimesheet)
 var GetTimesheet = data.OneArg("hrm.GetTimesheet", newQ, (*Queries).GetTimesheet)
 var UpdateTimesheetPeriod = data.ExecArg("hrm.UpdateTimesheetPeriod", newQ, (*Queries).UpdateTimesheetPeriod)

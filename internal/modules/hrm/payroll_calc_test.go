@@ -1,6 +1,7 @@
 package hrm
 
 import (
+	"maps"
 	"slices"
 	"testing"
 
@@ -85,7 +86,7 @@ func TestCalcRoundingModes(t *testing.T) {
 			}
 		}
 		var debit, credit int64
-		for _, l := range postingLines(9, lines) {
+		for _, l := range postingLines(9, nil, lines) {
 			switch l.Kind {
 			case posting.SalaryExpense, posting.EmployerInsuranceExpense:
 				debit += l.Amount
@@ -106,5 +107,73 @@ func TestCalcRoundingModes(t *testing.T) {
 		if sum.Earned != platform.Round(raw) {
 			t.Errorf("total: earned %d, want %d", sum.Earned, platform.Round(raw))
 		}
+	}
+}
+
+// postingTree is le=1 → A=2 → {A1=3, A2=4}, and B=5 under le.
+var postingTree = map[int64]int64{2: 1, 3: 2, 4: 2, 5: 1}
+
+// payInUnits gives each unit n payroll lines, all with the same amounts.
+func payInUnits(n map[int64]int) []PayrollLine {
+	var out []PayrollLine
+	for unit, k := range n {
+		for range k {
+			out = append(out, PayrollLine{OrgUnitID: unit, PayrollAmounts: PayrollAmounts{Gross: 100, Net: 80, Cost: 100}})
+		}
+	}
+	return out
+}
+
+// expenseByUnit returns the salary expense posted on each unit.
+func expenseByUnit(lines []posting.Line) map[int64]int64 {
+	out := map[int64]int64{}
+	for _, l := range lines {
+		if l.Kind == posting.SalaryExpense {
+			out[l.OrgUnitID] += l.Amount
+		}
+	}
+	return out
+}
+
+func TestPostingLinesMinimumGroup(t *testing.T) {
+	cases := []struct {
+		name string
+		pay  map[int64]int
+		want map[int64]int64
+	}{
+		{"unit at the threshold keeps its line", map[int64]int{3: 3}, map[int64]int64{3: 300}},
+		{"small unit rolls into its parent", map[int64]int{3: 2, 2: 3}, map[int64]int64{2: 500}},
+		{"small siblings reach the threshold together", map[int64]int{3: 1, 4: 2}, map[int64]int64{2: 300}},
+		{"rolls up to the legal entity", map[int64]int{5: 1, 3: 1}, map[int64]int64{1: 200}},
+		{"employees on the legal entity itself", map[int64]int{1: 2}, map[int64]int64{1: 200}},
+		{"unknown unit rolls to the legal entity", map[int64]int{99: 1}, map[int64]int64{1: 100}},
+		{"large and small mixed", map[int64]int{3: 4, 4: 1, 5: 3}, map[int64]int64{3: 400, 1: 100, 5: 300}},
+		{"small unit two levels down reaches a legal entity with its own people", map[int64]int{3: 1, 1: 1}, map[int64]int64{1: 200}},
+	}
+	for _, c := range cases {
+		got := expenseByUnit(postingLines(1, postingTree, payInUnits(c.pay)))
+		if !maps.Equal(got, c.want) {
+			t.Errorf("%s: got %v, want %v", c.name, got, c.want)
+		}
+	}
+}
+
+func TestPostingLinesConserveAmounts(t *testing.T) {
+	lines := payInUnits(map[int64]int{1: 1, 2: 2, 3: 1, 4: 5, 5: 2})
+	for i := range lines {
+		lines[i].Gross += int64(i)
+		lines[i].Net += int64(2 * i)
+		lines[i].IncomeTax = int64(i)
+	}
+	want := map[posting.Kind]int64{}
+	for _, l := range postingLines(1, nil, lines) {
+		want[l.Kind] += l.Amount
+	}
+	got := map[posting.Kind]int64{}
+	for _, l := range postingLines(1, postingTree, lines) {
+		got[l.Kind] += l.Amount
+	}
+	if !maps.Equal(got, want) {
+		t.Errorf("sums by kind: got %v, want %v", got, want)
 	}
 }

@@ -270,6 +270,41 @@ func (q *Queries) OrgUnitNames(ctx context.Context, ids []int64) ([]OrgUnitNames
 	return items, nil
 }
 
+const orgUnitParents = `-- name: OrgUnitParents :many
+WITH RECURSIVE down AS (
+    SELECT o.id, o.parent_id FROM iam.org_units o WHERE o.parent_id = $1 AND o.kind <> 'company'
+    UNION ALL
+    SELECT o.id, o.parent_id FROM iam.org_units o JOIN down ON o.parent_id = down.id WHERE o.kind <> 'company'
+)
+SELECT down.id, down.parent_id::bigint AS parent_id FROM down
+`
+
+type OrgUnitParentsRow struct {
+	ID       int64
+	ParentID int64
+}
+
+// The units under a legal entity with their parents, not crossing into another legal entity.
+func (q *Queries) OrgUnitParents(ctx context.Context, legalEntityID pgtype.Int8) ([]OrgUnitParentsRow, error) {
+	rows, err := q.db.Query(ctx, orgUnitParents, legalEntityID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []OrgUnitParentsRow
+	for rows.Next() {
+		var i OrgUnitParentsRow
+		if err := rows.Scan(&i.ID, &i.ParentID); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const payrollAdjustments = `-- name: PayrollAdjustments :many
 SELECT a.id, a.employee_id, a.source_period, a.data, e.code, e.full_name
 FROM hrm.payroll_adjustments a JOIN hrm.employees e ON e.id = a.employee_id

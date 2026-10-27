@@ -204,8 +204,9 @@ func TestPayrollLifecycle(t *testing.T) {
 	}
 	f.check(rows.Err())
 	p = f.payrollDoc(first)
-	want := []line{{"salary_expense", f.a, p.Totals[0].Gross}, {"employer_insurance_expense", f.a, 22_000_000 * 235 / 1000},
-		{"salary_payable", f.a, p.Totals[0].Net}, {"insurance_payable", f.c, 22_000_000 * 340 / 1000}, {"pit_payable", f.c, p.Totals[0].IncomeTax}}
+	// Fewer than 3 people in department A: the pay rolls up to the legal entity.
+	want := []line{{"salary_expense", f.c, p.Totals[0].Gross}, {"employer_insurance_expense", f.c, 22_000_000 * 235 / 1000},
+		{"salary_payable", f.c, p.Totals[0].Net}, {"insurance_payable", f.c, 22_000_000 * 340 / 1000}, {"pit_payable", f.c, p.Totals[0].IncomeTax}}
 	if !slices.Equal(lines, want) {
 		t.Fatalf("posting lines %+v, want %+v", lines, want)
 	}

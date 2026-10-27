@@ -2,6 +2,7 @@ package hrm
 
 import (
 	"bytes"
+	"cmp"
 	"context"
 	"encoding/json"
 	"errors"
@@ -305,39 +306,98 @@ func (s *Service) payrollTransition(ctx context.Context, d record.Doc, from reco
 	if err != nil {
 		return err
 	}
-	if err := s.d.Posting.Record(ctx, ref, postingLines(le, lines)); err != nil {
+	units, err := store.OrgUnitParents.Run(ctx, pgtype.Int8{Int64: le, Valid: true})
+	if err != nil {
+		return err
+	}
+	parent := make(map[int64]int64, len(units))
+	for _, u := range units {
+		parent[u.ID] = u.ParentID
+	}
+	if err := s.d.Posting.Record(ctx, ref, postingLines(le, parent, lines)); err != nil {
 		return err
 	}
 	return set(pgtype.Int8{Int64: d.ID, Valid: true})
 }
 
-// postingLines sums the pay by department, and what is owed to the state by legal entity:
-// never one person's amount on its own.
-func postingLines(le int64, lines []PayrollLine) []posting.Line {
-	type key struct {
-		kind posting.Kind
-		unit int64
+// postingMinLines is the fewest people one posting line may cover, so no line gives
+// away the pay of one or two people.
+const postingMinLines = 3
+
+// postingLines sums the pay by org unit, and what is owed to the state by legal entity.
+// A unit with fewer than postingMinLines people rolls into its parent, deepest first,
+// up to the legal entity, which takes whatever reaches it. parent maps each unit under
+// le to its parent; a unit missing from it rolls straight to le.
+func postingLines(le int64, parent map[int64]int64, lines []PayrollLine) []posting.Line {
+	kinds := []posting.Kind{posting.SalaryExpense, posting.EmployerInsuranceExpense, posting.SalaryPayable}
+	type group struct {
+		count int
+		sums  map[posting.Kind]int64
 	}
-	sums := map[key]int64{}
-	var order []key
-	add := func(k posting.Kind, unit, amount int64) {
-		kk := key{k, unit}
-		if _, ok := sums[kk]; !ok {
-			order = append(order, kk)
+	groups := map[int64]*group{}
+	get := func(unit int64) *group {
+		if _, known := parent[unit]; !known && unit != le {
+			unit = le
 		}
-		sums[kk] += amount
+		g := groups[unit]
+		if g == nil {
+			g = &group{sums: map[posting.Kind]int64{}}
+			groups[unit] = g
+		}
+		return g
 	}
+	var insurance, tax int64
 	for _, l := range lines {
-		add(posting.SalaryExpense, l.OrgUnitID, l.Gross)
-		add(posting.EmployerInsuranceExpense, l.OrgUnitID, l.employerInsurance())
-		add(posting.SalaryPayable, l.OrgUnitID, l.Net)
-		add(posting.InsurancePayable, le, l.employeeInsurance()+l.employerInsurance())
-		add(posting.PitPayable, le, l.IncomeTax)
+		g := get(l.OrgUnitID)
+		g.count++
+		g.sums[posting.SalaryExpense] += l.Gross
+		g.sums[posting.EmployerInsuranceExpense] += l.employerInsurance()
+		g.sums[posting.SalaryPayable] += l.Net
+		insurance += l.employeeInsurance() + l.employerInsurance()
+		tax += l.IncomeTax
 	}
+	depth := func(unit int64) int {
+		d := 0
+		for u := unit; u != le && d <= len(parent); d++ {
+			u = parent[u]
+		}
+		return d
+	}
+	// Every unit a share may pass through, deepest first, so a parent has every
+	// child's share before it is judged.
+	seen := map[int64]bool{le: true}
+	for u := range maps.Keys(groups) {
+		for ; !seen[u]; u = parent[u] {
+			seen[u] = true
+		}
+	}
+	units := slices.Collect(maps.Keys(seen))
+	slices.SortFunc(units, func(a, b int64) int {
+		return cmp.Or(cmp.Compare(depth(b), depth(a)), cmp.Compare(a, b))
+	})
 	out := []posting.Line{}
-	for _, k := range order {
-		if sums[k] != 0 {
-			out = append(out, posting.Line{Kind: k.kind, OrgUnitID: k.unit, Amount: sums[k]})
+	for _, u := range units {
+		g := groups[u]
+		if g == nil {
+			continue
+		}
+		if u != le && g.count < postingMinLines {
+			p := get(parent[u])
+			p.count += g.count
+			for k, v := range g.sums {
+				p.sums[k] += v
+			}
+			continue
+		}
+		for _, k := range kinds {
+			if g.sums[k] != 0 {
+				out = append(out, posting.Line{Kind: k, OrgUnitID: u, Amount: g.sums[k]})
+			}
+		}
+	}
+	for _, l := range []posting.Line{{Kind: posting.InsurancePayable, OrgUnitID: le, Amount: insurance}, {Kind: posting.PitPayable, OrgUnitID: le, Amount: tax}} {
+		if l.Amount != 0 {
+			out = append(out, l)
 		}
 	}
 	return out
