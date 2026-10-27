@@ -1,6 +1,6 @@
 # 0043. Printing: an actor may print the part they own
 
-Status: accepted · 2026-10-27 · extends [ADR-0034](./0034-record-types-declare-permissions.md) only where printing is concerned
+Status: accepted · 2026-10-27 · extends [ADR-0026](./0026-printing.md) only where printing is concerned
 
 ## Context
 

@@ -41,3 +41,8 @@ test('two areas of one product both render', () => {
   expect(html).toContain('href="/a/p"')
   expect(html).toContain('href="/b/p"')
 })
+
+test('no tile and no pending verdict shows the empty state', () => {
+  expect(render([area('no', '/a', { useEntitled: () => false })])).toContain('core.home.empty')
+  expect(render([area('wait', '/a', { useEntitled: () => undefined })])).not.toContain('core.home.empty')
+})

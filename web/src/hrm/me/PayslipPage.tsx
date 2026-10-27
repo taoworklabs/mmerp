@@ -4,7 +4,7 @@ import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { useParams } from 'react-router'
 import { api, unwrap } from '@/shared/api/hrm'
-import { formatDecimal, formatMoney, formatMonth } from '@/shared/i18n'
+import { formatDecimal, formatMoney, formatMonth, formatMonthShort } from '@/shared/i18n'
 import { ExportButton } from '@/shared/jobs'
 import { loaded } from '@/shared/ui/loaded'
 import { Page } from '@/shared/ui/page'
@@ -31,7 +31,7 @@ export function PayslipPage() {
       withBack
       title={p('title')}
       breadcrumbs={[list]}
-      description={`${t('hrm.print.payslip.period', { month: formatMonth(s.period_start.slice(0, 7)) })} · ${t('hrm.print.payslip.payroll', { number: s.number })}`}
+      description={`${t('hrm.print.payslip.period', { month: formatMonthShort(s.period_start.slice(0, 7)) })} · ${t('hrm.print.payslip.payroll', { number: s.number })}`}
       actions={
         self && <ExportButton kind="printing.hrm.payslip" params={{ id, parts: [self.id] }} label={t('hrm.me.payslips.print')} icon={IconPrinter} />
       }
