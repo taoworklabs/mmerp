@@ -2,6 +2,7 @@
 package iam
 
 import (
+	"bytes"
 	"context"
 	"crypto/rand"
 	"crypto/sha256"
@@ -94,7 +95,7 @@ func (s *Service) createUser(ctx context.Context, login, name, password string) 
 }
 
 // Login checks the password and opens a session; the returned token goes into the cookie.
-func (s *Service) Login(ctx context.Context, login, password string) (string, error) {
+func (s *Service) Login(ctx context.Context, login, password, userAgent string) (string, error) {
 	if err := s.reserveAttempt(ctx, login); err != nil {
 		return "", err
 	}
@@ -116,7 +117,7 @@ func (s *Service) Login(ctx context.Context, login, password string) (string, er
 		if err := store.DeleteExpiredSessions.Run(ctx, u.ID); err != nil {
 			return err
 		}
-		if err := store.CreateSession.Run(ctx, store.CreateSessionParams{TokenHash: tokenHash(token), UserID: u.ID}); err != nil {
+		if err := store.CreateSession.Run(ctx, store.CreateSessionParams{TokenHash: tokenHash(token), UserID: u.ID, UserAgent: pgtype.Text{String: truncateRunes(userAgent, 300), Valid: true}}); err != nil {
 			return err
 		}
 		if err := s.clearFailures(ctx, login); err != nil {
@@ -370,7 +371,7 @@ func (s *Service) ChangePassword(ctx context.Context, token, current, next strin
 		if err := store.SetUserPassword.Run(ctx, store.SetUserPasswordParams{ID: id, PasswordHash: hashPassword(next)}); err != nil {
 			return err
 		}
-		if err := store.DeleteOtherUserSessions.Run(ctx, store.DeleteOtherUserSessionsParams{UserID: id, TokenHash: tokenHash(token)}); err != nil {
+		if _, err := store.DeleteOtherUserSessions.Run(ctx, store.DeleteOtherUserSessionsParams{UserID: id, TokenHash: tokenHash(token)}); err != nil {
 			return err
 		}
 		return s.d.Audit.Record(ctx, "iam.password_changed", nil)
@@ -852,4 +853,53 @@ func notFound(err error) error {
 		return platform.ErrNotFound
 	}
 	return err
+}
+
+func truncateRunes(s string, n int) string {
+	if utf8.RuneCountInString(s) <= n {
+		return s
+	}
+	return string([]rune(s)[:n])
+}
+
+// MySessions lists the actor's unexpired sessions, newest first; token marks the current one.
+func (s *Service) MySessions(ctx context.Context, token string) ([]SessionInfo, error) {
+	id, _ := platform.ActorFrom(ctx)
+	rows, err := store.ListUserSessions.Run(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	cur := tokenHash(token)
+	out := make([]SessionInfo, len(rows))
+	for i, r := range rows {
+		out[i] = SessionInfo{ID: r.ID.Int64, CreatedAt: r.CreatedAt.Time, ExpiresAt: r.ExpiresAt.Time, UserAgent: r.UserAgent.String, Current: bytes.Equal(r.TokenHash, cur)}
+	}
+	return out, nil
+}
+
+// EndMySession ends one of the actor's own sessions.
+func (s *Service) EndMySession(ctx context.Context, sessionID int64) error {
+	id, _ := platform.ActorFrom(ctx)
+	return platform.InTx(ctx, func(ctx context.Context) error {
+		n, err := store.DeleteUserSession.Run(ctx, store.DeleteUserSessionParams{ID: pgtype.Int8{Int64: sessionID, Valid: true}, UserID: id})
+		if err != nil {
+			return err
+		}
+		if n == 0 {
+			return platform.ErrNotFound
+		}
+		return s.d.Audit.Record(ctx, "iam.session_ended", map[string]any{"id": sessionID})
+	})
+}
+
+// EndMyOtherSessions ends every session of the actor except the one holding token.
+func (s *Service) EndMyOtherSessions(ctx context.Context, token string) error {
+	id, _ := platform.ActorFrom(ctx)
+	return platform.InTx(ctx, func(ctx context.Context) error {
+		n, err := store.DeleteOtherUserSessions.Run(ctx, store.DeleteOtherUserSessionsParams{UserID: id, TokenHash: tokenHash(token)})
+		if err != nil {
+			return err
+		}
+		return s.d.Audit.Record(ctx, "iam.sessions_ended", map[string]any{"count": n})
+	})
 }

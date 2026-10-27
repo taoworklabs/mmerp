@@ -10,7 +10,7 @@ SELECT password_hash FROM iam.users WHERE id = $1;
 -- name: SetUserPassword :exec
 UPDATE iam.users SET password_hash = @password_hash, must_change_password = @must_change, authz_version = authz_version + 1 WHERE id = @id;
 
--- name: DeleteOtherUserSessions :exec
+-- name: DeleteOtherUserSessions :execrows
 DELETE FROM iam.sessions WHERE user_id = $1 AND token_hash <> $2;
 
 -- name: GetUser :one

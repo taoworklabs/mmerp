@@ -3,6 +3,7 @@ package iam
 import (
 	"net/http"
 	"slices"
+	"time"
 
 	"github.com/taoworklabs/mmerp/internal/platform"
 )
@@ -121,4 +122,13 @@ type ListColumn struct {
 	Key    string `json:"key" minLength:"1" maxLength:"100"`
 	Hidden bool   `json:"hidden"`
 	Width  *int   `json:"width" minimum:"48" maximum:"800"`
+}
+
+// SessionInfo is one of the actor's open sessions.
+type SessionInfo struct {
+	ID        int64     `json:"id"`
+	CreatedAt time.Time `json:"created_at"`
+	ExpiresAt time.Time `json:"expires_at"`
+	UserAgent string    `json:"user_agent"`
+	Current   bool      `json:"current"`
 }

@@ -46,7 +46,7 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (int64, 
 	return id, err
 }
 
-const deleteOtherUserSessions = `-- name: DeleteOtherUserSessions :exec
+const deleteOtherUserSessions = `-- name: DeleteOtherUserSessions :execrows
 DELETE FROM iam.sessions WHERE user_id = $1 AND token_hash <> $2
 `
 
@@ -55,9 +55,12 @@ type DeleteOtherUserSessionsParams struct {
 	TokenHash []byte
 }
 
-func (q *Queries) DeleteOtherUserSessions(ctx context.Context, arg DeleteOtherUserSessionsParams) error {
-	_, err := q.db.Exec(ctx, deleteOtherUserSessions, arg.UserID, arg.TokenHash)
-	return err
+func (q *Queries) DeleteOtherUserSessions(ctx context.Context, arg DeleteOtherUserSessionsParams) (int64, error) {
+	result, err := q.db.Exec(ctx, deleteOtherUserSessions, arg.UserID, arg.TokenHash)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
 }
 
 const getUser = `-- name: GetUser :one

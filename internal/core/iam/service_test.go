@@ -70,7 +70,7 @@ func TestCreateUserRules(t *testing.T) {
 	if _, err := s.CreateUser(ctx, "AN", "An", "long enough"); !errors.Is(err, iam.ErrLoginTaken) {
 		t.Fatalf("duplicate login: %v", err)
 	}
-	if _, err := s.Login(ctx, "An", "long enough"); err != nil {
+	if _, err := s.Login(ctx, "An", "long enough", ""); err != nil {
 		t.Fatalf("login is case-insensitive: %v", err)
 	}
 	if _, err := s.CreateUser(platform.WithActor(ctx, an), "binh", "Bình", "long enough"); !errors.Is(err, platform.ErrForbidden) {
@@ -351,19 +351,19 @@ func TestLockout(t *testing.T) {
 	locked := func(err error) bool { return errors.Is(err, iam.ErrLoginLocked) }
 
 	for range 4 {
-		if _, err := s.Login(ctx, "an", "wrong"); !errors.Is(err, iam.ErrInvalidCredentials) {
+		if _, err := s.Login(ctx, "an", "wrong", ""); !errors.Is(err, iam.ErrInvalidCredentials) {
 			t.Fatalf("wrong password: %v", err)
 		}
 	}
-	must[string](t)(s.Login(ctx, "an", "right password"))
+	must[string](t)(s.Login(ctx, "an", "right password", ""))
 	// The success reset the count: four more wrong ones do not lock.
 	for range 4 {
-		_, _ = s.Login(ctx, "AN", "wrong")
+		_, _ = s.Login(ctx, "AN", "wrong", "")
 	}
-	must[string](t)(s.Login(ctx, "an", "right password"))
+	must[string](t)(s.Login(ctx, "an", "right password", ""))
 
 	for i := range 5 {
-		_, err := s.Login(ctx, "an", "wrong")
+		_, err := s.Login(ctx, "an", "wrong", "")
 		if !errors.Is(err, iam.ErrInvalidCredentials) {
 			t.Fatalf("attempt %d (the 5th sets the lock): %v", i+1, err)
 		}
@@ -375,16 +375,16 @@ func TestLockout(t *testing.T) {
 		return n
 	}
 	failed := count("iam.login_failed")
-	if _, err := s.Login(ctx, "AN", "right password"); !locked(err) {
+	if _, err := s.Login(ctx, "AN", "right password", ""); !locked(err) {
 		t.Fatalf("locked login: %v", err)
 	}
 	if got := count("iam.login_failed"); got != failed {
 		t.Fatalf("a locked attempt wrote login_failed rows: %d -> %d", failed, got)
 	}
 	for range 5 {
-		_, _ = s.Login(ctx, "ghost", "wrong")
+		_, _ = s.Login(ctx, "ghost", "wrong", "")
 	}
-	if _, err := s.Login(ctx, "ghost", "wrong"); !locked(err) {
+	if _, err := s.Login(ctx, "ghost", "wrong", ""); !locked(err) {
 		t.Fatalf("unknown login: %v", err)
 	}
 
@@ -392,7 +392,7 @@ func TestLockout(t *testing.T) {
 	if _, err := sys.Exec(ctx, `UPDATE iam.login_failures SET locked_until = now() - interval '1 second'`); err != nil {
 		t.Fatal(err)
 	}
-	must[string](t)(s.Login(ctx, "an", "right password"))
+	must[string](t)(s.Login(ctx, "an", "right password", ""))
 }
 
 func TestLockoutCountsAtomically(t *testing.T) {
@@ -404,7 +404,7 @@ func TestLockoutCountsAtomically(t *testing.T) {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			_, _ = s.Login(ctx, "an", "wrong")
+			_, _ = s.Login(ctx, "an", "wrong", "")
 		}()
 	}
 	wg.Wait()
@@ -415,7 +415,7 @@ func TestLockoutCountsAtomically(t *testing.T) {
 	if err := platform.DBFrom(ctx).QueryRow(ctx, `SELECT count(*) FROM audit.log WHERE action = 'iam.login_locked'`).Scan(&n); err != nil || n != 1 {
 		t.Fatalf("login_locked rows = %d (%v)", n, err)
 	}
-	if _, err := s.Login(ctx, "an", "right password"); !errors.Is(err, iam.ErrLoginLocked) {
+	if _, err := s.Login(ctx, "an", "right password", ""); !errors.Is(err, iam.ErrLoginLocked) {
 		t.Fatalf("after lock: %v", err)
 	}
 }
@@ -423,7 +423,7 @@ func TestLockoutCountsAtomically(t *testing.T) {
 func TestLockUser(t *testing.T) {
 	s, ctx := setup(t)
 	id := must[int64](t)(s.CreateUser(ctx, "an", "An", "right password"))
-	token := must[string](t)(s.Login(ctx, "an", "right password"))
+	token := must[string](t)(s.Login(ctx, "an", "right password", ""))
 
 	if err := s.LockUser(ctx, id); err != nil {
 		t.Fatal(err)
@@ -431,10 +431,10 @@ func TestLockUser(t *testing.T) {
 	if _, ok, _ := s.Authenticate(ctx, token); ok {
 		t.Fatal("session survived the lock")
 	}
-	if _, err := s.Login(ctx, "an", "wrong"); !errors.Is(err, iam.ErrInvalidCredentials) {
+	if _, err := s.Login(ctx, "an", "wrong", ""); !errors.Is(err, iam.ErrInvalidCredentials) {
 		t.Fatalf("wrong password: %v", err)
 	}
-	if _, err := s.Login(ctx, "an", "right password"); !errors.Is(err, iam.ErrAccountLocked) {
+	if _, err := s.Login(ctx, "an", "right password", ""); !errors.Is(err, iam.ErrAccountLocked) {
 		t.Fatalf("right password: %v", err)
 	}
 	if u := must[iam.User](t)(s.User(ctx, id)); !u.Locked {
@@ -443,12 +443,12 @@ func TestLockUser(t *testing.T) {
 
 	// A temporary lock built up meanwhile is cleared by unlock too.
 	for range 5 {
-		_, _ = s.Login(ctx, "an", "wrong")
+		_, _ = s.Login(ctx, "an", "wrong", "")
 	}
 	if err := s.UnlockUser(ctx, id); err != nil {
 		t.Fatal(err)
 	}
-	must[string](t)(s.Login(ctx, "an", "right password"))
+	must[string](t)(s.Login(ctx, "an", "right password", ""))
 	if err := s.LockUser(ctx, 999999); !errors.Is(err, platform.ErrNotFound) {
 		t.Fatalf("unknown id: %v", err)
 	}
@@ -493,8 +493,8 @@ func TestRenameUser(t *testing.T) {
 func TestChangePassword(t *testing.T) {
 	s, ctx := setup(t)
 	id := must[int64](t)(s.CreateUser(ctx, "an", "An", "right password"))
-	t1 := must[string](t)(s.Login(ctx, "an", "right password"))
-	t2 := must[string](t)(s.Login(ctx, "an", "right password"))
+	t1 := must[string](t)(s.Login(ctx, "an", "right password", ""))
+	t2 := must[string](t)(s.Login(ctx, "an", "right password", ""))
 	me := platform.WithActor(ctx, id)
 
 	if err := s.ChangePassword(me, t1, "nope", "new password 1"); !errors.Is(err, iam.ErrWrongPassword) {
@@ -512,16 +512,16 @@ func TestChangePassword(t *testing.T) {
 	if _, ok, _ := s.Authenticate(ctx, t2); ok {
 		t.Fatal("other session survived")
 	}
-	if _, err := s.Login(ctx, "an", "right password"); !errors.Is(err, iam.ErrInvalidCredentials) {
+	if _, err := s.Login(ctx, "an", "right password", ""); !errors.Is(err, iam.ErrInvalidCredentials) {
 		t.Fatalf("old password: %v", err)
 	}
-	must[string](t)(s.Login(ctx, "an", "new password 1"))
+	must[string](t)(s.Login(ctx, "an", "new password 1", ""))
 }
 
 func TestResetPassword(t *testing.T) {
 	s, ctx := setup(t)
 	id := must[int64](t)(s.CreateUser(ctx, "an", "An", "right password"))
-	token := must[string](t)(s.Login(ctx, "an", "right password"))
+	token := must[string](t)(s.Login(ctx, "an", "right password", ""))
 	if err := s.ResetPassword(platform.WithActor(ctx, id), id, "temporary 1"); !errors.Is(err, platform.ErrForbidden) {
 		t.Fatalf("non-admin: %v", err)
 	}
@@ -531,7 +531,7 @@ func TestResetPassword(t *testing.T) {
 	if _, ok, _ := s.Authenticate(ctx, token); ok {
 		t.Fatal("session survived the reset")
 	}
-	token = must[string](t)(s.Login(ctx, "an", "temporary 1"))
+	token = must[string](t)(s.Login(ctx, "an", "temporary 1", ""))
 	sess, ok, _ := s.Authenticate(ctx, token)
 	if !ok || !sess.MustChangePassword {
 		t.Fatalf("session = %+v", sess)
@@ -544,5 +544,40 @@ func TestResetPassword(t *testing.T) {
 	}
 	if sess, _, _ := s.Authenticate(ctx, token); sess.MustChangePassword {
 		t.Fatal("flag not cleared")
+	}
+}
+
+func TestMySessions(t *testing.T) {
+	s, ctx := setup(t)
+	id := must[int64](t)(s.CreateUser(ctx, "an", "An", "right password"))
+	other := must[int64](t)(s.CreateUser(ctx, "bo", "Bo", "right password"))
+	ta := must[string](t)(s.Login(ctx, "an", "right password", "A"))
+	tb := must[string](t)(s.Login(ctx, "an", "right password", "B"))
+	tother := must[string](t)(s.Login(ctx, "bo", "right password", "C"))
+	me := platform.WithActor(ctx, id)
+
+	list := must[[]iam.SessionInfo](t)(s.MySessions(me, tb))
+	if len(list) != 2 || !list[0].Current || list[0].UserAgent != "B" || list[1].Current {
+		t.Fatalf("list = %+v", list)
+	}
+	theirs := must[[]iam.SessionInfo](t)(s.MySessions(platform.WithActor(ctx, other), tother))
+	if err := s.EndMySession(me, theirs[0].ID); !errors.Is(err, platform.ErrNotFound) {
+		t.Fatalf("other user's session: %v", err)
+	}
+	if err := s.EndMyOtherSessions(me, tb); err != nil {
+		t.Fatal(err)
+	}
+	if _, ok, _ := s.Authenticate(ctx, ta); ok {
+		t.Fatal("session A still valid")
+	}
+	list = must[[]iam.SessionInfo](t)(s.MySessions(me, tb))
+	if len(list) != 1 || !list[0].Current {
+		t.Fatalf("list = %+v", list)
+	}
+	if err := s.EndMySession(me, list[0].ID); err != nil {
+		t.Fatal(err)
+	}
+	if _, ok, _ := s.Authenticate(ctx, tb); ok {
+		t.Fatal("session B still valid")
 	}
 }

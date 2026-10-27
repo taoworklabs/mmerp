@@ -12,7 +12,8 @@ import (
 const cookieName = "session"
 
 type loginInput struct {
-	Body struct {
+	UserAgent string `header:"User-Agent"`
+	Body      struct {
 		Login    string `json:"login" minLength:"1" maxLength:"200"`
 		Password string `json:"password" minLength:"1" maxLength:"200"`
 	}
@@ -43,6 +44,12 @@ type resetPasswordInput struct {
 
 type meOutput struct{ Body Me }
 
+type sessionsOutput struct{ Body []SessionInfo }
+
+type endSessionInput struct {
+	ID int64 `path:"id"`
+}
+
 type updateMeInput struct {
 	Body struct {
 		Locale string `json:"locale" enum:"vi,en"`
@@ -61,7 +68,7 @@ func registerHandlers(api huma.API, s *Service) {
 		OperationID: "login", Method: http.MethodPost, Path: "/auth/login", Metadata: public,
 		DefaultStatus: http.StatusNoContent, Errors: []int{http.StatusUnauthorized, http.StatusForbidden, http.StatusTooManyRequests},
 	}, func(ctx context.Context, in *loginInput) (*cookieOutput, error) {
-		token, err := s.Login(ctx, in.Body.Login, in.Body.Password)
+		token, err := s.Login(ctx, in.Body.Login, in.Body.Password, in.UserAgent)
 		if err != nil {
 			return nil, err
 		}
@@ -102,6 +109,27 @@ func registerHandlers(api huma.API, s *Service) {
 		DefaultStatus: http.StatusNoContent, Errors: []int{http.StatusUnprocessableEntity},
 	}, func(ctx context.Context, in *changePasswordInput) (*struct{}, error) {
 		return nil, s.ChangePassword(ctx, in.Session, in.Body.Current, in.Body.Next)
+	})
+
+	huma.Register(api, huma.Operation{
+		OperationID: "list-my-sessions", Method: http.MethodGet, Path: "/me/sessions",
+	}, func(ctx context.Context, in *sessionInput) (*sessionsOutput, error) {
+		out, err := s.MySessions(ctx, in.Session)
+		return &sessionsOutput{Body: out}, err
+	})
+
+	huma.Register(api, huma.Operation{
+		OperationID: "end-my-session", Method: http.MethodDelete, Path: "/me/sessions/{id}",
+		DefaultStatus: http.StatusNoContent, Errors: []int{http.StatusNotFound},
+	}, func(ctx context.Context, in *endSessionInput) (*struct{}, error) {
+		return nil, s.EndMySession(ctx, in.ID)
+	})
+
+	huma.Register(api, huma.Operation{
+		OperationID: "end-my-other-sessions", Method: http.MethodDelete, Path: "/me/sessions",
+		DefaultStatus: http.StatusNoContent,
+	}, func(ctx context.Context, in *sessionInput) (*struct{}, error) {
+		return nil, s.EndMyOtherSessions(ctx, in.Session)
 	})
 
 	huma.Register(api, huma.Operation{
