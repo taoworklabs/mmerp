@@ -8,9 +8,9 @@ Posting a payroll writes its business lines to `posting.lines`: salary expense, 
 
 ## Decision
 
-- **A per-unit posting line needs at least 3 payroll lines of that payroll.** Payroll lines are counted per org unit of the employee.
+- **A per-unit posting line needs at least 3 people of that payroll.** People are counted per org unit of the employee, and only those with something to post (gross, net or employer contributions not zero): two people on unpaid leave must not hide the third.
 - **A smaller unit rolls up.** Units are visited deepest first; a unit below 3 adds its count and its amounts to its parent. A parent may then reach 3 with what its children brought, or roll up in turn.
-- **The legal entity ends the roll-up.** Whatever reaches the legal-entity node is posted there, whatever its count, as the insurance and income tax lines already are.
+- **The legal entity ends the roll-up.** What reaches the legal-entity node is posted there, as the insurance and income tax lines already are. If that leaves it with one or two people while units kept their own lines, it takes in the smallest of those units, one at a time, until it has 3.
 - **From the next posting on.** Lines already posted are never rewritten; cancelling and posting a payroll again applies the rule.
 - The threshold is fixed in code.
 
@@ -24,5 +24,5 @@ Posting a payroll writes its business lines to `posting.lines`: salary expense, 
 ## Consequences
 
 - A department's salary expense may appear under its parent unit or under the legal entity.
-- A legal entity with fewer than 3 people on a payroll still shows its total, which its own statutory declarations already disclose.
+- A legal entity with fewer than 3 people on a payroll still shows its total, which its own statutory declarations already disclose. No line covers fewer than 3 people otherwise.
 - Amounts are conserved: for each kind, the posting lines add up to the payroll lines.

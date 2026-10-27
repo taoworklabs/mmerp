@@ -147,7 +147,8 @@ func TestPostingLinesMinimumGroup(t *testing.T) {
 		{"rolls up to the legal entity", map[int64]int{5: 1, 3: 1}, map[int64]int64{1: 200}},
 		{"employees on the legal entity itself", map[int64]int{1: 2}, map[int64]int64{1: 200}},
 		{"unknown unit rolls to the legal entity", map[int64]int{99: 1}, map[int64]int64{1: 100}},
-		{"large and small mixed", map[int64]int{3: 4, 4: 1, 5: 3}, map[int64]int64{3: 400, 1: 100, 5: 300}},
+		// The one person left over on the legal entity takes in the smallest unit kept.
+		{"remainder on the legal entity folds in the smallest unit", map[int64]int{3: 4, 4: 1, 5: 3}, map[int64]int64{3: 400, 1: 400}},
 		{"small unit two levels down reaches a legal entity with its own people", map[int64]int{3: 1, 1: 1}, map[int64]int64{1: 200}},
 	}
 	for _, c := range cases {
@@ -158,12 +159,23 @@ func TestPostingLinesMinimumGroup(t *testing.T) {
 	}
 }
 
+// People with nothing to post do not hide the one who is paid.
+func TestPostingLinesCountOnlyPaidPeople(t *testing.T) {
+	lines := payInUnits(map[int64]int{3: 3})
+	lines[0].PayrollAmounts, lines[1].PayrollAmounts = PayrollAmounts{}, PayrollAmounts{}
+	got := expenseByUnit(postingLines(1, postingTree, lines))
+	if want := map[int64]int64{1: 100}; !maps.Equal(got, want) {
+		t.Errorf("got %v, want %v", got, want)
+	}
+}
+
 func TestPostingLinesConserveAmounts(t *testing.T) {
 	lines := payInUnits(map[int64]int{1: 1, 2: 2, 3: 1, 4: 5, 5: 2})
 	for i := range lines {
 		lines[i].Gross += int64(i)
 		lines[i].Net += int64(2 * i)
 		lines[i].IncomeTax = int64(i)
+		lines[i].Cost = lines[i].Gross + int64(10*i)
 	}
 	want := map[posting.Kind]int64{}
 	for _, l := range postingLines(1, nil, lines) {

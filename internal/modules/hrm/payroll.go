@@ -325,9 +325,11 @@ func (s *Service) payrollTransition(ctx context.Context, d record.Doc, from reco
 const postingMinLines = 3
 
 // postingLines sums the pay by org unit, and what is owed to the state by legal entity.
-// A unit with fewer than postingMinLines people rolls into its parent, deepest first,
-// up to the legal entity, which takes whatever reaches it. parent maps each unit under
-// le to its parent; a unit missing from it rolls straight to le.
+// Only people with something to post count. A unit with fewer than postingMinLines of
+// them rolls into its parent, deepest first, up to the legal entity; if the legal entity
+// is left with one or two, it takes in the smallest units kept until it has enough.
+// parent maps each unit under le to its parent, as a tree; a unit missing from it rolls
+// straight to le.
 func postingLines(le int64, parent map[int64]int64, lines []PayrollLine) []posting.Line {
 	kinds := []posting.Kind{posting.SalaryExpense, posting.EmployerInsuranceExpense, posting.SalaryPayable}
 	type group struct {
@@ -349,7 +351,9 @@ func postingLines(le int64, parent map[int64]int64, lines []PayrollLine) []posti
 	var insurance, tax int64
 	for _, l := range lines {
 		g := get(l.OrgUnitID)
-		g.count++
+		if l.Gross != 0 || l.Net != 0 || l.employerInsurance() != 0 {
+			g.count++
+		}
 		g.sums[posting.SalaryExpense] += l.Gross
 		g.sums[posting.EmployerInsuranceExpense] += l.employerInsurance()
 		g.sums[posting.SalaryPayable] += l.Net
@@ -375,18 +379,40 @@ func postingLines(le int64, parent map[int64]int64, lines []PayrollLine) []posti
 	slices.SortFunc(units, func(a, b int64) int {
 		return cmp.Or(cmp.Compare(depth(b), depth(a)), cmp.Compare(a, b))
 	})
-	out := []posting.Line{}
+	merge := func(from, into *group) {
+		into.count += from.count
+		for k, v := range from.sums {
+			into.sums[k] += v
+		}
+	}
+	var kept []int64
 	for _, u := range units {
 		g := groups[u]
-		if g == nil {
+		if g == nil || u == le {
 			continue
 		}
-		if u != le && g.count < postingMinLines {
-			p := get(parent[u])
-			p.count += g.count
-			for k, v := range g.sums {
-				p.sums[k] += v
+		if g.count < postingMinLines {
+			merge(g, get(parent[u]))
+			continue
+		}
+		kept = append(kept, u)
+	}
+	if top := groups[le]; top != nil && top.count > 0 && top.count < postingMinLines {
+		for top.count < postingMinLines && len(kept) > 0 {
+			i := 0
+			for j, u := range kept {
+				if groups[u].count < groups[kept[i]].count {
+					i = j
+				}
 			}
+			merge(groups[kept[i]], top)
+			kept = slices.Delete(kept, i, i+1)
+		}
+	}
+	out := []posting.Line{}
+	for _, u := range append(kept, le) {
+		g := groups[u]
+		if g == nil {
 			continue
 		}
 		for _, k := range kinds {

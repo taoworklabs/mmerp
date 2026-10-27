@@ -292,7 +292,7 @@ Dedicated view permissions: `hrm.employee.sensitive` (role `sensitive_viewer`) f
 | Where | Protection |
 | --- | --- |
 | `hrm.contracts`, `hrm.payroll_lines`, `hrm.payroll_adjustments`, captured inputs | Column encryption |
-| `posting.lines`, ledger | Only amounts aggregated over at least 3 people by org unit (a smaller unit rolls up to its parent, up to the legal entity), or by legal entity ([ADR-0040](../docs/adr/0040-payroll-posting-minimum-group.md)) |
+| `posting.lines`, ledger | Only amounts aggregated over at least 3 paid people by org unit (a smaller unit rolls up to its parent, up to the legal entity), or by legal entity ([ADR-0040](../docs/adr/0040-payroll-posting-minimum-group.md)) |
 | `record.documents.amount` of a payroll | Only the total cost of the whole legal entity |
 | Audit log | Sensitive field values are stored encrypted ([documents.md](../docs/documents.md#permissions)) |
 | Export files, payslips | Need the salary view permission; temporary files expire; every export is audited |
