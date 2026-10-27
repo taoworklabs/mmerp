@@ -41,6 +41,7 @@ A term used by two products must have the same meaning, or the two must use diff
 - **Held document** (vi: "Chứng từ đang chờ duyệt yêu cầu"): a document with an open approval request. No write on it succeeds, including a dependent write from another document; `allowed_actions` keeps only `print` and `export`.
 - **System job** (vi: "Job hệ thống"): a job type listed explicitly in code, run as the system actor. **User job** (vi: "Job thay người dùng"): every other job; runs with the requester's permissions, re-checked when it executes.
 - **My background jobs** (vi: "Việc chạy nền của tôi"): the list of user jobs the user requested, with status, error rows and result file. Each user sees only their own jobs. Administrators can also see system jobs, without the job parameters.
+- **List view** (vi: "Chế độ xem danh sách"): a named filter of a list, saved by one user on the server; the user's visible columns and widths for that list are saved beside it. Applying a view opens the list's URL with that query ([ADR-0031](./docs/adr/0031-personal-list-views.md)).
 - **Import** (vi: "Lần nhập"): one load of an Excel file into a data type (`hrm.timesheet`, `hrm.leave_balance`), run as a user job. All or nothing: if one row fails, no row is written, and the import reports each failing row with its reason.
 - **Export** (vi: "Lần xuất"): one write of data to an Excel file, run as a user job and audited. The result is a **temporary export file** (vi: "File xuất tạm"): only the requester can download it, and it expires after 24 hours.
 - **Print template** (vi: "Mẫu in"): what a record type prints, registered by its module: versioned layouts in code and named text blocks. A print is a PDF produced as an export (`printing.<template>`), so it follows the rules of temporary export files ([ADR-0026](./docs/adr/0026-printing.md)).
@@ -67,7 +68,7 @@ A term used by two products must have the same meaning, or the two must use diff
 - **Mention** (vi: "Nhắc tên"): `@login` in a comment. The mentioned user gets a notification if they can view the record; otherwise the mention is ignored, without telling the author.
 - **Notification** (`notification`, vi: "Thông báo"): a line telling a user about an event that concerns them (a document waiting for their approval, their document approved or rejected, being mentioned, their job finished or failed). Carries no record content; opening it re-checks view permission. May come with an email. See [ADR-0025](./docs/adr/0025-notifications.md).
 - **Mail server** (vi: "Máy chủ mail"): the tenant's SMTP configuration. Without it no email is sent; in-app notifications still work.
-- **Journal entry mapping** (vi: "Định khoản"): `accounting` turning business lines into debit/credit journal entries by configurable rules.
+- **Journal entry mapping** (vi: "Định khoản"): `accounting` turning business lines into debit/credit journal entries by configurable rules. Not built: accounting is out of scope.
 
 ## HRM
 
@@ -114,7 +115,7 @@ Product description: [products/hrm.md](./products/hrm.md).
 - **Recompute** (vi: "Tính lại"): a deliberate user action on a draft payroll: gather the current inputs again and recompute every item, run as a user job. Never runs on its own.
 - **Inputs hash** (`inputs_hash`, vi: "Mã băm đầu vào"): a hash of the set of source documents with their versions, legal parameters, work calendar, settings and employee data the payroll used. **Sources changed** (vi: "Nguồn đã đổi") when the recomputed hash differs from the stored one; the payroll then cannot be submitted for approval or finalized.
 - **Payroll samples** (vi: "Bộ mẫu lương"): sample payroll cases with the expected value of every item, used as the payroll acceptance test ([docs/payroll-samples](./docs/payroll-samples/README.md)).
-- **Initial import** (vi: "Nhập ban đầu"): loading the organisation's existing data (employees, dependants, contracts in effect) into the system when they start using it. Contracts imported this way take effect immediately, without approval. Only possible while the legal entity has no finalized pay period. Done in M10.
+- **Initial import** (vi: "Nhập ban đầu"): loading the organisation's existing data (employees, dependants, contracts in effect) into the system when they start using it. Contracts imported this way take effect immediately, without approval. Only possible while the legal entity has no finalized pay period. Not built yet (M10, on hold).
 
 ## Shared master data
 

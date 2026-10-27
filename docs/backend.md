@@ -11,7 +11,7 @@ internal/
 │                     # file storage, currency and rounding, the platform.Module type
 ├── core/             # core modules, always on, business-agnostic
 │   ├── iam/  setting/  numbering/  audit/
-│   └── record/  approval/  attachment/  discussion/  printing/  dataio/  customfield/
+│   └── record/  approval/  attachment/  discussion/  notification/  printing/  dataio/
 ├── shared/           # master data and data shared between products
 │   └── partner/  item/  tax/  posting/
 ├── modules/          # business modules of each product, including accounting
@@ -57,9 +57,9 @@ A module is created when it first starts being used, not ahead of time. The firs
 | `approval` | approval rules and flows; the adapter for `record`'s approval gate |
 | `attachment` | file attachments |
 | `discussion` | comments on records; mentions work together with `notification` |
+| `notification` | in-app notifications and the email job; kinds registered by modules ([ADR-0025](./adr/0025-notifications.md)) |
 | `printing` | print templates, PDF export |
 | `dataio` | Excel import/export |
-| `customfield` | custom field definitions, value validation |
 
 Details of the document features are in [documents.md](./documents.md).
 
@@ -75,12 +75,17 @@ internal/modules/sales/
 ├── deps.go         # Deps struct: core/shared modules passed in, and interfaces for other products
 ├── hooks.go        # hook interfaces this module EMITS
 ├── handler.go      # HTTP, not exported
+├── jobs.go         # module-wide job args and workers; an area's job stays in its area file
 ├── queries/        # one .sql file per business area (customer.sql, item.sql, …); sqlc generates one <file>.sql.go each
 └── internal/
     └── store/      # sqlc-generated code; Go forbids any package outside the module from importing it
 ```
 
 A module with several business areas splits them area first, so each area's files sort together: `<area>.go` (its service methods), `<area>_types.go`, `<area>_list.go`, `<area>_handler.go`, `<area>_test.go` (HRM: `leave.go`, `leave_types.go`, `leave_list.go`, `leave_handler.go`, `leave_test.go`). `service.go`, `types.go` and `handler.go` then keep only what spans areas. An area with few types keeps them in `<area>.go`.
+
+Pure calculation files, with no database access, sit beside the area they serve and are named for what they compute: `calc.go` in Sales, `payroll_calc.go` in HRM, `password.go` in `iam`.
+
+Besides `types.go`, a module may export building helpers its callers compose, such as `printing.Page` and `printing.Column` in `internal/core/printing/page.go`.
 
 A file with no content is left out, never created empty: a module without routes has no `handler.go` or `module.go`, a module that emits no hooks has no `hooks.go`. The files that do exist always have the names and roles above.
 
@@ -217,7 +222,7 @@ Registration is checked when the app is composed: a record type is named `<produ
 
 In order of preference, stop at the first approach that solves the problem:
 
-1. **Tenant configuration**: settings, custom fields, print templates, approval rules (see [documents.md](./documents.md)). The tenant or the implementer does it themselves, with no new release.
+1. **Tenant configuration**: settings, print templates, approval rules, later custom fields (see [documents.md](./documents.md)). The tenant or the implementer does it themselves, with no new release.
 2. **Extension table**: a module that needs extra information for another module's entity creates its own table in its own schema, one-to-one by that entity's id. Never add columns to another module's table.
 3. **Hook**: a module needs to react to another module's actions.
 4. **New module**: new business logic, released to every installation, enabled per product.
