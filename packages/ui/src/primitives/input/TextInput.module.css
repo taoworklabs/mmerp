@@ -49,6 +49,20 @@
   color: var(--mmerp-color-dimmed);
 }
 
+/* A section that is a button (a picker's chevron): no button chrome, the box's own cursor. */
+.sectionButton {
+  align-self: stretch;
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  cursor: pointer;
+}
+
+.sectionButton:disabled {
+  cursor: not-allowed;
+}
+
 /* Read-only: a grey fill without an edge, so the value stays framed and the layout does not move
    between viewing and editing, with nothing that invites typing. Shared by every boxed input. */
 [data-read-only] .wrapper {

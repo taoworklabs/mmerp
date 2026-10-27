@@ -417,7 +417,8 @@ function Cards<T>({ columns, rows, rowKey, renderLink, menu, label, group, foote
   )
 }
 
-// Card is one row as a card; a total card has no link and no menu.
+// Card is one row as a card; a total card has no link and no menu. Its lines are divs, not
+// paragraphs: a column may render blocks (a badge, a group), which a <p> cannot hold.
 function Card<T>({
   columns,
   row,
@@ -443,10 +444,12 @@ function Card<T>({
         {!total && renderLink ? (
           <CardTitle link={renderLink(row, titleContent) as ReactElement<{ className?: string }>} />
         ) : (
-          <Text weight={600}>{titleContent}</Text>
+          <Text weight={600} render={<div />}>
+            {titleContent}
+          </Text>
         )}
         {status.map((c) => (
-          <Text key={c.key} size="sm">
+          <Text key={c.key} size="sm" render={<div />}>
             {c.render(row)}
           </Text>
         ))}
@@ -457,7 +460,7 @@ function Card<T>({
         )}
       </Group>
       {meta.map((c) => (
-        <Text key={c.key} size="sm" tone={total ? undefined : 'dimmed'}>
+        <Text key={c.key} size="sm" tone={total ? undefined : 'dimmed'} render={<div />}>
           {total ? `${c.header}: ` : ''}
           {c.render(row)}
         </Text>

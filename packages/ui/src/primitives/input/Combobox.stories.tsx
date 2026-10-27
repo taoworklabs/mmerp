@@ -37,6 +37,16 @@ function Controlled(props: ComboboxProps) {
 export const Default: Story = {
   args: { value: null, placeholder: 'Tìm nhân viên' },
   render: (args) => <Controlled {...args} />,
+  play: async ({ canvasElement }) => {
+    // A chevron marks the box as a picker, and clicking it opens the list; the input stays typeable.
+    const chevron = canvasElement.querySelector<HTMLElement>('[data-combobox-chevron]')
+    expect(chevron).not.toBeNull()
+    expect(chevron!.querySelector('svg')).not.toBeNull()
+    await userEvent.click(chevron!)
+    await expect(await within(document.body).findByRole('option', { name: 'Đặng Thị Bích' })).toBeVisible()
+    const input = within(canvasElement).getByRole('combobox', { name: 'Người phụ trách' })
+    expect(input).not.toHaveAttribute('readonly')
+  },
 }
 
 export const WithValue: Story = {

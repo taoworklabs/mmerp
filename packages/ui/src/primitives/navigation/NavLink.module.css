@@ -75,11 +75,11 @@
   font-weight: var(--mmerp-font-weight-medium);
 }
 
+/* The label is the row's name, on one line; the description carries the detail (a document
+   number, a person) and wraps rather than hide it. */
 .description {
   width: 100%;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  overflow-wrap: anywhere;
   font-size: var(--mmerp-font-size-xs);
   color: var(--mmerp-color-dimmed);
 }

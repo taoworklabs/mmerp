@@ -100,3 +100,31 @@ export const Searchable: Story = {
     expect(await body.findByText('Không tìm thấy nhân viên')).toBeInTheDocument()
   },
 }
+
+// A row built of parts (an indent, an icon, a truncating name) ends long names with an ellipsis
+// inside the popup instead of running past its edge.
+export const LongOptions: Story = {
+  args: {
+    value: null,
+    popupWidth: 220,
+    data: [{ value: 'a', label: 'Hành chính – Nhân sự và Tổng hợp khu vực phía Nam' }],
+    renderOption: (item) => (
+      <span style={{ display: 'flex', gap: 8, paddingLeft: 24 }}>
+        <span aria-hidden="true">■</span>
+        <span data-testid="name" style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          {item.label}
+        </span>
+      </span>
+    ),
+    trigger: <Button aria-label="Chọn đơn vị">Chọn đơn vị</Button>,
+  },
+  render: (args) => <Controlled {...args} />,
+  play: async ({ canvasElement }) => {
+    const body = within(canvasElement.ownerDocument.body)
+    await userEvent.click(within(canvasElement).getByRole('combobox', { name: 'Chọn đơn vị' }))
+    const name = await body.findByTestId('name')
+    const option = name.closest('[role="option"]') as HTMLElement
+    expect(name.scrollWidth).toBeGreaterThan(name.clientWidth)
+    expect(name.getBoundingClientRect().right).toBeLessThanOrEqual(option.getBoundingClientRect().right)
+  },
+}

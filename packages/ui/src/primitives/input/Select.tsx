@@ -3,6 +3,7 @@ import type * as React from 'react'
 import { useId, useRef, useState } from 'react'
 import { ClearButton } from '../../internal/ClearButton.tsx'
 import { cx } from '../../internal/cx.ts'
+import { ChevronIcon } from '../../internal/icons.tsx'
 import { mergeRefs } from '../../internal/mergeRefs.ts'
 import { Field, type FieldProps } from './Field.tsx'
 import optionStyles from './options.module.css'
@@ -45,14 +46,6 @@ const valueStyle: React.CSSProperties = {
   textOverflow: 'ellipsis',
   whiteSpace: 'nowrap',
   textAlign: 'start',
-}
-
-function ChevronIcon() {
-  return (
-    <svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true">
-      <path d="M2 4l3 3 3-3" stroke="currentColor" strokeWidth="1.4" fill="none" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  )
 }
 
 export function Select({

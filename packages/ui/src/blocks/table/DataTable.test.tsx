@@ -53,4 +53,39 @@ describe('DataTable', () => {
     expect(root.classList.contains('extra')).toBe(true)
     expect(rootEl).toBe(root)
   })
+
+  it('keeps the identifier column on one line and scrolls a table too wide for its frame sideways', async () => {
+    type Param = { key: string; value: string }
+    const params: Column<Param>[] = [
+      { key: 'key', header: 'Tham số', role: 'title', render: (p) => <span data-testid="key">{p.key}</span> },
+      { key: 'value', header: 'Giá trị', role: 'meta', kind: 'number', render: (p) => p.value },
+    ]
+    const value = Array.from({ length: 8 }, (_, i) => `đến ${i + 1}.000.000: ${i + 5}%`).join(' · ')
+    const { container } = await render(
+      <div style={{ width: 600 }}>
+        <DataTable columns={params} rows={[{ key: 'Biểu thuế thu nhập cá nhân lũy tiến', value }]} rowKey={(p) => p.key} label="Tham số" labels={labels} />
+      </div>,
+    )
+
+    await page.viewport(1300, 900)
+    await expect.poll(() => container.querySelector('[data-testid="key"]')).not.toBeNull()
+    const key = container.querySelector('[data-testid="key"]') as HTMLElement
+    const lineHeight = parseFloat(getComputedStyle(key).lineHeight)
+    expect(key.getBoundingClientRect().height).toBeLessThanOrEqual(lineHeight)
+    const viewport = container.querySelector('[data-scroll-area-viewport]') as HTMLElement
+    expect(viewport.scrollWidth).toBeGreaterThan(viewport.clientWidth)
+  })
+
+  it('renders card lines as blocks below 64em, so a column that renders a block stays valid HTML', async () => {
+    const blocky: Column<Employee>[] = [
+      { key: 'full_name', header: 'Họ tên', role: 'title', render: (e) => <div>{e.full_name}</div> },
+      { key: 'code', header: 'Mã', role: 'meta', render: (e) => <div>{e.code}</div> },
+      { key: 'status', header: 'Trạng thái', role: 'status', render: (e) => <div>{e.status}</div> },
+    ]
+    const { container } = await render(<DataTable columns={blocky} rows={rows} rowKey={(e) => e.id} label="Nhân viên" labels={labels} />)
+
+    await page.viewport(375, 800)
+    await expect.poll(() => container.querySelector('[role="list"]')).not.toBeNull()
+    expect(container.querySelectorAll('p div')).toHaveLength(0)
+  })
 })

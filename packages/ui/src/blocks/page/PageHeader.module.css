@@ -45,6 +45,14 @@
   gap: var(--mmerp-space-sm);
 }
 
+/* Stacked under the title on a phone, the actions fill the width: a single primary action
+   becomes a full-width button, easy to reach with a thumb. */
+@media (max-width: 47.99em) {
+  .actions > * {
+    flex: 1 1 auto;
+  }
+}
+
 .titleGroup {
   display: flex;
   align-items: center;

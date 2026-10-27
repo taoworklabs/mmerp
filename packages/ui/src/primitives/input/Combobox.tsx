@@ -3,6 +3,7 @@ import type * as React from 'react'
 import { useId, useRef, useState } from 'react'
 import { ClearButton } from '../../internal/ClearButton.tsx'
 import { cx } from '../../internal/cx.ts'
+import { ChevronIcon } from '../../internal/icons.tsx'
 import { mergeRefs } from '../../internal/mergeRefs.ts'
 import { Loader } from '../feedback/Loader.tsx'
 import { Field, type FieldProps } from './Field.tsx'
@@ -156,6 +157,13 @@ export function Combobox({
               disabled={disabled}
               readOnly={readOnly}
             />
+          )}
+          {/* A cue that a list opens here; clicking it opens the list too. The input stays the
+              control for keyboards and assistive technology, so the button is hidden from them. */}
+          {!readOnly && (
+            <BaseCombobox.Trigger className={cx(textInputStyles.section, textInputStyles.sectionButton)} aria-hidden="true" data-combobox-chevron="">
+              <ChevronIcon />
+            </BaseCombobox.Trigger>
           )}
         </BaseCombobox.InputGroup>
         <BaseCombobox.Portal>

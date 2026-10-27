@@ -48,6 +48,21 @@ export const Long: Story = {
   },
 }
 
+export const LongDescription: Story = {
+  args: { label: 'Chờ duyệt', description: 'Bảng công BC-2026-000012 của Nguyễn Văn An, phòng Kinh doanh (HCM)', href: '#' },
+  render: (args) => (
+    <div style={{ width: 240 }}>
+      <NavLink {...args} />
+    </div>
+  ),
+  play: async ({ canvasElement }) => {
+    const description = within(canvasElement).getByText(/Bảng công/)
+    // Wrapped, not cut: every word stays readable on a narrow row.
+    expect(description.scrollWidth).toBeLessThanOrEqual(description.clientWidth)
+    expect(description.getBoundingClientRect().height).toBeGreaterThan(parseFloat(getComputedStyle(description).lineHeight) * 1.5)
+  },
+}
+
 export const Compact: Story = {
   render: () => (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>

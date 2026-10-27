@@ -16,4 +16,16 @@ describe('PageHeader', () => {
     await page.viewport(1300, 800)
     await expect.poll(() => Math.abs(actions.getBoundingClientRect().top - title.getBoundingClientRect().top)).toBeLessThanOrEqual(4)
   })
+
+  it('makes the action as wide as the header below 48em, and leaves it its own width from 48em', async () => {
+    const { container } = await render(<PageHeader title="Orders" actions={<button type="button">New order</button>} />)
+    const header = container.querySelector('[data-page-header]') as HTMLElement
+    const action = container.querySelector('button') as HTMLElement
+
+    await page.viewport(375, 800)
+    await expect.poll(() => Math.round(action.getBoundingClientRect().width)).toBe(Math.round(header.getBoundingClientRect().width))
+
+    await page.viewport(1300, 800)
+    await expect.poll(() => action.getBoundingClientRect().width).toBeLessThan(header.getBoundingClientRect().width / 2)
+  })
 })

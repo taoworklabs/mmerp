@@ -84,8 +84,10 @@
   }
 }
 
-/* After the spans above, so it wins over them. */
-.fields > .fullRow {
+/* After the spans above, so it wins over them; [data-full-row] is the same hook for a wrapper
+   that cannot take the class (a long text field), in a section's grid or a card's pairs. */
+.fields > :is(.fullRow, [data-full-row]),
+.pairFields > [data-full-row] {
   grid-column: 1 / -1;
 }
 
