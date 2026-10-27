@@ -9,6 +9,10 @@ import (
 
 func newQ(c platform.Conn) *Queries { return New(c) }
 
+var IsLoginLocked = data.OneArg("iam.IsLoginLocked", newQ, (*Queries).IsLoginLocked)
+var RecordLoginFailure = data.OneArg("iam.RecordLoginFailure", newQ, (*Queries).RecordLoginFailure)
+var DeleteStaleLoginFailures = data.Exec("iam.DeleteStaleLoginFailures", newQ, (*Queries).DeleteStaleLoginFailures)
+var ClearLoginFailures = data.ExecArg("iam.ClearLoginFailures", newQ, (*Queries).ClearLoginFailures)
 var LockOrgUnits = data.Exec("iam.LockOrgUnits", newQ, (*Queries).LockOrgUnits)
 var ShareOrgUnits = data.Exec("iam.ShareOrgUnits", newQ, (*Queries).ShareOrgUnits)
 var ListOrgUnits = data.Many("iam.ListOrgUnits", newQ, (*Queries).ListOrgUnits)

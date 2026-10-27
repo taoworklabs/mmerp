@@ -84,6 +84,7 @@ type Session struct {
 
 var (
 	ErrInvalidCredentials = &platform.Error{Status: http.StatusUnauthorized, Code: "invalid_credentials"}
+	ErrLoginLocked        = &platform.Error{Status: http.StatusTooManyRequests, Code: "login_temporarily_locked"}
 	ErrLoginTaken         = &platform.Error{Status: http.StatusConflict, Code: "login_taken"}
 	ErrUnknownRole        = &platform.Error{Status: http.StatusUnprocessableEntity, Code: "unknown_role"}
 	ErrRoleTenantWide     = &platform.Error{Status: http.StatusUnprocessableEntity, Code: "role_tenant_wide"}

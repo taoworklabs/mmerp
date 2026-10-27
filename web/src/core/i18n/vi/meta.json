@@ -5,6 +5,7 @@
   "core.login.password": "Mật khẩu",
   "core.login.submit": "Đăng nhập",
   "core.login.invalid_credentials": "Tên đăng nhập hoặc mật khẩu không đúng. Kiểm tra lại rồi thử lần nữa.",
+  "core.login.temporarily_locked": "Nhập sai quá nhiều lần. Vui lòng thử lại sau.",
   "core.home.title": "Xin chào, {{name}}",
   "core.home.empty": "Bạn chưa được cấp quyền vào phân hệ nào.",
   "core.shell.menu": "Mở thanh điều hướng",

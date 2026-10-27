@@ -5,7 +5,10 @@ import (
 	"errors"
 	"reflect"
 	"slices"
+	"sync"
 	"testing"
+
+	"github.com/jackc/pgx/v5/pgxpool" //nolint:depguard // the test moves a lock into the past through the system pool
 
 	"github.com/taoworklabs/mmerp/internal/core/audit"
 	"github.com/taoworklabs/mmerp/internal/core/iam"
@@ -27,6 +30,11 @@ func setup(t *testing.T) (*iam.Service, context.Context) {
 // setupWithRecord also returns record, which has a document type test.doc of product test.
 func setupWithRecord(t *testing.T) (*iam.Service, *record.Service, context.Context) {
 	t.Helper()
+	return setupWithPool(t, pgtest.New(t))
+}
+
+func setupWithPool(t *testing.T, pool *pgxpool.Pool) (*iam.Service, *record.Service, context.Context) {
+	t.Helper()
 	s := iam.NewService(iam.Deps{Setting: setting.NewService(), Audit: audit.NewService()})
 	rec := record.NewService(record.Deps{IAM: s, Numbering: numbering.NewService(numbering.Deps{}), Audit: audit.NewService()})
 	s.RegisterRoles("test", map[string][]string{"member": {"test.all"}})
@@ -34,7 +42,7 @@ func setupWithRecord(t *testing.T) (*iam.Service, *record.Service, context.Conte
 		Perms: record.Perms{View: "test.all", Edit: "test.all"}, OnDelete: func(context.Context, int64) error { return nil }})
 	s.SetDataProducts(rec)
 	s.RegisterRoles("hrm", map[string][]string{"hr": {"hrm.employee.view", "hrm.employee.edit"}, "viewer": {"hrm.employee.view"}, "approval_admin": {"hrm.approval.manage"}}, "approval_admin")
-	ctx := platform.WithDB(t.Context(), pgtest.New(t))
+	ctx := platform.WithDB(t.Context(), pool)
 	id, err := s.CreateAdmin(ctx, "admin", "Admin", "long enough")
 	if err != nil {
 		t.Fatal(err)
@@ -333,5 +341,65 @@ func TestAdminHoldsSharedNamespace(t *testing.T) {
 	s.RegisterRoles("widget", map[string][]string{"editor": {"widget.view", "widget.edit"}})
 	if sc := must[iam.Scope](t)(s.Scope(ctx, "widget", "widget.edit")); !sc.All {
 		t.Fatalf("admin scope on widget.edit = %+v, want all", sc)
+	}
+}
+
+func TestLockout(t *testing.T) {
+	pool := pgtest.New(t)
+	s, _, ctx := setupWithPool(t, pool)
+	must[int64](t)(s.CreateUser(ctx, "an", "An", "right password"))
+	locked := func(err error) bool { return errors.Is(err, iam.ErrLoginLocked) }
+
+	for range 4 {
+		if _, err := s.Login(ctx, "an", "wrong"); !errors.Is(err, iam.ErrInvalidCredentials) {
+			t.Fatalf("wrong password: %v", err)
+		}
+	}
+	must[string](t)(s.Login(ctx, "an", "right password"))
+	// The success reset the count: four more wrong ones do not lock.
+	for range 4 {
+		_, _ = s.Login(ctx, "AN", "wrong")
+	}
+	must[string](t)(s.Login(ctx, "an", "right password"))
+
+	for range 5 {
+		_, _ = s.Login(ctx, "an", "wrong")
+	}
+	if _, err := s.Login(ctx, "AN", "right password"); !locked(err) {
+		t.Fatalf("locked login: %v", err)
+	}
+	for range 5 {
+		_, _ = s.Login(ctx, "ghost", "wrong")
+	}
+	if _, err := s.Login(ctx, "ghost", "wrong"); !locked(err) {
+		t.Fatalf("unknown login: %v", err)
+	}
+
+	sys := pgtest.System(t, pool)
+	if _, err := sys.Exec(ctx, `UPDATE iam.login_failures SET locked_until = now() - interval '1 second'`); err != nil {
+		t.Fatal(err)
+	}
+	must[string](t)(s.Login(ctx, "an", "right password"))
+}
+
+func TestLockoutCountsAtomically(t *testing.T) {
+	s, ctx := setup(t)
+	must[int64](t)(s.CreateUser(ctx, "an", "An", "right password"))
+
+	var wg sync.WaitGroup
+	for range 5 {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			_, _ = s.Login(ctx, "an", "wrong")
+		}()
+	}
+	wg.Wait()
+	var n int
+	if err := platform.DBFrom(ctx).QueryRow(ctx, `SELECT count(*) FROM audit.log WHERE action = 'iam.login_locked'`).Scan(&n); err != nil || n != 1 {
+		t.Fatalf("login_locked rows = %d (%v)", n, err)
+	}
+	if _, err := s.Login(ctx, "an", "right password"); !errors.Is(err, iam.ErrLoginLocked) {
+		t.Fatalf("after lock: %v", err)
 	}
 }

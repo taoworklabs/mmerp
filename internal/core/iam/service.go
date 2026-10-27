@@ -94,6 +94,11 @@ func (s *Service) createUser(ctx context.Context, login, name, password string) 
 
 // Login checks the password and opens a session; the returned token goes into the cookie.
 func (s *Service) Login(ctx context.Context, login, password string) (string, error) {
+	if locked, err := store.IsLoginLocked.Run(ctx, login); err != nil {
+		return "", err
+	} else if locked {
+		return "", ErrLoginLocked
+	}
 	// Hashing runs outside the transaction so it holds no connection.
 	u, err := store.GetUserByLogin.Run(ctx, login)
 	switch {
@@ -113,15 +118,44 @@ func (s *Service) Login(ctx context.Context, login, password string) (string, er
 		if err := store.CreateSession.Run(ctx, store.CreateSessionParams{TokenHash: tokenHash(token), UserID: u.ID}); err != nil {
 			return err
 		}
+		if err := s.clearFailures(ctx, login); err != nil {
+			return err
+		}
 		return s.d.Audit.Record(ctx, "iam.login", nil)
 	})
 	return token, err
 }
 
+// clearFailures forgets the wrong passwords counted and any lock on login.
+func (s *Service) clearFailures(ctx context.Context, login string) error {
+	return store.ClearLoginFailures.Run(ctx, login)
+}
+
 func (s *Service) loginFailed(ctx context.Context, login string) error {
 	// Its own transaction: the attempt is recorded although the login fails.
+	p, err := s.policy(ctx)
+	if err != nil {
+		return err
+	}
 	if err := platform.InTx(ctx, func(ctx context.Context) error {
-		return s.d.Audit.Record(ctx, "iam.login_failed", map[string]any{"login": login})
+		if err := s.d.Audit.Record(ctx, "iam.login_failed", map[string]any{"login": login}); err != nil {
+			return err
+		}
+		if err := store.DeleteStaleLoginFailures.Run(ctx); err != nil {
+			return err
+		}
+		locked, err := store.RecordLoginFailure.Run(ctx, store.RecordLoginFailureParams{
+			Login: login, MaxFailures: int32(p.MaxFailures), LockMinutes: int32(p.LockMinutes)})
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil
+		}
+		if err != nil {
+			return err
+		}
+		if locked {
+			return s.d.Audit.Record(ctx, "iam.login_locked", map[string]any{"login": login})
+		}
+		return nil
 	}); err != nil {
 		return err
 	}

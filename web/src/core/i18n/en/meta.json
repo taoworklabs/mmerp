@@ -5,6 +5,7 @@
   "core.login.password": "Password",
   "core.login.submit": "Sign in",
   "core.login.invalid_credentials": "Wrong username or password. Check them and try again.",
+  "core.login.temporarily_locked": "Too many wrong attempts. Try again later.",
   "core.home.title": "Hello, {{name}}",
   "core.home.empty": "You have no access to any product yet.",
   "core.shell.menu": "Open navigation",
