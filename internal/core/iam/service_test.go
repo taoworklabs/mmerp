@@ -403,3 +403,73 @@ func TestLockoutCountsAtomically(t *testing.T) {
 		t.Fatalf("after lock: %v", err)
 	}
 }
+
+func TestLockUser(t *testing.T) {
+	s, ctx := setup(t)
+	id := must[int64](t)(s.CreateUser(ctx, "an", "An", "right password"))
+	token := must[string](t)(s.Login(ctx, "an", "right password"))
+
+	if err := s.LockUser(ctx, id); err != nil {
+		t.Fatal(err)
+	}
+	if _, ok, _ := s.Authenticate(ctx, token); ok {
+		t.Fatal("session survived the lock")
+	}
+	if _, err := s.Login(ctx, "an", "wrong"); !errors.Is(err, iam.ErrInvalidCredentials) {
+		t.Fatalf("wrong password: %v", err)
+	}
+	if _, err := s.Login(ctx, "an", "right password"); !errors.Is(err, iam.ErrAccountLocked) {
+		t.Fatalf("right password: %v", err)
+	}
+	if u := must[iam.User](t)(s.User(ctx, id)); !u.Locked {
+		t.Fatal("user not reported locked")
+	}
+
+	// A temporary lock built up meanwhile is cleared by unlock too.
+	for range 5 {
+		_, _ = s.Login(ctx, "an", "wrong")
+	}
+	if err := s.UnlockUser(ctx, id); err != nil {
+		t.Fatal(err)
+	}
+	must[string](t)(s.Login(ctx, "an", "right password"))
+	if err := s.LockUser(ctx, 999999); !errors.Is(err, platform.ErrNotFound) {
+		t.Fatalf("unknown id: %v", err)
+	}
+}
+
+func TestLockedUserSessionIsDead(t *testing.T) {
+	pool := pgtest.New(t)
+	s, _, ctx := setupWithPool(t, pool)
+	id := must[int64](t)(s.CreateUser(ctx, "an", "An", "right password"))
+	if err := s.LockUser(ctx, id); err != nil {
+		t.Fatal(err)
+	}
+	sys := pgtest.System(t, pool)
+	if _, err := sys.Exec(ctx, `INSERT INTO iam.sessions (token_hash, user_id, expires_at) VALUES (sha256('tok'::bytea), $1, now() + interval '1 day')`, id); err != nil {
+		t.Fatal(err)
+	}
+	if _, ok, err := s.Authenticate(ctx, "tok"); err != nil || ok {
+		t.Fatalf("ok=%v err=%v", ok, err)
+	}
+}
+
+func TestRenameUser(t *testing.T) {
+	s, ctx := setup(t)
+	id := must[int64](t)(s.CreateUser(ctx, "an", "An", "right password"))
+	if err := s.RenameUser(ctx, id, "  "); err == nil {
+		t.Fatal("blank name accepted")
+	} else if e, ok := errors.AsType[*platform.Error](err); !ok || e.Code != "invalid_request" {
+		t.Fatalf("blank name: %v", err)
+	}
+	if err := s.RenameUser(ctx, id, " Anh "); err != nil {
+		t.Fatal(err)
+	}
+	if u := must[iam.User](t)(s.User(ctx, id)); u.Name != "Anh" {
+		t.Fatalf("name = %q", u.Name)
+	}
+	var n int
+	if err := platform.DBFrom(ctx).QueryRow(ctx, `SELECT count(*) FROM audit.log WHERE action = 'iam.user_renamed'`).Scan(&n); err != nil || n != 1 {
+		t.Fatalf("audit rows = %d (%v)", n, err)
+	}
+}

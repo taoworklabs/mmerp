@@ -13,6 +13,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"unicode/utf8"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
@@ -109,6 +110,8 @@ func (s *Service) Login(ctx context.Context, login, password string) (string, er
 		return "", err
 	case !verifyPassword(password, u.PasswordHash):
 		return "", s.loginFailed(ctx, login)
+	case u.LockedAt.Valid:
+		return "", ErrAccountLocked
 	}
 	token := rand.Text()
 	err = platform.InTx(platform.WithActor(ctx, u.ID), func(ctx context.Context) error {
@@ -241,7 +244,7 @@ func (s *Service) Users(ctx context.Context) ([]User, error) {
 	rows, err := store.ListUsers.Run(ctx)
 	out := make([]User, len(rows))
 	for i, r := range rows {
-		out[i] = User{ID: r.ID, Login: r.Login, Name: r.Name, Email: platform.TextPtr(r.Email)}
+		out[i] = User{ID: r.ID, Login: r.Login, Name: r.Name, Email: platform.TextPtr(r.Email), Locked: r.LockedAt.Valid}
 	}
 	return out, err
 }
@@ -252,7 +255,7 @@ func (s *Service) User(ctx context.Context, id int64) (User, error) {
 		return User{}, err
 	}
 	u, err := store.GetUser.Run(ctx, id)
-	return User{ID: u.ID, Login: u.Login, Name: u.Name, Email: platform.TextPtr(u.Email)}, notFound(err)
+	return User{ID: u.ID, Login: u.Login, Name: u.Name, Email: platform.TextPtr(u.Email), Locked: u.LockedAt.Valid}, notFound(err)
 }
 
 var errEmail = &platform.Error{Status: http.StatusUnprocessableEntity, Code: "invalid_request", Params: map[string]any{"fields": []string{"email"}}}
@@ -279,6 +282,66 @@ func (s *Service) SetEmail(ctx context.Context, id int64, email *string) error {
 			return platform.ErrNotFound
 		}
 		return s.d.Audit.Record(ctx, "iam.user_email_set", map[string]any{"id": id})
+	})
+}
+
+var errName = &platform.Error{Status: http.StatusUnprocessableEntity, Code: "invalid_request", Params: map[string]any{"fields": []string{"name"}}}
+
+// RenameUser changes a user's display name.
+func (s *Service) RenameUser(ctx context.Context, id int64, name string) error {
+	if err := s.require(ctx, PermManageUsers); err != nil {
+		return err
+	}
+	if name = strings.TrimSpace(name); name == "" || utf8.RuneCountInString(name) > 200 {
+		return errName
+	}
+	return platform.InTx(ctx, func(ctx context.Context) error {
+		u, err := store.GetUser.Run(ctx, id)
+		if err != nil {
+			return notFound(err)
+		}
+		if err := store.SetUserName.Run(ctx, store.SetUserNameParams{ID: id, Name: name}); err != nil {
+			return err
+		}
+		return s.d.Audit.Record(ctx, "iam.user_renamed", map[string]any{"id": id, "from": u.Name, "to": name})
+	})
+}
+
+// LockUser blocks sign-in and ends the user's sessions; locking a locked user changes nothing.
+func (s *Service) LockUser(ctx context.Context, id int64) error {
+	return s.setLocked(ctx, id, true)
+}
+
+// UnlockUser lets a locked user sign in again and forgets any temporary lock on the login.
+func (s *Service) UnlockUser(ctx context.Context, id int64) error {
+	return s.setLocked(ctx, id, false)
+}
+
+func (s *Service) setLocked(ctx context.Context, id int64, locked bool) error {
+	if err := s.require(ctx, PermManageUsers); err != nil {
+		return err
+	}
+	return platform.InTx(ctx, func(ctx context.Context) error {
+		u, err := store.GetUser.Run(ctx, id)
+		if err != nil {
+			return notFound(err)
+		}
+		if u.LockedAt.Valid == locked {
+			return nil
+		}
+		if err := store.SetUserLocked.Run(ctx, store.SetUserLockedParams{ID: id, Locked: locked}); err != nil {
+			return err
+		}
+		action := "iam.user_unlocked"
+		if locked {
+			action = "iam.user_locked"
+			if err := store.DeleteUserSessions.Run(ctx, id); err != nil {
+				return err
+			}
+		} else if err := s.clearFailures(ctx, u.Login); err != nil {
+			return err
+		}
+		return s.d.Audit.Record(ctx, action, map[string]any{"id": id})
 	})
 }
 

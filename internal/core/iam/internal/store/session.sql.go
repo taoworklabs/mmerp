@@ -44,10 +44,19 @@ func (q *Queries) DeleteSession(ctx context.Context, tokenHash []byte) (int64, e
 	return user_id, err
 }
 
+const deleteUserSessions = `-- name: DeleteUserSessions :exec
+DELETE FROM iam.sessions WHERE user_id = $1
+`
+
+func (q *Queries) DeleteUserSessions(ctx context.Context, userID int64) error {
+	_, err := q.db.Exec(ctx, deleteUserSessions, userID)
+	return err
+}
+
 const getSession = `-- name: GetSession :one
 SELECT s.user_id, u.authz_version, (SELECT version FROM iam.authz) AS tenant_version
 FROM iam.sessions s JOIN iam.users u ON u.id = s.user_id
-WHERE s.token_hash = $1 AND s.expires_at > now()
+WHERE s.token_hash = $1 AND s.expires_at > now() AND u.locked_at IS NULL
 `
 
 type GetSessionRow struct {

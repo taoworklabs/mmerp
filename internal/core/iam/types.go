@@ -26,10 +26,11 @@ type Me struct {
 
 // User is an account as administrators see it.
 type User struct {
-	ID    int64   `json:"id"`
-	Login string  `json:"login"`
-	Name  string  `json:"name"`
-	Email *string `json:"email" doc:"Where email notifications go; null for none"`
+	ID     int64   `json:"id"`
+	Login  string  `json:"login"`
+	Name   string  `json:"name"`
+	Email  *string `json:"email" doc:"Where email notifications go; null for none"`
+	Locked bool    `json:"locked"`
 }
 
 // Role is a product role and the permissions it grants.
@@ -85,6 +86,7 @@ type Session struct {
 var (
 	ErrInvalidCredentials = &platform.Error{Status: http.StatusUnauthorized, Code: "invalid_credentials"}
 	ErrLoginLocked        = &platform.Error{Status: http.StatusTooManyRequests, Code: "login_temporarily_locked"}
+	ErrAccountLocked      = &platform.Error{Status: http.StatusForbidden, Code: "account_locked"}
 	ErrLoginTaken         = &platform.Error{Status: http.StatusConflict, Code: "login_taken"}
 	ErrUnknownRole        = &platform.Error{Status: http.StatusUnprocessableEntity, Code: "unknown_role"}
 	ErrRoleTenantWide     = &platform.Error{Status: http.StatusUnprocessableEntity, Code: "role_tenant_wide"}

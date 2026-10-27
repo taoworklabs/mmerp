@@ -2,17 +2,23 @@
 INSERT INTO iam.users (login, name, password_hash) VALUES ($1, $2, $3) RETURNING id;
 
 -- name: GetUserByLogin :one
-SELECT id, password_hash FROM iam.users WHERE lower(login) = lower($1);
+SELECT id, password_hash, locked_at FROM iam.users WHERE lower(login) = lower($1);
 
 -- name: GetUser :one
-SELECT u.id, u.login, u.name, u.email, u.locale, u.authz_version, (SELECT version FROM iam.authz) AS tenant_version
+SELECT u.id, u.login, u.name, u.email, u.locale, u.authz_version, u.locked_at, (SELECT version FROM iam.authz) AS tenant_version
 FROM iam.users u WHERE u.id = $1;
 
 -- name: ListUsers :many
-SELECT id, login, name, email FROM iam.users ORDER BY lower(login);
+SELECT id, login, name, email, locked_at FROM iam.users ORDER BY lower(login);
 
 -- name: SetUserEmail :execrows
 UPDATE iam.users SET email = $2 WHERE id = $1;
+
+-- name: SetUserLocked :exec
+UPDATE iam.users SET locked_at = CASE WHEN @locked::boolean THEN now() END, authz_version = authz_version + 1 WHERE id = @id;
+
+-- name: SetUserName :exec
+UPDATE iam.users SET name = $2 WHERE id = $1;
 
 -- name: BumpUserAuthz :exec
 UPDATE iam.users SET authz_version = authz_version + 1 WHERE id = $1;

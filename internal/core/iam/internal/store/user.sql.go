@@ -47,7 +47,7 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (int64, 
 }
 
 const getUser = `-- name: GetUser :one
-SELECT u.id, u.login, u.name, u.email, u.locale, u.authz_version, (SELECT version FROM iam.authz) AS tenant_version
+SELECT u.id, u.login, u.name, u.email, u.locale, u.authz_version, u.locked_at, (SELECT version FROM iam.authz) AS tenant_version
 FROM iam.users u WHERE u.id = $1
 `
 
@@ -58,6 +58,7 @@ type GetUserRow struct {
 	Email         pgtype.Text
 	Locale        pgtype.Text
 	AuthzVersion  int64
+	LockedAt      pgtype.Timestamptz
 	TenantVersion int64
 }
 
@@ -71,24 +72,26 @@ func (q *Queries) GetUser(ctx context.Context, id int64) (GetUserRow, error) {
 		&i.Email,
 		&i.Locale,
 		&i.AuthzVersion,
+		&i.LockedAt,
 		&i.TenantVersion,
 	)
 	return i, err
 }
 
 const getUserByLogin = `-- name: GetUserByLogin :one
-SELECT id, password_hash FROM iam.users WHERE lower(login) = lower($1)
+SELECT id, password_hash, locked_at FROM iam.users WHERE lower(login) = lower($1)
 `
 
 type GetUserByLoginRow struct {
 	ID           int64
 	PasswordHash string
+	LockedAt     pgtype.Timestamptz
 }
 
 func (q *Queries) GetUserByLogin(ctx context.Context, lower string) (GetUserByLoginRow, error) {
 	row := q.db.QueryRow(ctx, getUserByLogin, lower)
 	var i GetUserByLoginRow
-	err := row.Scan(&i.ID, &i.PasswordHash)
+	err := row.Scan(&i.ID, &i.PasswordHash, &i.LockedAt)
 	return i, err
 }
 
@@ -109,14 +112,15 @@ func (q *Queries) ListSettings(ctx context.Context, arg ListSettingsParams) ([]b
 }
 
 const listUsers = `-- name: ListUsers :many
-SELECT id, login, name, email FROM iam.users ORDER BY lower(login)
+SELECT id, login, name, email, locked_at FROM iam.users ORDER BY lower(login)
 `
 
 type ListUsersRow struct {
-	ID    int64
-	Login string
-	Name  string
-	Email pgtype.Text
+	ID       int64
+	Login    string
+	Name     string
+	Email    pgtype.Text
+	LockedAt pgtype.Timestamptz
 }
 
 func (q *Queries) ListUsers(ctx context.Context) ([]ListUsersRow, error) {
@@ -133,6 +137,7 @@ func (q *Queries) ListUsers(ctx context.Context) ([]ListUsersRow, error) {
 			&i.Login,
 			&i.Name,
 			&i.Email,
+			&i.LockedAt,
 		); err != nil {
 			return nil, err
 		}
@@ -189,4 +194,32 @@ func (q *Queries) SetUserEmail(ctx context.Context, arg SetUserEmailParams) (int
 		return 0, err
 	}
 	return result.RowsAffected(), nil
+}
+
+const setUserLocked = `-- name: SetUserLocked :exec
+UPDATE iam.users SET locked_at = CASE WHEN $1::boolean THEN now() END, authz_version = authz_version + 1 WHERE id = $2
+`
+
+type SetUserLockedParams struct {
+	Locked bool
+	ID     int64
+}
+
+func (q *Queries) SetUserLocked(ctx context.Context, arg SetUserLockedParams) error {
+	_, err := q.db.Exec(ctx, setUserLocked, arg.Locked, arg.ID)
+	return err
+}
+
+const setUserName = `-- name: SetUserName :exec
+UPDATE iam.users SET name = $2 WHERE id = $1
+`
+
+type SetUserNameParams struct {
+	ID   int64
+	Name string
+}
+
+func (q *Queries) SetUserName(ctx context.Context, arg SetUserNameParams) error {
+	_, err := q.db.Exec(ctx, setUserName, arg.ID, arg.Name)
+	return err
 }

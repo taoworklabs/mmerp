@@ -44,7 +44,7 @@ func registerHandlers(api huma.API, s *Service) {
 
 	huma.Register(api, huma.Operation{
 		OperationID: "login", Method: http.MethodPost, Path: "/auth/login", Metadata: public,
-		DefaultStatus: http.StatusNoContent, Errors: []int{http.StatusUnauthorized},
+		DefaultStatus: http.StatusNoContent, Errors: []int{http.StatusUnauthorized, http.StatusForbidden, http.StatusTooManyRequests},
 	}, func(ctx context.Context, in *loginInput) (*cookieOutput, error) {
 		token, err := s.Login(ctx, in.Body.Login, in.Body.Password)
 		if err != nil {
@@ -118,6 +118,13 @@ type orgUnitsInput struct {
 type orgUnitsOutput struct{ Body []OrgUnit }
 
 type orgUnitInput struct{ Body OrgUnitInput }
+
+type renameInput struct {
+	ID   int64 `path:"id"`
+	Body struct {
+		Name string `json:"name" maxLength:"200"`
+	}
+}
 
 type emailInput struct {
 	ID   int64 `path:"id"`
@@ -197,6 +204,18 @@ func registerAdminHandlers(api huma.API, s *Service) {
 	huma.Register(api, huma.Operation{OperationID: "set-user-email", Method: http.MethodPut, Path: "/users/{id}/email", DefaultStatus: http.StatusNoContent},
 		func(ctx context.Context, in *emailInput) (*struct{}, error) {
 			return nil, s.SetEmail(ctx, in.ID, in.Body.Email)
+		})
+	huma.Register(api, huma.Operation{OperationID: "lock-user", Method: http.MethodPost, Path: "/users/{id}/lock", DefaultStatus: http.StatusNoContent},
+		func(ctx context.Context, in *platform.IDInput) (*struct{}, error) {
+			return nil, s.LockUser(ctx, in.ID)
+		})
+	huma.Register(api, huma.Operation{OperationID: "unlock-user", Method: http.MethodPost, Path: "/users/{id}/unlock", DefaultStatus: http.StatusNoContent},
+		func(ctx context.Context, in *platform.IDInput) (*struct{}, error) {
+			return nil, s.UnlockUser(ctx, in.ID)
+		})
+	huma.Register(api, huma.Operation{OperationID: "rename-user", Method: http.MethodPut, Path: "/users/{id}/name", DefaultStatus: http.StatusNoContent},
+		func(ctx context.Context, in *renameInput) (*struct{}, error) {
+			return nil, s.RenameUser(ctx, in.ID, in.Body.Name)
 		})
 	huma.Register(api, huma.Operation{OperationID: "get-login-policy", Method: http.MethodGet, Path: "/login-policy"},
 		func(ctx context.Context, _ *struct{}) (*loginPolicyOutput, error) {
