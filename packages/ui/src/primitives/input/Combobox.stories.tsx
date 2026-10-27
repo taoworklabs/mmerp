@@ -37,6 +37,19 @@ function Controlled(props: ComboboxProps) {
 export const Default: Story = {
   args: { value: null, placeholder: 'Tìm nhân viên' },
   render: (args) => <Controlled {...args} />,
+  play: async ({ canvasElement }) => {
+    // A chevron marks the box as a picker, and clicking it opens the list; the input stays typeable.
+    const chevron = canvasElement.querySelector<HTMLElement>('[data-combobox-chevron]')
+    expect(chevron).not.toBeNull()
+    expect(chevron!.querySelector('svg')).not.toBeNull()
+    // Out of the tab order: the input is the control for keyboards.
+    expect(chevron).toHaveAttribute('tabindex', '-1')
+    await userEvent.click(chevron!)
+    await expect(await within(document.body).findByRole('option', { name: 'Đặng Thị Bích' })).toBeVisible()
+    const input = within(canvasElement).getByRole('combobox', { name: 'Người phụ trách' })
+    expect(input).not.toHaveAttribute('readonly')
+    expect(document.activeElement).toBe(input)
+  },
 }
 
 export const WithValue: Story = {
@@ -57,6 +70,7 @@ export const ReadOnly: Story = {
   render: (args) => <Controlled {...args} />,
   play: async ({ canvasElement }) => {
     expect(within(canvasElement).queryByRole('button', { name: 'Bỏ chọn' })).not.toBeInTheDocument()
+    expect(canvasElement.querySelector('[data-combobox-chevron]')).toBeNull()
   },
 }
 
@@ -165,5 +179,37 @@ export const Required: Story = {
   render: (args) => <Controlled {...args} />,
   play: async ({ canvasElement }) => {
     expect(within(canvasElement).getByRole('combobox', { name: 'Người phụ trách' })).toHaveAttribute('aria-required', 'true')
+  },
+}
+
+export const OptionAndSection: Story = {
+  tags: ['!dev', '!autodocs'],
+  args: {
+    value: 'a',
+    leftSection: <span data-testid="section">●</span>,
+    renderOption: (item: SelectItem) => <strong>{item.label.toUpperCase()}</strong>,
+  },
+  render: (args) => <Controlled {...args} />,
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    expect(canvas.getByTestId('section')).toBeInTheDocument()
+    const input = canvas.getByRole('combobox', { name: 'Người phụ trách' })
+    // The chosen value stays the plain label; only the list uses renderOption.
+    expect(input).toHaveValue('Nguyễn Văn An')
+    await userEvent.click(input)
+    expect(await within(canvasElement.ownerDocument.body).findByRole('option', { name: 'ĐẶNG THỊ BÍCH' })).toBeInTheDocument()
+  },
+}
+
+export const EscapeKeepsValue: Story = {
+  tags: ['!dev', '!autodocs'],
+  args: { value: 'a' },
+  render: (args) => <Controlled {...args} />,
+  play: async ({ canvasElement, args }) => {
+    const input = within(canvasElement).getByRole('combobox', { name: 'Người phụ trách' })
+    input.focus()
+    await userEvent.keyboard('{Escape}')
+    expect(args.onChange).not.toHaveBeenCalled()
+    expect(input).toHaveValue('Nguyễn Văn An')
   },
 }

@@ -1,4 +1,4 @@
-import { List, Stack, Text } from '@mantine/core'
+import { List, Stack, Text } from '@mmerp/ui'
 import { useController, useForm } from 'react-hook-form'
 import { useTranslation } from 'react-i18next'
 import { api, unwrap, type Timesheet } from '@/shared/api/hrm'
@@ -49,11 +49,11 @@ export function TimesheetGrid({ timesheet: ts }: { timesheet: Timesheet }) {
     notifySuccess(t('hrm.timesheet.saved'))
   }
 
-  if (ts.employees.length === 0) return <Text c="dimmed">{t('hrm.timesheet.no_employees')}</Text>
+  if (ts.employees.length === 0) return <Text tone="dimmed">{t('hrm.timesheet.no_employees')}</Text>
   return (
     <Form form={form} onSubmit={save}>
       <Stack gap="xs">
-        <Text size="sm" c="dimmed">
+        <Text size="sm" tone="dimmed">
           {t(editable ? 'hrm.timesheet.grid_hint' : 'hrm.timesheet.grid_hint_read')}
         </Text>
         <Warnings timesheet={ts} />
@@ -72,7 +72,7 @@ function Warnings({ timesheet: ts }: { timesheet: Timesheet }) {
   if (codes.length === 0) return null
   return (
     <Notice tone="warning" title={t('hrm.timesheet.warnings')}>
-      <List size="sm">
+      <List>
         {codes.map((c) => (
           <List.Item key={c}>{t(`hrm.timesheet.warning.${c}`)}</List.Item>
         ))}
@@ -125,7 +125,7 @@ function Grid({ timesheet: ts, editable }: { timesheet: Timesheet; editable: boo
         }}
       />
       {fieldState.error && (
-        <Text id={errorId} size="sm" c="var(--mantine-color-error)">
+        <Text id={errorId} size="sm" tone="danger">
           {fieldState.error.message}
         </Text>
       )}

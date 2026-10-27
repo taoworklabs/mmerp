@@ -1,29 +1,6 @@
-/* Filters read like the tool buttons beside them: light edge, button weight, button hover. */
-.filters :global(.mantine-Input-input):not([data-error]) {
-  border-color: var(--mantine-color-default-border);
-  font-weight: 500;
-}
-
-.filters :global(.mantine-Input-input):hover {
-  background: var(--mantine-color-default-hover);
-}
-
-.filters :global(.mantine-Input-input):focus,
-.filters :global(.mantine-Input-input):focus-within,
-.filters :global(.mantine-Input-input)[data-expanded] {
-  border-color: var(--mantine-primary-color-filled);
-}
-
-/* A wide list fills the window below the app header, so title, filters and paging stay put and
-   only the content scrolls; a table that is the whole content scrolls under its own header. The
-   shell's main turns into a column for it, so a banner above the page (a read-only product) takes
-   its share of the window instead of pushing the paging bar out. */
-:global(.mantine-AppShell-main):has(> .frame) {
-  display: flex;
-  flex-direction: column;
-  height: 100dvh;
-}
-
+/* A wide list fills the shell's main below the app header (a column of the window's height), so
+   title, filters and paging stay put and only the content scrolls; a table that is the whole
+   content scrolls under its own header. A banner above the page takes its share of the column. */
 .frame {
   flex: 1;
   min-height: 0;
@@ -39,39 +16,11 @@
 .content {
   display: flex;
   flex-direction: column;
-  gap: var(--mantine-spacing-lg);
+  gap: var(--mmerp-space-lg);
 }
 
 .frame .content {
   min-height: 0;
   overflow: auto;
   scrollbar-width: thin;
-}
-
-/* Pages sit in the middle whatever the widths of the count and the page-size select beside them. */
-.paging {
-  display: grid;
-  grid-template-columns: 1fr auto 1fr;
-  align-items: center;
-  gap: var(--mantine-spacing-sm);
-}
-
-/* Page numbers are round, so they read as positions rather than buttons. */
-.page {
-  border-radius: 100%;
-}
-
-.pageSize {
-  justify-self: end;
-}
-
-/* The page size and the page buttons are quiet: no edge or fill until hovered; the current page
-   keeps its primary fill. */
-.ghost:not(:focus, [data-active]) {
-  border-color: transparent;
-  background: transparent;
-}
-
-.ghost:hover:not([data-active], :disabled) {
-  background: var(--mantine-color-default-hover);
 }

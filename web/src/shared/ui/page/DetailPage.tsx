@@ -1,12 +1,10 @@
-import { Group, Stack } from '@mantine/core'
-import { useMediaQuery } from '@mantine/hooks'
+import { ActionBar, Group, RecordColumns, useMediaQuery } from '@mmerp/ui'
 import type { ReactNode } from 'react'
 import { MoreActions } from '../MoreActions'
-import classes from './DetailPage.module.css'
 import { Page, type PageHeaderProps } from './Page'
 
 type Props = Omit<PageHeaderProps, 'tabs' | 'withBack' | 'plain'> & {
-  // Menu.Item children: what does not earn a button, in a "…" menu after the actions.
+  // MenuAction children: what does not earn a button, in a "…" menu after the actions.
   more?: ReactNode
   // Under the header, over both columns: a page-level error.
   banner?: ReactNode
@@ -26,28 +24,16 @@ export function DetailPage({ more, banner, side, narrowActions, actions, childre
   // Rendered in one place only, so each action exists once on the page.
   const bar = !wide && narrowActions
   const all = !bar && (actions || more) && (
-    <Group gap="xs" justify="flex-end" wrap="nowrap">
+    <Group gap="xs" justify="end" wrap={false}>
       {actions}
       {more && <MoreActions place="page">{more}</MoreActions>}
     </Group>
   )
   return (
-    <Page {...header} withBack actions={all} centered="var(--mmerp-detail-width)">
+    <Page {...header} withBack actions={all} centered="detail">
       {banner}
-      <div className={classes.columns}>
-        <Stack gap="md" miw={0}>
-          {children}
-        </Stack>
-        <Stack gap={0} miw={0} className={classes.side}>
-          {side}
-        </Stack>
-      </div>
-      {bar && (
-        <>
-          <div className={classes.barSpace} />
-          <div className={classes.bar}>{narrowActions}</div>
-        </>
-      )}
+      <RecordColumns ratio="document" main={children} side={side} />
+      {bar && <ActionBar>{narrowActions}</ActionBar>}
     </Page>
   )
 }

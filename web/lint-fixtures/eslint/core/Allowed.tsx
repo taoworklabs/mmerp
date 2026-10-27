@@ -1,5 +1,5 @@
-// Allowed: an area using only the Mantine primitives on the allowlist.
-import { Anchor, Button, Divider, Group, List, Loader, Skeleton, Stack, Text, Tooltip } from '@mantine/core'
+// Allowed: an area using only the kit primitives on the allowlist.
+import { Anchor, Button, Divider, Group, List, Loader, Skeleton, Stack, Text, Tooltip } from '@mmerp/ui'
 
 export const Fixture = ({ label }: { label: string }) => (
   <Stack>

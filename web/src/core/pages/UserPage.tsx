@@ -1,4 +1,4 @@
-import { Button, Stack, Text } from '@mantine/core'
+import { Button, FieldList, KeyFacts, Panel, RecordColumns, Stack, Text } from '@mmerp/ui'
 import { IconMail, IconPlus, IconTrash, IconUserCircle } from '@tabler/icons-react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
@@ -11,12 +11,11 @@ import { errorText } from '@/shared/i18n'
 import { PersonAvatar } from '@/shared/ui/avatar'
 import { DataTable, type Column } from '@/shared/ui/DataTable'
 import { Form, FormActions, OrgUnitField, SelectField } from '@/shared/ui/form'
-import { FieldList, MissingValue } from '@/shared/ui/FieldList'
-import { KeyFacts } from '@/shared/ui/KeyFacts'
+import { MissingValue } from '@/shared/ui/MissingValue'
 import { InlineEditField } from '@/shared/ui/InlineEditField'
 import { MenuAction } from '@/shared/ui/MenuAction'
 import { notifySuccess } from '@/shared/ui/notify'
-import { FormModal, Panel, RecordColumns, RecordPage, SeeAll, TabContent } from '@/shared/ui/page'
+import { FormModal, RecordPage, SeeAll, TabContent } from '@/shared/ui/page'
 import { QueryView } from '@/shared/ui/QueryView'
 import { ContentSkeleton, EmptyState, ErrorState, NotFoundPage, PageSkeleton } from '@/shared/ui/states'
 import { icon } from '@/shared/ui/theme'
@@ -87,15 +86,15 @@ function RolesDigest({ userId }: { userId: number }) {
       ) : grants.isError ? (
         <ErrorState message={errorText(t, grants.error)} onRetry={() => void grants.refetch()} />
       ) : grants.data.length === 0 ? (
-        <Text size="sm" c="dimmed">
+        <Text size="sm" tone="dimmed">
           {t('core.user.no_roles')}
         </Text>
       ) : (
         <Stack gap="sm">
           {grants.data.slice(0, 5).map((g) => (
             <Stack key={g.id} gap={0}>
-              <Text fw={600}>{roleLabel(t, g.product, g.role)}</Text>
-              <Text size="sm" c="dimmed">
+              <Text weight={600}>{roleLabel(t, g.product, g.role)}</Text>
+              <Text size="sm" tone="dimmed">
                 {g.org_unit_name ?? t('core.user.tenant_wide')}
               </Text>
             </Stack>
@@ -209,7 +208,7 @@ function UserProfile({ userId, login, name, email }: { userId: number; login: st
   const qc = useQueryClient()
   return (
     <>
-      <Panel title={t('core.user.account')} icon={IconUserCircle}>
+      <Panel title={t('core.user.account')} icon={<IconUserCircle {...icon.text} aria-hidden />}>
         <FieldList
           stacked
           rows={[
@@ -218,7 +217,7 @@ function UserProfile({ userId, login, name, email }: { userId: number; login: st
           ]}
         />
       </Panel>
-      <Panel title={t('core.user.contact')} icon={IconMail}>
+      <Panel title={t('core.user.contact')} icon={<IconMail {...icon.text} aria-hidden />}>
         <Stack gap="xxs">
           <InlineEditField
             label={t('core.user.email')}
@@ -230,7 +229,7 @@ function UserProfile({ userId, login, name, email }: { userId: number; login: st
               await qc.invalidateQueries({ queryKey: coreKeys.users.detail(userId) })
             }}
           />
-          <Text size="xs" c="dimmed">
+          <Text size="xs" tone="dimmed">
             {t('core.user.email_hint')}
           </Text>
         </Stack>

@@ -100,3 +100,16 @@ export const Required: Story = {
     expect(within(canvasElement).getByRole('combobox', { name: 'Người duyệt' })).toHaveAttribute('aria-required', 'true')
   },
 }
+
+export const EscapeKeepsValues: Story = {
+  tags: ['!dev', '!autodocs'],
+  args: { value: ['a'] },
+  render: (args) => <Controlled {...args} />,
+  play: async ({ canvasElement, args }) => {
+    const input = within(canvasElement).getByRole('combobox', { name: 'Người duyệt' })
+    input.focus()
+    await userEvent.keyboard('{Escape}')
+    expect(args.onChange).not.toHaveBeenCalled()
+    expect(within(canvasElement).getByText(data[0]!.label)).toBeInTheDocument()
+  },
+}

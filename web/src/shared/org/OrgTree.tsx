@@ -1,4 +1,4 @@
-import { Tabs } from '@mantine/core'
+import { Group, Tabs } from '@mmerp/ui'
 import { IconHierarchy, IconTable } from '@tabler/icons-react'
 import type { ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -22,7 +22,7 @@ export function useOrgView() {
   const tabs = (
     <Tabs
       value={view}
-      onChange={(v) =>
+      onValueChange={(v) =>
         setSearch((s) => {
           if (v === 'table') s.set('view', v)
           else s.delete('view')
@@ -31,11 +31,17 @@ export function useOrgView() {
       }
     >
       <Tabs.List aria-label={t('shared.org.view')}>
-        <Tabs.Tab value="tree" leftSection={<IconHierarchy {...icon.text} />}>
-          {t('shared.org.view.tree')}
+        <Tabs.Tab value="tree">
+          <Group gap="xxs" wrap={false} render={<span />}>
+            <IconHierarchy {...icon.text} />
+            {t('shared.org.view.tree')}
+          </Group>
         </Tabs.Tab>
-        <Tabs.Tab value="table" leftSection={<IconTable {...icon.text} />}>
-          {t('shared.org.view.table')}
+        <Tabs.Tab value="table">
+          <Group gap="xxs" wrap={false} render={<span />}>
+            <IconTable {...icon.text} />
+            {t('shared.org.view.table')}
+          </Group>
         </Tabs.Tab>
       </Tabs.List>
     </Tabs>

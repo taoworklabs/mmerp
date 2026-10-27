@@ -1,4 +1,4 @@
-import { ActionIcon, Group, Stack, Text, TextInput, Tooltip, UnstyledButton } from '@mantine/core'
+import { ActionIcon, Group, Stack, Text, TextInput, Tooltip, UnstyledButton } from '@mmerp/ui'
 import { IconCheck, IconX } from '@tabler/icons-react'
 import { useId, useState } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -51,29 +51,29 @@ export function InlineEditField({ label, value, onSave, validate, readOnly, maxL
 
   return (
     <Stack gap="xxs">
-      <Text component="label" htmlFor={id} size="xs" fw={600} c="dimmed">
+      <Text render={<label htmlFor={id} />} size="xs" weight={600} tone="dimmed">
         {label}
       </Text>
       {draft === null ? (
         readOnly ? (
-          <Text id={id} className={classes.view} c={value ? undefined : 'dimmed'}>
+          <Text id={id} className={classes.view} tone={value ? undefined : 'dimmed'}>
             {shown}
           </Text>
         ) : (
           <UnstyledButton id={id} className={`${classes.view} ${classes.editable}`} onClick={() => setDraft(value)} aria-label={t('shared.inline.edit', { label })}>
-            <Text c={value ? undefined : 'dimmed'} truncate>
+            <Text tone={value ? undefined : 'dimmed'} truncate>
               {shown}
             </Text>
           </UnstyledButton>
         )
       ) : (
-        <Group gap="xxs" wrap="nowrap" align="flex-start">
+        <Group gap="xxs" wrap={false} align="start">
           <TextInput
             id={id}
-            flex={1}
+            className={classes.input}
             value={draft}
             maxLength={maxLength}
-            error={error}
+            error={error ?? undefined}
             autoFocus
             onChange={(e) => setDraft(e.currentTarget.value)}
             onKeyDown={(e) => {
@@ -87,12 +87,12 @@ export function InlineEditField({ label, value, onSave, validate, readOnly, maxL
             }}
           />
           <Tooltip label={t('shared.inline.save')}>
-            <ActionIcon variant="default" size="input-sm" loading={saving} onClick={() => void save()} aria-label={t('shared.inline.save')}>
+            <ActionIcon variant="default" loading={saving} onClick={() => void save()} aria-label={t('shared.inline.save')}>
               <IconCheck {...icon.button} />
             </ActionIcon>
           </Tooltip>
           <Tooltip label={t('shared.inline.cancel')}>
-            <ActionIcon variant="default" size="input-sm" disabled={saving} onClick={cancel} aria-label={t('shared.inline.cancel')}>
+            <ActionIcon variant="default" disabled={saving} onClick={cancel} aria-label={t('shared.inline.cancel')}>
               <IconX {...icon.button} />
             </ActionIcon>
           </Tooltip>

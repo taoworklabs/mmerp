@@ -1,4 +1,4 @@
-import { Text } from '@mantine/core'
+import { Text } from '@mmerp/ui'
 import { IconPrinter } from '@tabler/icons-react'
 import { useTranslation } from 'react-i18next'
 import type { Payroll, PayrollLine, PayrollTotal } from '@/shared/api/hrm'
@@ -37,7 +37,7 @@ function sum(rows: Amounts[]): Amounts {
 // A zero shows as a quiet dash, so the eye stops on the figures that are there.
 function amount(n: number) {
   return n === 0 ? (
-    <Text span c="dimmed">
+    <Text render={<span />} tone="dimmed">
       –
     </Text>
   ) : (
@@ -109,7 +109,7 @@ export function PayrollTable({ payroll, onPrint }: { payroll: Payroll; onPrint?:
       render: (l) =>
         l.employee_code ? (
           <>
-            <Text span size="xs" c="dimmed">
+            <Text render={<span />} size="xs" tone="dimmed">
               {l.employee_code}
             </Text>{' '}
             {l.employee_name}

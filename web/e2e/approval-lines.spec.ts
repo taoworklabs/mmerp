@@ -89,7 +89,7 @@ test('a quote selling the special item goes to the manager', async ({ browser })
   await panel.getByRole('button', { name: 'Thêm điều kiện' }).click()
   await pick(panel, page, 'Trường', 'Mặt hàng')
   // The only comparison of a set field is filled in.
-  await expect(panel.getByRole('combobox', { name: 'So sánh' })).toHaveValue('Có')
+  await expect(panel.getByRole('combobox', { name: 'So sánh' })).toHaveText('Có')
   await panel.getByRole('combobox', { name: /^Giá trị/ }).fill('TH-')
   await page.getByRole('option', { name: `${special.code} · ${special.name}`, exact: true }).click()
   await main.getByRole('group', { name: /^Trường hợp 1/ }).getByRole('button', { name: /^Bước duyệt/ }).click()

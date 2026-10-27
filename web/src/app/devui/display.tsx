@@ -1,4 +1,4 @@
-import { Anchor, Button, Group, Menu, Text } from '@mantine/core'
+import { Anchor, Button, FieldList, Group, KeyFacts, Panel, Text } from '@mmerp/ui'
 import { IconDownload, IconFileDescription, IconPencil, IconPlus, IconUsersGroup } from '@tabler/icons-react'
 import { type ReactNode, useState } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -7,13 +7,10 @@ import { formatNumber } from '@/shared/i18n'
 import { PersonAvatar, PersonName } from '@/shared/ui/avatar'
 import { CellGrid } from '@/shared/ui/CellGrid'
 import { type Column, DataTable } from '@/shared/ui/DataTable'
-import { FieldList } from '@/shared/ui/FieldList'
-import { KeyFacts } from '@/shared/ui/KeyFacts'
 import { useListView } from '@/shared/ui/ListView'
 import { MenuAction } from '@/shared/ui/MenuAction'
 import { MoreActions } from '@/shared/ui/MoreActions'
 import { OrgUnitName } from '@/shared/ui/OrgUnitName'
-import { Panel } from '@/shared/ui/page'
 import { Section } from '@/shared/ui/Section'
 import { StatusBadge } from '@/shared/ui/StatusBadge'
 import { icon } from '@/shared/ui/theme'
@@ -38,8 +35,9 @@ const code = {
 // column: { key, header, role: 'title' | 'meta', kind?: 'code' | 'number', sortable?, render }`,
   cellGrid: `<CellGrid label corner rows columns value onChange invalid? off? warning? total? />`,
   fieldList: `<FieldList rows={[[label, value, 'wide'?], …]} stacked? />
-import { MissingValue } from '@/shared/ui/FieldList'   // an empty value users can fill`,
-  keyFacts: `<KeyFacts facts={[[label, value], …]} />   // in the page header's summary`,
+import { MissingValue } from '@/shared/ui/MissingValue'   // an empty value users can fill`,
+  keyFacts: `import { KeyFacts } from '@mmerp/ui'
+<KeyFacts facts={[[label, value], …]} />   // in the page header's summary`,
   treeList: `<TreeList label nodes render meta? toggleLabel />
 import { OrgUnitName } from '@/shared/ui/OrgUnitName'   // render an org unit`,
   statusBadge: `<StatusBadge tone="positive" | "neutral" | "info" | "warning" | "negative">{label}</StatusBadge>`,
@@ -47,7 +45,8 @@ import { OrgUnitName } from '@/shared/ui/OrgUnitName'   // render an org unit`,
 import { PersonName } from '@/shared/ui/avatar'   // avatar and name together`,
   tiles: `<TileGrid><StatTile label value to error? onRetry? /><LinkTile icon title to /></TileGrid>`,
   section: `<Section title description? actions?>{content}</Section>`,
-  panel: `<Panel title icon? actions? plain?>{content}</Panel>`,
+  panel: `import { Panel } from '@mmerp/ui'
+<Panel title icon? actions? plain?>{content}</Panel>`,
 }
 
 const values: [string, ReactNode][] = [
@@ -73,7 +72,11 @@ export function DataTableDoc() {
             rows={rows}
             rowKey={(r) => r.id}
             href={() => '/dev/ui/mmerp/data-table'}
-            menu={() => <Menu.Item>{t('shared.devui.secondary')}</Menu.Item>}
+            menu={() => (
+              <MenuAction icon={IconPencil} onClick={() => {}}>
+                {t('shared.devui.secondary')}
+              </MenuAction>
+            )}
             sort={sort}
             onSort={setSort}
             columns={columns}
@@ -93,7 +96,7 @@ export function DataTableDoc() {
             />
           </Case>
           <Case label={t('shared.devui.case_column_tools')}>
-            <Group justify="flex-end">{view.tools}</Group>
+            <Group justify="end">{view.tools}</Group>
             <DataTable label={t('shared.devui.table')} columns={view.columns} rows={rows} rowKey={(r) => r.id} onResize={view.onResize} />
           </Case>
         </>
@@ -143,14 +146,14 @@ export function FieldListDoc() {
   const { t } = useTranslation()
   return (
     <DocPage
-      path="mmerp/field-list"
+      path="kit/field-list"
       example={
         <Case>
           <FieldList
             rows={[
               [
                 'Nhân viên',
-                <Anchor key="p" component={Link} to="/dev/ui/mmerp/field-list" size="sm" inherit>
+                <Anchor key="p" render={<Link to="/dev/ui/kit/field-list" />}>
                   {person}
                 </Anchor>,
               ],
@@ -175,7 +178,7 @@ export function FieldListDoc() {
 export function KeyFactsDoc() {
   return (
     <DocPage
-      path="mmerp/key-facts"
+      path="kit/key-facts"
       example={
         <Case>
           <KeyFacts facts={facts} />
@@ -251,7 +254,7 @@ export function StatusBadgeDoc() {
               <Group>
                 <StatusBadge tone="positive">{t('shared.devui.status_neutral')}</StatusBadge>
               </Group>
-              <Text size="sm" c="dimmed">
+              <Text size="sm" tone="dimmed">
                 {t('shared.devui.dont_badge_tone')}
               </Text>
             </>
@@ -376,12 +379,12 @@ export function PanelDoc() {
   const { t } = useTranslation()
   return (
     <DocPage
-      path="mmerp/panel"
+      path="kit/panel"
       example={
         <Case>
           <Panel
             title={t('shared.devui.section_company')}
-            icon={IconFileDescription}
+            icon={<IconFileDescription {...icon.text} aria-hidden />}
             actions={
               <Button variant="subtle" leftSection={<IconPencil {...icon.button} />}>
                 {t('shared.devui.edit')}

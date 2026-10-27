@@ -95,3 +95,7 @@ export const Render: Story = {
     expect(text.tagName).toBe('SPAN')
   },
 }
+
+export const InheritSize: Story = {
+  args: { render: <span />, size: 'inherit', weight: 600, children: 'Theo cỡ chữ của đoạn quanh nó' },
+}

@@ -1,4 +1,4 @@
-import { Button } from '@mantine/core'
+import { Button } from '@mmerp/ui'
 import { IconPlus } from '@tabler/icons-react'
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
@@ -69,7 +69,7 @@ export function OvertimesPage() {
       description={t('hrm.overtimes.description')}
       action={
         canCreate && (
-          <Button component={Link} to="/hrm/overtimes/new" leftSection={<IconPlus {...icon.button} />}>
+          <Button render={<Link to="/hrm/overtimes/new" />} leftSection={<IconPlus {...icon.button} />}>
             {t('hrm.overtimes.create')}
           </Button>
         )

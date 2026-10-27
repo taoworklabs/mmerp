@@ -3,7 +3,9 @@
   height: 100dvh;
   /* minmax(0, …): a plain 1fr never shrinks below its content, so a wide header would widen the page. */
   grid-template-columns: var(--mmerp-appshell-navbar-width) minmax(0, 1fr);
-  grid-template-rows: var(--mmerp-appshell-header-height) 1fr;
+  /* minmax(0, …) again: a long navbar or page would otherwise grow the row past the window, and
+     the window would scroll instead of the navbar and main. */
+  grid-template-rows: var(--mmerp-appshell-header-height) minmax(0, 1fr);
   grid-template-areas:
     'header header'
     'navbar main';
@@ -57,7 +59,7 @@
   top: var(--mmerp-appshell-header-height);
   bottom: 0;
   left: 0;
-  width: var(--mmerp-appshell-navbar-width);
+  width: 100%;
   transform: translateX(-100%);
   transition: transform var(--mmerp-motion-duration) ease;
 }

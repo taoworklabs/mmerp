@@ -1,13 +1,12 @@
-import { Anchor, Group, Stack, Text } from '@mantine/core'
+import { Anchor, Group, KeyFacts, Panel, Stack, Text } from '@mmerp/ui'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router'
 import type { Customer } from '@/shared/api/sales'
 import { ActivityFeed, DocumentStatus } from '@/shared/document'
 import { formatDate, formatNumber } from '@/shared/i18n'
 import { DataTable } from '@/shared/ui/DataTable'
-import { MissingValue } from '@/shared/ui/FieldList'
-import { KeyFacts } from '@/shared/ui/KeyFacts'
-import { Panel, SeeAll, TabContent } from '@/shared/ui/page'
+import { MissingValue } from '@/shared/ui/MissingValue'
+import { SeeAll, TabContent } from '@/shared/ui/page'
 import { QueryView } from '@/shared/ui/QueryView'
 import { ContentSkeleton, EmptyState } from '@/shared/ui/states'
 import { useCustomerDocs } from '../hooks/useSales'
@@ -59,20 +58,20 @@ function Latest({ customer: c, kind }: { customer: Customer; kind: Kind }) {
       {list.isPending ? (
         <ContentSkeleton />
       ) : list.data.items.length === 0 ? (
-        <Text size="sm" c="dimmed">
+        <Text size="sm" tone="dimmed">
           {t(`sales.${pathOf(kind)}.empty`)}
         </Text>
       ) : (
         <Stack gap="sm">
           {list.data.items.slice(0, 3).map((d) => (
             <Stack key={d.id} gap={0}>
-              <Group gap="sm" justify="space-between" wrap="nowrap">
-                <Anchor component={Link} to={`/sales/${pathOf(kind)}/${d.id}`} fw={600}>
+              <Group gap="sm" justify="space-between" wrap={false}>
+                <Anchor render={<Link to={`/sales/${pathOf(kind)}/${d.id}`} />} weight={600}>
                   {d.number}
                 </Anchor>
                 <DocumentStatus docType={docTypeOf(kind)} status={d.status} />
               </Group>
-              <Text size="sm" c="dimmed">
+              <Text size="sm" tone="dimmed">
                 {t('sales.customer.doc_line', { date: formatDate(d.date), total: formatNumber(d.total) })}
               </Text>
             </Stack>

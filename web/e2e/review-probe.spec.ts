@@ -230,7 +230,7 @@ test('TB-07 back from a document restores the filtered list', async ({ page }) =
   const row = page.getByRole('table').getByRole('link').first()
   await expect(row).toBeVisible()
   // The status filter is a chip that names its value ("Trạng thái: Nháp").
-  const filter = page.getByRole('button', { name: /^Trạng thái/ })
+  const filter = page.getByRole('combobox', { name: /^Trạng thái/ })
   const shown = async () => `count=${await filter.count()} text=${await filter.first().textContent().catch((e) => `(${e.message.split('\n')[0]})`)}`
   console.log('TB-07 the filter control before opening:', await shown())
   const rowCount = await page.getByRole('table').getByRole('link').count()

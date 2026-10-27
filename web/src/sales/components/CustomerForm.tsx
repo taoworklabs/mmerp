@@ -1,4 +1,4 @@
-import { Button, Stack, Text } from '@mantine/core'
+import { Button, Stack, Text } from '@mmerp/ui'
 import { IconAddressBook, IconBuildingStore } from '@tabler/icons-react'
 import { useEffect, useState } from 'react'
 import { useForm, useWatch } from 'react-hook-form'
@@ -113,7 +113,7 @@ function TakenPartner({ id, onUse }: { id: number; onUse: (p: Partner) => void }
   const p = partner.data
   return (
     <Notice tone="warning" announce="alert" title={t('sales.customer.partner_taken_title')}>
-      <Stack gap="sm" align="flex-start">
+      <Stack gap="sm" align="start">
         <Text size="sm">{t('sales.customer.partner_taken', { name: p.name, code: p.code })}</Text>
         <Button type="submit" variant="default" onClick={() => onUse(p)}>
           {t('sales.customer.use_partner')}

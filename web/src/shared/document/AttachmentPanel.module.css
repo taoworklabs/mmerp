@@ -5,12 +5,12 @@
 
 .list[data-active],
 .drop[data-active] {
-  border-color: var(--mantine-primary-color-filled);
-  background: var(--mantine-primary-color-light);
+  border-color: var(--mmerp-color-primary-6);
+  background: var(--mmerp-color-primary-light);
 }
 
 .row + .row {
-  border-top: 1px solid var(--mantine-color-default-border);
+  border-top: 1px solid var(--mmerp-color-border);
 }
 
 /* The empty list: a low dashed frame to click or drop files on. */
@@ -20,11 +20,25 @@
   justify-content: center;
   width: 100%;
   min-height: 80px;
-  border: 1px dashed var(--mantine-color-default-border);
-  border-radius: var(--mantine-radius-md);
+  border: 1px dashed var(--mmerp-color-border);
+  border-radius: var(--mmerp-radius-md);
   transition: background-color 100ms ease;
 }
 
 .drop:hover {
-  background: var(--mantine-color-default-hover);
+  background: var(--mmerp-color-gray-0);
+}
+
+.row {
+  padding: var(--mmerp-space-sm);
+}
+
+.name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.add {
+  width: fit-content;
 }

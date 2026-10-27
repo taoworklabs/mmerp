@@ -1,4 +1,4 @@
-import { Button } from '@mantine/core'
+import { Button } from '@mmerp/ui'
 import { IconDownload, IconFileExport, type Icon } from '@tabler/icons-react'
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -38,7 +38,7 @@ export function ExportButton({
 
   if (job !== null && j?.state === 'completed' && j.file_id)
     return (
-      <Button component="a" href={fileHref(j.file_id)} variant="default" leftSection={<IconDownload {...icon.button} />} onClick={() => setJob(null)}>
+      <Button render={<a href={fileHref(j.file_id)} />} variant="default" leftSection={<IconDownload {...icon.button} />} onClick={() => setJob(null)}>
         {t('shared.jobs.download')}
       </Button>
     )

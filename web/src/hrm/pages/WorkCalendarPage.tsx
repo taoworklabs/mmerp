@@ -1,4 +1,4 @@
-import { Button, Stack, Text } from '@mantine/core'
+import { Button, Stack, Text } from '@mmerp/ui'
 import { IconPencil, IconPlus, IconTrash } from '@tabler/icons-react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
@@ -204,7 +204,7 @@ function WeekModal({ entity, week, onClose }: { entity: number; week: WorkWeek |
     <FormModal opened title={t(week ? 'hrm.calendar.edit_week' : 'hrm.calendar.add_week')} onClose={onClose}>
       <Form form={form} onSubmit={save}>
         <DateField name="effective_from" label={t('hrm.calendar.effective_from')} description={t('hrm.calendar.effective_from_hint')} readOnly={!!week} required />
-        <Text size="sm" fw={500} c="dimmed">
+        <Text size="sm" weight={500} tone="dimmed">
           {t('hrm.calendar.off_days')}
         </Text>
         {weekdays.map((d) => (

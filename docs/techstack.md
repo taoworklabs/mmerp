@@ -39,10 +39,10 @@ Every choice below must satisfy these three constraints:
 | Framework | React + TypeScript (strict) | Pin TypeScript 5.x until `typescript-eslint` and `openapi-typescript` support a newer version |
 | API client | [`openapi-typescript`](https://openapi-ts.dev) + `openapi-fetch` | Generated from Huma's spec by `make gen`; API types are never hand-written |
 | API calls | [TanStack Query](https://tanstack.com/query) | |
-| Data tables | Mantine's `Table`, wrapped in `DataTable` | Enough for predeclared columns. Add [TanStack Table](https://tanstack.com/table) when dynamic columns for custom fields arrive |
+| Data tables | The `@mmerp/ui` `Table`, wrapped in `DataTable` | Enough for predeclared columns. Add [TanStack Table](https://tanstack.com/table) when dynamic columns for custom fields arrive |
 | Router | [React Router](https://reactrouter.com), data mode | Builds the route tree from each area's manifest, lazily loaded ([frontend.md](./frontend.md#startup-flow)) |
 | Forms | [React Hook Form](https://react-hook-form.com) | |
-| UI kit | [Mantine](https://mantine.dev) (`core`, `dates`, `notifications`) | Areas do not use convention-bearing components directly; they use the wrappers in `shared/ui` ([ui.md](./ui.md#enforcement)). `@mantine/dates` needs `dayjs` (peer dependency), used only through `DateField`, `MonthField` and `MonthFilter` in `shared/ui/form` |
+| UI kit | `@mmerp/ui` (`packages/ui`, consumed from source), built on [Base UI](https://base-ui.com) (`@base-ui/react`) | Tokens and primitives, viewed in Storybook (`make storybook`). Only the kit imports Base UI. Areas do not use convention-bearing components directly; they use the wrappers in `shared/ui` ([ui.md](./ui.md#enforcement)). Dates are the kit's own `DateInput` and calendar, parsed in `shared/ui/form/parseDate` |
 | Font | Inter, self-hosted via `@fontsource-variable/inter` | Full Vietnamese diacritics and tabular figures; not loaded from a CDN |
 | Icons | [Tabler Icons](https://tabler.io/icons) (`@tabler/icons-react`) | |
 | i18n | [`react-i18next`](https://react.i18next.com) | See the i18n section below |

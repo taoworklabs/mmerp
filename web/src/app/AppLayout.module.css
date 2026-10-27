@@ -1,14 +1,59 @@
-/* An area's menu is a quiet list: 32px rows set close (the theme sizes a NavLink by the control
-   height), the label and its 16px icon in the secondary text colour until chosen. */
-.item {
-  --mmerp-control-height: 2rem;
-  padding-block: 0;
+/* The burger opens the nav only where it is a drawer, below 1024px; doubled to outrank its own display. */
+@media (min-width: 64em) {
+  .burger.burger {
+    display: none;
+  }
 }
 
-.item:not([data-active]) {
-  color: var(--mantine-color-dimmed);
+.bar {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
 }
 
-.section {
-  margin-inline-end: var(--mantine-spacing-xs);
+.noShrink {
+  flex: none;
+}
+
+.account {
+  flex: none;
+  height: 2.25rem;
+  padding-inline: var(--mmerp-space-xs);
+}
+
+.accountName {
+  display: none;
+  max-width: 12.5rem;
+}
+
+@media (min-width: 48em) {
+  .accountName {
+    display: block;
+  }
+}
+
+.banner {
+  padding: var(--mmerp-space-lg);
+  padding-bottom: 0;
+}
+
+.bannerFramed {
+  padding: var(--mmerp-space-lg) var(--mmerp-space-md) 0;
+}
+
+@media (min-width: 64em) {
+  .bannerFramed {
+    padding-inline: var(--mmerp-space-xl);
+  }
+}
+
+@media (min-width: 80em) {
+  .bannerFramed {
+    padding-inline: var(--mmerp-space-xxl);
+  }
+}
+
+.groupHead {
+  padding-inline: var(--mmerp-space-xs);
+  margin-block: var(--mmerp-space-sm) var(--mmerp-space-xxs);
 }

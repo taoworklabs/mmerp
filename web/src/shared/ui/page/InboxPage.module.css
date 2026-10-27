@@ -2,8 +2,8 @@
 .list {
   flex: 0 0 360px;
   min-width: 0;
-  padding-right: var(--mantine-spacing-md);
-  border-right: 1px solid var(--mantine-color-default-border);
+  padding-right: var(--mmerp-space-md);
+  border-right: 1px solid var(--mmerp-color-border);
 }
 
 .items {
@@ -21,19 +21,25 @@
    frame it takes the room left and scrolls inside itself, so its edges stay in view. */
 .framed {
   min-height: 0;
-  border: 1px solid var(--mantine-color-default-border);
-  border-radius: var(--mantine-radius-md);
+  border: 1px solid var(--mmerp-color-border);
+  border-radius: var(--mmerp-radius-md);
   overflow: auto;
   scrollbar-width: thin;
 }
 
 .framed > li + li {
-  border-top: 1px solid var(--mantine-color-default-border);
+  border-top: 1px solid var(--mmerp-color-border);
 }
 
-.framed :global(.mantine-NavLink-root) {
+/* A row reads its item's two lines, so it grows past the control height. Scoped to the list to
+   outrank the nav link's own padding whatever order the CSS loads in. */
+.items .row {
+  padding-block: var(--mmerp-space-xs);
+}
+
+.items.framed .row {
   border-radius: 0;
-  padding-block: var(--mantine-spacing-sm);
+  padding-block: var(--mmerp-space-sm);
 }
 
 /* A group's heading reads like a table's group row, and stays at the top while its rows scroll. */
@@ -41,9 +47,9 @@
   position: sticky;
   top: 0;
   z-index: 1;
-  padding: var(--mantine-spacing-xxs) var(--mantine-spacing-md);
-  background: var(--mmerp-elevation-surface-sunken);
-  box-shadow: inset 0 -1px 0 var(--mantine-color-default-border);
+  padding: var(--mmerp-space-xxs) var(--mmerp-space-md);
+  background: var(--mmerp-color-elevation-surface-sunken);
+  box-shadow: inset 0 -1px 0 var(--mmerp-color-border);
 }
 
 /* Holds its place on every row so times line up; filled while the item is unread. */
@@ -55,5 +61,15 @@
 }
 
 .dot[data-unread] {
-  background: var(--mantine-color-primary-filled);
+  background: var(--mmerp-color-primary-6);
+}
+
+.detail {
+  flex: 1;
+  min-width: 0;
+  padding-left: var(--mmerp-space-xl);
+}
+
+.pick {
+  padding-block: var(--mmerp-space-xl);
 }

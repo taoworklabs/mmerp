@@ -1,11 +1,10 @@
-import { Anchor, Button, Collapse, Group, SegmentedControl, Stack, Text } from '@mantine/core'
+import { Anchor, Button, Group, Panel, SegmentedControl, Stack, Text } from '@mmerp/ui'
 import { IconChevronDown, IconChevronRight, IconPlus } from '@tabler/icons-react'
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { useFormContext, useWatch } from 'react-hook-form'
 import { useTranslation } from 'react-i18next'
 import { useConfirm } from '@/shared/ui/confirm'
 import { DecimalField, IntegerField, MultiSelectField, SelectField } from '@/shared/ui/form'
-import { Panel } from '@/shared/ui/page'
 import { icon } from '@/shared/ui/theme'
 import { kindAt, newStep, parentOf, type BranchValues, type ElementValues } from '../flowForm'
 import { ConditionEditor } from './ConditionEditor'
@@ -46,7 +45,7 @@ function EmptyPanel() {
   const { ctx } = useFlowEditor()
   return (
     <Panel title={t('shared.rule.panel_title')}>
-      <Text size="sm" c="dimmed">
+      <Text size="sm" tone="dimmed">
         {t(ctx.readOnly ? 'shared.rule.panel_hint_readonly' : 'shared.rule.panel_hint')}
       </Text>
     </Panel>
@@ -99,20 +98,20 @@ function StepPanel({ path }: { path: string }) {
         />
         {kind === 'role' && <SelectField readOnly={readOnly} name={`${path}.role`} label={t('shared.rule.role')} required data={ctx.roleOptions} error={problems.role} />}
         {kind === 'user' && (
-          <MultiSelectField readOnly={readOnly} name={`${path}.users`} label={t('shared.rule.user')} required searchable max={maxUsers} data={ctx.userOptions} error={problems.users} />
+          <MultiSelectField readOnly={readOnly} name={`${path}.users`} label={t('shared.rule.user')} required max={maxUsers} data={ctx.userOptions} error={problems.users} />
         )}
         {/* One chosen user approves alone, unless the count still asks for more and must be fixed. */}
         {(kind !== 'user' || users.length > 1 || String(approvals) !== '1') && <IntegerField readOnly={readOnly} name={`${path}.approvals`} label={t('shared.rule.approvals')} required min={1} max={20} error={problems.approvals} />}
         <IntegerField readOnly={readOnly} name={`${path}.dueHours`} label={t('shared.rule.due_hours')} description={t('shared.rule.due_hours_hint')} min={1} max={maxDueHours} error={problems.dueHours} />
-        <Anchor component="button" type="button" size="sm" onClick={() => setAdvanced((v) => !v)} aria-expanded={advanced}>
-          <Group gap="xxs" wrap="nowrap">
+        <Anchor render={<button />} type="button" size="sm" onClick={() => setAdvanced((v) => !v)} aria-expanded={advanced}>
+          <Group gap="xxs" wrap={false}>
             {advanced ? <IconChevronDown {...icon.text} aria-hidden /> : <IconChevronRight {...icon.text} aria-hidden />}
             {t('shared.rule.advanced')}
           </Group>
         </Anchor>
-        <Collapse expanded={advanced}>
+        {advanced && (
           <IntegerField readOnly={readOnly} name={`${path}.rejections`} label={t('shared.rule.rejections')} description={t('shared.rule.rejections_hint')} required min={1} max={20} error={problems.rejections} />
-        </Collapse>
+        )}
         {!readOnly && (
           <Group gap="xs">
             {!first && (
@@ -165,7 +164,8 @@ function SplitPanel({ path }: { path: string }) {
         <IssueAlert name={`${path}.issue`} />
         <SegmentedControl
           fullWidth
-          readOnly={ctx.readOnly}
+          aria-label={t('shared.rule.split_kind')}
+          disabled={ctx.readOnly}
           value={type}
           onChange={(v) => void changeType(v)}
           data={[
@@ -173,7 +173,7 @@ function SplitPanel({ path }: { path: string }) {
             { value: 'all', label: t('shared.rule.split.all') },
           ]}
         />
-        <Text size="sm" c="dimmed">
+        <Text size="sm" tone="dimmed">
           {t(one ? 'shared.rule.split_hint.one' : 'shared.rule.split_hint.all')}
         </Text>
         {!ctx.readOnly && (
@@ -203,7 +203,7 @@ function BranchPanel({ path }: { path: string }) {
   return (
     <Panel title={t(one ? 'shared.rule.case_n' : 'shared.rule.branch', { n: index + 1 })}>
       <Stack gap="sm">
-        <Text size="sm" c="dimmed">
+        <Text size="sm" tone="dimmed">
           {t(one ? 'shared.rule.case_hint' : 'shared.rule.branch_hint')}
         </Text>
         <IssueAlert name={`${path}.issue`} />
@@ -237,7 +237,7 @@ function OtherwisePanel() {
   const { t } = useTranslation()
   return (
     <Panel title={t('shared.rule.otherwise')}>
-      <Text size="sm" c="dimmed">
+      <Text size="sm" tone="dimmed">
         {t('shared.rule.otherwise_hint')}
       </Text>
     </Panel>

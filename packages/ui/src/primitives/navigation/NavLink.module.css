@@ -75,11 +75,11 @@
   font-weight: var(--mmerp-font-weight-medium);
 }
 
+/* The label is the row's name, on one line; the description carries the detail (a document
+   number, a person) and wraps rather than hide it. */
 .description {
   width: 100%;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  overflow-wrap: anywhere;
   font-size: var(--mmerp-font-size-xs);
   color: var(--mmerp-color-dimmed);
 }
@@ -105,4 +105,12 @@
   font-size: var(--mmerp-font-size-xs);
   line-height: var(--mmerp-line-height-xs);
   color: var(--mmerp-color-dimmed);
+}
+
+/* Below 1024px a nav row is a 44px touch target, compact or not. */
+@media (max-width: 63.99em) {
+  .root,
+  .root[data-compact] {
+    min-height: var(--mmerp-touch-target);
+  }
 }

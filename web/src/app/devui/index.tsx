@@ -1,9 +1,8 @@
-import { Anchor, AppShell, Burger, Group, NavLink, ScrollArea, Stack, Text, ThemeIcon } from '@mantine/core'
-import { useDisclosure } from '@mantine/hooks'
+import { Anchor, AppShell, Burger, Group, NavLink, Stack, Text, ThemeIcon, useDisclosure } from '@mmerp/ui'
 import { IconComponents } from '@tabler/icons-react'
-import type { ComponentType, ReactNode } from 'react'
+import { useEffect, type ComponentType, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
-import { createBrowserRouter, Link, Navigate, Outlet, ScrollRestoration, useLocation } from 'react-router'
+import { createBrowserRouter, Link, Navigate, Outlet, useLocation } from 'react-router'
 import { client } from '@/shared/api/client'
 import type { Me } from '@/shared/api/core'
 import { MeProvider } from '@/shared/auth/me'
@@ -19,7 +18,7 @@ import { BulkBarDoc, MoreActionsDoc, NoticeDoc, NotifyDoc, QueryViewDoc, SidePan
 import { BulkPattern, ConfirmDeletePattern, CreateEditPattern, DocumentApprovalPattern, FilterSearchPattern, LoadingEmptyErrorPattern } from './patterns'
 import { EditablePanelDoc, FiltersDoc, FormDoc, FormModalDoc, InlineEditFieldDoc, LinesTableDoc } from './forms'
 import { CellGridDoc, DataTableDoc, FieldListDoc, KeyFactsDoc, PanelDoc, PersonAvatarDoc, SectionDoc, StatusBadgeDoc, TilesDoc, TreeListDoc } from './display'
-import { AnchorDoc, ButtonDoc, LayoutTextDoc, LoaderDoc, SkeletonDoc, TooltipDoc } from './mantine'
+import { AnchorDoc, ButtonDoc, LayoutTextDoc, LoaderDoc, SkeletonDoc, TooltipDoc } from './kit'
 import { Colour, Icons, Principles, Spacing, Surfaces, Typography } from './foundations'
 import { AuthTemplate, DocumentTemplate, InboxTemplate, ListTemplate, PageTemplate, RecordTemplate } from './templates'
 
@@ -32,12 +31,12 @@ const pages: Record<Path, ComponentType> = {
   'foundations/spacing': Spacing,
   'foundations/surfaces': Surfaces,
   'foundations/icons': Icons,
-  'mantine/anchor': AnchorDoc,
-  'mantine/button': ButtonDoc,
-  'mantine/layout-text': LayoutTextDoc,
-  'mantine/loader': LoaderDoc,
-  'mantine/skeleton': SkeletonDoc,
-  'mantine/tooltip': TooltipDoc,
+  'kit/anchor': AnchorDoc,
+  'kit/button': ButtonDoc,
+  'kit/layout-text': LayoutTextDoc,
+  'kit/loader': LoaderDoc,
+  'kit/skeleton': SkeletonDoc,
+  'kit/tooltip': TooltipDoc,
   'mmerp/activity-feed': ActivityFeedDoc,
   'mmerp/approval-panel': ApprovalPanelDoc,
   'mmerp/attachment-panel': AttachmentPanelDoc,
@@ -47,17 +46,17 @@ const pages: Record<Path, ComponentType> = {
   'mmerp/document-preview': DocumentPreviewDoc,
   'mmerp/document-status': DocumentStatusDoc,
   'mmerp/editable-panel': EditablePanelDoc,
-  'mmerp/field-list': FieldListDoc,
+  'kit/field-list': FieldListDoc,
   'mmerp/filters': FiltersDoc,
   'mmerp/form': FormDoc,
   'mmerp/form-modal': FormModalDoc,
   'mmerp/inline-edit-field': InlineEditFieldDoc,
-  'mmerp/key-facts': KeyFactsDoc,
+  'kit/key-facts': KeyFactsDoc,
   'mmerp/lines-table': LinesTableDoc,
   'mmerp/more-actions': MoreActionsDoc,
   'mmerp/notice': NoticeDoc,
   'mmerp/notify': NotifyDoc,
-  'mmerp/panel': PanelDoc,
+  'kit/panel': PanelDoc,
   'mmerp/person-avatar': PersonAvatarDoc,
   'mmerp/query-view': QueryViewDoc,
   'mmerp/section': SectionDoc,
@@ -95,23 +94,23 @@ function TemplateNote({ entry }: { entry: Entry }) {
   const title = useEntryTitle()
   const line = (label: string, text: ReactNode) => (
     <Text size="sm">
-      <Text span fw={600}>
+      <Text render={<span />} weight={600}>
         {label}
       </Text>{' '}
       {text}
     </Text>
   )
   return (
-    <Stack gap="xxxs" px="md" py="xs" className={devui.usage}>
+    <Stack gap="xxxs" className={devui.usage}>
       <Text size="sm">{t(`shared.devui.about_${k}`)}</Text>
       {line(t('shared.devui.use_when'), t(`shared.devui.use_${k}`))}
       {line(t('shared.devui.avoid_when'), <Linked text={t(`shared.devui.avoid_${k}`)} />)}
       {entry.related &&
         line(
           t('shared.devui.built_from'),
-          <Group component="span" gap="xs" display="inline-flex">
+          <Group render={<span />} gap="xs" className={devui.related}>
             {entry.related.map((p) => (
-              <Anchor key={p} component={Link} to={`/dev/ui/${p}`} size="sm">
+              <Anchor key={p} render={<Link to={`/dev/ui/${p}`} />} size="sm">
                 {title(entryByPath(p))}
               </Anchor>
             ))}
@@ -128,60 +127,52 @@ function DevUiLayout() {
   const [drawer, { toggle, close }] = useDisclosure()
   const title = useEntryTitle()
   const template = all.find((e) => e.layer === 'templates' && pathname === `/dev/ui/${e.path}`)
+  // Each page opens at its top; opening a side panel (a search param) keeps the scroll.
+  useEffect(() => {
+    document.querySelector('main')?.scrollTo(0, 0)
+  }, [pathname])
   return (
     <MeProvider me={me}>
-      <AppShell header={{ height: 48 }} navbar={{ width: 280, breakpoint: 'md', collapsed: { mobile: !drawer } }} padding={0}>
-        <AppShell.Header px="md">
-          <Group h="100%" gap="xs" wrap="nowrap">
-            <Burger opened={drawer} onClick={toggle} hiddenFrom="md" size="sm" aria-label={t('core.shell.menu')} aria-expanded={drawer} />
-            <ThemeIcon size={28} radius="sm" aria-hidden>
+      <AppShell
+        navbarWidth={280}
+        navbarOpened={drawer}
+        header={
+          <Group gap="xs" wrap={false} className={devui.bar}>
+            <Burger opened={drawer} onClick={toggle} className={classes.burger} aria-label={t('core.shell.menu')} />
+            <ThemeIcon size={28} aria-hidden>
               <IconComponents {...icon.text} />
             </ThemeIcon>
-            <Text fw={600} truncate>
+            <Text weight={600} truncate>
               {t('shared.devui.title')}
             </Text>
           </Group>
-        </AppShell.Header>
-        <AppShell.Navbar>
-          <AppShell.Section grow component={ScrollArea} p="xs">
-            <Stack gap="md">
-              {layers.map((l, i) => (
-                <Stack key={l} gap="xxs" role="group" aria-label={t(`shared.devui.layer_${l}`)}>
-                  <Stack gap={0} px="xs">
-                    <Text size="xs" fw={600}>
-                      {`${i + 1} · ${t(`shared.devui.layer_${l}`)}`}
-                    </Text>
-                    <Text size="xs" c="dimmed">
-                      {t(`shared.devui.layer_${l}_note`)}
-                    </Text>
-                  </Stack>
-                  <Stack gap={0} className={devui.entries}>
-                    {all
-                      .filter((e) => e.layer === l)
-                      .map((e) => (
-                        <NavLink
-                          key={e.path}
-                          className={classes.item}
-                          component={Link}
-                          to={e.path}
-                          label={title(e)}
-                          active={pathname === `/dev/ui/${e.path}`}
-                          variant="light"
-                          onClick={close}
-                        />
-                      ))}
-                  </Stack>
+        }
+        navbar={
+          <Stack gap="md">
+            {layers.map((l, i) => (
+              <Stack key={l} gap="xxs" role="group" aria-label={t(`shared.devui.layer_${l}`)}>
+                <Stack gap={0} className={devui.layerHead}>
+                  <Text size="xs" weight={600}>
+                    {`${i + 1} · ${t(`shared.devui.layer_${l}`)}`}
+                  </Text>
+                  <Text size="xs" tone="dimmed">
+                    {t(`shared.devui.layer_${l}_note`)}
+                  </Text>
                 </Stack>
-              ))}
-            </Stack>
-          </AppShell.Section>
-        </AppShell.Navbar>
-        <AppShell.Main>
-          {template && <TemplateNote entry={template} />}
-          <Outlet />
-          {/* Keyed by path, so opening a side panel (a search param) keeps the scroll. */}
-          <ScrollRestoration getKey={(location) => location.pathname} />
-        </AppShell.Main>
+                <Stack gap={0} className={devui.entries}>
+                  {all
+                    .filter((e) => e.layer === l)
+                    .map((e) => (
+                      <NavLink key={e.path} compact render={<Link to={e.path} />} label={title(e)} active={pathname === `/dev/ui/${e.path}`} onClick={close} />
+                    ))}
+                </Stack>
+              </Stack>
+            ))}
+          </Stack>
+        }
+      >
+        {template && <TemplateNote entry={template} />}
+        <Outlet />
       </AppShell>
     </MeProvider>
   )

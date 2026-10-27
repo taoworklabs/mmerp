@@ -1,3 +1,11 @@
+export function ChevronIcon() {
+  return (
+    <svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true">
+      <path d="M2 4l3 3 3-3" stroke="currentColor" strokeWidth="1.4" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  )
+}
+
 export function CloseIcon({ size = 10 }: { size?: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 10 10" aria-hidden="true">

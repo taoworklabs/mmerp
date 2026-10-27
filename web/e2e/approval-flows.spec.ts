@@ -47,8 +47,8 @@ const status = (page: Page, text: string) => expect(page.getByRole('main').getBy
 
 const main = (page: Page) => page.getByRole('main')
 const panel = (page: Page) => page.getByRole('complementary')
-// A box, chip or pill of the diagram, by its accessible name.
-const box = (scope: Page | Locator, name: string | RegExp) => scope.getByRole('button', { name })
+// A box, chip or pill of the diagram, by its accessible name; the side panel's toggles may share it.
+const box = (scope: Page | Locator, name: string | RegExp) => scope.getByRole('button', { name }).and(scope.locator(':not(aside *)'))
 // A branch column of a split, by its chip's name ("Trường hợp 1: …", "Nhánh 2: …", "Còn lại").
 const branchOf = (page: Page, name: string | RegExp) => main(page).getByRole('group', { name })
 
@@ -252,7 +252,7 @@ test('a disabled product shows the flow read-only', async ({ browser }) => {
   await expect(main(page).getByRole('button', { name: 'Thêm vào đây' })).toHaveCount(0)
   await expect(page.getByRole('button', { name: 'Lưu' })).toHaveCount(0)
   await box(branchOf(page, 'Còn lại'), 'Bước duyệt: Quản lý trực tiếp').click()
-  await expect(panel(page).getByRole('combobox', { name: 'Ai duyệt' })).toHaveAttribute('readonly', '')
+  await expect(panel(page).getByRole('combobox', { name: 'Ai duyệt' })).toHaveAttribute('aria-readonly', 'true')
   await expect(panel(page).getByRole('button', { name: 'Xóa bước' })).toHaveCount(0)
 })
 

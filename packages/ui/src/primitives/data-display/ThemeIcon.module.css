@@ -9,3 +9,7 @@
   background: var(--mmerp-theme-icon-bg);
   color: var(--mmerp-theme-icon-color);
 }
+
+.root[data-circle] {
+  border-radius: 50%;
+}

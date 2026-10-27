@@ -1,4 +1,4 @@
-import { Select, type ComboboxItem, type ComboboxLikeRenderOptionInput } from '@mantine/core'
+import { Combobox } from '@mmerp/ui'
 import { IconSitemap } from '@tabler/icons-react'
 import { useQuery } from '@tanstack/react-query'
 import { useController, useFormContext } from 'react-hook-form'
@@ -7,7 +7,7 @@ import { api, unwrap, type OrgUnit } from '@/shared/api/core'
 import { OrgUnitIcon, OrgUnitName } from '../OrgUnitName'
 import { FilterChip } from './FilterChip'
 import { fieldId } from './Form'
-import { belowError, type Option } from './fields'
+import { useClearing, type Option } from './fields'
 
 // Without a permission it lists the whole tree (administrators only).
 type Scope = { product?: string; permission?: string }
@@ -40,7 +40,7 @@ function useTreeSelect(units: OrgUnit[]) {
   return {
     data: options.map(({ value, label }) => ({ value, label })),
     unitOf: (value: string | null) => (value ? byId.get(value) : undefined),
-    renderOption: ({ option }: ComboboxLikeRenderOptionInput<ComboboxItem>) => {
+    renderOption: (option: Option) => {
       const row = byValue.get(option.value)
       return row?.unit ? <OrgUnitName unit={row.unit} depth={row.depth} /> : option.label
     },
@@ -75,7 +75,7 @@ export function OrgUnitFilter({ product, permission, label, value, onChange }: F
       value={value}
       onChange={onChange}
       searchable
-      renderOption={(option) => tree.renderOption({ option })}
+      renderOption={tree.renderOption}
     />
   )
 }
@@ -97,26 +97,24 @@ export function OrgUnitField({
   const { data = [] } = useOrgUnits({ product, permission })
   const tree = useTreeSelect(data)
   const chosen = tree.unitOf(field.value ?? null)
+  const clearing = useClearing(clearable, label)
   return (
-    <Select
+    <Combobox
       data={tree.data}
       renderOption={tree.renderOption}
       // The chosen unit keeps the kind icon it has in the list.
-      leftSection={chosen && <OrgUnitIcon kind={chosen.kind} size="sm" />}
-      leftSectionPointerEvents="none"
+      leftSection={chosen && <OrgUnitIcon kind={chosen.kind} size={20} />}
       id={fieldId(name)}
       ref={field.ref}
       label={label}
-      withAsterisk={required}
+      required={required && !readOnly}
       error={fieldState.error?.message ?? error}
       value={field.value ?? null}
       onChange={field.onChange}
       onBlur={field.onBlur}
-      searchable
-      clearable={clearable}
+      nothingFound="—"
+      {...clearing}
       readOnly={readOnly}
-      wrapperProps={{ 'data-readonly': readOnly || undefined }}
-      comboboxProps={belowError(fieldState.error?.message ?? error)}
     />
   )
 }

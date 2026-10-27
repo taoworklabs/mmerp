@@ -178,7 +178,7 @@ List tables never edit in place. Editing happens on the record's page (its `Edit
 <DataTable … onRowClick={(r) => setEditing(r)} />            // settings row with one action
 
 // Don't
-<Table>…</Table>                                               // Mantine Table in an area: lint fails
+<Table>…</Table>                                               // the kit's Table in an area: lint fails
 { render: (d) => <Button>{t('…edit')}</Button> }     // a button per row: use menu
 <Select aria-label={…} … />                                   // a Select in the filter bar: use FilterChip
 render: (d) => d.total.toLocaleString()                        // formatting outside shared/i18n

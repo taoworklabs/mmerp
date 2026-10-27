@@ -1,8 +1,9 @@
 import { Select as BaseSelect } from '@base-ui/react/select'
 import type * as React from 'react'
-import { useId, useRef } from 'react'
+import { useId, useRef, useState } from 'react'
 import { ClearButton } from '../../internal/ClearButton.tsx'
 import { cx } from '../../internal/cx.ts'
+import { ChevronIcon } from '../../internal/icons.tsx'
 import { mergeRefs } from '../../internal/mergeRefs.ts'
 import { Field, type FieldProps } from './Field.tsx'
 import optionStyles from './options.module.css'
@@ -47,14 +48,6 @@ const valueStyle: React.CSSProperties = {
   textAlign: 'start',
 }
 
-function ChevronIcon() {
-  return (
-    <svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true">
-      <path d="M2 4l3 3 3-3" stroke="currentColor" strokeWidth="1.4" fill="none" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  )
-}
-
 export function Select({
   label,
   description,
@@ -71,9 +64,12 @@ export function Select({
   className,
   style,
   ref,
+  onBlur,
   ...props
 }: SelectProps) {
   const triggerRef = useRef<HTMLButtonElement>(null)
+  // Opening moves focus into the list; that is not leaving the field, so it is no blur.
+  const [open, setOpen] = useState(false)
   // The trigger isn't a Field control, so Base UI never links it to the description/error text itself.
   const descriptionId = useId()
   const errorId = useId()
@@ -93,7 +89,7 @@ export function Select({
       {/* The visible control box: the trigger (and the clear button, when clearable) are siblings
           inside it, never nested — a <button> cannot contain another interactive descendant. */}
       <div className={textInputStyles.wrapper} data-mmerp-control="" data-error={error ? '' : undefined} data-disabled={disabled ? '' : undefined}>
-        <BaseSelect.Root<string> items={data} value={value} onValueChange={onChange} disabled={disabled} readOnly={readOnly}>
+        <BaseSelect.Root<string> items={data} value={value} onValueChange={onChange} onOpenChange={setOpen} disabled={disabled} readOnly={readOnly}>
           <BaseSelect.Trigger
             ref={mergeRefs(triggerRef, ref)}
             className={textInputStyles.input}
@@ -101,15 +97,21 @@ export function Select({
             aria-describedby={describedBy}
             aria-invalid={error ? true : undefined}
             aria-required={required || undefined}
+            onBlur={(event) => {
+              if (!open) onBlur?.(event)
+            }}
             {...props}
           >
             <BaseSelect.Value placeholder={placeholder} style={valueStyle} />
-            <BaseSelect.Icon className={textInputStyles.section}>
-              <ChevronIcon />
-            </BaseSelect.Icon>
+            {/* A read-only select does not open, so nothing hints that it would. */}
+            {!readOnly && (
+              <BaseSelect.Icon className={textInputStyles.section}>
+                <ChevronIcon />
+              </BaseSelect.Icon>
+            )}
           </BaseSelect.Trigger>
           <BaseSelect.Portal>
-            <BaseSelect.Positioner sideOffset={4}>
+            <BaseSelect.Positioner sideOffset={4} className={optionStyles.positioner}>
               <BaseSelect.Popup className={optionStyles.popup}>
                 <BaseSelect.List>
                   {data.map((item) => (

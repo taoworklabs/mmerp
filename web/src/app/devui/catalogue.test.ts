@@ -16,10 +16,12 @@ describe('devui catalogue', () => {
     expect(new Set(all.map((e) => e.path)).size).toBe(all.length)
   })
 
-  it('mantine layer covers exactly the area allowlist', () => {
-    const match = /allowImportNames:\s*\[([^\]]*)\]/.exec(eslintConfig)
-    const allowed = [...match![1]!.matchAll(/'([A-Za-z]+)'/g)].map((m) => m[1]!)
-    const covered = all.filter((e) => e.layer === 'mantine').flatMap((e) => e.covers ?? [e.name!])
+  it('kit layer covers exactly the area allowlist', () => {
+    const match = /name: '@mmerp\/ui',\s*allowImportNames:\s*\[([^\]]*)\]/.exec(eslintConfig)
+    // The look-only blocks are catalogued with the shared/ui components they replace.
+    const blocks = ['RecordColumns', 'ActionBar']
+    const allowed = [...match![1]!.matchAll(/'([A-Za-z]+)'/g)].map((m) => m[1]!).filter((n) => !blocks.includes(n))
+    const covered = all.filter((e) => e.layer === 'kit').flatMap((e) => e.covers ?? [e.name!])
     expect([...covered].sort()).toEqual([...allowed].sort())
   })
 
@@ -41,7 +43,7 @@ describe('devui catalogue', () => {
   })
 
   it('component layers are alphabetical', () => {
-    for (const layer of ['mantine', 'mmerp', 'templates'] as const) {
+    for (const layer of ['kit', 'mmerp', 'templates'] as const) {
       const names = all.filter((e) => e.layer === layer).map((e) => e.name!)
       expect(names, layer).toEqual([...names].sort(byName))
     }
@@ -57,7 +59,7 @@ describe('devui catalogue', () => {
     for (const e of all) {
       if (e.label) need(e.label)
       if (!e.name && !e.label) missing.push(`${e.path}: no name or label`)
-      if (['mantine', 'mmerp', 'patterns', 'templates'].includes(e.layer)) for (const p of ['about', 'use', 'avoid']) need(`shared.devui.${p}_${key(e)}`)
+      if (['kit', 'mmerp', 'patterns', 'templates'].includes(e.layer)) for (const p of ['about', 'use', 'avoid']) need(`shared.devui.${p}_${key(e)}`)
     }
     expect(missing).toEqual([])
   })

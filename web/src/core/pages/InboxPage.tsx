@@ -1,4 +1,4 @@
-import { Anchor, Button, Divider, Group, Stack, Text, Tooltip } from '@mantine/core'
+import { Anchor, Button, Divider, Group, Stack, Text, Tooltip } from '@mmerp/ui'
 import { IconExternalLink, IconUserShare } from '@tabler/icons-react'
 import { useQuery } from '@tanstack/react-query'
 import { useRef } from 'react'
@@ -54,12 +54,12 @@ export default function InboxPage() {
             active={i.instance_id === selected}
             onClick={() => setSearch({ item: String(i.instance_id) })}
             label={
-              <Group justify="space-between" wrap="nowrap">
-                <Text fw={500} size="sm">
+              <Group justify="space-between" wrap={false}>
+                <Text weight={500} size="sm">
                   {i.number}
                 </Text>
                 <Tooltip label={formatDateTime(i.submitted_at, me.timezone)}>
-                  <Text size="xs" c="dimmed">
+                  <Text size="xs" tone="dimmed">
                     {formatAgo(i.submitted_at, me.timezone)}
                   </Text>
                 </Tooltip>
@@ -82,7 +82,7 @@ export default function InboxPage() {
       description={t('core.inbox.description')}
       actions={
         // Relative, so inside an area the page keeps that area's menu.
-        <Button component={Link} to="../delegations" relative="path" variant="default" leftSection={<IconUserShare {...icon.button} />}>
+        <Button render={<Link to="../delegations" relative="path" />} variant="default" leftSection={<IconUserShare {...icon.button} />}>
           {t('core.delegations.title')}
         </Button>
       }
@@ -99,15 +99,15 @@ function Detail({ item, onDone }: { item: InboxItem; onDone: () => void }) {
   return (
     <Stack gap="md">
       <Group justify="space-between">
-        <Text fw={600}>
+        <Text weight={600}>
           {item.number}{' '}
-          <Text span c="dimmed" fw={400}>
+          <Text render={<span />} tone="dimmed" weight={400}>
             · {t(`${item.doc_type}.name`, { defaultValue: item.doc_type })}
           </Text>
         </Text>
         {link && (
-          <Anchor component={Link} to={link} size="sm">
-            <Group gap="xxs" component="span">
+          <Anchor render={<Link to={link} />} size="sm">
+            <Group gap="xxs" render={<span />}>
               {t('shared.document.open')}
               <IconExternalLink {...icon.text} aria-hidden />
             </Group>
@@ -117,7 +117,7 @@ function Detail({ item, onDone }: { item: InboxItem; onDone: () => void }) {
       <RecordPreview docType={item.doc_type} id={item.doc_id} />
       <Divider />
       <Stack gap="xs">
-        <Text fw={600}>{t('shared.document.tab.approval')}</Text>
+        <Text weight={600}>{t('shared.document.tab.approval')}</Text>
         <ApprovalPanel docType={item.doc_type} id={item.doc_id} onDone={onDone} sticky />
       </Stack>
     </Stack>

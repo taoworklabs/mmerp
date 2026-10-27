@@ -1,4 +1,4 @@
-import { Alert } from '@mantine/core'
+import { Alert } from '@mmerp/ui'
 import { IconAlertCircle, IconAlertTriangle, IconCircleCheck, IconInfoCircle, IconSparkles, type Icon as TablerIcon } from '@tabler/icons-react'
 import type { ReactNode } from 'react'
 import { icon as iconSize } from './theme'

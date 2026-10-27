@@ -1,4 +1,5 @@
-import { Button, Group, Text, Tooltip } from '@mantine/core'
+import { Button, Group, Text, Tooltip } from '@mmerp/ui'
+import type { ComponentProps } from 'react'
 import { IconAlertTriangle, IconAt, IconBell, IconChecks, IconCircleCheck, IconCircleX, IconClockExclamation, IconHourglassHigh, type Icon as TablerIcon } from '@tabler/icons-react'
 import { useInfiniteQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Fragment, useState } from 'react'
@@ -16,7 +17,7 @@ import { notificationKeys } from '../notificationKeys'
 
 // Each core kind has its icon, in the colour of what it says: waiting, done, refused, overdue, a mention.
 // A product's own kind (<product>.<name>) gets the plain bell and its label from the product's area.
-const kindLooks: Record<string, { Icon: TablerIcon; color: string } | undefined> = {
+const kindLooks: Record<string, { Icon: TablerIcon; color: ComponentProps<typeof InboxIcon>['color'] } | undefined> = {
   approval_requested: { Icon: IconHourglassHigh, color: 'warning' },
   approval_approved: { Icon: IconCircleCheck, color: 'success' },
   approval_rejected: { Icon: IconCircleX, color: 'danger' },
@@ -25,7 +26,7 @@ const kindLooks: Record<string, { Icon: TablerIcon; color: string } | undefined>
   job_completed: { Icon: IconChecks, color: 'success' },
   job_failed: { Icon: IconAlertTriangle, color: 'danger' },
 }
-const productLook = { Icon: IconBell, color: 'gray' }
+const productLook: NonNullable<(typeof kindLooks)[string]> = { Icon: IconBell, color: 'gray' }
 const kindLabelKey = (kind: string) => (kind.includes('.') ? `${kind}.notification` : `core.notifications.kind.${kind}`)
 
 // The user's notifications, newest first, under the day they came. Opening one marks it read
@@ -104,14 +105,14 @@ export default function NotificationsPage() {
                     onClick={() => void open(n)}
                     icon={<InboxIcon icon={Icon} color={color} />}
                     label={
-                      <Text size="sm" fw="inherit">
+                      <Text size="sm">
                         {t(kindLabelKey(n.kind))}
                       </Text>
                     }
                     description={describe(n)}
                     aside={
                       <Tooltip label={formatDateTime(n.created_at, me.timezone)}>
-                        <Text size="xs" c="dimmed">
+                        <Text size="xs" tone="dimmed">
                           {formatAgo(n.created_at, me.timezone)}
                         </Text>
                       </Tooltip>

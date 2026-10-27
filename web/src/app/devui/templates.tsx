@@ -1,4 +1,4 @@
-import { Button, Group, PasswordInput, Stack, Text, TextInput } from '@mantine/core'
+import { Button, FieldList, Group, KeyFacts, Panel, PasswordInput, RecordColumns, Stack, Text, TextInput } from '@mmerp/ui'
 import { IconAlertTriangle, IconAt, IconCircleCheck, IconHourglassHigh, IconUsersGroup } from '@tabler/icons-react'
 import { useTranslation } from 'react-i18next'
 import { Fragment } from 'react'
@@ -7,10 +7,9 @@ import { WithSampleSections } from '@/shared/document/samples'
 import { formatMonth, formatNumber } from '@/shared/i18n'
 import { PersonAvatar } from '@/shared/ui/avatar'
 import { DataTable } from '@/shared/ui/DataTable'
-import { FieldList, MissingValue } from '@/shared/ui/FieldList'
-import { KeyFacts } from '@/shared/ui/KeyFacts'
+import { MissingValue } from '@/shared/ui/MissingValue'
 import { EditablePanel, MonthFilter, OrgUnitFilter, SearchInput, SensitiveValue } from '@/shared/ui/form'
-import { AuthPage, DocumentPage, InboxGroup, InboxIcon, InboxList, InboxPage, InboxRow, ListPage, Page, Panel, RecordColumns, RecordPage, SeeAll, TabContent } from '@/shared/ui/page'
+import { AuthPage, DocumentPage, InboxGroup, InboxIcon, InboxList, InboxPage, InboxRow, ListPage, Page, RecordPage, SeeAll, TabContent } from '@/shared/ui/page'
 import { StatusBadge } from '@/shared/ui/StatusBadge'
 import { useListParams } from '@/shared/url/listParams'
 import { orgUnits } from './api'
@@ -48,7 +47,7 @@ const crumbs = [
 function Body() {
   const { t } = useTranslation()
   return (
-    <Text size="sm" c="dimmed">
+    <Text size="sm" tone="dimmed">
       {t('shared.devui.page_content')}
     </Text>
   )
@@ -248,7 +247,7 @@ const inboxLooks = [
   { Icon: IconCircleCheck, color: 'success' },
   { Icon: IconAt, color: 'info' },
   { Icon: IconAlertTriangle, color: 'danger' },
-]
+] as const
 
 export function InboxTemplate() {
   const { t } = useTranslation()
@@ -271,11 +270,11 @@ export function InboxTemplate() {
                   onClick={() => setSearch({ item: String(r.id) })}
                   icon={<InboxIcon icon={look.Icon} color={look.color} />}
                   label={
-                    <Group justify="space-between" wrap="nowrap">
-                      <Text size="sm" fw="inherit">
+                    <Group justify="space-between" wrap={false}>
+                      <Text size="sm">
                         {r.code}
                       </Text>
-                      <Text size="xs" c="dimmed">
+                      <Text size="xs" tone="dimmed">
                         {t('shared.devui.ago')}
                       </Text>
                     </Group>
@@ -300,7 +299,12 @@ export function AuthTemplate() {
     <AuthPage title="AuthPage">
       <Stack gap="md">
         <TextInput label={t('core.login.login')} autoComplete="off" required />
-        <PasswordInput label={t('core.login.password')} autoComplete="off" required />
+        <PasswordInput
+          label={t('core.login.password')}
+          autoComplete="off"
+          required
+          visibilityLabels={{ show: t('shared.form.show_password'), hide: t('shared.form.hide_password') }}
+        />
         <Button>{t('core.login.submit')}</Button>
       </Stack>
     </AuthPage>

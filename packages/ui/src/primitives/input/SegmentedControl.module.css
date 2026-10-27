@@ -1,9 +1,11 @@
+/* A thin frame of plain labels; the chosen one tinted and edged in primary, like a selected chip. */
 .root {
   display: inline-flex;
   gap: var(--mmerp-space-xxxs);
   padding: var(--mmerp-space-xxxs);
+  border: 1px solid var(--mmerp-color-border);
   border-radius: var(--mmerp-radius-md);
-  background: var(--mmerp-color-elevation-surface-sunken);
+  background: transparent;
 }
 
 .root[data-full-width] {
@@ -34,8 +36,9 @@
 }
 
 .item[data-pressed] {
-  background: var(--mmerp-color-elevation-surface);
-  box-shadow: var(--mmerp-shadow-xs);
+  background: var(--mmerp-color-primary-light);
+  box-shadow: inset 0 0 0 1px var(--mmerp-color-primary-6);
+  color: var(--mmerp-color-primary-light-color);
 }
 
 .item:disabled {

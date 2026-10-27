@@ -1,4 +1,4 @@
-import { Menu } from '@mantine/core'
+import { Menu } from '@mmerp/ui'
 import type { Icon as TablerIcon } from '@tabler/icons-react'
 import type { ReactNode } from 'react'
 import { icon as iconSize } from './theme'

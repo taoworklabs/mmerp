@@ -1,4 +1,4 @@
-import { Button, Group, SegmentedControl, Stack, Text } from '@mantine/core'
+import { Button, FieldList, Group, Panel, RecordColumns, SegmentedControl, Stack, Text } from '@mmerp/ui'
 import { IconCircleDot, IconDownload, IconTrash } from '@tabler/icons-react'
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
@@ -9,13 +9,12 @@ import { sample, SampleDocument } from '@/shared/document/samples'
 import { formatNumber } from '@/shared/i18n'
 import { BulkBar } from '@/shared/ui/BulkBar'
 import { type Column, DataTable } from '@/shared/ui/DataTable'
-import { FieldList } from '@/shared/ui/FieldList'
 import { FilterChip, Form, FormActions, FormSection, MoneyField, SearchInput, TextField } from '@/shared/ui/form'
 import { useListView } from '@/shared/ui/ListView'
 import { MenuAction } from '@/shared/ui/MenuAction'
 import { MoreActions } from '@/shared/ui/MoreActions'
 import { Notice } from '@/shared/ui/Notice'
-import { FormModal, Panel, RecordColumns } from '@/shared/ui/page'
+import { FormModal } from '@/shared/ui/page'
 import { QueryView } from '@/shared/ui/QueryView'
 import { SidePanel, usePeek } from '@/shared/ui/SidePanel'
 import { EmptyState } from '@/shared/ui/states'
@@ -158,7 +157,14 @@ export function LoadingEmptyErrorPattern() {
       path="patterns/loading-empty-error"
       example={
         <Case>
-          <SegmentedControl w="fit-content" value={state} onChange={(v) => setState(v as QueryCase)} data={queryStates.map((s) => ({ value: s, label: t(`shared.devui.query_${s}`) }))} />
+          <Group>
+            <SegmentedControl
+              aria-label={t('shared.devui.query_state')}
+              value={state}
+              onChange={(v) => setState(v as QueryCase)}
+              data={queryStates.map((s) => ({ value: s, label: t(`shared.devui.query_${s}`) }))}
+            />
+          </Group>
           <QueryView
             query={fakeQuery(state)}
             select={(data) => (state === 'no_results' ? [] : data)}
@@ -191,7 +197,7 @@ export function BulkPattern() {
             </BulkBar>
           ) : (
             <Group justify="space-between">
-              <Text size="sm" c="dimmed">
+              <Text size="sm" tone="dimmed">
                 {t('shared.devui.bulk_none')}
               </Text>
               {view.tools}

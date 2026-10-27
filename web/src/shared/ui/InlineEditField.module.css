@@ -3,9 +3,9 @@
   display: flex;
   align-items: center;
   min-height: var(--mmerp-control-height);
-  padding-inline: calc(var(--mmerp-control-height) / 3);
+  padding-inline: var(--mmerp-space-sm);
   border: 1px solid transparent;
-  border-radius: var(--mantine-radius-md);
+  border-radius: var(--mmerp-radius-md);
   min-width: 0;
 }
 
@@ -16,6 +16,10 @@
 
 .editable:hover,
 .editable:focus-visible {
-  background: var(--mantine-color-gray-light);
-  border-color: var(--mmerp-input-border);
+  background: var(--mmerp-color-gray-light);
+  border-color: var(--mmerp-color-input-border);
+}
+
+.input {
+  flex: 1;
 }

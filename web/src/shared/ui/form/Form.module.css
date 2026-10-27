@@ -1,105 +1,18 @@
-/* Sections are separated by a rule, not boxed, and stop at the content width so fields stay
-   near their labels on wide screens. */
-.section {
-  max-width: var(--mmerp-content-width);
-  border: 0;
-  margin: 0;
-  padding: 0 0 var(--mantine-spacing-lg);
-  min-width: 0;
-}
-
-.section + .section {
-  border-top: 1px solid var(--mantine-color-default-border);
-  padding-top: var(--mantine-spacing-lg);
-}
-
 /* Amounts line their digits up. */
-.money {
+.money input {
   font-variant-numeric: tabular-nums;
   text-align: right;
 }
 
-/* A section's fields: one column below 1280px; from there six, where a field takes half a row,
-   a short one (a date, a choice, a phone number) a third, and a wide one the whole row. */
-/* Data entry gets taller fields than toolbars and filters; buttons and input rows among them
-   follow, so a row still lines up. */
-.fields {
-  --mmerp-control-height: 40px;
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  gap: var(--mantine-spacing-md);
+/* The number of fields still to fix, in a round badge. */
+.count.count {
+  min-width: 1.125rem;
+  height: 1.125rem;
+  padding: 0;
+  justify-content: center;
+  border-radius: 999px;
 }
 
-@media (min-width: 80em) {
-  .fields:not([data-wide], [data-compact], [data-pair]) {
-    grid-template-columns: repeat(6, minmax(0, 1fr));
-  }
-
-  .fields:not([data-wide], [data-compact], [data-pair]) > * {
-    grid-column: span 3;
-  }
-
-  .fields:not([data-wide], [data-compact], [data-pair]) > .short {
-    grid-column: span 2;
-  }
-}
-
-/* A compact section, and fields edited in a card: two fields to a row from 768px; a compact
-   section four from 1280px. Long text keeps the row. */
-@media (min-width: 48em) {
-  .fields:is([data-compact], [data-pair]) {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-}
-
-@media (min-width: 80em) {
-  .fields[data-compact] {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-  }
-}
-
-/* A read-only field keeps its box as a grey fill without an edge, so its value stays framed and
-   the layout does not move between viewing and editing; it shows nothing that invites typing. */
-.fields [data-readonly] :global(.mantine-Input-input) {
-  border-color: transparent;
-  background: var(--mantine-color-default-hover);
-  cursor: default;
-}
-
-.fields [data-readonly] :is(:global(.mantine-InputWrapper-required), :global(.mantine-InputWrapper-description)) {
-  display: none;
-}
-
-/* After the spans above, so it wins over them. */
-.fields > .fullRow {
-  grid-column: 1 / -1;
-}
-
-/* The height of an sm input, at the bottom of its grid cell or row; an auto margin, not
-   align-self, so in a column (the filter drawer) it stays at the start. */
-.inputRow {
-  margin-top: auto;
-  height: var(--mmerp-control-height);
-}
-
-/* A page form's footer stays on screen however long the form. Pinned 1px past the edge so
-   FormActions can tell when the form runs on under it, and lift it off with a shadow. */
-.bar {
-  position: sticky;
-  bottom: -1px;
-  z-index: 1;
-  padding: var(--mantine-spacing-sm) 0;
-  background: var(--mantine-color-body);
-  border-top: 1px solid var(--mantine-color-default-border);
-}
-
-.bar[data-stuck] {
-  box-shadow: var(--mmerp-shadow-footer);
-}
-
-.dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 100%;
-  background: var(--mantine-color-primary-filled);
+.alert {
+  color: var(--mmerp-color-danger-light-color);
 }

@@ -1,9 +1,7 @@
-import { ActionIcon, Button, Group, Paper, ScrollArea, SimpleGrid, Stack, Table, Text, Tooltip } from '@mantine/core'
-import { useMediaQuery } from '@mantine/hooks'
+import { ActionIcon, Button, FieldList, Group, Paper, ScrollArea, SimpleGrid, Stack, Table, Text, Tooltip, useMediaQuery } from '@mmerp/ui'
 import { IconPlus, IconTrash } from '@tabler/icons-react'
 import type { KeyboardEvent, ReactNode } from 'react'
 import { useFieldArray, useFormContext } from 'react-hook-form'
-import { FieldList } from '../FieldList'
 import { icon } from '../theme'
 import classes from './LinesTable.module.css'
 
@@ -64,7 +62,7 @@ function EditLines<L extends object>({ name, label, columns: all, newLine, addLa
   const removable = lines.fields.length > minLines
   const remove = (i: number) => (
     <Tooltip label={removeLabel(i + 1)}>
-      <ActionIcon variant="subtle" color="gray" size="input-sm" aria-label={removeLabel(i + 1)} onClick={() => lines.remove(i)}>
+      <ActionIcon variant="subtle" color="gray" aria-label={removeLabel(i + 1)} onClick={() => lines.remove(i)}>
         <IconTrash {...icon.button} />
       </ActionIcon>
     </Tooltip>
@@ -81,10 +79,10 @@ function EditLines<L extends object>({ name, label, columns: all, newLine, addLa
     return (
       <Stack gap="sm">
         {lines.fields.map((line, i) => (
-          <Paper key={line.id} withBorder p="sm">
+          <Paper key={line.id} withBorder padding="sm">
             <Stack gap="sm">
-              <Group justify="space-between" wrap="nowrap">
-                <Text fw={600} size="sm">
+              <Group justify="space-between" wrap={false}>
+                <Text weight={600} size="sm">
                   {lineLabel(i + 1)}
                 </Text>
                 {removable && remove(i)}
@@ -105,8 +103,8 @@ function EditLines<L extends object>({ name, label, columns: all, newLine, addLa
   return (
     <Stack gap="sm">
       <Paper withBorder className={classes.frame}>
-        <ScrollArea type="auto">
-          <Table aria-label={label} className={classes.table} onKeyDown={nextCellOnEnter} verticalSpacing="xxs">
+        <ScrollArea>
+          <Table aria-label={label} className={classes.table} onKeyDown={nextCellOnEnter} appearance={{ density: 'compact' }}>
             <Head columns={columns} />
             <Table.Tbody>
               {lines.fields.map((line, i) => (
@@ -135,7 +133,7 @@ function ReadOnlyLines<L extends object>({ label, columns: all, lines, lineLabel
     <Stack gap="sm">
       {wide ? (
         <Paper withBorder className={classes.frame}>
-          <ScrollArea type="auto">
+          <ScrollArea>
             <Table aria-label={label} className={classes.table} data-readonly>
               <Head columns={columns} readOnly />
               <Table.Tbody>
@@ -143,7 +141,7 @@ function ReadOnlyLines<L extends object>({ label, columns: all, lines, lineLabel
                   <Table.Tr key={i}>
                     <Table.Td className={classes.n}>{i + 1}</Table.Td>
                     {columns.map((c) => (
-                      <Table.Td key={c.key} ta={c.numeric ? 'right' : undefined}>
+                      <Table.Td key={c.key} look={c.numeric ? 'numeric' : undefined}>
                         {c.value?.(line, i)}
                       </Table.Td>
                     ))}
@@ -155,9 +153,9 @@ function ReadOnlyLines<L extends object>({ label, columns: all, lines, lineLabel
         </Paper>
       ) : (
         lines.map((line, i) => (
-          <Paper key={i} withBorder p="sm">
+          <Paper key={i} withBorder padding="sm">
             <Stack gap="xs">
-              <Text fw={600} size="sm">
+              <Text weight={600} size="sm">
                 {lineLabel(i + 1)}
               </Text>
               <FieldList rows={columns.map((c) => [c.header, c.value?.(line, i)])} />
@@ -177,10 +175,10 @@ function Head<L extends object>({ columns, readOnly }: { columns: LineColumn<L>[
       <Table.Tr>
         <Table.Th className={classes.n}>#</Table.Th>
         {columns.map((c) => (
-          <Table.Th key={c.key} miw={readOnly ? undefined : (c.width ?? 200)} ta={c.numeric ? 'right' : undefined}>
+          <Table.Th key={c.key} style={readOnly ? undefined : { minWidth: c.width ?? 200 }} look={c.numeric ? 'numeric' : undefined}>
             {c.header}
             {c.required && !readOnly && (
-              <Text component="span" c="var(--mantine-color-error)" aria-hidden>
+              <Text render={<span />} tone="danger" aria-hidden>
                 {' *'}
               </Text>
             )}
@@ -206,9 +204,9 @@ function nextCellOnEnter(e: KeyboardEvent<HTMLTableElement>) {
 // note says where the figures come from (the server computes them when the draft is saved).
 export function LinesTotals({ rows, note }: { rows: [string, string][]; note?: string }) {
   return (
-    <Stack gap="xxs" align="flex-end">
+    <Stack gap="xxs" align="end">
       {note && (
-        <Text size="sm" c="dimmed">
+        <Text size="sm" tone="dimmed">
           {note}
         </Text>
       )}

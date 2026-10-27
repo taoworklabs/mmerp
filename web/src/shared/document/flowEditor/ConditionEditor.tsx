@@ -1,4 +1,4 @@
-import { ActionIcon, Button, Group, Paper, SegmentedControl, SimpleGrid, Stack, Text, Tooltip } from '@mantine/core'
+import { ActionIcon, Button, Group, Paper, SegmentedControl, SimpleGrid, Stack, Text, Tooltip } from '@mmerp/ui'
 import { IconPlus, IconX } from '@tabler/icons-react'
 import { useQuery } from '@tanstack/react-query'
 import { useState } from 'react'
@@ -28,27 +28,29 @@ export function ConditionEditor({ path, ctx, depth, onEmpty }: { path: string; c
   return (
     <Stack gap="xs">
       {depth === 0 && (
-        <Text size="sm" fw={600}>
+        <Text size="sm" weight={600}>
           {t('shared.rule.condition')}
         </Text>
       )}
       {fields.length === 0 && (
-        <Text size="sm" c="dimmed">
+        <Text size="sm" tone="dimmed">
           {t('shared.rule.always')}
         </Text>
       )}
       {/* With one row there is nothing to combine. */}
       {fields.length > 1 && (
-        <SegmentedControl
-          w="fit-content"
-          readOnly={readOnly}
-          value={mode.field.value}
-          onChange={mode.field.onChange}
-          data={[
-            { value: 'all', label: t('shared.rule.cond_all') },
-            { value: 'any', label: t('shared.rule.cond_any') },
-          ]}
-        />
+        <Group>
+          <SegmentedControl
+            aria-label={t('shared.rule.cond_mode')}
+            disabled={readOnly}
+            value={mode.field.value}
+            onChange={mode.field.onChange}
+            data={[
+              { value: 'all', label: t('shared.rule.cond_all') },
+              { value: 'any', label: t('shared.rule.cond_any') },
+            ]}
+          />
+        </Group>
       )}
       {fields.map((r, i) => {
         const rp = `${path}.rows.${i}`
@@ -59,16 +61,16 @@ export function ConditionEditor({ path, ctx, depth, onEmpty }: { path: string; c
         }
         const remove = !readOnly && (
           <Tooltip label={t(r.group ? 'shared.rule.remove_group' : 'shared.rule.remove_cond')}>
-            <ActionIcon variant="subtle" color="gray" size="input-sm" aria-label={t(r.group ? 'shared.rule.remove_group' : 'shared.rule.remove_cond')} onClick={removeRow}>
+            <ActionIcon variant="subtle" color="gray" aria-label={t(r.group ? 'shared.rule.remove_group' : 'shared.rule.remove_cond')} onClick={removeRow}>
               <IconX {...icon.button} />
             </ActionIcon>
           </Tooltip>
         )
         if (r.group)
           return (
-            <Paper key={r.id} withBorder p="sm">
-              <Group align="flex-start" wrap="nowrap" gap="xs">
-                <Stack flex={1} miw={0}>
+            <Paper key={r.id} withBorder padding="sm">
+              <Group align="start" wrap={false} gap="xs">
+                <Stack fill>
                   {/* An empty nested group has no valid server form; dropping its last row drops the group itself. */}
                   <ConditionEditor path={`${rp}.group`} ctx={ctx} depth={depth + 1} onEmpty={() => rows.remove(i)} />
                 </Stack>
@@ -77,7 +79,7 @@ export function ConditionEditor({ path, ctx, depth, onEmpty }: { path: string; c
             </Paper>
           )
         return (
-          <Group key={r.id} align="flex-end" wrap="nowrap" gap="xs">
+          <Group key={r.id} align="end" wrap={false} gap="xs">
             <Leaf path={rp} ctx={ctx} />
             {remove}
           </Group>
@@ -114,7 +116,7 @@ function Leaf({ path, ctx }: { path: string; ctx: EditorCtx }) {
   const value = { readOnly, name: `${path}.value`, label: t('shared.rule.value'), required: true, error: problems.value }
   return (
     // The panel is narrow: the field on its own row, the comparison and the value under it.
-    <Stack flex={1} miw={0} gap="xs">
+    <Stack gap="xs" fill>
       <SelectField
         readOnly={readOnly}
         name={`${path}.field`}

@@ -1,4 +1,4 @@
-import { Menu, Text, UnstyledButton } from '@mantine/core'
+import { Menu, Stack, Text, UnstyledButton } from '@mmerp/ui'
 import { IconPlus } from '@tabler/icons-react'
 import { keepPreviousData, useQueries } from '@tanstack/react-query'
 import { createContext, Fragment, useContext, type ReactNode } from 'react'
@@ -92,18 +92,18 @@ export function FlowDiagram() {
       >
         <div className={c.lane}>
           <div className={c.start}>
-            <Text size="sm" fw={600}>
+            <Text size="sm" weight={600}>
               {t('shared.rule.start')}
             </Text>
           </div>
           <Lane path="flow" depth={0} top />
           <div className={c.end}>
-            <Text size="sm" fw={600}>
+            <Text size="sm" weight={600}>
               {t(empty ? 'shared.rule.end_now' : 'shared.rule.end')}
             </Text>
           </div>
           {empty && (
-            <Text size="sm" c="dimmed" mt="md">
+            <Text size="sm" tone="dimmed" className={c.hint}>
               {t(ctx.readOnly ? 'shared.rule.empty_readonly' : 'shared.rule.empty_hint')}
             </Text>
           )}
@@ -152,36 +152,40 @@ function Edge({ list, at, depth, root }: { list: string; at: number; depth: numb
   const m = ctx.rule.module_approvers
   const item = (title: string, hint: string, make: () => ElementValues) => (
     <Menu.Item onClick={() => insert(list, at, make())}>
-      <Text size="sm" fw={500}>
-        {title}
-      </Text>
-      <Text size="xs" c="dimmed">
-        {hint}
-      </Text>
+      <Stack gap={0}>
+        <Text size="sm" weight={500}>
+          {title}
+        </Text>
+        <Text size="xs" tone="dimmed">
+          {hint}
+        </Text>
+      </Stack>
     </Menu.Item>
   )
   return (
     <div className={c.edge}>
       <div className={c.line} />
       {/* The new element's panel takes the focus, not this + again. */}
-      <Menu position="right-start" returnFocus={false}>
-        <Menu.Target>
-          <UnstyledButton
-            className={c.plus}
-            id={root ? fieldId('flow.root') : undefined}
-            data-big={root || undefined}
-            aria-invalid={root && issueAt('flow.root') ? true : undefined}
-            aria-label={t('shared.rule.add_here')}
-          >
-            <IconPlus {...(root ? icon.button : icon.text)} aria-hidden />
-          </UnstyledButton>
-        </Menu.Target>
-        <Menu.Dropdown>
+      <Menu.Root>
+        <Menu.Trigger
+          render={
+            <UnstyledButton
+              className={c.plus}
+              id={root ? fieldId('flow.root') : undefined}
+              data-big={root || undefined}
+              aria-invalid={root && issueAt('flow.root') ? true : undefined}
+              aria-label={t('shared.rule.add_here')}
+            >
+              <IconPlus {...(root ? icon.button : icon.text)} aria-hidden />
+            </UnstyledButton>
+          }
+        />
+        <Menu.Popup side="right" align="start" finalFocus={false}>
           {item(t('shared.rule.step'), t('shared.rule.step_hint'), () => newStep(m))}
           {depth < maxDepth && item(t('shared.rule.split.one'), t('shared.rule.split.one_hint'), () => newSplit('one', m))}
           {depth < maxDepth && item(t('shared.rule.split.all'), t('shared.rule.split.all_hint'), () => newSplit('all', m))}
-        </Menu.Dropdown>
-      </Menu>
+        </Menu.Popup>
+      </Menu.Root>
       <div className={c.line} />
     </div>
   )
@@ -218,16 +222,16 @@ function StepBox({ path, el }: { path: string; el: ElementValues }) {
   const detail = stepDetail(t, el)
   return (
     <Box path={path} at={`${path}.issue`} className={c.node} label={t('shared.rule.box.named', { name: t('shared.rule.step'), text })}>
-      <Text size="sm" fw={600}>
+      <Text size="sm" weight={600}>
         {text}
       </Text>
       {issue ? (
-        <Text size="xs" c="danger">
+        <Text size="xs" tone="danger">
           {issue}
         </Text>
       ) : (
         detail && (
-          <Text size="xs" c="dimmed">
+          <Text size="xs" tone="dimmed">
             {detail}
           </Text>
         )
@@ -254,7 +258,7 @@ function SplitBox({ path, el, depth }: { path: string; el: ElementValues; depth:
   return (
     <div className={c.split}>
       <Box path={path} at={`${path}.issue`} className={c.pill} label={name} data-mode={el.type}>
-        <Text size="sm" fw={600}>
+        <Text size="sm" weight={600}>
           {name}
         </Text>
       </Box>
@@ -287,7 +291,7 @@ function SplitBox({ path, el, depth }: { path: string; el: ElementValues; depth:
           )}
       </div>
       {!one && (
-        <Text size="xs" c="dimmed" mt="xxs">
+        <Text size="xs" tone="dimmed" className={c.joinNote}>
           {t('shared.rule.parallel_join')}
         </Text>
       )}

@@ -1,4 +1,4 @@
-import { ActionIcon, Anchor, Group, Input, Text, TextInput, Tooltip, VisuallyHidden } from '@mantine/core'
+import { ActionIcon, Anchor, Field, Group, Text, TextInput, Tooltip, VisuallyHidden } from '@mmerp/ui'
 import { IconEye, IconEyeOff } from '@tabler/icons-react'
 import { useEffect, useState } from 'react'
 import { useController, useFormContext } from 'react-hook-form'
@@ -31,9 +31,9 @@ export function SensitiveField({ name, label, present, canView, canEdit, reveal 
 
   if (!canView) {
     return (
-      <Input.Wrapper label={label} id={fieldId(name)}>
-        <Text c="dimmed">{t('shared.sensitive.no_permission')}</Text>
-      </Input.Wrapper>
+      <Field label={label} id={fieldId(name)}>
+        <Text tone="dimmed">{t('shared.sensitive.no_permission')}</Text>
+      </Field>
     )
   }
 
@@ -50,21 +50,21 @@ export function SensitiveField({ name, label, present, canView, canEdit, reveal 
       }
     }
     return (
-      <Input.Wrapper label={label} id={fieldId(name)} error={error}>
-        <Group gap="sm" wrap="nowrap">
+      <Field label={label} id={fieldId(name)} error={error ?? undefined}>
+        <Group gap="sm" wrap={false}>
           <Text aria-hidden>••••••</Text>
           <VisuallyHidden>{t('shared.sensitive.masked')}</VisuallyHidden>
           <RevealLink label={label} busy={busy} onClick={() => void show()} />
         </Group>
-      </Input.Wrapper>
+      </Field>
     )
   }
 
   if (!canEdit && !present) {
     return (
-      <Input.Wrapper label={label} id={fieldId(name)}>
-        <Text c="dimmed">—</Text>
-      </Input.Wrapper>
+      <Field label={label} id={fieldId(name)}>
+        <Text tone="dimmed">—</Text>
+      </Field>
     )
   }
 
@@ -84,7 +84,7 @@ export function SensitiveField({ name, label, present, canView, canEdit, reveal 
         shown !== null && field.value === undefined ? (
           <Tooltip label={t('shared.sensitive.hide')}>
             {/* Inside the input, so smaller than the input itself. */}
-            <ActionIcon variant="subtle" color="gray" size="md" onClick={() => setShown(null)} aria-label={t('shared.sensitive.hide_field', { field: label })}>
+            <ActionIcon variant="subtle" color="gray" onClick={() => setShown(null)} aria-label={t('shared.sensitive.hide_field', { field: label })}>
               <IconEyeOff {...icon.button} />
             </ActionIcon>
           </Tooltip>
@@ -98,8 +98,8 @@ export function SensitiveField({ name, label, present, canView, canEdit, reveal 
 function RevealLink({ label, busy, onClick }: { label: string; busy?: boolean; onClick: () => void }) {
   const { t } = useTranslation()
   return (
-    <Anchor component="button" type="button" size="sm" disabled={busy} onClick={onClick} aria-label={t('shared.sensitive.show_field', { field: label })}>
-      <Group gap="xxs" wrap="nowrap" component="span">
+    <Anchor render={<button disabled={busy} />} type="button" size="sm" onClick={onClick} aria-label={t('shared.sensitive.show_field', { field: label })}>
+      <Group gap="xxs" wrap={false} render={<span />}>
         <IconEye {...icon.text} aria-hidden />
         {t('shared.sensitive.show')}
       </Group>
@@ -133,31 +133,31 @@ export function SensitiveValue({ label, present, canView, reveal, tail, revealAl
     if (revealAll && present && canView) void show()
     // Only a new "Show all" reveals; a value shown or hidden by hand stays as the user left it.
   }, [revealAll])
-  if (!canView) return <Text c="dimmed">{t('shared.sensitive.no_permission')}</Text>
-  if (!present) return <Text c="dimmed">—</Text>
+  if (!canView) return <Text tone="dimmed">{t('shared.sensitive.no_permission')}</Text>
+  if (!present) return <Text tone="dimmed">—</Text>
   return (
     <>
-      <Group gap="sm" wrap="nowrap" component="span">
+      <Group gap="sm" wrap={false} render={<span />}>
         {shown === null ? (
           <>
-            <Text span aria-hidden>
+            <Text render={<span />} aria-hidden>
               ••••••
             </Text>
-            {tail && <Text span aria-hidden>{tail}</Text>}
+            {tail && <Text render={<span />} aria-hidden>{tail}</Text>}
             <VisuallyHidden>{tail ? t('shared.sensitive.masked_tail', { tail }) : t('shared.sensitive.masked')}</VisuallyHidden>
             <RevealLink label={label} busy={busy} onClick={() => void show()} />
           </>
         ) : (
           <>
-            <Text span>{shown}</Text>
-            <Anchor component="button" type="button" size="sm" onClick={() => setShown(null)} aria-label={t('shared.sensitive.hide_field', { field: label })}>
+            <Text render={<span />}>{shown}</Text>
+            <Anchor render={<button />} type="button" size="sm" onClick={() => setShown(null)} aria-label={t('shared.sensitive.hide_field', { field: label })}>
               {t('shared.sensitive.hide')}
             </Anchor>
           </>
         )}
       </Group>
       {error && (
-        <Text size="xs" c="danger" role="alert">
+        <Text size="xs" tone="danger" role="alert">
           {error}
         </Text>
       )}

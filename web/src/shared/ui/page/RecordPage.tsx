@@ -1,17 +1,16 @@
-import { Anchor, Group, Stack, Tabs } from '@mantine/core'
+import { Anchor, Group, Stack, Tabs } from '@mmerp/ui'
 import type { ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link, useSearchParams } from 'react-router'
 import { MoreActions } from '../MoreActions'
 import { Notice } from '../Notice'
 import { Page, type PageHeaderProps } from './Page'
-import classes from './RecordPage.module.css'
 
 // A part of the record: its tab's value on the URL, label (a count once known) and content.
 export type RecordTab = { value: string; label: string; content: ReactNode }
 
 type Props = Omit<PageHeaderProps, 'tabs' | 'withBack' | 'plain' | 'current'> & {
-  // Menu.Item children: the rarer and the destructive actions, in a "…" menu after the buttons.
+  // MenuAction children: the rarer and the destructive actions, in a "…" menu after the buttons.
   more?: ReactNode
   // The record's parts, the first (its overview) open by default; a label may carry a count.
   tabs: RecordTab[]
@@ -31,7 +30,7 @@ export function RecordPage({ more, actions, tabs, aliases, children, ...header }
   const wanted = aliases?.[asked] ?? asked
   const tab = tabs.some((x) => x.value === wanted) ? wanted : first
   const all = (actions || more) && (
-    <Group gap="xs" justify="flex-end" wrap="nowrap">
+    <Group gap="xs" justify="end" wrap={false}>
       {actions}
       {more && <MoreActions place="page">{more}</MoreActions>}
     </Group>
@@ -39,22 +38,21 @@ export function RecordPage({ more, actions, tabs, aliases, children, ...header }
   return (
     <Tabs
       value={tab}
-      onChange={(v) => {
+      onValueChange={(v) => {
         const next = new URLSearchParams(search)
         if (!v || v === first) next.delete('tab')
         else next.set('tab', v)
         // Replaced, not pushed: Back leaves the record rather than walking back through its tabs.
         setSearch(next, { replace: true })
       }}
-      keepMounted={false}
     >
       <Page
         {...header}
         current
         actions={all}
-        centered="var(--mmerp-detail-width)"
+        centered="detail"
         tabs={
-          <Tabs.List className={classes.tabs}>
+          <Tabs.List scroll onRule>
             {tabs.map((x) => (
               <Tabs.Tab key={x.value} value={x.value}>
                 {x.label}
@@ -74,27 +72,11 @@ export function RecordPage({ more, actions, tabs, aliases, children, ...header }
   )
 }
 
-// RecordColumns lays out a record's overview: its values in cards on the left, digests of its parts
-// on the right, about 1.6 to 1; one column below 1024px, the right one under the left. The digests
-// are plain Panels, unframed so the values read first, parted by rules.
-export function RecordColumns({ main, side }: { main: ReactNode; side: ReactNode }) {
-  return (
-    <div className={classes.columns}>
-      <Stack gap="md" miw={0}>
-        {main}
-      </Stack>
-      <Stack gap={0} miw={0} className={classes.side}>
-        {side}
-      </Stack>
-    </div>
-  )
-}
-
 // SeeAll, on a digest's title line, opens the tab holding the whole of it.
 export function SeeAll({ tab }: { tab: string }) {
   const { t } = useTranslation()
   return (
-    <Anchor component={Link} to={`?tab=${tab}`} replace size="sm">
+    <Anchor render={<Link to={`?tab=${tab}`} replace />} size="sm">
       {t('shared.record.see_all')}
     </Anchor>
   )
@@ -105,7 +87,7 @@ export function SeeAll({ tab }: { tab: string }) {
 export function TabContent({ actions, error, children }: { actions?: ReactNode; error?: string | null; children: ReactNode }) {
   return (
     <Stack gap="md">
-      {actions && <Group justify="flex-end">{actions}</Group>}
+      {actions && <Group justify="end">{actions}</Group>}
       {error && <Notice tone="danger">{error}</Notice>}
       {children}
     </Stack>

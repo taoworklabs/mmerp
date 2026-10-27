@@ -19,6 +19,14 @@ export const Tone: Story = {
   args: { href: '#', tone: 'danger', children: 'Hủy đơn hàng' },
 }
 
+export const Size: Story = {
+  args: { href: '#', size: 'xs', children: 'Liên kết nhỏ' },
+}
+
+export const Weight: Story = {
+  args: { href: '#', weight: 600, children: 'Liên kết đậm' },
+}
+
 export const UnderlineAlways: Story = {
   args: { href: '#', underline: 'always', children: 'Luôn gạch chân' },
 }

@@ -1,32 +1,9 @@
-import { Group, Paper, SimpleGrid, Stack, Text } from '@mantine/core'
-import type { Icon as TablerIcon } from '@tabler/icons-react'
+import { Panel, SimpleGrid, Stack } from '@mmerp/ui'
 import type { ReactNode } from 'react'
-import { icon } from '../theme'
 
 // DocumentSection is one more part of a document's side column (attachments), its title
 // also the tab's label on a narrow screen.
 export type DocumentSection = { key: string; title: string; content: ReactNode }
-
-// Panel is the one card of a detail page, in either column: a part of the record's values, the
-// approval, the attachments, the activity. icon and actions (an Edit button) sit on its title line.
-// plain drops the frame, for the history in a full-width document's activity tab.
-export function Panel({ title, icon: Icon, actions, plain, children }: { title: string; icon?: TablerIcon; actions?: ReactNode; plain?: boolean; children: ReactNode }) {
-  return (
-    <Paper component="section" aria-label={title} withBorder={!plain} p="md" px={plain ? 0 : undefined}>
-      <Stack gap="sm">
-        {/* On a narrow card the actions drop under the title rather than squeezing it. */}
-        <Group justify="space-between" gap="xs" mih="var(--mmerp-control-height)">
-          <Group gap="xs" wrap="nowrap">
-            {Icon && <Icon {...icon.text} aria-hidden />}
-            <Text fw={600}>{title}</Text>
-          </Group>
-          {actions}
-        </Group>
-        {children}
-      </Stack>
-    </Paper>
-  )
-}
 
 // Activity lays out a wide document's side column in one tab: the framed parts (approval and
 // the extra sections) on the left, the activity feed, usually the longest, on the right; one column below 1024px.

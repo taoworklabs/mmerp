@@ -1,4 +1,4 @@
-import { Button } from '@mantine/core'
+import { Button } from '@mmerp/ui'
 import { IconPlus } from '@tabler/icons-react'
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
@@ -54,7 +54,7 @@ export function DocsPage({ kind: docKind }: { kind: Kind }) {
       description={t(`sales.${pathOf(docKind)}.description`)}
       action={
         canCreate && (
-          <Button component={Link} to={`${base}/new`} leftSection={<IconPlus {...icon.button} />}>
+          <Button render={<Link to={`${base}/new`} />} leftSection={<IconPlus {...icon.button} />}>
             {t(`sales.${pathOf(docKind)}.create`)}
           </Button>
         )

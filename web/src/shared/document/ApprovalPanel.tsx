@@ -1,4 +1,4 @@
-import { Badge, Button, Group, Stack, Text, Timeline } from '@mantine/core'
+import { Badge, Button, Group, Stack, Text, Timeline, type BadgeProps } from '@mmerp/ui'
 import { IconArrowBackUp, IconCheck, IconUserShare, IconX, type Icon as TablerIcon } from '@tabler/icons-react'
 import { useQuery } from '@tanstack/react-query'
 import type { TFunction } from 'i18next'
@@ -56,7 +56,7 @@ export function ApprovalPanel({ docType, id, onDone, sticky, subject, decideElse
   const inst = q.data.instance
   if (!inst)
     return (
-      <Text size="sm" c="dimmed">
+      <Text size="sm" tone="dimmed">
         {t('shared.approval.none')}
       </Text>
     )
@@ -198,7 +198,7 @@ function Instance({ docType, id, inst, onDone, sticky, subject, decideElsewhere 
     if (node.par)
       return (
         <Stack gap="xs">
-          <Text size="xs" c="dimmed" fw={600}>
+          <Text size="xs" tone="dimmed" weight={600}>
             {t('shared.approval.parallel')}
           </Text>
           <Stack gap="sm" className={classes.parallel}>
@@ -237,21 +237,21 @@ function Instance({ docType, id, inst, onDone, sticky, subject, decideElsewhere 
   return (
     <Stack gap="md">
       {inst.action !== 'post' && (
-        <Text size="sm" fw={600}>
+        <Text size="sm" weight={600}>
           {requestTitle(t, docType, inst.action)}
         </Text>
       )}
-      <Text size="sm" c="dimmed">
+      <Text size="sm" tone="dimmed">
         {subject && subject !== inst.submitted_by_name
           ? t('shared.approval.submitted_for', { name: inst.submitted_by_name, subject, at })
           : t('shared.approval.submitted', { name: inst.submitted_by_name, at })}
       </Text>
       {top.length === 0 && (
-        <Text size="sm" c="dimmed">
+        <Text size="sm" tone="dimmed">
           {t('shared.approval.no_steps')}
         </Text>
       )}
-      <Timeline active={top.length - 1} bulletSize={20} lineWidth={2} role="list" aria-label={t('shared.approval.steps')}>
+      <Timeline role="list" aria-label={t('shared.approval.steps')}>
         {top.map((node, i) => {
           const status = nodeStatus(node, byPos)
           const look = stepLook[status]
@@ -259,6 +259,7 @@ function Instance({ docType, id, inst, onDone, sticky, subject, decideElsewhere 
             <Timeline.Item
               key={i}
               role="listitem"
+              active
               aria-current={status === 'open' ? 'step' : undefined}
               color={look.color}
               bullet={look.icon && <look.icon size={12} stroke={2.5} aria-hidden />}
@@ -277,12 +278,12 @@ function Instance({ docType, id, inst, onDone, sticky, subject, decideElsewhere 
       )}
       {!decideElsewhere && only && (
         // In the narrow side column the pair splits the width; as a sticky bar it sits on the right.
-        <Group gap="xs" grow={!sticky} justify="flex-end" className={sticky ? classes.bar : undefined}>
+        <Group gap="xs" grow={!sticky} justify="end" className={sticky ? classes.bar : undefined}>
           <DecisionButtons d={d} step={only} />
         </Group>
       )}
       {inst.allowed_actions.includes('withdraw') && (
-        <Group gap="xs" justify="flex-end">
+        <Group gap="xs" justify="end">
           <Button variant="default" leftSection={<IconArrowBackUp {...icon.button} />} disabled={d.busy} onClick={() => void withdraw()}>
             {t('shared.approval.withdraw')}
           </Button>
@@ -301,7 +302,7 @@ function requestTitle(t: TFunction, docType: string, action: string) {
 }
 
 // stepLook: approved is a green check, rejected a red cross, an open step amber, the rest grey.
-const stepLook: Record<ApprovalStep['status'], { color: string; icon?: TablerIcon }> = {
+const stepLook: Record<ApprovalStep['status'], { color: BadgeProps['color']; icon?: TablerIcon }> = {
   approved: { color: 'success', icon: IconCheck },
   rejected: { color: 'danger', icon: IconX },
   open: { color: 'warning' },
@@ -334,20 +335,20 @@ function StepBody({ step, onReassign, busy, decision }: { step: ApprovalStep; on
   const approved = step.voters.filter((v) => v.decision === 'approved').length
   return (
     <Stack gap="xxxs">
-      <Group gap="xs" wrap="nowrap">
-        <Text size="sm" fw={600}>
+      <Group gap="xs" wrap={false}>
+        <Text size="sm" weight={600}>
           {t('shared.approval.step', { n: step.position })}
         </Text>
         <Badge color={stepLook[step.status].color}>{t(`shared.approval.step_status.${step.status}`)}</Badge>
         {step.overdue && <Badge color="danger">{t('shared.approval.overdue')}</Badge>}
       </Group>
       {step.due_at && step.status === 'open' && (
-        <Text size="xs" c="dimmed">
+        <Text size="xs" tone="dimmed">
           {t('shared.approval.due', { at: formatDateTime(step.due_at, me.timezone) })}
         </Text>
       )}
       {step.approvals > 1 && (
-        <Text size="xs" c="dimmed">
+        <Text size="xs" tone="dimmed">
           {t('shared.approval.count', { n: approved, m: step.approvals })}
         </Text>
       )}
@@ -356,13 +357,13 @@ function StepBody({ step, onReassign, busy, decision }: { step: ApprovalStep; on
           <Text size="sm">
             {v.cast_by_name ? t('shared.approval.cast_by', { cast_by: v.cast_by_name, name: v.name }) : v.name}
             {v.decision && (
-              <Text span size="sm" c={v.decision === 'approved' ? 'success' : 'danger'}>
+              <Text render={<span />} size="sm" tone={v.decision === 'approved' ? 'success' : 'danger'}>
                 {` · ${t(`shared.approval.decision.${v.decision}`)}`}
               </Text>
             )}
           </Text>
           {v.decided_at && (
-            <Text size="xs" c="dimmed">
+            <Text size="xs" tone="dimmed">
               {formatDateTime(v.decided_at, me.timezone)}
             </Text>
           )}
@@ -372,7 +373,7 @@ function StepBody({ step, onReassign, busy, decision }: { step: ApprovalStep; on
       {(step.fallback || onReassign) && (
         <Group gap="xs">
           {step.fallback && (
-            <Text size="xs" c="dimmed">
+            <Text size="xs" tone="dimmed">
               {t('shared.approval.fallback')}
             </Text>
           )}

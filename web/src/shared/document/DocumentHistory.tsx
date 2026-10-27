@@ -1,4 +1,4 @@
-import { Text, ThemeIcon, Tooltip } from '@mantine/core'
+import { Text, ThemeIcon, type ThemeIconProps, Tooltip } from '@mmerp/ui'
 import {
   IconArrowBackUp,
   IconArrowRight,
@@ -84,7 +84,7 @@ function createdTwin(e: HistoryEntry, other: HistoryEntry | undefined) {
   )
 }
 
-export type Look = { color: string; icon: TablerIcon; filled?: boolean }
+export type Look = { color: ThemeIconProps['color']; icon: TablerIcon; filled?: boolean }
 
 // A status reached has its status colour; the rest by what was done, grey when it changed nothing.
 // Creation is the milestone the rest follows, so it alone is filled.
@@ -163,13 +163,13 @@ export function ChangeValue({ docType, field, change: c }: { docType: string; fi
       {/* A first value has nothing to strike out. */}
       {!empty(c.old) && (
         <>
-          <Text span inherit c="dimmed" className={classes.old}>
+          <Text render={<span />} size="inherit" tone="dimmed" className={classes.old}>
             {value(c.old)}
           </Text>
           <IconArrowRight {...icon.text} className={classes.arrow} aria-label={t('shared.history.to')} />
         </>
       )}
-      <Text span inherit fw={500}>
+      <Text render={<span />} size="inherit" weight={500}>
         {value(c.new)}
       </Text>
     </>
@@ -183,10 +183,10 @@ export function ChangeList({ docType, changes }: { docType: string; changes: [st
     <dl className={classes.changes}>
       {changes.map(([field, c]) => (
         <Fragment key={field}>
-          <Text component="dt" size="xs" c="dimmed">
+          <Text render={<dt />} size="xs" tone="dimmed">
             {fieldLabel(t, docType, field)}
           </Text>
-          <Text component="dd" size="xs">
+          <Text render={<dd />} size="xs">
             <ChangeValue docType={docType} field={field} change={c} />
           </Text>
         </Fragment>
@@ -202,7 +202,7 @@ export function FeedRow({ at, bullet, detail, children }: { at: string; bullet: 
   return (
     <li className={classes.row} data-detail={detail ? true : undefined}>
       <Tooltip label={formatAgo(at, me.timezone)}>
-        <Text component="time" dateTime={at} size="xs" c="dimmed" className={classes.time}>
+        <Text render={<time dateTime={at} />} size="xs" tone="dimmed" className={classes.time}>
           {formatDateTime(at, me.timezone).slice(11)}
         </Text>
       </Tooltip>
@@ -218,7 +218,7 @@ export function FeedRow({ at, bullet, detail, children }: { at: string; bullet: 
 // Who did it and what they did it to lead the sentence in the text colour; the doing steps back.
 export function Who({ name }: { name: string }) {
   return (
-    <Text span inherit fw={600}>
+    <Text render={<span />} size="inherit" weight={600}>
       {name}
     </Text>
   )
@@ -226,7 +226,7 @@ export function Who({ name }: { name: string }) {
 
 export function Did({ children }: { children: ReactNode }) {
   return (
-    <Text span inherit c="dimmed">
+    <Text render={<span />} size="inherit" tone="dimmed">
       {children}
     </Text>
   )
@@ -234,7 +234,7 @@ export function Did({ children }: { children: ReactNode }) {
 
 export function Bullet({ look }: { look: Look }) {
   return (
-    <ThemeIcon variant={look.filled ? 'filled' : 'light'} color={look.color} size={20} radius={1000} aria-hidden>
+    <ThemeIcon variant={look.filled ? 'filled' : 'light'} color={look.color} size={20} circle aria-hidden>
       <look.icon size={12} stroke={1.5} />
     </ThemeIcon>
   )

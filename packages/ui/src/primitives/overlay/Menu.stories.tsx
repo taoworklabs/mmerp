@@ -90,3 +90,20 @@ export const WithLabelAndSeparator: Story = {
     </Menu.Root>
   ),
 }
+
+// The entry in use is tinted (data-active) or checked at the far end (rightSection).
+export const ActiveAndRightSection: Story = {
+  render: () => (
+    <Menu.Root>
+      <Menu.Trigger render={<Button>Mở menu</Button>} />
+      <Menu.Popup>
+        <Menu.Label>Ngôn ngữ</Menu.Label>
+        <Menu.Item rightSection="✓">Tiếng Việt</Menu.Item>
+        <Menu.Item>English</Menu.Item>
+        <Menu.Separator />
+        <Menu.Item data-active>Nhân viên đang làm</Menu.Item>
+        <Menu.Item>Nhân viên đã nghỉ</Menu.Item>
+      </Menu.Popup>
+    </Menu.Root>
+  ),
+}

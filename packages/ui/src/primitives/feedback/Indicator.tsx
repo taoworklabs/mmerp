@@ -8,10 +8,12 @@ export interface IndicatorProps extends React.ComponentPropsWithRef<'div'> {
   label?: React.ReactNode
   color?: ColorName
   disabled?: boolean
+  // Pulls the badge in from the corner, in px; a round child (an icon button) needs it.
+  offset?: number
 }
 
-export function Indicator({ label, color = 'primary', disabled, className, style, children, ...props }: IndicatorProps) {
-  const vars: StyleVars = { ...style, '--mmerp-indicator-bg': `var(--mmerp-color-${color}-6)` }
+export function Indicator({ label, color = 'primary', disabled, offset = 0, className, style, children, ...props }: IndicatorProps) {
+  const vars: StyleVars = { ...style, '--mmerp-indicator-bg': `var(--mmerp-color-${color}-6)`, '--mmerp-indicator-offset': `${offset}px` }
   return (
     <div className={cx(styles.root, className)} style={vars} {...props}>
       {children}

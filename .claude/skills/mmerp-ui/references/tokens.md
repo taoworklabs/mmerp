@@ -1,13 +1,13 @@
 # Tokens
 
-Every value below is defined in `web/src/shared/ui/theme.ts` (or `global.css` where noted). If you change one there, change it here and in `docs/ui.md` in the same commit.
+Every value below is defined in `packages/ui/src/tokens/tokens.ts` (`@mmerp/ui`), which generates the `--mmerp-*` CSS variables in `tokens.css`. If you change one there, change it here and in `docs/ui.md` in the same commit.
 
 How to reach a token:
 
 | From | Use |
 | --- | --- |
-| A Mantine prop in any component | The theme key: `gap="xs"`, `p="md"`, `c="dimmed"`, `color="danger"`, `radius="lg"`, `fz="xs"`, `fw={600}` |
-| A CSS module in `shared/ui` | The CSS variable: `var(--mantine-spacing-xs)`, `var(--mantine-color-default-border)`, `var(--mmerp-elevation-surface-sunken)` |
+| A `@mmerp/ui` prop in any component | The token key: `gap="xs"`, `padding="md"`, `tone="dimmed"`, `color="danger"`, `size="xs"`, `weight={600}` |
+| A CSS module in `shared/ui` | The CSS variable: `var(--mmerp-space-xs)`, `var(--mmerp-color-border)`, `var(--mmerp-color-elevation-surface-sunken)` |
 | An icon | The `icon` constant: `<IconPlus {...icon.button} />` |
 
 ## Colour
@@ -26,16 +26,16 @@ Each colour is a ten-step scale, palest (0) to darkest (9). Components read it b
 
 | Token | How to use | Value | Use for |
 | --- | --- | --- | --- |
-| text | default, `var(--mantine-color-text)` | `#292A2E` | Body text, values, identifiers (14.3:1) |
-| text subtle | `c="dimmed"`, `var(--mantine-color-dimmed)` | `#505258` | Labels, captions, descriptions, column headers (7.8:1) |
+| text | default, `var(--mmerp-color-text)` | `#292A2E` | Body text, values, identifiers (14.3:1) |
+| text subtle | `tone="dimmed"`, `var(--mmerp-color-dimmed)` | `#505258` | Labels, captions, descriptions, column headers (7.8:1) |
 | placeholder | automatic | `#6B6E76` | Input placeholders only (5.1:1) |
-| border | `withBorder`, `var(--mantine-color-default-border)` | `#0B120E24` (translucent) | Dividers, table rules, frames, outlined buttons. Translucent so it reads on white and on the sunken tone alike |
-| frame border | automatic on `Paper withBorder` and table rules (`gray-3`) | `#DDDEE1` | Same tone as `border`, drawn solid by Mantine |
-| input border | automatic on fields (`global.css`), `var(--mmerp-input-border)` | `#0B120E33` (translucent) | Edges of text fields and inline edit, a step stronger than `border`; the filter bar's search box uses `border`, like the chips and tool buttons beside it (`tables.md`) |
+| border | `withBorder`, `var(--mmerp-color-border)` | `#0B120E24` (translucent) | Dividers, table rules, frames, outlined buttons. Translucent so it reads on white and on the sunken tone alike |
+| frame border | automatic on `Paper withBorder` and table rules (`gray-3`) | `#DDDEE1` | Same tone as `border`, drawn solid |
+| input border | automatic on fields, `var(--mmerp-color-input-border)` | `#0B120E33` (translucent) | Edges of text fields and inline edit, a step stronger than `border`; the filter bar's search box uses `border`, like the chips and tool buttons beside it (`tables.md`) |
 | control border | automatic (`gray-4`) | `#B4B7BD` | Edges of checkboxes and radios: small, so they keep the stronger edge |
-| surface | `var(--mmerp-elevation-surface)`, default `Paper` background | `#FFFFFF` | Tables, forms, cards, the page |
-| surface sunken | `var(--mmerp-elevation-surface-sunken)` | `#F8F8F8` | Group and total rows, tile hover, grid cells that take no value |
-| table header | `var(--mmerp-table-header)` | `#F4F5F6` | A table's column header row (`DataTable`, `LinesTable`, `CellGrid`): a step deeper than the sunken rows |
+| surface | `var(--mmerp-color-elevation-surface)`, default `Paper` background | `#FFFFFF` | Tables, forms, cards, the page |
+| surface sunken | `var(--mmerp-color-elevation-surface-sunken)` | `#F8F8F8` | Group and total rows, tile hover, grid cells that take no value |
+| table header | `var(--mmerp-color-table-header)` | `#F4F5F6` | A table's column header row (`DataTable`, `LinesTable`, `CellGrid`): a step deeper than the sunken rows |
 | disabled | automatic | `#F0F1F2` | Disabled input background |
 | neutral | `color="gray"` | tint `#F0F1F2`, text `#505258` (badges: `#DDDEE1`, `#3B3D42`) | Neutral badges, quiet icon buttons, empty-state icon |
 
@@ -50,25 +50,25 @@ Each colour is a ten-step scale, palest (0) to darkest (9). Components read it b
 | info | `"info"` | `#1868DB` | `#E9F2FE` | `#1558BC` | Neutral information; same scale as primary |
 | discovery | `"discovery"` | `#964AC0` | `#F8EEFE` | `#803FA5` | Something new or in beta; nothing else |
 
-Field errors and the required `*` use `var(--mantine-color-error)` = `#AE2E24`.
+Field errors and the required `*` use `var(--mmerp-color-error)` = `#AE2E24`.
 
-Selected state, everywhere (navigation, menus, dropdown options, inbox rows): tint `var(--mantine-primary-color-light)` and text `var(--mantine-primary-color-light-color)`. Nothing else marks selection.
+Selected state, everywhere (navigation, menus, dropdown options, inbox rows): tint `var(--mmerp-color-primary-light)` and text `var(--mmerp-color-primary-light-color)`. Nothing else marks selection.
 
 Avatars take their colour from `PersonAvatar` (derived from the name); set no colour on a person yourself.
 
 Do:
 
 ```tsx
-<Text size="sm" c="dimmed">{t('sales.customers.description')}</Text>
+<Text size="sm" tone="dimmed">{t('sales.customers.description')}</Text>
 <Notice tone="warning">{t('hrm.payroll.sources_changed')}</Notice>
 ```
 
 Don't:
 
 ```tsx
-<Text c="#666">…</Text>            // colour code: lint fails outside shared/ui
-<Text c="gray.6">…</Text>          // a step instead of a role: use c="dimmed"
-<Button color="orange">…</Button>  // a hue instead of a meaning: use a role (color="danger", c="dimmed")
+<Text style={{ color: '#666' }}>…</Text> // colour code and inline style: lint fails
+<Text className={grey6}>…</Text>   // a step instead of a role: use tone="dimmed"
+<Button color="orange">…</Button>  // a hue instead of a meaning: use a role (color="danger", tone="dimmed")
 // Accent hues (grape, blue, teal, orange, red, green) only name a kind: PersonAvatar, OrgUnitIcon, the file-type icons of AttachmentPanel.
 <Notice tone="discovery">…</Notice> // discovery for something that is not new
 ```
@@ -81,7 +81,7 @@ Font: Inter Variable, self-hosted. Lines sit on a 4px grid.
 | --- | --- | --- |
 | `xs` | 12 / 16 | Captions, column headers, badges, field labels, form section descriptions. The minimum size |
 | `sm` | 14 / 20 | Body text, table cells, inputs, buttons, page descriptions |
-| `md` | 14 / 20 | Same as `sm` (Mantine's default size) |
+| `md` | 14 / 20 | Same as `sm` (the default size) |
 | `lg` | 16 / 24 | Larger body text |
 | `xl` | 20 / 24 | Modal titles (weight 650), stat values in tiles |
 | `h1` (`<Title order={1}>`) | 24 / 28, weight 650 | Page title, one per page, set by the page template |
@@ -112,7 +112,7 @@ The scale is closed: if a gap seems to need 6, 10 or 20, the layout needs anothe
 ```tsx
 <Stack gap="xxxs">
   <Text size="sm">{name}</Text>
-  <Text size="xs" c="dimmed">{formatDate(day)}</Text>
+  <Text size="xs" tone="dimmed">{formatDate(day)}</Text>
 </Stack>
 ```
 
@@ -133,10 +133,10 @@ Components already carry their radius through theme defaults; set `radius` only 
 
 | Level | Surface | Shadow | Use |
 | --- | --- | --- | --- |
-| Sunken | `--mmerp-elevation-surface-sunken` | none | A well inside the page: group and total rows, unavailable cells; a table's header row sits a step deeper (`--mmerp-table-header`) |
-| Default | `--mmerp-elevation-surface` | none | The page and everything flat on it; framed with `withBorder` |
+| Sunken | `--mmerp-color-elevation-surface-sunken` | none | A well inside the page: group and total rows, unavailable cells; a table's header row sits a step deeper (`--mmerp-color-table-header`) |
+| Default | `--mmerp-color-elevation-surface` | none | The page and everything flat on it; framed with `withBorder` |
 | Raised | surface | `shadow="xs"` | Reserved for a card that can be dragged; no screen has one yet |
-| Overlay | surface | `md`, `lg`, `xl` (all `0 8px 12px #1E1F2126, 0 0 1px #1E1F214F`) | Menus, popovers, modals, toasts: Mantine applies it |
+| Overlay | surface | `md`, `lg`, `xl` (all `0 8px 12px #1E1F2126, 0 0 1px #1E1F214F`) | Menus, popovers, modals, toasts: the kit applies it |
 | Pinned footer | body | `--mmerp-shadow-footer` (`0 -6px 8px -6px #1E1F2126`, upwards only) | A page form's footer while the form runs on under it (`FormActions`) |
 
 A card on the page is `Paper withBorder`, never a shadow.
@@ -145,20 +145,20 @@ A card on the page is `Paper withBorder`, never a shadow.
 
 | What | Value | Where |
 | --- | --- | --- |
-| Control (button, input, select, pagination, `ActionIcon size="input-sm"`), wherever it sits | 30px, `size="sm"` (default); 40px among a form section's fields and in a modal's body (a lines table and `ModalFooter` keep 30px) | `--mmerp-control-height`, applied in `global.css`, raised in `Form.module.css` and the `Modal` body (`theme.ts`) |
-| Touch target below 1024px | 44px | `global.css` |
+| Control (button, input, select, pagination, `ActionIcon`), wherever it sits | 30px, `size="sm"` (default); 40px among a form section's fields and in a modal's body (a lines table and `ModalFooter` keep 30px) | `--mmerp-control-height`, raised to `--mmerp-control-height-lg` by the kit's form layout and dialog body |
+| Touch target below 1024px | 44px | `--mmerp-touch-target`, the kit's `styles/global.css` |
 | Header | 48px | `app/AppLayout.tsx` |
 | Navigation | 240px, 56px collapsed; items 32px | `app/AppLayout.tsx`, `AppLayout.module.css` |
 | Table row / header row | 40px / 36px | `DataTable.module.css` |
 | Grid cell (timesheet) | 30px | `CellGrid.module.css` |
-| Scrollbar (`ScrollArea`) | 8px; in a table it runs between the sticky header and footer | `theme.ts`, `DataTable.module.css` |
+| Scrollbar (`ScrollArea`) | 8px; in a table it runs between the sticky header and footer | the kit's `ScrollArea`, `DataTable.module.css` |
 | Inbox list | 360px | `--mmerp-side-width` |
 | Content width (form sections, a form page, a `fullWidth` document's tab) | 1200px | `--mmerp-content-width`, applied by `FormSection` and `Page centered` |
 | Record or document page (`RecordPage`, `DocumentPage`) | 1440px, header included; a document's main and side column about 62/38, a record overview's about 1.6/1, one column below 1024px | `--mmerp-detail-width`, `DetailPage.module.css`, `RecordPage.module.css` |
 | Side panel, side-column tab | 480px | `--mmerp-aside-width`, `readingWidth` (`page/Page.tsx`) |
-| Breakpoints | `sm` 768, `md` 1024 (navigation becomes a drawer, tables become cards), `lg` 1280 (design size) | `theme.ts` |
+| Breakpoints | `sm` 768, `md` 1024 (navigation becomes a drawer, tables become cards), `lg` 1280 (design size) | `breakpoint` (`@mmerp/ui`) |
 
-Filter bar sizes live in `filterWidth` (`theme.ts`) and only the filter components read them: `search` 280 and `searchMin` 160 (the search box, narrowing when the bar is full), `chip` 320 (the widest a filter chip grows before its value truncates), `menu` 240 (a chip's dropdown). Areas set no size apart from the column widths of a lines table (`forms.md`).
+Filter bar sizes live in `--mmerp-filter-width-*` (`filterWidth` in the kit tokens) and only the filter components read them: `search` 280 and `searchMin` 160 (the search box, narrowing when the bar is full), `chip` 320 (the widest a filter chip grows before its value truncates), `menu` 240 (a chip's dropdown). Areas set no size apart from the column widths of a lines table (`forms.md`).
 
 ## Icons
 
@@ -174,4 +174,4 @@ Decorative icons are `aria-hidden` and always sit next to text.
 
 ## Motion
 
-Mantine's own transitions only (menus, modals, toasts), 200ms at most; `respectReducedMotion` is on. No page transitions, no animation for decoration.
+The kit's own transitions only (menus, modals, toasts), `--mmerp-motion-duration` (150ms); reduced motion turns them off. No page transitions, no animation for decoration.

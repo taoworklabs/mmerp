@@ -1,4 +1,4 @@
-import { Anchor, List, Stack, Text } from '@mantine/core'
+import { Anchor, List, Stack, Text } from '@mmerp/ui'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
@@ -73,10 +73,10 @@ function LockModal({ lock, onClose }: { lock: PeriodLock; onClose: () => void })
         <DateField name="locked_until" label={t('core.period.locked_until')} description={t('core.period.locked_until_hint')} clearable />
         {pending.length > 0 && (
           <Stack gap="xs">
-            <Text size="sm" fw={500}>
+            <Text size="sm" weight={500}>
               {t('core.period.pending')}
             </Text>
-            <List size="sm">
+            <List>
               {pending.map((d) => (
                 <PendingItem key={d.id} doc={d} />
               ))}
@@ -95,7 +95,7 @@ function PendingItem({ doc }: { doc: Pending }) {
   return (
     <List.Item>
       {link ? (
-        <Anchor component={Link} to={link} size="sm">
+        <Anchor render={<Link to={link} />} size="sm">
           {text}
         </Anchor>
       ) : (

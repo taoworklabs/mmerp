@@ -4,9 +4,9 @@ Mandatory rules for every screen. **Agents and people must read this document be
 
 Sources of truth in code:
 
-- `web/src/shared/ui/theme.ts`: every colour, font size, spacing and radius. Sizes specific to one component (table row height, 44px touch target) live in its CSS module in `shared/ui`; areas set no size apart from the column widths of a lines table.
+- `packages/ui` (`@mmerp/ui`): the tokens (`src/tokens/tokens.ts`: every colour, font size, spacing and radius, as `--mmerp-*` CSS variables) and the primitives built on them, each shown in Storybook (`make storybook`, `:6006`). Sizes specific to one component (table row height) live in its CSS module in `shared/ui`; areas set no size apart from the column widths of a lines table.
 - `web/src/shared/ui/`: page templates and components. New screens are **assembled from what already exists here**.
-- The `/dev/ui` page, dev build only, in six layers: foundations, the Mantine primitives areas may import directly, the ready-made mmerp components (`shared/ui`, `shared/document`), patterns, and page templates. Each component page shows a live example, when to use it, its variants and states, do and don't, its import, and related entries. When unsure what to use, open this page first; the written rules stay here and in the `mmerp-ui` skill.
+- The `/dev/ui` page, dev build only, in six layers: foundations, the `@mmerp/ui` primitives and blocks areas may import directly (linking to Storybook), the ready-made mmerp components (`shared/ui`, `shared/document`), patterns, and page templates. Each component page shows a live example, when to use it, its variants and states, do and don't, its import, and related entries. When unsure what to use, open this page first; the written rules stay here and in the `mmerp-ui` skill.
 
 ## Principles
 
@@ -42,7 +42,7 @@ No dark mode in the first release. The theme uses semantic tokens (below), so it
 
 ## Tokens
 
-All of them live in `theme.ts`. Area code uses only token names or Mantine props, **never its own colour codes, font sizes in px, or spacing**.
+All of them live in the `@mmerp/ui` tokens. Area code uses only token names or `@mmerp/ui` props, **never its own colour codes, font sizes in px, or spacing**.
 
 ### Colour
 
@@ -65,7 +65,7 @@ All of them live in `theme.ts`. Area code uses only token names or Mantine props
 | `info` | Blue, same as `primary` | Neutral information |
 | `discovery` | Purple `#964AC0` | Marks something new or in beta; nothing else |
 
-Each colour is a ten-step scale in `theme.ts`. Alerts and selected items use its palest step behind and its step 7 for text; badges use step 1 behind (neutral: step 2) and step 8 for text, so statuses stand out in a column of rows. `theme.ts` applies it.
+Each colour is a ten-step scale in the `@mmerp/ui` tokens. Alerts and selected items use its palest step behind and its step 7 for text; badges use step 1 behind (neutral: step 2) and step 8 for text, so statuses stand out in a column of rows. The kit's components apply it.
 
 Body text must have a contrast ratio of at least 4.5:1 against its background. Colour is never the only signal: a status always comes with text, an error always comes with text and an icon.
 
@@ -94,13 +94,13 @@ A document type may change the **label**, never the colour, through the translat
 
 - 4px-based spacing scale: 4, 8, 12, 16, 24, 32 (`xxs`…`xl`), plus 2 (`xxxs`) between a line and its caption and 48 (`xxl`) for the page's side padding from 1280px and a record page's tabs. No other values.
 - Radius by role: 4px for badges, tooltips and small icon tiles (`sm`; a file-type tile is 6px, the kind icons of notifications and empty panels are round); 6px for buttons, inputs, navigation items, cards, tiles, frames and modals (`md`, the default); 8px for menus and popovers (`lg`); avatars and page numbers are round.
-- **Controls in the same strip have the same height.** A strip is a row of controls placed side by side: filter bar, pagination bar, form footer, page header buttons. The `shared/ui` component that builds the strip picks the size of every control inside it; a button next to an input uses Mantine's `input-*` size so it is exactly as tall as the input (e.g. pagination at `input-sm` next to the rows-per-page select). Buttons are always `sm`; other controls elsewhere keep the size that fits their place, as long as they meet the minimum touch target. Buttons inside an input (clear value, show password, hide sensitive field) are smaller than the input that holds them.
+- **Controls in the same strip have the same height.** A strip is a row of controls placed side by side: filter bar, pagination bar, form footer, page header buttons. The `shared/ui` component that builds the strip picks the size of every control inside it; every control reads `--mmerp-control-height`, so a button next to an input is exactly as tall as the input (e.g. pagination next to the rows-per-page select). Buttons are always `sm`; other controls elsewhere keep the size that fits their place, as long as they meet the minimum touch target. Buttons inside an input (clear value, show password, hide sensitive field) are smaller than the input that holds them.
 - No shadows, except on modals, dropdown menus, popovers and toasts (one overlay shadow), and the upward shadow of a page form's footer while the form runs on under it (`--mmerp-shadow-footer`).
 - **A selected item only gets a light blue background and primary text**, everywhere (navigation, lists, menus, approval inbox): no accent bar on the left edge and no coloured border.
 
 ### Icons
 
-- The [Tabler Icons](https://tabler.io/icons) set (`@tabler/icons-react`), stroke 1.5, through the `icon` constant in `theme.ts`: `icon.text` (16px) in text, tables and inputs, `icon.button` (18px) in every button, `icon.empty` (24px) in empty states.
+- The [Tabler Icons](https://tabler.io/icons) set (`@tabler/icons-react`), stroke 1.5, through the `icon` constant (`@mmerp/ui`, re-exported by `shared/ui/theme.ts` for areas): `icon.text` (16px) in text, tables and inputs, `icon.button` (18px) in every button, `icon.empty` (24px) in empty states.
 - No emoji as icons.
 - Decorative icons (form section titles, org unit type in the org tree, empty states) are always `aria-hidden` and always come with text.
 - People (employees, users) are shown with `PersonAvatar`: initials on an accent colour derived from the name, so a person always has the same colour.
@@ -154,7 +154,7 @@ General rules:
 
 ## Data tables
 
-Use `<DataTable>` from `shared/ui`, not Mantine's `Table` directly.
+Use `<DataTable>` from `shared/ui`, not the kit's `Table` directly.
 
 - Rows are 40px tall. A table that is part of a page (a record's tab, a section, a document, a modal) sits in a frame: a 1px `border` edge with 6px corners, like a document's lines. The table that is a list page's whole content fills the page and has no frame of its own. The column header row sits on the table header tone (`#F4F5F6`, a step deeper than the sunken group and total rows): 12px text, weight 600, in `text-secondary` over a rule. From 1024px a list page is exactly as tall as the window: its header, filter bar and paging bar stay in place and only the content below the filters scrolls; a table that is the whole content scrolls inside itself, under its column headers, which stick. Scrollbars are thin (8px); a table's vertical scrollbar runs between its sticky header and footer, never behind them.
 - The first column is the identifier (document number, full name with avatar), weight 500 in the main text colour, underlined on hover. The whole row is clickable; the link is a real `<a>` tag, so middle-click or Ctrl+click opens a new tab.
@@ -292,7 +292,7 @@ Dates and times are shown in the tenant's time zone, not the browser's ([techsta
 
 ## Keyboard and accessibility
 
-- Every action can be done with the keyboard. Keep Mantine's default focus ring, never remove it.
+- Every action can be done with the keyboard. Keep the kit's focus ring, never remove it.
 - Tab order follows reading order. Opening a modal moves focus into it; closing it returns focus to where it was.
 - Shortcuts, and only these: `/` to go to a list's search box; `Ctrl+S` to save a form; `Esc` to close a modal or menu.
 - Minimum touch target 30×30px on desktop, 44×44px on self-service screens on small devices.
@@ -300,7 +300,7 @@ Dates and times are shown in the tenant's time zone, not the browser's ([techsta
 
 ## Motion
 
-Only Mantine's default motion (opening modals, menus, notifications), 200ms at most. No page transitions, no scroll effects.
+Only the kit's own motion (opening modals, menus, notifications), `--mmerp-motion-duration` (150ms). No page transitions, no scroll effects.
 
 ## Enforcement
 
@@ -308,9 +308,9 @@ The rules above are enforced by tools wherever tools can do it:
 
 | Rule | Enforced by |
 | --- | --- |
-| Areas take from `@mantine/core` only plain layout and text primitives (`Anchor`, `Button`, `Divider`, `Group`, `List`, `Loader`, `Skeleton`, `Stack`, `Text`, `Tooltip`), and nothing from `@mantine/dates` or `@mantine/notifications`; everything else comes from `shared/ui` | ESLint `no-restricted-imports` (`allowImportNames` option), with a message pointing to `shared/ui` |
+| Areas take from `@mmerp/ui` only plain layout and text primitives (`Anchor`, `Button`, `Divider`, `Group`, `List`, `Loader`, `Skeleton`, `Stack`, `Text`, `Tooltip`) and the look-only blocks (`Panel`, `FieldList`, `KeyFacts`, `RecordColumns`, `ActionBar`); everything else comes from `shared/ui`. Only `@mmerp/ui` imports `@base-ui/react` | ESLint `no-restricted-imports` (`allowImportNames` option), with a message pointing to `shared/ui` |
 | No inline `style` and no CSS files in areas | ESLint `no-restricted-syntax` blocks the `style` attribute in JSX (outside `shared/ui`); dependency-cruiser blocks `*.css` imports from areas. CSS modules exist only in `shared/ui` |
-| No colour codes outside `shared/ui` | `make lint` scans for hex codes (3, 6 and 8 digits), `rgb(` and `hsl(` in every file of `web/src` except `shared/ui`, `.css` files included |
+| No colour codes in the app | `make lint` scans for hex codes (3, 6 and 8 digits), `rgb(` and `hsl(` in every file of `web/src`, `.css` files included; colours live only in the `@mmerp/ui` tokens |
 | No hard-coded text in JSX | ESLint `i18next/no-literal-string` |
 | Translation keys have both `vi` and `en` | Check in `make lint` ([techstack.md](./techstack.md#i18n)) |
 | Page-level layout, button hierarchy, button names, voice | Cannot be enforced by tools: use page templates, and check against the list below during review |

@@ -1,4 +1,4 @@
-import { Button, Group } from '@mantine/core'
+import { Button } from '@mmerp/ui'
 import { IconCircleDot, IconFileImport, IconPlus } from '@tabler/icons-react'
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { useState } from 'react'
@@ -64,18 +64,18 @@ export function EmployeesPage() {
       title={t('hrm.employees.title')}
       description={t('hrm.employees.description')}
       action={
-        <Group gap="xs">
+        <>
           {actions.includes('import_leave_balances') && (
             <Button variant="default" leftSection={<IconFileImport {...icon.button} />} onClick={() => setImporting(true)}>
               {t('hrm.employees.import_balances')}
             </Button>
           )}
           {canCreate && (
-            <Button component={Link} to="/hrm/employees/new" leftSection={<IconPlus {...icon.button} />}>
+            <Button render={<Link to="/hrm/employees/new" />} leftSection={<IconPlus {...icon.button} />}>
               {t('hrm.employees.create')}
             </Button>
           )}
-        </Group>
+        </>
       }
       filters={
         <>

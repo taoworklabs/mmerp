@@ -65,7 +65,7 @@ test('HR imports the March timesheet from Excel, fixes a bad file, follows the j
   await create.getByRole('combobox', { name: 'Đơn vị' }).click()
   await hr.getByRole('option', { name: new RegExp(`Phòng P ${run}`) }).click()
   await create.getByRole('button', { name: /^Kỳ/ }).click()
-  await hr.getByRole('button', { name: 'Th03' }).click()
+  await hr.getByRole('gridcell', { name: /^(thg|Tháng) 3$/i }).click()
   await create.getByRole('button', { name: 'Tạo bản nháp' }).click()
   await expect(hr.getByRole('heading', { name: /^BC-2026-/ })).toBeVisible()
   await expect(total(hr, 'M5E01')).toHaveText('0')

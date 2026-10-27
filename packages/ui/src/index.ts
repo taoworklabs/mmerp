@@ -75,6 +75,7 @@ export { FormSection, type FormSectionProps, type FormSectionLayout, type FormSe
 export { FormBar, type FormBarProps, type FormBarUnsavedDotProps } from './blocks/form/FormBar.tsx'
 export { FilterBar, type FilterBarProps, type FilterBarSearchProps } from './blocks/list/FilterBar.tsx'
 export { FilterChip, type FilterChipProps } from './blocks/list/FilterChip.tsx'
+export { MonthFilterChip, type MonthFilterChipProps } from './blocks/list/MonthFilterChip.tsx'
 export { PagingBar, type PagingBarProps } from './blocks/list/PagingBar.tsx'
 export { MoreActions, type MoreActionsProps } from './blocks/list/MoreActions.tsx'
 export { BulkBar, type BulkBarProps } from './blocks/list/BulkBar.tsx'

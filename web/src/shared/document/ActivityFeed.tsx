@@ -1,4 +1,4 @@
-import { Anchor, Button, SegmentedControl, Stack, Text, UnstyledButton } from '@mantine/core'
+import { Anchor, Button, Group, SegmentedControl, Stack, Text, UnstyledButton } from '@mmerp/ui'
 import { IconChevronDown, IconEye } from '@tabler/icons-react'
 import { Fragment, useId, useState, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -90,20 +90,22 @@ export function ActivityFeed({ docType, id, recent }: { docType: string; id: num
   return (
     <Stack gap="lg" className={classes.feed}>
       {talk.data.allowed_actions.includes('comment') && <CommentBox docType={docType} id={id} maxLength={talk.data.max_length} />}
+      {/* In a Group, so the control keeps its own width. */}
       {!recent && (
-        <SegmentedControl
-          value={filter}
-          onChange={(v) => {
-            setFilter(v as Filter)
-            setShown(page)
-          }}
-          aria-label={t('shared.activity.filter')}
-          data={(['all', 'comments', 'changes', 'views'] as const).map((f) => ({ value: f, label: t(`shared.activity.${f}`) }))}
-          w="fit-content"
-        />
+        <Group>
+          <SegmentedControl
+            value={filter}
+            onChange={(v) => {
+              setFilter(v as Filter)
+              setShown(page)
+            }}
+            aria-label={t('shared.activity.filter')}
+            data={(['all', 'comments', 'changes', 'views'] as const).map((f) => ({ value: f, label: t(`shared.activity.${f}`) }))}
+          />
+        </Group>
       )}
       {days.length === 0 ? (
-        <Text size="sm" c="dimmed">
+        <Text size="sm" tone="dimmed">
           {t('shared.activity.empty')}
         </Text>
       ) : (
@@ -122,7 +124,7 @@ export function ActivityFeed({ docType, id, recent }: { docType: string; id: num
             <Stack key={d.day} gap="md">
               <UnstyledButton className={classes.day} onClick={toggle} aria-expanded={open} aria-controls={id}>
                 <IconChevronDown {...icon.text} aria-hidden className={classes.chevron} data-closed={!open || undefined} />
-                <Text span size="xs" fw={600} c="dimmed">
+                <Text render={<span />} size="xs" weight={600} tone="dimmed">
                   {dayLabel(d.day)}
                   {!open && ` · ${t('shared.activity.day_count', { count })}`}
                 </Text>
@@ -137,7 +139,7 @@ export function ActivityFeed({ docType, id, recent }: { docType: string; id: num
         })
       )}
       {visible.length > shown && (
-        <Button variant="default" w="fit-content" onClick={() => setShown(shown + page)}>
+        <Button variant="default" className={classes.more} onClick={() => setShown(shown + page)}>
           {t('shared.activity.more')}
         </Button>
       )}
@@ -160,7 +162,7 @@ function Fold({ items }: { items: Item[] }) {
   return (
     <FeedRow at={items[0]!.at} bullet={<Bullet look={{ color: 'gray', icon: IconEye }} />}>
       <Did>{t('shared.activity.folded', { count: items.length })}</Did>{' '}
-      <Anchor component="button" type="button" size="sm" onClick={() => setOpen(true)}>
+      <Anchor render={<button />} type="button" size="sm" onClick={() => setOpen(true)}>
         {t('shared.activity.show')}
       </Anchor>
     </FeedRow>

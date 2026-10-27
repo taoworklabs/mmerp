@@ -15,3 +15,8 @@
   opacity: 0;
   transform: scale(0.98);
 }
+
+/* Above any dialog or drawer the popup opens from. */
+.positioner {
+  z-index: var(--mmerp-z-index-popup);
+}

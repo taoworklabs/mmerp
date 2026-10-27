@@ -13,3 +13,8 @@
 .popup[data-ending-style] {
   opacity: 0;
 }
+
+/* Above any dialog or drawer the popup opens from. */
+.positioner {
+  z-index: var(--mmerp-z-index-popup);
+}

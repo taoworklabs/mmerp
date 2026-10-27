@@ -1,5 +1,5 @@
-import { Button, Modal, Stack, Text } from '@mantine/core'
-import { useState, type ReactNode } from 'react'
+import { Button, Dialog, Stack, Text } from '@mmerp/ui'
+import { useRef, useState, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { ApiError } from '@/shared/api/error'
 import { useInvalidateRecord } from '@/shared/area'
@@ -12,6 +12,7 @@ export function useDocumentMutation(docType: string, id: number, version: number
   const { t } = useTranslation()
   const invalidate = useInvalidateRecord()
   const [conflict, setConflict] = useState(false)
+  const reloadRef = useRef<HTMLButtonElement>(null)
 
   async function run<T>(call: (version: number) => Promise<T>): Promise<T> {
     try {
@@ -30,16 +31,16 @@ export function useDocumentMutation(docType: string, id: number, version: number
   }
 
   const dialog: ReactNode = conflict && (
-    <Modal opened onClose={() => void reload()} title={t('shared.document.conflict.title')}>
+    <Dialog opened onClose={() => void reload()} title={t('shared.document.conflict.title')} closeLabel={t('shared.modal.close')} initialFocus={reloadRef}>
       <Stack gap="md">
         <Text>{t('shared.document.conflict.message')}</Text>
         <ModalFooter>
-          <Button onClick={() => void reload()} data-autofocus>
+          <Button onClick={() => void reload()} ref={reloadRef}>
             {t('shared.document.conflict.reload')}
           </Button>
         </ModalFooter>
       </Stack>
-    </Modal>
+    </Dialog>
   )
   return { run, dialog }
 }

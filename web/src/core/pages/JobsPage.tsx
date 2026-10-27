@@ -1,4 +1,4 @@
-import { Anchor, Button, Text } from '@mantine/core'
+import { Anchor, Button, Text } from '@mmerp/ui'
 import { IconAlertTriangle, IconEye, IconRefresh } from '@tabler/icons-react'
 import { useQuery } from '@tanstack/react-query'
 import { useState } from 'react'
@@ -57,14 +57,14 @@ export default function JobsPage() {
     if (j.state === 'completed') return t('core.jobs.imported', { rows: formatNumber(j.rows ?? 0) })
     if (j.state === 'retrying')
       return (
-        <Text size="sm" c="dimmed">
+        <Text size="sm" tone="dimmed">
           {jobError(t, j)}
         </Text>
       )
     if (j.state !== 'failed') return null
     // The reason can be long; it opens in a dialog so the table stays readable.
     return (
-      <Anchor component="button" type="button" size="sm" onClick={() => setFailed(j)}>
+      <Anchor render={<button />} type="button" size="sm" onClick={() => setFailed(j)}>
         {j.row_errors.length > 0 ? t('core.jobs.row_errors', { count: j.row_errors.length }) : t('core.jobs.reason')}
       </Anchor>
     )

@@ -1,7 +1,5 @@
-import { TextInput } from '@mantine/core'
-import { IconSearch } from '@tabler/icons-react'
+import { FilterBar } from '@mmerp/ui'
 import { useEffect, useRef, useState } from 'react'
-import { filterWidth, icon } from '../theme'
 
 // SearchInput is a list's search box. It applies on Enter or when leaving the box, so typing
 // does not flood history; "/" focuses it from anywhere on the page.
@@ -33,17 +31,10 @@ export function SearchInput({ label, placeholder, value, onSearch }: { label: st
     onSearch(v)
   }
   return (
-    <TextInput
+    <FilterBar.Search
       ref={ref}
-      type="search"
       aria-label={label}
       placeholder={placeholder ?? label}
-      // From 1024px it shares the filter bar: it takes the room the chips leave, within its bounds.
-      w={{ base: '100%', md: 'auto' }}
-      flex={{ md: `1 1 ${filterWidth.searchMin}px` }}
-      miw={{ md: filterWidth.searchMin }}
-      maw={{ md: filterWidth.search }}
-      leftSection={<IconSearch {...icon.text} />}
       value={draft}
       onChange={(e) => setDraft(e.currentTarget.value)}
       onKeyDown={(e) => e.key === 'Enter' && apply()}

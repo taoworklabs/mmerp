@@ -1,4 +1,4 @@
-import { Anchor } from '@mantine/core'
+import { Anchor } from '@mmerp/ui'
 import { useQueryClient } from '@tanstack/react-query'
 import { createContext, lazy, Suspense, useCallback, useContext, useMemo, type ComponentType, type LazyExoticComponent, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -61,7 +61,7 @@ export function RecordPreview({ docType, id }: { docType: string; id: number }) 
   const link = useRecordLink(docType, id)
   if (!e?.preview) {
     return link ? (
-      <Anchor component={Link} to={link}>
+      <Anchor render={<Link to={link} />}>
         {t('shared.document.open')}
       </Anchor>
     ) : null

@@ -4,7 +4,7 @@ import type { StyleVars } from '../../internal/style.ts'
 import styles from './Alert.module.css'
 
 export interface AlertProps extends Omit<React.ComponentPropsWithRef<'div'>, 'title'> {
-  color?: 'info' | 'success' | 'warning' | 'danger'
+  color?: 'info' | 'success' | 'warning' | 'danger' | 'discovery'
   title?: React.ReactNode
   icon?: React.ReactNode
 }

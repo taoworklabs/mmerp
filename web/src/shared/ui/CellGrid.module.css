@@ -4,26 +4,26 @@
   width: 100%;
   border-collapse: separate;
   border-spacing: 0;
-  font-size: var(--mantine-font-size-sm);
+  font-size: var(--mmerp-font-size-sm);
   font-variant-numeric: tabular-nums;
 }
 
 .grid th,
 .grid td {
-  border-bottom: 1px solid var(--mantine-color-default-border);
-  border-right: 1px solid var(--mantine-color-default-border);
+  border-bottom: 1px solid var(--mmerp-color-border);
+  border-right: 1px solid var(--mmerp-color-border);
   padding: 0;
   height: 30px;
   text-align: center;
 }
 
 .grid thead th {
-  background: var(--mmerp-table-header);
-  color: var(--mantine-color-dimmed);
-  font-size: var(--mantine-font-size-xs);
+  background: var(--mmerp-color-table-header);
+  color: var(--mmerp-color-dimmed);
+  font-size: var(--mmerp-font-size-xs);
   font-weight: 600;
   min-width: 40px;
-  padding: var(--mantine-spacing-xxs);
+  padding: var(--mmerp-space-xxs);
   line-height: 1.2;
 }
 
@@ -32,21 +32,21 @@
   position: sticky;
   left: 0;
   z-index: 1;
-  background: var(--mmerp-elevation-surface);
+  background: var(--mmerp-color-elevation-surface);
   text-align: left;
-  padding: 0 var(--mantine-spacing-sm);
+  padding: 0 var(--mmerp-space-sm);
   white-space: nowrap;
   /* As narrow as its content, so the spare width goes to the day columns. */
   width: 1%;
 }
 
 .grid thead .sticky {
-  background: var(--mmerp-table-header);
+  background: var(--mmerp-color-table-header);
 }
 
 .grid .total {
   font-weight: 500;
-  padding: 0 var(--mantine-spacing-xs);
+  padding: 0 var(--mmerp-space-xs);
   text-align: right;
   width: 1%;
 }
@@ -58,29 +58,29 @@
   border: 0;
   padding: 0;
   background: transparent;
-  color: var(--mantine-color-text);
+  color: var(--mmerp-color-text);
   font: inherit;
   text-align: center;
 }
 
 .cell:focus {
-  outline: 2px solid var(--mantine-primary-color-filled);
+  outline: 2px solid var(--mmerp-color-primary-6);
   outline-offset: -2px;
 }
 
 .cell[aria-invalid='true'] {
-  background: var(--mantine-color-danger-0);
-  outline: 1px solid var(--mantine-color-error);
+  background: var(--mmerp-color-danger-0);
+  outline: 1px solid var(--mmerp-color-error);
   outline-offset: -1px;
 }
 
 /* A cell that takes no value, e.g. before an employee joined. */
 .off {
-  background: var(--mmerp-elevation-surface-sunken);
+  background: var(--mmerp-color-elevation-surface-sunken);
 }
 
 /* A cell to look at again; the reason is in its tooltip and read out with it. Listed after
    .off, so a day off holding a value shows the warning. */
 .warn {
-  background: var(--mantine-color-warning-1);
+  background: var(--mmerp-color-warning-1);
 }

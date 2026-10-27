@@ -1,4 +1,4 @@
-import { Button, Group, Stack, Text } from '@mantine/core'
+import { Button, FieldList, Group, Stack, Text } from '@mmerp/ui'
 import { IconCircleDot, IconUsersGroup } from '@tabler/icons-react'
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
@@ -39,7 +39,7 @@ import {
   YearFilter,
 } from '@/shared/ui/form'
 import { DocumentStatusFilter } from '@/shared/document'
-import { FieldList, MissingValue } from '@/shared/ui/FieldList'
+import { MissingValue } from '@/shared/ui/MissingValue'
 import { InlineEditField } from '@/shared/ui/InlineEditField'
 import { ModalFooter } from '@/shared/ui/ModalFooter'
 import { FormModal } from '@/shared/ui/page'
@@ -118,7 +118,6 @@ export function FormDoc() {
                 <MultiSelectField
                   name="many"
                   label={t('shared.devui.multi_choice')}
-                  searchable
                   data={[
                     { value: 'a', label: 'A' },
                     { value: 'b', label: 'B' },
@@ -132,7 +131,7 @@ export function FormDoc() {
                 </InputRow>
                 <CheckboxField name="flag" label={t('shared.devui.checkbox')} description={t('shared.devui.hint')} />
                 <FormRow>
-                  <Text size="sm" c="dimmed">
+                  <Text size="sm" tone="dimmed">
                     {t('shared.devui.hint')}
                   </Text>
                 </FormRow>

@@ -2,7 +2,7 @@
 
 What exists, how to use it, and how to build a new one. Imports are from `@/shared/ui/…` and `@/shared/document`. Every component here is on `/dev/ui` in each of its states.
 
-Areas take from `@mantine/core` only the layout and text primitives `Anchor`, `Button`, `Divider`, `Group`, `List`, `Loader`, `Skeleton`, `Stack`, `Text`, `Tooltip` (ESLint allowlist), and nothing from `@mantine/dates` or `@mantine/notifications`; everything else comes from `shared/ui`. When a screen needs something more, add it to `shared/ui` (and to the allowlist only if it is a plain primitive). `shared/ui` itself builds on any Mantine component, with the variants below.
+Areas take from `@mmerp/ui` only the layout and text primitives `Anchor`, `Button`, `Divider`, `Group`, `List`, `Loader`, `Skeleton`, `Stack`, `Text`, `Tooltip` and the look-only blocks `Panel`, `FieldList`, `KeyFacts`, `RecordColumns`, `ActionBar` (ESLint allowlist); everything else comes from `shared/ui`. When a screen needs something more, add it to `shared/ui` (and to the allowlist only if it is a plain primitive). `shared/ui` itself builds on any `@mmerp/ui` component, with the variants below; Storybook (`make storybook`, `:6006`) shows every primitive's props and states. Only the kit imports Base UI.
 
 ## Button
 
@@ -135,7 +135,7 @@ Every field takes `bare` for a table cell: no visible label (kept as `aria-label
 
 A list's filter bar holds `SearchInput` and filter chips: `FilterChip` (options from `data`; `icon` is the icon component, the chip sizes it; `searchable`; `clearable={false}` for a filter that always holds a value), `OrgUnitFilter`, `LegalEntityFilter` (always holds one: `useLegalEntities(scope, picked)` gives the options and the chosen one, the first by default), `MonthFilter`, `YearFilter`. A chip is named after its filter and reads "Name: value", tinted with its own ✕ (with a tooltip), once set; `{...filterBar.bind(key)}` from `useListParams` wires one to the URL; areas set no width (`tables.md`).
 
-To switch between views of one feed (an activity feed's All · Comments · Changes · Views), use Mantine's `SegmentedControl`: the theme draws it as a thin frame of plain labels with the chosen one tinted and edged in primary (`SegmentedControl.module.css`); set nothing on it but `w="fit-content"`.
+To switch between views of one feed (an activity feed's All · Comments · Changes · Views), use the kit's `SegmentedControl`: it draws as a thin frame of plain labels with the chosen one tinted and edged in primary (`SegmentedControl.module.css`); set nothing on it but its value, data and `aria-label`.
 
 ## Data display
 
@@ -184,22 +184,22 @@ To switch between views of one feed (an activity feed's All · Comments · Chang
 
 1. Check this file and `/dev/ui` first; extend an existing component with a prop before adding a new one.
 2. Decide where it lives: no business concept → `shared/ui`; a document feature → `shared/document`; a product concept (employee picker, payroll breakdown) → that product's area, assembled from `shared/ui` pieces.
-3. Build it on Mantine primitives and theme tokens. Styling that props cannot express goes in a CSS module next to it, using only `var(--mantine-…)` and `var(--mmerp-…)` variables; a size specific to the component is allowed there with a one-line comment saying why.
+3. Build it on `@mmerp/ui` primitives and tokens. Styling that props cannot express goes in a CSS module next to it, using only `var(--mmerp-…)` variables; a size specific to the component is allowed there with a one-line comment saying why.
 4. Pick the variant, size, radius and colour from the tables above and in `tokens.md`; a new look needs a new row here first, agreed before code.
 5. Cover every state it can be in: loading, empty, error, disabled, selected, focus, read-only; keyboard reachable, `aria-label` on icon-only controls.
 6. Add it to `/dev/ui` (`app/devui`): an `mmerp` entry in `catalogue.ts` (name, import `source`, `related`) and a `DocPage` showing its example and each state as a labelled `Case`, or a `Case` in the page of the family it belongs to; its one-line `about_`, `use_` and `avoid_` texts go in both locales (`catalogue.test.ts` checks them). Add a row to this file.
 
 ```tsx
 // shared/ui/Example.tsx
-import { Paper, Stack, Text } from '@mantine/core'
+import { Paper, Stack, Text } from '@mmerp/ui'
 import classes from './Example.module.css'
 
 // Example frames a summary block on the page; a flat surface, framed, not shadowed.
 export function Example({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <Paper withBorder p="md">
+    <Paper withBorder padding="md">
       <Stack gap="xs">
-        <Text size="sm" c="dimmed">{title}</Text>
+        <Text size="sm" tone="dimmed">{title}</Text>
         <div className={classes.body}>{children}</div>
       </Stack>
     </Paper>
@@ -210,7 +210,7 @@ export function Example({ title, children }: { title: string; children: React.Re
 ```css
 /* Example.module.css: tokens only. */
 .body {
-  border-top: 1px solid var(--mantine-color-default-border);
-  padding-top: var(--mantine-spacing-xs);
+  border-top: 1px solid var(--mmerp-color-border);
+  padding-top: var(--mmerp-space-xs);
 }
 ```

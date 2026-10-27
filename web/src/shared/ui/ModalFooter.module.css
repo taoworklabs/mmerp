@@ -2,8 +2,8 @@
    (a section edited in place) across the card's content. Its buttons keep the compact height under
    the taller fields. */
 .footer {
-  --mmerp-control-height: 30px;
-  margin-inline: calc(var(--mb-padding, 0px) * -1);
-  padding: var(--mantine-spacing-md) var(--mb-padding, 0px) 0;
-  border-top: 1px solid var(--mantine-color-default-border);
+  --mmerp-control-height: var(--mmerp-control-height-sm);
+  margin-inline: calc(var(--mmerp-dialog-padding, 0px) * -1);
+  padding: var(--mmerp-space-md) var(--mmerp-dialog-padding, 0px) 0;
+  border-top: 1px solid var(--mmerp-color-border);
 }

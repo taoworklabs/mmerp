@@ -1,6 +1,6 @@
 # Forms
 
-Forms use React Hook Form through `@/shared/ui/form`: `Form`, `FormSection`, `FormFields`, `FormRow`, `InputRow`, `FormActions` and the fields. A field is wired by `name`; the screen never renders a bare Mantine input inside a form.
+Forms use React Hook Form through `@/shared/ui/form`: `Form`, `FormSection`, `FormFields`, `FormRow`, `InputRow`, `FormActions` and the fields. A field is wired by `name`; the screen never renders a bare `@mmerp/ui` input inside a form.
 
 ## Page or modal
 
@@ -44,7 +44,7 @@ There is no "Create another" option; series entry goes through Excel import.
 
 - Label above every field, always visible, 12px weight 600 `dimmed` (the theme does it); never a placeholder instead of a label.
 - A placeholder shows a format, never a label or a value: date fields show `dd/mm/yyyy` (month fields `mm/yyyy`) and a calendar icon by themselves; a `TextField` takes `placeholder` for a sample starting "VD:" when the label does not make the format plain (phone). Read-only fields show none.
-- A read-only field in a form is a grey fill without an edge, in the input's place, so rows keep their height and the layout does not move between viewing and editing: no `*`, no help text. Each shared field marks its wrapper `data-readonly` when `readOnly`, and `FormSection`/`FormFields` do the rest; a screen sets nothing. A custom field built on a Mantine input must pass the same `wrapperProps` (as `OrgUnitField` does), or it counts as still editable.
+- A read-only field in a form is a grey fill without an edge, in the input's place, so rows keep their height and the layout does not move between viewing and editing: no `*`, no help text. Each shared field marks its wrapper `data-readonly` when `readOnly`, and `FormSection`/`FormFields` do the rest; a screen sets nothing. A custom field built on a kit input must pass `readOnly` through to it (as `OrgUnitField` does), or it counts as still editable.
 - Values that are only read (a record, a document out of draft) are label–value pairs (`FieldList` in an `EditablePanel`), never a form of read-only inputs. Only `fullWidth` documents (payroll, timesheet, quotation, order) show their form read-only.
 - `required` adds `*` after the label; no legend, no "(required)".
 - `description` is one sentence under the input, only when the label is not enough.
@@ -202,6 +202,6 @@ Use it only for a single value of master data that saves on its own, apart from 
 // Don't
 <TextField name="month" rules={{ pattern: /^\d{4}-\d{2}$/ }} … />     // use MonthField
 <Button type="submit" disabled={!form.formState.isValid}>…</Button>   // never disable to signal errors
-<Text fz={13}>{t('…label')}</Text>                                    // labels come from the field
+<Text size="xs" weight={600}>{t('…label')}</Text>                                    // labels come from the field
 const total = lines.reduce((s, l) => s + l.qty * l.price, 0)          // totals are the server's
 ```

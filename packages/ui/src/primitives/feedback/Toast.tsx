@@ -40,6 +40,8 @@ export const toast = {
 
 export interface ToasterProps {
   closeLabel: string
+  // Where the stack sits; top-center keeps it clear of a narrow screen's bottom action bar.
+  position?: 'bottom-right' | 'top-center'
 }
 
 function ToastList({ closeLabel }: { closeLabel: string }) {
@@ -78,11 +80,11 @@ function ToastList({ closeLabel }: { closeLabel: string }) {
   })
 }
 
-export function Toaster({ closeLabel }: ToasterProps) {
+export function Toaster({ closeLabel, position = 'bottom-right' }: ToasterProps) {
   return (
     <BaseToast.Provider toastManager={manager}>
       <BaseToast.Portal>
-        <BaseToast.Viewport className={styles.viewport}>
+        <BaseToast.Viewport className={styles.viewport} data-position={position}>
           <ToastList closeLabel={closeLabel} />
         </BaseToast.Viewport>
       </BaseToast.Portal>

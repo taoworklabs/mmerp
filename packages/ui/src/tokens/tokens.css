@@ -160,6 +160,7 @@
   --mmerp-shadow-xl: 0 8px 12px #1E1F2126, 0 0 1px #1E1F214F;
   --mmerp-shadow-footer: 0 -6px 8px -6px #1E1F2126;
   --mmerp-control-height: 1.875rem;
+  --mmerp-control-height-sm: 1.875rem;
   --mmerp-control-height-lg: 2.5rem;
   --mmerp-content-width: 75rem;
   --mmerp-side-width: 22.5rem;
@@ -171,4 +172,6 @@
   --mmerp-filter-width-menu: 15rem;
   --mmerp-motion-duration: 150ms;
   --mmerp-touch-target: 44px;
+  --mmerp-z-index-modal: 200;
+  --mmerp-z-index-popup: 300;
 }

@@ -7,6 +7,7 @@ import { ActionIcon } from '../input/ActionIcon.tsx'
 import styles from './Dialog.module.css'
 
 export type DialogSize = 'sm' | 'md' | 'lg' | 'xl'
+type DialogFocusProp = React.ComponentProps<typeof BaseDialog.Popup>['initialFocus']
 
 const sizeWidths: Record<DialogSize, number> = { sm: 380, md: 440, lg: 620, xl: 780 }
 
@@ -17,6 +18,8 @@ export interface DialogProps extends Omit<React.ComponentPropsWithRef<'div'>, 'c
   size?: DialogSize | number
   closeLabel: string
   withCloseButton?: boolean
+  // Where focus lands on open, e.g. the confirm button of a confirmation; default the first tabbable.
+  initialFocus?: DialogFocusProp
   children: React.ReactNode
 }
 
@@ -27,6 +30,7 @@ function DialogRoot({
   size = 'md',
   closeLabel,
   withCloseButton = true,
+  initialFocus,
   className,
   style,
   children,
@@ -43,7 +47,7 @@ function DialogRoot({
     >
       <BaseDialog.Portal>
         <BaseDialog.Backdrop className={styles.backdrop} />
-        <BaseDialog.Popup className={cx(styles.popup, className)} style={vars} {...props}>
+        <BaseDialog.Popup initialFocus={initialFocus} className={cx(styles.popup, className)} style={vars} {...props}>
           <div className={styles.header}>
             <BaseDialog.Title className={styles.title}>{title}</BaseDialog.Title>
             {withCloseButton && (

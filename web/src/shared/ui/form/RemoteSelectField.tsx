@@ -1,5 +1,5 @@
-import { useDebouncedValue } from '@mantine/hooks'
-import { useQuery, type QueryKey } from '@tanstack/react-query'
+import { useDebouncedValue } from '@mmerp/ui'
+import { keepPreviousData, useQuery, type QueryKey } from '@tanstack/react-query'
 import { useState } from 'react'
 import { SelectField, type Option } from './fields'
 
@@ -51,7 +51,9 @@ export function RemoteSelectField<T extends RemoteRow>({
   const [text, setText] = useState('')
   const [q] = useDebouncedValue(text, 300)
   const [picked, setPicked] = useState<T>()
-  const found = useQuery({ queryKey: queryKey(q), queryFn: () => search(q), enabled: !readOnly })
+  // The last results stay while the next search runs: an emptied list would drop the option
+  // highlighted with the arrow keys before Enter picks it.
+  const found = useQuery({ queryKey: queryKey(q), queryFn: () => search(q), enabled: !readOnly, placeholderData: keepPreviousData })
   const rows = found.data ?? []
   const options = remoteOptions(rows, [picked, current])
   return (

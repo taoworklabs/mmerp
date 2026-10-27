@@ -1,5 +1,4 @@
-import { ActionIcon, AppShell, Box, Burger, Group, Indicator, Menu, NavLink, ScrollArea, Stack, Text, ThemeIcon, Tooltip, UnstyledButton } from '@mantine/core'
-import { useDisclosure, useLocalStorage, useMediaQuery } from '@mantine/hooks'
+import { ActionIcon, AppShell, Box, Burger, Group, Indicator, Menu, NavLink, Stack, Text, ThemeIcon, Tooltip, UnstyledButton, cx, useDisclosure, useLocalStorage, useMediaQuery } from '@mmerp/ui'
 import { IconBell, IconBuildingSkyscraper, IconCheck, IconHourglass, IconInbox, IconChevronDown, IconChevronRight, IconLayoutSidebarLeftCollapse, IconLayoutSidebarLeftExpand, IconLogout } from '@tabler/icons-react'
 import { useQuery } from '@tanstack/react-query'
 import { Suspense, useEffect, useState, type ReactNode } from 'react'
@@ -13,7 +12,6 @@ import { endSession } from '@/shared/auth/session'
 import { documentKeys } from '@/shared/document'
 import { errorText, locales, rememberLocale, type Locale } from '@/shared/i18n'
 import { PersonAvatar } from '@/shared/ui/avatar'
-import { pageFrame } from '@/shared/ui/page'
 import { ErrorState, PageSkeleton, ReadOnlyBanner } from '@/shared/ui/states'
 import { icon } from '@/shared/ui/theme'
 import classes from './AppLayout.module.css'
@@ -41,7 +39,7 @@ export function AppLayout({ areas }: { areas: AreaManifest[] }) {
   }, [drawer, closeDrawer])
   const wide = useMediaQuery('(min-width: 80em)', true)
   // Remembered per user; until the user chooses, it collapses below 1280px.
-  const [pref, setPref] = useLocalStorage<boolean | null>({ key: `mmerp.nav.collapsed.${me.id}`, defaultValue: null })
+  const [pref, setPref] = useLocalStorage<boolean | null>(`mmerp.nav.collapsed.${me.id}`, null)
   const collapsed = pref ?? !wide
 
   const [error, setError] = useState<string | null>(null)
@@ -82,38 +80,32 @@ export function AppLayout({ areas }: { areas: AreaManifest[] }) {
 
   return (
     <AppShell
-      header={{ height: 48 }}
-      navbar={nav.length > 0 ? { width: collapsed ? 56 : 240, breakpoint: 'md', collapsed: { mobile: !drawer } } : undefined}
-      padding={0}
-    >
-      <AppShell.Header px="md">
-        <Group h="100%" justify="space-between" wrap="nowrap">
-          <Group gap="xs" wrap="nowrap" miw={0}>
+      header={
+        <Group className={classes.bar} justify="space-between" wrap={false}>
+          <Group gap="xs" wrap={false} shrink>
             {nav.length > 0 && (
               <Tooltip label={t('core.shell.menu')}>
-                <Burger opened={drawer} onClick={toggleDrawer} hiddenFrom="md" size="sm" aria-label={t('core.shell.menu')} aria-expanded={drawer} />
+                <Burger opened={drawer} onClick={toggleDrawer} className={classes.burger} aria-label={t('core.shell.menu')} />
               </Tooltip>
             )}
             {/* The logo goes home, where the products are. */}
             <Tooltip label={t('core.nav.home')}>
-              <UnstyledButton component={Link} to="/" aria-label={t('core.nav.home')} onClick={closeDrawer}>
-                <ThemeIcon size={28} radius="sm" aria-hidden>
+              <UnstyledButton render={<Link to="/" />} aria-label={t('core.nav.home')} onClick={closeDrawer}>
+                <ThemeIcon size={28} aria-hidden>
                   <IconBuildingSkyscraper {...icon.text} />
                 </ThemeIcon>
               </UnstyledButton>
             </Tooltip>
-            <Text fw={600} truncate>{t(area?.label ?? 'shared.app.title')}</Text>
+            <Text weight={600} truncate>{t(area?.label ?? 'shared.app.title')}</Text>
           </Group>
-          <Group gap="xs" wrap="nowrap" flex="none">
+          <Group gap="xs" wrap={false} className={classes.noShrink}>
             {/* Every user has notifications, an inbox and background jobs, wherever they are. */}
             <Tooltip label={t('core.nav.notifications')}>
-              <Indicator label={unread} size={16} disabled={unread === 0} offset={4}>
+              <Indicator label={unread} disabled={unread === 0} offset={4}>
                 <ActionIcon
-                  component={Link}
-                  to={own('notifications')}
+                  render={<Link to={own('notifications')} />}
                   variant={pathname === own('notifications') ? 'light' : 'subtle'}
                   color={pathname === own('notifications') ? undefined : 'gray'}
-                  size="lg"
                   aria-label={unread > 0 ? t('core.nav.notifications_count', { count: unread }) : t('core.nav.notifications')}
                 >
                   <IconBell {...icon.button} />
@@ -121,13 +113,11 @@ export function AppLayout({ areas }: { areas: AreaManifest[] }) {
               </Indicator>
             </Tooltip>
             <Tooltip label={t('core.nav.inbox')}>
-              <Indicator label={waiting} size={16} disabled={waiting === 0} offset={4}>
+              <Indicator label={waiting} disabled={waiting === 0} offset={4}>
                 <ActionIcon
-                  component={Link}
-                  to={own('inbox')}
+                  render={<Link to={own('inbox')} />}
                   variant={pathname === own('inbox') ? 'light' : 'subtle'}
                   color={pathname === own('inbox') ? undefined : 'gray'}
-                  size="lg"
                   aria-label={waiting > 0 ? t('core.nav.inbox_count', { count: waiting }) : t('core.nav.inbox')}
                 >
                   <IconInbox {...icon.button} />
@@ -136,29 +126,29 @@ export function AppLayout({ areas }: { areas: AreaManifest[] }) {
             </Tooltip>
             <Tooltip label={t('core.nav.jobs')}>
               <ActionIcon
-                component={Link}
-                to={own('jobs')}
+                render={<Link to={own('jobs')} />}
                 variant={pathname === own('jobs') ? 'light' : 'subtle'}
                 color={pathname === own('jobs') ? undefined : 'gray'}
-                size="lg"
                 aria-label={t('core.nav.jobs')}
               >
                 <IconHourglass {...icon.button} />
               </ActionIcon>
             </Tooltip>
-            <Menu position="bottom-end">
-              <Menu.Target>
-                <Tooltip label={t('core.shell.account')}>
-                <UnstyledButton aria-label={`${t('core.shell.account')}: ${me.name}`} flex="none" h={36} px="xs">
-                  <Group gap="xs" wrap="nowrap">
-                    <PersonAvatar name={me.name} />
-                    <Text truncate maw={200} fw={500} visibleFrom="sm">{me.name}</Text>
-                    <IconChevronDown {...icon.text} />
-                  </Group>
-                </UnstyledButton>
-                </Tooltip>
-              </Menu.Target>
-              <Menu.Dropdown>
+            <Menu.Root>
+              <Tooltip label={t('core.shell.account')}>
+                <Menu.Trigger
+                  render={
+                    <UnstyledButton aria-label={`${t('core.shell.account')}: ${me.name}`} className={classes.account}>
+                      <Group gap="xs" wrap={false}>
+                        <PersonAvatar name={me.name} />
+                        <Text truncate weight={500} className={classes.accountName}>{me.name}</Text>
+                        <IconChevronDown {...icon.text} />
+                      </Group>
+                    </UnstyledButton>
+                  }
+                />
+              </Tooltip>
+              <Menu.Popup align="end">
                 <Menu.Label>{t('core.shell.language')}</Menu.Label>
                 {locales.map((l) => (
                   <Menu.Item
@@ -171,66 +161,66 @@ export function AppLayout({ areas }: { areas: AreaManifest[] }) {
                     {t(`shared.locale.${l}`)}
                   </Menu.Item>
                 ))}
-                <Menu.Divider />
+                <Menu.Separator />
                 <Menu.Item leftSection={<IconLogout {...icon.text} />} onClick={() => void logout()}>
                   {t('core.shell.logout')}
                 </Menu.Item>
-              </Menu.Dropdown>
-            </Menu>
+              </Menu.Popup>
+            </Menu.Root>
           </Group>
         </Group>
-      </AppShell.Header>
-
-      {nav.length > 0 && area && (
-        <AppShell.Navbar>
-          <AppShell.Section grow component={ScrollArea} p="xs">
-            {/* Only the open area's menu; other areas are reached from home. Ungrouped items
-                first, then each group in manifest order; a group emptied by permissions is gone. */}
-            <Stack gap={0}>
-              {[...new Set(nav.map((item) => item.group))].map((group) => {
-                const links = nav.filter((item) => item.group === group).map((item) => <AreaLink key={item.path} area={area} item={item} narrow={narrow} onClick={closeDrawer} />)
-                return group && !narrow ? (
-                  <NavGroup key={group} userId={me.id} group={group} collapsible={area.collapsibleGroups?.includes(group) ?? false}>
-                    {links}
-                  </NavGroup>
-                ) : (
-                  links
-                )
-              })}
-            </Stack>
-          </AppShell.Section>
-          <AppShell.Section p="xs" visibleFrom="md">
-            <Tooltip label={t(collapsed ? 'core.shell.expand' : 'core.shell.collapse')} position="right">
-              <ActionIcon
-                variant="subtle"
-                color="gray"
-                size="lg"
-                aria-label={t(collapsed ? 'core.shell.expand' : 'core.shell.collapse')}
-                onClick={() => setPref(!collapsed)}
-              >
-                {collapsed ? <IconLayoutSidebarLeftExpand {...icon.button} /> : <IconLayoutSidebarLeftCollapse {...icon.button} />}
-              </ActionIcon>
-            </Tooltip>
-          </AppShell.Section>
-        </AppShell.Navbar>
+      }
+      // Only the open area's menu; other areas are reached from home. Ungrouped items first, then
+      // each group in manifest order; a group emptied by permissions is gone.
+      navbarLabel={t('core.shell.nav')}
+      navbar={
+        nav.length > 0 &&
+        area && (
+          <Stack gap={0}>
+            {[...new Set(nav.map((item) => item.group))].map((group) => {
+              const links = nav.filter((item) => item.group === group).map((item) => <AreaLink key={item.path} area={area} item={item} narrow={narrow} onClick={closeDrawer} />)
+              return group && !narrow ? (
+                <NavGroup key={group} userId={me.id} group={group} collapsible={area.collapsibleGroups?.includes(group) ?? false}>
+                  {links}
+                </NavGroup>
+              ) : (
+                links
+              )
+            })}
+          </Stack>
+        )
+      }
+      navbarOpened={drawer}
+      navbarCollapsed={collapsed}
+      navbarFooter={
+        nav.length > 0 && (
+          <Tooltip label={t(collapsed ? 'core.shell.expand' : 'core.shell.collapse')} side="right">
+            <ActionIcon
+              variant="subtle"
+              color="gray"
+              aria-label={t(collapsed ? 'core.shell.expand' : 'core.shell.collapse')}
+              onClick={() => setPref(!collapsed)}
+            >
+              {collapsed ? <IconLayoutSidebarLeftExpand {...icon.button} /> : <IconLayoutSidebarLeftCollapse {...icon.button} />}
+            </ActionIcon>
+          </Tooltip>
+        )
+      }
+    >
+      {error && (
+        <Box className={classes.banner}>
+          <ErrorState message={error} />
+        </Box>
       )}
-
-      <AppShell.Main>
-        {error && (
-          <Box p="lg" pb={0}>
-            <ErrorState message={error} />
-          </Box>
-        )}
-        {area && !onOwn && area.product !== 'core' && !me.products.includes(area.product) && (
-          <Box px={pageFrame.px} pt="lg">
-            <ReadOnlyBanner />
-          </Box>
-        )}
-        {/* Keyed by area, so entering one shows the skeleton rather than the previous page. */}
-        <Suspense key={pathname.split('/')[1]} fallback={<PageSkeleton />}>
-          <Outlet />
-        </Suspense>
-      </AppShell.Main>
+      {area && !onOwn && area.product !== 'core' && !me.products.includes(area.product) && (
+        <Box className={cx(classes.banner, classes.bannerFramed)}>
+          <ReadOnlyBanner />
+        </Box>
+      )}
+      {/* Keyed by area, so entering one shows the skeleton rather than the previous page. */}
+      <Suspense key={pathname.split('/')[1]} fallback={<PageSkeleton />}>
+        <Outlet />
+      </Suspense>
     </AppShell>
   )
 }
@@ -242,19 +232,17 @@ function AreaLink({ area, item, narrow, onClick }: { area: AreaManifest; item: N
   const label = t(item.label)
   const link = (
     <NavLink
-      component={Link}
-      to={to}
+      render={<Link to={to} />}
       label={narrow ? undefined : label}
       aria-label={label}
       leftSection={<item.icon {...icon.text} />}
       active={pathname === to || pathname.startsWith(`${to}/`)}
-      variant="light"
-      classNames={{ root: classes.item, section: classes.section }}
+      compact
       onClick={onClick}
     />
   )
   return narrow ? (
-    <Tooltip label={label} position="right">
+    <Tooltip label={label} side="right">
       {link}
     </Tooltip>
   ) : (
@@ -267,21 +255,21 @@ function NavGroup({ userId, group, collapsible, children }: { userId: number; gr
   const { t } = useTranslation()
   const label = t(group)
   // Keyed by the i18n key, so the state survives a language change.
-  const [folded, setFolded] = useLocalStorage<boolean>({ key: `mmerp.nav.folded.${userId}.${group}`, defaultValue: false })
+  const [folded, setFolded] = useLocalStorage<boolean>(`mmerp.nav.folded.${userId}.${group}`, false)
   const open = !collapsible || !folded
   return (
     <Stack gap={0} role="group" aria-label={label}>
       {collapsible ? (
-        <UnstyledButton px="xs" mt="sm" mb="xxs" onClick={() => setFolded(open)} aria-expanded={open}>
-          <Group gap="xxs" justify="space-between" wrap="nowrap">
-            <Text size="xs" c="dimmed">
+        <UnstyledButton className={classes.groupHead} onClick={() => setFolded(open)} aria-expanded={open}>
+          <Group gap="xxs" justify="space-between" wrap={false}>
+            <Text size="xs" tone="dimmed">
               {label}
             </Text>
             {open ? <IconChevronDown {...icon.text} /> : <IconChevronRight {...icon.text} />}
           </Group>
         </UnstyledButton>
       ) : (
-        <Text size="xs" c="dimmed" px="xs" mt="sm" mb="xxs">
+        <Text size="xs" tone="dimmed" className={classes.groupHead}>
           {label}
         </Text>
       )}

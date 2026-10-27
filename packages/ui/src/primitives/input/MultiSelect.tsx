@@ -95,10 +95,15 @@ export function MultiSelect({
             aria-invalid={error ? true : undefined}
             aria-required={required || undefined}
             {...props}
+            onKeyDown={(event) => {
+              props.onKeyDown?.(event)
+              // With the list shut Base UI would clear every chosen value; leaving a field must not lose them.
+              if (event.key === 'Escape' && event.currentTarget.getAttribute('aria-expanded') !== 'true') event.preventBaseUIHandler()
+            }}
           />
         </BaseCombobox.InputGroup>
         <BaseCombobox.Portal>
-          <BaseCombobox.Positioner sideOffset={4}>
+          <BaseCombobox.Positioner sideOffset={4} className={optionStyles.positioner}>
             <BaseCombobox.Popup className={optionStyles.popup}>
               <BaseCombobox.Empty className={optionStyles.empty}>{nothingFound}</BaseCombobox.Empty>
               <BaseCombobox.List>

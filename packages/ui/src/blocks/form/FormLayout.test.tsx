@@ -1,7 +1,7 @@
 import { render } from 'vitest-browser-react'
 import { page } from 'vitest/browser'
 import { describe, expect, it } from 'vitest'
-import { FormSection } from './FormSection.tsx'
+import { FormFields, FormSection } from './FormSection.tsx'
 import '../../styles/index.css'
 
 describe('FormSection', () => {
@@ -42,5 +42,26 @@ describe('FormSection', () => {
 
     await page.viewport(1000, 900)
     await expect.poll(() => normal.getBoundingClientRect().top).toBeGreaterThanOrEqual(legend.getBoundingClientRect().bottom)
+  })
+
+  it('spans the whole row for a [data-full-row] wrapper, in a section grid and in FormFields', async () => {
+    const { container } = await render(
+      <>
+        <FormSection title="Section title">
+          <div>Normal field</div>
+          <div data-full-row="" data-testid="section-row">Long text field</div>
+        </FormSection>
+        <FormFields>
+          <div>Normal field</div>
+          <div data-full-row="" data-testid="pair-row">Long text field</div>
+        </FormFields>
+      </>,
+    )
+    await page.viewport(1400, 900)
+    for (const id of ['section-row', 'pair-row']) {
+      const row = container.querySelector(`[data-testid="${id}"]`) as HTMLElement
+      const grid = row.parentElement as HTMLElement
+      await expect.poll(() => Math.round(row.getBoundingClientRect().width)).toBe(Math.round(grid.getBoundingClientRect().width))
+    }
   })
 })

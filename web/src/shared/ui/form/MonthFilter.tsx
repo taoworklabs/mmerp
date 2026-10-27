@@ -1,33 +1,22 @@
-import { Popover } from '@mantine/core'
-import { MonthPicker } from '@mantine/dates'
-import { useDisclosure } from '@mantine/hooks'
+import { MonthFilterChip } from '@mmerp/ui'
 import { IconCalendarMonth } from '@tabler/icons-react'
-import { formatMonthShort } from '@/shared/i18n'
-import { ChipShell } from './FilterChip'
+import { useTranslation } from 'react-i18next'
+import { calendarLocale, formatMonthShort } from '@/shared/i18n'
+import { icon } from '../theme'
 
-// MonthFilter is a filter chip that picks a month (YYYY-MM).
+// MonthFilter is a filter chip that picks a month (YYYY-MM), beside the FilterChips of a filter bar.
 export function MonthFilter({ label, value, onChange }: { label: string; value: string | null; onChange: (month: string | null) => void }) {
-  const [opened, { toggle, close }] = useDisclosure()
+  const { t } = useTranslation()
   return (
-    <Popover opened={opened} onChange={(o) => !o && close()} position="bottom-start" trapFocus returnFocus>
-      <ChipShell
-        label={label}
-        icon={IconCalendarMonth}
-        chosen={value ? formatMonthShort(value) : null}
-        clearable
-        onClear={() => onChange(null)}
-        onToggle={toggle}
-        target={(button) => <Popover.Target>{button}</Popover.Target>}
-      />
-      <Popover.Dropdown>
-        <MonthPicker
-          value={value ? `${value}-01` : null}
-          onChange={(v) => {
-            if (v) onChange(v.slice(0, 7))
-            close()
-          }}
-        />
-      </Popover.Dropdown>
-    </Popover>
+    <MonthFilterChip
+      label={label}
+      icon={<IconCalendarMonth {...icon.button} />}
+      value={value}
+      onChange={onChange}
+      valueText={(name, month) => t('shared.list.filter_value', { name, value: formatMonthShort(month) })}
+      clearLabel={t('shared.list.clear_filter', { name: label })}
+      locale={calendarLocale()}
+      labels={{ previousYear: t('shared.form.previous_year'), nextYear: t('shared.form.next_year') }}
+    />
   )
 }

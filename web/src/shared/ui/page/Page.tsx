@@ -1,10 +1,7 @@
-import { ActionIcon, Anchor, Box, Breadcrumbs, Flex, Group, Stack, Text, Title, Tooltip } from '@mantine/core'
-import { IconArrowLeft, IconChevronRight } from '@tabler/icons-react'
+import { Page as KitPage, PageHeader as KitPageHeader } from '@mmerp/ui'
 import type { ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link, useLocation, useNavigate } from 'react-router'
-import { icon } from '../theme'
-import classes from './Page.module.css'
 
 export type Crumb = { label: string; to: string }
 
@@ -33,78 +30,26 @@ export type PageHeaderProps = {
   current?: boolean
 }
 
-// pageFrame is the padding around a page, shared with the page-level skeleton.
-export const pageFrame = { px: { base: 'md', md: 'xl', lg: 'xxl' }, py: 'lg' } as const
-
 // readingWidth is the width of a side panel (approval, attachments) shown full width as a tab.
 export const readingWidth = 480
 
 // Page is the frame every page template builds on: header (breadcrumbs, title, at most one
 // primary action), then content. A record's or a form's page is centred at the width it stops at
-// (centered: the content width, or the given one), its header too, so both share a left edge;
-// lists and dashboards use the whole width.
-export function Page({ children, className, centered, ...header }: PageHeaderProps & { children: ReactNode; className?: string; centered?: boolean | string }) {
-  if (centered)
-    return (
-      <Box {...pageFrame} className={className}>
-        <Stack gap="lg" w="100%" maw={centered === true ? 'var(--mmerp-content-width)' : centered} mx="auto">
-          <PageHeader {...header} />
-          {children}
-        </Stack>
-      </Box>
-    )
+// (centered: the content width, or 'detail' for the wider record width), its header too, so both
+// share a left edge; lists and dashboards use the whole width.
+export function Page({ children, className, centered, ...header }: PageHeaderProps & { children: ReactNode; className?: string; centered?: boolean | 'detail' }) {
   return (
-    <Stack gap="lg" {...pageFrame} className={className}>
-      <PageHeader {...header} />
+    <KitPage variant={centered === 'detail' ? 'detail' : centered ? 'centered' : 'full'} className={className} header={<PageHeader {...header} />}>
       {children}
-    </Stack>
+    </KitPage>
   )
 }
 
-function PageHeader({ title, breadcrumbs, description, leading, status, actions, summary, tabs, plain, withBack, current }: PageHeaderProps) {
+function PageHeader({ breadcrumbs, withBack, current, ...props }: PageHeaderProps) {
+  const { t } = useTranslation()
   const parent = breadcrumbs?.at(-1)
-  return (
-    <Stack gap="xs" className={classes.header} data-tabs={tabs ? true : undefined} data-plain={plain || undefined}>
-      {breadcrumbs && breadcrumbs.length > 0 && (
-        <Breadcrumbs separator={<IconChevronRight {...icon.text} />} separatorMargin="xxs">
-          {breadcrumbs.map((c) => (
-            <Anchor key={c.to} component={Link} to={c.to} size="sm" c="dimmed">
-              {c.label}
-            </Anchor>
-          ))}
-          {(withBack || current) && (
-            <Text size="sm" fw={500} aria-current="page" truncate>
-              {title}
-            </Text>
-          )}
-        </Breadcrumbs>
-      )}
-      {/* Narrow screens stack the actions under the title instead of squeezing them. */}
-      <Flex direction={{ base: 'column', sm: 'row' }} justify="space-between" align={{ base: 'stretch', sm: 'center' }} gap="sm">
-        <Group gap="md" wrap="nowrap" miw={0}>
-          {withBack && parent && <BackButton to={parent.to} />}
-          {leading}
-          <Stack gap={0} miw={0}>
-            {/* The status drops under a long title rather than squeezing it. */}
-            <Group gap="xs" miw={0}>
-              <Title order={1} lineClamp={1}>
-                {title}
-              </Title>
-              {status}
-            </Group>
-            {description && (
-              <Text size="sm" c="dimmed" component="div">
-                {description}
-              </Text>
-            )}
-          </Stack>
-        </Group>
-        {actions}
-      </Flex>
-      {summary}
-      {tabs && <div className={classes.tabs}>{tabs}</div>}
-    </Stack>
-  )
+  const crumbs = breadcrumbs?.length ? { breadcrumbs: breadcrumbs.map((c) => ({ label: c.label, render: <Link to={c.to} /> })), breadcrumbsLabel: t('shared.page.breadcrumb') } : {}
+  return <KitPageHeader {...props} {...crumbs} current={withBack || current} back={withBack && parent ? <BackButton to={parent.to} /> : undefined} />
 }
 
 // BackButton returns to where the user came from, the list with its filters and page; opened
@@ -114,25 +59,16 @@ function BackButton({ to }: { to: string }) {
   const { t } = useTranslation()
   const navigate = useNavigate()
   const location = useLocation()
-  const label = t('shared.page.back')
   return (
-    <Tooltip label={label}>
-      <ActionIcon
-        component={Link}
-        to={to}
-        variant="default"
-        radius={1000}
-        size="input-sm"
-        aria-label={label}
-        onClick={(e) => {
-          // The first entry of the session has the default key: there is nothing in the app to go back to.
-          if (location.key === 'default' || e.metaKey || e.ctrlKey || e.shiftKey) return
-          e.preventDefault()
-          void navigate(-1)
-        }}
-      >
-        <IconArrowLeft {...icon.button} />
-      </ActionIcon>
-    </Tooltip>
+    <KitPageHeader.BackButton
+      label={t('shared.page.back')}
+      render={<Link to={to} />}
+      onClick={(e) => {
+        // The first entry of the session has the default key: there is nothing in the app to go back to.
+        if (location.key === 'default' || e.metaKey || e.ctrlKey || e.shiftKey) return
+        e.preventDefault()
+        void navigate(-1)
+      }}
+    />
   )
 }

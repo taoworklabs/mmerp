@@ -1,4 +1,4 @@
-import { Anchor, Button, Group, Stack, Text } from '@mantine/core'
+import { Anchor, Button, Group, Stack, Text } from '@mmerp/ui'
 import { IconDownload } from '@tabler/icons-react'
 import { useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
@@ -10,6 +10,7 @@ import { FormModal } from '@/shared/ui/page'
 import { ModalFooter } from '@/shared/ui/ModalFooter'
 import { icon } from '@/shared/ui/theme'
 import { JobOutcome } from './JobOutcome'
+import classes from './ImportDialog.module.css'
 import { finished, followJob, useJobRefresh, useJobStatus, type JobWrites } from './useJobStatus'
 
 type Props = {
@@ -60,8 +61,8 @@ export function ImportDialog({ kind, params = {}, title, description, writes, on
         <Form form={form} onSubmit={start}>
           <Stack gap="sm">
             <Text size="sm">{description}</Text>
-            <Anchor href={`/api/imports/${kind}/template?params=${encodeURIComponent(json)}`} size="sm" w="fit-content">
-              <Group gap="xxs" component="span">
+            <Anchor href={`/api/imports/${kind}/template?params=${encodeURIComponent(json)}`} size="sm" className={classes.template}>
+              <Group gap="xxs" render={<span />}>
                 <IconDownload {...icon.text} aria-hidden />
                 {t('shared.jobs.template')}
               </Group>

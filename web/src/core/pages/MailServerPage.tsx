@@ -1,4 +1,4 @@
-import { Button, Group } from '@mantine/core'
+import { Button, Group } from '@mmerp/ui'
 import { IconLogin, IconMailForward, IconSend, IconServer, IconTrash } from '@tabler/icons-react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'

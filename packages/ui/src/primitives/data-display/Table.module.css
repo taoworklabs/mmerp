@@ -36,9 +36,11 @@
   background: var(--mmerp-color-primary-light);
 }
 
+/* 8px at the sides, as dense as the rest of the app: wider cells squeeze text columns into
+   extra lines. */
 .th,
 .td {
-  padding: 0 var(--mmerp-space-sm);
+  padding: 0 var(--mmerp-space-xs);
   border-bottom: var(--mmerp-table-row-rule);
   border-inline-end: var(--mmerp-table-column-rule);
   text-align: start;
@@ -75,11 +77,13 @@
   font-weight: 600;
 }
 
-/* The identifier column stays in view when a wide table scrolls sideways. */
+/* The identifier column stays in view when a wide table scrolls sideways, on one line: the other
+   columns scroll instead of squeezing it a word per line. */
 .th[data-sticky],
 .td[data-sticky] {
   position: sticky;
   left: var(--mmerp-table-sticky-left, 0);
+  white-space: nowrap;
   background: var(--mmerp-color-elevation-surface);
 }
 

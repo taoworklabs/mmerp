@@ -1,15 +1,15 @@
 /* Clips the header's tinted cells to the frame's rounded corners. Cell inputs keep the compact
    height inside a form's taller fields. */
 .frame {
-  --mmerp-control-height: 30px;
+  --mmerp-control-height: var(--mmerp-control-height-sm);
   overflow: hidden;
 }
 
 .table thead th {
   height: 36px;
-  background: var(--mmerp-table-header);
-  color: var(--mantine-color-dimmed);
-  font-size: var(--mantine-font-size-xs);
+  background: var(--mmerp-color-table-header);
+  color: var(--mmerp-color-dimmed);
+  font-size: var(--mmerp-font-size-xs);
   font-weight: 600;
   white-space: nowrap;
 }
@@ -21,13 +21,13 @@
 
 /* "Add line" sits under the table, outside its frame, yet keeps the table's compact height. */
 .add {
-  --mmerp-control-height: 30px;
+  --mmerp-control-height: var(--mmerp-control-height-sm);
 }
 
 /* The line number and the remove button take only their own width. */
 .n {
   width: 1%;
-  color: var(--mantine-color-dimmed);
+  color: var(--mmerp-color-dimmed);
   font-variant-numeric: tabular-nums;
 }
 
@@ -39,7 +39,7 @@
 .totals {
   display: grid;
   grid-template-columns: max-content minmax(8rem, max-content);
-  gap: var(--mantine-spacing-xxs) var(--mantine-spacing-lg);
+  gap: var(--mmerp-space-xxs) var(--mmerp-space-lg);
   margin: 0;
   font-variant-numeric: tabular-nums;
 }
@@ -49,7 +49,7 @@
 }
 
 .totals dt {
-  color: var(--mantine-color-dimmed);
+  color: var(--mmerp-color-dimmed);
 }
 
 .totals dd {
@@ -59,6 +59,11 @@
 
 .grand dt,
 .grand dd {
-  color: var(--mantine-color-text);
+  color: var(--mmerp-color-text);
   font-weight: 600;
+}
+
+/* A cell's input takes the column's width instead of widening it to the input's natural size. */
+.table td input:not([type='checkbox']) {
+  width: 0;
 }

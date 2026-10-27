@@ -37,3 +37,29 @@ export const Default: Story = {
     expect(canvas.getByText('Đã giao cho đơn vị vận chuyển').closest('[data-active]')).toBeNull()
   },
 }
+
+export const Coloured: Story = {
+  render: () => (
+    <Timeline>
+      <Timeline.Item title="Trưởng phòng đã duyệt" active color="success">
+        01/10/2026
+      </Timeline.Item>
+      <Timeline.Item title="Giám đốc đang xem" active color="warning" lineVariant="dashed">
+        02/10/2026
+      </Timeline.Item>
+      <Timeline.Item title="Kế toán" active color="gray" />
+    </Timeline>
+  ),
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    const probe = document.createElement('div')
+    probe.style.borderColor = 'var(--mmerp-color-success-6)'
+    canvasElement.appendChild(probe)
+    const approved = canvas.getByText('Trưởng phòng đã duyệt').closest('[data-active]')!
+    expect(getComputedStyle(approved.querySelector('span')!).borderColor).toBe(getComputedStyle(probe).borderColor)
+    probe.remove()
+
+    const open = canvas.getByText('Giám đốc đang xem').closest('[data-active]')!
+    expect(getComputedStyle(open, '::before').borderLeftStyle).toBe('dashed')
+  },
+}

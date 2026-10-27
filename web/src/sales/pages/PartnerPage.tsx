@@ -1,4 +1,4 @@
-import { Anchor } from '@mantine/core'
+import { Anchor, FieldList, Panel, RecordColumns } from '@mmerp/ui'
 import { IconAddressBook } from '@tabler/icons-react'
 import { useQuery } from '@tanstack/react-query'
 import type { ReactNode } from 'react'
@@ -12,11 +12,11 @@ import { ActivityFeed, useAttachmentSection } from '@/shared/document'
 import { canEditPartner, PartnerFields, partnerBody, partnerValues, usePartner, type PartnerValues } from '@/shared/master'
 import { PersonAvatar } from '@/shared/ui/avatar'
 import { DataTable, type Column } from '@/shared/ui/DataTable'
-import { FieldList, MissingValue } from '@/shared/ui/FieldList'
+import { MissingValue } from '@/shared/ui/MissingValue'
 import { EditablePanel, Form, FormActions, FormFields } from '@/shared/ui/form'
 import { loaded } from '@/shared/ui/loaded'
 import { notifySuccess } from '@/shared/ui/notify'
-import { Panel, RecordColumns, RecordPage, SeeAll, TabContent } from '@/shared/ui/page'
+import { RecordPage, SeeAll, TabContent } from '@/shared/ui/page'
 import { QueryView } from '@/shared/ui/QueryView'
 import { EmptyState } from '@/shared/ui/states'
 import { CustomerStatus } from '../components/CustomerStatus'
@@ -128,9 +128,9 @@ function PartnerProfile({ partner: p, onSaved }: { partner: Partner; onSaved: ()
             [t('shared.partner.contact_name'), or(open, t('shared.partner.contact_name'), p.contact_name)],
             [
               t('shared.partner.phone'),
-              or(open, t('shared.partner.phone'), p.phone && <Anchor href={`tel:${p.phone.replace(/\s/g, '')}`} size="sm" inherit>{p.phone}</Anchor>),
+              or(open, t('shared.partner.phone'), p.phone && <Anchor href={`tel:${p.phone.replace(/\s/g, '')}`}>{p.phone}</Anchor>),
             ],
-            [t('shared.partner.email'), or(open, t('shared.partner.email'), p.email && <Anchor href={`mailto:${p.email}`} size="sm" inherit>{p.email}</Anchor>)],
+            [t('shared.partner.email'), or(open, t('shared.partner.email'), p.email && <Anchor href={`mailto:${p.email}`}>{p.email}</Anchor>)],
             [t('shared.partner.address'), or(open, t('shared.partner.address'), p.address), 'wide'],
           ]}
         />

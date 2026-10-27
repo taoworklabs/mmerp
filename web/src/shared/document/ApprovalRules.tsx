@@ -1,4 +1,4 @@
-import { Button, Group } from '@mantine/core'
+import { Button, Group } from '@mmerp/ui'
 import { IconSettings, IconTrash } from '@tabler/icons-react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import type { TFunction } from 'i18next'

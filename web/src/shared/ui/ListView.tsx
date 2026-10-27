@@ -1,4 +1,4 @@
-import { Button, Checkbox, Group, Menu, Popover, Stack, Text } from '@mantine/core'
+import { Button, Checkbox, Group, Menu, Popover, Stack, Text } from '@mmerp/ui'
 import { IconColumns3, IconDeviceFloppy, IconLayoutList, IconTrash } from '@tabler/icons-react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
@@ -37,7 +37,7 @@ export function useListView<T>(listKey: string, columns: Column<T>[]) {
     columns: shownColumns(columns, settings.data),
     onResize: (column: string, width: number) => save.mutate(withColumn(current, column, { width })),
     tools: (
-      <Group gap="xs" wrap="nowrap">
+      <Group gap="xs" wrap={false}>
         <ViewsMenu settings={current} onChange={(next) => save.mutateAsync(next)} />
         <ColumnsMenu columns={columns} settings={current} onChange={(next) => save.mutate(next)} />
       </Group>
@@ -54,20 +54,22 @@ function ViewsMenu({ settings, onChange }: { settings: ListSettings; onChange: (
   const active = settings.views.find((v) => v.query === query)
   return (
     <>
-      <Menu position="bottom-end">
-        <Menu.Target>
-          <Button variant="default" leftSection={<IconLayoutList {...icon.button} />}>
-            {active?.name ?? t('shared.views.label')}
-          </Button>
-        </Menu.Target>
-        <Menu.Dropdown>
+      <Menu.Root>
+        <Menu.Trigger
+          render={
+            <Button variant="default" leftSection={<IconLayoutList {...icon.button} />}>
+              {active?.name ?? t('shared.views.label')}
+            </Button>
+          }
+        />
+        <Menu.Popup align="end">
           {settings.views.length === 0 && <Menu.Label>{t('shared.views.none')}</Menu.Label>}
           {settings.views.map((v) => (
             <Menu.Item key={v.name} data-active={v === active || undefined} onClick={() => setSearch(new URLSearchParams(v.query))}>
               {v.name}
             </Menu.Item>
           ))}
-          <Menu.Divider />
+          <Menu.Separator />
           <Menu.Item leftSection={<IconDeviceFloppy {...icon.text} />} onClick={() => setNaming(true)}>
             {t('shared.views.save')}
           </Menu.Item>
@@ -76,8 +78,8 @@ function ViewsMenu({ settings, onChange }: { settings: ListSettings; onChange: (
               {t('shared.views.delete', { name: active.name })}
             </Menu.Item>
           )}
-        </Menu.Dropdown>
-      </Menu>
+        </Menu.Popup>
+      </Menu.Root>
       <FormModal title={t('shared.views.save')} opened={naming} onClose={() => setNaming(false)}>
         <SaveView
           onCancel={() => setNaming(false)}
@@ -107,19 +109,21 @@ function ColumnsMenu<T>({ columns, settings, onChange }: { columns: Column<T>[];
   const { t } = useTranslation()
   const hidden = new Set(settings.columns.filter((c) => c.hidden).map((c) => c.key))
   return (
-    <Popover position="bottom-end">
-      <Popover.Target>
-        <Button variant="default" leftSection={<IconColumns3 {...icon.button} />}>
-          {t('shared.views.columns')}
-        </Button>
-      </Popover.Target>
-      <Popover.Dropdown>
+    <Popover.Root>
+      <Popover.Trigger
+        render={
+          <Button variant="default" leftSection={<IconColumns3 {...icon.button} />}>
+            {t('shared.views.columns')}
+          </Button>
+        }
+      />
+      <Popover.Popup align="end" aria-label={t('shared.views.columns')}>
         <Stack gap="xs">
-          <Text size="xs" fw={600} c="dimmed">
+          <Text size="xs" weight={600} tone="dimmed">
             {t('shared.views.columns_hint')}
           </Text>
           {columns.slice(1).map((c) => (
-            <Checkbox key={c.key} label={c.header} checked={!hidden.has(c.key)} onChange={(e) => onChange(withColumn(settings, c.key, { hidden: !e.currentTarget.checked }))} />
+            <Checkbox key={c.key} label={c.header} checked={!hidden.has(c.key)} onChange={(checked) => onChange(withColumn(settings, c.key, { hidden: !checked }))} />
           ))}
           <Group>
             <Button variant="subtle" onClick={() => onChange({ ...settings, columns: [] })}>
@@ -127,7 +131,7 @@ function ColumnsMenu<T>({ columns, settings, onChange }: { columns: Column<T>[];
             </Button>
           </Group>
         </Stack>
-      </Popover.Dropdown>
-    </Popover>
+      </Popover.Popup>
+    </Popover.Root>
   )
 }

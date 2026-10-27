@@ -1,4 +1,4 @@
-import { Button, Group, Loader, Stack, Text } from '@mantine/core'
+import { Button, Group, Loader, Stack, Text } from '@mmerp/ui'
 import { IconDownload } from '@tabler/icons-react'
 import { useTranslation } from 'react-i18next'
 import { ApiError } from '@/shared/api/error'
@@ -28,7 +28,7 @@ export function JobOutcome({ job, error }: { job: Job | undefined; error?: unkno
   if (!job || job.state === 'queued' || job.state === 'running' || job.state === 'retrying')
     return (
       <Group gap="sm" aria-live="polite">
-        <Loader size="sm" />
+        <Loader size="sm" label={t('shared.state.loading')} />
         <Text>{t(`shared.jobs.${job?.state ?? 'queued'}`)}</Text>
       </Group>
     )
@@ -38,7 +38,7 @@ export function JobOutcome({ job, error }: { job: Job | undefined; error?: unkno
         {job.file_id ? (
           <Group justify="space-between">
             <Text>{t('shared.jobs.exported')}</Text>
-            <Button component="a" href={fileHref(job.file_id)} leftSection={<IconDownload {...icon.button} />}>
+            <Button render={<a href={fileHref(job.file_id)} />} leftSection={<IconDownload {...icon.button} />}>
               {t('shared.jobs.download')}
             </Button>
           </Group>

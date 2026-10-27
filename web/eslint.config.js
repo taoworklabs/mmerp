@@ -7,6 +7,9 @@ import tseslint from 'typescript-eslint'
 const areaFiles = ['src/*/**/*.{ts,tsx}']
 const nonAreas = ['src/app/**', 'src/shared/**']
 
+// Only the kit touches Base UI.
+const baseUi = { group: ['@base-ui/react', '@base-ui/react/*'], message: 'Import from @mmerp/ui; only the kit uses Base UI.' }
+
 export default tseslint.config(
   { ignores: ['dist', 'lint-fixtures', 'src/shared/api/*.gen.ts'] },
   js.configs.recommended,
@@ -34,22 +37,32 @@ export default tseslint.config(
     },
   },
   {
+    files: ['src/**/*.{ts,tsx}'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [baseUi],
+        },
+      ],
+    },
+  },
+  {
     files: areaFiles,
     ignores: nonAreas,
     rules: {
       'no-restricted-imports': [
         'error',
         {
+          patterns: [baseUi],
           paths: [
             {
-              // Areas compose screens from shared/ui; only these layout and text primitives come from Mantine directly.
-              name: '@mantine/core',
-              allowImportNames: ['Anchor', 'Button', 'Divider', 'Group', 'List', 'Loader', 'Skeleton', 'Stack', 'Text', 'Tooltip'],
+              // Areas compose screens from shared/ui; only these layout and text primitives and look-only blocks come from the kit directly.
+              name: '@mmerp/ui',
+              allowImportNames: ['Anchor', 'Button', 'Divider', 'Group', 'List', 'Loader', 'Skeleton', 'Stack', 'Text', 'Tooltip', 'Panel', 'FieldList', 'KeyFacts', 'RecordColumns', 'ActionBar'],
               message:
                 'Use the shared/ui component (DataTable, FormModal, Notice, MenuAction, QueryView, StatusBadge, the form fields…); add one there if none fits.',
             },
-            { name: '@mantine/notifications', message: 'Use the shared/ui notification helpers.' },
-            { name: '@mantine/dates', message: 'Use DateField from shared/ui.' },
           ],
         },
       ],

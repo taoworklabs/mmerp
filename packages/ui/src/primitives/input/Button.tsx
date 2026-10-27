@@ -1,4 +1,4 @@
-import { Button as BaseButton } from '@base-ui/react/button'
+import { ButtonBase } from '../../internal/ButtonBase.tsx'
 import type * as React from 'react'
 import { cx } from '../../internal/cx.ts'
 import type { RenderProp } from '../../internal/render.ts'
@@ -77,10 +77,9 @@ function ButtonRoot({
   ...props
 }: ButtonProps) {
   const vars: StyleVars = { ...style, ...buttonColorVars(variant, color) }
-  // Base UI types its own `render` against its internal button state; our public prop stays generic.
   return (
-    <BaseButton
-      render={render as React.ComponentProps<typeof BaseButton>['render']}
+    <ButtonBase
+      render={render}
       disabled={disabled || loading}
       aria-busy={loading ? true : undefined}
       data-mmerp-control=""
@@ -99,7 +98,7 @@ function ButtonRoot({
       )}
       {children}
       {!loading && rightSection}
-    </BaseButton>
+    </ButtonBase>
   )
 }
 

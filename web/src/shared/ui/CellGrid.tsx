@@ -1,4 +1,4 @@
-import { Paper, ScrollArea, VisuallyHidden } from '@mantine/core'
+import { Paper, ScrollArea, VisuallyHidden } from '@mmerp/ui'
 import type { KeyboardEvent, ReactNode } from 'react'
 import classes from './CellGrid.module.css'
 
@@ -52,7 +52,7 @@ export function CellGrid({ label, corner, rows, columns, value, onChange, invali
 
   return (
     <Paper withBorder>
-      <ScrollArea type="auto">
+      <ScrollArea>
         <table className={classes.grid} aria-label={label}>
           <thead>
             <tr>

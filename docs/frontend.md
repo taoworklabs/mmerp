@@ -25,7 +25,7 @@ web/src/
 │   ├── document/       # shared document features
 │   ├── jobs/           # background jobs: ExportButton, ImportDialog, JobOutcome, useJobStatus
 │   ├── org/            # OrgTree: read-only org tree
-│   ├── ui/             # theme.ts, page templates (page/), form/, DataTable… — see ui.md
+│   ├── ui/             # theme.ts (icon sizes), page templates (page/), form/, DataTable… — see ui.md
 │   ├── url/            # useListParams: filter, sort, page in the URL
 │   └── i18n/           # i18next, formatting functions (date, month, number), text for API error codes
 ├── core/               # sign-in, users and roles, org tree, settings, approval inbox, period lock
@@ -59,7 +59,7 @@ The rules are checked by **dependency-cruiser** on the resolved dependency graph
 | Area `X` uses only `shared/api/core` and `shared/api/X` | Never calls another product's API directly (see [Calling the API](#calling-the-api)) |
 | No global store shared between areas | Convention: server state lives in TanStack Query, UI state lives in components |
 
-**Verifying the configuration.** `web/lint-fixtures/` holds a small directory tree with each kind of violation: a deep relative import into another area, an import through an alias, a dynamic import of another area, a re-export of an area through `shared`, and a call to another product's API client. `make lint` runs dependency-cruiser twice: on `web/src` there must be no errors; on `web/lint-fixtures` it must report **every one** of the listed violations. ESLint gets the same treatment: each file under `web/lint-fixtures/eslint/` is linted as if it sat at the same path under `web/src`, and must report exactly `web/lint-fixtures/eslint/expected.json` (a Mantine import outside the allowlist, `@mantine/dates`, `@mantine/notifications`, an inline `style`, literal text); the files there that should pass prove the rules stay scoped. If a configuration change lets a kind of violation slip through, CI fails.
+**Verifying the configuration.** `web/lint-fixtures/` holds a small directory tree with each kind of violation: a deep relative import into another area, an import through an alias, a dynamic import of another area, a re-export of an area through `shared`, and a call to another product's API client. `make lint` runs dependency-cruiser twice: on `web/src` there must be no errors; on `web/lint-fixtures` it must report **every one** of the listed violations. ESLint gets the same treatment: each file under `web/lint-fixtures/eslint/` is linted as if it sat at the same path under `web/src`, and must report exactly `web/lint-fixtures/eslint/expected.json` (an `@mmerp/ui` import outside the allowlist, a `@base-ui/react` import, an inline `style`, literal text); the files there that should pass prove the rules stay scoped. If a configuration change lets a kind of violation slip through, CI fails.
 
 ## Manifest: the entry point of an area
 

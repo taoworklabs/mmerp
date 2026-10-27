@@ -75,7 +75,7 @@ test('a sensitive field is masked, shown on request, and cleared when the permis
 
   // The next request carries a new X-Authz-Version: the page reloads with nothing stale left.
   const reloaded = page.waitForEvent('load')
-  await page.getByRole('navigation').getByRole('link', { name: 'Nhân viên' }).click()
+  await page.getByRole('navigation', { name: 'Điều hướng chính' }).getByRole('link', { name: 'Nhân viên' }).click()
   await reloaded
   await page.goto(`/hrm/employees/${ids.ea}`)
   await expect(page.getByText('Không có quyền xem').first()).toBeVisible()
@@ -148,7 +148,7 @@ test('below 1024px the employee list becomes cards and the filters wrap above th
   await expect(page.getByRole('table')).toHaveCount(0)
   const filters = page.getByRole('search')
   await expect(filters.getByLabel('Tìm kiếm')).toBeVisible()
-  await expect(filters.getByRole('button', { name: 'Trạng thái' })).toBeVisible()
+  await expect(filters.getByRole('combobox', { name: 'Trạng thái' })).toBeVisible()
 })
 
 test('an administrator builds the tree and grants a role from the admin screens', async ({ page }) => {
@@ -220,7 +220,7 @@ test('HR creates an employee with a sensitive field, edits it and adds a depende
   await page.getByRole('option', { name: 'Con' }).click()
   // Months are picked, not typed: January of the year the picker opens on.
   await dialog.getByRole('button', { name: 'Giảm trừ từ tháng' }).click()
-  await page.getByRole('button', { name: 'Th01' }).click()
+  await page.getByRole('gridcell', { name: /^(thg|Tháng) 1$/i }).click()
   await dialog.getByRole('button', { name: 'Thêm', exact: true }).click()
   await expect(page.getByRole('table', { name: 'Người phụ thuộc' }).getByText('Lê Bé')).toBeVisible()
 })
@@ -239,7 +239,7 @@ test('the employee page tabs live on the URL and survive a reload', async ({ pag
   // Links to the activity card it replaced open the activity tab.
   await page.goto(`/hrm/employees/${ids.ea}?tab=discussion`)
   await expect(page.getByRole('tab', { name: 'Hoạt động' })).toHaveAttribute('aria-selected', 'true')
-  await expect(page.getByRole('radiogroup', { name: 'Lọc hoạt động' })).toBeVisible()
+  await expect(page.getByRole('group', { name: 'Lọc hoạt động' })).toBeVisible()
 })
 
 test('recent activity on the overview leaves reads out; the activity tab keeps them', async ({ page }) => {
@@ -249,7 +249,7 @@ test('recent activity on the overview leaves reads out; the activity tab keeps t
   await page.reload()
   const recent = page.getByRole('region', { name: 'Hoạt động gần đây' })
   await expect(recent.getByLabel('Bình luận', { exact: true })).toBeVisible()
-  await expect(recent.getByRole('radiogroup', { name: 'Lọc hoạt động' })).toHaveCount(0)
+  await expect(recent.getByRole('group', { name: 'Lọc hoạt động' })).toHaveCount(0)
   await expect(recent.getByText('xem thông tin nhạy cảm')).toHaveCount(0)
   await recent.getByRole('link', { name: 'Xem tất cả' }).click()
   await expect(page).toHaveURL(/tab=activity/)
@@ -283,7 +283,7 @@ test('terminating asks for the last day, then confirms before saving', async ({ 
 
 test('leaving a record asks only when something was edited', async ({ page }) => {
   await signInAs(page, hrA, `/hrm/employees/${ids.ea}`)
-  const nav = page.getByRole('navigation').getByRole('link', { name: 'Nhân viên' })
+  const nav = page.getByRole('navigation', { name: 'Điều hướng chính' }).getByRole('link', { name: 'Nhân viên' })
   await nav.click()
   await expect(page).toHaveURL(/\/hrm\/employees$/)
   await expect(page.getByRole('dialog')).toHaveCount(0)

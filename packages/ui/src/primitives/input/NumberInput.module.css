@@ -41,3 +41,13 @@
 .input:disabled {
   cursor: not-allowed;
 }
+
+/* Read-only: the same grey, edgeless box as TextInput's. */
+[data-read-only] .wrapper {
+  border-color: transparent;
+  background: var(--mmerp-color-gray-0);
+}
+
+[data-read-only] .input {
+  cursor: default;
+}

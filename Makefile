@@ -12,7 +12,8 @@ export ENCRYPTION_KEYS ?= 1:bW1lcnAgZGV2IGtleSAtIG5ldmVyIHByb2R1Y3Rpb24=
 
 .PHONY: gen lint test e2e dev ui-dev storybook image smoke db reset-db seed migration
 
-web/node_modules: web/package.json web/pnpm-lock.yaml
+# web links ../packages/ui, whose own dependencies must be installed first.
+web/node_modules: web/package.json web/pnpm-lock.yaml packages/ui/node_modules
 	pnpm -C web install --frozen-lockfile
 	@touch $@
 

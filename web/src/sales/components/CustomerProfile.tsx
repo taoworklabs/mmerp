@@ -1,4 +1,4 @@
-import { Anchor } from '@mantine/core'
+import { Anchor, FieldList } from '@mmerp/ui'
 import { IconAddressBook, IconBuildingStore } from '@tabler/icons-react'
 import type { ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -6,7 +6,7 @@ import { Link } from 'react-router'
 import type { Customer } from '@/shared/api/sales'
 import { useCan } from '@/shared/auth/me'
 import { canEditPartner } from '@/shared/master'
-import { FieldList, MissingValue } from '@/shared/ui/FieldList'
+import { MissingValue } from '@/shared/ui/MissingValue'
 import { EditablePanel, Form, FormActions, FormFields } from '@/shared/ui/form'
 import { CustomerStatus } from './CustomerStatus'
 import { GeneralFields, SalesFields, useCustomerForm } from './CustomerForm'
@@ -39,7 +39,7 @@ export function CustomerProfile({ customer: c, onSaved }: { customer: Customer; 
               [
                 t('sales.customer.partner'),
                 canSeePartner ? (
-                  <Anchor component={Link} to={`/sales/partners/${c.partner_id}`} size="sm" inherit>
+                  <Anchor render={<Link to={`/sales/partners/${c.partner_id}`} />}>
                     {c.partner_code}
                   </Anchor>
                 ) : (
@@ -50,9 +50,9 @@ export function CustomerProfile({ customer: c, onSaved }: { customer: Customer; 
               [t('sales.customer.contact_name'), orGeneral(open, t('sales.customer.contact_name'), c.partner.contact_name)],
               [
                 t('sales.customer.phone'),
-                orGeneral(open, t('sales.customer.phone'), c.partner.phone && <Anchor href={`tel:${c.partner.phone.replace(/\s/g, '')}`} size="sm" inherit>{c.partner.phone}</Anchor>),
+                orGeneral(open, t('sales.customer.phone'), c.partner.phone && <Anchor href={`tel:${c.partner.phone.replace(/\s/g, '')}`}>{c.partner.phone}</Anchor>),
               ],
-              [t('sales.customer.email'), orGeneral(open, t('sales.customer.email'), c.partner.email && <Anchor href={`mailto:${c.partner.email}`} size="sm" inherit>{c.partner.email}</Anchor>)],
+              [t('sales.customer.email'), orGeneral(open, t('sales.customer.email'), c.partner.email && <Anchor href={`mailto:${c.partner.email}`}>{c.partner.email}</Anchor>)],
               [t('sales.customer.address'), orGeneral(open, t('sales.customer.address'), c.partner.address), 'wide'],
             ]}
           />

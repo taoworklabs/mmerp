@@ -1,6 +1,7 @@
 .backdrop {
   position: fixed;
   inset: 0;
+  z-index: var(--mmerp-z-index-modal);
   background: var(--mmerp-color-overlay-backdrop);
   transition: opacity var(--mmerp-motion-duration) ease;
 }
@@ -13,6 +14,7 @@
 .popup {
   box-sizing: border-box;
   position: fixed;
+  z-index: var(--mmerp-z-index-modal);
   top: 50%;
   left: 50%;
   display: flex;
@@ -57,7 +59,9 @@
 
 .body {
   --mmerp-control-height: var(--mmerp-control-height-lg);
-  padding: var(--mmerp-space-lg);
+  /* Read by a footer band that spans the body's whole width. */
+  --mmerp-dialog-padding: var(--mmerp-space-lg);
+  padding: var(--mmerp-dialog-padding);
   overflow-y: auto;
 }
 

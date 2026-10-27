@@ -1,5 +1,4 @@
-import { Drawer, useMantineTheme } from '@mantine/core'
-import { useMediaQuery } from '@mantine/hooks'
+import { breakpoint, Drawer, useMediaQuery } from '@mmerp/ui'
 import { useTranslation } from 'react-i18next'
 import { useFlowEditor } from './editor'
 import { ElementPanel } from './ElementPanel'
@@ -10,9 +9,8 @@ import c from './FlowDiagram.module.css'
 // on a narrow screen the diagram takes the width and the panel slides up over it.
 export function FlowWorkspace() {
   const { t } = useTranslation()
-  const theme = useMantineTheme()
   // Beside the diagram only where both fit (lg, 1280px); below that it slides up over it.
-  const wide = useMediaQuery(`(min-width: ${theme.breakpoints.lg})`, true)
+  const wide = useMediaQuery(`(min-width: ${breakpoint.lg})`, true)
   const { selected, select } = useFlowEditor()
   return (
     <div className={c.workspace}>
@@ -28,9 +26,9 @@ export function FlowWorkspace() {
           position="bottom"
           size="85%"
           title={t('shared.rule.panel_title')}
-          closeButtonProps={{ 'aria-label': t('shared.modal.close') }}
+          closeLabel={t('shared.modal.close')}
           // Focus going back to the box would select it and open the drawer again.
-          returnFocus={false}
+          finalFocus={false}
         >
           <ElementPanel />
         </Drawer>

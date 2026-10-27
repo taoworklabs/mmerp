@@ -58,6 +58,14 @@ export const Disabled: Story = {
 
 export const ReadOnly: Story = {
   args: { label: 'Họ tên', readOnly: true, defaultValue: 'Nguyễn Thị Thu Hương' },
+  play: async ({ canvasElement }) => {
+    const input = within(canvasElement).getByRole('textbox', { name: 'Họ tên' })
+    // A grey box without an edge: framed like an input, nothing inviting typing.
+    const transparent = document.createElement('div')
+    transparent.style.color = 'transparent'
+    canvasElement.append(transparent)
+    expect(getComputedStyle(input.parentElement!).borderTopColor).toBe(getComputedStyle(transparent).color)
+  },
 }
 
 export const RootClassName: Story = {

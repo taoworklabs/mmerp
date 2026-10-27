@@ -1,4 +1,4 @@
-import { Button, Group, Menu, Notification, Stack, Text } from '@mantine/core'
+import { Button, FieldList, Group, Menu, Stack, Text } from '@mmerp/ui'
 import { IconDownload, IconPencil, IconTrash } from '@tabler/icons-react'
 import type { UseQueryResult } from '@tanstack/react-query'
 import { useState } from 'react'
@@ -6,24 +6,22 @@ import { useTranslation } from 'react-i18next'
 import { ApiError } from '@/shared/api/error'
 import { BulkBar } from '@/shared/ui/BulkBar'
 import { useConfirm } from '@/shared/ui/confirm'
-import { FieldList } from '@/shared/ui/FieldList'
 import { MenuAction } from '@/shared/ui/MenuAction'
 import { MoreActions } from '@/shared/ui/MoreActions'
 import { Notice } from '@/shared/ui/Notice'
-import { notifyError, notifySuccess, notifyUndo, UndoMessage } from '@/shared/ui/notify'
+import { notifyError, notifySuccess, notifyUndo } from '@/shared/ui/notify'
 import { QueryView } from '@/shared/ui/QueryView'
 import { SidePanel } from '@/shared/ui/SidePanel'
 import { ContentSkeleton, EmptyState, ErrorState, ForbiddenPage, NotFoundPage, PageSkeleton, ReadOnlyBanner } from '@/shared/ui/states'
 import { useAction } from '@/shared/ui/useAction'
 import { Case, rows, type Row } from './Demo'
-import devui from './DevUi.module.css'
 import { DocPage, DoDont } from './DocPage'
 
 // The main props of each component; data, not interface text.
 const code = {
   moreActions: `<MoreActions place="page" | "row">
   <MenuAction icon onClick>{label}</MenuAction>
-  <Menu.Divider />
+  <Menu.Separator />
   <MenuAction icon danger onClick>{label}</MenuAction>
 </MoreActions>`,
   notice: `<Notice tone="info" | "success" | "warning" | "danger" | "discovery">{message}</Notice>`,
@@ -77,7 +75,7 @@ function Items({ dangerFirst }: { dangerFirst?: boolean }) {
       </MenuAction>
       {!dangerFirst && (
         <>
-          <Menu.Divider />
+          <Menu.Separator />
           {danger}
         </>
       )}
@@ -126,7 +124,7 @@ export function MoreActionsDoc() {
                   <Items dangerFirst />
                 </MoreActions>
               </Group>
-              <Text size="sm" c="dimmed">
+              <Text size="sm" tone="dimmed">
                 {t('shared.devui.dont_danger_first')}
               </Text>
             </>
@@ -160,7 +158,7 @@ export function NoticeDoc() {
   )
 }
 
-// Each case shows the toast at rest, then a button that raises the real one.
+// Each case has a button that raises the real toast.
 export function NotifyDoc() {
   const { t } = useTranslation()
   const undo = () => notifySuccess(t('shared.devui.toast_undone'))
@@ -169,9 +167,6 @@ export function NotifyDoc() {
       path="mmerp/notify"
       example={
         <Case>
-          <Notification color="success" className={devui.toast}>
-            {t('shared.devui.toast_saved')}
-          </Notification>
           <Group>
             <Button variant="default" onClick={() => notifySuccess(t('shared.devui.toast_saved'))}>
               {t('shared.devui.show_toast')}
@@ -182,9 +177,6 @@ export function NotifyDoc() {
       variants={
         <>
           <Case label={t('shared.devui.case_toast_error')}>
-            <Notification color="danger" className={devui.toast}>
-              {t('shared.devui.toast_job_failed')}
-            </Notification>
             <Group>
               <Button variant="default" onClick={() => notifyError(t('shared.devui.toast_job_failed'))}>
                 {t('shared.devui.show_toast')}
@@ -192,9 +184,6 @@ export function NotifyDoc() {
             </Group>
           </Case>
           <Case label={t('shared.devui.case_toast_undo')}>
-            <Notification color="success" className={devui.toast}>
-              <UndoMessage message={t('shared.devui.undo_done')} undoLabel={t('shared.undo')} onUndo={undo} />
-            </Notification>
             <Group>
               <Button variant="default" onClick={() => notifyUndo(t('shared.devui.undo_done'), t('shared.undo'), undo)}>
                 {t('shared.devui.show_toast')}
@@ -287,7 +276,7 @@ export function UseActionDoc() {
       example={
         <Case>
           <Stack gap="md">
-            <Group justify="flex-end">
+            <Group justify="end">
               <Button variant="default" onClick={() => void run(async () => undefined, { success: t('shared.devui.toast_test_sent') })}>
                 {t('shared.devui.send_test')}
               </Button>
@@ -307,7 +296,7 @@ export function UseActionDoc() {
               </Button>
             </Group>
             {error && <Notice tone="danger">{error}</Notice>}
-            <Text size="sm" c="dimmed">
+            <Text size="sm" tone="dimmed">
               {t('shared.devui.use_action_region')}
             </Text>
           </Stack>
@@ -341,7 +330,7 @@ export function UseConfirmDoc() {
       doDont={
         <DoDont
           good={
-            <Group justify="flex-end">
+            <Group justify="end">
               <Button variant="subtle" color="gray">
                 {t('shared.form.cancel')}
               </Button>
@@ -350,13 +339,13 @@ export function UseConfirmDoc() {
           }
           bad={
             <>
-              <Group justify="flex-end">
+              <Group justify="end">
                 <Button variant="subtle" color="gray">
                   {t('shared.form.cancel')}
                 </Button>
                 <Button color="danger">{t('shared.devui.yes')}</Button>
               </Group>
-              <Text size="sm" c="dimmed">
+              <Text size="sm" tone="dimmed">
                 {t('shared.devui.dont_confirm_yes')}
               </Text>
             </>

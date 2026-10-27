@@ -23,6 +23,12 @@
   padding-block: var(--mmerp-space-xxs);
 }
 
+/* An option built of parts (an indent, an icon, a name) shrinks to the popup, so a truncating
+   name ends with an ellipsis instead of running past the edge. */
+.option > * {
+  min-width: 0;
+}
+
 @media (max-width: 63.99em) {
   .option {
     min-height: var(--mmerp-touch-target);
@@ -47,4 +53,9 @@
   padding: var(--mmerp-space-xs) var(--mmerp-space-sm);
   font-size: var(--mmerp-font-size-sm);
   color: var(--mmerp-color-dimmed);
+}
+
+/* Above any dialog or drawer the popup opens from. */
+.positioner {
+  z-index: var(--mmerp-z-index-popup);
 }
