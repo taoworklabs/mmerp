@@ -101,6 +101,7 @@ Product description: [products/hrm.md](./products/hrm.md).
 - **Timesheet line** (vi: "Dòng bảng công"): the days actually worked (0.5 or 1) by an employee on one day of the timesheet. An empty cell means not worked. By convention no attendance is recorded on leave days and holidays, but such lines are still accepted; payroll ignores lines falling on a holiday or weekly day off, and worked days plus paid leave days count at most 1 per day.
 - **Payroll** (`hrm.payroll`, vi: "Bảng lương"): pay for a pay period of a legal entity. `posted` means pay is finalized. Stores all inputs used for the computation.
 - **Payslip** (vi: "Phiếu lương"): the print of one employee's line of a payroll (`hrm.payslip`).
+- **Personal space** (vi: "Cá nhân"): the home tile where a user linked to an employee profile (`hrm.employees.user_id`) sees their own HRM data: attendance, payslips, leave and overtime, profile.
 - **Pay period** (vi: "Kỳ lương"): the date range `period_start`–`period_end`. The first version is always a calendar month.
 - **Direct manager** (vi: "Quản lý trực tiếp"): the managing employee (`manager_id`), an HRM business relationship, independent of the permission-scope tree.
 - **Finalized pay period** (vi: "Kỳ lương đã chốt"): a pay period of a legal entity that has exactly one `posted` payroll (`posted_payroll_id`). Source documents whose affected date range overlaps that period can no longer change until the payroll is cancelled.
