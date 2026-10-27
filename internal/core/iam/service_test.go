@@ -581,3 +581,42 @@ func TestMySessions(t *testing.T) {
 		t.Fatal("session B still valid")
 	}
 }
+
+func TestChangePasswordThrottled(t *testing.T) {
+	s, ctx := setup(t)
+	id := must[int64](t)(s.CreateUser(ctx, "an", "An", "right password"))
+	token := must[string](t)(s.Login(ctx, "an", "right password", ""))
+	me := platform.WithActor(ctx, id)
+	for range 5 {
+		if err := s.ChangePassword(me, token, "nope", "new password 1"); !errors.Is(err, iam.ErrWrongPassword) {
+			t.Fatalf("wrong current: %v", err)
+		}
+	}
+	if err := s.ChangePassword(me, token, "right password", "new password 1"); !errors.Is(err, iam.ErrLoginLocked) {
+		t.Fatalf("right current while locked: %v", err)
+	}
+	if _, err := s.Login(ctx, "an", "right password", ""); !errors.Is(err, iam.ErrLoginLocked) {
+		t.Fatalf("login while locked: %v", err)
+	}
+}
+
+func TestPasswordAuditAndResetPolicy(t *testing.T) {
+	s, ctx := setup(t)
+	id := must[int64](t)(s.CreateUser(ctx, "minhan", "An", "right password"))
+	if e, ok := errors.AsType[*platform.Error](s.ResetPassword(ctx, id, "xx-minhan-secret")); !ok || e.Code != "password_weak" {
+		t.Fatalf("temporary with login: %v", e)
+	}
+	token := must[string](t)(s.Login(ctx, "minhan", "right password", ""))
+	if err := s.ChangePassword(platform.WithActor(ctx, id), token, "right password", "new password 1"); err != nil {
+		t.Fatal(err)
+	}
+	if err := s.ResetPassword(ctx, id, "temporary 1"); err != nil {
+		t.Fatal(err)
+	}
+	for _, a := range []string{"iam.password_changed", "iam.password_reset"} {
+		var n int
+		if err := platform.DBFrom(ctx).QueryRow(ctx, `SELECT count(*) FROM audit.log WHERE action = $1`, a).Scan(&n); err != nil || n != 1 {
+			t.Fatalf("%s rows = %d (%v)", a, n, err)
+		}
+	}
+}

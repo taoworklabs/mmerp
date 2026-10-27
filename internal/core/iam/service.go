@@ -352,7 +352,15 @@ func (s *Service) setLocked(ctx context.Context, id int64, locked bool) error {
 // ChangePassword sets the actor's own password and ends their other sessions.
 func (s *Service) ChangePassword(ctx context.Context, token, current, next string) error {
 	id, _ := platform.ActorFrom(ctx)
-	// Hashing runs outside the transaction so it holds no connection.
+	u, err := store.GetUser.Run(ctx, id)
+	if err != nil {
+		return notFound(err)
+	}
+	// Shares the sign-in counter, so a hijacked session cannot guess the password unthrottled.
+	if err := s.reserveAttempt(ctx, u.Login); err != nil {
+		return err
+	}
+	// Verifying current runs outside the write transaction so it holds no connection.
 	hash, err := store.GetUserPassword.Run(ctx, id)
 	if err != nil {
 		return notFound(err)
@@ -361,11 +369,10 @@ func (s *Service) ChangePassword(ctx context.Context, token, current, next strin
 		return ErrWrongPassword
 	}
 	return platform.InTx(ctx, func(ctx context.Context) error {
-		u, err := store.GetUser.Run(ctx, id)
-		if err != nil {
-			return notFound(err)
-		}
 		if err := s.checkPassword(ctx, u.Login, u.Name, next); err != nil {
+			return err
+		}
+		if err := s.clearFailures(ctx, u.Login); err != nil {
 			return err
 		}
 		if err := store.SetUserPassword.Run(ctx, store.SetUserPasswordParams{ID: id, PasswordHash: hashPassword(next)}); err != nil {
