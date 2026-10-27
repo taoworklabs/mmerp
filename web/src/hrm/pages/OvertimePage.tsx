@@ -7,20 +7,22 @@ import { EmployeeLink } from '../components/EmployeeLink'
 import { loaded } from '@/shared/ui/loaded'
 import { useOvertime } from '../hooks/useOvertime'
 import { overtimeDocType } from '../keys'
+import { useRequestPaths } from '../requestPaths'
 
 export function OvertimePage() {
   const { t } = useTranslation()
   const id = Number(useParams().id)
+  const paths = useRequestPaths('overtime')
   const overtime = useOvertime(id)
 
-  const state = loaded(overtime, t, { to: '/hrm/overtimes', label: t('hrm.overtimes.back') })
+  const state = loaded(overtime, t, { to: paths.list, label: t('hrm.overtimes.back') })
   if (!state.ok) return state.fallback
   const o = state.data
   return (
     <DocumentScreen
       docType={overtimeDocType}
       doc={o}
-      list={{ label: t('hrm.overtimes.title'), to: '/hrm/overtimes' }}
+      list={{ label: t('hrm.overtimes.title'), to: paths.list }}
       facts={[
         <EmployeeLink key="employee" id={o.employee_id}>
           {o.employee_name}

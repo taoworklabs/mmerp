@@ -3,18 +3,21 @@ import { CreatePage } from '@/shared/document'
 import { LeaveForm } from '../components/LeaveForm'
 import { useLeaveActions, useLeaveSelf } from '../hooks/useLeave'
 import { leaveDocType } from '../keys'
+import { useRequestPaths } from '../requestPaths'
 
 export function NewLeavePage() {
   const { t } = useTranslation()
   const actions = useLeaveActions()
   // The same query as the actions, so it loads and fails with them.
   const self = useLeaveSelf()
+  const paths = useRequestPaths('leave')
   return (
     <CreatePage
       docType={leaveDocType}
       actions={actions}
       title={t('hrm.leaves.create')}
-      breadcrumbs={[{ label: t('hrm.leaves.title'), to: '/hrm/leaves' }]}
+      breadcrumbs={[{ label: t('hrm.leaves.title'), to: paths.list }]}
+      openAt={paths.open}
       description={t('hrm.leaves.create_description')}
       created={t('hrm.leave.created')}
     >

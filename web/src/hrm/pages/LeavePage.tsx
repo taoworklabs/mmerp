@@ -8,10 +8,12 @@ import { LeaveDetails, LeaveImpact } from '../components/LeaveDetails'
 import { loaded } from '@/shared/ui/loaded'
 import { useLeave, useLeaveTypes, useOverlappingLeaves } from '../hooks/useLeave'
 import { hrmKeys, leaveDocType } from '../keys'
+import { useRequestPaths } from '../requestPaths'
 
 export function LeavePage() {
   const { t } = useTranslation()
   const id = Number(useParams().id)
+  const paths = useRequestPaths('leave')
   const leave = useLeave(id)
   const types = useLeaveTypes()
   const employeeId = leave.data?.employee_id
@@ -24,7 +26,7 @@ export function LeavePage() {
   })
   const overlapping = useOverlappingLeaves(leave.data, employee.data?.org_unit_id)
 
-  const state = loaded(leave, t, { to: '/hrm/leaves', label: t('hrm.leaves.back') })
+  const state = loaded(leave, t, { to: paths.list, label: t('hrm.leaves.back') })
   if (!state.ok) return state.fallback
   const l = state.data
   const deducts = types.data?.find((x) => x.id === l.leave_type_id)?.deducts_balance
@@ -32,7 +34,7 @@ export function LeavePage() {
     <DocumentScreen
       docType={leaveDocType}
       doc={l}
-      list={{ label: t('hrm.leaves.title'), to: '/hrm/leaves' }}
+      list={{ label: t('hrm.leaves.title'), to: paths.list }}
       facts={[
         <EmployeeLink key="employee" id={l.employee_id}>
           {l.employee_name}

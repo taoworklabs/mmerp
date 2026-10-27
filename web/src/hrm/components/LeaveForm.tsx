@@ -10,6 +10,7 @@ import { DateField, DecimalField, Form, FormActions, FormFields, FormSection, Se
 import { useLeaveTypes, useLeaveWorkingDays } from '../hooks/useLeave'
 import { EmployeeField } from './EmployeeField'
 import { leaveDocType } from '../keys'
+import { useRequestPaths } from '../requestPaths'
 
 type Values = {
   employee_id: string | null
@@ -46,6 +47,7 @@ type Props = {
 // card with onClose); otherwise it is read-only.
 export function LeaveForm({ leave, self, chooseEmployee, onCreated, onClose }: Props) {
   const { t } = useTranslation()
+  const paths = useRequestPaths('leave')
   // One id per opened form: sending it twice returns the document made the first time.
   const [requestId] = useState(() => crypto.randomUUID())
   const types = useLeaveTypes()
@@ -132,7 +134,7 @@ export function LeaveForm({ leave, self, chooseEmployee, onCreated, onClose }: P
       <FormSection title={t('hrm.leave.section')} description={t('hrm.leave.section_hint')} icon={IconCalendarEvent} compact>
         {inputs}
       </FormSection>
-      {editable && <FormActions submitLabel={leave ? t('hrm.common.save') : t('hrm.common.create_draft')} cancelTo={leave ? undefined : '/hrm/leaves'} />}
+      {editable && <FormActions submitLabel={leave ? t('hrm.common.save') : t('hrm.common.create_draft')} cancelTo={leave ? undefined : paths.list} />}
       {mutation.dialog}
     </Form>
   )
