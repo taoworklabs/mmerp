@@ -434,12 +434,8 @@ func (s *Service) payrollLines(ctx context.Context, id int64) ([]PayrollLine, er
 	rows, err := store.PayrollLines.Run(ctx, id)
 	out := make([]PayrollLine, len(rows))
 	for i, r := range rows {
-		raw, err := platform.Decrypt(ctx, linesAAD, r.Data)
+		l, err := openLine(ctx, r.Data)
 		if err != nil {
-			return nil, err
-		}
-		var l payrollLine
-		if err := json.Unmarshal(raw, &l); err != nil {
 			return nil, err
 		}
 		out[i] = PayrollLine{EmployeeID: r.EmployeeID, EmployeeCode: r.Code, EmployeeName: r.FullName, OrgUnitID: r.OrgUnitID,
@@ -450,6 +446,16 @@ func (s *Service) payrollLines(ctx context.Context, id int64) ([]PayrollLine, er
 		}
 	}
 	return out, err
+}
+
+// openLine decrypts one stored payroll line.
+func openLine(ctx context.Context, data []byte) (payrollLine, error) {
+	var l payrollLine
+	raw, err := platform.Decrypt(ctx, linesAAD, data)
+	if err == nil {
+		err = json.Unmarshal(raw, &l)
+	}
+	return l, err
 }
 
 // adjustments decrypts the adjustments of a payroll.

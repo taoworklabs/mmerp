@@ -14,4 +14,5 @@ func registerHandlers(api huma.API, s *Service) {
 	registerContractHandlers(api, s)
 	registerTimesheetHandlers(api, s)
 	registerEmployeeHandlers(api, s)
+	registerMeHandlers(api, s)
 }
