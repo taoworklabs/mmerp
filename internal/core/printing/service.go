@@ -6,6 +6,7 @@ import (
 	"context"
 	"embed"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io/fs"
 	"slices"
@@ -91,13 +92,35 @@ func (s *Service) check(ctx context.Context, t Template, raw json.RawMessage) (p
 		return in, dataio.ErrInvalidParams
 	}
 	ref := record.Ref{Type: t.DocType, ID: in.ID}
-	if err := s.d.Record.Visible(ctx, ref, record.View); err != nil {
-		return in, err
+	err := s.d.Record.Visible(ctx, ref, record.View)
+	if err == nil {
+		if ok, cerr := s.d.Record.Can(ctx, ref.Type, ref.ID, record.Print); cerr != nil || !ok {
+			err = platform.OrErr(cerr, platform.ErrForbidden)
+		}
 	}
-	if ok, err := s.d.Record.Can(ctx, ref.Type, ref.ID, record.Print); err != nil || !ok {
-		return in, platform.OrErr(err, platform.ErrForbidden)
+	if (errors.Is(err, platform.ErrNotFound) || errors.Is(err, platform.ErrForbidden)) && t.Owner != nil && len(in.Parts) == 1 {
+		owns, oerr := s.ownsPart(ctx, t, ref, in.Parts[0])
+		if oerr != nil {
+			return in, oerr
+		}
+		if owns {
+			return in, nil
+		}
 	}
-	return in, nil
+	return in, err
+}
+
+// ownsPart reports whether ref is posted and key is the part the actor owns in it.
+func (s *Service) ownsPart(ctx context.Context, t Template, ref record.Ref, key int64) (bool, error) {
+	d, err := s.d.Record.Get(ctx, ref)
+	if errors.Is(err, platform.ErrNotFound) {
+		return false, nil
+	}
+	if err != nil || d.Status != record.Posted {
+		return false, err
+	}
+	owner, err := t.Owner(ctx, ref.ID)
+	return owner != 0 && owner == key, err
 }
 
 // render draws the asked parts of a record, a page or more each, and audits the print on

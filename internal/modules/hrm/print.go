@@ -3,6 +3,10 @@ package hrm
 import (
 	"context"
 	"encoding/json"
+	"errors"
+
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgtype"
 
 	"github.com/taoworklabs/mmerp/internal/core/printing"
 	"github.com/taoworklabs/mmerp/internal/core/record"
@@ -19,7 +23,24 @@ func (s *Service) registerPrints() {
 		},
 		Data: s.contractPrint, Layouts: []printing.Layout{contractLayout1}})
 	s.d.Printing.Register(printing.Template{Code: "hrm.payslip", Name: "hrm.print.payslip.name", DocType: payrollType,
-		Data: s.payslips, Layouts: []printing.Layout{payslipLayout1}})
+		Data: s.payslips, Owner: s.payslipOwner, Layouts: []printing.Layout{payslipLayout1}})
+}
+
+// payslipOwner is the actor's employee when they have a line on the payroll, else 0.
+func (s *Service) payslipOwner(ctx context.Context, payrollID int64) (int64, error) {
+	actor, _ := platform.ActorFrom(ctx)
+	self, err := store.EmployeeByUser.Run(ctx, pgtype.Int8{Int64: actor, Valid: true})
+	if errors.Is(err, pgx.ErrNoRows) {
+		return 0, nil
+	}
+	if err != nil {
+		return 0, err
+	}
+	has, err := store.PayrollHasLine.Run(ctx, store.PayrollHasLineParams{PayrollID: payrollID, EmployeeID: self.ID})
+	if err != nil || !has {
+		return 0, err
+	}
+	return self.ID, nil
 }
 
 // contractPrint is what a contract's print shows; frozen as is once the contract is posted.

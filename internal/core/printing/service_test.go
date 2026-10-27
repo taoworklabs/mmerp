@@ -32,6 +32,7 @@ func must[T any](t *testing.T) func(T, error) T {
 
 type harness struct {
 	pool  platform.Conn
+	ids   *iam.Service
 	rec   *record.Service
 	prn   *Service
 	admin context.Context
@@ -39,7 +40,7 @@ type harness struct {
 	doc record.Doc
 }
 
-// setup prints the document type test.doc, which anyone may do anything with, from data.
+// setup prints the document type test.doc, which the administrator may do anything with, from data.
 func setup(t *testing.T, data func(context.Context, int64) ([]Part, error), layout Layout) harness {
 	t.Helper()
 	pool := pgtest.New(t)
@@ -50,7 +51,6 @@ func setup(t *testing.T, data func(context.Context, int64) ([]Part, error), layo
 	ids.RegisterRoles("test", map[string][]string{"member": {"test.all"}})
 	rec.Register(record.Type{Code: "test.doc", Product: "test", Kind: record.Document, NumberPrefix: "T",
 		Perms:    record.Perms{View: "test.all", Edit: "test.all", ViewFiles: "test.all", Attach: "test.all"},
-		Grant:    func(context.Context, int64, record.Action) (bool, error) { return true, nil },
 		OnDelete: func(context.Context, int64) error { return nil }})
 	prn := NewService(Deps{Record: rec, Audit: audit.NewService(), IAM: ids,
 		DataIO: dataio.NewService(dataio.Deps{IAM: ids, Audit: audit.NewService(), Record: rec})})
@@ -58,7 +58,7 @@ func setup(t *testing.T, data func(context.Context, int64) ([]Part, error), layo
 	admin := platform.WithActor(ctx, must[int64](t)(ids.CreateAdmin(ctx, "admin", "Admin", "long enough")))
 	c := must[int64](t)(ids.CreateOrgUnit(admin, iam.OrgUnitInput{Kind: "company", Name: "C"}))
 	d := must[record.Doc](t)(rec.Create(admin, "test.doc", record.Header{Date: "2026-03-10", OrgUnitID: c}))
-	return harness{pool: pool, rec: rec, prn: prn, admin: admin, doc: d}
+	return harness{pool: pool, ids: ids, rec: rec, prn: prn, admin: admin, doc: d}
 }
 
 // Posting a printable document freezes its print data in the same transaction: if
@@ -161,5 +161,62 @@ func TestLegalEntity(t *testing.T) {
 	}
 	if _, err := h.prn.render(h.admin, h.prn.templates["test.doc"], json.RawMessage(fmt.Sprintf(`{"id":%d}`, h.doc.ID))); err != nil {
 		t.Fatal(err)
+	}
+}
+
+// One without rights on a posted record prints exactly the one part it owns; anything else
+// fails as for a record it cannot see.
+func TestOwnPartPrint(t *testing.T) {
+	h := setup(t, func(context.Context, int64) ([]Part, error) {
+		return []Part{{Key: 7, Data: json.RawMessage(`{}`)}, {Key: 8, Data: json.RawMessage(`{}`)}}, nil
+	}, func(p *Page, _ json.RawMessage) error {
+		p.Title("PHIẾU LƯƠNG")
+		return nil
+	})
+	stranger := platform.WithActor(h.admin, must[int64](t)(h.ids.CreateUser(h.admin, "stranger", "Stranger", "long enough")))
+	plain := h.prn.templates["test.doc"]
+	owned := plain
+	owned.Owner = func(context.Context, int64) (int64, error) { return 7, nil }
+	nobody := plain
+	nobody.Owner = func(context.Context, int64) (int64, error) { return 0, nil }
+	raw := func(parts string) json.RawMessage {
+		return json.RawMessage(fmt.Sprintf(`{"id":%d%s}`, h.doc.ID, parts))
+	}
+	refused := func(name string, tpl Template, in json.RawMessage) {
+		t.Helper()
+		if _, err := h.prn.check(stranger, tpl, in); !errors.Is(err, platform.ErrNotFound) {
+			t.Fatalf("%s: check %v", name, err)
+		}
+		if _, err := h.prn.render(stranger, tpl, in); !errors.Is(err, platform.ErrNotFound) {
+			t.Fatalf("%s: render %v", name, err)
+		}
+	}
+
+	refused("draft", owned, raw(`,"parts":[7]`))
+	if _, err := h.rec.Transition(h.admin, h.doc.Ref, h.doc.Version, record.Posted); err != nil {
+		t.Fatal(err)
+	}
+	refused("no owner", plain, raw(`,"parts":[7]`))
+	refused("owns none", nobody, raw(`,"parts":[0]`))
+	refused("another part", owned, raw(`,"parts":[8]`))
+	refused("no parts", owned, raw(`,"parts":[]`))
+	refused("all parts", owned, raw(``))
+	refused("more parts", owned, raw(`,"parts":[7,8]`))
+
+	if _, err := h.prn.check(stranger, owned, raw(`,"parts":[7]`)); err != nil {
+		t.Fatal(err)
+	}
+	f, err := h.prn.render(stranger, owned, raw(`,"parts":[7]`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if r, err := pdfread.NewReader(bytes.NewReader(f.Body), int64(len(f.Body))); err != nil || r.NumPage() != 1 {
+		t.Fatalf("own part: %v", err)
+	}
+	var n int
+	actor, _ := platform.ActorFrom(stranger)
+	if err := h.pool.QueryRow(h.admin, `SELECT count(*) FROM audit.log WHERE action = 'printing.printed' AND doc_id = $1
+		AND actor_id = $2 AND data->'parts' = '[7]'::jsonb`, h.doc.ID, actor).Scan(&n); err != nil || n != 1 {
+		t.Fatalf("audited %d: %v", n, err)
 	}
 }

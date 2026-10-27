@@ -85,6 +85,7 @@ var ClearPayrollComputed = data.ExecArg("hrm.ClearPayrollComputed", newQ, (*Quer
 var DeletePayrollLines = data.ExecArg("hrm.DeletePayrollLines", newQ, (*Queries).DeletePayrollLines)
 var InsertPayrollLine = data.ExecArg("hrm.InsertPayrollLine", newQ, (*Queries).InsertPayrollLine)
 var PayrollLines = data.ManyArg("hrm.PayrollLines", newQ, (*Queries).PayrollLines)
+var PayrollHasLine = data.OneArg("hrm.PayrollHasLine", newQ, (*Queries).PayrollHasLine)
 var DeletePayrollSources = data.ExecArg("hrm.DeletePayrollSources", newQ, (*Queries).DeletePayrollSources)
 var InsertPayrollSources = data.ExecArg("hrm.InsertPayrollSources", newQ, (*Queries).InsertPayrollSources)
 var PayrollAdjustments = data.ManyArg("hrm.PayrollAdjustments", newQ, (*Queries).PayrollAdjustments)

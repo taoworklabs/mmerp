@@ -49,6 +49,9 @@ SELECT l.employee_id, l.org_unit_id, l.data, e.code, e.full_name
 FROM hrm.payroll_lines l JOIN hrm.employees e ON e.id = l.employee_id
 WHERE l.payroll_id = $1 ORDER BY lower(e.code);
 
+-- name: PayrollHasLine :one
+SELECT EXISTS (SELECT 1 FROM hrm.payroll_lines WHERE payroll_id = $1 AND employee_id = $2);
+
 -- name: DeletePayrollSources :exec
 DELETE FROM hrm.payroll_sources WHERE payroll_id = $1;
 

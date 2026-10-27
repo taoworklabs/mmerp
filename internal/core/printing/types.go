@@ -24,6 +24,9 @@ type Template struct {
 	// Layouts draw one part; version n is Layouts[n-1] and the last is current. A released
 	// layout never changes: changing what a print shows, labels included, adds a version.
 	Layouts []Layout
+	// Owner, optional, returns the part key the actor owns in a record, 0 for none: one
+	// without rights on a posted record may print that part alone.
+	Owner func(ctx context.Context, id int64) (int64, error)
 }
 
 // Part is the data of one printable unit of a record, printed on pages of its own.

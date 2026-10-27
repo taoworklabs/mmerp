@@ -495,6 +495,22 @@ func (q *Queries) PayrollEmployees(ctx context.Context, arg PayrollEmployeesPara
 	return items, nil
 }
 
+const payrollHasLine = `-- name: PayrollHasLine :one
+SELECT EXISTS (SELECT 1 FROM hrm.payroll_lines WHERE payroll_id = $1 AND employee_id = $2)
+`
+
+type PayrollHasLineParams struct {
+	PayrollID  int64
+	EmployeeID int64
+}
+
+func (q *Queries) PayrollHasLine(ctx context.Context, arg PayrollHasLineParams) (bool, error) {
+	row := q.db.QueryRow(ctx, payrollHasLine, arg.PayrollID, arg.EmployeeID)
+	var exists bool
+	err := row.Scan(&exists)
+	return exists, err
+}
+
 const payrollLeaveBalances = `-- name: PayrollLeaveBalances :many
 SELECT employee_id, days::text AS days FROM hrm.leave_balances WHERE employee_id = ANY($1::bigint[]) AND year = $2
 `
