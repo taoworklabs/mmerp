@@ -121,3 +121,32 @@ func TestPayrollSeveranceKinds(t *testing.T) {
 		t.Fatalf("restructuring pays %d", l.Severance)
 	}
 }
+
+// A contract that only counts for the six-month average is a source too: an appendix posted
+// on it afterwards changes the allowance, so the draft payroll goes stale.
+func TestPayrollSeveranceWindowIsASource(t *testing.T) {
+	f := newPayrollFixture(t)
+	e := employee("Q1", f.a)
+	e.HireDate = "2007-07-01"
+	emp := must(t)(f.hrm.CreateEmployee(f.hr, e))
+	contract := func(start, end string, salary int64) int64 {
+		id := must(t)(f.hrm.CreateContract(f.pay, hrm.NewContract{EmployeeID: emp, ContractFields: hrm.ContractFields{
+			ContractTypeID: f.fixed, StartDate: start, EndDate: &end, Terms: hrm.ContractTerms{Salary: salary, Lines: []hrm.ContractLine{}}}}))
+		f.post(record.Ref{Type: "hrm.contract", ID: id}, 1)
+		return id
+	}
+	old := contract("2025-01-01", "2025-12-31", 20_000_000)
+	contract("2026-01-01", "2026-12-31", 24_000_000)
+	f.terminate(emp, "2026-04-15", "mutual_agreement", 207)
+	f.timesheet(f.a, "2026-04", map[int64][]string{emp: april1to15})
+	id := f.payroll("2026-04")
+	if l := f.line(id, emp); l.Severance != 16_500_000 {
+		t.Fatalf("severance %d", l.Severance)
+	}
+	app := must(t)(f.hrm.CreateContract(f.pay, hrm.NewContract{EmployeeID: emp, ParentID: &old, ContractFields: hrm.ContractFields{
+		StartDate: "2025-11-01", Terms: hrm.ContractTerms{Salary: 22_000_000, Lines: []hrm.ContractLine{}}}}))
+	f.post(record.Ref{Type: "hrm.contract", ID: app}, 1)
+	if !f.payrollDoc(id).SourcesChanged {
+		t.Fatal("an appendix inside the allowance window left the payroll current")
+	}
+}

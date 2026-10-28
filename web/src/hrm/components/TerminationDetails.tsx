@@ -24,7 +24,7 @@ export function TerminationDetails({ termination: x }: { termination: Terminatio
         <Notice tone="warning" title={t('hrm.termination.warnings')}>
           <ul>
             {x.warnings.map((w, i) => (
-              <li key={i}>{t(`hrm.termination.warning.${w.code}`, w.params as Record<string, unknown>)}</li>
+              <li key={i}>{t(`hrm.termination.warning.${w.code}`, warningParams(w.params))}</li>
             ))}
           </ul>
         </Notice>
@@ -74,4 +74,11 @@ export function TerminationDetails({ termination: x }: { termination: Terminatio
       </EditablePanel>
     </Fragment>
   )
+}
+
+// Dates in a warning read in the user's format; the other params (numbers, days) as they are.
+function warningParams(params: Record<string, unknown> | null | undefined) {
+  const out: Record<string, unknown> = { ...params }
+  for (const k of ['date', 'start_date', 'end_date']) if (typeof out[k] === 'string') out[k] = formatDate(out[k] as string)
+  return out
 }
