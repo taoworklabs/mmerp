@@ -33,3 +33,9 @@ FROM hrm.terminations t
 JOIN record.documents d ON d.id = t.id
 JOIN hrm.employees e ON e.id = t.employee_id
 JOIN iam.org_units u ON u.id = d.org_unit_id;
+
+-- name: SetEmployeeTerminationDate :exec
+UPDATE hrm.employees SET termination_date = @termination_date WHERE id = @id;
+
+-- name: SetTerminationPreviousDate :exec
+UPDATE hrm.terminations SET previous_date = @previous_date WHERE id = @id;

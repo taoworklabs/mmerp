@@ -206,8 +206,48 @@ func terminationChanges(old, n TerminationFields) []audit.Change {
 	}
 }
 
-// terminationTransition sets the employee's termination date when posted and restores it
-// when cancelled.
+// terminationTransition sets the employee's termination date when posted and restores the
+// one it replaced when cancelled. The new date changes the pay of its month and every later
+// one, so a closed period from there on refuses both.
 func (s *Service) terminationTransition(ctx context.Context, d record.Doc, from record.Status) error {
-	return nil
+	posted, ok := payrollEffect(d, from)
+	if !ok {
+		return nil
+	}
+	if err := checkPayrollPeriods(ctx, d.LegalEntityID, d.Date, nil); err != nil {
+		return err
+	}
+	t, err := store.GetTermination.Run(ctx, d.ID)
+	if err != nil {
+		return err
+	}
+	e, err := store.LockEmployee.Run(ctx, t.EmployeeID)
+	if err != nil {
+		return err
+	}
+	next := t.PreviousDate
+	if posted {
+		if err := openTermination(ctx, e.ID, d.ID, []string{string(record.Posted)}); err != nil {
+			return err
+		}
+		if d.Date < *platform.DatePtr(e.HireDate) {
+			return ErrTerminationBeforeHire
+		}
+		legalEntity, err := s.d.IAM.LegalEntityOf(ctx, e.OrgUnitID)
+		if err != nil {
+			return err
+		}
+		if legalEntity != d.LegalEntityID {
+			return ErrTerminationLegalEntity
+		}
+		if err := store.SetTerminationPreviousDate.Run(ctx, store.SetTerminationPreviousDateParams{ID: d.ID, PreviousDate: e.TerminationDate}); err != nil {
+			return err
+		}
+		next = platform.NullDate(&d.Date)
+	}
+	if err := store.SetEmployeeTerminationDate.Run(ctx, store.SetEmployeeTerminationDateParams{ID: e.ID, TerminationDate: next}); err != nil {
+		return err
+	}
+	return s.d.Audit.RecordChanges(ctx, "hrm.employee_updated", audit.Ref{Type: employeeType, ID: e.ID},
+		[]audit.Change{{Field: "termination_date", Old: platform.DatePtr(e.TerminationDate), New: platform.DatePtr(next)}})
 }

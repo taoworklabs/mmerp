@@ -130,6 +130,34 @@ func (q *Queries) OpenTerminationOf(ctx context.Context, arg OpenTerminationOfPa
 	return i, err
 }
 
+const setEmployeeTerminationDate = `-- name: SetEmployeeTerminationDate :exec
+UPDATE hrm.employees SET termination_date = $1 WHERE id = $2
+`
+
+type SetEmployeeTerminationDateParams struct {
+	TerminationDate pgtype.Date
+	ID              int64
+}
+
+func (q *Queries) SetEmployeeTerminationDate(ctx context.Context, arg SetEmployeeTerminationDateParams) error {
+	_, err := q.db.Exec(ctx, setEmployeeTerminationDate, arg.TerminationDate, arg.ID)
+	return err
+}
+
+const setTerminationPreviousDate = `-- name: SetTerminationPreviousDate :exec
+UPDATE hrm.terminations SET previous_date = $1 WHERE id = $2
+`
+
+type SetTerminationPreviousDateParams struct {
+	PreviousDate pgtype.Date
+	ID           int64
+}
+
+func (q *Queries) SetTerminationPreviousDate(ctx context.Context, arg SetTerminationPreviousDateParams) error {
+	_, err := q.db.Exec(ctx, setTerminationPreviousDate, arg.PreviousDate, arg.ID)
+	return err
+}
+
 const terminationListBase = `-- name: TerminationListBase :many
 SELECT t.id, d.number, d.status, d.org_unit_id, d.date, t.employee_id, e.code AS employee_code, e.full_name AS employee_name,
        u.name AS org_unit_name, t.reason
