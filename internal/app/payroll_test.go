@@ -129,7 +129,7 @@ func TestPayrollSampleFlow(t *testing.T) {
 	if err := f.system.QueryRow(t.Context(), `SELECT count(*) FROM posting.lines WHERE doc_id = $1 AND voided_at IS NULL`, id).Scan(&lines); err != nil {
 		t.Fatal(err)
 	}
-	if err := f.system.QueryRow(t.Context(), `SELECT count(*) FROM river_job WHERE kind NOT IN ('dataio.import', 'dataio.export', 'dataio.cleanup', 'attachment.cleanup', 'approval.overdue', 'hrm.payroll_compute')`).Scan(&others); err != nil {
+	if err := f.system.QueryRow(t.Context(), `SELECT count(*) FROM river_job WHERE kind NOT IN ('dataio.import', 'dataio.export', 'dataio.cleanup', 'attachment.cleanup', 'approval.overdue', 'hrm.leave_accrual', 'hrm.payroll_compute')`).Scan(&others); err != nil {
 		t.Fatal(err)
 	}
 	if lines != 5 || others != 0 {

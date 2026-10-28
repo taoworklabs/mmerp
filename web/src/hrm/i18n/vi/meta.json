@@ -179,5 +179,9 @@
   "hrm.termination.reason.absent_without_reason": "Tự ý bỏ việc từ 5 ngày liên tục (điểm e khoản 1 Điều 36)",
   "hrm.termination.reason.restructuring": "Cho thôi việc do cơ cấu lại, lý do kinh tế (Điều 42, 43)",
   "hrm.termination.reason.work_permit_expired": "Giấy phép lao động hết hiệu lực (khoản 12 Điều 34)",
-  "hrm.termination.reason.probation_failed": "Thử việc không đạt (khoản 13 Điều 34)"
+  "hrm.termination.reason.probation_failed": "Thử việc không đạt (khoản 13 Điều 34)",
+  "hrm.error.report_payroll_missing": "Chưa có bảng lương đã chốt của: {{months}}. Chốt bảng lương các tháng đó trước khi lập báo cáo.",
+  "hrm.error.report_form_not_supported": "Kỳ này dùng mẫu biểu cũ, mmerp chưa hỗ trợ.",
+  "hrm.nav.group_reports": "Báo cáo",
+  "hrm.nav.reports": "Báo cáo BHXH & thuế TNCN"
 }
