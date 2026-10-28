@@ -1975,6 +1975,9 @@
             ],
             "type": "string"
           },
+          "termination": {
+            "$ref": "#/components/schemas/TerminationRef"
+          },
           "termination_date": {
             "format": "date",
             "type": [
@@ -2001,6 +2004,7 @@
           "sensitive",
           "sensitive_tail",
           "current_contract",
+          "termination",
           "allowed_actions",
           "full_name",
           "date_of_birth",
@@ -7540,6 +7544,23 @@
           "org_unit_name",
           "termination_date",
           "reason"
+        ],
+        "type": "object"
+      },
+      "TerminationRef": {
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "number": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "number"
         ],
         "type": "object"
       },

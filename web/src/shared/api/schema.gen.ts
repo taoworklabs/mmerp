@@ -2580,6 +2580,7 @@ export interface components {
             sensitive_tail: components["schemas"]["SensitiveTails"];
             /** @enum {string} */
             status: "active" | "terminated";
+            termination: components["schemas"]["TerminationRef"];
             /** Format: date */
             termination_date: string | null;
             /** @description Login of the linked account */
@@ -4436,6 +4437,11 @@ export interface components {
             status: "draft" | "pending_approval" | "posted" | "cancelled";
             /** Format: date */
             termination_date: string;
+        };
+        TerminationRef: {
+            /** Format: int64 */
+            id: number;
+            number: string;
         };
         TerminationUpdate: {
             /**

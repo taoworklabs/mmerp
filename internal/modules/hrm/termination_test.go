@@ -3,6 +3,7 @@ package hrm_test
 import (
 	"context"
 	"fmt"
+	"slices"
 	"sync"
 	"testing"
 
@@ -353,5 +354,27 @@ func TestTerminationWarnings(t *testing.T) {
 		codes["leave_after_termination"]["number"] != f.leave(leave).Number || codes["leave_after_termination"]["status"] != "draft" ||
 		codes["overtime_after_termination"]["date"] != "2026-04-22" || codes["leave_balance_to_pay"]["days"] != "4" {
 		t.Fatalf("warnings %+v", got.Warnings)
+	}
+}
+
+// The profile offers a termination until one stands, then links to it.
+func TestEmployeeTerminationLink(t *testing.T) {
+	f := newLeaveFixture(t)
+	e, err := f.hrm.Employee(f.hr, f.emp)
+	f.check(err)
+	if !slices.Contains(e.AllowedActions, "create_termination") || e.Termination != nil {
+		t.Fatalf("before %v %+v", e.AllowedActions, e.Termination)
+	}
+	id := must(t)(f.hrm.CreateTermination(f.hr, hrm.NewTermination{EmployeeID: f.emp, TerminationFields: quit("2026-04-15", "mutual_agreement")}))
+	e, err = f.hrm.Employee(f.hr, f.emp)
+	f.check(err)
+	if slices.Contains(e.AllowedActions, "create_termination") || e.Termination == nil || e.Termination.ID != id || e.Termination.Number != "NV-2026-00001" {
+		t.Fatalf("after %v %+v", e.AllowedActions, e.Termination)
+	}
+	// A profile viewer without the termination permission sees neither.
+	self, err := f.hrm.Employee(f.ctxFor("viewer", "viewer@*"), f.emp)
+	f.check(err)
+	if self.Termination != nil || slices.Contains(self.AllowedActions, "create_termination") {
+		t.Fatalf("self %v %+v", self.AllowedActions, self.Termination)
 	}
 }

@@ -109,3 +109,9 @@ type TerminationAllowance struct {
 	Average       *int64 `json:"average,omitempty" doc:"Average monthly salary of the six months before the termination month"`
 	Amount        *int64 `json:"amount,omitempty"`
 }
+
+// TerminationRef is the termination of an employee that stands, on their profile.
+type TerminationRef struct {
+	ID     int64  `json:"id"`
+	Number string `json:"number"`
+}

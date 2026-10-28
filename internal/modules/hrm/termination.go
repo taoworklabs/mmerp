@@ -369,3 +369,23 @@ func (s *Service) terminationTransition(ctx context.Context, d record.Doc, from 
 	return s.d.Audit.RecordChanges(ctx, "hrm.employee_updated", audit.Ref{Type: employeeType, ID: e.ID},
 		[]audit.Change{{Field: "termination_date", Old: platform.DatePtr(e.TerminationDate), New: platform.DatePtr(next)}})
 }
+
+// employeeTermination is the employee's standing termination for a viewer of terminations,
+// and adds create_termination while there is none and the actor may create one.
+func (s *Service) employeeTermination(ctx context.Context, employee, unit int64, actions []string) (*TerminationRef, []string, error) {
+	view, err := s.allowed(ctx, PermTerminationView, unit)
+	if err != nil || !view {
+		return nil, actions, err
+	}
+	r, err := store.OpenTerminationOf.Run(ctx, store.OpenTerminationOfParams{EmployeeID: employee, Statuses: openStatuses})
+	if err == nil {
+		return &TerminationRef{ID: r.ID, Number: r.Number}, actions, nil
+	}
+	if !errors.Is(err, pgx.ErrNoRows) {
+		return nil, actions, err
+	}
+	if ok, err := s.allowed(ctx, PermTerminationEdit, unit); err != nil || !ok || platform.ProductGate(ctx, "hrm", platform.ClassWrite) != nil {
+		return nil, actions, err
+	}
+	return nil, append(actions, "create_termination"), nil
+}

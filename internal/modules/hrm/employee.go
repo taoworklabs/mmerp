@@ -134,6 +134,10 @@ func (s *Service) Employee(ctx context.Context, id int64) (Employee, error) {
 	} else if ok && platform.ProductGate(ctx, "hrm", platform.ClassWrite) == nil {
 		actions = append(actions, "create_contract")
 	}
+	termination, actions, err := s.employeeTermination(ctx, e.ID, e.OrgUnitID, actions)
+	if err != nil {
+		return Employee{}, err
+	}
 	today, err := s.d.Setting.Today(ctx)
 	if err != nil {
 		return Employee{}, err
@@ -167,6 +171,7 @@ func (s *Service) Employee(ctx context.Context, id int64) (Employee, error) {
 		},
 		SensitiveTail:   tails,
 		CurrentContract: current,
+		Termination:     termination,
 		AllowedActions:  actions,
 	}, nil
 }
