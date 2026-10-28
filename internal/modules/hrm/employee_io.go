@@ -5,9 +5,12 @@ import (
 	"encoding/json"
 	"errors"
 	"maps"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/jackc/pgx/v5/pgconn"
 
 	"github.com/taoworklabs/mmerp/internal/core/audit"
 	"github.com/taoworklabs/mmerp/internal/core/dataio"
@@ -274,14 +277,20 @@ func (s *Service) importEmployees(ctx context.Context, _ json.RawMessage, rows [
 	for _, e := range found {
 		known[strings.ToLower(e.Code)] = e
 	}
-	type write struct {
-		row           int
-		id            int64 // 0 creates
-		code, manager string
-		in            EmployeeInput
+	// Codes this file creates, so a row may name one as manager.
+	inFile := map[string]bool{}
+	for _, r := range rows {
+		if r == nil {
+			continue
+		}
+		if key := strings.ToLower(strings.TrimSpace(r[0])); key != "" {
+			if _, ok := known[key]; !ok {
+				inFile[key] = true
+			}
+		}
 	}
 	var errs []dataio.RowError
-	var creates, updates []write
+	var creates, updates []parsedRow
 	seen := map[string]bool{}
 	for i, r := range rows {
 		if r == nil {
@@ -307,6 +316,10 @@ func (s *Service) importEmployees(ctx context.Context, _ json.RawMessage, rows [
 			if !view.Has(cur.OrgUnitID) {
 				fail("employee_code_taken", map[string]any{"code": code})
 				continue
+			}
+			// Locked before reading, so a form edit cannot land between this read and the write.
+			if _, err := store.LockEmployee.Run(ctx, cur.ID); err != nil {
+				return nil, err
 			}
 			if old, err = store.GetEmployee.Run(ctx, cur.ID); err != nil {
 				return nil, err
@@ -354,14 +367,17 @@ func (s *Service) importEmployees(ctx context.Context, _ json.RawMessage, rows [
 			}
 		}
 		manager := strings.TrimSpace(r[8])
-		if manager != "" {
-			m, ok := known[strings.ToLower(manager)]
-			switch {
-			case !ok:
-				fail("unknown_manager", map[string]any{"code": manager})
-			case in.ManagerID == nil || *in.ManagerID != m.ID:
-				in.ManagerID, changed = &m.ID, true
-			}
+		mkey, newManager := strings.ToLower(manager), ""
+		switch m, ok := known[mkey]; {
+		case manager == "":
+		case code != "" && mkey == key:
+			fail("manager_self", map[string]any{"code": code})
+		case inFile[mkey]:
+			newManager, changed = mkey, true
+		case !ok:
+			fail("unknown_manager", map[string]any{"code": manager})
+		case in.ManagerID == nil || *in.ManagerID != m.ID:
+			in.ManagerID, changed = &m.ID, true
 		}
 		var hire *string
 		if in.HireDate != "" {
@@ -373,9 +389,12 @@ func (s *Service) importEmployees(ctx context.Context, _ json.RawMessage, rows [
 		}
 		date(10, &in.TerminationDate)
 		if !exists {
-			for col, c := range map[int]string{1: "name_required", 7: "org_unit_required", 9: "hire_date_required"} {
-				if strings.TrimSpace(r[col]) == "" {
-					fail(c, nil)
+			for _, req := range []struct {
+				col  int
+				code string
+			}{{1, "name_required"}, {7, "org_unit_required"}, {9, "hire_date_required"}} {
+				if strings.TrimSpace(r[req.col]) == "" {
+					fail(req.code, nil)
 				}
 			}
 		}
@@ -419,23 +438,56 @@ func (s *Service) importEmployees(ctx context.Context, _ json.RawMessage, rows [
 				}
 			}
 		}
+		w := parsedRow{row: i, code: code, manager: manager, newManager: newManager, in: in}
 		switch {
 		case !exists:
-			creates = append(creates, write{row: i, code: code, manager: manager, in: in})
+			creates = append(creates, w)
 		case changed:
-			updates = append(updates, write{row: i, id: old.ID, code: old.Code, manager: manager, in: in})
+			w.id, w.code = old.ID, old.Code
+			updates = append(updates, w)
 		}
+	}
+	newCodes := map[string]int{}
+	for i, w := range creates {
+		if w.code != "" {
+			newCodes[strings.ToLower(w.code)] = i
+		}
+	}
+	order, err := createOrder(creates, newCodes)
+	if err != nil {
+		w := creates[order[0]]
+		m := creates[newCodes[w.newManager]]
+		errs = append(errs, dataio.RowError{Row: w.row, Code: ErrManagerCycle.Code, Params: map[string]any{"code": w.code, "name": m.code + " · " + m.in.FullName}})
 	}
 	if len(errs) > 0 {
 		return errs, nil
 	}
-	for _, w := range append(creates, updates...) {
+	todo := make([]parsedRow, 0, len(creates)+len(updates))
+	for _, i := range order {
+		todo = append(todo, creates[i])
+	}
+	ids := map[string]int64{}
+	var managed []parsedRow
+	for _, w := range append(todo, updates...) {
+		if w.newManager != "" {
+			id, ok := ids[w.newManager]
+			if !ok {
+				continue // the manager's row failed and reports it
+			}
+			w.in.ManagerID = &id
+		}
 		if w.id == 0 {
-			_, err = s.CreateEmployee(ctx, NewEmployee{Code: w.code, EmployeeInput: w.in})
+			var id int64
+			if id, err = s.CreateEmployee(ctx, NewEmployee{Code: w.code, EmployeeInput: w.in}); err == nil {
+				w.id, ids[strings.ToLower(w.code)] = id, id
+			}
 		} else {
-			err = s.updateEmployee(ctx, w.id, w.in, true)
+			err = s.updateEmployee(ctx, w.id, w.in, false)
 		}
 		if err == nil {
+			if w.manager != "" {
+				managed = append(managed, w)
+			}
 			continue
 		}
 		e, ok := writeRowError(w.row, w.code, w.manager, err)
@@ -443,8 +495,79 @@ func (s *Service) importEmployees(ctx context.Context, _ json.RawMessage, rows [
 			return nil, err
 		}
 		errs = append(errs, e)
+		if _, ok := errors.AsType[*pgconn.PgError](err); ok {
+			return errs, nil // the transaction is aborted
+		}
+	}
+	if len(errs) > 0 || len(managed) == 0 {
+		return errs, nil
+	}
+	// The end state is checked, so a file may swap managers; the lock comes after the
+	// employee rows, in the form's order.
+	if err := store.LockManagerTree.Run(ctx); err != nil {
+		return nil, err
+	}
+	for _, w := range managed {
+		chain, err := store.ManagerChain.Run(ctx, *w.in.ManagerID)
+		if err != nil {
+			return nil, err
+		}
+		if !slices.Contains(chain, w.id) {
+			continue
+		}
+		m, err := store.GetEmployee.Run(ctx, *w.in.ManagerID)
+		if err != nil {
+			return nil, err
+		}
+		errs = append(errs, dataio.RowError{Row: w.row, Code: ErrManagerCycle.Code, Params: map[string]any{"code": w.code, "name": m.Code + " · " + m.FullName}})
 	}
 	return errs, nil
+}
+
+// parsedRow is a checked import row waiting to be written.
+type parsedRow struct {
+	row           int
+	id            int64 // 0 creates
+	code, manager string
+	newManager    string // lower-cased code of a manager another row creates
+	in            EmployeeInput
+}
+
+// createOrder orders the new rows so a manager created by the file comes before its reports, and
+// typed codes before issued ones, so the series never issues a code a later row types. Only typed
+// rows can be named as managers. On a cycle it returns the index of one row in it.
+func createOrder(rows []parsedRow, newCodes map[string]int) ([]int, error) {
+	const visiting, done = 1, 2
+	state := make([]int, len(rows))
+	var order []int
+	var visit func(i int) int // -1, or a row in a cycle
+	visit = func(i int) int {
+		switch state[i] {
+		case done:
+			return -1
+		case visiting:
+			return i
+		}
+		state[i] = visiting
+		if m, ok := newCodes[rows[i].newManager]; ok {
+			if c := visit(m); c >= 0 {
+				return c
+			}
+		}
+		state[i] = done
+		order = append(order, i)
+		return -1
+	}
+	for _, typed := range []bool{true, false} {
+		for i, r := range rows {
+			if (r.code != "") == typed {
+				if c := visit(i); c >= 0 {
+					return []int{c}, ErrManagerCycle
+				}
+			}
+		}
+	}
+	return order, nil
 }
 
 // writeRowError turns a service's refusal of a row into the row's error; other errors are not the row's.
@@ -474,7 +597,8 @@ func cellDate(cell string) (string, bool) {
 		}
 	}
 	// Excel counts days from 30/12/1899.
-	if n, err := strconv.Atoi(cell); err == nil && n > 0 && n < 2958466 {
+	// Below 1910 it is more likely a year typed alone.
+	if n, err := strconv.Atoi(cell); err == nil && n >= 3653 && n < 2958466 {
 		return time.Date(1899, 12, 30, 0, 0, 0, 0, time.UTC).AddDate(0, 0, n).Format(time.DateOnly), true
 	}
 	return "", false

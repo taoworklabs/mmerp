@@ -434,15 +434,16 @@ func writeErr(err error) error {
 	if !ok {
 		return err
 	}
+	// Joined, so a caller can still tell that the transaction is now aborted.
 	switch pgErr.ConstraintName {
 	case "employees_code_key":
-		return ErrCodeTaken
+		return errors.Join(ErrCodeTaken, err)
 	case "employees_user_id_key":
-		return ErrUserAlreadyLinked
+		return errors.Join(ErrUserAlreadyLinked, err)
 	case "employees_manager_id_fkey", "employees_check":
-		return ErrManagerNotFound
+		return errors.Join(ErrManagerNotFound, err)
 	case "employees_org_unit_id_fkey":
-		return platform.ErrNotFound
+		return errors.Join(platform.ErrNotFound, err)
 	}
 	return err
 }

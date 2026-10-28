@@ -18,6 +18,7 @@ import (
 	"github.com/taoworklabs/mmerp/internal/core/iam"
 	"github.com/taoworklabs/mmerp/internal/modules/hrm"
 	"github.com/taoworklabs/mmerp/internal/platform"
+	"github.com/taoworklabs/mmerp/internal/platform/pgtest"
 )
 
 // exportEmployees runs the employee export as ctx's actor and returns the sheet's rows.
@@ -231,6 +232,16 @@ func asRows(rows [][]string) [][]any {
 // importEmployees imports rows under the employee header as ctx's actor; the job must end as want.
 func (f *fixture) importEmployees(ctx context.Context, want string, rows ...[]any) dataio.Job {
 	f.t.Helper()
+	job := f.startImport(ctx, rows...)
+	f.wantJob(job, want)
+	j, err := f.core.DataIO.Job(ctx, job)
+	f.check(err)
+	return j
+}
+
+// startImport queues an import of rows under the employee header as ctx's actor.
+func (f *fixture) startImport(ctx context.Context, rows ...[]any) int64 {
+	f.t.Helper()
 	x := excelize.NewFile()
 	for r, row := range append([][]any{employeeHeader}, rows...) {
 		cell, _ := excelize.CoordinatesToCellName(1, r+1)
@@ -240,10 +251,7 @@ func (f *fixture) importEmployees(ctx context.Context, want string, rows ...[]an
 	f.check(err)
 	job, err := f.core.DataIO.StartImport(ctx, "hrm.employees", "e.xlsx", b, nil)
 	f.check(err)
-	f.wantJob(job, want)
-	j, err := f.core.DataIO.Job(ctx, job)
-	f.check(err)
-	return j
+	return job
 }
 
 func wantRowError(t *testing.T, j dataio.Job, row int, part string) {
@@ -397,4 +405,143 @@ func TestEmployeeImportDatesAndGender(t *testing.T) {
 		}
 	}
 	wantRowError(t, f.importEmployees(hr, "import_rows_invalid", eRow("D4", with("31/02/1990"))), 2, "Ngày sinh: \"31/02/1990\"")
+	// A year typed alone is not a day count.
+	wantRowError(t, f.importEmployees(hr, "import_rows_invalid", eRow("D5", with(1990))), 2, "Ngày sinh: \"1990\"")
+}
+
+func TestEmployeeImportRequiredInOrder(t *testing.T) {
+	f := newFixture(t)
+	hr := f.ctxFor("hr", "hr@*")
+	j := f.importEmployees(hr, "import_rows_invalid", eRow("X1", nil), eRow("X2", nil), eRow("X3", nil))
+	var got []string
+	for _, e := range j.RowErrors {
+		got = append(got, e.Message)
+	}
+	want := []string{"Thiếu họ tên", "Thiếu phòng ban", "Thiếu ngày vào làm"}
+	if !slices.Equal(got, slices.Concat(want, want, want)) {
+		t.Fatalf("%q", got)
+	}
+}
+
+// A typed code the series would issue next is written before the rows that take an issued one.
+func TestEmployeeImportTypedCodesFirst(t *testing.T) {
+	f := newFixture(t)
+	hr := f.ctxFor("hr", "hr@*")
+	f.importEmployees(hr, "completed",
+		eRow("", map[int]any{1: "Không mã", 7: "A", 9: "01/02/2026"}),
+		eRow("NV00001", map[int]any{1: "Có mã", 7: "A", 9: "01/02/2026"}))
+	if a, b := f.employeeByCode(hr, "NV00001"), f.employeeByCode(hr, "NV00002"); a.FullName != "Có mã" || b.FullName != "Không mã" {
+		t.Fatalf("%s, %s", a.FullName, b.FullName)
+	}
+}
+
+// A constraint failure aborts the transaction, so the rows after it are not written but the error is the row's.
+func TestEmployeeImportStopsAtConstraintFailure(t *testing.T) {
+	f := newFixture(t)
+	hr := f.ctxFor("hr", "hr@*")
+	_, err := f.system.Exec(f.admin, `CREATE FUNCTION hrm.test_boom() RETURNS trigger LANGUAGE plpgsql AS $$
+BEGIN
+  IF NEW.full_name = 'Boom' THEN RAISE unique_violation USING CONSTRAINT = 'employees_code_key'; END IF;
+  RETURN NEW;
+END $$;
+CREATE TRIGGER boom BEFORE INSERT ON hrm.employees FOR EACH ROW EXECUTE FUNCTION hrm.test_boom();`)
+	f.check(err)
+	j := f.importEmployees(hr, "import_rows_invalid",
+		eRow("B1", map[int]any{1: "Boom", 7: "A", 9: "01/02/2026"}),
+		eRow("B2", map[int]any{1: "Fine", 7: "A", 9: "01/02/2026"}))
+	if len(j.RowErrors) != 1 {
+		t.Fatalf("%+v", j.RowErrors)
+	}
+	wantRowError(t, j, 2, "B1 đã được dùng")
+}
+
+// A form edit committed while the import waits is kept: the import reads the profile under its lock.
+func TestEmployeeImportLocksBeforeReading(t *testing.T) {
+	f := newFixture(t)
+	hr := f.ctxFor("hr", "hr@*")
+	id := must(t)(f.hrm.CreateEmployee(hr, employee("E1", f.a)))
+	job := f.startImport(hr, eRow("E1", map[int]any{6: "Đà Nẵng"}))
+	tx, err := pgtest.System(t, f.core.Pool).Begin(t.Context())
+	f.check(err)
+	defer func() { _ = tx.Rollback(context.Background()) }()
+	_, err = tx.Exec(t.Context(), `SELECT 1 FROM hrm.employees WHERE id = $1 FOR UPDATE`, id)
+	f.check(err)
+	f.check(f.jobs.Start(t.Context()))
+	pgtest.AwaitLockWait(t, f.system)
+	_, err = tx.Exec(t.Context(), `UPDATE hrm.employees SET phone = '0999' WHERE id = $1`, id)
+	f.check(err)
+	f.check(tx.Commit(t.Context()))
+	f.check(f.jobs.Stop(t.Context()))
+	f.wantJob(job, "completed")
+	e, err := f.hrm.Employee(hr, id)
+	f.check(err)
+	if e.Phone == nil || *e.Phone != "0999" || *e.Address != "Đà Nẵng" {
+		t.Fatalf("%+v", e.EmployeeFields)
+	}
+}
+
+func TestEmployeeImportManagerInFile(t *testing.T) {
+	f := newFixture(t)
+	hr := f.ctxFor("hr", "hr@*")
+	must(t)(f.hrm.CreateEmployee(hr, employee("E1", f.a)))
+	f.importEmployees(hr, "completed",
+		eRow("R1", map[int]any{1: "R", 7: "A", 8: "m1", 9: "01/02/2026"}),
+		eRow("E1", map[int]any{8: "M1"}),
+		eRow("", map[int]any{1: "Không mã", 7: "A", 8: "M1", 9: "01/02/2026"}),
+		eRow("M1", map[int]any{1: "M", 7: "A", 9: "01/02/2026"}))
+	m1 := f.employeeByCode(hr, "M1")
+	for _, c := range []string{"R1", "E1", "NV00001"} {
+		if e := f.employeeByCode(hr, c); e.ManagerID == nil || *e.ManagerID != m1.ID {
+			t.Fatalf("%s manager %v", c, e.ManagerID)
+		}
+	}
+}
+
+// The cycle rule holds for the end state, so a file may swap managers in any row order.
+func TestEmployeeImportManagerSwap(t *testing.T) {
+	f := newFixture(t)
+	hr := f.ctxFor("hr", "hr@*")
+	b := must(t)(f.hrm.CreateEmployee(hr, employee("B", f.a)))
+	in := employee("A", f.a)
+	in.ManagerID = &b
+	a := must(t)(f.hrm.CreateEmployee(hr, in))
+	c := must(t)(f.hrm.CreateEmployee(hr, employee("C", f.a)))
+	f.importEmployees(hr, "completed", eRow("B", map[int]any{8: "A"}), eRow("A", map[int]any{8: "C"}))
+	if ea, eb := f.employeeByCode(hr, "A"), f.employeeByCode(hr, "B"); *ea.ManagerID != c || *eb.ManagerID != a {
+		t.Fatalf("A→%d B→%d", *ea.ManagerID, *eb.ManagerID)
+	}
+}
+
+func TestEmployeeImportManagerCycle(t *testing.T) {
+	f := newFixture(t)
+	hr := f.ctxFor("hr", "hr@*")
+	b := must(t)(f.hrm.CreateEmployee(hr, employee("B", f.a)))
+	in := employee("A", f.a)
+	in.ManagerID = &b
+	must(t)(f.hrm.CreateEmployee(hr, in))
+	j := f.importEmployees(hr, "import_rows_invalid", eRow("B", map[int]any{8: "A"}))
+	wantRowError(t, j, 2, "Người quản lý của nhân viên B tạo thành vòng lặp qua A · Nhân viên A")
+	if e := f.employeeByCode(hr, "B"); e.ManagerID != nil {
+		t.Fatalf("B manager %v", *e.ManagerID)
+	}
+	j = f.importEmployees(hr, "import_rows_invalid",
+		eRow("N1", map[int]any{1: "Một", 7: "A", 8: "N2", 9: "01/02/2026"}),
+		eRow("N2", map[int]any{1: "Hai", 7: "A", 8: "N1", 9: "01/02/2026"}))
+	if len(j.RowErrors) != 1 || !strings.Contains(j.RowErrors[0].Message, "vòng lặp") {
+		t.Fatalf("%+v", j.RowErrors)
+	}
+	if n := f.auditCount("hrm.employee_created"); n != 2 {
+		t.Fatalf("created %d", n)
+	}
+}
+
+func TestEmployeeImportManagerSelf(t *testing.T) {
+	f := newFixture(t)
+	hr := f.ctxFor("hr", "hr@*")
+	must(t)(f.hrm.CreateEmployee(hr, employee("E1", f.a)))
+	j := f.importEmployees(hr, "import_rows_invalid",
+		eRow("E1", map[int]any{8: "e1"}),
+		eRow("N1", map[int]any{1: "Một", 7: "A", 8: "N1", 9: "01/02/2026"}))
+	wantRowError(t, j, 2, "E1 không thể là người quản lý")
+	wantRowError(t, j, 3, "N1 không thể là người quản lý")
 }
