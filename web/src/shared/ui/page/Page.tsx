@@ -45,7 +45,7 @@ export function Page({ children, className, centered, ...header }: PageHeaderPro
   )
 }
 
-function PageHeader({ breadcrumbs, withBack, current, ...props }: PageHeaderProps) {
+export function PageHeader({ breadcrumbs, withBack, current, ...props }: PageHeaderProps) {
   const { t } = useTranslation()
   const parent = breadcrumbs?.at(-1)
   const crumbs = breadcrumbs?.length ? { breadcrumbs: breadcrumbs.map((c) => ({ label: c.label, render: <Link to={c.to} /> })), breadcrumbsLabel: t('shared.page.breadcrumb') } : {}

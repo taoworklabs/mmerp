@@ -1,9 +1,9 @@
-/* A wide list fills the shell's main below the app header (a column of the window's height), so
-   title, filters and paging stay put and only the content scrolls; a table that is the whole
-   content scrolls under its own header. A banner above the page takes its share of the column. */
-.frame {
+/* The content is one item of the page, its parts spaced like the page's. */
+.content {
+  display: flex;
+  flex-direction: column;
   flex: 1;
-  min-height: 0;
+  gap: var(--mmerp-space-lg);
 }
 
 /* The list's own table is the page's content: it fills the page and needs no frame of its own. */
@@ -12,15 +12,16 @@
   border-radius: 0;
 }
 
-/* The content is one item of the page, its parts spaced like the page's. */
-.content {
-  display: flex;
-  flex-direction: column;
-  gap: var(--mmerp-space-lg);
-}
+/* From 64em the table runs edge to edge and only the content scrolls, under the table's own
+   header; anything else in it (an alert, a tree, an empty state) keeps the page's margins. */
+@media (min-width: 64em) {
+  .content {
+    min-height: 0;
+    overflow: auto;
+    scrollbar-width: thin;
+  }
 
-.frame .content {
-  min-height: 0;
-  overflow: auto;
-  scrollbar-width: thin;
+  .content > :not(:global([data-table])) {
+    margin-inline: var(--mmerp-page-inline);
+  }
 }

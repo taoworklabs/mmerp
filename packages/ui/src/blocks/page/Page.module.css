@@ -73,7 +73,8 @@
   padding: var(--mmerp-space-lg) var(--mmerp-page-inline) var(--mmerp-space-md);
 }
 
-.listHead [data-page-header] {
+/* Tabs keep the rule they sit on. */
+.listHead [data-page-header]:not([data-tabs]) {
   padding-bottom: 0;
   border-bottom: 0;
 }

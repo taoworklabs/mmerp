@@ -1,4 +1,4 @@
-import { Button, FilterBar, PagingBar as KitPagingBar, useMediaQuery } from '@mmerp/ui'
+import { Button, FilterBar, Page as KitPage, PagingBar as KitPagingBar, useMediaQuery } from '@mmerp/ui'
 import type { ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { errorText, formatNumber } from '@/shared/i18n'
@@ -7,7 +7,7 @@ import { DataTable, type DataTableProps } from '../DataTable'
 import { ContentSkeleton, EmptyState, ErrorState } from '../states'
 import classes from './ListPage.module.css'
 import { listState, type ListQuery } from './listState'
-import { Page, type PageHeaderProps } from './Page'
+import { PageHeader, type PageHeaderProps } from './Page'
 
 type Paging = { page: number; pageSize: number; total: number; onPage: (page: number) => void; onPageSize: (size: number) => void }
 
@@ -23,7 +23,7 @@ export type ListBody<T> = {
 // ListPage: title and the create button, optional view tabs on the header's rule, a filter bar, the table, then paging. The filter bar's
 // chips wrap onto more lines when they do not fit; tools (saved views, columns) sit at its right end
 // from 1024px; bulk, while rows are selected, takes the whole bar's place. From 1024px the page fills
-// the window and only its content scrolls. Given list, it shows loading, error, empty or the table and pages it;
+// the window and only its content scrolls, the table edge to edge under the header block. Given list, it shows loading, error, empty or the table and pages it;
 // children (an alert above the table, a side panel, a modal) come first.
 export function ListPage<T>({
   action,
@@ -50,30 +50,35 @@ export function ListPage<T>({
   const { t } = useTranslation()
   const wide = useMediaQuery('(min-width: 64em)', true)
   return (
-    <Page {...header} actions={action} tabs={tabs} className={wide ? classes.frame : undefined}>
-      {(filters || (wide && (tools || bulk))) && (
-        <FilterBar
-          label={t('shared.list.filters')}
-          tools={tools}
-          bulk={bulk}
-          filters={
-            <>
-              {filters}
-              {onClearFilters && (
-                <Button variant="default" onClick={onClearFilters}>
-                  {t('shared.list.clear_filters')}
-                </Button>
-              )}
-            </>
-          }
-        />
-      )}
+    <KitPage
+      variant="list"
+      header={<PageHeader {...header} actions={action} tabs={tabs} />}
+      filters={
+        (filters || (wide && (tools || bulk))) && (
+          <FilterBar
+            label={t('shared.list.filters')}
+            tools={tools}
+            bulk={bulk}
+            filters={
+              <>
+                {filters}
+                {onClearFilters && (
+                  <Button variant="default" onClick={onClearFilters}>
+                    {t('shared.list.clear_filters')}
+                  </Button>
+                )}
+              </>
+            }
+          />
+        )
+      }
+      footer={list?.paging && !!list.query.data?.total && <PagingBar {...list.paging} total={list.query.data.total} />}
+    >
       <div className={classes.content}>
         {children}
         {list && <ListContent list={list} onClearFilters={onClearFilters} />}
       </div>
-      {list?.paging && !!list.query.data?.total && <PagingBar {...list.paging} total={list.query.data.total} />}
-    </Page>
+    </KitPage>
   )
 }
 
