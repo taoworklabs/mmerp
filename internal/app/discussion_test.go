@@ -72,7 +72,7 @@ func TestLeaveDiscussion(t *testing.T) {
 	ok(admin, "PUT", "/api/approval-rules/hrm.leave_request", `{"flow":[{"step":{"approver":{"kind":"module"},"approvals":1,"rejections":1}}],"max_levels":3,"fallback_product":"hrm","fallback_role":"hr"}`, 204)
 
 	staffC, bossC, stranger := login("staff"), login("boss"), login("stranger")
-	lv := id(staffC, "/api/hrm/leaves", fmt.Sprintf(`{"leave_type_id":%d,"start_date":"2026-03-10","end_date":"2026-03-11","days":"1.5","reason":null}`, annual))
+	lv := id(staffC, "/api/hrm/leaves", fmt.Sprintf(`{"leave_type_id":%d,"start_date":"2026-03-10","end_date":"2026-03-11","days":"1.5","end_half":true,"reason":null}`, annual))
 	docPath := fmt.Sprintf("/api/documents/hrm.leave_request/%d", lv)
 	comments := fmt.Sprintf("/api/records/hrm.leave_request/%d/comments", lv)
 	ok(staffC, "POST", docPath+"/transitions", `{"to":"posted","version":1}`, 200)

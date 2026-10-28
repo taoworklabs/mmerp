@@ -22,8 +22,11 @@ type LeaveFields struct {
 	LeaveTypeID int64   `json:"leave_type_id"`
 	StartDate   string  `json:"start_date" format:"date"`
 	EndDate     string  `json:"end_date" format:"date"`
-	Days        string  `json:"days" pattern:"^[0-9]{1,3}(\\.[05])?$" doc:"Half-day steps, e.g. 2.5; at most the working days of the range"`
+	Days        string  `json:"days,omitempty" pattern:"^[0-9]{1,3}(\\.[05])?$" doc:"Computed from the work calendar; when sent, the count the client expects, refused if it differs"`
 	Reason      *string `json:"reason" maxLength:"1000"`
+	// Half a day on the first or the last working date of the range.
+	StartHalf bool `json:"start_half,omitempty" doc:"Only the afternoon of the first working date"`
+	EndHalf   bool `json:"end_half,omitempty" doc:"Only the morning of the last working date"`
 }
 
 type NewLeave struct {

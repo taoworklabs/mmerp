@@ -73,7 +73,7 @@ func (q *Queries) AddLeaveBalance(ctx context.Context, arg AddLeaveBalanceParams
 }
 
 const approvedLeaveOverlapping = `-- name: ApprovedLeaveOverlapping :many
-SELECT r.id, d.number, r.start_date, r.end_date, r.days::text AS days
+SELECT r.id, d.number, r.start_date, r.end_date, r.days::text AS days, r.start_half
 FROM hrm.leave_requests r
 JOIN record.documents d ON d.id = r.id
 WHERE r.employee_id = $1 AND r.id <> $2 AND d.status = 'posted'
@@ -94,6 +94,7 @@ type ApprovedLeaveOverlappingRow struct {
 	StartDate pgtype.Date
 	EndDate   pgtype.Date
 	Days      string
+	StartHalf bool
 }
 
 // The employee's other approved leave touching [@start_date, @end_date], whatever its type:
@@ -118,6 +119,7 @@ func (q *Queries) ApprovedLeaveOverlapping(ctx context.Context, arg ApprovedLeav
 			&i.StartDate,
 			&i.EndDate,
 			&i.Days,
+			&i.StartHalf,
 		); err != nil {
 			return nil, err
 		}
@@ -130,8 +132,8 @@ func (q *Queries) ApprovedLeaveOverlapping(ctx context.Context, arg ApprovedLeav
 }
 
 const createLeaveRequest = `-- name: CreateLeaveRequest :exec
-INSERT INTO hrm.leave_requests (id, employee_id, leave_type_id, start_date, end_date, days, reason)
-VALUES ($1, $2, $3, $4, $5, CAST($6::text AS numeric), $7)
+INSERT INTO hrm.leave_requests (id, employee_id, leave_type_id, start_date, end_date, days, reason, start_half, end_half, computed)
+VALUES ($1, $2, $3, $4, $5, CAST($6::text AS numeric), $7, $8, $9, true)
 `
 
 type CreateLeaveRequestParams struct {
@@ -142,6 +144,8 @@ type CreateLeaveRequestParams struct {
 	EndDate     pgtype.Date
 	Days        string
 	Reason      pgtype.Text
+	StartHalf   bool
+	EndHalf     bool
 }
 
 func (q *Queries) CreateLeaveRequest(ctx context.Context, arg CreateLeaveRequestParams) error {
@@ -153,6 +157,8 @@ func (q *Queries) CreateLeaveRequest(ctx context.Context, arg CreateLeaveRequest
 		arg.EndDate,
 		arg.Days,
 		arg.Reason,
+		arg.StartHalf,
+		arg.EndHalf,
 	)
 	return err
 }
@@ -210,6 +216,7 @@ func (q *Queries) EnsureLeaveBalance(ctx context.Context, arg EnsureLeaveBalance
 
 const getLeaveRequest = `-- name: GetLeaveRequest :one
 SELECT r.id, r.employee_id, r.leave_type_id, r.start_date, r.end_date, r.days::text AS days, r.reason,
+       r.start_half, r.end_half, r.computed,
        r.deducted::text AS deducted, r.deducted_carried::text AS deducted_carried,
        e.code AS employee_code, e.full_name AS employee_name, e.user_id AS employee_user_id,
        t.name AS leave_type_name, t.deducts_balance, t.max_days, t.requires_attachment, d.org_unit_id
@@ -228,6 +235,9 @@ type GetLeaveRequestRow struct {
 	EndDate            pgtype.Date
 	Days               string
 	Reason             pgtype.Text
+	StartHalf          bool
+	EndHalf            bool
+	Computed           bool
 	Deducted           string
 	DeductedCarried    string
 	EmployeeCode       string
@@ -251,6 +261,9 @@ func (q *Queries) GetLeaveRequest(ctx context.Context, id int64) (GetLeaveReques
 		&i.EndDate,
 		&i.Days,
 		&i.Reason,
+		&i.StartHalf,
+		&i.EndHalf,
+		&i.Computed,
 		&i.Deducted,
 		&i.DeductedCarried,
 		&i.EmployeeCode,
@@ -573,8 +586,8 @@ func (q *Queries) SetLeaveDeducted(ctx context.Context, arg SetLeaveDeductedPara
 
 const updateLeaveRequest = `-- name: UpdateLeaveRequest :exec
 UPDATE hrm.leave_requests SET leave_type_id = $1, start_date = $2, end_date = $3,
-    days = CAST($4::text AS numeric), reason = $5
-WHERE id = $6
+    days = CAST($4::text AS numeric), reason = $5, start_half = $6, end_half = $7, computed = true
+WHERE id = $8
 `
 
 type UpdateLeaveRequestParams struct {
@@ -583,6 +596,8 @@ type UpdateLeaveRequestParams struct {
 	EndDate     pgtype.Date
 	Days        string
 	Reason      pgtype.Text
+	StartHalf   bool
+	EndHalf     bool
 	ID          int64
 }
 
@@ -593,6 +608,8 @@ func (q *Queries) UpdateLeaveRequest(ctx context.Context, arg UpdateLeaveRequest
 		arg.EndDate,
 		arg.Days,
 		arg.Reason,
+		arg.StartHalf,
+		arg.EndHalf,
 		arg.ID,
 	)
 	return err

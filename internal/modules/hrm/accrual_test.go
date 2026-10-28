@@ -260,3 +260,16 @@ func TestLeaverNotCarriedNorExpired(t *testing.T) {
 		t.Fatalf("carried into 2027: 2026 %s, 2027 %s", f.balance(), f.balanceIn(2027))
 	}
 }
+
+// Leave dated after the carried days lapse cannot spend them.
+func TestCarriedNotForLaterLeave(t *testing.T) {
+	f := newCarryFixture(t, "3", nil)
+	f.accrue("2026-01-02")
+	f.grant("1")
+	id := must(t)(f.hrm.CreateLeave(f.e, hrm.NewLeave{LeaveFields: f.fields("2026-06-01", "2026-06-02", "2")}))
+	wantErr(t, f.send(f.e, id), "insufficient_leave_balance")
+	f.approved("2026-06-01", "2026-06-01", "1")
+	if carried, _ := f.carried(); carried != "5" || f.balance() != "5" {
+		t.Fatalf("carried %s, balance %s", carried, f.balance())
+	}
+}

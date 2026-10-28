@@ -12,7 +12,7 @@ import (
 )
 
 const myLeaves = `-- name: MyLeaves :many
-SELECT r.start_date, r.end_date, r.days::text AS days, t.name AS type_name, t.paid
+SELECT r.start_date, r.end_date, r.days::text AS days, t.name AS type_name, t.paid, r.start_half
 FROM hrm.leave_requests r JOIN hrm.leave_types t ON t.id = r.leave_type_id JOIN record.documents d ON d.id = r.id
 WHERE r.employee_id = $1 AND d.status = 'posted' AND r.start_date <= $2::date AND r.end_date >= $3::date
 ORDER BY r.start_date, r.id
@@ -30,6 +30,7 @@ type MyLeavesRow struct {
 	Days      string
 	TypeName  string
 	Paid      bool
+	StartHalf bool
 }
 
 func (q *Queries) MyLeaves(ctx context.Context, arg MyLeavesParams) ([]MyLeavesRow, error) {
@@ -47,6 +48,7 @@ func (q *Queries) MyLeaves(ctx context.Context, arg MyLeavesParams) ([]MyLeavesR
 			&i.Days,
 			&i.TypeName,
 			&i.Paid,
+			&i.StartHalf,
 		); err != nil {
 			return nil, err
 		}

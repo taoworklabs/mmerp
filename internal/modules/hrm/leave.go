@@ -169,9 +169,12 @@ func (s *Service) leaveTransition(ctx context.Context, d record.Doc, from record
 	var delta, fromCarried decimal.Decimal
 	if approved {
 		delta = decimal.RequireFromString(r.Days).Neg()
-		// Leave dated while carried days last spends them first.
+		// Leave dated while carried days last spends them first; leave dated after they lapse
+		// may not spend them at all.
 		if bal.CarriedUntil.Valid && !r.StartDate.Time.After(bal.CarriedUntil.Time) {
 			fromCarried = decimal.Min(carried, delta.Neg())
+		} else if days.Sub(carried).Add(delta).IsNegative() {
+			return ErrInsufficientBalance
 		}
 		carried = carried.Sub(fromCarried)
 	} else {
@@ -253,7 +256,7 @@ func (s *Service) Leave(ctx context.Context, id int64) (Leave, error) {
 		ID: id, Number: d.Number, Status: string(d.Status), Version: d.Version, EmployeeID: r.EmployeeID,
 		EmployeeCode: r.EmployeeCode, EmployeeName: r.EmployeeName, LeaveTypeName: r.LeaveTypeName,
 		LeaveFields: LeaveFields{LeaveTypeID: r.LeaveTypeID, StartDate: *platform.DatePtr(r.StartDate), EndDate: *platform.DatePtr(r.EndDate),
-			Days: platform.PlainDecimal(r.Days), Reason: platform.TextPtr(r.Reason)},
+			Days: platform.PlainDecimal(r.Days), Reason: platform.TextPtr(r.Reason), StartHalf: r.StartHalf, EndHalf: r.EndHalf},
 		AllowedActions: actions,
 	}
 	if ok, err := s.canSeeBalance(ctx, r.EmployeeID); err != nil {
@@ -299,6 +302,7 @@ func (s *Service) CreateLeave(ctx context.Context, in NewLeave) (int64, error) {
 		if err := store.CreateLeaveRequest.Run(ctx, row); err != nil {
 			return err
 		}
+		in.Days = row.Days
 		return s.d.Audit.RecordChanges(ctx, "hrm.leave_request_created", audit.Ref{Type: leaveType, ID: id}, leaveChanges(LeaveFields{}, "", in.LeaveFields, typeName))
 	})
 	return id, err
@@ -324,10 +328,13 @@ func (s *Service) UpdateLeave(ctx context.Context, id int64, in LeaveUpdate) err
 		row.ID = id
 		if err := store.UpdateLeaveRequest.Run(ctx, store.UpdateLeaveRequestParams{
 			ID: id, LeaveTypeID: row.LeaveTypeID, StartDate: row.StartDate, EndDate: row.EndDate, Days: row.Days, Reason: row.Reason,
+			StartHalf: row.StartHalf, EndHalf: row.EndHalf,
 		}); err != nil {
 			return err
 		}
-		before := LeaveFields{LeaveTypeID: old.LeaveTypeID, StartDate: *platform.DatePtr(old.StartDate), EndDate: *platform.DatePtr(old.EndDate), Days: platform.PlainDecimal(old.Days), Reason: platform.TextPtr(old.Reason)}
+		in.Days = row.Days
+		before := LeaveFields{LeaveTypeID: old.LeaveTypeID, StartDate: *platform.DatePtr(old.StartDate), EndDate: *platform.DatePtr(old.EndDate), Days: platform.PlainDecimal(old.Days), Reason: platform.TextPtr(old.Reason),
+			StartHalf: old.StartHalf, EndHalf: old.EndHalf}
 		return s.d.Audit.RecordChanges(ctx, "hrm.leave_request_updated", audit.Ref{Type: leaveType, ID: id}, leaveChanges(before, old.LeaveTypeName, in.LeaveFields, typeName))
 	})
 }
@@ -361,7 +368,18 @@ func (s *Service) checkLeaveDates(ctx context.Context, d record.Doc, r store.Get
 	if err != nil {
 		return err
 	}
-	if err := checkLeaveDaysOn(cal, start, end, days); err != nil {
+	if r.Computed {
+		// The calendar may have changed since the request was saved; the approved count must
+		// be the one the requester saw.
+		now, err := computedDays(cal, start, end, r.StartHalf, r.EndHalf)
+		if err != nil {
+			return err
+		}
+		if !now.Equal(days) {
+			return leaveDaysChanged(now)
+		}
+	} else if err := checkLeaveDaysOn(cal, start, end, days); err != nil {
+		// Saved before counts were computed: the typed count under the calendar cap.
 		return err
 	}
 	// Add every other request up per date first: three half days on one date must fail
@@ -373,12 +391,12 @@ func (s *Service) checkLeaveDates(ctx context.Context, d record.Doc, r store.Get
 		if err != nil {
 			return err
 		}
-		for date, v := range leaveAllocation(cal, *platform.DatePtr(o.StartDate), *platform.DatePtr(o.EndDate), oDays) {
+		for date, v := range halfAllocation(cal, *platform.DatePtr(o.StartDate), *platform.DatePtr(o.EndDate), oDays, o.StartHalf) {
 			taken[date] = taken[date].Add(v)
 			culprit[date] = o.Number
 		}
 	}
-	for date, v := range leaveAllocation(cal, start, end, days) {
+	for date, v := range halfAllocation(cal, start, end, days, r.StartHalf) {
 		if v.Add(taken[date]).GreaterThan(one) {
 			return &platform.Error{Status: http.StatusConflict, Code: "leave_overlaps",
 				Params: map[string]any{"date": date, "number": culprit[date]}}
@@ -415,17 +433,9 @@ func (s *Service) LeaveWorkingDays(ctx context.Context, employee *int64, start, 
 	return cal.workingDays(from, to), nil
 }
 
-// checkLeaveDays holds the day count to the working days of [start, end]: the days the
+// checkLeaveDaysOn holds a typed day count to the working days of [start, end]: the days the
 // allocation can place it on. Without the cap the remainder is dropped from the paid days
 // while the balance still loses it.
-func checkLeaveDays(ctx context.Context, legalEntity int64, start, end string, days decimal.Decimal) error {
-	cal, err := workCalendar(ctx, legalEntity, start, end)
-	if err != nil {
-		return err
-	}
-	return checkLeaveDaysOn(cal, start, end, days)
-}
-
 func checkLeaveDaysOn(cal calendar, start, end string, days decimal.Decimal) error {
 	available := cal.workingDays(dayOf(start), dayOf(end))
 	switch {
@@ -465,8 +475,8 @@ func (s *Service) leaveHeader(ctx context.Context, unit int64, in LeaveFields) (
 	case start.Time.Year() != end.Time.Year():
 		return h, row, "", ErrLeaveSpansYears
 	}
-	days, ok := record.ParseNumber(in.Days)
-	if !ok || !days.IsPositive() || !days.Mul(decimal.NewFromInt(2)).IsInteger() {
+	sent, ok := record.ParseNumber(in.Days)
+	if in.Days != "" && (!ok || !sent.IsPositive() || !sent.Mul(decimal.NewFromInt(2)).IsInteger()) {
 		return h, row, "", ErrLeaveDays
 	}
 	// The legal entity is read under the tree lock, so the calendar cannot move under us.
@@ -477,8 +487,16 @@ func (s *Service) leaveHeader(ctx context.Context, unit int64, in LeaveFields) (
 	if err != nil {
 		return h, row, "", err
 	}
-	if err := checkLeaveDays(ctx, legalEntity, in.StartDate, in.EndDate, days); err != nil {
+	cal, err := workCalendar(ctx, legalEntity, in.StartDate, in.EndDate)
+	if err != nil {
 		return h, row, "", err
+	}
+	days, err := computedDays(cal, in.StartDate, in.EndDate, in.StartHalf, in.EndHalf)
+	if err != nil {
+		return h, row, "", err
+	}
+	if in.Days != "" && !sent.Equal(days) {
+		return h, row, "", leaveDaysChanged(days)
 	}
 	t, err := store.GetLeaveType.Run(ctx, in.LeaveTypeID)
 	if errors.Is(err, pgx.ErrNoRows) {
@@ -493,8 +511,9 @@ func (s *Service) leaveHeader(ctx context.Context, unit int64, in LeaveFields) (
 	if err := checkLeaveTypeMax(t.MaxDays, days); err != nil {
 		return h, row, "", err
 	}
-	row = store.CreateLeaveRequestParams{LeaveTypeID: t.ID, StartDate: start, EndDate: end, Days: in.Days, Reason: platform.NullText(in.Reason)}
-	h = record.Header{Date: in.StartDate, OrgUnitID: unit, Fields: map[string]string{"days": in.Days, "leave_type": strconv.FormatInt(t.ID, 10)}}
+	row = store.CreateLeaveRequestParams{LeaveTypeID: t.ID, StartDate: start, EndDate: end, Days: days.String(), Reason: platform.NullText(in.Reason),
+		StartHalf: in.StartHalf, EndHalf: in.EndHalf}
+	h = record.Header{Date: in.StartDate, OrgUnitID: unit, Fields: map[string]string{"days": days.String(), "leave_type": strconv.FormatInt(t.ID, 10)}}
 	return h, row, t.Name, nil
 }
 
@@ -506,6 +525,8 @@ func leaveChanges(old LeaveFields, oldType string, n LeaveFields, newType string
 		{Field: "end_date", Old: old.EndDate, New: n.EndDate},
 		{Field: "days", Old: old.Days, New: platform.PlainDecimal(n.Days)},
 		{Field: "reason", Old: old.Reason, New: n.Reason},
+		{Field: "start_half", Old: old.StartHalf, New: n.StartHalf},
+		{Field: "end_half", Old: old.EndHalf, New: n.EndHalf},
 	}
 }
 
@@ -577,4 +598,31 @@ func (s *Service) AdjustLeaveBalance(ctx context.Context, employeeID int64, year
 		return s.d.Audit.RecordFor(ctx, "hrm.leave_balance_adjusted", audit.Ref{Type: employeeType, ID: employeeID},
 			map[string]any{"year": year, "delta": in.Delta, "days": platform.PlainDecimal(after), "reason": in.Reason})
 	})
+}
+
+// ErrLeaveHalfDays: both halves of the only working date of a request.
+var ErrLeaveHalfDays = &platform.Error{Status: http.StatusUnprocessableEntity, Code: "leave_half_days"}
+
+// computedDays is a request's day count: the working days of [start, end] less half a day
+// for each half flag, which fall on the first and last working dates.
+func computedDays(c calendar, start, end string, startHalf, endHalf bool) (decimal.Decimal, error) {
+	n := c.workingDays(dayOf(start), dayOf(end))
+	switch {
+	case n == 0:
+		return decimal.Zero, ErrLeaveNoWorkingDays
+	case n == 1 && startHalf && endHalf:
+		return decimal.Zero, ErrLeaveHalfDays
+	}
+	days := decimal.NewFromInt(int64(n))
+	for _, half := range []bool{startHalf, endHalf} {
+		if half {
+			days = days.Sub(decimal.New(5, -1))
+		}
+	}
+	return days, nil
+}
+
+// leaveDaysChanged: the calendar gives another count than the one sent or saved.
+func leaveDaysChanged(days decimal.Decimal) error {
+	return &platform.Error{Status: http.StatusConflict, Code: "leave_days_changed", Params: map[string]any{"days": days.String()}}
 }

@@ -15,6 +15,7 @@ WHERE id = @id;
 
 -- name: GetLeaveRequest :one
 SELECT r.id, r.employee_id, r.leave_type_id, r.start_date, r.end_date, r.days::text AS days, r.reason,
+       r.start_half, r.end_half, r.computed,
        r.deducted::text AS deducted, r.deducted_carried::text AS deducted_carried,
        e.code AS employee_code, e.full_name AS employee_name, e.user_id AS employee_user_id,
        t.name AS leave_type_name, t.deducts_balance, t.max_days, t.requires_attachment, d.org_unit_id
@@ -28,18 +29,18 @@ WHERE r.id = $1;
 SELECT EXISTS (SELECT 1 FROM attachment.files WHERE doc_type = 'hrm.leave_request' AND doc_id = $1);
 
 -- name: CreateLeaveRequest :exec
-INSERT INTO hrm.leave_requests (id, employee_id, leave_type_id, start_date, end_date, days, reason)
-VALUES (@id, @employee_id, @leave_type_id, @start_date, @end_date, CAST(@days::text AS numeric), @reason);
+INSERT INTO hrm.leave_requests (id, employee_id, leave_type_id, start_date, end_date, days, reason, start_half, end_half, computed)
+VALUES (@id, @employee_id, @leave_type_id, @start_date, @end_date, CAST(@days::text AS numeric), @reason, @start_half, @end_half, true);
 
 -- name: UpdateLeaveRequest :exec
 UPDATE hrm.leave_requests SET leave_type_id = @leave_type_id, start_date = @start_date, end_date = @end_date,
-    days = CAST(@days::text AS numeric), reason = @reason
+    days = CAST(@days::text AS numeric), reason = @reason, start_half = @start_half, end_half = @end_half, computed = true
 WHERE id = @id;
 
 -- name: ApprovedLeaveOverlapping :many
 -- The employee's other approved leave touching [@start_date, @end_date], whatever its type:
 -- overlap is about absence, so a type that neither deducts nor is paid still occupies dates.
-SELECT r.id, d.number, r.start_date, r.end_date, r.days::text AS days
+SELECT r.id, d.number, r.start_date, r.end_date, r.days::text AS days, r.start_half
 FROM hrm.leave_requests r
 JOIN record.documents d ON d.id = r.id
 WHERE r.employee_id = @employee_id AND r.id <> @id AND d.status = 'posted'
