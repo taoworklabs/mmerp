@@ -175,7 +175,14 @@ test('with HRM disabled, no screen offers to create, import or edit', async ({ b
     await expect(page.getByRole('heading', { level: 1 })).toBeVisible()
     await expect(page.getByRole('main').getByRole('button', { name: writes }), path).toHaveCount(0)
     await expect(page.getByRole('main').getByRole('link', { name: writes }), path).toHaveCount(0)
-    await expect(page.getByRole('main').getByRole('button', { name: 'Thao tác khác' }).first(), path).toBeHidden()
+    // A "more" menu may stay for exports, but offers nothing that writes.
+    const more = page.getByRole('main').getByRole('button', { name: 'Thao tác khác' })
+    if (await more.count()) {
+      await more.first().click()
+      await expect(page.getByRole('menuitem').first(), path).toBeVisible()
+      await expect(page.getByRole('menuitem', { name: writes }), path).toHaveCount(0)
+      await page.keyboard.press('Escape')
+    }
   }
   await page.goto(`http://localhost:8091/hrm/employees?q=M9A${run}`)
   await page.getByRole('link', { name: `M9A${run}-0` }).click()

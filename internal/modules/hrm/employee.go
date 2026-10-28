@@ -67,7 +67,7 @@ func (s *Service) Employees(ctx context.Context, f EmployeeFilter) (EmployeeList
 
 // EmployeeActions lists what the actor may do with employees before picking one: create
 // (needs edit somewhere, and the product enabled), view_sensitive (to fill sensitive
-// fields when creating) and import_leave_balances. The frontend shows the create button
+// fields when creating), import_leave_balances and import_employees. The frontend shows the create button
 // and fields from this.
 func (s *Service) EmployeeActions(ctx context.Context) ([]string, error) {
 	out, err := s.d.Record.TypeActions(ctx, employeeType)
@@ -87,6 +87,10 @@ func (s *Service) EmployeeActions(ctx context.Context) ([]string, error) {
 	}
 	if adjust.Any() && platform.ProductGate(ctx, "hrm", platform.ClassWrite) == nil {
 		out = append(out, "import_leave_balances")
+	}
+	// "create" already means edit somewhere with the product enabled.
+	if slices.Contains(out, "create") {
+		out = append(out, "import_employees")
 	}
 	return out, nil
 }
@@ -224,6 +228,11 @@ func (s *Service) CreateEmployee(ctx context.Context, in NewEmployee) (int64, er
 
 // UpdateEmployee replaces the plain fields and the sensitive fields listed in in.
 func (s *Service) UpdateEmployee(ctx context.Context, id int64, in EmployeeInput) error {
+	return s.updateEmployee(ctx, id, in, true)
+}
+
+// updateEmployee is UpdateEmployee; without checkCycle the caller checks the manager tree itself.
+func (s *Service) updateEmployee(ctx context.Context, id int64, in EmployeeInput, checkCycle bool) error {
 	return platform.InTx(ctx, func(ctx context.Context) error {
 		if _, err := s.visible(ctx, id); err != nil {
 			return err
@@ -240,6 +249,11 @@ func (s *Service) UpdateEmployee(ctx context.Context, id int64, in EmployeeInput
 			return err
 		}
 		if row.ManagerID.Valid && row.ManagerID != old.ManagerID {
+			if row.ManagerID.Int64 == id {
+				return ErrManagerSelf
+			}
+		}
+		if checkCycle && row.ManagerID.Valid && row.ManagerID != old.ManagerID {
 			// ponytail: one lock for all manager changes; per-tree locks if HR edits get busy.
 			if err := store.LockManagerTree.Run(ctx); err != nil {
 				return err
@@ -247,9 +261,6 @@ func (s *Service) UpdateEmployee(ctx context.Context, id int64, in EmployeeInput
 			chain, err := store.ManagerChain.Run(ctx, row.ManagerID.Int64)
 			if err != nil {
 				return err
-			}
-			if row.ManagerID.Int64 == id {
-				return ErrManagerSelf
 			}
 			if slices.Contains(chain, id) {
 				m, err := store.GetEmployee.Run(ctx, row.ManagerID.Int64)
@@ -427,15 +438,16 @@ func writeErr(err error) error {
 	if !ok {
 		return err
 	}
+	// Joined, so a caller can still tell that the transaction is now aborted.
 	switch pgErr.ConstraintName {
 	case "employees_code_key":
-		return ErrCodeTaken
+		return errors.Join(ErrCodeTaken, err)
 	case "employees_user_id_key":
-		return ErrUserAlreadyLinked
+		return errors.Join(ErrUserAlreadyLinked, err)
 	case "employees_manager_id_fkey", "employees_check":
-		return ErrManagerNotFound
+		return errors.Join(ErrManagerNotFound, err)
 	case "employees_org_unit_id_fkey":
-		return platform.ErrNotFound
+		return errors.Join(platform.ErrNotFound, err)
 	}
 	return err
 }

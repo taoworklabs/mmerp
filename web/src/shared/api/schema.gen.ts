@@ -531,7 +531,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** @description What the actor may do before picking an employee: create, view_sensitive, import_leave_balances. */
+        /** @description What the actor may do before picking an employee: create, view_sensitive, import_leave_balances, import_employees. */
         get: operations["get-employee-actions"];
         put?: never;
         post?: never;

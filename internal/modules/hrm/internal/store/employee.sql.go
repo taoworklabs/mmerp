@@ -101,6 +101,70 @@ func (q *Queries) EmployeeCodeTaken(ctx context.Context, lower string) (bool, er
 	return exists, err
 }
 
+const employeeExportBase = `-- name: EmployeeExportBase :many
+SELECT e.id, e.code, e.full_name, e.date_of_birth, e.gender, e.phone, e.email, e.address, e.org_unit_id,
+       m.code AS manager_code, e.hire_date, e.termination_date,
+       e.national_id, e.social_insurance_no, e.tax_code, e.bank_account
+FROM hrm.employees e LEFT JOIN hrm.employees m ON m.id = e.manager_id
+`
+
+type EmployeeExportBaseRow struct {
+	ID                int64
+	Code              string
+	FullName          string
+	DateOfBirth       pgtype.Date
+	Gender            pgtype.Text
+	Phone             pgtype.Text
+	Email             pgtype.Text
+	Address           pgtype.Text
+	OrgUnitID         int64
+	ManagerCode       pgtype.Text
+	HireDate          pgtype.Date
+	TerminationDate   pgtype.Date
+	NationalID        []byte
+	SocialInsuranceNo []byte
+	TaxCode           []byte
+	BankAccount       []byte
+}
+
+// data:base
+func (q *Queries) EmployeeExportBase(ctx context.Context) ([]EmployeeExportBaseRow, error) {
+	rows, err := q.db.Query(ctx, employeeExportBase)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []EmployeeExportBaseRow
+	for rows.Next() {
+		var i EmployeeExportBaseRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Code,
+			&i.FullName,
+			&i.DateOfBirth,
+			&i.Gender,
+			&i.Phone,
+			&i.Email,
+			&i.Address,
+			&i.OrgUnitID,
+			&i.ManagerCode,
+			&i.HireDate,
+			&i.TerminationDate,
+			&i.NationalID,
+			&i.SocialInsuranceNo,
+			&i.TaxCode,
+			&i.BankAccount,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const employeeListBase = `-- name: EmployeeListBase :many
 SELECT e.id, e.code, e.full_name, e.org_unit_id, u.name AS org_unit_name, e.email, e.phone,
        e.hire_date, e.termination_date
@@ -140,6 +204,35 @@ func (q *Queries) EmployeeListBase(ctx context.Context) ([]EmployeeListBaseRow, 
 			&i.HireDate,
 			&i.TerminationDate,
 		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const employeeUnits = `-- name: EmployeeUnits :many
+SELECT id, org_unit_id FROM hrm.employees WHERE id = ANY($1::bigint[])
+`
+
+type EmployeeUnitsRow struct {
+	ID        int64
+	OrgUnitID int64
+}
+
+func (q *Queries) EmployeeUnits(ctx context.Context, ids []int64) ([]EmployeeUnitsRow, error) {
+	rows, err := q.db.Query(ctx, employeeUnits, ids)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []EmployeeUnitsRow
+	for rows.Next() {
+		var i EmployeeUnitsRow
+		if err := rows.Scan(&i.ID, &i.OrgUnitID); err != nil {
 			return nil, err
 		}
 		items = append(items, i)
@@ -276,9 +369,10 @@ func (q *Queries) IsManager(ctx context.Context, arg IsManagerParams) (bool, err
 }
 
 const lockEmployee = `-- name: LockEmployee :one
-SELECT id, code, full_name, date_of_birth, gender, phone, email, address, org_unit_id, manager_id, user_id, hire_date, termination_date, national_id, social_insurance_no, tax_code, bank_account FROM hrm.employees WHERE id = $1 FOR UPDATE
+SELECT id, code, full_name, date_of_birth, gender, phone, email, address, org_unit_id, manager_id, user_id, hire_date, termination_date, national_id, social_insurance_no, tax_code, bank_account FROM hrm.employees WHERE id = $1 FOR NO KEY UPDATE
 `
 
+// NO KEY: serialises edits of the employee without blocking writes of rows that reference it.
 func (q *Queries) LockEmployee(ctx context.Context, id int64) (HrmEmployee, error) {
 	row := q.db.QueryRow(ctx, lockEmployee, id)
 	var i HrmEmployee

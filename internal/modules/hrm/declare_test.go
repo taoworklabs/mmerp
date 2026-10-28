@@ -63,7 +63,7 @@ func TestEmployeeFiles(t *testing.T) {
 		"employee views self": {f.e, record.View, false},
 	})
 	checkCan(t, f.fixture, "hrm.employee", f.emp+1000, map[string]canCase{"missing": {f.hr, record.View, false}})
-	if a, err := f.hrm.EmployeeActions(f.hr); err != nil || !equal(a, "create", "import_leave_balances") {
+	if a, err := f.hrm.EmployeeActions(f.hr); err != nil || !equal(a, "create", "import_leave_balances", "import_employees") {
 		t.Fatalf("hr before an employee: %v %v", a, err)
 	}
 }

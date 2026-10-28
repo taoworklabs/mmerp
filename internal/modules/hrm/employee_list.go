@@ -40,3 +40,14 @@ func employeeQuery(sc data.Scope, f EmployeeFilter, today pgtype.Date) data.Quer
 		),
 	}
 }
+
+// employeeExportList is employeeList with every column the sheet needs.
+var employeeExportList = data.Register(data.List[store.EmployeeExportBaseRow]{
+	Name:     "hrm.EmployeeExport",
+	Base:     store.EmployeeExportBase,
+	Scope:    data.ByColumn("org_unit_id"),
+	Search:   []string{"code", "full_name"},
+	Sorts:    map[string][]data.Order{},
+	Default:  []data.Order{data.Asc("code").Lower()},
+	Tiebreak: data.Asc("id"),
+})

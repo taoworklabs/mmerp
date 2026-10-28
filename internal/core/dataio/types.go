@@ -20,6 +20,8 @@ type Import struct {
 	// when none is wrong, writes them through the module's services. It runs in one
 	// transaction that is rolled back if any row error is returned.
 	Run func(ctx context.Context, params json.RawMessage, rows [][]string) ([]RowError, error)
+	// TextColumns (0-based) are text in the template, so Excel keeps a typed 0012 as is.
+	TextColumns []int
 }
 
 // Export is what a module registers to write its data to a file: Excel through Run, or
@@ -40,6 +42,11 @@ type Sheet struct {
 	Name   string // file name without extension
 	Header []string
 	Rows   [][]any
+	// TextColumns (0-based) are text-formatted, so a value typed there keeps its leading zeros.
+	TextColumns []int
+	// Pin, when set, replaces the request's params as what every download's Check gets,
+	// so a sheet built from a filter can be checked against the rows it really holds.
+	Pin json.RawMessage
 }
 
 // File is an exported file other than a sheet; its name's extension gives its type.

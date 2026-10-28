@@ -33,6 +33,7 @@ func (s *Service) registerDataIO() {
 			_, err := s.exportablePayroll(ctx, params)
 			return err
 		}})
+	s.registerEmployeeIO()
 	s.d.DataIO.RegisterImport(dataio.Import{Kind: leaveBalanceImport, Product: "hrm", Header: s.leaveBalanceHeader, Run: s.importLeaveBalances})
 }
 

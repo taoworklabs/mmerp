@@ -3,6 +3,7 @@ package hrm
 import (
 	"context"
 
+	"github.com/taoworklabs/mmerp/internal/core/iam"
 	"github.com/taoworklabs/mmerp/internal/core/printing"
 )
 
@@ -14,4 +15,13 @@ var DayKinds = dayKinds
 
 func (s *Service) Payslips(ctx context.Context, id int64) ([]printing.Part, error) {
 	return s.payslips(ctx, id)
+}
+
+var (
+	UnitPaths     = unitPaths
+	WriteRowError = writeRowError
+)
+
+func ResolveUnit(units []iam.OrgUnit, cell string) (int64, int) {
+	return resolveUnit(unitIndex(units), cell)
 }

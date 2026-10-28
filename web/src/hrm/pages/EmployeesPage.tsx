@@ -1,14 +1,16 @@
 import { Button } from '@mmerp/ui'
-import { IconCircleDot, IconFileImport, IconPlus } from '@tabler/icons-react'
-import { keepPreviousData, useQuery } from '@tanstack/react-query'
+import { IconCircleDot, IconFileExport, IconFileImport, IconPlus } from '@tabler/icons-react'
+import { keepPreviousData, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router'
 import { api, unwrap, type EmployeeListItem, type EmployeeSort } from '@/shared/api/hrm'
 import { formatDate } from '@/shared/i18n'
-import { ImportDialog } from '@/shared/jobs'
+import { ExportButton, exportInBackground, ImportDialog } from '@/shared/jobs'
 import { PersonName } from '@/shared/ui/avatar'
 import { type Column } from '@/shared/ui/DataTable'
+import { MenuAction } from '@/shared/ui/MenuAction'
+import { MoreActions } from '@/shared/ui/MoreActions'
 import { FilterChip, OrgUnitFilter, SearchInput } from '@/shared/ui/form'
 import { useListView } from '@/shared/ui/ListView'
 import { ListPage } from '@/shared/ui/page'
@@ -24,9 +26,10 @@ const defaults = { filters: { q: '', status: '', org_unit_id: '' }, sort: 'code'
 
 export function EmployeesPage() {
   const { t } = useTranslation()
+  const qc = useQueryClient()
   const actions = useEmployeeActions().data ?? []
   const canCreate = actions.includes('create')
-  const [importing, setImporting] = useState(false)
+  const [importing, setImporting] = useState<'hrm.employees' | 'hrm.leave_balance' | null>(null)
   const [params, set, filterBar] = useListParams(defaults)
   const { q, status, org_unit_id } = params.filters as typeof defaults.filters
   const query = { q, status, org_unit_id, sort: params.sort, page: params.page, pageSize: params.pageSize }
@@ -50,6 +53,8 @@ export function EmployeesPage() {
     placeholderData: keepPreviousData,
   })
 
+  const exportParams = { org_unit_id: org_unit_id ? Number(org_unit_id) : undefined, status: status || undefined, q: q || undefined }
+
   const columns: Column<EmployeeListItem>[] = [
     { key: 'full_name', header: t('hrm.employee.full_name'), role: 'title', kind: 'person', sortable: true, render: (e) => <PersonName name={e.full_name} /> },
     { key: 'code', header: t('hrm.employee.code'), role: 'meta', kind: 'code', sortable: true, render: (e) => e.code },
@@ -65,10 +70,25 @@ export function EmployeesPage() {
       description={t('hrm.employees.description')}
       action={
         <>
-          {actions.includes('import_leave_balances') && (
-            <Button variant="default" leftSection={<IconFileImport {...icon.button} />} onClick={() => setImporting(true)}>
-              {t('hrm.employees.import_balances')}
-            </Button>
+          <ExportButton kind="hrm.employees" params={exportParams} label={t('hrm.employees.export')} />
+          {(actions.includes('view_sensitive') || actions.includes('import_employees') || actions.includes('import_leave_balances')) && (
+            <MoreActions place="page">
+              {actions.includes('view_sensitive') && (
+                <MenuAction icon={IconFileExport} onClick={() => void exportInBackground(qc, t, 'hrm.employees', { ...exportParams, include_sensitive: true })}>
+                  {t('hrm.employees.export_sensitive')}
+                </MenuAction>
+              )}
+              {actions.includes('import_employees') && (
+                <MenuAction icon={IconFileImport} onClick={() => setImporting('hrm.employees')}>
+                  {t('hrm.employees.import')}
+                </MenuAction>
+              )}
+              {actions.includes('import_leave_balances') && (
+                <MenuAction icon={IconFileImport} onClick={() => setImporting('hrm.leave_balance')}>
+                  {t('hrm.employees.import_balances')}
+                </MenuAction>
+              )}
+            </MoreActions>
           )}
           {canCreate && (
             <Button render={<Link to="/hrm/employees/new" />} leftSection={<IconPlus {...icon.button} />}>
@@ -115,13 +135,22 @@ export function EmployeesPage() {
         paging: { page: params.page, pageSize: params.pageSize, onPage: (page) => set({ page }), onPageSize: (pageSize) => set({ pageSize }) },
       }}
     >
-      {importing && (
+      {importing === 'hrm.employees' && (
+        <ImportDialog
+          kind="hrm.employees"
+          title={t('hrm.employees.import')}
+          description={t('hrm.employees.import_hint')}
+          writes={[hrmKeys.employees.all()]}
+          onClose={() => setImporting(null)}
+        />
+      )}
+      {importing === 'hrm.leave_balance' && (
         <ImportDialog
           kind="hrm.leave_balance"
           title={t('hrm.employees.import_balances')}
           description={t('hrm.employees.import_balances_hint')}
           writes={[hrmKeys.balances.all()]}
-          onClose={() => setImporting(false)}
+          onClose={() => setImporting(null)}
         />
       )}
     </ListPage>

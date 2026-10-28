@@ -4,6 +4,13 @@ SELECT e.id, e.code, e.full_name, e.org_unit_id, u.name AS org_unit_name, e.emai
        e.hire_date, e.termination_date
 FROM hrm.employees e JOIN iam.org_units u ON u.id = e.org_unit_id;
 
+-- name: EmployeeExportBase :many
+-- data:base
+SELECT e.id, e.code, e.full_name, e.date_of_birth, e.gender, e.phone, e.email, e.address, e.org_unit_id,
+       m.code AS manager_code, e.hire_date, e.termination_date,
+       e.national_id, e.social_insurance_no, e.tax_code, e.bank_account
+FROM hrm.employees e LEFT JOIN hrm.employees m ON m.id = e.manager_id;
+
 -- name: GetEmployee :one
 SELECT e.*, u.name AS org_unit_name, m.code AS manager_code, m.full_name AS manager_name, a.login AS user_login
 FROM hrm.employees e
@@ -13,7 +20,8 @@ LEFT JOIN iam.users a ON a.id = e.user_id
 WHERE e.id = $1;
 
 -- name: LockEmployee :one
-SELECT * FROM hrm.employees WHERE id = $1 FOR UPDATE;
+-- NO KEY: serialises edits of the employee without blocking writes of rows that reference it.
+SELECT * FROM hrm.employees WHERE id = $1 FOR NO KEY UPDATE;
 
 -- name: CreateEmployee :one
 INSERT INTO hrm.employees (code, full_name, date_of_birth, gender, phone, email, address, org_unit_id,
@@ -73,3 +81,6 @@ SELECT id, code, org_unit_id FROM hrm.employees WHERE lower(code) = ANY(@codes::
 
 -- name: AnyEmployee :one
 SELECT EXISTS (SELECT 1 FROM hrm.employees);
+
+-- name: EmployeeUnits :many
+SELECT id, org_unit_id FROM hrm.employees WHERE id = ANY(@ids::bigint[]);

@@ -1,13 +1,31 @@
 import { Button } from '@mmerp/ui'
 import { IconDownload, IconFileExport, type Icon } from '@tabler/icons-react'
+import type { QueryClient } from '@tanstack/react-query'
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { coreClient, unwrap } from '@/shared/api/client'
 import { errorText } from '@/shared/i18n'
-import { notifyError } from '@/shared/ui/notify'
+import { notifyError, notifySuccess } from '@/shared/ui/notify'
 import { icon } from '@/shared/ui/theme'
 import { fileHref, jobError } from './JobOutcome'
-import { finished, useJobStatus } from './useJobStatus'
+import { finished, followJob, jobKeys, useJobStatus } from './useJobStatus'
+
+const startExport = async (kind: string, params: Record<string, unknown>) =>
+  (await unwrap(coreClient.POST('/exports/{kind}', { params: { path: { kind } }, body: { params } }))).job_id
+
+// exportInBackground starts an export from a menu entry, which has no room to wait for it: it
+// follows the job and tells the user how it ended; the file is in their background jobs.
+export async function exportInBackground(qc: QueryClient, t: (key: string) => string, kind: string, params: Record<string, unknown>) {
+  try {
+    const id = await startExport(kind, params)
+    notifySuccess(t('shared.jobs.export_started'))
+    const job = await followJob(qc, id, () => qc.invalidateQueries({ queryKey: jobKeys.list() }))
+    if (job?.state === 'failed') notifyError(jobError(t, job))
+    else if (job) notifySuccess(t('shared.jobs.exported'))
+  } catch (err) {
+    notifyError(errorText(t as never, err))
+  }
+}
 
 // ExportButton starts an export, waits for its job, then turns into the download of the file.
 // A failure is reported as a notification, since the user may have moved on. A print is an
@@ -46,7 +64,7 @@ export function ExportButton({
   async function start() {
     setStarting(true)
     try {
-      setJob((await unwrap(coreClient.POST('/exports/{kind}', { params: { path: { kind } }, body: { params } }))).job_id)
+      setJob(await startExport(kind, params))
     } catch (err) {
       notifyError(errorText(t, err))
     } finally {

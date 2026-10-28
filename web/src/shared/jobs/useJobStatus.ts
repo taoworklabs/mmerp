@@ -58,8 +58,9 @@ export function useJobStatus(id: number | null, writes?: JobWrites) {
 }
 
 // followJob keeps following a job no screen shows any more (its dialog was closed early),
-// so what it writes is still refreshed when it ends (refresh from useJobRefresh).
-export async function followJob(qc: QueryClient, id: number, refresh: () => Promise<void>) {
+// so what it writes is still refreshed when it ends (refresh from useJobRefresh). It returns
+// the ended job, or undefined when the job could no longer be read.
+export async function followJob(qc: QueryClient, id: number, refresh: () => Promise<void>): Promise<Job | undefined> {
   const started = Date.now()
   for (;;) {
     await new Promise((resolve) => setTimeout(resolve, pollDelay(Date.now() - started)))
@@ -67,8 +68,11 @@ export async function followJob(qc: QueryClient, id: number, refresh: () => Prom
     try {
       job = await qc.fetchQuery({ queryKey: jobKeys.detail(id), queryFn: () => fetchJob(id), staleTime: 0 })
     } catch {
-      return
+      return undefined
     }
-    if (finished(job)) return refresh()
+    if (finished(job)) {
+      await refresh()
+      return job
+    }
   }
 }
