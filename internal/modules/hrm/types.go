@@ -36,9 +36,6 @@ const (
 	PermLegalParamManage = "hrm.legal_param.manage"
 	// Approval rules of HRM document types; core's approval checks it by name.
 	PermApprovalManage = "hrm.approval.manage"
-	// Terminations by the employee's org unit.
-	PermTerminationView = "hrm.termination.view"
-	PermTerminationEdit = "hrm.termination.edit"
 )
 
 // SettingWageRegion is a legal entity's minimum-wage region, 1 to 4: it sets the unemployment insurance cap.
@@ -52,20 +49,12 @@ var (
 	ErrManagerCycle          = &platform.Error{Status: http.StatusUnprocessableEntity, Code: "manager_cycle"}
 	ErrManagerSelf           = &platform.Error{Status: http.StatusUnprocessableEntity, Code: "manager_self"}
 	ErrTerminationBeforeHire = &platform.Error{Status: http.StatusUnprocessableEntity, Code: "termination_before_hire"}
-	// An employee has at most one termination that is not cancelled; params name it.
-	ErrTerminationExists = &platform.Error{Status: http.StatusConflict, Code: "termination_exists"}
-	ErrTerminationReason = &platform.Error{Status: http.StatusUnprocessableEntity, Code: "invalid_termination_reason"}
-	ErrTerminationMonths = &platform.Error{Status: http.StatusUnprocessableEntity, Code: "invalid_termination_months"}
-	// Only a termination sets or changes an employee's termination date.
-	ErrTerminationViaDocument = &platform.Error{Status: http.StatusUnprocessableEntity, Code: "termination_via_document"}
-	// The employee moved to another legal entity since the termination was drafted.
-	ErrTerminationLegalEntity = &platform.Error{Status: http.StatusConflict, Code: "termination_legal_entity_changed"}
-	ErrLeaveTypeTaken         = &platform.Error{Status: http.StatusConflict, Code: "leave_type_taken"}
-	ErrLeaveTypeInactive      = &platform.Error{Status: http.StatusUnprocessableEntity, Code: "leave_type_inactive"}
-	ErrLeaveAttachment        = &platform.Error{Status: http.StatusUnprocessableEntity, Code: "leave_attachment_required"}
-	ErrNotAnEmployee          = &platform.Error{Status: http.StatusUnprocessableEntity, Code: "not_an_employee"}
-	ErrLeaveDates             = &platform.Error{Status: http.StatusUnprocessableEntity, Code: "leave_end_before_start"}
-	ErrLeaveSpansYears        = &platform.Error{Status: http.StatusUnprocessableEntity, Code: "leave_spans_years"}
+	ErrLeaveTypeTaken        = &platform.Error{Status: http.StatusConflict, Code: "leave_type_taken"}
+	ErrLeaveTypeInactive     = &platform.Error{Status: http.StatusUnprocessableEntity, Code: "leave_type_inactive"}
+	ErrLeaveAttachment       = &platform.Error{Status: http.StatusUnprocessableEntity, Code: "leave_attachment_required"}
+	ErrNotAnEmployee         = &platform.Error{Status: http.StatusUnprocessableEntity, Code: "not_an_employee"}
+	ErrLeaveDates            = &platform.Error{Status: http.StatusUnprocessableEntity, Code: "leave_end_before_start"}
+	ErrLeaveSpansYears       = &platform.Error{Status: http.StatusUnprocessableEntity, Code: "leave_spans_years"}
 	// Days must be positive half-day steps.
 	ErrLeaveDays = &platform.Error{Status: http.StatusUnprocessableEntity, Code: "invalid_leave_days"}
 	// No day of the range is a working day, so the request would take and pay nothing.

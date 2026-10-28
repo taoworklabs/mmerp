@@ -1,6 +1,29 @@
 package hrm
 
-import "github.com/taoworklabs/mmerp/internal/platform"
+import (
+	"net/http"
+
+	"github.com/taoworklabs/mmerp/internal/platform"
+)
+
+const terminationType = "hrm.termination"
+
+// Terminations by the employee's org unit.
+const (
+	PermTerminationView = "hrm.termination.view"
+	PermTerminationEdit = "hrm.termination.edit"
+)
+
+var (
+	// An employee has at most one termination that is not cancelled; params name it.
+	ErrTerminationExists = &platform.Error{Status: http.StatusConflict, Code: "termination_exists"}
+	ErrTerminationReason = &platform.Error{Status: http.StatusUnprocessableEntity, Code: "invalid_termination_reason"}
+	ErrTerminationMonths = &platform.Error{Status: http.StatusUnprocessableEntity, Code: "invalid_termination_months"}
+	// Only a termination sets or changes an employee's termination date.
+	ErrTerminationViaDocument = &platform.Error{Status: http.StatusUnprocessableEntity, Code: "termination_via_document"}
+	// The employee moved to another legal entity since the termination was drafted.
+	ErrTerminationLegalEntity = &platform.Error{Status: http.StatusConflict, Code: "termination_legal_entity_changed"}
+)
 
 // TerminationFields are the editable fields of a termination.
 type TerminationFields struct {

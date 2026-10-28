@@ -16,13 +16,12 @@ import (
 )
 
 const (
-	employeeType    = "hrm.employee"
-	leaveType       = "hrm.leave_request"
-	contractType    = "hrm.contract"
-	overtimeType    = "hrm.overtime_request"
-	timesheetType   = "hrm.timesheet"
-	payrollType     = "hrm.payroll"
-	terminationType = "hrm.termination"
+	employeeType  = "hrm.employee"
+	leaveType     = "hrm.leave_request"
+	contractType  = "hrm.contract"
+	overtimeType  = "hrm.overtime_request"
+	timesheetType = "hrm.timesheet"
+	payrollType   = "hrm.payroll"
 )
 
 type Service struct{ d Deps }
