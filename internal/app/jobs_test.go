@@ -412,6 +412,27 @@ func TestLeaveBalanceImport(t *testing.T) {
 	}
 }
 
+// The employee import runs through the HTTP route, and its row errors read in Vietnamese.
+func TestEmployeeImportOverHTTP(t *testing.T) {
+	f := newJobsFixture(t)
+	f.work([]string{"hrm"})
+	head := []any{"Mã NV", "Họ tên", "Ngày sinh", "Giới tính", "SĐT", "Email", "Địa chỉ", "Phòng ban", "Mã người quản lý trực tiếp",
+		"Ngày vào làm", "Ngày nghỉ việc", "CCCD/Hộ chiếu", "Số sổ BHXH", "Mã số thuế", "Số tài khoản"}
+	j := f.wait(f.admin, f.upload(f.admin, "hrm.employees", "", head, []any{"N1", "", "", "", "", "", "", "P", "", "01/02/2026"}))
+	if j.State != "failed" || len(j.RowErrors) != 1 || j.RowErrors[0].Row != 2 || !strings.Contains(j.RowErrors[0].Message, "Thiếu họ tên") {
+		t.Fatalf("%+v", j)
+	}
+	j = f.wait(f.admin, f.upload(f.admin, "hrm.employees", "", head, []any{"N1", "Mới", "", "", "", "", "", "P", "", "01/02/2026"}))
+	if j.State != "completed" {
+		t.Fatalf("%+v", j)
+	}
+	var list struct{ Total int }
+	_ = json.Unmarshal(f.ok(f.admin, "GET", "/api/hrm/employees?q=N1", "", 200), &list)
+	if list.Total != 1 {
+		t.Fatalf("listed %d", list.Total)
+	}
+}
+
 // An administrator follows system jobs, failing ones on their own, each with the code of its
 // last error and never its arguments; everyone else still sees only their own jobs.
 func TestSystemJobsForAdmin(t *testing.T) {

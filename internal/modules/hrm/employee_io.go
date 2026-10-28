@@ -3,7 +3,11 @@ package hrm
 import (
 	"context"
 	"encoding/json"
+	"errors"
+	"maps"
+	"strconv"
 	"strings"
+	"time"
 
 	"github.com/taoworklabs/mmerp/internal/core/audit"
 	"github.com/taoworklabs/mmerp/internal/core/dataio"
@@ -25,6 +29,17 @@ func (s *Service) registerEmployeeIO() {
 		Check: func(ctx context.Context, params json.RawMessage) error {
 			_, err := s.exportedEmployees(ctx, params)
 			return err
+		}})
+	s.d.DataIO.RegisterImport(dataio.Import{Kind: employeeIO, Product: "hrm", Run: s.importEmployees,
+		Header: func(ctx context.Context, _ json.RawMessage) ([]string, error) {
+			sc, err := s.d.IAM.Scope(ctx, "hrm", PermEdit)
+			if err == nil && !sc.Any() {
+				err = platform.ErrForbidden
+			}
+			if err != nil {
+				return nil, err
+			}
+			return s.employeeColumns(ctx)
 		}})
 }
 
@@ -228,4 +243,254 @@ func (s *Service) exportEmployees(ctx context.Context, params json.RawMessage) (
 		rows = append(rows, row)
 	}
 	return dataio.Sheet{Name: platform.Translate(loc, "hrm.import.sheet.employees", nil), Header: header, Rows: rows}, nil
+}
+
+// importEmployees creates the rows whose code is new or empty and edits the others. An empty
+// cell keeps the current value, so a re-imported export loses nothing, sensitive cells included.
+func (s *Service) importEmployees(ctx context.Context, _ json.RawMessage, rows [][]string) ([]dataio.RowError, error) {
+	header, err := s.employeeColumns(ctx)
+	if err != nil {
+		return nil, err
+	}
+	units, err := s.d.IAM.OrgUnits(ctx, "", "")
+	if err != nil {
+		return nil, err
+	}
+	view, err := s.d.IAM.Scope(ctx, "hrm", PermView)
+	if err != nil {
+		return nil, err
+	}
+	var codes []string
+	for _, r := range rows {
+		if r != nil {
+			codes = append(codes, strings.ToLower(strings.TrimSpace(r[0])), strings.ToLower(strings.TrimSpace(r[8])))
+		}
+	}
+	found, err := store.EmployeesByCodes.Run(ctx, codes)
+	if err != nil {
+		return nil, err
+	}
+	known := make(map[string]store.EmployeesByCodesRow, len(found))
+	for _, e := range found {
+		known[strings.ToLower(e.Code)] = e
+	}
+	type write struct {
+		row           int
+		id            int64 // 0 creates
+		code, manager string
+		in            EmployeeInput
+	}
+	var errs []dataio.RowError
+	var creates, updates []write
+	seen := map[string]bool{}
+	for i, r := range rows {
+		if r == nil {
+			continue
+		}
+		code := strings.TrimSpace(r[0])
+		n := len(errs)
+		fail := func(c string, params map[string]any) {
+			errs = append(errs, dataio.RowError{Row: i, Code: c, Params: params})
+		}
+		key := strings.ToLower(code)
+		if code != "" && seen[key] {
+			fail("duplicate_employee", map[string]any{"code": code})
+			continue
+		}
+		seen[key] = true
+		cur, exists := known[key]
+		exists = exists && code != ""
+		var in EmployeeInput
+		var old store.GetEmployeeRow
+		if exists {
+			// Elsewhere such an employee does not exist, but here that would mean "create".
+			if !view.Has(cur.OrgUnitID) {
+				fail("employee_code_taken", map[string]any{"code": code})
+				continue
+			}
+			if old, err = store.GetEmployee.Run(ctx, cur.ID); err != nil {
+				return nil, err
+			}
+			in.EmployeeFields = EmployeeFields{
+				FullName: old.FullName, DateOfBirth: platform.DatePtr(old.DateOfBirth), Gender: platform.TextPtr(old.Gender),
+				Phone: platform.TextPtr(old.Phone), Email: platform.TextPtr(old.Email), Address: platform.TextPtr(old.Address), OrgUnitID: old.OrgUnitID,
+				ManagerID: platform.Int8Ptr(old.ManagerID), UserLogin: platform.TextPtr(old.UserLogin), HireDate: *platform.DatePtr(old.HireDate),
+				TerminationDate: platform.DatePtr(old.TerminationDate),
+			}
+		}
+		changed := false
+		text := func(dst **string, v string) {
+			if v != "" && (*dst == nil || **dst != v) {
+				*dst, changed = &v, true
+			}
+		}
+		date := func(col int, dst **string) {
+			v, ok := cellDate(r[col])
+			if !ok {
+				fail("invalid_date", map[string]any{"column": header[col], "value": r[col]})
+			}
+			text(dst, v)
+		}
+		if v := strings.TrimSpace(r[1]); v != "" && v != in.FullName {
+			in.FullName, changed = v, true
+		}
+		date(2, &in.DateOfBirth)
+		if g, ok := cellGender(r[3]); !ok {
+			fail("invalid_gender", map[string]any{"value": r[3]})
+		} else if g != nil {
+			text(&in.Gender, *g)
+		}
+		text(&in.Phone, strings.TrimSpace(r[4]))
+		text(&in.Email, strings.TrimSpace(r[5]))
+		text(&in.Address, strings.TrimSpace(r[6]))
+		if v := strings.TrimSpace(r[7]); v != "" {
+			switch id, matches := resolveUnit(units, v); {
+			case matches == 0:
+				fail("unknown_org_unit", map[string]any{"value": v})
+			case matches > 1:
+				fail("ambiguous_org_unit", map[string]any{"value": v})
+			case id != in.OrgUnitID:
+				in.OrgUnitID, changed = id, true
+			}
+		}
+		manager := strings.TrimSpace(r[8])
+		if manager != "" {
+			m, ok := known[strings.ToLower(manager)]
+			switch {
+			case !ok:
+				fail("unknown_manager", map[string]any{"code": manager})
+			case in.ManagerID == nil || *in.ManagerID != m.ID:
+				in.ManagerID, changed = &m.ID, true
+			}
+		}
+		var hire *string
+		if in.HireDate != "" {
+			hire = &in.HireDate
+		}
+		date(9, &hire)
+		if hire != nil {
+			in.HireDate = *hire
+		}
+		date(10, &in.TerminationDate)
+		if !exists {
+			for col, c := range map[int]string{1: "name_required", 7: "org_unit_required", 9: "hire_date_required"} {
+				if strings.TrimSpace(r[col]) == "" {
+					fail(c, nil)
+				}
+			}
+		}
+		if len(errs) > n {
+			continue
+		}
+		var sens SensitiveValues
+		cells := []**string{&sens.NationalID, &sens.SocialInsuranceNo, &sens.TaxCode, &sens.BankAccount}
+		filled := false
+		for j, dst := range cells {
+			if v := strings.TrimSpace(r[11+j]); v != "" {
+				*dst, filled = &v, true
+			}
+		}
+		if filled {
+			// Checked before comparing, so a guess at a hidden value learns nothing.
+			var was []int64
+			if exists && old.OrgUnitID != in.OrgUnitID {
+				was = append(was, old.OrgUnitID)
+			}
+			if ok, err := s.allowed(ctx, PermSensitive, in.OrgUnitID, was...); err != nil {
+				return nil, err
+			} else if !ok {
+				fail("sensitive_forbidden", map[string]any{"code": code})
+				continue
+			}
+			sealed := sealedOf(store.HrmEmployee{NationalID: old.NationalID, SocialInsuranceNo: old.SocialInsuranceNo, TaxCode: old.TaxCode, BankAccount: old.BankAccount})
+			for j, f := range sensitiveFields {
+				if *cells[j] == nil {
+					continue
+				}
+				// An equal value stays as stored, so the audit shows no change.
+				v, err := open(ctx, f, sealed[f])
+				if err != nil {
+					return nil, err
+				}
+				if v != nil && *v == **cells[j] {
+					*cells[j] = nil
+				} else {
+					in.Sensitive, changed = &sens, true
+				}
+			}
+		}
+		switch {
+		case !exists:
+			creates = append(creates, write{row: i, code: code, manager: manager, in: in})
+		case changed:
+			updates = append(updates, write{row: i, id: old.ID, code: old.Code, manager: manager, in: in})
+		}
+	}
+	if len(errs) > 0 {
+		return errs, nil
+	}
+	for _, w := range append(creates, updates...) {
+		if w.id == 0 {
+			_, err = s.CreateEmployee(ctx, NewEmployee{Code: w.code, EmployeeInput: w.in})
+		} else {
+			err = s.updateEmployee(ctx, w.id, w.in, true)
+		}
+		if err == nil {
+			continue
+		}
+		e, ok := writeRowError(w.row, w.code, w.manager, err)
+		if !ok {
+			return nil, err
+		}
+		errs = append(errs, e)
+	}
+	return errs, nil
+}
+
+// writeRowError turns a service's refusal of a row into the row's error; other errors are not the row's.
+func writeRowError(row int, code, manager string, err error) (dataio.RowError, bool) {
+	switch pe, ok := errors.AsType[*platform.Error](err); {
+	case errors.Is(err, platform.ErrForbidden):
+		return dataio.RowError{Row: row, Code: "forbidden_row", Params: map[string]any{"code": code}}, true
+	case errors.Is(err, ErrManagerNotFound):
+		return dataio.RowError{Row: row, Code: "unknown_manager", Params: map[string]any{"code": manager}}, true
+	case ok:
+		params := map[string]any{"code": code}
+		maps.Copy(params, pe.Params)
+		return dataio.RowError{Row: row, Code: pe.Code, Params: params}, true
+	}
+	return dataio.RowError{}, false
+}
+
+// cellDate reads dd/mm/yyyy, yyyy-mm-dd or an Excel date; blank is no date.
+func cellDate(cell string) (string, bool) {
+	cell = strings.TrimSpace(cell)
+	if cell == "" {
+		return "", true
+	}
+	for _, layout := range []string{"2/1/2006", time.DateOnly} {
+		if t, err := time.Parse(layout, cell); err == nil {
+			return t.Format(time.DateOnly), true
+		}
+	}
+	// Excel counts days from 30/12/1899.
+	if n, err := strconv.Atoi(cell); err == nil && n > 0 && n < 2958466 {
+		return time.Date(1899, 12, 30, 0, 0, 0, 0, time.UTC).AddDate(0, 0, n).Format(time.DateOnly), true
+	}
+	return "", false
+}
+
+// cellGender reads a gender label in either language, or its code.
+func cellGender(cell string) (*string, bool) {
+	cell = strings.TrimSpace(cell)
+	if cell == "" {
+		return nil, true
+	}
+	for _, g := range []string{"male", "female", "other"} {
+		key := "hrm.import.gender." + g
+		if strings.EqualFold(cell, g) || strings.EqualFold(cell, platform.Translate("vi", key, nil)) || strings.EqualFold(cell, platform.Translate("en", key, nil)) {
+			return &g, true
+		}
+	}
+	return nil, false
 }

@@ -224,6 +224,11 @@ func (s *Service) CreateEmployee(ctx context.Context, in NewEmployee) (int64, er
 
 // UpdateEmployee replaces the plain fields and the sensitive fields listed in in.
 func (s *Service) UpdateEmployee(ctx context.Context, id int64, in EmployeeInput) error {
+	return s.updateEmployee(ctx, id, in, true)
+}
+
+// updateEmployee is UpdateEmployee; without checkCycle the caller checks the manager tree itself.
+func (s *Service) updateEmployee(ctx context.Context, id int64, in EmployeeInput, checkCycle bool) error {
 	return platform.InTx(ctx, func(ctx context.Context) error {
 		if _, err := s.visible(ctx, id); err != nil {
 			return err
@@ -240,6 +245,11 @@ func (s *Service) UpdateEmployee(ctx context.Context, id int64, in EmployeeInput
 			return err
 		}
 		if row.ManagerID.Valid && row.ManagerID != old.ManagerID {
+			if row.ManagerID.Int64 == id {
+				return ErrManagerSelf
+			}
+		}
+		if checkCycle && row.ManagerID.Valid && row.ManagerID != old.ManagerID {
 			// ponytail: one lock for all manager changes; per-tree locks if HR edits get busy.
 			if err := store.LockManagerTree.Run(ctx); err != nil {
 				return err
@@ -247,9 +257,6 @@ func (s *Service) UpdateEmployee(ctx context.Context, id int64, in EmployeeInput
 			chain, err := store.ManagerChain.Run(ctx, row.ManagerID.Int64)
 			if err != nil {
 				return err
-			}
-			if row.ManagerID.Int64 == id {
-				return ErrManagerSelf
 			}
 			if slices.Contains(chain, id) {
 				m, err := store.GetEmployee.Run(ctx, row.ManagerID.Int64)
