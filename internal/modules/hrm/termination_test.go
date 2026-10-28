@@ -226,3 +226,69 @@ func TestTerminationLegalEntityChanged(t *testing.T) {
 	f.check(f.hrm.UpdateEmployee(f.hr, f.emp, moved.EmployeeInput))
 	wantErr(t, f.postTermination(id), "termination_legal_entity_changed")
 }
+
+// Only a termination changes the date on a profile; creating one may carry it, for former
+// employees loaded without documents.
+func TestEmployeeTerminationDateReadOnly(t *testing.T) {
+	f := newLeaveFixture(t)
+	e := employee("L", f.a)
+	e.TerminationDate = str("2026-05-31")
+	emp := must(t)(f.hrm.CreateEmployee(f.hr, e))
+	f.check(f.hrm.UpdateEmployee(f.hr, emp, e.EmployeeInput))
+	for _, date := range []*string{str("2026-06-30"), nil} {
+		e.TerminationDate = date
+		wantErr(t, f.hrm.UpdateEmployee(f.hr, emp, e.EmployeeInput), "termination_via_document")
+	}
+	if got := f.terminationDate(emp); got != "2026-05-31" {
+		t.Fatalf("date %q", got)
+	}
+}
+
+func TestEmployeeImportTerminationDate(t *testing.T) {
+	f := newFixture(t)
+	hr := f.ctxFor("hr", "hr@*")
+	e := employee("E1", f.a)
+	e.TerminationDate = str("2026-05-31")
+	must(t)(f.hrm.CreateEmployee(hr, e))
+	j := f.importEmployees(hr, "import_rows_invalid", eRow("E1", map[int]any{10: "30/06/2026"}))
+	wantRowError(t, j, 2, "chỉ đổi qua quyết định nghỉ việc")
+	// Empty and unchanged cells pass; a new employee may carry a date.
+	f.importEmployees(hr, "completed",
+		eRow("E1", map[int]any{4: "0901"}),
+		eRow("E1B", map[int]any{1: "Hai", 7: "A", 9: "01/02/2026", 10: "31/03/2026"}))
+	f.importEmployees(hr, "completed", eRow("E1", map[int]any{10: "31/05/2026"}))
+	if got := f.employeeByCode(hr, "E1"); *got.TerminationDate != "2026-05-31" || *got.Phone != "0901" {
+		t.Fatalf("E1 %+v", got.EmployeeFields)
+	}
+	if got := f.employeeByCode(hr, "E1B"); *got.TerminationDate != "2026-03-31" {
+		t.Fatalf("E1B %+v", got.EmployeeFields)
+	}
+}
+
+// Replacing or restoring an earlier date changes the pay from that earlier date on, so a
+// closed period there refuses both.
+func TestTerminationEarlierDateInClosedPeriod(t *testing.T) {
+	f := newLeaveFixture(t)
+	e := employee("L", f.a)
+	e.TerminationDate = str("2026-02-28")
+	emp := must(t)(f.hrm.CreateEmployee(f.hr, e))
+	id := must(t)(f.hrm.CreateTermination(f.hr, hrm.NewTermination{EmployeeID: emp, TerminationFields: quit("2026-04-15", "contract_expired")}))
+	f.closePeriod("2026-03-01", "2026-03-31", id)
+	wantErr(t, f.postTermination(id), "payroll_period_closed")
+	if got := f.terminationDate(emp); got != "2026-02-28" {
+		t.Fatalf("refused post changed the date to %q", got)
+	}
+}
+
+func TestTerminationCancelAfterLegalEntityChanged(t *testing.T) {
+	f := newLeaveFixture(t)
+	id := must(t)(f.hrm.CreateTermination(f.hr, hrm.NewTermination{EmployeeID: f.emp, TerminationFields: quit("2026-04-15", "mutual_agreement")}))
+	f.check(f.postTermination(id))
+	other := must(t)(f.iam.CreateOrgUnit(f.admin, iam.OrgUnitInput{Kind: "company", Name: "D"}))
+	e, err := f.hrm.Employee(f.hr, f.emp)
+	f.check(err)
+	moved := employee("E", other)
+	moved.UserLogin, moved.ManagerID, moved.TerminationDate = str("e"), e.ManagerID, e.TerminationDate
+	f.check(f.hrm.UpdateEmployee(f.hr, f.emp, moved.EmployeeInput))
+	wantErr(t, f.cancelTermination(id), "termination_legal_entity_changed")
+}

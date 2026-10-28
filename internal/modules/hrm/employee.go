@@ -290,6 +290,10 @@ func (s *Service) prepare(ctx context.Context, old store.HrmEmployee, in Employe
 	if in.TerminationDate != nil && *in.TerminationDate < in.HireDate {
 		return old, ErrTerminationBeforeHire
 	}
+	// Only a termination changes the date once the employee exists.
+	if was, now := platform.DatePtr(old.TerminationDate), in.TerminationDate; old.ID != 0 && ((was == nil) != (now == nil) || was != nil && *was != *now) {
+		return old, ErrTerminationViaDocument
+	}
 	row := store.HrmEmployee{
 		ID: old.ID, Code: old.Code, FullName: in.FullName, DateOfBirth: platform.NullDate(in.DateOfBirth), Gender: platform.NullText(in.Gender),
 		Phone: platform.NullText(in.Phone), Email: platform.NullText(in.Email), Address: platform.NullText(in.Address), OrgUnitID: in.OrgUnitID,

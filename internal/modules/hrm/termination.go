@@ -225,6 +225,15 @@ func (s *Service) terminationTransition(ctx context.Context, d record.Doc, from 
 	if err != nil {
 		return err
 	}
+	// Pay follows the employee's legal entity: one that moved since the termination was
+	// drafted is outside this payroll lock, both ways.
+	legalEntity, err := s.d.IAM.LegalEntityOf(ctx, e.OrgUnitID)
+	if err != nil {
+		return err
+	}
+	if legalEntity != d.LegalEntityID {
+		return ErrTerminationLegalEntity
+	}
 	next := t.PreviousDate
 	if posted {
 		if err := openTermination(ctx, e.ID, d.ID, []string{string(record.Posted)}); err != nil {
@@ -233,17 +242,22 @@ func (s *Service) terminationTransition(ctx context.Context, d record.Doc, from 
 		if d.Date < *platform.DatePtr(e.HireDate) {
 			return ErrTerminationBeforeHire
 		}
-		legalEntity, err := s.d.IAM.LegalEntityOf(ctx, e.OrgUnitID)
-		if err != nil {
-			return err
-		}
-		if legalEntity != d.LegalEntityID {
-			return ErrTerminationLegalEntity
-		}
 		if err := store.SetTerminationPreviousDate.Run(ctx, store.SetTerminationPreviousDateParams{ID: d.ID, PreviousDate: e.TerminationDate}); err != nil {
 			return err
 		}
 		next = platform.NullDate(&d.Date)
+	}
+	// The date replaced or restored may be earlier: the pay changes from there on. The
+	// payroll lock is already held, so checking again keeps the lock order.
+	if was := platform.DatePtr(e.TerminationDate); was != nil && *was < d.Date {
+		if err := checkPayrollPeriods(ctx, d.LegalEntityID, *was, nil); err != nil {
+			return err
+		}
+	}
+	if now := platform.DatePtr(next); now != nil && *now < d.Date {
+		if err := checkPayrollPeriods(ctx, d.LegalEntityID, *now, nil); err != nil {
+			return err
+		}
 	}
 	if err := store.SetEmployeeTerminationDate.Run(ctx, store.SetEmployeeTerminationDateParams{ID: e.ID, TerminationDate: next}); err != nil {
 		return err
