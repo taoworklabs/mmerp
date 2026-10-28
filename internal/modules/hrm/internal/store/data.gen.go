@@ -69,6 +69,7 @@ var LeaveBalanceDays = data.OneArg("hrm.LeaveBalanceDays", newQ, (*Queries).Leav
 var InsertLeaveAccrual = data.ExecRowsArg("hrm.InsertLeaveAccrual", newQ, (*Queries).InsertLeaveAccrual)
 var LeaveAccrualMonths = data.ManyArg("hrm.LeaveAccrualMonths", newQ, (*Queries).LeaveAccrualMonths)
 var LeaveAccruedDays = data.OneArg("hrm.LeaveAccruedDays", newQ, (*Queries).LeaveAccruedDays)
+var AccrualEmployees = data.ManyArg("hrm.AccrualEmployees", newQ, (*Queries).AccrualEmployees)
 var ListLegalParams = data.Many("hrm.ListLegalParams", newQ, (*Queries).ListLegalParams)
 var LegalParamsAt = data.ManyArg("hrm.LegalParamsAt", newQ, (*Queries).LegalParamsAt)
 var GetLegalParam = data.OneArg("hrm.GetLegalParam", newQ, (*Queries).GetLegalParam)

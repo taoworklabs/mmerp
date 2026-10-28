@@ -1,10 +1,25 @@
 package hrm
 
 import (
+	"context"
+	"errors"
+	"fmt"
+	"slices"
 	"time"
 
+	"github.com/riverqueue/river"
 	"github.com/shopspring/decimal"
+
+	"github.com/taoworklabs/mmerp/internal/core/audit"
+	"github.com/taoworklabs/mmerp/internal/modules/hrm/internal/store"
+	"github.com/taoworklabs/mmerp/internal/platform"
 )
+
+// SettingLeaveAccrual is monthly (the job credits annual leave) or manual (HR grants it).
+const SettingLeaveAccrual = "hrm.leave_accrual"
+
+// SettingCarryOverMonths is how many months of the new year last year's unused days last: 0, 3, 6 or 12.
+const SettingCarryOverMonths = "hrm.leave_carry_over_months"
 
 // Annual leave of a full year under normal conditions (Labour Code 2019, Article 113.1a).
 const annualLeaveDays = 12
@@ -56,4 +71,123 @@ func entitlementThrough(cal calendar, hire string, termination *string, year, mo
 // monthCredit is what month adds to the year's rounded entitlement.
 func monthCredit(cal calendar, hire string, termination *string, year, month int) decimal.Decimal {
 	return entitlementThrough(cal, hire, termination, year, month).Sub(entitlementThrough(cal, hire, termination, year, month-1))
+}
+
+type leaveAccrualArgs struct{}
+
+func (leaveAccrualArgs) Kind() string           { return "hrm.leave_accrual" }
+func (leaveAccrualArgs) Spec() platform.JobSpec { return platform.JobSpec{System: true} }
+
+type leaveAccrualWorker struct {
+	river.WorkerDefaults[leaveAccrualArgs]
+	s *Service
+}
+
+func (w *leaveAccrualWorker) Work(ctx context.Context, _ *river.Job[leaveAccrualArgs]) error {
+	today, err := w.s.d.Setting.Today(ctx)
+	if err != nil {
+		return err
+	}
+	return w.s.AccrueLeave(ctx, *platform.DatePtr(today))
+}
+
+// periodic looks for months to credit every hour and at start: a server off on the 1st
+// credits what it missed at its next run.
+var periodic = []*river.PeriodicJob{river.NewPeriodicJob(river.PeriodicInterval(time.Hour),
+	func() (river.JobArgs, *river.InsertOpts) { return leaveAccrualArgs{}, nil }, &river.PeriodicJobOpts{RunOnStart: true})}
+
+// AccrueLeave credits every month completed before today that the ledger has not decided
+// yet, each employee in its own transaction. A failing employee does not stop the others;
+// the next run retries them.
+func (s *Service) AccrueLeave(ctx context.Context, today string) error {
+	t := dayOf(today)
+	emps, err := store.AccrualEmployees.Run(ctx, pgDate(time.Date(t.Year()-1, 1, 1, 0, 0, 0, 0, time.UTC)))
+	if err != nil {
+		return err
+	}
+	cals := map[[2]int64]calendar{}
+	var errs []error
+	for _, e := range emps {
+		if err := platform.InTx(ctx, func(ctx context.Context) error { return s.accrueEmployee(ctx, e, t, cals) }); err != nil {
+			errs = append(errs, fmt.Errorf("leave accrual of employee %d: %w", e.ID, err))
+		}
+	}
+	return errors.Join(errs...)
+}
+
+func (s *Service) accrueEmployee(ctx context.Context, e store.AccrualEmployeesRow, today time.Time, cals map[[2]int64]calendar) error {
+	legalEntity, err := s.d.IAM.LegalEntityOf(ctx, e.OrgUnitID)
+	if err != nil {
+		return err
+	}
+	mode, err := s.d.Setting.GetFor(ctx, legalEntity, SettingLeaveAccrual)
+	if err != nil || mode != "monthly" {
+		return err
+	}
+	calOf := func(year int) (calendar, error) {
+		k := [2]int64{legalEntity, int64(year)}
+		if c, ok := cals[k]; ok {
+			return c, nil
+		}
+		c, err := workCalendar(ctx, legalEntity, fmt.Sprintf("%d-01-01", year), fmt.Sprintf("%d-12-31", year))
+		cals[k] = c
+		return c, err
+	}
+	year := today.Year()
+	// Last year is caught up in January, or later when it was already accruing, so turning
+	// accrual on in the autumn never back-fills the year before.
+	last, err := store.LeaveAccrualMonths.Run(ctx, store.LeaveAccrualMonthsParams{EmployeeID: e.ID, Year: int32(year - 1)})
+	if err != nil {
+		return err
+	}
+	if today.Month() == time.January || len(last) > 0 {
+		cal, err := calOf(year - 1)
+		if err != nil {
+			return err
+		}
+		if err := s.accrueMonths(ctx, e, cal, year-1, 12, last); err != nil {
+			return err
+		}
+	}
+	done, err := store.LeaveAccrualMonths.Run(ctx, store.LeaveAccrualMonthsParams{EmployeeID: e.ID, Year: int32(year)})
+	if err != nil {
+		return err
+	}
+	cal, err := calOf(year)
+	if err != nil {
+		return err
+	}
+	return s.accrueMonths(ctx, e, cal, year, int(today.Month())-1, done)
+}
+
+// accrueMonths decides months 1 to through of year that are not done, within the employment.
+func (s *Service) accrueMonths(ctx context.Context, e store.AccrualEmployeesRow, cal calendar, year, through int, done []int32) error {
+	hire, termination := *platform.DatePtr(e.HireDate), platform.DatePtr(e.TerminationDate)
+	ym := func(d string) int { t := dayOf(d); return t.Year()*12 + int(t.Month()) }
+	for m := 1; m <= through; m++ {
+		at := year*12 + m
+		if slices.Contains(done, int32(m)) || at < ym(hire) || termination != nil && at > ym(*termination) {
+			continue
+		}
+		credit := monthCredit(cal, hire, termination, year, m)
+		n, err := store.InsertLeaveAccrual.Run(ctx, store.InsertLeaveAccrualParams{EmployeeID: e.ID, Year: int32(year), Month: int32(m), Days: credit.String()})
+		if err != nil {
+			return err
+		}
+		if n == 0 || !credit.IsPositive() {
+			continue
+		}
+		if err := store.EnsureLeaveBalance.Run(ctx, store.EnsureLeaveBalanceParams{EmployeeID: e.ID, Year: int32(year)}); err != nil {
+			return err
+		}
+		after, err := store.AddLeaveBalance.Run(ctx, store.AddLeaveBalanceParams{EmployeeID: e.ID, Year: int32(year), Delta: credit.String()})
+		if err != nil {
+			return err
+		}
+		if err := s.d.Audit.RecordFor(ctx, "hrm.leave_accrued", audit.Ref{Type: employeeType, ID: e.ID},
+			map[string]any{"year": year, "month": m, "days": credit.String(), "balance": platform.PlainDecimal(after)}); err != nil {
+			return err
+		}
+	}
+	return nil
 }

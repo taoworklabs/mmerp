@@ -50,6 +50,8 @@ func NewService(d Deps) *Service {
 		"hrm.timesheets_org_unit_period_key": ErrTimesheetExists,
 	})
 	d.Setting.RegisterLegalEntityKey("hrm", SettingWageRegion, "1", []string{"1", "2", "3", "4"})
+	d.Setting.RegisterLegalEntityKey("hrm", SettingLeaveAccrual, "monthly", []string{"monthly", "manual"})
+	d.Setting.RegisterLegalEntityKey("hrm", SettingCarryOverMonths, "3", []string{"0", "3", "6", "12"})
 	d.IAM.RegisterRoles("hrm", map[string][]string{
 		"hr": {PermView, PermEdit, PermLeaveView, PermLeaveEdit, PermOvertimeView, PermOvertimeEdit,
 			PermContractView, PermContractEdit, PermContractTypeManage, PermTimesheetView, PermTimesheetEdit},
@@ -73,6 +75,9 @@ func NewService(d Deps) *Service {
 	// A profile's viewer sees neither leave balances nor what sensitive data was read or changed;
 	// on an employee, ViewFiles is view plus the sensitive permission.
 	d.Record.RestrictHistory("hrm.leave_balance_adjusted", "")
+	for _, a := range []string{"hrm.leave_accrued", "hrm.leave_carried_over", "hrm.leave_carry_expired"} {
+		d.Record.RestrictHistory(a, "")
+	}
 	for _, a := range []string{"hrm.employee_sensitive_viewed", "hrm.employee_sensitive_exported", "hrm.dependents_viewed", "hrm.dependent_saved", "hrm.dependent_deleted"} {
 		d.Record.RestrictHistory(a, record.ViewFiles)
 	}

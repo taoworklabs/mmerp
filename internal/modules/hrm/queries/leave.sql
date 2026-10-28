@@ -88,3 +88,9 @@ SELECT month FROM hrm.leave_accruals WHERE employee_id = $1 AND year = $2 ORDER 
 
 -- name: LeaveAccruedDays :one
 SELECT coalesce(sum(days), 0)::text FROM hrm.leave_accruals WHERE employee_id = $1 AND year = $2;
+
+-- name: AccrualEmployees :many
+-- Everyone still employed on @since, the first day of last year.
+SELECT id, org_unit_id, hire_date, termination_date FROM hrm.employees
+WHERE termination_date IS NULL OR termination_date >= @since::date
+ORDER BY id;

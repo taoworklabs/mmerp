@@ -11,6 +11,45 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const accrualEmployees = `-- name: AccrualEmployees :many
+SELECT id, org_unit_id, hire_date, termination_date FROM hrm.employees
+WHERE termination_date IS NULL OR termination_date >= $1::date
+ORDER BY id
+`
+
+type AccrualEmployeesRow struct {
+	ID              int64
+	OrgUnitID       int64
+	HireDate        pgtype.Date
+	TerminationDate pgtype.Date
+}
+
+// Everyone still employed on @since, the first day of last year.
+func (q *Queries) AccrualEmployees(ctx context.Context, since pgtype.Date) ([]AccrualEmployeesRow, error) {
+	rows, err := q.db.Query(ctx, accrualEmployees, since)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []AccrualEmployeesRow
+	for rows.Next() {
+		var i AccrualEmployeesRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.OrgUnitID,
+			&i.HireDate,
+			&i.TerminationDate,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const addLeaveBalance = `-- name: AddLeaveBalance :one
 UPDATE hrm.leave_balances SET days = days + CAST($1::text AS numeric)
 WHERE employee_id = $2 AND year = $3

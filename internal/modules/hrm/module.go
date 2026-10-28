@@ -12,6 +12,10 @@ func Module(s *Service) platform.Module {
 		Name:    "hrm",
 		Product: "hrm",
 		Routes:  func(api huma.API) { registerHandlers(api, s) },
-		Workers: func(w *river.Workers) { platform.AddWorker(w, &payrollWorker{s: s}) },
+		Workers: func(w *river.Workers) {
+			platform.AddWorker(w, &payrollWorker{s: s})
+			platform.AddWorker(w, &leaveAccrualWorker{s: s})
+		},
+		Periodic: periodic,
 	}
 }
