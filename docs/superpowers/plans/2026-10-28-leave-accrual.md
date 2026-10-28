@@ -176,7 +176,9 @@ With a short comment per table/column, as in the baseline.
 
 **Files:**
 - Create: `web/e2e/leave-accrual.spec.ts`
-- Modify: `web/e2e/m3.spec.ts` (its legal entity set to `manual` before granting), any other spec that asserts a hand-granted balance figure (grep `leave-balances`), `web/e2e/demo.seed.ts` (drop the 2026 opening grants; keep the 2025 carried days as a 2025 grant so the job carries them; leave requests send no `days`)
+- Modify: `web/e2e/m3.spec.ts` (its legal entity set to `manual` in `beforeAll`, right after it is created), `web/e2e/demo.seed.ts`
+
+Why only m3: there is no shared e2e setup that creates legal entities; every spec creates its own company. Of the specs that file leave, only m3 uses a balance-deducting type and asserts balance figures; all the others (m9, m11, m12, approval-*, keyboard-inputs, notification-links, personal-space) create `deducts_balance: false` types, so a credit the hourly job makes during the run cannot change what they assert. Accrual itself is covered by the Go tests, because e2e cannot wait for the job. The new spec uses its own company set to `manual`. (drop the 2026 opening grants; keep the 2025 carried days as a 2025 grant so the job carries them; leave requests send no `days`)
 
 - [ ] **Step 1: Write** `leave-accrual.spec.ts`: the leave form shows the computed count for a Mon–Fri range, ticking "Last day: morning only" shows 4.5, the saved request shows 4.5; the settings dialog for `hrm.leave_accrual` shows the hint. Through the API only for setup.
 - [ ] **Step 2: Typecheck** `pnpm -C web tsc --noEmit -p e2e` (or the repo's e2e tsconfig) → PASS. Do not run Playwright; the lead runs `make e2e` and the seed.
