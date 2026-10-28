@@ -29,7 +29,7 @@ test.beforeAll(async ({ baseURL }) => {
 async function signInAs(page: Page, login: string, url: string) {
   await page.goto(url)
   await page.getByLabel('Tên đăng nhập').fill(login)
-  await page.getByLabel(/^Mật khẩu/).fill(password)
+  await page.getByLabel(/^Mật khẩu/).fill(login === admin.login ? admin.password : password)
   await page.getByRole('button', { name: 'Đăng nhập' }).click()
   await expect(page.getByRole('button', { name: /^Tài khoản:/ })).toBeVisible()
 }

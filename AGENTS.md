@@ -70,7 +70,7 @@ The design docs are written in English; keep them in English when you edit them.
 
 ## Commands
 
-Tools: Go, Node 24+ with pnpm, Docker. The server reads `DATABASE_URL`, `PRODUCTS`, `ENCRYPTION_KEYS`, `HTTP_ADDR` (`:8080`), `FILES_DIR` (`data/files`), `RUN_JOBS` (`true`), `SLOW_QUERY_MS` (`500`), `LOG_LEVEL` (`info`) and `ROOT_PASSWORD` (first password of the `root` account, read only until it exists; `make` exports `e2e password`) (`platform.LoadConfig`). Postgres from compose listens on `localhost:5433`. To use a Postgres 18 already running on the machine instead, set `TEST_DATABASE_URL` (and `DATABASE_URL` if it differs from the default) in a gitignored `local.mk`; make then never starts compose.
+Tools: Go, Node 24+ with pnpm, Docker. The server reads `DATABASE_URL`, `PRODUCTS`, `ENCRYPTION_KEYS`, `HTTP_ADDR` (`:8080`), `FILES_DIR` (`data/files`), `RUN_JOBS` (`true`), `SLOW_QUERY_MS` (`500`), `LOG_LEVEL` (`info`) and `ROOT_PASSWORD` (first password of the `root` account, read only until it exists; `make` exports `1234@Abcd`) (`platform.LoadConfig`). Postgres from compose listens on `localhost:5433`. To use a Postgres 18 already running on the machine instead, set `TEST_DATABASE_URL` (and `DATABASE_URL` if it differs from the default) in a gitignored `local.mk`; make then never starts compose.
 
 | Command | Does |
 | --- | --- |
@@ -83,7 +83,7 @@ Tools: Go, Node 24+ with pnpm, Docker. The server reads `DATABASE_URL`, `PRODUCT
 | `make ui-dev` | Vite dev server alone, opening the design system catalogue `/dev/ui` (foundations read live from the theme, then every component and page template) (`web/src/app/devui`, dev builds only; no session; every API call is answered in the browser from samples (`app/devui/api.ts`), so no backend or Postgres) |
 | `make storybook` | Storybook of the `@mmerp/ui` primitives (`packages/ui`, a standalone package with its own lockfile; `:6006`), installing its dependencies first |
 | `make migration name=<module>_<description>` | Creates an empty `migrations/YYYYMMDDHHMMSS_<module>_<description>.sql` named after the current UTC time, so parallel branches never pick the same name |
-| `make reset-db` | Drops and recreates the dev database, then creates `root` (password `e2e password`, no forced change); a running `make dev` reconnects |
+| `make reset-db` | Drops and recreates the dev database, then creates `root` (password `1234@Abcd`, no forced change); a running `make dev` reconnects |
 | `make seed` | Builds the Demo demo company (org chart, accounts, employees, contracts, leave, overtime, timesheets, payrolls; then Sales: catalogue, customers, quotations, orders, `web/e2e/sales.seed.ts`) through the API of a running `make dev` on an empty database (`make reset-db` first; Playwright project `seed`, `web/e2e/demo.seed.ts`); accounts other than `root` use password `Demo@2026`; `E2E_ADMIN_LOGIN`/`E2E_ADMIN_PASSWORD` name a tenant administrator |
 | `make image` | Runtime image `mmerp:dev`; the frontend is embedded with `-tags embedweb` |
 | `mmerp reset-password <login>` | Recovery: sets a user's password, clears any lock, forced change and sessions; password on stdin (`echo pw \| ENCRYPTION_KEYS=… docker compose run --rm -T app reset-password root`: compose refuses to start without `ENCRYPTION_KEYS`). The server creates `root` (tenant-wide `core.admin`, must change its password at first sign-in) at startup from `ROOT_PASSWORD` |

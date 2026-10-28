@@ -6,7 +6,7 @@ declare const process: { env: Record<string, string | undefined> }
 // The root account created at startup; E2E_ADMIN_* point at another one, e.g. on the dev database.
 export const admin = {
   login: process.env.E2E_ADMIN_LOGIN ?? 'root',
-  password: process.env.E2E_ADMIN_PASSWORD ?? 'e2e password',
+  password: process.env.E2E_ADMIN_PASSWORD ?? '1234@Abcd',
   name: process.env.E2E_ADMIN_NAME ?? 'root',
 }
 

@@ -333,6 +333,7 @@ test('seed Sales on the Demo demo company', async ({ baseURL }) => {
   }
   const teamOf = (customer: string) => team[customers.find((c) => c[0] === customer)![2]]
 
+  const today = new Date().toLocaleDateString('sv-SE', { timeZone: 'Asia/Ho_Chi_Minh' })
   const sessions: Record<string, APIRequestContext> = {}
   for (const login of ['kd.hn', 'kd.hn2', 'kd.hcm', 'ql.kd.hn', 'ql.kd.hcm', 'gd.kinhdoanh']) {
     sessions[login] = await signedInApi(baseURL!, login, password)
@@ -390,7 +391,8 @@ test('seed Sales on the Demo demo company', async ({ baseURL }) => {
           date: q.date,
           org_unit_id: teamOf(q.customer),
           customer_id: customerId[q.customer],
-          valid_until: q.until,
+          // A quotation past its validity cannot become an order, and the seed runs on any later day.
+          valid_until: q.order && q.until < today ? today : q.until,
           delivery_date: null,
           payment_terms: customerTerms[q.customer],
           delivery_terms: 'Giao tại địa chỉ khách hàng',

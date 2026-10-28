@@ -25,7 +25,13 @@ export default defineConfig({
     // Files that change or count tenant-wide state run alone, after the rest.
     { name: 'exclusive', testMatch: exclusive, dependencies: ['chromium'], workers: 1 },
     // Sample data for a dev database; only with E2E_SEED, so the e2e run never adds it.
-    ...(process.env.E2E_SEED ? [{ name: 'seed', testMatch: /\.seed\.ts$/, dependencies: ['setup'] }] : []),
+    // Sales needs the org units and accounts the HRM seed creates.
+    ...(process.env.E2E_SEED
+      ? [
+          { name: 'seed-hrm', testMatch: /demo\.seed\.ts$/, dependencies: ['setup'] },
+          { name: 'seed', testMatch: /sales\.seed\.ts$/, dependencies: ['seed-hrm'] },
+        ]
+      : []),
   ],
   // E2E_EXTERNAL=1 runs against servers already up on :8090 and :8091, e.g. on the dev database.
   webServer: process.env.E2E_EXTERNAL ? undefined : {
