@@ -1,12 +1,12 @@
 import { Button } from '@mmerp/ui'
 import { IconCircleDot, IconFileExport, IconFileImport, IconPlus } from '@tabler/icons-react'
-import { keepPreviousData, useQuery } from '@tanstack/react-query'
+import { keepPreviousData, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router'
 import { api, unwrap, type EmployeeListItem, type EmployeeSort } from '@/shared/api/hrm'
 import { formatDate } from '@/shared/i18n'
-import { ExportButton, ImportDialog } from '@/shared/jobs'
+import { ExportButton, exportInBackground, ImportDialog } from '@/shared/jobs'
 import { PersonName } from '@/shared/ui/avatar'
 import { type Column } from '@/shared/ui/DataTable'
 import { MenuAction } from '@/shared/ui/MenuAction'
@@ -26,6 +26,7 @@ const defaults = { filters: { q: '', status: '', org_unit_id: '' }, sort: 'code'
 
 export function EmployeesPage() {
   const { t } = useTranslation()
+  const qc = useQueryClient()
   const actions = useEmployeeActions().data ?? []
   const canCreate = actions.includes('create')
   const [importing, setImporting] = useState<'hrm.employees' | 'hrm.leave_balance' | null>(null)
@@ -52,6 +53,8 @@ export function EmployeesPage() {
     placeholderData: keepPreviousData,
   })
 
+  const exportParams = { org_unit_id: org_unit_id ? Number(org_unit_id) : undefined, status: status || undefined, q: q || undefined }
+
   const columns: Column<EmployeeListItem>[] = [
     { key: 'full_name', header: t('hrm.employee.full_name'), role: 'title', kind: 'person', sortable: true, render: (e) => <PersonName name={e.full_name} /> },
     { key: 'code', header: t('hrm.employee.code'), role: 'meta', kind: 'code', sortable: true, render: (e) => e.code },
@@ -67,17 +70,14 @@ export function EmployeesPage() {
       description={t('hrm.employees.description')}
       action={
         <>
-          <ExportButton kind="hrm.employees" params={{ org_unit_id: org_unit_id ? Number(org_unit_id) : undefined, status: status || undefined, q: q || undefined }} label={t('hrm.employees.export')} />
-          {actions.includes('view_sensitive') && (
-            <ExportButton
-              kind="hrm.employees"
-              params={{ org_unit_id: org_unit_id ? Number(org_unit_id) : undefined, status: status || undefined, q: q || undefined, include_sensitive: true }}
-              label={t('hrm.employees.export_sensitive')}
-              icon={IconFileExport}
-            />
-          )}
-          {(actions.includes('import_employees') || actions.includes('import_leave_balances')) && (
+          <ExportButton kind="hrm.employees" params={exportParams} label={t('hrm.employees.export')} />
+          {(actions.includes('view_sensitive') || actions.includes('import_employees') || actions.includes('import_leave_balances')) && (
             <MoreActions place="page">
+              {actions.includes('view_sensitive') && (
+                <MenuAction icon={IconFileExport} onClick={() => void exportInBackground(qc, t, 'hrm.employees', { ...exportParams, include_sensitive: true })}>
+                  {t('hrm.employees.export_sensitive')}
+                </MenuAction>
+              )}
               {actions.includes('import_employees') && (
                 <MenuAction icon={IconFileImport} onClick={() => setImporting('hrm.employees')}>
                   {t('hrm.employees.import')}

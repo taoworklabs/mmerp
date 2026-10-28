@@ -57,6 +57,7 @@ test('HR exports the employee list, imports a file that fixes one profile and ad
   await expect(good.getByText('Đã nhập 2 dòng.')).toBeVisible()
   await good.getByRole('button', { name: 'Đóng', exact: true }).click()
   await page.getByRole('searchbox').fill('EI02')
+  await page.getByRole('searchbox').press('Enter')
   await expect(page.getByRole('link', { name: /Nhân viên EI02/ })).toBeVisible()
 
   const list = (await (await api.get('/api/hrm/employees?q=EI01')).json()) as { items: { id: number; code: string }[] }
