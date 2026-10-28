@@ -17,7 +17,7 @@ go build -tags embedweb -o "$bin" ./cmd/server
 # psql from the Postgres image, so the host needs only Docker.
 docker run --rm --network host postgres:18 psql -q "$base" \
   -c 'DROP DATABASE IF EXISTS mmerp_e2e WITH (FORCE)' -c 'CREATE DATABASE mmerp_e2e'
-echo 'e2e password' | DATABASE_URL=$db_url ROOT_PASSWORD='e2e password' "$bin" reset-password root
+echo '1234@Abcd' | DATABASE_URL=$db_url ROOT_PASSWORD='1234@Abcd' "$bin" reset-password root
 
 trap 'kill 0' EXIT INT TERM
 # Only the :8090 server works jobs, so they run with its products.
