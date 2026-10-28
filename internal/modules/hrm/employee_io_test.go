@@ -573,16 +573,16 @@ func TestEmployeeImportLocksBeforeReading(t *testing.T) {
 	hr := f.ctxFor("hr", "hr@*")
 	id := must(t)(f.hrm.CreateEmployee(hr, employee("E1", f.a)))
 	job := f.startImport(hr, eRow("E1", map[int]any{6: "Đà Nẵng"}))
-	tx, err := pgtest.System(t, f.core.Pool).Begin(t.Context())
-	f.check(err)
-	defer func() { _ = tx.Rollback(context.Background()) }()
-	_, err = tx.Exec(t.Context(), `SELECT 1 FROM hrm.employees WHERE id = $1 FOR UPDATE`, id)
-	f.check(err)
-	f.check(f.jobs.Start(t.Context()))
-	pgtest.AwaitLockWait(t, f.system)
-	_, err = tx.Exec(t.Context(), `UPDATE hrm.employees SET phone = '0999' WHERE id = $1`, id)
-	f.check(err)
-	f.check(tx.Commit(t.Context()))
+	f.check(platform.InTx(f.admin, func(ctx context.Context) error {
+		db := platform.DBFrom(ctx)
+		if _, err := db.Exec(ctx, `SELECT 1 FROM hrm.employees WHERE id = $1 FOR UPDATE`, id); err != nil {
+			return err
+		}
+		f.check(f.jobs.Start(t.Context()))
+		pgtest.AwaitLockWait(t, f.system)
+		_, err := db.Exec(ctx, `UPDATE hrm.employees SET phone = '0999' WHERE id = $1`, id)
+		return err
+	}))
 	f.check(f.jobs.Stop(t.Context()))
 	f.wantJob(job, "completed")
 	e, err := f.hrm.Employee(hr, id)
@@ -669,18 +669,19 @@ func TestEmployeeImportNoDeadlockWithManagerEdit(t *testing.T) {
 	must(t)(f.hrm.CreateEmployee(hr, employee("Y", f.a)))
 	job := f.startImport(hr, eRow("M", nil), eRow("Y", map[int]any{8: "C"}))
 	// The form's order: the edited row, then the manager tree, then the write.
-	tx, err := pgtest.System(t, f.core.Pool).Begin(t.Context())
-	f.check(err)
-	defer func() { _ = tx.Rollback(context.Background()) }()
-	_, err = tx.Exec(t.Context(), `SELECT 1 FROM hrm.employees WHERE id = $1 FOR NO KEY UPDATE`, z)
-	f.check(err)
-	_, err = tx.Exec(t.Context(), `SELECT pg_advisory_xact_lock(hashtext('hrm.manager_tree'))`)
-	f.check(err)
-	f.check(f.jobs.Start(t.Context()))
-	pgtest.AwaitLockWait(t, f.system) // the import holds M and waits for the tree
-	_, err = tx.Exec(t.Context(), `UPDATE hrm.employees SET manager_id = $1 WHERE id = $2`, m, z)
-	f.check(err)
-	f.check(tx.Commit(t.Context()))
+	f.check(platform.InTx(f.admin, func(ctx context.Context) error {
+		db := platform.DBFrom(ctx)
+		if _, err := db.Exec(ctx, `SELECT 1 FROM hrm.employees WHERE id = $1 FOR NO KEY UPDATE`, z); err != nil {
+			return err
+		}
+		if _, err := db.Exec(ctx, `SELECT pg_advisory_xact_lock(hashtext('hrm.manager_tree'))`); err != nil {
+			return err
+		}
+		f.check(f.jobs.Start(t.Context()))
+		pgtest.AwaitLockWait(t, f.system) // the import holds M and waits for the tree
+		_, err := db.Exec(ctx, `UPDATE hrm.employees SET manager_id = $1 WHERE id = $2`, m, z)
+		return err
+	}))
 	f.check(f.jobs.Stop(t.Context()))
 	f.wantJob(job, "completed")
 	if r, err := f.jobs.JobGet(f.admin, job); err != nil || len(r.Errors) > 0 {
