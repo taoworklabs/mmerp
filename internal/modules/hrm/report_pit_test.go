@@ -9,19 +9,15 @@ import (
 // yearTax is the 2026 schedule on a year's assessable income: 5/10/20/30/35% above
 // 0, 120M, 360M, 720M and 1.2 billion.
 func yearTax(n int64) int64 {
-	var tax float64
-	prev := int64(0)
-	for _, b := range []struct {
-		upper int64
-		rate  float64
-	}{{120_000_000, 0.05}, {360_000_000, 0.1}, {720_000_000, 0.2}, {1_200_000_000, 0.3}, {1 << 62, 0.35}} {
+	var hundredths, prev int64
+	for _, b := range []struct{ upper, percent int64 }{{120_000_000, 5}, {360_000_000, 10}, {720_000_000, 20}, {1_200_000_000, 30}, {1 << 62, 35}} {
 		if n <= prev {
 			break
 		}
-		tax += float64(min(n, b.upper)-prev) * b.rate
+		hundredths += (min(n, b.upper) - prev) * b.percent
 		prev = b.upper
 	}
-	return int64(tax + 0.5)
+	return (hundredths + 50) / 100
 }
 
 // worked is every working day of month from the fixture's hire date, 5 January.
