@@ -144,5 +144,20 @@
   "hrm.print.contract.block.clauses": "Điều khoản hợp đồng",
   "hrm.print.contract.block.clauses.default": "Người lao động {employee_name} làm việc cho {employer_name} theo nội quy lao động và thỏa ước lao động tập thể của đơn vị.\nHai bên cam kết thực hiện đúng các điều khoản đã thỏa thuận trong hợp đồng này và quy định của pháp luật lao động.",
   "hrm.print.contract.block.footer": "Chân trang",
-  "hrm.print.contract.block.footer.default": "Hợp đồng được lập thành hai bản có giá trị như nhau, mỗi bên giữ một bản."
+  "hrm.print.contract.block.footer.default": "Hợp đồng được lập thành hai bản có giá trị như nhau, mỗi bên giữ một bản.",
+  "hrm.termination.reason": "Lý do nghỉ việc",
+  "hrm.termination.reason.contract_expired": "Hết hạn hợp đồng (khoản 1 Điều 34 BLLĐ)",
+  "hrm.termination.reason.work_completed": "Đã hoàn thành công việc theo hợp đồng (khoản 2 Điều 34)",
+  "hrm.termination.reason.mutual_agreement": "Hai bên thỏa thuận chấm dứt (khoản 3 Điều 34)",
+  "hrm.termination.reason.imprisonment": "Bị kết án tù, cấm làm công việc (khoản 4 Điều 34)",
+  "hrm.termination.reason.foreigner_expelled": "Người nước ngoài bị trục xuất (khoản 5 Điều 34)",
+  "hrm.termination.reason.death": "Người lao động chết, mất tích, mất năng lực hành vi (khoản 6 Điều 34)",
+  "hrm.termination.reason.employer_ceased": "Người sử dụng lao động chấm dứt hoạt động (khoản 7 Điều 34)",
+  "hrm.termination.reason.dismissal": "Kỷ luật sa thải (khoản 8 Điều 34)",
+  "hrm.termination.reason.employee_resignation": "Người lao động đơn phương chấm dứt (Điều 35)",
+  "hrm.termination.reason.employer_unilateral": "Công ty đơn phương chấm dứt (Điều 36)",
+  "hrm.termination.reason.absent_without_reason": "Tự ý bỏ việc từ 5 ngày liên tục (điểm e khoản 1 Điều 36)",
+  "hrm.termination.reason.restructuring": "Cho thôi việc do cơ cấu lại, lý do kinh tế (Điều 42, 43)",
+  "hrm.termination.reason.work_permit_expired": "Giấy phép lao động hết hiệu lực (khoản 12 Điều 34)",
+  "hrm.termination.reason.probation_failed": "Thử việc không đạt (khoản 13 Điều 34)"
 }
