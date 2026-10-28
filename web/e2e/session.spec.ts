@@ -19,6 +19,8 @@ test('a session revoked on the server sends every open tab to the login screen o
   const other = await context.newPage()
   await other.goto('/')
   await expect(other.getByRole('button', { name: /^Tài khoản:/ })).toBeVisible()
+  // A load query still in flight would hit 401 before the click below.
+  await Promise.all([page.waitForLoadState('networkidle'), other.waitForLoadState('networkidle')])
 
   // Revoke from outside the browser, as an administrator or expiry would.
   const cookie = (await context.cookies()).find((c) => c.name === 'session')!
