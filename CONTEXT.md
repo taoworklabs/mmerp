@@ -122,6 +122,9 @@ Product description: [products/hrm.md](./products/hrm.md).
 - **Inputs hash** (`inputs_hash`, vi: "Mã băm đầu vào"): a hash of the set of source documents with their versions, legal parameters, work calendar, settings and employee data the payroll used. **Sources changed** (vi: "Nguồn đã đổi") when the recomputed hash differs from the stored one; the payroll then cannot be submitted for approval or finalized.
 - **Payroll samples** (vi: "Bộ mẫu lương"): sample payroll cases with the expected value of every item, used as the payroll acceptance test ([docs/payroll-samples](./docs/payroll-samples/README.md)).
 - **Initial import** (vi: "Nhập ban đầu"): loading the organisation's existing data (employees, dependants, contracts in effect) into the system when they start using it. Contracts imported this way take effect immediately, without approval. Only possible while the legal entity has no finalized pay period. Not built yet (M10, on hold).
+- **Insurance enrolment list** (D02-LT, vi: "Danh sách tham gia, điều chỉnh BHXH, BHYT, BHTN"): a month's increases, decreases and salary adjustments of a legal entity's insured staff, found by comparing the insured salary on the posted payrolls of that month and the one before.
+- **PIT withholding return** (05/KK-TNCN, vi: "Tờ khai khấu trừ thuế TNCN"): a quarter's totals of taxable income and tax withheld of a legal entity, from its posted payrolls.
+- **PIT finalisation** (05/QTT-TNCN, vi: "Quyết toán thuế TNCN"): a year's totals and, for each **authorising employee** (vi: "Cá nhân ủy quyền quyết toán"; taken to be everyone on the posted payroll of December), the year's tax due against the tax withheld; listed per employee in 05-1/BK and with dependants in 05-3/BK.
 
 ## Shared master data
 
