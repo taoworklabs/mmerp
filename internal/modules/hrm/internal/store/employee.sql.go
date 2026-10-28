@@ -340,9 +340,10 @@ func (q *Queries) IsManager(ctx context.Context, arg IsManagerParams) (bool, err
 }
 
 const lockEmployee = `-- name: LockEmployee :one
-SELECT id, code, full_name, date_of_birth, gender, phone, email, address, org_unit_id, manager_id, user_id, hire_date, termination_date, national_id, social_insurance_no, tax_code, bank_account FROM hrm.employees WHERE id = $1 FOR UPDATE
+SELECT id, code, full_name, date_of_birth, gender, phone, email, address, org_unit_id, manager_id, user_id, hire_date, termination_date, national_id, social_insurance_no, tax_code, bank_account FROM hrm.employees WHERE id = $1 FOR NO KEY UPDATE
 `
 
+// NO KEY: serialises edits of the employee without blocking writes of rows that reference it.
 func (q *Queries) LockEmployee(ctx context.Context, id int64) (HrmEmployee, error) {
 	row := q.db.QueryRow(ctx, lockEmployee, id)
 	var i HrmEmployee

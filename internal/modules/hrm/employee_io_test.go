@@ -545,3 +545,39 @@ func TestEmployeeImportManagerSelf(t *testing.T) {
 	wantRowError(t, j, 2, "E1 không thể là người quản lý")
 	wantRowError(t, j, 3, "N1 không thể là người quản lý")
 }
+
+// A form setting someone's manager to an employee the import holds does not deadlock with it:
+// the import's row lock lets the foreign key check through. M is read but left as is.
+func TestEmployeeImportNoDeadlockWithManagerEdit(t *testing.T) {
+	f := newFixture(t)
+	hr := f.ctxFor("hr", "hr@*")
+	m := must(t)(f.hrm.CreateEmployee(hr, employee("M", f.a)))
+	z := must(t)(f.hrm.CreateEmployee(hr, employee("Z", f.a)))
+	must(t)(f.hrm.CreateEmployee(hr, employee("C", f.a)))
+	must(t)(f.hrm.CreateEmployee(hr, employee("Y", f.a)))
+	job := f.startImport(hr, eRow("M", nil), eRow("Y", map[int]any{8: "C"}))
+	// The form's order: the edited row, then the manager tree, then the write.
+	tx, err := pgtest.System(t, f.core.Pool).Begin(t.Context())
+	f.check(err)
+	defer func() { _ = tx.Rollback(context.Background()) }()
+	_, err = tx.Exec(t.Context(), `SELECT 1 FROM hrm.employees WHERE id = $1 FOR NO KEY UPDATE`, z)
+	f.check(err)
+	_, err = tx.Exec(t.Context(), `SELECT pg_advisory_xact_lock(hashtext('hrm.manager_tree'))`)
+	f.check(err)
+	f.check(f.jobs.Start(t.Context()))
+	pgtest.AwaitLockWait(t, f.system) // the import holds M and waits for the tree
+	_, err = tx.Exec(t.Context(), `UPDATE hrm.employees SET manager_id = $1 WHERE id = $2`, m, z)
+	f.check(err)
+	f.check(tx.Commit(t.Context()))
+	f.check(f.jobs.Stop(t.Context()))
+	f.wantJob(job, "completed")
+	if r, err := f.jobs.JobGet(f.admin, job); err != nil || len(r.Errors) > 0 {
+		t.Fatalf("job errors %v %v", err, r.Errors)
+	}
+	if e := f.employeeByCode(hr, "Z"); e.ManagerID == nil || *e.ManagerID != m {
+		t.Fatalf("Z manager %v", e.ManagerID)
+	}
+	if e := f.employeeByCode(hr, "Y"); e.ManagerCode == nil || *e.ManagerCode != "C" {
+		t.Fatalf("Y manager %v", e.ManagerCode)
+	}
+}

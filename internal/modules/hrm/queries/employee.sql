@@ -20,7 +20,8 @@ LEFT JOIN iam.users a ON a.id = e.user_id
 WHERE e.id = $1;
 
 -- name: LockEmployee :one
-SELECT * FROM hrm.employees WHERE id = $1 FOR UPDATE;
+-- NO KEY: serialises edits of the employee without blocking writes of rows that reference it.
+SELECT * FROM hrm.employees WHERE id = $1 FOR NO KEY UPDATE;
 
 -- name: CreateEmployee :one
 INSERT INTO hrm.employees (code, full_name, date_of_birth, gender, phone, email, address, org_unit_id,
