@@ -92,10 +92,11 @@ type allowanceBasis struct {
 	Pension bool          `json:"pension"`
 }
 
-// kind is what is paid: nothing under 12 months worked, and no severance to someone
-// eligible for a pension (Art 46.1).
+// kind is what is paid: nothing under 12 months worked, no severance to someone eligible
+// for a pension (Art 46.1), and no severance when every month was insured, the usual case
+// since unemployment insurance began. Job loss keeps its two-month floor.
 func (b allowanceBasis) kind() allowanceKind {
-	if b.Worked < 12 || b.Kind == allowanceSeverance && b.Pension {
+	if b.Worked < 12 || b.Kind == allowanceSeverance && (b.Pension || b.years().IsZero()) {
 		return allowanceNone
 	}
 	return b.Kind

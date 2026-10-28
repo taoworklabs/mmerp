@@ -150,3 +150,33 @@ func TestPayrollSeveranceWindowIsASource(t *testing.T) {
 		t.Fatal("an appendix inside the allowance window left the payroll current")
 	}
 }
+
+// Hired after 2009 with every month insured, the usual case: no severance is paid, and the
+// termination says so instead of promising one.
+func TestPayrollSeveranceAllInsured(t *testing.T) {
+	f := newPayrollFixture(t)
+	emp := f.leaving("Q1", "2015-01-01", "2025-01-01", 20_000_000, 0)
+	f.terminate(emp, "2026-04-15", "mutual_agreement", 135)
+	f.timesheet(f.a, "2026-04", map[int64][]string{emp: april1to15})
+	id := f.payroll("2026-04")
+	if l := f.line(id, emp); l.Severance != 0 {
+		t.Fatalf("severance %d", l.Severance)
+	}
+	if got := f.capturedMonthly(id, emp); got != nil {
+		t.Fatalf("captured a severance: %v", got)
+	}
+	l, err := f.hrm.Terminations(f.pay, hrm.TerminationFilter{Sort: "-date", Paging: platform.Paging{Page: 1, PageSize: 20}})
+	f.check(err)
+	x, err := f.hrm.Termination(f.pay, l.Items[0].ID)
+	f.check(err)
+	if x.Allowance.Kind != "none" || *x.Allowance.Amount != 0 {
+		t.Fatalf("preview %+v", x.Allowance)
+	}
+	parts, err := f.hrm.TerminationPrint(f.pay, x.ID)
+	f.check(err)
+	var printed map[string]any
+	f.check(json.Unmarshal(parts[0].Data, &printed))
+	if printed["allowance"] != "none" {
+		t.Fatalf("decision prints %v", printed["allowance"])
+	}
+}

@@ -152,16 +152,29 @@ func TestTerminationPost(t *testing.T) {
 	if got := f.terminationDate(f.emp); got != "2026-04-15" {
 		t.Fatalf("termination date %q", got)
 	}
-	// A second posted termination of the same employee (a draft slipped in before the first
-	// was posted) is refused under the employee lock.
-	other := must(t)(f.hrm.CreateEmployee(f.hr, employee("X", f.a)))
-	twin := must(t)(f.hrm.CreateTermination(f.hr, hrm.NewTermination{EmployeeID: other, TerminationFields: quit("2026-04-20", "dismissal")}))
-	if _, err := f.system.Exec(f.admin, `UPDATE hrm.terminations SET employee_id = $1 WHERE id = $2`, f.emp, twin); err != nil {
-		t.Fatal(err)
-	}
-	wantErr(t, f.postTermination(twin), "termination_exists")
 	_, err := f.hrm.CreateTermination(f.hr, hrm.NewTermination{EmployeeID: f.emp, TerminationFields: quit("2026-04-20", "dismissal")})
 	wantErr(t, err, "termination_exists")
+}
+
+// Two creates for the same employee at once: the employee lock lets one draft through.
+func TestTerminationConcurrentCreates(t *testing.T) {
+	f := newLeaveFixture(t)
+	var wg sync.WaitGroup
+	errs := make([]error, 2)
+	for i := range errs {
+		wg.Go(func() {
+			_, errs[i] = f.hrm.CreateTermination(f.hr, hrm.NewTermination{EmployeeID: f.emp, TerminationFields: quit("2026-04-15", "mutual_agreement")})
+		})
+	}
+	wg.Wait()
+	if (errs[0] == nil) == (errs[1] == nil) || errCode(errs[0])+errCode(errs[1]) != "termination_exists" {
+		t.Fatalf("want one draft and one termination_exists: %v, %v", errs[0], errs[1])
+	}
+	var n int
+	f.check(f.system.QueryRow(f.admin, `SELECT count(*) FROM hrm.terminations WHERE employee_id = $1`, f.emp).Scan(&n))
+	if n != 1 {
+		t.Fatalf("%d drafts", n)
+	}
 }
 
 func TestTerminationCancel(t *testing.T) {

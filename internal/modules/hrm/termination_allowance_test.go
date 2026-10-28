@@ -56,7 +56,11 @@ func TestAllowanceBasis(t *testing.T) {
 		{allowanceBasis{Kind: allowanceSeverance, Worked: 36, Pension: true}, allowanceNone, "3"},
 		{allowanceBasis{Kind: allowanceJobLoss, Worked: 36, Pension: true}, allowanceJobLoss, "3"},
 		{allowanceBasis{Kind: allowanceSeverance, Worked: 225, Insured: 207}, allowanceSeverance, "1.5"},
-		{allowanceBasis{Kind: allowanceSeverance, Worked: 30, Insured: 20, Paid: 20}, allowanceSeverance, "0"},
+		// Every month insured: no year left to pay severance for, so none, not a severance of 0.
+		{allowanceBasis{Kind: allowanceSeverance, Worked: 30, Insured: 20, Paid: 20}, allowanceNone, "0"},
+		{allowanceBasis{Kind: allowanceSeverance, Worked: 120, Insured: 120}, allowanceNone, "0"},
+		// Job loss keeps its two-month floor at zero years.
+		{allowanceBasis{Kind: allowanceJobLoss, Worked: 26, Insured: 26}, allowanceJobLoss, "0"},
 	} {
 		if got := c.b.kind(); got != c.kind {
 			t.Errorf("%+v: kind %q, want %q", c.b, got, c.kind)

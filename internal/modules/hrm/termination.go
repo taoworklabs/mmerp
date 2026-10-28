@@ -226,7 +226,11 @@ func (s *Service) CreateTermination(ctx context.Context, in NewTermination) (int
 		if err != nil || d.Reused {
 			return err
 		}
-		// After Create, so a retried create returns its document instead of refusing.
+		// After Create, so a retried create returns its document instead of refusing; under the
+		// employee lock, so two creates at once leave one draft.
+		if _, err := store.LockEmployee.Run(ctx, e.ID); err != nil {
+			return err
+		}
 		if err := openTermination(ctx, e.ID, id, openStatuses); err != nil {
 			return err
 		}
