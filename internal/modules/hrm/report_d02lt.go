@@ -111,7 +111,7 @@ func (s *Service) exportD02LT(ctx context.Context, params json.RawMessage) (data
 		}
 	}
 	name := "D02-LT " + b.Entity.Name + " " + month.Format("01-2006")
-	return reportSheet(name, layoutD02LT_QD366_2026, rows, []int{2}, p.LegalEntityID, people)
+	return reportSheet(name, layoutD02LT_QD366_2026, rows, []int{2}, p.LegalEntityID, personIDs(people))
 }
 
 func d02Cells(n int, p reportPerson, m d02Row, month time.Time) []any {

@@ -304,3 +304,103 @@ func TestReportAuditsIdentifiers(t *testing.T) {
 	}
 }
 
+// indicators maps each code of an indicator sheet to its value.
+func indicators(t *testing.T, rows [][]string) map[string]string {
+	t.Helper()
+	out := map[string]string{}
+	for _, r := range rows {
+		if r = pad(r, 4); strings.HasPrefix(r[2], "[") {
+			out[r[2]] = r[3]
+		}
+	}
+	return out
+}
+
+func wantIndicators(t *testing.T, got map[string]string, want map[string]int64) {
+	t.Helper()
+	for code, v := range want {
+		if got[code] != itoa(v) {
+			t.Errorf("%s = %q, want %d", code, got[code], v)
+		}
+	}
+}
+
+// Q3/2026 in C: E is taxed and recovers 1,000,000 in August; L earns too little to be taxed.
+func TestPIT05KK(t *testing.T) {
+	f := newReportFixture(t)
+	f.contract(f.emp, sample{salary: 30_000_000}, "2026-01-01", "2026-12-31")
+	low := f.hire("L", f.a, "2026-01-05", 6_000_000)
+	var lines []hrm.PayrollLine
+	for _, m := range []string{"2026-07", "2026-08", "2026-09"} {
+		f.timesheet(f.a, m, map[int64][]string{f.emp: full(m), low: full(m)})
+		p, err := f.hrm.CreatePayroll(f.pay, hrm.NewPayroll{LegalEntityID: f.c, Month: m})
+		f.check(err)
+		f.wantJob(p.JobID, "completed")
+		if m == "2026-08" {
+			job, err := f.hrm.SavePayrollAdjustments(f.pay, p.ID, hrm.PayrollAdjustments{Version: f.payrollDoc(p.ID).Version,
+				Items: []hrm.PayrollAdjustmentInput{{EmployeeID: f.emp, Amount: -1_000_000, SourcePeriod: "2026-07", Reason: "Trả thừa"}}})
+			f.check(err)
+			f.wantJob(job, "completed")
+		}
+		f.check(f.send(p.ID))
+		lines = append(lines, f.payrollDoc(p.ID).Lines...)
+	}
+	var tnct, exempt, taxed, assessable, tax int64
+	for _, l := range lines {
+		tnct += l.Gross - l.Exempt
+		exempt += l.Exempt
+		assessable += l.Taxable
+		tax += l.IncomeTax
+		if l.EmployeeID == f.emp {
+			taxed += l.Gross - l.Exempt
+		} else if l.IncomeTax != 0 {
+			t.Fatalf("L is taxed: %+v", l)
+		}
+	}
+	rows, name := f.exportReport(f.rep, "hrm.report.pit_05kk", `{"legal_entity_id":`+itoa(f.c)+`,"quarter":"2026-Q3"}`)
+	if !strings.Contains(name, "05-KK-TNCN") || !strings.Contains(name, "Q3-2026") {
+		t.Errorf("file name %q", name)
+	}
+	got := indicators(t, rows)
+	wantIndicators(t, got, map[string]int64{"[15]": 2, "[16]": 2, "[17]": 1, "[18]": 1, "[19]": 0,
+		"[20]": tnct, "[21]": tnct, "[22]": 0, "[23]": 0, "[24]": exempt, "[25]": 0, "[26]": 0, "[27]": 0, "[28]": exempt,
+		"[29]": taxed, "[30]": taxed, "[31]": 0, "[32]": assessable, "[33]": assessable, "[34]": 0,
+		"[35]": tax, "[36]": 0, "[37]": 0, "[38]": 0, "[39]": 0, "[40]": 0, "[41]": 0, "[42]": tax, "[43]": tax, "[44]": 0, "[45]": 0})
+	// 31 indicators under 4 header fields: [01], [04], [05], [06].
+	if tax == 0 || len(got) != 35 {
+		t.Fatalf("tax %d, %d indicators", tax, len(got))
+	}
+}
+
+func TestPIT05KKPeriods(t *testing.T) {
+	f := newReportFixture(t)
+	f.contract(f.emp, sample{salary: 22_000_000}, "2026-01-01", "2026-12-31")
+	f.close(f.c, "2026-07", map[int64]map[int64][]string{f.a: {f.emp: full("2026-07")}})
+	f.close(f.c, "2026-08", map[int64]map[int64][]string{f.a: {f.emp: full("2026-08")}})
+	job := f.reportJob(f.rep, "hrm.report.pit_05kk", `{"legal_entity_id":`+itoa(f.c)+`,"quarter":"2026-Q3"}`, "report_payroll_missing")
+	if out := f.jobError(job); !strings.Contains(out, "09/2026") {
+		t.Errorf("error %s", out)
+	}
+	f.reportJob(f.rep, "hrm.report.pit_05kk", `{"legal_entity_id":`+itoa(f.c)+`,"quarter":"2026-Q2"}`, "report_form_not_supported")
+}
+
+// The header rows come from the legal entity: its legal name, tax code and address once set.
+func TestReportEntityHeader(t *testing.T) {
+	f := newReportFixture(t)
+	f.contract(f.emp, sample{salary: 22_000_000}, "2026-01-01", "2026-12-31")
+	for _, m := range []string{"2026-07", "2026-08", "2026-09"} {
+		f.close(f.c, m, map[int64]map[int64][]string{f.a: {f.emp: full(m)}})
+	}
+	params := `{"legal_entity_id":` + itoa(f.c) + `,"quarter":"2026-Q3"}`
+	head := func() map[string]string {
+		rows, _ := f.exportReport(f.rep, "hrm.report.pit_05kk", params)
+		return indicators(t, rows)
+	}
+	if h := head(); h["[04]"] != "C" || h["[05]"] != "" || h["[01]"] != "Quý 3 năm 2026" {
+		t.Fatalf("before: %v", h)
+	}
+	f.check(f.iam.UpdateOrgUnit(f.admin, f.c, iam.OrgUnitInput{Kind: "company", Name: "C", LegalName: str("Công ty C"), TaxCode: str("0101234567"), Address: str("Hà Nội")}))
+	if h := head(); h["[04]"] != "Công ty C" || h["[05]"] != "0101234567" || h["[06]"] != "Hà Nội" {
+		t.Fatalf("after: %v", h)
+	}
+}

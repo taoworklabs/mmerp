@@ -24,7 +24,11 @@ const monthLayout = "01/2006"
 
 func (s *Service) registerReports() {
 	for kind, run := range map[string]func(context.Context, json.RawMessage) (dataio.Sheet, error){
-		"hrm.report.d02lt": s.exportD02LT,
+		"hrm.report.d02lt":      s.exportD02LT,
+		"hrm.report.pit_05kk":   s.exportPIT05KK,
+		"hrm.report.pit_05qtt":  s.exportPIT05QTT,
+		"hrm.report.pit_05_1bk": s.exportPIT05_1BK,
+		"hrm.report.pit_05_3bk": s.exportPIT05_3BK,
 	} {
 		s.d.DataIO.RegisterExport(dataio.Export{Kind: kind, Product: "hrm", Run: run, Check: s.checkReportFile})
 	}
@@ -117,14 +121,8 @@ type reportPerson struct {
 // reportPeople decrypts the identifiers of the employees a report lists. The actor must read
 // sensitive values at each one's current unit; every read is audited, never with the values.
 func (s *Service) reportPeople(ctx context.Context, rows []store.ReportEmployeesRow) ([]reportPerson, error) {
-	sens, err := s.d.IAM.Scope(ctx, "hrm", PermSensitive)
-	if err != nil {
+	if err := s.requireReportSensitive(ctx, rows); err != nil {
 		return nil, err
-	}
-	for _, r := range rows {
-		if !sens.Has(r.OrgUnitID) {
-			return nil, platform.ErrForbidden
-		}
 	}
 	out := make([]reportPerson, len(rows))
 	for i, r := range rows {
@@ -152,6 +150,21 @@ func (s *Service) reportPeople(ctx context.Context, rows []store.ReportEmployees
 		out[i] = p
 	}
 	return out, nil
+}
+
+// requireReportSensitive refuses unless the actor reads sensitive values at every employee's
+// current unit: even a report of totals is only for those who may see what it adds up.
+func (s *Service) requireReportSensitive(ctx context.Context, rows []store.ReportEmployeesRow) error {
+	sens, err := s.d.IAM.Scope(ctx, "hrm", PermSensitive)
+	if err != nil {
+		return err
+	}
+	for _, r := range rows {
+		if !sens.Has(r.OrgUnitID) {
+			return platform.ErrForbidden
+		}
+	}
+	return nil
 }
 
 // reportFile is what a report file holds, pinned when it is made.
@@ -189,14 +202,13 @@ func (s *Service) checkReportFile(ctx context.Context, pin json.RawMessage) erro
 	return nil
 }
 
-// reportSheet pins the legal entity and the people a sheet lists.
-func reportSheet(name string, header []string, rows [][]any, text []int, entity int64, people []reportPerson) (dataio.Sheet, error) {
-	ids := make([]int64, len(people))
-	for i, p := range people {
-		ids[i] = p.ID
+// reportSheet pins the legal entity and the employees a sheet is built from.
+func reportSheet(name string, header []string, rows [][]any, text []int, entity int64, ids []int64) (dataio.Sheet, error) {
+	ids = slices.Compact(slices.Sorted(slices.Values(ids)))
+	if ids == nil {
+		ids = []int64{}
 	}
-	slices.Sort(ids)
-	pin, err := json.Marshal(reportFile{LegalEntityID: entity, EmployeeIDs: slices.Compact(ids)})
+	pin, err := json.Marshal(reportFile{LegalEntityID: entity, EmployeeIDs: ids})
 	return dataio.Sheet{Name: name, Header: header, Rows: rows, TextColumns: text, Pin: pin}, err
 }
 
@@ -242,4 +254,12 @@ func dottedThousands(n int64) string {
 		return "-" + s
 	}
 	return s
+}
+
+func personIDs(people []reportPerson) []int64 {
+	ids := make([]int64, len(people))
+	for i, p := range people {
+		ids[i] = p.ID
+	}
+	return ids
 }
