@@ -140,5 +140,7 @@
   "hrm.me.nav.team_leaves": "Leave requests",
   "hrm.me.nav.team_overtimes": "Overtime requests",
   "hrm.error.report_payroll_missing": "No posted payroll for: {{months}}. Post those payrolls before running the report.",
-  "hrm.error.report_form_not_supported": "This period uses an older version of the form, which mmerp does not produce."
+  "hrm.error.report_form_not_supported": "This period uses an older version of the form, which mmerp does not produce.",
+  "hrm.nav.group_reports": "Reports",
+  "hrm.nav.reports": "Insurance & PIT reports"
 }

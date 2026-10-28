@@ -23,6 +23,7 @@ import { TimesheetsPage } from './pages/TimesheetsPage'
 import { LegalParamsPage } from './pages/LegalParamsPage'
 import { PayrollPage } from './pages/PayrollPage'
 import { PayrollsPage } from './pages/PayrollsPage'
+import { ReportsPage } from './pages/ReportsPage'
 import { WorkCalendarPage } from './pages/WorkCalendarPage'
 
 export default function HrmRoutes() {
@@ -35,6 +36,9 @@ export default function HrmRoutes() {
   const canPayrolls = useCan('hrm.payroll.view')
   const canParams = useCan('hrm.legal_param.manage')
   const canRules = useCan(['hrm.approval.manage', 'core.approval.manage'])
+  // Reports hold per-person amounts and identifiers: both permissions.
+  const canSalary = useCan('hrm.salary.view')
+  const canSensitive = useCan('hrm.employee.sensitive')
   return (
     <Routes>
       <Route path="employees" element={canView ? <EmployeesPage /> : <ForbiddenPage />} />
@@ -59,6 +63,7 @@ export default function HrmRoutes() {
       <Route path="timesheets/:id" element={canTimesheets ? <TimesheetPage /> : <ForbiddenPage />} />
       <Route path="payrolls" element={canPayrolls ? <PayrollsPage /> : <ForbiddenPage />} />
       <Route path="payrolls/:id" element={canPayrolls ? <PayrollPage /> : <ForbiddenPage />} />
+      <Route path="reports" element={canSalary && canSensitive ? <ReportsPage /> : <ForbiddenPage />} />
       <Route path="work-calendar" element={canCalendar ? <WorkCalendarPage /> : <ForbiddenPage />} />
       <Route path="legal-params" element={canParams ? <LegalParamsPage /> : <ForbiddenPage />} />
       <Route path="approval-rules/*" element={canRules ? <ApprovalRules product="hrm" basePath="/hrm/approval-rules" /> : <ForbiddenPage />} />
