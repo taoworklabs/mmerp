@@ -107,7 +107,7 @@ func (s *Service) MyDays(ctx context.Context, month string) (MyDays, error) {
 		return out, err
 	}
 	for _, l := range leaves {
-		for date, days := range leaveAllocation(cal, *platform.DatePtr(l.StartDate), *platform.DatePtr(l.EndDate), decimal.RequireFromString(l.Days)) {
+		for date, days := range halfAllocation(cal, *platform.DatePtr(l.StartDate), *platform.DatePtr(l.EndDate), decimal.RequireFromString(l.Days), l.StartHalf) {
 			// ponytail: one leave per day shown; a second half-day request on the same date is left out.
 			if d := at[date]; d != nil && d.Leave == nil {
 				d.Leave = &MyDayLeave{TypeName: l.TypeName, Days: days.String(), Paid: l.Paid}

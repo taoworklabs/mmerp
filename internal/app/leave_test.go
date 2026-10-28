@@ -61,7 +61,7 @@ func TestLeaveAPI(t *testing.T) {
 	if rec := c.do("GET", "/api/hrm/leaves/actions", ""); !strings.Contains(rec.Body.String(), `"create"`) || !strings.Contains(rec.Body.String(), fmt.Sprintf(`"self_employee_id":%d`, emp)) {
 		t.Fatalf("actions = %s", rec.Body)
 	}
-	lv := id("/api/hrm/leaves", fmt.Sprintf(`{"leave_type_id":%d,"start_date":"2026-03-10","end_date":"2026-03-11","days":"1.5","reason":null}`, annual))
+	lv := id("/api/hrm/leaves", fmt.Sprintf(`{"leave_type_id":%d,"start_date":"2026-03-10","end_date":"2026-03-11","days":"1.5","end_half":true,"reason":null}`, annual))
 	path := fmt.Sprintf("/api/hrm/leaves/%d", lv)
 	docPath := fmt.Sprintf("/api/documents/hrm.leave_request/%d", lv)
 	if l := get(c, path); l.Status != "draft" || l.Version != 1 || *l.Balance != "12" || !slices.Equal(l.AllowedActions, []string{"edit", "delete", "submit"}) {

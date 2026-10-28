@@ -74,7 +74,14 @@ function SettingModal({ entity, setting, onClose }: { entity: number; setting: L
   return (
     <FormModal opened title={t(setting.key)} onClose={onClose}>
       <Form form={form} onSubmit={save}>
-        <SelectField name="value" label={t('core.settings.value')} data={setting.values.map((v) => ({ value: v, label: t(`${setting.key}.${v}`) }))} required />
+        <SelectField
+          name="value"
+          label={t('core.settings.value')}
+          // A setting whose change has side effects explains them in its own hint.
+          description={t(`${setting.key}.hint`, { defaultValue: '' }) || undefined}
+          data={setting.values.map((v) => ({ value: v, label: t(`${setting.key}.${v}`) }))}
+          required
+        />
         <FormActions submitLabel={t('core.common.save')} onCancel={onClose} cancelLabel={t('core.common.cancel')} />
       </Form>
     </FormModal>

@@ -18,7 +18,7 @@ WHERE l.employee_id = @employee_id AND t.period_start = @period_start AND d.stat
 ORDER BY l.date;
 
 -- name: MyLeaves :many
-SELECT r.start_date, r.end_date, r.days::text AS days, t.name AS type_name, t.paid
+SELECT r.start_date, r.end_date, r.days::text AS days, t.name AS type_name, t.paid, r.start_half
 FROM hrm.leave_requests r JOIN hrm.leave_types t ON t.id = r.leave_type_id JOIN record.documents d ON d.id = r.id
 WHERE r.employee_id = @employee_id AND d.status = 'posted' AND r.start_date <= @to_date::date AND r.end_date >= @from_date::date
 ORDER BY r.start_date, r.id;

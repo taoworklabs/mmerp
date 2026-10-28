@@ -104,7 +104,7 @@ func TestLeaveAttachments(t *testing.T) {
 		"email":null,"address":null,"org_unit_id":%d,"manager_id":null,"user_login":"admin","hire_date":"2026-01-05","termination_date":null}`, dept))
 	annual := id("/api/hrm/leave-types", `{"name":"Phép năm","deducts_balance":true,"paid":true,"active":true}`)
 	ok(c, "POST", fmt.Sprintf("/api/hrm/employees/%d/leave-balances/2026/adjustments", emp), `{"delta":"12","reason":"đầu năm"}`, 204)
-	lv := id("/api/hrm/leaves", fmt.Sprintf(`{"leave_type_id":%d,"start_date":"2026-03-10","end_date":"2026-03-11","days":"1.5","reason":null}`, annual))
+	lv := id("/api/hrm/leaves", fmt.Sprintf(`{"leave_type_id":%d,"start_date":"2026-03-10","end_date":"2026-03-11","days":"1.5","end_half":true,"reason":null}`, annual))
 	files := fmt.Sprintf("/api/records/hrm.leave_request/%d/attachments", lv)
 	docPath := fmt.Sprintf("/api/documents/hrm.leave_request/%d", lv)
 
@@ -270,7 +270,7 @@ func TestRemoveLeaveAttachments(t *testing.T) {
 	ok(admin, "POST", fmt.Sprintf("/api/hrm/employees/%d/leave-balances/2026/adjustments", staff), `{"delta":"12","reason":"đầu năm"}`, 204)
 
 	staffC, bossC, stranger := login("staff"), login("boss"), login("stranger")
-	lv := id(staffC, "/api/hrm/leaves", fmt.Sprintf(`{"leave_type_id":%d,"start_date":"2026-03-10","end_date":"2026-03-11","days":"1.5","reason":null}`, annual))
+	lv := id(staffC, "/api/hrm/leaves", fmt.Sprintf(`{"leave_type_id":%d,"start_date":"2026-03-10","end_date":"2026-03-11","days":"1.5","end_half":true,"reason":null}`, annual))
 	files := fmt.Sprintf("/api/records/hrm.leave_request/%d/attachments", lv)
 	docPath := fmt.Sprintf("/api/documents/hrm.leave_request/%d", lv)
 

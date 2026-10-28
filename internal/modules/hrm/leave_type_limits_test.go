@@ -19,14 +19,16 @@ func TestLeaveTypeCapsOneRequest(t *testing.T) {
 	f := newLeaveFixture(t)
 	wedding := must(t)(f.hrm.SaveLeaveType(f.hr, 0, hrm.LeaveTypeInput{Name: "Kết hôn", Paid: true, Active: true, MaxDays: str("3")}))
 
-	_, err := f.hrm.CreateLeave(f.e, hrm.NewLeave{LeaveFields: f.leaveOf(wedding, "2026-03-09", "2026-03-13", "4")})
+	_, err := f.hrm.CreateLeave(f.e, hrm.NewLeave{LeaveFields: f.leaveOf(wedding, "2026-03-09", "2026-03-12", "4")})
 	wantErr(t, err, "leave_days_exceed_type_max")
 	if e, _ := err.(*platform.Error); e.Params["max_days"] != "3" {
 		t.Fatalf("params = %v, want max_days 3", e.Params)
 	}
 
 	id := must(t)(f.hrm.CreateLeave(f.e, hrm.NewLeave{LeaveFields: f.leaveOf(wedding, "2026-03-09", "2026-03-11", "3")}))
-	wantErr(t, f.hrm.UpdateLeave(f.e, id, hrm.LeaveUpdate{Version: 1, LeaveFields: f.leaveOf(wedding, "2026-03-09", "2026-03-12", "3.5")}), "leave_days_exceed_type_max")
+	longer := f.leaveOf(wedding, "2026-03-09", "2026-03-12", "3.5")
+	longer.EndHalf = true
+	wantErr(t, f.hrm.UpdateLeave(f.e, id, hrm.LeaveUpdate{Version: 1, LeaveFields: longer}), "leave_days_exceed_type_max")
 
 	// A type without a cap is bounded only by the working days.
 	must(t)(f.hrm.CreateLeave(f.e, hrm.NewLeave{LeaveFields: f.fields("2026-03-16", "2026-03-20", "5")}))

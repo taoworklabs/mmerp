@@ -118,7 +118,7 @@ func timesheetWarnings(ctx context.Context, cal calendar, t store.GetTimesheetRo
 	}
 	leaves := make([]basisLeave, len(rows))
 	for i, r := range rows {
-		leaves[i] = basisLeave{EmployeeID: r.EmployeeID, Start: *platform.DatePtr(r.StartDate), End: *platform.DatePtr(r.EndDate), Days: decimal.RequireFromString(r.Days)}
+		leaves[i] = basisLeave{EmployeeID: r.EmployeeID, Start: *platform.DatePtr(r.StartDate), End: *platform.DatePtr(r.EndDate), Days: decimal.RequireFromString(r.Days), StartHalf: r.StartHalf}
 	}
 	onLeave := map[int64]map[string]decimal.Decimal{}
 	out := []TimesheetWarning{}

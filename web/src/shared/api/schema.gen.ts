@@ -2852,14 +2852,16 @@ export interface components {
             readonly $schema?: string;
             allowed_actions: string[];
             balance: string | null;
-            /** @description Half-day steps, e.g. 2.5; at most the working days of the range */
-            days: string;
+            /** @description Computed from the work calendar; when sent, the count the client expects, refused if it differs */
+            days?: string;
             employee_code: string;
             /** Format: int64 */
             employee_id: number;
             employee_name: string;
             /** Format: date */
             end_date: string;
+            /** @description Only the morning of the last working date */
+            end_half?: boolean;
             /** Format: int64 */
             id: number;
             /** Format: int64 */
@@ -2869,12 +2871,17 @@ export interface components {
             reason: string | null;
             /** Format: date */
             start_date: string;
+            /** @description Only the afternoon of the first working date */
+            start_half?: boolean;
             /** @enum {string} */
             status: "draft" | "pending_approval" | "posted" | "cancelled";
             /** Format: int32 */
             version: number;
         };
         LeaveBalance: {
+            carried: string;
+            /** Format: date */
+            carried_until: string | null;
             days: string;
             /** Format: int32 */
             year: number;
@@ -2946,15 +2953,19 @@ export interface components {
              * @example /api/schemas/LeaveUpdate.json
              */
             readonly $schema?: string;
-            /** @description Half-day steps, e.g. 2.5; at most the working days of the range */
-            days: string;
+            /** @description Computed from the work calendar; when sent, the count the client expects, refused if it differs */
+            days?: string;
             /** Format: date */
             end_date: string;
+            /** @description Only the morning of the last working date */
+            end_half?: boolean;
             /** Format: int64 */
             leave_type_id: number;
             reason: string | null;
             /** Format: date */
             start_date: string;
+            /** @description Only the afternoon of the first working date */
+            start_half?: boolean;
             /** Format: int32 */
             version: number;
         };
@@ -3404,12 +3415,14 @@ export interface components {
              * @example /api/schemas/NewLeave.json
              */
             readonly $schema?: string;
-            /** @description Half-day steps, e.g. 2.5; at most the working days of the range */
-            days: string;
+            /** @description Computed from the work calendar; when sent, the count the client expects, refused if it differs */
+            days?: string;
             /** Format: int64 */
             employee_id?: number;
             /** Format: date */
             end_date: string;
+            /** @description Only the morning of the last working date */
+            end_half?: boolean;
             /** Format: int64 */
             leave_type_id: number;
             reason: string | null;
@@ -3420,6 +3433,8 @@ export interface components {
             request_id?: string;
             /** Format: date */
             start_date: string;
+            /** @description Only the afternoon of the first working date */
+            start_half?: boolean;
         };
         NewOvertime: {
             /**
