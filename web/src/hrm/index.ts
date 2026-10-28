@@ -1,7 +1,7 @@
-import { IconUsersGroup, IconLayoutDashboard, IconCalendarCog, IconCash, IconCalendarEvent, IconCategory, IconScale, IconSitemap, IconClockHour4, IconFileCertificate, IconFileText, IconGitBranch, IconTable, IconUsers } from '@tabler/icons-react'
+import { IconUsersGroup, IconLayoutDashboard, IconCalendarCog, IconCash, IconCalendarEvent, IconCategory, IconScale, IconSitemap, IconClockHour4, IconFileCertificate, IconFileText, IconGitBranch, IconTable, IconUserOff, IconUsers } from '@tabler/icons-react'
 import type { AreaManifest } from '@/shared/area'
 import { leaveRecord, overtimeRecord } from './records'
-import { contractDocType, employeeDocType, hrmKeys, leaveDocType, overtimeDocType, payrollDocType, timesheetDocType } from './keys'
+import { contractDocType, employeeDocType, hrmKeys, leaveDocType, overtimeDocType, payrollDocType, terminationDocType, timesheetDocType } from './keys'
 
 export { hrmMe } from './me'
 
@@ -16,6 +16,7 @@ export const hrm: AreaManifest = {
     // Every signed-in user may read the tree.
     { label: 'hrm.nav.org', path: 'org', icon: IconSitemap, group: 'hrm.nav.group_people' },
     { label: 'hrm.nav.contracts', path: 'contracts', icon: IconFileText, permission: 'hrm.contract.view', group: 'hrm.nav.group_people' },
+    { label: 'hrm.nav.terminations', path: 'terminations', icon: IconUserOff, permission: 'hrm.termination.view', group: 'hrm.nav.group_people' },
     { label: 'hrm.nav.timesheets', path: 'timesheets', icon: IconTable, permission: 'hrm.timesheet.view', group: 'hrm.nav.group_time' },
     // Everyone files their own leave; the list shows what each user may see.
     { label: 'hrm.nav.leaves', path: 'leaves', icon: IconCalendarEvent, group: 'hrm.nav.group_time' },
@@ -47,6 +48,12 @@ export const hrm: AreaManifest = {
       // Contracts are listed per employee, and the employee page shows its current one; the
       // employee is not known from the id alone.
       invalidate: () => [hrmKeys.contracts.all(), hrmKeys.employees.all()],
+    },
+    [terminationDocType]: {
+      path: (id) => `terminations/${id}`,
+      preview: () => import('./components/TerminationPreview'),
+      // Posting one sets the employee's termination date and the profile links to it.
+      invalidate: () => [hrmKeys.terminations.all(), hrmKeys.employees.all()],
     },
     [timesheetDocType]: {
       path: (id) => `timesheets/${id}`,

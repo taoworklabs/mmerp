@@ -120,8 +120,6 @@ export function MainFields({ employee }: { employee?: Employee }) {
         }
       />
       <TextField name="user_login" label={t('hrm.employee.user_login')} description={t('hrm.employee.user_login_hint')} maxLength={200} />
-      {/* Leaving is recorded on an existing employee, never when creating one. */}
-      {employee && <DateField name="termination_date" label={t('hrm.employee.termination_date')} clearable />}
     </>
   )
 }

@@ -254,31 +254,6 @@ test('recent activity on the overview leaves reads out; the activity tab keeps t
   await expect(page.getByText('xem thông tin nhạy cảm').first()).toBeVisible()
 })
 
-test('terminating asks for the last day, then confirms before saving', async ({ page, baseURL }) => {
-  const api = await signedInApi(baseURL!)
-  const id = await created(api.post('/api/hrm/employees', { data: employee(`T${run}`, ids.a) }))
-  const terminationDate = async () => (await (await api.get(`/api/hrm/employees/${id}`)).json()).termination_date
-  await signInAs(page, hrA, `/hrm/employees/${id}`)
-  // Not a button beside Transfer: it sits in the "…" menu.
-  await expect(page.getByRole('button', { name: 'Điều chuyển' })).toBeVisible()
-  await expect(page.getByRole('button', { name: 'Cho nghỉ việc' })).toHaveCount(0)
-  await page.getByRole('button', { name: 'Thao tác khác' }).click()
-  await page.getByRole('menuitem', { name: 'Cho nghỉ việc' }).click()
-  const form = page.getByRole('dialog', { name: `Cho Nhân viên T${run} nghỉ việc` })
-  await form.getByRole('textbox', { name: 'Ngày nghỉ việc' }).fill('31/12/2026')
-  await form.getByRole('button', { name: 'Cho nghỉ việc' }).click()
-  const confirm = page.getByRole('dialog', { name: 'Cho nghỉ việc', exact: true })
-  await expect(confirm).toContainText('31/12/2026')
-  // Backing out saves nothing.
-  await confirm.getByRole('button', { name: 'Quay lại' }).click()
-  await expect(confirm).toHaveCount(0)
-  expect(await terminationDate()).toBeNull()
-  await form.getByRole('button', { name: 'Cho nghỉ việc' }).click()
-  await confirm.getByRole('button', { name: 'Cho nghỉ việc' }).click()
-  await expect(page.getByText('Đã lưu hồ sơ nhân viên.')).toBeVisible()
-  expect(await terminationDate()).toBe('2026-12-31')
-})
-
 test('leaving a record asks only when something was edited', async ({ page }) => {
   await signInAs(page, hrA, `/hrm/employees/${ids.ea}`)
   const nav = page.getByRole('navigation', { name: 'Điều hướng chính' }).getByRole('link', { name: 'Nhân viên' })

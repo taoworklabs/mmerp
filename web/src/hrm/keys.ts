@@ -5,6 +5,7 @@ export const contractDocType = 'hrm.contract'
 export const timesheetDocType = 'hrm.timesheet'
 export const payrollDocType = 'hrm.payroll'
 export const employeeDocType = 'hrm.employee'
+export const terminationDocType = 'hrm.termination'
 
 // Query keys of the hrm area; every parameter that changes a result is part of its key.
 export type EmployeeQuery = { q: string; status: string; org_unit_id: string; sort: string; page: number; pageSize: number }
@@ -12,6 +13,7 @@ export type LeaveQuery = { q: string; status: string; orgUnit: string; month: st
 export type OvertimeQuery = LeaveQuery
 export type TimesheetQuery = { month: string; org_unit_id: string; status: string; sort: string; page: number; pageSize: number }
 export type PayrollQuery = { month: string; legal_entity_id: string; status: string; page: number; pageSize: number }
+export type TerminationQuery = { q: string; status: string; org_unit_id: string; sort: string; page: number; pageSize: number }
 export type ContractQuery = { q: string; status: string; contract_type_id: string; org_unit_id: string; expiring: string; sort: string; page: number; pageSize: number }
 
 export const hrmKeys = {
@@ -48,6 +50,11 @@ export const hrmKeys = {
     list: (q: ContractQuery) => ['hrm', 'contracts', 'list', q] as const,
     employee: (id: number) => ['hrm', 'contracts', 'employee', id] as const,
     detail: (id: number) => ['hrm', 'contracts', 'detail', id] as const,
+  },
+  terminations: {
+    all: () => ['hrm', 'terminations'] as const,
+    list: (q: TerminationQuery) => ['hrm', 'terminations', 'list', q] as const,
+    detail: (id: number) => ['hrm', 'terminations', 'detail', id] as const,
   },
   timesheets: {
     actions: () => ['hrm', 'timesheets', 'actions'] as const,
