@@ -378,3 +378,20 @@ func TestEmployeeTerminationLink(t *testing.T) {
 		t.Fatalf("self %v %+v", self.AllowedActions, self.Termination)
 	}
 }
+
+// A termination stays filed under the unit it was made in: HR of the employee's new unit
+// neither sees it on the profile nor gets to create a second one.
+func TestEmployeeTerminationLinkAfterMove(t *testing.T) {
+	f := newLeaveFixture(t)
+	must(t)(f.hrm.CreateTermination(f.hr, hrm.NewTermination{EmployeeID: f.emp, TerminationFields: quit("2026-04-15", "mutual_agreement")}))
+	e, err := f.hrm.Employee(f.hr, f.emp)
+	f.check(err)
+	moved := employee("E", f.b)
+	moved.UserLogin, moved.ManagerID = str("e"), e.ManagerID
+	f.check(f.hrm.UpdateEmployee(f.hr, f.emp, moved.EmployeeInput))
+	got, err := f.hrm.Employee(f.ctxFor("hrb", "hr@B"), f.emp)
+	f.check(err)
+	if got.Termination != nil || slices.Contains(got.AllowedActions, "create_termination") {
+		t.Fatalf("new unit's HR %v %+v", got.AllowedActions, got.Termination)
+	}
+}

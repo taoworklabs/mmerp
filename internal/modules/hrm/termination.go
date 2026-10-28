@@ -370,15 +370,16 @@ func (s *Service) terminationTransition(ctx context.Context, d record.Doc, from 
 		[]audit.Change{{Field: "termination_date", Old: platform.DatePtr(e.TerminationDate), New: platform.DatePtr(next)}})
 }
 
-// employeeTermination is the employee's standing termination for a viewer of terminations,
-// and adds create_termination while there is none and the actor may create one.
+// employeeTermination is the employee's standing termination when the actor may view that
+// document (it stays filed under the unit it was made in), and adds create_termination while
+// there is none and the actor may create one.
 func (s *Service) employeeTermination(ctx context.Context, employee, unit int64, actions []string) (*TerminationRef, []string, error) {
-	view, err := s.allowed(ctx, PermTerminationView, unit)
-	if err != nil || !view {
-		return nil, actions, err
-	}
 	r, err := store.OpenTerminationOf.Run(ctx, store.OpenTerminationOfParams{EmployeeID: employee, Statuses: openStatuses})
 	if err == nil {
+		ok, err := s.d.Record.Can(ctx, terminationType, r.ID, record.View)
+		if err != nil || !ok {
+			return nil, actions, err
+		}
 		return &TerminationRef{ID: r.ID, Number: r.Number}, actions, nil
 	}
 	if !errors.Is(err, pgx.ErrNoRows) {
