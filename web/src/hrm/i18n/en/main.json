@@ -329,6 +329,7 @@
   "hrm.employee_created": "Employee created",
   "hrm.employee_updated": "Employee updated",
   "hrm.employee_sensitive_viewed": "Viewed sensitive details",
+  "hrm.employee_sensitive_exported": "Exported sensitive data to Excel",
   "hrm.dependents_viewed": "Viewed dependants",
   "hrm.dependent_saved": "Dependant saved",
   "hrm.dependent_deleted": "Dependant removed",

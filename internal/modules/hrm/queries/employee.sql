@@ -4,6 +4,13 @@ SELECT e.id, e.code, e.full_name, e.org_unit_id, u.name AS org_unit_name, e.emai
        e.hire_date, e.termination_date
 FROM hrm.employees e JOIN iam.org_units u ON u.id = e.org_unit_id;
 
+-- name: EmployeeExportBase :many
+-- data:base
+SELECT e.id, e.code, e.full_name, e.date_of_birth, e.gender, e.phone, e.email, e.address, e.org_unit_id,
+       m.code AS manager_code, e.hire_date, e.termination_date,
+       e.national_id, e.social_insurance_no, e.tax_code, e.bank_account
+FROM hrm.employees e LEFT JOIN hrm.employees m ON m.id = e.manager_id;
+
 -- name: GetEmployee :one
 SELECT e.*, u.name AS org_unit_name, m.code AS manager_code, m.full_name AS manager_name, a.login AS user_login
 FROM hrm.employees e

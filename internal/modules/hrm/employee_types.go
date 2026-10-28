@@ -104,3 +104,10 @@ type EmployeeFilter struct {
 	Sort      string `query:"sort" enum:"code,-code,full_name,-full_name,hire_date,-hire_date" default:"code"`
 	platform.Paging
 }
+
+// EmployeeExportParams are the list filters an employee export keeps.
+type EmployeeExportParams struct {
+	OrgUnitID int64  `json:"org_unit_id"`
+	Status    string `json:"status"`
+	Q         string `json:"q"`
+}

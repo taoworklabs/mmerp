@@ -329,6 +329,7 @@
   "hrm.employee_created": "Tạo hồ sơ nhân viên",
   "hrm.employee_updated": "Sửa hồ sơ nhân viên",
   "hrm.employee_sensitive_viewed": "Xem thông tin nhạy cảm",
+  "hrm.employee_sensitive_exported": "Xuất thông tin nhạy cảm ra Excel",
   "hrm.dependents_viewed": "Xem người phụ thuộc",
   "hrm.dependent_saved": "Lưu người phụ thuộc",
   "hrm.dependent_deleted": "Xóa người phụ thuộc",

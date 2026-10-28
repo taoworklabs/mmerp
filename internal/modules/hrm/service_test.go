@@ -176,7 +176,7 @@ func TestScopeLimitsEmployees(t *testing.T) {
 	}
 
 	e, err := f.hrm.Employee(viewer, ea)
-	if err != nil || !slices.Equal(e.AllowedActions, []string{}) {
+	if err != nil || !slices.Equal(e.AllowedActions, []string{"export"}) {
 		t.Fatalf("viewer actions = %v %v", e.AllowedActions, err)
 	}
 	if err := f.hrm.UpdateEmployee(viewer, ea, employee("A1", f.a).EmployeeInput); !errors.Is(err, platform.ErrForbidden) {
@@ -188,11 +188,11 @@ func TestScopeLimitsEmployees(t *testing.T) {
 	}
 
 	e, _ = f.hrm.Employee(hrA, ea)
-	if !slices.Equal(e.AllowedActions, []string{"edit", "view_contracts"}) {
+	if !slices.Equal(e.AllowedActions, []string{"edit", "export", "view_contracts"}) {
 		t.Fatalf("hr_a actions = %v", e.AllowedActions)
 	}
 	disabled := platform.WithProducts(hrA, nil)
-	if e, _ := f.hrm.Employee(disabled, ea); !slices.Equal(e.AllowedActions, []string{"view_contracts"}) {
+	if e, _ := f.hrm.Employee(disabled, ea); !slices.Equal(e.AllowedActions, []string{"export", "view_contracts"}) {
 		t.Fatalf("product disabled: actions = %v", e.AllowedActions)
 	}
 }

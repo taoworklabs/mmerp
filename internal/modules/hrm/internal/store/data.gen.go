@@ -35,6 +35,7 @@ var CreateDependent = data.OneArg("hrm.CreateDependent", newQ, (*Queries).Create
 var UpdateDependent = data.ExecArg("hrm.UpdateDependent", newQ, (*Queries).UpdateDependent)
 var DeleteDependent = data.ExecArg("hrm.DeleteDependent", newQ, (*Queries).DeleteDependent)
 var EmployeeListBase = data.NewBase("hrm.EmployeeListBase", employeeListBase, []string{"id", "code", "full_name", "org_unit_id", "org_unit_name", "email", "phone", "hire_date", "termination_date"}, (*Queries).EmployeeListBase)
+var EmployeeExportBase = data.NewBase("hrm.EmployeeExportBase", employeeExportBase, []string{"id", "code", "full_name", "date_of_birth", "gender", "phone", "email", "address", "org_unit_id", "manager_code", "hire_date", "termination_date", "national_id", "social_insurance_no", "tax_code", "bank_account"}, (*Queries).EmployeeExportBase)
 var GetEmployee = data.OneArg("hrm.GetEmployee", newQ, (*Queries).GetEmployee)
 var LockEmployee = data.OneArg("hrm.LockEmployee", newQ, (*Queries).LockEmployee)
 var CreateEmployee = data.OneArg("hrm.CreateEmployee", newQ, (*Queries).CreateEmployee)
