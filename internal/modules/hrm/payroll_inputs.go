@@ -1,6 +1,7 @@
 package hrm
 
 import (
+	"cmp"
 	"context"
 	"crypto/sha256"
 	"encoding/json"
@@ -142,6 +143,14 @@ func (s *Service) readBasis(ctx context.Context, legalEntity, payrollID int64, s
 				if bal.EmployeeID == e.ID {
 					e.LeaveBalance = bal.Days
 				}
+			}
+			earned, err := s.earnedNotCredited(ctx, legalEntity, e.ID, e.Hire, *e.Leave)
+			if err != nil {
+				return b, err
+			}
+			if earned.IsPositive() {
+				// In the balance's own text form, so the sum reads the same once the job credits it.
+				e.LeaveBalance = decimal.RequireFromString(cmp.Or(e.LeaveBalance, "0")).Add(earned).StringFixed(1)
 			}
 		}
 	}

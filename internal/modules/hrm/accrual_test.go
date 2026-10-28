@@ -273,3 +273,49 @@ func TestCarriedNotForLaterLeave(t *testing.T) {
 		t.Fatalf("carried %s, balance %s", carried, f.balance())
 	}
 }
+
+// The termination month is credited only after the employee has left, yet the payroll that
+// pays out their untaken leave counts it; crediting it later changes no payroll input.
+func TestPayrollPaysTerminationMonthAccrual(t *testing.T) {
+	f := newPayrollFixture(t)
+	f.setting(hrm.SettingLeaveAccrual, "monthly")
+	x := employee("X", f.a)
+	x.HireDate, x.TerminationDate = "2023-01-01", new("2026-04-20")
+	emp := must(t)(f.hrm.CreateEmployee(f.hr, x))
+	// 22,000,000 over March's 22 working days: a day of leave is worth 1,000,000.
+	f.contract(emp, sample{salary: 22_000_000}, "2026-01-01", "2026-06-30")
+	f.accrue("2026-04-01")
+	if got := f.balanceOfEmp(emp); got != "3" {
+		t.Fatalf("balance before leaving: %s", got)
+	}
+	f.timesheet(f.a, "2026-04", map[int64][]string{emp: workdays("2026-04-01", "2026-04-20", "2026-04-27", "2026-04-30")})
+	id := f.payroll("2026-04")
+	var line hrm.PayrollLine
+	for _, l := range f.payrollDoc(id).Lines {
+		if l.EmployeeID == emp {
+			line = l
+		}
+	}
+	if line.UnusedLeave != 4_000_000 {
+		t.Fatalf("unused leave paid %d, want four days", line.UnusedLeave)
+	}
+	f.accrue("2026-05-01")
+	if got := f.balanceOfEmp(emp); got != "4" {
+		t.Fatalf("balance after the job: %s", got)
+	}
+	if f.payrollDoc(id).SourcesChanged {
+		t.Fatal("crediting April changed the payroll's inputs")
+	}
+}
+
+func (f *payrollFixture) balanceOfEmp(emp int64) string {
+	f.t.Helper()
+	bs, err := f.hrm.LeaveBalances(f.pay, emp)
+	f.check(err)
+	for _, b := range bs {
+		if b.Year == 2026 {
+			return b.Days
+		}
+	}
+	return "0"
+}
