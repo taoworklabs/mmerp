@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -110,9 +111,9 @@ func (s *Service) exportPIT05KK(ctx context.Context, params json.RawMessage) (da
 	if err != nil {
 		return dataio.Sheet{}, err
 	}
-	var year, q int
-	if _, err := fmt.Sscanf(p.Quarter, "%4d-Q%1d", &year, &q); err != nil || q < 1 || q > 4 {
-		return dataio.Sheet{}, dataio.ErrInvalidParams
+	year, q, err := parseQuarter(p.Quarter)
+	if err != nil {
+		return dataio.Sheet{}, err
 	}
 	first := time.Date(year, time.Month(3*q-2), 1, 0, 0, 0, 0, time.UTC)
 	if first.Before(pitFrom) {
@@ -286,20 +287,22 @@ func (s *Service) exportPIT05QTT(ctx context.Context, params json.RawMessage) (d
 	return reportSheet(name, indicatorHeader, rows, nil, y.Entity.ID, y.employeeIDs())
 }
 
-// clipMonths bounds a dependant's YYYY-MM deduction months to the year, as MM/YYYY; ok is
-// false when they miss it.
-func clipMonths(from, to *string, year int) (first, last string, ok bool) {
-	lo, hi := fmt.Sprintf("%d-01", year), fmt.Sprintf("%d-12", year)
-	if from != nil && *from > lo {
-		lo = *from
+// deductedMonths is the first and last month (MM/YYYY) of paid, the YYYY-MM months an employee
+// had a posted payroll line in, sorted, that the payroll deducted the dependant in: by the
+// payroll's own rule, from a set first month to the last, if any. ok is false for none.
+func deductedMonths(d DependentInput, paid []string) (first, last string, ok bool) {
+	for _, m := range paid {
+		if d.DeductionFrom != nil && *d.DeductionFrom <= m && (d.DeductionTo == nil || m <= *d.DeductionTo) {
+			if first == "" {
+				first = m
+			}
+			last = m
+		}
 	}
-	if to != nil && *to < hi {
-		hi = *to
-	}
-	if lo > hi {
+	if first == "" {
 		return "", "", false
 	}
-	return lo[5:] + "/" + lo[:4], hi[5:] + "/" + hi[:4], true
+	return first[5:] + "/" + first[:4], last[5:] + "/" + last[:4], true
 }
 
 // isTaxCode tells a personal tax code (10 or 13 digits) from another ID number.
@@ -329,9 +332,26 @@ func (s *Service) exportPIT05_3BK(ctx context.Context, params json.RawMessage) (
 		}
 		byEmployee[d.EmployeeID] = append(byEmployee[d.EmployeeID], in)
 	}
+	// Only the dependants some posted payroll of the year deducted, over the months it did.
+	type listed struct {
+		DependentInput
+		first, last string
+	}
+	deducted := map[int64][]listed{}
 	var withDeps []store.ReportEmployeesRow
 	for _, e := range y.emps {
-		if len(byEmployee[e.ID]) > 0 {
+		var paid []string
+		for _, m := range y.Months {
+			if _, ok := m.Lines[e.ID]; ok {
+				paid = append(paid, m.Start.Format("2006-01"))
+			}
+		}
+		for _, d := range byEmployee[e.ID] {
+			if first, last, ok := deductedMonths(d, paid); ok {
+				deducted[e.ID] = append(deducted[e.ID], listed{d, first, last})
+			}
+		}
+		if len(deducted[e.ID]) > 0 {
 			withDeps = append(withDeps, e)
 		}
 	}
@@ -346,12 +366,8 @@ func (s *Service) exportPIT05_3BK(ctx context.Context, params json.RawMessage) (
 		}); err != nil {
 			return dataio.Sheet{}, err
 		}
-		for _, d := range byEmployee[e.ID] {
-			first, last, ok := clipMonths(d.DeductionFrom, d.DeductionTo, y.year)
-			if !ok {
-				continue
-			}
-			row := []any{int64(len(rows) + 1), e.FullName, e.TaxCode, d.FullName, "", "", "", "", relationships05_3BK[d.Relationship], first, last}
+		for _, d := range deducted[e.ID] {
+			row := []any{int64(len(rows) + 1), e.FullName, e.TaxCode, d.FullName, "", "", "", "", relationships05_3BK[d.Relationship], d.first, d.last}
 			if d.DateOfBirth != nil {
 				if t, err := time.Parse(time.DateOnly, *d.DateOfBirth); err == nil {
 					row[4] = t.Format(dateLayout)
@@ -371,4 +387,17 @@ func (s *Service) exportPIT05_3BK(ctx context.Context, params json.RawMessage) (
 	}
 	name := fmt.Sprintf("05-3BK-QTT-TNCN %s %d", y.Entity.Name, y.year)
 	return reportSheet(name, layout05_3BK_TT89_2026, rows, []int{2, 5, 7}, y.Entity.ID, personIDs(people))
+}
+
+var quarterParam = regexp.MustCompile(`^([0-9]{4})-Q([1-4])$`)
+
+// parseQuarter reads a YYYY-Qn quarter.
+func parseQuarter(v string) (year, q int, err error) {
+	m := quarterParam.FindStringSubmatch(v)
+	if m == nil {
+		return 0, 0, dataio.ErrInvalidParams
+	}
+	year, _ = strconv.Atoi(m[1])
+	q, _ = strconv.Atoi(m[2])
+	return year, q, nil
 }

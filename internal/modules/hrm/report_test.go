@@ -221,6 +221,19 @@ func TestD02LTLateHire(t *testing.T) {
 	wantCells(t, rowOf(t, rows, dName, "Nhân viên H"), map[int]string{dKind: "Tăng lao động", dEff: "25/05/2026", dFrom: "06/2026"})
 }
 
+// G joins on 1 May but works too few days to contribute: June is an increase, not a return,
+// since G was never insured here.
+func TestD02LTFirstMonthWaived(t *testing.T) {
+	f := newReportFixture(t)
+	f.contract(f.emp, sample{salary: 22_000_000}, "2026-01-01", "2026-12-31")
+	f.close(f.c, "2026-04", map[int64]map[int64][]string{f.a: {f.emp: full("2026-04")}})
+	g := f.hire("G", f.a, "2026-05-01", 10_000_000)
+	f.close(f.c, "2026-05", map[int64]map[int64][]string{f.a: {f.emp: full("2026-05"), g: workdays("2026-05-04", "2026-05-05")}})
+	f.close(f.c, "2026-06", map[int64]map[int64][]string{f.a: {f.emp: full("2026-06"), g: full("2026-06")}})
+	rows, _ := f.exportReport(f.rep, "hrm.report.d02lt", `{"legal_entity_id":`+itoa(f.c)+`,"month":"2026-06"}`)
+	wantCells(t, rowOf(t, rows, dName, "Nhân viên G"), map[int]string{dKind: "Tăng lao động", dEff: "01/05/2026", dFrom: "06/2026"})
+}
+
 // E moves from C to C2 on 1 June: a decrease for C, an increase for C2.
 func TestD02LTMoveBetweenEntities(t *testing.T) {
 	f := newReportFixture(t)

@@ -3,7 +3,11 @@ package hrm
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"time"
+
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgtype"
 
 	"github.com/taoworklabs/mmerp/internal/core/dataio"
 	"github.com/taoworklabs/mmerp/internal/modules/hrm/internal/store"
@@ -54,6 +58,7 @@ func (s *Service) exportD02LT(ctx context.Context, params json.RawMessage) (data
 	}
 	monthEnd := month.AddDate(0, 1, -1)
 	var moves []d02Row
+	maybeBack := map[int64]int{}
 	var listed []store.ReportEmployeesRow
 	for _, e := range emps {
 		pl, inPrev := prev[e.ID]
@@ -63,14 +68,10 @@ func (s *Service) exportD02LT(ctx context.Context, params json.RawMessage) (data
 		switch {
 		case cb > 0 && pb == 0:
 			r.kind, r.terms, r.effective = 0, cl.Input.InsuredTerms, month
-			r.label = "Tăng lao động"
-			// A return only for who was already there when M−1 began: someone hired late
-			// in M−1 contributed nothing yet and is new.
-			prevStart := month.AddDate(0, -1, 0)
-			if _, there := contractOn(contracts, e.ID, prevStart); inPrev && there && !e.HireDate.Time.After(prevStart) {
-				r.label = "Đi làm lại"
-			} else {
-				r.effective = joined(contracts, e, month, monthEnd)
+			r.label, r.effective = "Tăng lao động", joined(contracts, e, month, monthEnd)
+			if inPrev {
+				// On the payroll without contributing: a return only if once insured here.
+				maybeBack[e.ID] = len(moves)
 			}
 			r.fixed = fixedOn(contracts, e.ID, monthEnd)
 		case pb > 0 && cb == 0:
@@ -99,6 +100,13 @@ func (s *Service) exportD02LT(ctx context.Context, params json.RawMessage) (data
 		}
 		moves = append(moves, r)
 		listed = append(listed, e)
+	}
+	back, err := insuredBefore(ctx, p.LegalEntityID, month.AddDate(0, -2, 0), emps, maybeBack)
+	if err != nil {
+		return dataio.Sheet{}, err
+	}
+	for id := range back {
+		moves[maybeBack[id]].label, moves[maybeBack[id]].effective = "Đi làm lại", month
 	}
 	people, err := s.reportPeople(ctx, listed, "social_insurance_no")
 	if err != nil {
@@ -198,4 +206,57 @@ func joined(cs []store.ReportContractsRow, e store.ReportEmployeesRow, start, en
 		}
 	}
 	return out
+}
+
+// insuredBefore tells which of the employees in ids contributed on a posted payroll of the legal
+// entity, walking back month by month from from. Leaving the entity's payroll ends the walk for
+// them; where the payroll history starts, whoever was hired by then is taken as insured
+// before it.
+func insuredBefore(ctx context.Context, entity int64, from time.Time, emps []store.ReportEmployeesRow, ids map[int64]int) (map[int64]bool, error) {
+	open := map[int64]store.ReportEmployeesRow{}
+	for _, e := range emps {
+		if _, ok := ids[e.ID]; ok {
+			open[e.ID] = e
+		}
+	}
+	out := map[int64]bool{}
+	for m := from; len(open) > 0; m = m.AddDate(0, -1, 0) {
+		id, err := store.PostedPayroll.Run(ctx, store.PostedPayrollParams{LegalEntityID: entity, PeriodStart: pgtype.Date{Time: m, Valid: true}})
+		if errors.Is(err, pgx.ErrNoRows) || err == nil && !id.Valid {
+			for i, e := range open {
+				if e.HireDate.Time.Before(m.AddDate(0, 1, 0)) {
+					out[i] = true
+				}
+			}
+			break
+		}
+		if err != nil {
+			return nil, err
+		}
+		rows, err := store.PayrollLines.Run(ctx, id.Int64)
+		if err != nil {
+			return nil, err
+		}
+		seen := map[int64]bool{}
+		for _, r := range rows {
+			if _, ok := open[r.EmployeeID]; !ok {
+				continue
+			}
+			seen[r.EmployeeID] = true
+			l, err := openLine(ctx, r.Data)
+			if err != nil {
+				return nil, err
+			}
+			if l.Result.InsuranceBase > 0 {
+				out[r.EmployeeID] = true
+				delete(open, r.EmployeeID)
+			}
+		}
+		for i := range open {
+			if !seen[i] {
+				delete(open, i)
+			}
+		}
+	}
+	return out, nil
 }

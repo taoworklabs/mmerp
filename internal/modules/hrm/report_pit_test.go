@@ -136,6 +136,8 @@ func TestPIT05_3BK(t *testing.T) {
 		{FullName: "Con A", Relationship: "child", DateOfBirth: str("2020-02-03"), IDNumber: str("0123456789"), DeductionFrom: str("2025-06")},
 		{FullName: "Mẹ B", Relationship: "parent", IDNumber: str("001099012345"), DeductionFrom: str("2026-03"), DeductionTo: str("2026-08")},
 		{FullName: "Con C", Relationship: "child", DeductionFrom: str("2024-01"), DeductionTo: str("2025-12")},
+		// Registered without a first month: no payroll deducts them, so neither does the list.
+		{FullName: "Con D", Relationship: "child"},
 	} {
 		if _, err := f.hrm.SaveDependent(f.pay, f.emp, 0, d); err != nil {
 			t.Fatal(err)

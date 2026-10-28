@@ -23,22 +23,36 @@ func TestFinaliseUsesYearSchedule(t *testing.T) {
 	}
 }
 
-func TestClipMonths(t *testing.T) {
+// A dependant is listed for the months the payroll deducted them: from a set first month, and
+// only months the employee was paid in.
+func TestDeductedMonths(t *testing.T) {
 	s := func(v string) *string { return &v }
+	year := []string{"2026-01", "2026-02", "2026-03", "2026-04", "2026-05", "2026-06", "2026-07", "2026-08", "2026-09", "2026-10", "2026-11", "2026-12"}
 	for _, c := range []struct {
 		from, to    *string
+		paid        []string
 		first, last string
 		ok          bool
 	}{
-		{s("2025-06"), nil, "01/2026", "12/2026", true},
-		{s("2026-03"), s("2026-08"), "03/2026", "08/2026", true},
-		{s("2024-01"), s("2025-12"), "", "", false},
-		{s("2027-01"), nil, "", "", false},
-		{nil, nil, "01/2026", "12/2026", true},
+		{s("2025-06"), nil, year, "01/2026", "12/2026", true},
+		{s("2026-03"), s("2026-08"), year, "03/2026", "08/2026", true},
+		{s("2024-01"), s("2025-12"), year, "", "", false},
+		{s("2027-01"), nil, year, "", "", false},
+		{nil, nil, year, "", "", false},
+		{s("2025-06"), nil, year[:3], "01/2026", "03/2026", true},
+		{s("2026-05"), nil, year[:3], "", "", false},
 	} {
-		first, last, ok := clipMonths(c.from, c.to, 2026)
+		first, last, ok := deductedMonths(DependentInput{DeductionFrom: c.from, DeductionTo: c.to}, c.paid)
 		if first != c.first || last != c.last || ok != c.ok {
-			t.Errorf("%v-%v: %s %s %v", c.from, c.to, first, last, ok)
+			t.Errorf("%v-%v over %d months: %s %s %v", c.from, c.to, len(c.paid), first, last, ok)
+		}
+	}
+}
+
+func TestQuarterParam(t *testing.T) {
+	for in, want := range map[string]bool{"2026-Q3": true, "2026-Q4": true, "2026-Q31": false, "2026-Q0": false, "2026-Q5": false, "26-Q3": false, "2026-Q3 ": false} {
+		if _, _, err := parseQuarter(in); (err == nil) != want {
+			t.Errorf("%q: %v", in, err)
 		}
 	}
 }
