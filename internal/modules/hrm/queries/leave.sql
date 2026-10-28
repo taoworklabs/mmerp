@@ -76,3 +76,15 @@ SELECT year, days::text AS days FROM hrm.leave_balances WHERE employee_id = $1 O
 
 -- name: LeaveBalanceDays :one
 SELECT coalesce((SELECT days::text FROM hrm.leave_balances WHERE employee_id = $1 AND year = $2), '0')::text;
+
+-- name: InsertLeaveAccrual :execrows
+-- No row when the month was already decided: a credit is applied once.
+INSERT INTO hrm.leave_accruals (employee_id, year, month, days)
+VALUES (@employee_id, @year, @month, CAST(@days::text AS numeric))
+ON CONFLICT DO NOTHING;
+
+-- name: LeaveAccrualMonths :many
+SELECT month FROM hrm.leave_accruals WHERE employee_id = $1 AND year = $2 ORDER BY month;
+
+-- name: LeaveAccruedDays :one
+SELECT coalesce(sum(days), 0)::text FROM hrm.leave_accruals WHERE employee_id = $1 AND year = $2;

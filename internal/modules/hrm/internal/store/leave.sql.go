@@ -241,6 +241,78 @@ func (q *Queries) GetLeaveType(ctx context.Context, id int64) (HrmLeaveType, err
 	return i, err
 }
 
+const insertLeaveAccrual = `-- name: InsertLeaveAccrual :execrows
+INSERT INTO hrm.leave_accruals (employee_id, year, month, days)
+VALUES ($1, $2, $3, CAST($4::text AS numeric))
+ON CONFLICT DO NOTHING
+`
+
+type InsertLeaveAccrualParams struct {
+	EmployeeID int64
+	Year       int32
+	Month      int32
+	Days       string
+}
+
+// No row when the month was already decided: a credit is applied once.
+func (q *Queries) InsertLeaveAccrual(ctx context.Context, arg InsertLeaveAccrualParams) (int64, error) {
+	result, err := q.db.Exec(ctx, insertLeaveAccrual,
+		arg.EmployeeID,
+		arg.Year,
+		arg.Month,
+		arg.Days,
+	)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
+const leaveAccrualMonths = `-- name: LeaveAccrualMonths :many
+SELECT month FROM hrm.leave_accruals WHERE employee_id = $1 AND year = $2 ORDER BY month
+`
+
+type LeaveAccrualMonthsParams struct {
+	EmployeeID int64
+	Year       int32
+}
+
+func (q *Queries) LeaveAccrualMonths(ctx context.Context, arg LeaveAccrualMonthsParams) ([]int32, error) {
+	rows, err := q.db.Query(ctx, leaveAccrualMonths, arg.EmployeeID, arg.Year)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []int32
+	for rows.Next() {
+		var month int32
+		if err := rows.Scan(&month); err != nil {
+			return nil, err
+		}
+		items = append(items, month)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const leaveAccruedDays = `-- name: LeaveAccruedDays :one
+SELECT coalesce(sum(days), 0)::text FROM hrm.leave_accruals WHERE employee_id = $1 AND year = $2
+`
+
+type LeaveAccruedDaysParams struct {
+	EmployeeID int64
+	Year       int32
+}
+
+func (q *Queries) LeaveAccruedDays(ctx context.Context, arg LeaveAccruedDaysParams) (string, error) {
+	row := q.db.QueryRow(ctx, leaveAccruedDays, arg.EmployeeID, arg.Year)
+	var column_1 string
+	err := row.Scan(&column_1)
+	return column_1, err
+}
+
 const leaveBalanceDays = `-- name: LeaveBalanceDays :one
 SELECT coalesce((SELECT days::text FROM hrm.leave_balances WHERE employee_id = $1 AND year = $2), '0')::text
 `
