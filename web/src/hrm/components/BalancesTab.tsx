@@ -6,7 +6,7 @@ import { useForm } from 'react-hook-form'
 import { useTranslation } from 'react-i18next'
 import { api, unwrap, type Employee, type LeaveBalance } from '@/shared/api/hrm'
 import { useMe } from '@/shared/auth/me'
-import { currentYear, formatDecimal } from '@/shared/i18n'
+import { currentYear, formatDate, formatDecimal } from '@/shared/i18n'
 import { DataTable, type Column } from '@/shared/ui/DataTable'
 import { DecimalField, Form, FormActions, IntegerField, TextField } from '@/shared/ui/form'
 import { notifySuccess } from '@/shared/ui/notify'
@@ -26,6 +26,13 @@ export function BalancesTab({ employee }: { employee: Employee }) {
   const columns: Column<LeaveBalance>[] = [
     { key: 'year', header: t('hrm.balance.year'), role: 'title', kind: 'date', render: (b) => String(b.year) },
     { key: 'days', header: t('hrm.balance.days'), role: 'meta', kind: 'number', render: (b) => formatDecimal(b.days) },
+    {
+      key: 'carried',
+      header: t('hrm.balance.carried'),
+      role: 'meta',
+      kind: 'number',
+      render: (b) => (b.carried_until && b.carried !== '0' ? t('hrm.balance.carried_until', { days: formatDecimal(b.carried), date: formatDate(b.carried_until) }) : ''),
+    },
   ]
   return (
     <TabContent
