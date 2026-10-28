@@ -102,6 +102,10 @@ var periodic = []*river.PeriodicJob{river.NewPeriodicJob(river.PeriodicInterval(
 // yet, each employee in its own transaction. A failing employee does not stop the others;
 // the next run retries them.
 func (s *Service) AccrueLeave(ctx context.Context, today string) error {
+	// A disabled product stays read-only: nothing to credit, and nothing failed.
+	if platform.ProductGate(ctx, "hrm", platform.ClassWrite) != nil {
+		return nil
+	}
 	t := dayOf(today)
 	emps, err := store.AccrualEmployees.Run(ctx, pgDate(time.Date(t.Year()-1, 1, 1, 0, 0, 0, 0, time.UTC)))
 	if err != nil {
@@ -157,8 +161,14 @@ func (s *Service) accrueEmployee(ctx context.Context, e store.AccrualEmployeesRo
 	// A leaver's balance is final once paid out: it is neither carried past the year they
 	// left in nor expired after they left.
 	termination := platform.DatePtr(e.TerminationDate)
-	if termination == nil || dayOf(*termination).Year() >= year {
+	switch {
+	case termination == nil || dayOf(*termination).Year() >= year:
 		if err := s.carryOver(ctx, e.ID, legalEntity, year); err != nil {
+			return err
+		}
+	case dayOf(*termination).Year() == year-1:
+		// A termination entered after the carry-over: the days belong to the year paid out.
+		if err := s.reverseCarry(ctx, e.ID, year); err != nil {
 			return err
 		}
 	}
@@ -192,6 +202,19 @@ func (s *Service) carryOver(ctx context.Context, employee, legalEntity int64, ye
 	if err != nil {
 		return err
 	}
+	// Carried days of the year before lapsed within it, whether or not a run expired them.
+	if c := decimal.RequireFromString(prev.Carried); c.IsPositive() {
+		left := decimal.RequireFromString(prev.Days).Sub(c)
+		if err := store.SetLeaveBalance.Run(ctx, store.SetLeaveBalanceParams{EmployeeID: employee, Year: int32(year - 1),
+			Days: left.String(), Carried: "0", CarriedUntil: prev.CarriedUntil}); err != nil {
+			return err
+		}
+		if err := s.d.Audit.RecordFor(ctx, "hrm.leave_carry_expired", audit.Ref{Type: employeeType, ID: employee},
+			map[string]any{"year": year - 1, "days": c.String(), "balance": left.String()}); err != nil {
+			return err
+		}
+		prev.Days, prev.Carried = left.String(), "0"
+	}
 	moved := decimal.RequireFromString(prev.Days)
 	if !moved.IsPositive() {
 		return nil
@@ -223,6 +246,41 @@ func (s *Service) carryOver(ctx context.Context, employee, legalEntity int64, ye
 	}
 	return s.d.Audit.RecordFor(ctx, "hrm.leave_carried_over", audit.Ref{Type: employeeType, ID: employee},
 		map[string]any{"year": year, "days": moved.String(), "until": until, "balance": days.String()})
+}
+
+// reverseCarry moves the days carried into year back to the year before, for an employee
+// whose termination in that year was entered after the carry-over. Last year's row is locked
+// first, the order carryOver takes.
+func (s *Service) reverseCarry(ctx context.Context, employee int64, year int) error {
+	prev, err := store.LockLeaveBalance.Run(ctx, store.LockLeaveBalanceParams{EmployeeID: employee, Year: int32(year - 1)})
+	if errors.Is(err, pgx.ErrNoRows) {
+		return nil
+	}
+	if err != nil {
+		return err
+	}
+	cur, err := store.LockLeaveBalance.Run(ctx, store.LockLeaveBalanceParams{EmployeeID: employee, Year: int32(year)})
+	if errors.Is(err, pgx.ErrNoRows) {
+		return nil
+	}
+	if err != nil {
+		return err
+	}
+	back := decimal.RequireFromString(cur.Carried)
+	if !back.IsPositive() {
+		return nil
+	}
+	if err := store.SetLeaveBalance.Run(ctx, store.SetLeaveBalanceParams{EmployeeID: employee, Year: int32(year),
+		Days: decimal.RequireFromString(cur.Days).Sub(back).String(), Carried: "0", CarriedUntil: cur.CarriedUntil}); err != nil {
+		return err
+	}
+	days := decimal.RequireFromString(prev.Days).Add(back)
+	if err := store.SetLeaveBalance.Run(ctx, store.SetLeaveBalanceParams{EmployeeID: employee, Year: int32(year - 1),
+		Days: days.String(), Carried: prev.Carried, CarriedUntil: prev.CarriedUntil}); err != nil {
+		return err
+	}
+	return s.d.Audit.RecordFor(ctx, "hrm.leave_carry_reversed", audit.Ref{Type: employeeType, ID: employee},
+		map[string]any{"year": year - 1, "days": back.String(), "balance": days.String()})
 }
 
 // expireCarried takes the carried days still unspent out of the balance once they have lapsed.

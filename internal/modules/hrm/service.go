@@ -75,7 +75,7 @@ func NewService(d Deps) *Service {
 	// A profile's viewer sees neither leave balances nor what sensitive data was read or changed;
 	// on an employee, ViewFiles is view plus the sensitive permission.
 	d.Record.RestrictHistory("hrm.leave_balance_adjusted", "")
-	for _, a := range []string{"hrm.leave_accrued", "hrm.leave_carried_over", "hrm.leave_carry_expired"} {
+	for _, a := range []string{"hrm.leave_accrued", "hrm.leave_carried_over", "hrm.leave_carry_expired", "hrm.leave_carry_reversed"} {
 		d.Record.RestrictHistory(a, "")
 	}
 	for _, a := range []string{"hrm.employee_sensitive_viewed", "hrm.employee_sensitive_exported", "hrm.dependents_viewed", "hrm.dependent_saved", "hrm.dependent_deleted"} {

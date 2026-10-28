@@ -6,6 +6,7 @@ import (
 
 	"github.com/taoworklabs/mmerp/internal/core/record"
 	"github.com/taoworklabs/mmerp/internal/modules/hrm"
+	"github.com/taoworklabs/mmerp/internal/platform"
 )
 
 // accrualFixture: the leave fixture with E hired long ago, so every month counts.
@@ -347,5 +348,58 @@ func TestPayrollLateTerminationTakesBackLaterCredits(t *testing.T) {
 	}
 	if line.UnusedLeave != 7_000_000 {
 		t.Fatalf("unused leave paid %d, want seven days", line.UnusedLeave)
+	}
+}
+
+// Carried days lapse even when they last all year: next year's carry-over expires them
+// first and moves only this year's own days.
+func TestCarriedAllYearLapseAtNextCarry(t *testing.T) {
+	f := newCarryFixture(t, "12", nil)
+	f.accrue("2026-01-02")
+	f.grant("3")
+	f.accrue("2027-01-04")
+	if f.balance() != "0" || f.balanceIn(2027) != "3" || f.auditCount("hrm.leave_carry_expired") != 1 {
+		t.Fatalf("2026 %s, 2027 %s, expiries %d", f.balance(), f.balanceIn(2027), f.auditCount("hrm.leave_carry_expired"))
+	}
+}
+
+// A disabled product stays read-only, the accrual job included.
+func TestAccrualSkipsDisabledHRM(t *testing.T) {
+	f := newAccrualFixture(t, "2023-01-01", nil)
+	f.check(f.hrm.AccrueLeave(platform.WithProducts(f.admin, nil), "2026-04-01"))
+	if got := f.ledger(2026); len(got) != 0 || f.auditCount("hrm.leave_accrued") != 0 {
+		t.Fatalf("ledger %v", got)
+	}
+}
+
+// A termination dated last year but entered after the new year's carry-over gets its days
+// back in the termination year, so that year's payroll pays them out.
+func TestLateTerminationReversesCarry(t *testing.T) {
+	f := newPayrollFixture(t)
+	x := employee("X", f.a)
+	x.HireDate = "2023-01-01"
+	emp := must(t)(f.hrm.CreateEmployee(f.hr, x))
+	// 21,000,000 over November's 21 working days: a day of leave is worth 1,000,000.
+	f.contract(emp, sample{salary: 21_000_000}, "2026-01-01", "2026-12-31")
+	f.check(f.hrm.AdjustLeaveBalance(f.pay, emp, 2026, hrm.BalanceAdjustment{Delta: "5", Reason: "còn lại"}))
+	f.accrue("2027-01-04")
+	if _, err := f.system.Exec(f.admin, `UPDATE hrm.employees SET termination_date = '2026-12-10' WHERE id = $1`, emp); err != nil {
+		t.Fatal(err)
+	}
+	f.accrue("2027-01-15")
+	bs, err := f.hrm.LeaveBalances(f.pay, emp)
+	f.check(err)
+	got := map[int32]string{}
+	for _, b := range bs {
+		got[b.Year] = b.Days + "/" + b.Carried
+	}
+	if got[2026] != "5/0" || got[2027] != "0/0" || f.auditCount("hrm.leave_carry_reversed") != 1 {
+		t.Fatalf("balances %v", got)
+	}
+	f.timesheet(f.a, "2026-12", map[int64][]string{emp: workdays("2026-12-01", "2026-12-10")})
+	for _, l := range f.payrollDoc(f.payroll("2026-12")).Lines {
+		if l.EmployeeID == emp && l.UnusedLeave != 5_000_000 {
+			t.Fatalf("unused leave paid %d, want five days", l.UnusedLeave)
+		}
 	}
 }
