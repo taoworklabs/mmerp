@@ -74,24 +74,119 @@ func (s *Service) Terminations(ctx context.Context, f TerminationFilter) (Termin
 	return out, nil
 }
 
-// Termination returns one termination; one the actor may not view does not exist.
+// Termination returns one termination with its warnings and allowance preview; one the
+// actor may not view does not exist. Reading the allowance's amounts is audited.
 func (s *Service) Termination(ctx context.Context, id int64) (Termination, error) {
-	d, err := s.d.Record.Read(ctx, record.Ref{Type: terminationType, ID: id})
+	var out Termination
+	err := platform.InTx(ctx, func(ctx context.Context) error {
+		d, err := s.d.Record.Read(ctx, record.Ref{Type: terminationType, ID: id})
+		if err != nil {
+			return err
+		}
+		r, err := store.GetTermination.Run(ctx, id)
+		if err != nil {
+			return err
+		}
+		actions, err := s.d.Record.Actions(ctx, d)
+		if err != nil {
+			return err
+		}
+		out = Termination{
+			ID: id, Number: d.Number, Status: string(d.Status), Version: d.Version, EmployeeID: r.EmployeeID,
+			EmployeeCode: r.EmployeeCode, EmployeeName: r.EmployeeName, TerminationFields: terminationFields(r), AllowedActions: actions,
+		}
+		if out.Warnings, err = terminationWarnings(ctx, r.EmployeeID, d.Date); err != nil {
+			return err
+		}
+		out.Allowance, err = s.allowancePreview(ctx, d, r)
+		return err
+	})
+	return out, err
+}
+
+// terminationWarnings lists what still stands past the termination date.
+func terminationWarnings(ctx context.Context, employee int64, date string) ([]TerminationWarning, error) {
+	out := []TerminationWarning{}
+	after := platform.NullDate(&date)
+	contracts, err := store.TerminationContractsAfter.Run(ctx, store.TerminationContractsAfterParams{EmployeeID: employee, After: after})
 	if err != nil {
-		return Termination{}, err
+		return nil, err
 	}
-	r, err := store.GetTermination.Run(ctx, id)
+	for _, c := range contracts {
+		out = append(out, TerminationWarning{Code: "contract_in_force_after", Params: map[string]any{"number": c.Number, "end_date": platform.DatePtr(c.EndDate)}})
+	}
+	leaves, err := store.TerminationLeavesAfter.Run(ctx, store.TerminationLeavesAfterParams{EmployeeID: employee, After: after})
 	if err != nil {
-		return Termination{}, err
+		return nil, err
 	}
-	actions, err := s.d.Record.Actions(ctx, d)
+	for _, l := range leaves {
+		out = append(out, TerminationWarning{Code: "leave_after_termination", Params: map[string]any{
+			"number": l.Number, "status": l.Status, "start_date": *platform.DatePtr(l.StartDate), "end_date": *platform.DatePtr(l.EndDate)}})
+	}
+	ots, err := store.TerminationOvertimeAfter.Run(ctx, store.TerminationOvertimeAfterParams{EmployeeID: employee, After: after})
 	if err != nil {
-		return Termination{}, err
+		return nil, err
 	}
-	return Termination{
-		ID: id, Number: d.Number, Status: string(d.Status), Version: d.Version, EmployeeID: r.EmployeeID,
-		EmployeeCode: r.EmployeeCode, EmployeeName: r.EmployeeName, TerminationFields: terminationFields(r), AllowedActions: actions,
-	}, nil
+	for _, o := range ots {
+		out = append(out, TerminationWarning{Code: "overtime_after_termination", Params: map[string]any{"number": o.Number, "status": o.Status, "date": *platform.DatePtr(o.Date)}})
+	}
+	days, err := store.TerminationLeaveBalance.Run(ctx, store.TerminationLeaveBalanceParams{EmployeeID: employee, Year: int32(dayOf(date).Year())})
+	if err != nil {
+		return nil, err
+	}
+	if n, ok := record.ParseNumber(days); ok && n.IsPositive() {
+		out = append(out, TerminationWarning{Code: "leave_balance_to_pay", Params: map[string]any{"days": platform.PlainDecimal(days)}})
+	}
+	return out, nil
+}
+
+// allowancePreview works the allowance out as the payroll will; the average and amount need
+// hrm.salary.view at the termination's unit, and only then are contract terms read.
+func (s *Service) allowancePreview(ctx context.Context, d record.Doc, r store.GetTerminationRow) (TerminationAllowance, error) {
+	b := terminationBasis(r, d.Date)
+	out := TerminationAllowance{Kind: string(b.kind()), MonthsWorked: b.Worked, MonthsCounted: max(0, b.Worked-b.Insured-b.Paid), Years: b.years().String()}
+	if ok, err := s.allowed(ctx, PermSalaryView, d.OrgUnitID); err != nil || !ok {
+		return out, err
+	}
+	cs, err := s.allowanceContracts(ctx, d.LegalEntityID, r.EmployeeID, d.Date)
+	if err != nil {
+		return out, err
+	}
+	_, avg := allowanceAverage(cs, d.Date)
+	average, amount := platform.Round(avg), platform.Round(allowanceAmount(b.kind(), b.years(), avg))
+	out.Average, out.Amount = &average, &amount
+	return out, nil
+}
+
+// terminationBasis is the allowance inputs of a termination dated date.
+func terminationBasis(r store.GetTerminationRow, date string) allowanceBasis {
+	kind, _ := reasonAllowance(r.Reason)
+	return allowanceBasis{Kind: kind, Worked: monthsWorked(*platform.DatePtr(r.HireDate), date), Insured: int(r.InsuredMonths),
+		Paid: int(r.PaidMonths), Pension: r.PensionEligible}
+}
+
+// allowanceContracts reads, audited, the employee's contracts with the legal entity over the
+// six months before the termination month.
+func (s *Service) allowanceContracts(ctx context.Context, legalEntity, employee int64, date string) ([]payContract, error) {
+	from := allowanceWindow(date)
+	rows, err := store.PayrollContracts.Run(ctx, store.PayrollContractsParams{LegalEntityID: legalEntity, Ids: []int64{employee},
+		PeriodEnd: platform.NullDate(&date), PrevStart: platform.NullDate(&from)})
+	if err != nil {
+		return nil, err
+	}
+	var out []payContract
+	for _, r := range rows {
+		if err := s.d.Audit.RecordFor(ctx, "hrm.contract_terms_viewed", audit.Ref{Type: contractType, ID: r.ID}, nil); err != nil {
+			return nil, err
+		}
+		t, err := openTerms(ctx, r.Terms)
+		if err != nil {
+			return nil, err
+		}
+		out = append(out, payContract{ID: r.ID, Original: !r.ParentID.Valid, Parent: r.ParentID.Int64,
+			Start: *platform.DatePtr(r.StartDate), End: platform.DatePtr(r.EndDate), Terms: t})
+	}
+	return out, nil
 }
 
 // CreateTermination adds a draft termination of an employee.

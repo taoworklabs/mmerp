@@ -7264,6 +7264,9 @@
             "readOnly": true,
             "type": "string"
           },
+          "allowance": {
+            "$ref": "#/components/schemas/TerminationAllowance"
+          },
           "allowed_actions": {
             "items": {
               "type": "string"
@@ -7362,6 +7365,12 @@
           "version": {
             "format": "int32",
             "type": "integer"
+          },
+          "warnings": {
+            "items": {
+              "$ref": "#/components/schemas/TerminationWarning"
+            },
+            "type": "array"
           }
         },
         "required": [
@@ -7372,6 +7381,8 @@
           "employee_id",
           "employee_code",
           "employee_name",
+          "warnings",
+          "allowance",
           "allowed_actions",
           "termination_date",
           "reason",
@@ -7381,6 +7392,47 @@
           "paid_months",
           "handover",
           "note"
+        ],
+        "type": "object"
+      },
+      "TerminationAllowance": {
+        "additionalProperties": false,
+        "properties": {
+          "amount": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "average": {
+            "description": "Average monthly salary of the six months before the termination month",
+            "format": "int64",
+            "type": "integer"
+          },
+          "kind": {
+            "enum": [
+              "none",
+              "severance",
+              "job_loss"
+            ],
+            "type": "string"
+          },
+          "months_counted": {
+            "description": "Worked, less unemployment insurance and months already paid",
+            "format": "int64",
+            "type": "integer"
+          },
+          "months_worked": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "years": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind",
+          "months_worked",
+          "months_counted",
+          "years"
         ],
         "type": "object"
       },
@@ -7563,6 +7615,23 @@
           "paid_months",
           "handover",
           "note"
+        ],
+        "type": "object"
+      },
+      "TerminationWarning": {
+        "additionalProperties": false,
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "params": {
+            "additionalProperties": {},
+            "type": "object"
+          }
+        },
+        "required": [
+          "code",
+          "params"
         ],
         "type": "object"
       },

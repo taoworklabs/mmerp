@@ -158,6 +158,103 @@ func (q *Queries) SetTerminationPreviousDate(ctx context.Context, arg SetTermina
 	return err
 }
 
+const terminationContractsAfter = `-- name: TerminationContractsAfter :many
+SELECT d.number, c.end_date FROM hrm.contracts c JOIN record.documents d ON d.id = c.id
+WHERE c.employee_id = $1 AND c.parent_id IS NULL AND d.status = 'posted' AND (c.end_date IS NULL OR c.end_date > $2::date)
+ORDER BY c.start_date, d.id
+`
+
+type TerminationContractsAfterParams struct {
+	EmployeeID int64
+	After      pgtype.Date
+}
+
+type TerminationContractsAfterRow struct {
+	Number  string
+	EndDate pgtype.Date
+}
+
+// Posted originals of the employee still in force after @after.
+func (q *Queries) TerminationContractsAfter(ctx context.Context, arg TerminationContractsAfterParams) ([]TerminationContractsAfterRow, error) {
+	rows, err := q.db.Query(ctx, terminationContractsAfter, arg.EmployeeID, arg.After)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []TerminationContractsAfterRow
+	for rows.Next() {
+		var i TerminationContractsAfterRow
+		if err := rows.Scan(&i.Number, &i.EndDate); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const terminationLeaveBalance = `-- name: TerminationLeaveBalance :one
+SELECT coalesce((SELECT days::text FROM hrm.leave_balances WHERE employee_id = $1 AND year = $2), '0')::text AS days
+`
+
+type TerminationLeaveBalanceParams struct {
+	EmployeeID int64
+	Year       int32
+}
+
+func (q *Queries) TerminationLeaveBalance(ctx context.Context, arg TerminationLeaveBalanceParams) (string, error) {
+	row := q.db.QueryRow(ctx, terminationLeaveBalance, arg.EmployeeID, arg.Year)
+	var days string
+	err := row.Scan(&days)
+	return days, err
+}
+
+const terminationLeavesAfter = `-- name: TerminationLeavesAfter :many
+SELECT d.number, d.status, r.start_date, r.end_date FROM hrm.leave_requests r JOIN record.documents d ON d.id = r.id
+WHERE r.employee_id = $1 AND d.status <> 'cancelled' AND r.end_date > $2::date
+ORDER BY r.start_date, d.id
+`
+
+type TerminationLeavesAfterParams struct {
+	EmployeeID int64
+	After      pgtype.Date
+}
+
+type TerminationLeavesAfterRow struct {
+	Number    string
+	Status    string
+	StartDate pgtype.Date
+	EndDate   pgtype.Date
+}
+
+// Leave requests of the employee that still stand and end after @after.
+func (q *Queries) TerminationLeavesAfter(ctx context.Context, arg TerminationLeavesAfterParams) ([]TerminationLeavesAfterRow, error) {
+	rows, err := q.db.Query(ctx, terminationLeavesAfter, arg.EmployeeID, arg.After)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []TerminationLeavesAfterRow
+	for rows.Next() {
+		var i TerminationLeavesAfterRow
+		if err := rows.Scan(
+			&i.Number,
+			&i.Status,
+			&i.StartDate,
+			&i.EndDate,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const terminationListBase = `-- name: TerminationListBase :many
 SELECT t.id, d.number, d.status, d.org_unit_id, d.date, t.employee_id, e.code AS employee_code, e.full_name AS employee_name,
        u.name AS org_unit_name, t.reason
@@ -202,6 +299,43 @@ func (q *Queries) TerminationListBase(ctx context.Context) ([]TerminationListBas
 			&i.OrgUnitName,
 			&i.Reason,
 		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const terminationOvertimeAfter = `-- name: TerminationOvertimeAfter :many
+SELECT d.number, d.status, o.date FROM hrm.overtime_requests o JOIN record.documents d ON d.id = o.id
+WHERE o.employee_id = $1 AND d.status <> 'cancelled' AND o.date > $2::date
+ORDER BY o.date, d.id
+`
+
+type TerminationOvertimeAfterParams struct {
+	EmployeeID int64
+	After      pgtype.Date
+}
+
+type TerminationOvertimeAfterRow struct {
+	Number string
+	Status string
+	Date   pgtype.Date
+}
+
+func (q *Queries) TerminationOvertimeAfter(ctx context.Context, arg TerminationOvertimeAfterParams) ([]TerminationOvertimeAfterRow, error) {
+	rows, err := q.db.Query(ctx, terminationOvertimeAfter, arg.EmployeeID, arg.After)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []TerminationOvertimeAfterRow
+	for rows.Next() {
+		var i TerminationOvertimeAfterRow
+		if err := rows.Scan(&i.Number, &i.Status, &i.Date); err != nil {
 			return nil, err
 		}
 		items = append(items, i)

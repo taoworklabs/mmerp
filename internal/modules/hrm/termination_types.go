@@ -57,6 +57,9 @@ type Termination struct {
 	EmployeeCode string `json:"employee_code"`
 	EmployeeName string `json:"employee_name"`
 	TerminationFields
+	// What is still open past the termination date; nothing is refused for it.
+	Warnings  []TerminationWarning `json:"warnings" nullable:"false"`
+	Allowance TerminationAllowance `json:"allowance"`
 	// edit, delete, submit, withdraw, cancel, print.
 	AllowedActions []string `json:"allowed_actions" nullable:"false"`
 }
@@ -87,4 +90,22 @@ type TerminationFilter struct {
 	EmployeeID int64  `query:"employee_id"`
 	Sort       string `query:"sort" enum:"date,-date,number,-number" default:"-date"`
 	platform.Paging
+}
+
+// TerminationWarning is one thing still open past the termination date: contract_in_force_after,
+// leave_after_termination, overtime_after_termination, leave_balance_to_pay.
+type TerminationWarning struct {
+	Code   string         `json:"code"`
+	Params map[string]any `json:"params"`
+}
+
+// TerminationAllowance previews what the payroll of the termination month will pay. The
+// average and the amount come only with hrm.salary.view.
+type TerminationAllowance struct {
+	Kind          string `json:"kind" enum:"none,severance,job_loss"`
+	MonthsWorked  int    `json:"months_worked"`
+	MonthsCounted int    `json:"months_counted" doc:"Worked, less unemployment insurance and months already paid"`
+	Years         string `json:"years"`
+	Average       *int64 `json:"average,omitempty" doc:"Average monthly salary of the six months before the termination month"`
+	Amount        *int64 `json:"amount,omitempty"`
 }

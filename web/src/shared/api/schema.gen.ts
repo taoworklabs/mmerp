@@ -4338,6 +4338,7 @@ export interface components {
              * @example /api/schemas/Termination.json
              */
             readonly $schema?: string;
+            allowance: components["schemas"]["TerminationAllowance"];
             allowed_actions: string[];
             /** Format: date */
             decision_date: string | null;
@@ -4373,6 +4374,26 @@ export interface components {
             termination_date: string;
             /** Format: int32 */
             version: number;
+            warnings: components["schemas"]["TerminationWarning"][];
+        };
+        TerminationAllowance: {
+            /** Format: int64 */
+            amount?: number;
+            /**
+             * Format: int64
+             * @description Average monthly salary of the six months before the termination month
+             */
+            average?: number;
+            /** @enum {string} */
+            kind: "none" | "severance" | "job_loss";
+            /**
+             * Format: int64
+             * @description Worked, less unemployment insurance and months already paid
+             */
+            months_counted: number;
+            /** Format: int64 */
+            months_worked: number;
+            years: string;
         };
         TerminationList: {
             /**
@@ -4433,6 +4454,12 @@ export interface components {
             termination_date: string;
             /** Format: int32 */
             version: number;
+        };
+        TerminationWarning: {
+            code: string;
+            params: {
+                [key: string]: unknown;
+            };
         };
         Timesheet: {
             /**

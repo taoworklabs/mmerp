@@ -292,3 +292,66 @@ func TestTerminationCancelAfterLegalEntityChanged(t *testing.T) {
 	f.check(f.hrm.UpdateEmployee(f.hr, f.emp, moved.EmployeeInput))
 	wantErr(t, f.cancelTermination(id), "termination_legal_entity_changed")
 }
+
+// leaver is E hired on 01/07/2007 with 20,000,000 from 2025 and 24,000,000 from 2026.
+func leaver(t *testing.T) *contractFixture {
+	f := newContractFixture(t)
+	e, err := f.hrm.Employee(f.hr, f.emp)
+	f.check(err)
+	in := employee("E", f.a)
+	in.UserLogin, in.ManagerID, in.HireDate = str("e"), e.ManagerID, "2007-07-01"
+	f.check(f.hrm.UpdateEmployee(f.hr, f.emp, in.EmployeeInput))
+	orig := must(t)(f.original("2025-01-01", "", 20_000_000))
+	f.check(f.post(orig))
+	f.check(f.post(must(t)(f.appendix(orig, "2026-01-01", 24_000_000))))
+	return f
+}
+
+func TestTerminationAllowancePreview(t *testing.T) {
+	f := leaver(t)
+	in := quit("2026-04-15", "mutual_agreement")
+	in.InsuredMonths = 207
+	id := must(t)(f.hrm.CreateTermination(f.hr, hrm.NewTermination{EmployeeID: f.emp, TerminationFields: in}))
+	before := f.auditCount("hrm.contract_terms_viewed")
+	got, err := f.hrm.Termination(f.hr, id)
+	f.check(err)
+	a := got.Allowance
+	if a.Kind != "severance" || a.MonthsWorked != 225 || a.MonthsCounted != 18 || a.Years != "1.5" || a.Average != nil || a.Amount != nil {
+		t.Fatalf("without salary view %+v", a)
+	}
+	if f.auditCount("hrm.contract_terms_viewed") != before {
+		t.Fatal("terms read without the salary permission")
+	}
+	got, err = f.hrm.Termination(f.pay, id)
+	f.check(err)
+	a = got.Allowance
+	if a.Average == nil || *a.Average != 22_000_000 || *a.Amount != 16_500_000 {
+		t.Fatalf("with salary view %+v", a)
+	}
+	if f.auditCount("hrm.contract_terms_viewed") == before {
+		t.Fatal("terms read unaudited")
+	}
+}
+
+func TestTerminationWarnings(t *testing.T) {
+	f := leaver(t)
+	f.grant("4")
+	leave := must(t)(f.hrm.CreateLeave(f.hr, hrm.NewLeave{EmployeeID: &f.emp, LeaveFields: f.fields("2026-04-20", "2026-04-21", "2")}))
+	gone := must(t)(f.hrm.CreateLeave(f.hr, hrm.NewLeave{EmployeeID: &f.emp, LeaveFields: f.fields("2026-04-23", "2026-04-23", "1")}))
+	f.check(errOf(f.rec.Transition(f.hr, record.Ref{Type: "hrm.leave_request", ID: gone}, 1, record.Posted)))
+	f.check(errOf(f.rec.Transition(f.hr, record.Ref{Type: "hrm.leave_request", ID: gone}, 2, record.Cancelled)))
+	ot := must(t)(f.hrm.CreateOvertime(f.hr, hrm.NewOvertime{EmployeeID: &f.emp, OvertimeFields: overtime("2026-04-22", "2", "0")}))
+	f.check(errOf(f.rec.Transition(f.hr, record.Ref{Type: "hrm.overtime_request", ID: ot}, 1, record.Posted)))
+	id := must(t)(f.hrm.CreateTermination(f.hr, hrm.NewTermination{EmployeeID: f.emp, TerminationFields: quit("2026-04-15", "mutual_agreement")}))
+	got, err := f.hrm.Termination(f.hr, id)
+	f.check(err)
+	codes := map[string]map[string]any{}
+	for _, w := range got.Warnings {
+		codes[w.Code] = w.Params
+	}
+	if len(codes) != 4 || codes["contract_in_force_after"]["number"] != "HD-2025-00001" ||
+		codes["leave_after_termination"]["number"] != f.leave(leave).Number || codes["leave_after_termination"]["status"] != "draft" ||
+		codes["overtime_after_termination"]["date"] != "2026-04-22" || codes["leave_balance_to_pay"]["days"] != "4" {
+		t.Fatalf("warnings %+v", got.Warnings)
+	}
+}

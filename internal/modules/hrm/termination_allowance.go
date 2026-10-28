@@ -112,3 +112,30 @@ func allowanceAmount(kind allowanceKind, years, average decimal.Decimal) decimal
 	}
 	return decimal.Zero
 }
+
+// allowanceAverage is the salary and salary allowances in force at the end of each of the
+// six months before the termination month, and their average; a month with no contract in
+// force is left out (Art 8.5 Decree 145/2020).
+func allowanceAverage(cs []payContract, termination string) ([]int64, decimal.Decimal) {
+	t := dayOf(termination)
+	first := time.Date(t.Year(), t.Month(), 1, 0, 0, 0, 0, time.UTC)
+	var monthly []int64
+	sum := decimal.Zero
+	for k := 6; k >= 1; k-- {
+		end := first.AddDate(0, -k+1, -1)
+		if c := termsAt(cs, end.Format(time.DateOnly)); c != nil {
+			v := c.Terms.insured()
+			monthly, sum = append(monthly, v.IntPart()), sum.Add(v)
+		}
+	}
+	if len(monthly) == 0 {
+		return nil, decimal.Zero
+	}
+	return monthly, sum.Div(decimal.NewFromInt(int64(len(monthly))))
+}
+
+// allowanceWindow is the first day of the six months before the termination month.
+func allowanceWindow(termination string) string {
+	t := dayOf(termination)
+	return time.Date(t.Year(), t.Month()-6, 1, 0, 0, 0, 0, time.UTC).Format(time.DateOnly)
+}

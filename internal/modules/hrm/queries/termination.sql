@@ -39,3 +39,23 @@ UPDATE hrm.employees SET termination_date = @termination_date WHERE id = @id;
 
 -- name: SetTerminationPreviousDate :exec
 UPDATE hrm.terminations SET previous_date = @previous_date WHERE id = @id;
+
+-- name: TerminationContractsAfter :many
+-- Posted originals of the employee still in force after @after.
+SELECT d.number, c.end_date FROM hrm.contracts c JOIN record.documents d ON d.id = c.id
+WHERE c.employee_id = @employee_id AND c.parent_id IS NULL AND d.status = 'posted' AND (c.end_date IS NULL OR c.end_date > @after::date)
+ORDER BY c.start_date, d.id;
+
+-- name: TerminationLeavesAfter :many
+-- Leave requests of the employee that still stand and end after @after.
+SELECT d.number, d.status, r.start_date, r.end_date FROM hrm.leave_requests r JOIN record.documents d ON d.id = r.id
+WHERE r.employee_id = @employee_id AND d.status <> 'cancelled' AND r.end_date > @after::date
+ORDER BY r.start_date, d.id;
+
+-- name: TerminationOvertimeAfter :many
+SELECT d.number, d.status, o.date FROM hrm.overtime_requests o JOIN record.documents d ON d.id = o.id
+WHERE o.employee_id = @employee_id AND d.status <> 'cancelled' AND o.date > @after::date
+ORDER BY o.date, d.id;
+
+-- name: TerminationLeaveBalance :one
+SELECT coalesce((SELECT days::text FROM hrm.leave_balances WHERE employee_id = @employee_id AND year = @year), '0')::text AS days;
