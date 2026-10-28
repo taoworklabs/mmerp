@@ -64,7 +64,6 @@ test.describe('dates', () => {
     await page.getByRole('button', { name: 'Đăng nhập' }).click()
     await page.getByRole('combobox', { name: 'Loại nghỉ' }).click()
     await page.getByRole('option', { name: `Phép ngày ${run}` }).click()
-    await page.getByRole('textbox', { name: /^Số ngày/ }).fill('1')
   }
 
   test('date field accepts dd/mm/yyyy typed by hand', async ({ page }) => {

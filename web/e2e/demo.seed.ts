@@ -207,6 +207,11 @@ test('seed the Demo demo company', async ({ baseURL }) => {
     for (const [date, name] of holidays) await ok(admin.put(`/api/hrm/calendars/${c}/holidays/${date}`, { data: { name } }), `holiday ${date}`)
   }
   await ok(admin.put(`/api/hrm/calendars/${lg}/weeks/2026-01-01`, { data: { off_days: [0] } }), 'work week')
+  // The seed approves leave right after hiring, before the hourly accrual job could credit
+  // anything, so both companies grant by hand. CP Demo keeps last year's days all year;
+  // Logistics until March, so they lapse at the job's next run.
+  for (const c of [cp, lg]) await ok(admin.put(`/api/legal-entities/${c}/settings/hrm.leave_accrual`, { data: { value: 'manual' } }), 'leave accrual')
+  await ok(admin.put(`/api/legal-entities/${cp}/settings/hrm.leave_carry_over_months`, { data: { value: '12' } }), 'carry-over')
   const offDays = (c: number) => (c === lg ? [0] : [0, 6])
   const isHoliday = new Set(holidays.map(([d]) => d))
   const workdays = (c: number, from: string, to: string) => {
@@ -290,7 +295,7 @@ test('seed the Demo demo company', async ({ baseURL }) => {
   }
 
   // Leave types and the 2026 balances: 12 days, a day more for each five years, prorated for
-  // those who joined or left in 2026, and some days carried over from 2025.
+  // those who joined or left in 2026; some have days left of 2025, which the job carries over.
   const leaveType: Record<string, number> = {}
   // Sick leave needs a medical certificate; the Article 115 kinds cap the days of one request.
   const needsFile = new Set(['Nghỉ ốm'])
@@ -308,7 +313,8 @@ test('seed the Demo demo company', async ({ baseURL }) => {
     const data = { name, deducts_balance, paid, active, max_days, requires_attachment: needsFile.has(name) }
     leaveType[name] = await created(admin.post('/api/hrm/leave-types', { data }))
   }
-  const adjust = (e: Emp, delta: string, reason: string) => ok(admin.post(`/api/hrm/employees/${e.id}/leave-balances/2026/adjustments`, { data: { delta, reason } }), `balance ${e.code}`)
+  const adjust = (e: Emp, delta: string, reason: string, year = 2026) =>
+    ok(admin.post(`/api/hrm/employees/${e.id}/leave-balances/${year}/adjustments`, { data: { delta, reason } }), `balance ${e.code}`)
   for (const e of Object.values(emps)) {
     if (e.end && e.end < '2026-01-01') continue
     const from = max(e.hire, '2026-01-01')
@@ -317,7 +323,7 @@ test('seed the Demo demo company', async ({ baseURL }) => {
     await adjust(e, half((12 * months) / 12), 'Phép năm 2026')
     const years = Math.floor((day('2026-01-01').getTime() - day(e.hire).getTime()) / (365.25 * 86_400_000))
     if (years >= 5) await adjust(e, String(Math.floor(years / 5)), 'Phép thâm niên')
-    if (e.hire < '2025-01-01' && e.n % 4 === 0) await adjust(e, '2.5', 'Phép năm 2025 chuyển sang')
+    if (e.hire < '2025-01-01' && e.n % 4 === 0) await adjust(e, '2.5', 'Phép năm 2025 còn lại', 2025)
   }
 
   // Approval rules: heads decide leave and overtime, the deputy director long leave, holiday
