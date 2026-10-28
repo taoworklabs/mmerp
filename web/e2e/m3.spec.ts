@@ -12,6 +12,8 @@ let api: APIRequestContext
 test.beforeAll(async ({ baseURL }) => {
   api = await signedInApi(baseURL!)
   const company = await created(api.post('/api/org-units', { data: { parent_id: null, kind: 'company', name: `Công ty nghỉ ${run}` } }))
+  // Balances here are granted by hand; the hourly accrual job must not add to them mid-run.
+  expect((await api.put(`/api/legal-entities/${company}/settings/hrm.leave_accrual`, { data: { value: 'manual' } })).status()).toBe(204)
   const p = await created(api.post('/api/org-units', { data: { parent_id: company, kind: 'department', name: `Phòng P ${run}` } }))
   for (const l of [login.m, login.e, login.e2, login.e3]) await createUser(api, l, [])
   await createUser(api, login.b, [{ role: 'hrm.hr', unit: p }])
@@ -40,30 +42,28 @@ async function signInAs(page: Page, user: string, url: string) {
   await expect(page.getByRole('button', { name: /^Tài khoản:/ })).toBeVisible()
 }
 
-// fillLeave fills the leave form for a request of `days` days starting on the 10th of `month`.
-async function fillLeave(page: Page, month: string, days: string) {
+// fillLeave fills the leave form for a request from `from` to `to` (dd/mm/yyyy); the days
+// are the working days between them.
+async function fillLeave(page: Page, from: string, to: string) {
   await page.getByRole('combobox', { name: 'Loại nghỉ' }).click()
   await page.getByRole('option', { name: `Phép năm ${run}` }).click()
-  await page.getByRole('textbox', { name: /^Số ngày/ }).fill(days)
-  await page.getByRole('textbox', { name: /^Từ ngày/ }).fill(`10/${month}/2026`)
-  await page.getByRole('textbox', { name: /^Đến ngày/ }).fill(`14/${month}/2026`)
+  await page.getByRole('textbox', { name: /^Từ ngày/ }).fill(from)
+  await page.getByRole('textbox', { name: /^Đến ngày/ }).fill(to)
   await page.getByRole('textbox', { name: /^Lý do/ }).click()
 }
 
-async function newLeave(page: Page, month: string, days: string) {
+async function newLeave(page: Page, from: string, to: string) {
   await page.goto('/me/requests/leave/new')
-  await fillLeave(page, month, days)
+  await fillLeave(page, from, to)
   await page.getByRole('button', { name: 'Tạo bản nháp' }).click()
   await expect(page.getByRole('heading', { name: /^NP-2026-/ })).toBeVisible()
   return Number(new URL(page.url()).pathname.split('/').pop())
 }
 
 // sendViaApi creates and sends a request as another user, for setting up a waiting approval.
-async function sendViaApi(baseURL: string, user: string, month: string, days: string) {
+async function sendViaApi(baseURL: string, user: string, start: string, end: string) {
   const as = await signedInApi(baseURL, user, password)
-  const id = await created(
-    as.post('/api/hrm/leaves', { data: { leave_type_id: ids.annual, start_date: `2026-${month}-10`, end_date: `2026-${month}-14`, days, reason: null } }),
-  )
+  const id = await created(as.post('/api/hrm/leaves', { data: { leave_type_id: ids.annual, start_date: start, end_date: end, reason: null } }))
   const res = await as.post(`/api/documents/hrm.leave_request/${id}/transitions`, { data: { to: 'posted', version: 1 } })
   expect(res.status(), await res.text()).toBe(200)
   return id
@@ -86,7 +86,7 @@ test('HR grants the start-of-year leave balance through the UI', async ({ page }
 test('an employee sends, withdraws and sends again; the manager approves one request and rejects another', async ({ browser }) => {
   const e = await (await browser.newContext()).newPage()
   await signInAs(e, login.e, '/me/requests')
-  const first = await newLeave(e, '03', '2')
+  const first = await newLeave(e, '10/03/2026', '11/03/2026')
   await status(e, 'Nháp')
   await e.getByRole('button', { name: 'Gửi duyệt' }).click()
   await status(e, 'Chờ duyệt')
@@ -96,7 +96,7 @@ test('an employee sends, withdraws and sends again; the manager approves one req
   await status(e, 'Nháp')
   await e.getByRole('button', { name: 'Gửi duyệt' }).click()
   await status(e, 'Chờ duyệt')
-  const second = await newLeave(e, '05', '1')
+  const second = await newLeave(e, '11/05/2026', '11/05/2026')
   await e.getByRole('button', { name: 'Gửi duyệt' }).click()
   await status(e, 'Chờ duyệt')
 
@@ -120,7 +120,7 @@ test('two tabs editing the same draft: the second save gets the reload dialog', 
   const ctx = await browser.newContext()
   const one = await ctx.newPage()
   await signInAs(one, login.e, '/me/requests')
-  const id = await newLeave(one, '06', '1')
+  const id = await newLeave(one, '10/06/2026', '10/06/2026')
   const two = await ctx.newPage()
   await two.goto(`/me/requests/leave/${id}`)
   // A draft reads as values; its card turns into the form on Edit.
@@ -128,11 +128,13 @@ test('two tabs editing the same draft: the second save gets the reload dialog', 
   await expect(two.getByRole('textbox', { name: /^Số ngày/ })).toHaveValue('1')
 
   await one.getByRole('button', { name: 'Sửa Thông tin nghỉ' }).click()
-  await one.getByRole('textbox', { name: /^Số ngày/ }).fill('2')
+  await one.getByRole('textbox', { name: /^Đến ngày/ }).fill('11/06/2026')
+  await one.getByRole('textbox', { name: /^Lý do/ }).click()
   await one.getByRole('button', { name: 'Lưu' }).click()
   await expect(one.getByText('Thông tin nghỉ')).toBeVisible()
 
-  await two.getByRole('textbox', { name: /^Số ngày/ }).fill('3')
+  await two.getByRole('textbox', { name: /^Đến ngày/ }).fill('12/06/2026')
+  await two.getByRole('textbox', { name: /^Lý do/ }).click()
   await two.getByRole('button', { name: 'Lưu' }).click()
   await expect(two.getByRole('dialog', { name: 'Dữ liệu đã thay đổi' })).toBeVisible()
   await two.getByRole('button', { name: 'Tải lại' }).click()
@@ -140,7 +142,8 @@ test('two tabs editing the same draft: the second save gets the reload dialog', 
 })
 
 test('approving from the inbox refreshes the leave balance on the HRM screen', async ({ page, baseURL }) => {
-  await sendViaApi(baseURL!, login.e3, '07', '2')
+  // Friday 10 and Monday 13 July: two working days.
+  await sendViaApi(baseURL!, login.e3, '2026-07-10', '2026-07-13')
   await signInAs(page, login.b, `/hrm/employees/${ids.e3}?tab=balances`)
   const balances = page.getByRole('table', { name: 'Quỹ phép' })
   await expect(balances.getByRole('row').filter({ hasText: /2026[\s\S]*12/ })).toBeVisible()
@@ -161,7 +164,7 @@ test('at 375px an employee sends a request and the manager approves it', async (
   const e = await (await browser.newContext(small)).newPage()
   await signInAs(e, login.e2, '/me/requests')
   await e.getByRole('link', { name: 'Tạo đơn nghỉ' }).click()
-  await fillLeave(e, '08', '1')
+  await fillLeave(e, '10/08/2026', '10/08/2026')
   await e.getByRole('button', { name: 'Tạo bản nháp' }).click()
   await expect(e.getByRole('heading', { name: /^NP-2026-/ })).toBeVisible()
   const number = (await e.getByRole('heading', { name: /^NP-2026-/ }).textContent()) ?? ''
@@ -180,28 +183,48 @@ test('at 375px an employee sends a request and the manager approves it', async (
   await status(e, 'Đã duyệt')
 })
 
-// The form names the ceiling before the user is refused, and the refusal lands on the day
-// count. 2026-08-10 to 14 is a whole working week; 2026-08-08 to 09 is a weekend.
-test('the form shows the working days of the range and refuses more than them', async ({ page }) => {
+// The form counts the days from the calendar as soon as both dates are known, half days
+// included, and a range of nothing but rest days is refused. 2026-08-10 to 14 is a whole
+// working week; 2026-08-08 to 09 is a weekend.
+test('the form computes the days of the range, half days included', async ({ page }) => {
   await signInAs(page, login.e3, '/me/requests/leave/new')
   await page.getByRole('combobox', { name: 'Loại nghỉ' }).click()
   await page.getByRole('option', { name: `Phép năm ${run}` }).click()
   await page.getByRole('textbox', { name: /^Từ ngày/ }).fill('10/08/2026')
   await page.getByRole('textbox', { name: /^Đến ngày/ }).fill('14/08/2026')
-  // A date field hands its value to the form on blur, so move off it before reading the hint.
+  // A date field hands its value to the form on blur, so move off it before reading the count.
   await page.getByRole('textbox', { name: /^Lý do/ }).click()
   await expect(page.getByText('Khoảng ngày đã chọn có 5 ngày làm việc.')).toBeVisible()
-
-  await page.getByRole('textbox', { name: /^Số ngày/ }).fill('6')
+  const days = page.getByRole('textbox', { name: /^Số ngày/ })
+  await expect(days).toHaveValue('5')
+  await page.getByRole('checkbox', { name: 'Ngày cuối chỉ nghỉ buổi sáng' }).check()
+  await expect(days).toHaveValue('4,5')
   await page.getByRole('button', { name: 'Tạo bản nháp' }).click()
-  await expect(page.getByText(/chỉ có 5 ngày làm việc/)).toBeVisible()
+  await expect(page.getByRole('heading', { name: /^NP-2026-/ })).toBeVisible()
+  await expect(page.getByRole('main').getByText('4,5 ngày làm việc').first()).toBeVisible()
+
+  // One day: a single half-day box.
+  await page.goto('/me/requests/leave/new')
+  await page.getByRole('textbox', { name: /^Từ ngày/ }).fill('17/08/2026')
+  await page.getByRole('textbox', { name: /^Đến ngày/ }).fill('17/08/2026')
+  await page.getByRole('textbox', { name: /^Lý do/ }).click()
+  await expect(page.getByRole('checkbox', { name: 'Nghỉ nửa ngày' })).toBeVisible()
+  await expect(page.getByRole('checkbox', { name: 'Ngày cuối chỉ nghỉ buổi sáng' })).toHaveCount(0)
 
   // A range of nothing but rest days has no leave to take.
+  await page.getByRole('combobox', { name: 'Loại nghỉ' }).click()
+  await page.getByRole('option', { name: `Phép năm ${run}` }).click()
   await page.getByRole('textbox', { name: /^Từ ngày/ }).fill('08/08/2026')
   await page.getByRole('textbox', { name: /^Đến ngày/ }).fill('09/08/2026')
   await page.getByRole('textbox', { name: /^Lý do/ }).click()
   await expect(page.getByText('Khoảng ngày đã chọn có 0 ngày làm việc.')).toBeVisible()
-  await page.getByRole('textbox', { name: /^Số ngày/ }).fill('1')
   await page.getByRole('button', { name: 'Tạo bản nháp' }).click()
   await expect(page.getByText(/đều là ngày nghỉ hoặc ngày lễ/)).toBeVisible()
+})
+
+// A setting whose change has side effects says so where it is changed.
+test('the accrual setting explains what switching it does', async ({ page }) => {
+  await signInAs(page, admin.login, '/admin/settings')
+  await page.getByRole('button', { name: 'Cộng phép năm' }).click()
+  await expect(page.getByRole('dialog').getByText(/chồng lên số đã cấp tay/)).toBeVisible()
 })

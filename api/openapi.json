@@ -2968,7 +2968,7 @@
             ]
           },
           "days": {
-            "description": "Half-day steps, e.g. 2.5; at most the working days of the range",
+            "description": "Computed from the work calendar; when sent, the count the client expects, refused if it differs",
             "pattern": "^[0-9]{1,3}(\\.[05])?$",
             "type": "string"
           },
@@ -2985,6 +2985,10 @@
           "end_date": {
             "format": "date",
             "type": "string"
+          },
+          "end_half": {
+            "description": "Only the morning of the last working date",
+            "type": "boolean"
           },
           "id": {
             "format": "int64",
@@ -3010,6 +3014,10 @@
           "start_date": {
             "format": "date",
             "type": "string"
+          },
+          "start_half": {
+            "description": "Only the afternoon of the first working date",
+            "type": "boolean"
           },
           "status": {
             "enum": [
@@ -3039,7 +3047,6 @@
           "leave_type_id",
           "start_date",
           "end_date",
-          "days",
           "reason"
         ],
         "type": "object"
@@ -3047,6 +3054,16 @@
       "LeaveBalance": {
         "additionalProperties": false,
         "properties": {
+          "carried": {
+            "type": "string"
+          },
+          "carried_until": {
+            "format": "date",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
           "days": {
             "type": "string"
           },
@@ -3057,7 +3074,9 @@
         },
         "required": [
           "year",
-          "days"
+          "days",
+          "carried",
+          "carried_until"
         ],
         "type": "object"
       },
@@ -3249,13 +3268,17 @@
             "type": "string"
           },
           "days": {
-            "description": "Half-day steps, e.g. 2.5; at most the working days of the range",
+            "description": "Computed from the work calendar; when sent, the count the client expects, refused if it differs",
             "pattern": "^[0-9]{1,3}(\\.[05])?$",
             "type": "string"
           },
           "end_date": {
             "format": "date",
             "type": "string"
+          },
+          "end_half": {
+            "description": "Only the morning of the last working date",
+            "type": "boolean"
           },
           "leave_type_id": {
             "format": "int64",
@@ -3272,6 +3295,10 @@
             "format": "date",
             "type": "string"
           },
+          "start_half": {
+            "description": "Only the afternoon of the first working date",
+            "type": "boolean"
+          },
           "version": {
             "format": "int32",
             "type": "integer"
@@ -3282,7 +3309,6 @@
           "leave_type_id",
           "start_date",
           "end_date",
-          "days",
           "reason"
         ],
         "type": "object"
@@ -4671,7 +4697,7 @@
             "type": "string"
           },
           "days": {
-            "description": "Half-day steps, e.g. 2.5; at most the working days of the range",
+            "description": "Computed from the work calendar; when sent, the count the client expects, refused if it differs",
             "pattern": "^[0-9]{1,3}(\\.[05])?$",
             "type": "string"
           },
@@ -4682,6 +4708,10 @@
           "end_date": {
             "format": "date",
             "type": "string"
+          },
+          "end_half": {
+            "description": "Only the morning of the last working date",
+            "type": "boolean"
           },
           "leave_type_id": {
             "format": "int64",
@@ -4702,13 +4732,16 @@
           "start_date": {
             "format": "date",
             "type": "string"
+          },
+          "start_half": {
+            "description": "Only the afternoon of the first working date",
+            "type": "boolean"
           }
         },
         "required": [
           "leave_type_id",
           "start_date",
           "end_date",
-          "days",
           "reason"
         ],
         "type": "object"

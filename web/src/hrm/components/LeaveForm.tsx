@@ -1,16 +1,17 @@
 import { IconCalendarEvent } from '@tabler/icons-react'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { useTranslation } from 'react-i18next'
 import { api, unwrap, type Leave } from '@/shared/api/hrm'
 import { useDocumentMutation } from '@/shared/document'
 import { formatDecimal } from '@/shared/i18n'
 import { notifySuccess } from '@/shared/ui/notify'
-import { DateField, DecimalField, Form, FormActions, FormFields, FormSection, SelectField, TextField, type ErrorFields } from '@/shared/ui/form'
+import { CheckboxField, DateField, DecimalField, Form, FormActions, FormFields, FormSection, SelectField, TextField, type ErrorFields } from '@/shared/ui/form'
 import { useLeaveTypes, useLeaveWorkingDays } from '../hooks/useLeave'
 import { EmployeeField } from './EmployeeField'
 import { leaveDocType } from '../keys'
 import { useRequestPaths } from '../requestPaths'
+import { leaveDays } from '../leaveDays'
 
 type Values = {
   employee_id: string | null
@@ -18,14 +19,18 @@ type Values = {
   start_date: string | null
   end_date: string | null
   days: string
+  start_half: boolean
+  end_half: boolean
   reason: string
 }
 
 const errorFields: ErrorFields<Values> = {
   invalid_leave_days: 'days',
+  leave_days_changed: 'days',
   leave_days_exceed_working_days: 'days',
   leave_days_exceed_type_max: 'days',
   leave_end_before_start: 'end_date',
+  leave_half_days: 'end_half',
   leave_no_working_days: 'start_date',
   leave_overlaps: 'start_date',
   leave_spans_years: 'end_date',
@@ -60,16 +65,23 @@ export function LeaveForm({ leave, self, chooseEmployee, onCreated, onClose }: P
       start_date: leave?.start_date ?? null,
       end_date: leave?.end_date ?? null,
       days: leave?.days ?? '',
+      start_half: leave?.start_half ?? false,
+      end_half: leave?.end_half ?? false,
       reason: leave?.reason ?? '',
     },
   })
   const editable = leave ? leave.allowed_actions.includes('edit') : true
   const ro = !editable
-  // The day count may not exceed the working days of the range, so show that ceiling as
-  // soon as both dates are known rather than letting the user find it by being refused.
-  const [start, end, chosen, typeID] = form.watch(['start_date', 'end_date', 'employee_id', 'leave_type_id'])
+  // The day count comes from the calendar: the working days of the range less the half days,
+  // shown as soon as both dates are known.
+  const [start, end, chosen, typeID, startHalf, endHalf] = form.watch(['start_date', 'end_date', 'employee_id', 'leave_type_id', 'start_half', 'end_half'])
   const forEmployee = leave?.employee_id ?? (chosen && Number(chosen) !== self?.id ? Number(chosen) : undefined)
   const working = useLeaveWorkingDays(ro ? null : start, ro ? null : end, forEmployee)
+  const oneDay = !!start && start === end
+  const computed = working.data ? leaveDays(working.data.working_days, startHalf, !oneDay && endHalf) : null
+  useEffect(() => {
+    if (!ro) form.setValue('days', computed ?? '')
+  }, [form, ro, computed])
   // The chosen kind's own rules, shown before they refuse anything.
   const kind = types.data?.find((x) => String(x.id) === typeID)
   const daysHint = [
@@ -87,7 +99,10 @@ export function LeaveForm({ leave, self, chooseEmployee, onCreated, onClose }: P
       leave_type_id: Number(v.leave_type_id),
       start_date: v.start_date ?? '',
       end_date: v.end_date ?? '',
-      days: v.days,
+      // The count the user saw: refused if the calendar now gives another.
+      days: v.days === '' ? undefined : v.days,
+      start_half: v.start_half,
+      end_half: !oneDay && v.end_half,
       reason: v.reason.trim() === '' ? null : v.reason.trim(),
     }
     if (leave) {
@@ -114,9 +129,11 @@ export function LeaveForm({ leave, self, chooseEmployee, onCreated, onClose }: P
         readOnly={ro}
         data={options}
       />
-      <DecimalField name="days" label={t('hrm.leave.days')} description={daysHint} required readOnly={ro} scale={1} step={0.5} min={0.5} />
       <DateField name="start_date" label={t('hrm.leave.start_date')} required readOnly={ro} />
-      <DateField name="end_date" label={t('hrm.leave.end_date')} required readOnly={ro} />
+      <DateField name="end_date" label={t('hrm.leave.end_date')} description={daysHint} required readOnly={ro} />
+      <CheckboxField name="start_half" label={oneDay ? t('hrm.leave.half_day') : t('hrm.leave.start_half')} readOnly={ro} />
+      {!oneDay && <CheckboxField name="end_half" label={t('hrm.leave.end_half')} readOnly={ro} />}
+      <DecimalField name="days" label={t('hrm.leave.days')} readOnly scale={1} />
       <TextField name="reason" label={t('hrm.leave.reason')} description={t('hrm.leave.reason_hint')} multiline maxLength={1000} readOnly={ro} />
     </>
   )

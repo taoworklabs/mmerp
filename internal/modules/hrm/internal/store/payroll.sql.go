@@ -546,7 +546,7 @@ func (q *Queries) PayrollLeaveBalances(ctx context.Context, arg PayrollLeaveBala
 }
 
 const payrollLeaves = `-- name: PayrollLeaves :many
-SELECT r.employee_id, r.start_date, r.end_date, r.days::text AS days, t.paid
+SELECT r.employee_id, r.start_date, r.end_date, r.days::text AS days, t.paid, r.start_half
 FROM hrm.leave_requests r JOIN hrm.leave_types t ON t.id = r.leave_type_id JOIN record.documents d ON d.id = r.id
 WHERE d.status = 'posted' AND r.employee_id = ANY($1::bigint[]) AND r.start_date <= $2::date AND r.end_date >= $3::date
 ORDER BY r.employee_id, r.start_date, r.id
@@ -564,6 +564,7 @@ type PayrollLeavesRow struct {
 	EndDate    pgtype.Date
 	Days       string
 	Paid       bool
+	StartHalf  bool
 }
 
 func (q *Queries) PayrollLeaves(ctx context.Context, arg PayrollLeavesParams) ([]PayrollLeavesRow, error) {
@@ -581,6 +582,7 @@ func (q *Queries) PayrollLeaves(ctx context.Context, arg PayrollLeavesParams) ([
 			&i.EndDate,
 			&i.Days,
 			&i.Paid,
+			&i.StartHalf,
 		); err != nil {
 			return nil, err
 		}

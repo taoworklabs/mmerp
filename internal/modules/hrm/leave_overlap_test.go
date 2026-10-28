@@ -31,15 +31,18 @@ func TestLeaveDaysCappedByWorkingDays(t *testing.T) {
 		{"the whole range is working days", "2026-04-06", "2026-04-07", "2", ""},
 		{"a weekend in the middle does not count", "2026-04-03", "2026-04-06", "2", ""},
 		{"half days are allowed up to the cap", "2026-04-03", "2026-04-06", "1.5", ""},
-		{"more than the working days of the range", "2026-04-03", "2026-04-06", "4", "leave_days_exceed_working_days"},
-		{"one more than the working days", "2026-04-06", "2026-04-07", "2.5", "leave_days_exceed_working_days"},
+		{"more than the working days of the range", "2026-04-03", "2026-04-06", "4", "leave_days_changed"},
+		{"one more than the working days", "2026-04-06", "2026-04-07", "2.5", "leave_days_changed"},
 		{"the weekend only", "2026-04-04", "2026-04-05", "2", "leave_no_working_days"},
 		{"the holiday only", "2026-04-30", "2026-04-30", "1", "leave_no_working_days"},
-		{"the holiday and the weekend around it do not count", "2026-04-29", "2026-05-04", "6", "leave_days_exceed_working_days"},
+		{"the holiday and the weekend around it do not count", "2026-04-29", "2026-05-04", "6", "leave_days_changed"},
 		{"the same range, entered as the three working days it has", "2026-04-29", "2026-05-04", "3", ""},
 	}
 	for _, c := range cases {
-		_, err := f.hrm.CreateLeave(f.e, hrm.NewLeave{LeaveFields: f.fields(c.start, c.end, c.days)})
+		in := f.fields(c.start, c.end, c.days)
+		// A count half a day short of the range is its last morning.
+		in.EndHalf = c.days == "1.5"
+		_, err := f.hrm.CreateLeave(f.e, hrm.NewLeave{LeaveFields: in})
 		if c.want == "" {
 			f.check(err)
 			continue
@@ -55,11 +58,11 @@ func TestLeaveDaysErrorNamesTheWorkingDays(t *testing.T) {
 	f := newLeaveFixture(t)
 	f.grant("12")
 	_, err := f.hrm.CreateLeave(f.e, hrm.NewLeave{LeaveFields: f.fields("2026-04-03", "2026-04-06", "4")})
-	if errCode(err) != "leave_days_exceed_working_days" {
+	if errCode(err) != "leave_days_changed" {
 		t.Fatalf("error %v", err)
 	}
-	if p := fmt.Sprint(errParams(err)["working_days"]); p != "2" {
-		t.Fatalf("the error reports working_days = %v, want 2", p)
+	if p := fmt.Sprint(errParams(err)["days"]); p != "2" {
+		t.Fatalf("the error reports days = %v, want 2", p)
 	}
 }
 
@@ -104,7 +107,7 @@ func TestLeaveDaysRecheckedOnApproval(t *testing.T) {
 	id := must(t)(f.hrm.CreateLeave(f.e, hrm.NewLeave{LeaveFields: f.fields("2026-04-29", "2026-04-30", "2")}))
 	f.check(f.send(f.e, id))
 	f.holiday() // 2026-04-30 becomes a holiday, leaving one working day in the range
-	if got := errCode(f.appr.Approve(f.m, f.ticket(id), 1)); got != "leave_days_exceed_working_days" {
+	if got := errCode(f.appr.Approve(f.m, f.ticket(id), 1)); got != "leave_days_changed" {
 		t.Fatalf("approving a request the calendar has overtaken: %q", got)
 	}
 	if s := f.leave(id).Status; s != "pending_approval" {
@@ -146,24 +149,30 @@ func TestLeaveOverlapRefusedOnApproval(t *testing.T) {
 	}
 }
 
+// half marks a one-day request as half a day.
+func half(l hrm.LeaveFields) hrm.LeaveFields {
+	l.StartHalf = true
+	return l
+}
+
 // Half days compose: two halves on one date make a whole day and are allowed; a half plus
 // a whole day are not.
 func TestLeaveOverlapCountsHalfDays(t *testing.T) {
 	f := newLeaveFixture(t)
 	f.ruleManager()
 	f.grant("30")
-	morning := must(t)(f.hrm.CreateLeave(f.e, hrm.NewLeave{LeaveFields: f.fields("2026-04-06", "2026-04-06", "0.5")}))
+	morning := must(t)(f.hrm.CreateLeave(f.e, hrm.NewLeave{LeaveFields: half(f.fields("2026-04-06", "2026-04-06", "0.5"))}))
 	f.check(f.send(f.e, morning))
 	f.check(f.appr.Approve(f.m, f.ticket(morning), 1))
 
-	afternoon := must(t)(f.hrm.CreateLeave(f.e, hrm.NewLeave{LeaveFields: f.fields("2026-04-06", "2026-04-06", "0.5")}))
+	afternoon := must(t)(f.hrm.CreateLeave(f.e, hrm.NewLeave{LeaveFields: half(f.fields("2026-04-06", "2026-04-06", "0.5"))}))
 	f.check(f.send(f.e, afternoon))
 	f.check(f.appr.Approve(f.m, f.ticket(afternoon), 1))
 	if f.balance() != "29" {
 		t.Fatalf("balance %s, want both halves deducted", f.balance())
 	}
 
-	third := must(t)(f.hrm.CreateLeave(f.e, hrm.NewLeave{LeaveFields: f.fields("2026-04-06", "2026-04-06", "0.5")}))
+	third := must(t)(f.hrm.CreateLeave(f.e, hrm.NewLeave{LeaveFields: half(f.fields("2026-04-06", "2026-04-06", "0.5"))}))
 	f.check(f.send(f.e, third))
 	if got := errCode(f.appr.Approve(f.m, f.ticket(third), 1)); got != "leave_overlaps" {
 		t.Fatalf("a third half day on the same date: %q", got)
@@ -171,7 +180,7 @@ func TestLeaveOverlapCountsHalfDays(t *testing.T) {
 
 	// A whole day on a date already holding half a day is refused too.
 	f.check(f.hrm.AdjustLeaveBalance(f.hr, f.emp, 2026, hrm.BalanceAdjustment{Delta: "1", Reason: "test"}))
-	half := must(t)(f.hrm.CreateLeave(f.e, hrm.NewLeave{LeaveFields: f.fields("2026-04-08", "2026-04-08", "0.5")}))
+	half := must(t)(f.hrm.CreateLeave(f.e, hrm.NewLeave{LeaveFields: half(f.fields("2026-04-08", "2026-04-08", "0.5"))}))
 	f.check(f.send(f.e, half))
 	f.check(f.appr.Approve(f.m, f.ticket(half), 1))
 	whole := must(t)(f.hrm.CreateLeave(f.e, hrm.NewLeave{LeaveFields: f.fields("2026-04-08", "2026-04-08", "1")}))
