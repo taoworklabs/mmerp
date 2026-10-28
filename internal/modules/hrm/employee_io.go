@@ -5,10 +5,12 @@ import (
 	"encoding/json"
 	"errors"
 	"maps"
+	"reflect"
 	"slices"
 	"strconv"
 	"strings"
 	"time"
+	"unicode/utf8"
 
 	"github.com/jackc/pgx/v5/pgconn"
 
@@ -26,6 +28,25 @@ const (
 
 var employeeHeaderKeys = []string{"code", "name", "date_of_birth", "gender", "phone", "email", "address", "org_unit", "manager",
 	"hire_date", "termination_date", "national_id", "social_insurance_no", "tax_code", "bank_account"}
+
+// employeeMaxLen holds the form's maxLength per column, read from the input types' tags.
+var employeeMaxLen = func() (out []struct{ col, max int }) {
+	for col, f := range map[int]struct {
+		t     any
+		field string
+	}{0: {NewEmployee{}, "Code"}, 1: {NewEmployee{}, "FullName"}, 4: {NewEmployee{}, "Phone"}, 5: {NewEmployee{}, "Email"},
+		6: {NewEmployee{}, "Address"}, 11: {SensitiveValues{}, "NationalID"}, 12: {SensitiveValues{}, "SocialInsuranceNo"},
+		13: {SensitiveValues{}, "TaxCode"}, 14: {SensitiveValues{}, "BankAccount"}} {
+		sf, _ := reflect.TypeOf(f.t).FieldByName(f.field)
+		n, err := strconv.Atoi(sf.Tag.Get("maxLength"))
+		if err != nil {
+			panic("hrm: no maxLength on " + f.field)
+		}
+		out = append(out, struct{ col, max int }{col, n})
+	}
+	slices.SortFunc(out, func(a, b struct{ col, max int }) int { return a.col - b.col })
+	return out
+}()
 
 // Code, phone, manager code and the sensitive columns hold digit strings with leading zeros.
 var employeeTextColumns = []int{0, 4, 8, 11, 12, 13, 14}
@@ -385,6 +406,11 @@ func (s *Service) importEmployees(ctx context.Context, _ json.RawMessage, rows [
 			in.HireDate = *hire
 		}
 		date(10, &in.TerminationDate)
+		for _, l := range employeeMaxLen {
+			if utf8.RuneCountInString(strings.TrimSpace(r[l.col])) > l.max {
+				fail("too_long", map[string]any{"column": header[l.col], "max": l.max})
+			}
+		}
 		if !exists {
 			for _, req := range []struct {
 				col  int

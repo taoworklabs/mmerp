@@ -50,6 +50,8 @@
   "hrm.import.manager_cycle": "Người quản lý của nhân viên {code} tạo thành vòng lặp qua {name}",
   "hrm.import.user_not_found": "Không có tài khoản liên kết với nhân viên {code}",
   "hrm.import.user_already_linked": "Tài khoản của nhân viên {code} đã liên kết với nhân viên khác",
+  "hrm.import.too_long": "{column}: dài quá {max} ký tự",
+  "hrm.import.not_found": "Phòng ban của nhân viên {code} không còn tồn tại",
   "hrm.export.payroll.code": "Mã NV",
   "hrm.export.payroll.name": "Họ tên",
   "hrm.export.payroll.org_unit": "Phòng ban",

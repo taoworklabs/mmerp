@@ -50,6 +50,8 @@
   "hrm.import.manager_cycle": "Employee {code}'s manager would form a loop through {name}",
   "hrm.import.user_not_found": "The account linked to employee {code} does not exist",
   "hrm.import.user_already_linked": "The account of employee {code} is already linked to another employee",
+  "hrm.import.too_long": "{column}: longer than {max} characters",
+  "hrm.import.not_found": "The org unit of employee {code} no longer exists",
   "hrm.export.payroll.code": "Employee code",
   "hrm.export.payroll.name": "Full name",
   "hrm.export.payroll.org_unit": "Department",

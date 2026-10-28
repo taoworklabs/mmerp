@@ -17,7 +17,10 @@ func (s *Service) Payslips(ctx context.Context, id int64) ([]printing.Part, erro
 	return s.payslips(ctx, id)
 }
 
-var UnitPaths = unitPaths
+var (
+	UnitPaths     = unitPaths
+	WriteRowError = writeRowError
+)
 
 func ResolveUnit(units []iam.OrgUnit, cell string) (int64, int) {
 	return resolveUnit(unitIndex(units), cell)

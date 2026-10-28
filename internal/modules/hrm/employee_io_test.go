@@ -252,6 +252,36 @@ func TestEmployeeImportUnitNamesRoundTrip(t *testing.T) {
 	}
 }
 
+// The import keeps the form's length limits, counted in characters.
+func TestEmployeeImportTooLong(t *testing.T) {
+	f := newFixture(t)
+	hr := f.ctxFor("hr", "hr@*", "sensitive_viewer@*")
+	j := f.importEmployees(hr, "import_rows_invalid",
+		eRow("E1", map[int]any{1: strings.Repeat("ạ", 201), 7: "A", 9: "01/02/2026"}),
+		eRow("E2", map[int]any{1: strings.Repeat("ạ", 200), 7: "A", 9: "01/02/2026", 13: strings.Repeat("1", 51)}),
+		eRow(strings.Repeat("X", 51), map[int]any{1: "Ba", 7: "A", 9: "01/02/2026"}))
+	wantRowError(t, j, 2, "Họ tên: dài quá 200 ký tự")
+	wantRowError(t, j, 3, "Mã số thuế: dài quá 50 ký tự")
+	wantRowError(t, j, 4, "Mã NV: dài quá 50 ký tự")
+	if len(j.RowErrors) != 3 {
+		t.Fatalf("errors %+v", j.RowErrors)
+	}
+}
+
+// An org unit removed while the import runs fails the row with a message of its own.
+func TestEmployeeImportNotFoundMessage(t *testing.T) {
+	newFixture(t) // loads the catalog
+	e, ok := hrm.WriteRowError(0, "E1", "", errors.Join(platform.ErrNotFound, errors.New("fk")))
+	if !ok || e.Code != "not_found" {
+		t.Fatalf("%+v %v", e, ok)
+	}
+	for _, loc := range []string{"vi", "en"} {
+		if m := platform.Translate(loc, "hrm.import."+e.Code, e.Params); !strings.Contains(m, "E1") {
+			t.Errorf("%s: %q", loc, m)
+		}
+	}
+}
+
 var employeeHeader = []any{"Mã NV", "Họ tên", "Ngày sinh", "Giới tính", "SĐT", "Email", "Địa chỉ", "Phòng ban", "Mã người quản lý trực tiếp",
 	"Ngày vào làm", "Ngày nghỉ việc", "CCCD/Hộ chiếu", "Số sổ BHXH", "Mã số thuế", "Số tài khoản"}
 
