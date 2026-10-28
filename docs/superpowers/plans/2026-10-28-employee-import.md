@@ -4,7 +4,7 @@
 
 **Goal:** HR exports the employee list to Excel, edits it, and imports it back; the same import creates new employees and edits existing ones.
 
-**Architecture:** Two `dataio` kinds registered by `hrm`, both `hrm.employee`: an export (`Run` returning one `dataio.Sheet`) and an import (`Header` + `Run`), in a new file `internal/modules/hrm/employee_io.go`. The import parses every row, merges non-empty cells over the current profile, then writes through the same `prepare` checks the form uses; manager cycles are checked once on the file's end state. The employee list gets an export button and an import dialog.
+**Architecture:** Two `dataio` kinds registered by `hrm`, both `hrm.employees`: an export (`Run` returning one `dataio.Sheet`) and an import (`Header` + `Run`), in a new file `internal/modules/hrm/employee_io.go`. The import parses every row, merges non-empty cells over the current profile, then writes through the same `prepare` checks the form uses; manager cycles are checked once on the file's end state. The employee list gets an export button and an import dialog.
 
 **Tech Stack:** Go, sqlc, `internal/core/dataio` (excelize underneath), `platform/data` lists, React + TanStack Query, `@/shared/jobs` (`ExportButton`, `ImportDialog`), Playwright.
 
@@ -39,14 +39,14 @@
 
 **Interfaces:**
 - Produces:
-  - `const employeeIO = "hrm.employee"` (export and import kind; equals `employeeType`, reuse that constant if it is the same string)
+  - `const employeeIO = "hrm.employees"` (export and import kind; equals `employeeType`, reuse that constant if it is the same string)
   - `type EmployeeExportParams struct { OrgUnitID int64 `json:"org_unit_id"`; Status string `json:"status"`; Q string `json:"q"` }` in `employee_types.go`
   - `func (s *Service) employeeColumns(ctx context.Context) ([]string, error)`: the 15 translated titles, in this order with these keys under `hrm.import.header.`: `code`, `name`, `date_of_birth`, `gender`, `phone`, `email`, `address`, `org_unit`, `manager`, `hire_date`, `termination_date`, `national_id`, `social_insurance_no`, `tax_code`, `bank_account` (`code`, `name` exist; vi titles: Mã NV, Họ tên, Ngày sinh, Giới tính, SĐT, Email, Địa chỉ, Phòng ban, Mã người quản lý trực tiếp, Ngày vào làm, Ngày nghỉ việc, CCCD/Hộ chiếu, Số sổ BHXH, Mã số thuế, Số tài khoản)
   - `func unitPaths(units []iam.OrgUnit) map[int64]string`: for every unit, its shortest unique path (`name`, or `parent / name`, … up the tree, joined by ` / `); units whose full path is still not unique map to their full path
   - `func resolveUnit(units []iam.OrgUnit, path string) (id int64, matches int)`: units whose name equals the last segment and whose ancestors' names equal the preceding segments in order (a suffix of the ancestor chain); trimmed, case-sensitive
   - `func genderLabel(loc string, g *string) string` and `const dateLayout = "02/01/2006"`
 
-- [ ] **Step 1: Write the failing tests** in `employee_io_test.go` (package `hrm_test`), with a helper `func (f *fixture) exportEmployees(ctx context.Context, params string) [][]string` that calls `f.core.DataIO.StartExport(ctx, "hrm.employee", []byte(params))`, `f.wantJob(job, "completed")`, reads the file through `f.core.DataIO.Job`/`File` (as `printPayslip` in `me_test.go`), and returns `excelize` rows of `Sheet1` (`RawCellValue: true`).
+- [ ] **Step 1: Write the failing tests** in `employee_io_test.go` (package `hrm_test`), with a helper `func (f *fixture) exportEmployees(ctx context.Context, params string) [][]string` that calls `f.core.DataIO.StartExport(ctx, "hrm.employees", []byte(params))`, `f.wantJob(job, "completed")`, reads the file through `f.core.DataIO.Job`/`File` (as `printPayslip` in `me_test.go`), and returns `excelize` rows of `Sheet1` (`RawCellValue: true`).
   - `TestEmployeeExportColumns`: HR (`hr@*`) creates E1 in A with date of birth `1990-02-03`, gender `female`, manager E0. Rows[0] equals the 15 vi titles; E1's row has `"03/02/1990"`, `"Nữ"`, `"A"`, `"E0"`, hire date `"05/01/2026"`, empty sensitive cells.
   - `TestEmployeeExportFilters`: E1 in A, E2 in B, E3 terminated; `{"org_unit_id":A}` gives only E1; `{"status":"terminated"}` only E3; `{"q":"E2"}` only E2; `hr@A` with `{}` sees no E2.
   - `TestEmployeeExportSensitive`: E1 with all four sensitive values. Export by `hr@*` → the four cells empty and no `hrm.employee_sensitive_exported` audit row. Export by `hr@*` + `sensitive_viewer@*` → full values, and exactly one audit row `hrm.employee_sensitive_exported` on E1 whose data is `{"fields": ["national_id", …]}` (only the non-empty fields) and contains no value.
@@ -75,7 +75,7 @@
 **Interfaces:**
 - Consumes: `employeeColumns`, `resolveUnit`, `dateLayout`, gender labels from Task 1.
 - Produces:
-  - `func (s *Service) importEmployees(ctx context.Context, _ json.RawMessage, rows [][]string) ([]dataio.RowError, error)` registered as import `hrm.employee` with `Header: func(ctx, _) { require edit somewhere; return s.employeeColumns(ctx) }`
+  - `func (s *Service) importEmployees(ctx context.Context, _ json.RawMessage, rows [][]string) ([]dataio.RowError, error)` registered as import `hrm.employees` with `Header: func(ctx, _) { require edit somewhere; return s.employeeColumns(ctx) }`
   - `func (s *Service) updateEmployee(ctx context.Context, id int64, in EmployeeInput, checkCycle bool) error`: today's `UpdateEmployee` body; `UpdateEmployee` calls it with `true`. With `false` it skips only the `LockManagerTree`/`ManagerChain` block (`manager_self` is still refused).
   - `func cellDate(cell string) (string, bool)`: accepts `dd/mm/yyyy`, `yyyy-mm-dd` and an Excel serial number; returns ISO date. Blank → `("", true)`.
   - `func cellGender(cell string) (*string, bool)`: accepts the vi and en labels (case-insensitive) and `male`/`female`/`other`.
@@ -89,7 +89,7 @@ Order inside `importEmployees` (all in the job's one transaction):
 5. Collect row errors for every row before writing; return them if any.
 6. Write creates first, then updates (Task 3 adds the manager ordering and the final cycle check; in this task a manager cell must name an employee that already exists, else `unknown_manager`). Creates call `CreateEmployee` directly (`platform.InTx` joins the job's transaction when one is in ctx). Updates use `updateEmployee(…, true)`.
 
-- [ ] **Step 1: Write the failing tests.** Helper `func (f *fixture) importEmployees(ctx context.Context, rows ...[]any) dataio.Job` that writes an excelize file (header = Task 1 titles, prepended), calls `f.core.DataIO.StartImport(ctx, "hrm.employee", "e.xlsx", r, nil)`, `wantJob`, returns `f.core.DataIO.Job`.
+- [ ] **Step 1: Write the failing tests.** Helper `func (f *fixture) importEmployees(ctx context.Context, rows ...[]any) dataio.Job` that writes an excelize file (header = Task 1 titles, prepended), calls `f.core.DataIO.StartImport(ctx, "hrm.employees", "e.xlsx", r, nil)`, `wantJob`, returns `f.core.DataIO.Job`.
   - `TestEmployeeImportCreatesAndEdits`: E1 exists in A. File: `E1` with new phone; `E9` new in `B`; empty code new in `A`. Job completed; E1's phone changed, other E1 fields unchanged; E9 exists with code `E9`; the third got a series code; audit has one `hrm.employee_updated` on E1 and two `hrm.employee_created`.
   - `TestEmployeeImportAllOrNothing`: one good row and one row with unknown unit `"Z"` → job failed, `RowErrors` has row 3 with the unit message; nothing created.
   - `TestEmployeeImportUnchangedExportWritesNothing`: export with `viewer@*` + `hr@A` (view everywhere, edit only A), import that same file back unchanged → completed, zero new audit rows (Review Focus 3).
@@ -97,7 +97,7 @@ Order inside `importEmployees` (all in the job's one transaction):
   - `TestEmployeeImportScope`: `hr@A` importing a row for E2 (in B) → `employee_code_taken`; a new row in B → `forbidden_row`.
   - `TestEmployeeImportDuplicateCode`: rows `e1` then `E1` → `duplicate_employee` on row 3 (Review Focus 5).
   - `TestEmployeeImportDatesAndGender`: `"03/02/1990"`, `"1990-02-03"` and the serial `32907` all store `1990-02-03`; `"nam"` stores `male`; `"31/02/1990"` → `invalid_date`.
-  - In `internal/app/jobs_test.go`, `TestEmployeeImportOverHTTP`: through `f.upload(f.admin, "hrm.employee", "", head, row)`, one created employee and one row error message in Vietnamese, proving the HTTP route and translations.
+  - In `internal/app/jobs_test.go`, `TestEmployeeImportOverHTTP`: through `f.upload(f.admin, "hrm.employees", "", head, row)`, one created employee and one row error message in Vietnamese, proving the HTTP route and translations.
 
 - [ ] **Step 2: Run** `go test ./internal/modules/hrm -run TestEmployeeImport` and `go test ./internal/app -run TestEmployeeImportOverHTTP`. Expected: FAIL.
 
@@ -144,19 +144,19 @@ Use the `mmerp-ui` and `new-screen` skills; finish with the `docs/ui.md` checkli
 - Create: `web/e2e/employee-import.spec.ts`
 
 **Interfaces:**
-- Consumes: kinds `hrm.employee` from Tasks 1–3.
+- Consumes: kinds `hrm.employees` from Tasks 1–3.
 - Produces: action `import_employees` in `GET /hrm/employees/actions`: edit permission somewhere and `ProductGate(ctx, "hrm", platform.ClassWrite) == nil`, exactly like `import_leave_balances`.
 
 - [ ] **Step 1: Failing Go test.** Extend `TestEmployeeActions`: `hr@A` gets `import_employees`; `viewer@*` does not. Run `go test ./internal/modules/hrm -run TestEmployeeActions` → FAIL; add the action; → PASS; `make gen` to refresh types.
 
-- [ ] **Step 2: Screen.** On `EmployeesPage`, in the list's `action` area before the create button: `<ExportButton kind="hrm.employee" params={{ org_unit_id, status, q }} label={t('hrm.employees.export')} />` (always shown, since the page needs view), and when `import_employees`: a button opening `<ImportDialog kind="hrm.employee" title={t('hrm.employees.import')} description={t('hrm.employees.import_hint')} writes={[hrmKeys.employees.all()]} … />`. With three or more actions, follow `mmerp-ui` for grouping secondary actions (e.g. a menu for the two imports) rather than a row of four buttons. Copy (vi; en alongside):
+- [ ] **Step 2: Screen.** On `EmployeesPage`, in the list's `action` area before the create button: `<ExportButton kind="hrm.employees" params={{ org_unit_id, status, q }} label={t('hrm.employees.export')} />` (always shown, since the page needs view); when the actions include `view_sensitive`, a second export entry "Xuất kèm thông tin nhạy cảm" / "Export with sensitive data" (`hrm.employees.export_sensitive`) passing `include_sensitive: true`; and when `import_employees`: a button opening `<ImportDialog kind="hrm.employees" title={t('hrm.employees.import')} description={t('hrm.employees.import_hint')} writes={[hrmKeys.employees.all()]} … />`. With three or more actions, follow `mmerp-ui` for grouping secondary actions (e.g. a menu for the two imports) rather than a row of four buttons. Copy (vi; en alongside):
   - `hrm.employees.export`: "Xuất Excel"
   - `hrm.employees.import`: "Nhập hồ sơ từ Excel"
   - `hrm.employees.import_hint`: "Mỗi dòng là một nhân viên. Mã đã có thì sửa hồ sơ đó, mã mới hoặc để trống thì tạo nhân viên mới. Ô để trống giữ nguyên giá trị hiện tại. Một dòng lỗi thì không dòng nào được ghi. Dùng file xuất từ danh sách này làm mẫu."
 
 - [ ] **Step 3: e2e** `web/e2e/employee-import.spec.ts` (follow `m5.spec.ts`/`helpers.ts` patterns): HR exports the list, the download has the header row; HR uploads a file creating one employee and editing another's phone, sees the success state, and the list shows the new employee; a file with an unknown department shows the row error. Do not run it; tell the user to run `make e2e`.
 
-- [ ] **Step 4: Docs.** `products/hrm.md` line 58: profile import/export now exists (employee export and import with the empty-cell rule); remove "there is no profile import/export yet". Add the `hrm.employee` export/import to the `dataio` list there.
+- [ ] **Step 4: Docs.** `products/hrm.md` line 58: profile import/export now exists (employee export and import with the empty-cell rule); remove "there is no profile import/export yet". Add the `hrm.employees` export/import to the `dataio` list there.
 
 - [ ] **Step 5: Verify** `go test ./internal/modules/hrm ./internal/app` and `cd web && pnpm vitest run` pass, `pnpm tsc --noEmit` clean. Commit `feat(web): export and import employee profiles from the employee list`.
 
