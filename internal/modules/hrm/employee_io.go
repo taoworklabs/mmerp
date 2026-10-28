@@ -27,13 +27,16 @@ const (
 var employeeHeaderKeys = []string{"code", "name", "date_of_birth", "gender", "phone", "email", "address", "org_unit", "manager",
 	"hire_date", "termination_date", "national_id", "social_insurance_no", "tax_code", "bank_account"}
 
+// Code, phone, manager code and the sensitive columns hold digit strings with leading zeros.
+var employeeTextColumns = []int{0, 4, 8, 11, 12, 13, 14}
+
 func (s *Service) registerEmployeeIO() {
 	s.d.DataIO.RegisterExport(dataio.Export{Kind: employeeIO, Product: "hrm", Run: s.exportEmployees,
 		Check: func(ctx context.Context, params json.RawMessage) error {
 			_, err := s.exportedEmployees(ctx, params)
 			return err
 		}})
-	s.d.DataIO.RegisterImport(dataio.Import{Kind: employeeIO, Product: "hrm", Run: s.importEmployees,
+	s.d.DataIO.RegisterImport(dataio.Import{Kind: employeeIO, Product: "hrm", Run: s.importEmployees, TextColumns: employeeTextColumns,
 		Header: func(ctx context.Context, _ json.RawMessage) ([]string, error) {
 			sc, err := s.d.IAM.Scope(ctx, "hrm", PermEdit)
 			if err == nil && !sc.Any() {
@@ -245,7 +248,7 @@ func (s *Service) exportEmployees(ctx context.Context, params json.RawMessage) (
 		}
 		rows = append(rows, row)
 	}
-	return dataio.Sheet{Name: platform.Translate(loc, "hrm.import.sheet.employees", nil), Header: header, Rows: rows}, nil
+	return dataio.Sheet{Name: platform.Translate(loc, "hrm.import.sheet.employees", nil), Header: header, Rows: rows, TextColumns: employeeTextColumns}, nil
 }
 
 // importEmployees creates the rows whose code is new or empty and edits the others. An empty

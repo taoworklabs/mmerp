@@ -24,6 +24,14 @@ import (
 // exportEmployees runs the employee export as ctx's actor and returns the sheet's rows.
 func (f *fixture) exportEmployees(ctx context.Context, params string) [][]string {
 	f.t.Helper()
+	rows, err := f.exportEmployeesFile(ctx, params).GetRows("Sheet1", excelize.Options{RawCellValue: true})
+	f.check(err)
+	return rows
+}
+
+// exportEmployeesFile runs the employee export as ctx's actor and opens its file.
+func (f *fixture) exportEmployeesFile(ctx context.Context, params string) *excelize.File {
+	f.t.Helper()
 	job, err := f.core.DataIO.StartExport(ctx, "hrm.employees", []byte(params))
 	f.check(err)
 	f.wantJob(job, "completed")
@@ -36,9 +44,7 @@ func (f *fixture) exportEmployees(ctx context.Context, params string) [][]string
 	f.check(err)
 	x, err := excelize.OpenReader(bytes.NewReader(b))
 	f.check(err)
-	rows, err := x.GetRows("Sheet1", excelize.Options{RawCellValue: true})
-	f.check(err)
-	return rows
+	return x
 }
 
 // exportEmployeesEnding starts an export that must end as want.
@@ -78,6 +84,30 @@ func TestEmployeeExportColumns(t *testing.T) {
 	exp := []string{"E1", "Nhân viên E1", "03/02/1990", "Nữ", "", "", "", "A", "E0", "05/01/2026", "", "", "", "", ""}
 	if !slices.Equal(got, exp) {
 		t.Fatalf("row %q, want %q", got, exp)
+	}
+}
+
+// The columns holding digit strings are text in the export and the template, so a value typed
+// there keeps its leading zeros.
+func TestEmployeeSheetTextColumns(t *testing.T) {
+	f := newFixture(t)
+	hr := f.ctxFor("hr", "hr@*")
+	must(t)(f.hrm.CreateEmployee(hr, employee("E1", f.a)))
+	tmpl, err := f.core.DataIO.Template(hr, "hrm.employees", nil)
+	f.check(err)
+	tx, err := excelize.OpenReader(bytes.NewReader(tmpl))
+	f.check(err)
+	for name, x := range map[string]*excelize.File{"export": f.exportEmployeesFile(hr, `{}`), "template": tx} {
+		for c := 1; c <= 15; c++ {
+			col, _ := excelize.ColumnNumberToName(c)
+			id, err := x.GetColStyle("Sheet1", col)
+			f.check(err)
+			st, err := x.GetStyle(id)
+			f.check(err)
+			if want := slices.Contains([]int{1, 5, 9, 12, 13, 14, 15}, c); (st.NumFmt == 49) != want {
+				t.Errorf("%s column %s: format %d", name, col, st.NumFmt)
+			}
+		}
 	}
 }
 

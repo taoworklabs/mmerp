@@ -263,7 +263,7 @@ func export(ctx context.Context, exp Export, params json.RawMessage) (File, *int
 	return File{Name: sheet.Name + ".xlsx", Body: b.Bytes()}, &rows, nil
 }
 
-// writeSheet writes the header in bold, frozen, and the rows below it.
+// writeSheet writes the header in bold, frozen, and the rows below it; text columns get the text format.
 func writeSheet(sh Sheet) (*bytes.Buffer, error) {
 	x := excelize.NewFile()
 	defer func() { _ = x.Close() }()
@@ -271,6 +271,16 @@ func writeSheet(sh Sheet) (*bytes.Buffer, error) {
 	bold, err := x.NewStyle(&excelize.Style{Font: &excelize.Font{Bold: true}})
 	if err != nil {
 		return nil, err
+	}
+	text, err := x.NewStyle(&excelize.Style{NumFmt: 49}) // "@"
+	if err != nil {
+		return nil, err
+	}
+	for _, c := range sh.TextColumns {
+		col, _ := excelize.ColumnNumberToName(c + 1)
+		if err := x.SetColStyle(name, col, text); err != nil {
+			return nil, err
+		}
 	}
 	for c, v := range sh.Header {
 		cell, _ := excelize.CoordinatesToCellName(c+1, 1)

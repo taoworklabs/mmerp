@@ -129,7 +129,7 @@ func (s *Service) Template(ctx context.Context, kind string, params json.RawMess
 	if err != nil {
 		return nil, err
 	}
-	b, err := writeSheet(Sheet{Header: header})
+	b, err := writeSheet(Sheet{Header: header, TextColumns: imp.TextColumns})
 	if err != nil {
 		return nil, err
 	}
