@@ -2,6 +2,8 @@ import { IconUsersGroup, IconLayoutDashboard, IconCalendarCog, IconCash, IconCal
 import type { AreaManifest } from '@/shared/area'
 import { contractDocType, employeeDocType, hrmKeys, leaveDocType, overtimeDocType, payrollDocType, timesheetDocType } from './keys'
 
+export { hrmMe } from './me'
+
 export const hrm: AreaManifest = {
   product: 'hrm',
   label: 'hrm.nav.group',

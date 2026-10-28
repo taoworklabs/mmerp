@@ -61,6 +61,15 @@ export const hrmKeys = {
     list: (q: PayrollQuery) => ['hrm', 'payrolls', 'list', q] as const,
     detail: (id: number) => ['hrm', 'payrolls', 'detail', id] as const,
   },
+  me: {
+    days: (month: string) => ['hrm', 'me', 'days', month] as const,
+    profile: () => ['hrm', 'me', 'profile'] as const,
+    payslips: () => ['hrm', 'me', 'payslips'] as const,
+    payslip: (id: number) => ['hrm', 'me', 'payslips', id] as const,
+    // Under the lists' keys, so whatever refreshes the lists refreshes these.
+    leaves: (employee: number) => ['hrm', 'leaves', 'list', 'mine', employee] as const,
+    overtimes: (employee: number) => ['hrm', 'overtimes', 'list', 'mine', employee] as const,
+  },
   leaveTypes: () => ['hrm', 'leave-types'] as const,
   calendar: (legalEntity: number, year: number) => ['hrm', 'calendar', legalEntity, year] as const,
   calendars: () => ['hrm', 'calendar'] as const,

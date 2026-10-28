@@ -32,12 +32,14 @@ type Props = {
   // The success toast once created.
   created: string
   // The form, given what to do once it created a record, and the allowed actions.
+  // Where to go once created, when not the area's page for the record.
+  openAt?: (id: number) => string
   children: (onCreated: (id: number) => Promise<void>, actions: string[]) => ReactNode
 }
 
 // CreatePage is the page of a new document: forbidden without the action, then the form; once
 // created it refreshes the record, says so and opens it.
-export function CreatePage({ docType, actions, action = 'create', title, breadcrumbs, description, created, children }: Props) {
+export function CreatePage({ docType, actions, action = 'create', title, breadcrumbs, description, created, openAt, children }: Props) {
   const { t } = useTranslation()
   const navigate = useNavigate()
   const invalidate = useInvalidateRecord()
@@ -50,7 +52,7 @@ export function CreatePage({ docType, actions, action = 'create', title, breadcr
   const onCreated = async (id: number) => {
     await invalidate(docType, id)
     notifySuccess(created)
-    const to = link(docType, id)
+    const to = openAt ? openAt(id) : link(docType, id)
     // The form is clean after a successful save, so leaving is not blocked.
     if (to) setTimeout(() => navigate(to, { replace: true }))
   }

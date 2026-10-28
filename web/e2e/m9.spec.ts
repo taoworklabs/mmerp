@@ -11,7 +11,7 @@ const emp = `m9_emp_${run}` // no role: files leave only
 let viewerId: number
 let timesheet: number
 
-const tiles = ['Nhân sự đang làm việc', 'Hợp đồng sắp hết hạn', 'Đơn nghỉ chờ duyệt', 'Đơn tăng ca chờ duyệt', 'Hợp đồng chờ duyệt']
+const tiles = ['Nhân sự đang làm việc', 'Hợp đồng sắp hết hạn', 'Đơn nghỉ phép chờ duyệt', 'Đơn tăng ca chờ duyệt', 'Hợp đồng chờ duyệt']
 
 test.beforeAll(async ({ baseURL }) => {
   const api = await signedInApi(baseURL!)
@@ -78,7 +78,7 @@ test('a viewer sees only the employee block; revoking the role mid-session remov
 
   // The next request carries a new X-Authz-Version and the app reloads.
   const reloaded = page.waitForEvent('load')
-  await page.getByRole('navigation').getByRole('link', { name: 'Đơn nghỉ' }).click()
+  await page.getByRole('navigation').getByRole('link', { name: 'Đơn nghỉ phép' }).click()
   await reloaded
   await page.goto('/hrm/overview')
   await expect(page.getByText('Chưa có số liệu nào cho bạn.')).toBeVisible()
@@ -95,19 +95,19 @@ test('home has no sidebar; each area shows only its own menu; the header names t
   // Administration is a tile too; its menu holds no HRM item, and HRM's none of its.
   await page.getByRole('main').getByRole('link', { name: 'Quản trị' }).click()
   await expect(page).toHaveURL(/\/admin\/org-units$/)
-  await expect(nav.getByRole('link', { name: 'Cơ cấu tổ chức' })).toHaveCount(0)
+  await expect(nav.getByRole('link', { name: 'Sơ đồ tổ chức' })).toHaveCount(0)
   await header.getByRole('link', { name: 'Trang chủ' }).click()
-  await page.getByRole('main').getByRole('link', { name: 'Quản lý nhân sự' }).click()
+  await page.getByRole('main').getByRole('link', { name: 'Nhân sự' }).click()
   await expect(nav.getByRole('link', { name: 'Cây tổ chức' })).toHaveCount(0)
 
   // The inbox is in the header on every page and opens inside the current area.
   await header.getByRole('link', { name: /^Hộp duyệt/ }).click()
   await expect(page).toHaveURL(/\/hrm\/inbox$/)
-  await expect(header.getByText('Quản lý nhân sự')).toBeVisible()
+  await expect(header.getByText('Nhân sự')).toBeVisible()
   await expect(nav).toHaveCount(1)
 
   await page.goto('/hrm/overview')
-  await expect(header.getByText('Quản lý nhân sự')).toBeVisible()
+  await expect(header.getByText('Nhân sự')).toBeVisible()
   await page.goto('/admin/users')
   await expect(header.getByText('Quản trị', { exact: true })).toBeVisible()
   // From home it has no area.
@@ -119,22 +119,22 @@ test('home has no sidebar; each area shows only its own menu; the header names t
 test('the HRM menu is grouped and empty groups are hidden', async ({ page }) => {
   await signInAs(page, menuViewer, '/hrm/overview')
   const nav = page.getByRole('navigation')
-  await expect(nav.getByRole('group', { name: 'Nhân sự' }).getByRole('link', { name: 'Nhân viên' })).toBeVisible()
-  await expect(nav.getByRole('group', { name: 'Chấm công & nghỉ phép' }).getByRole('link', { name: 'Đơn nghỉ' })).toBeVisible()
+  await expect(nav.getByRole('group', { name: 'Nhân sự' }).getByRole('link', { name: 'Hồ sơ nhân viên' })).toBeVisible()
+  await expect(nav.getByRole('group', { name: 'Chấm công & nghỉ phép' }).getByRole('link', { name: 'Đơn nghỉ phép' })).toBeVisible()
   await expect(nav.getByRole('group', { name: 'Tiền lương' })).toHaveCount(0)
-  await expect(nav.getByRole('group', { name: 'Cấu hình' })).toHaveCount(0)
+  await expect(nav.getByRole('group', { name: 'Thiết lập' })).toHaveCount(0)
 })
 
 test('an administrator folds Configuration and it stays folded after a reload', async ({ page }) => {
   await signedIn(page, '/hrm/overview')
-  const config = page.getByRole('navigation').getByRole('group', { name: 'Cấu hình' })
-  await expect(config.getByRole('link', { name: 'Loại nghỉ' })).toBeVisible()
-  await config.getByRole('button', { name: 'Cấu hình' }).click()
-  await expect(config.getByRole('link', { name: 'Loại nghỉ' })).toHaveCount(0)
+  const config = page.getByRole('navigation').getByRole('group', { name: 'Thiết lập' })
+  await expect(config.getByRole('link', { name: 'Loại nghỉ phép' })).toBeVisible()
+  await config.getByRole('button', { name: 'Thiết lập' }).click()
+  await expect(config.getByRole('link', { name: 'Loại nghỉ phép' })).toHaveCount(0)
   await page.reload()
-  await expect(page.getByRole('navigation').getByRole('group', { name: 'Cấu hình' }).getByRole('link', { name: 'Loại nghỉ' })).toHaveCount(0)
-  await page.getByRole('navigation').getByRole('button', { name: 'Cấu hình' }).click()
-  await expect(page.getByRole('navigation').getByRole('link', { name: 'Loại nghỉ' })).toBeVisible()
+  await expect(page.getByRole('navigation').getByRole('group', { name: 'Thiết lập' }).getByRole('link', { name: 'Loại nghỉ phép' })).toHaveCount(0)
+  await page.getByRole('navigation').getByRole('button', { name: 'Thiết lập' }).click()
+  await expect(page.getByRole('navigation').getByRole('link', { name: 'Loại nghỉ phép' })).toBeVisible()
 })
 
 test('on a phone the drawer shows the groups and closes on a choice', async ({ browser }) => {
@@ -143,9 +143,9 @@ test('on a phone the drawer shows the groups and closes on a choice', async ({ b
   await page.getByRole('button', { name: 'Mở thanh điều hướng' }).click()
   const nav = page.getByRole('navigation')
   await expect(nav.getByRole('group', { name: 'Chấm công & nghỉ phép' })).toBeVisible()
-  await nav.getByRole('link', { name: 'Đơn nghỉ' }).click()
+  await nav.getByRole('link', { name: 'Đơn nghỉ phép' }).click()
   await expect(page).toHaveURL(/\/hrm\/leaves$/)
-  await expect(nav.getByRole('link', { name: 'Đơn nghỉ' })).not.toBeInViewport()
+  await expect(nav.getByRole('link', { name: 'Đơn nghỉ phép' })).not.toBeInViewport()
 })
 
 test('with HRM disabled, its data stays readable behind a read-only banner', async ({ browser, page: withHrm }) => {
@@ -156,7 +156,7 @@ test('with HRM disabled, its data stays readable behind a read-only banner', asy
   const page = await (await browser.newContext()).newPage()
   await signedIn(page, `http://localhost:8091/hrm/employees?q=M9A${run}`)
   await expect(page.getByText('Phân hệ đang tắt: chỉ xem và xuất được dữ liệu.')).toBeVisible()
-  await expect(page.getByRole('banner').getByText('Quản lý nhân sự', { exact: true })).toBeVisible()
+  await expect(page.getByRole('banner').getByText('Nhân sự', { exact: true })).toBeVisible()
   await page.getByRole('link', { name: `M9A${run}-0` }).click()
   await expect(page.getByRole('heading', { name: `Nhân viên M9A${run}-0` })).toBeVisible()
   await expect(page.getByText('Phân hệ đang tắt: chỉ xem và xuất được dữ liệu.')).toBeVisible()
@@ -188,7 +188,7 @@ test('with HRM disabled, no screen offers to create, import or edit', async ({ b
 
   // The home page still offers HRM, read-only.
   await page.goto('http://localhost:8091/')
-  await page.getByRole('main').getByRole('link', { name: 'Quản lý nhân sự' }).click()
+  await page.getByRole('main').getByRole('link', { name: 'Nhân sự' }).click()
   await expect(page).toHaveURL(/:8091\/hrm\/overview$/)
   await expect(page.getByText('Phân hệ đang tắt: chỉ xem và xuất được dữ liệu.')).toBeVisible()
 })
@@ -196,7 +196,7 @@ test('with HRM disabled, no screen offers to create, import or edit', async ({ b
 test('home shows the products the user may enter; Back walks list, overview, home', async ({ page }) => {
   await signInAs(page, hr, '/')
   await expect(page).toHaveURL(/\/$/)
-  await page.getByRole('main').getByRole('link', { name: 'Quản lý nhân sự' }).click()
+  await page.getByRole('main').getByRole('link', { name: 'Nhân sự' }).click()
   await expect(page).toHaveURL(/\/hrm\/overview$/)
   await tile(page, 'Nhân sự đang làm việc').click()
   await expect(page).toHaveURL(/\/hrm\/employees\?status=active$/)
@@ -208,8 +208,8 @@ test('home shows the products the user may enter; Back walks list, overview, hom
 
 test('a user without HRM permissions has no HRM tile', async ({ page }) => {
   await signInAs(page, emp, '/')
-  await expect(page.getByRole('main').getByRole('link', { name: 'Quản lý nhân sự' })).toHaveCount(0)
-  await expect(page.getByText('Bạn chưa được cấp quyền vào phân hệ nào.')).toBeVisible()
+  await expect(page.getByRole('main').getByRole('link', { name: 'Nhân sự' })).toHaveCount(0)
+  await expect(page.getByRole('main').getByRole('link', { name: 'Cá nhân' })).toBeVisible()
 })
 
 test('a deep link to a filtered list opens after signing in', async ({ page }) => {
@@ -222,7 +222,7 @@ test('on a phone the home grid shows, then the HRM drawer opens', async ({ brows
   const page = await (await browser.newContext({ viewport: { width: 375, height: 800 } })).newPage()
   await signedIn(page, '/')
   await expect(page.getByRole('button', { name: 'Mở thanh điều hướng' })).toHaveCount(0)
-  await page.getByRole('main').getByRole('link', { name: 'Quản lý nhân sự' }).click()
+  await page.getByRole('main').getByRole('link', { name: 'Nhân sự' }).click()
   await page.getByRole('button', { name: 'Mở thanh điều hướng' }).click()
   await expect(page.getByRole('navigation').getByRole('link', { name: 'Tổng quan' })).toBeVisible()
 })

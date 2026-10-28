@@ -7,6 +7,7 @@ import { useDocumentMutation } from '@/shared/document'
 import { notifySuccess } from '@/shared/ui/notify'
 import { DateField, DecimalField, Form, FormActions, FormFields, FormSection, SelectField, TextField, type ErrorFields } from '@/shared/ui/form'
 import { overtimeDocType } from '../keys'
+import { useRequestPaths } from '../requestPaths'
 import { EmployeeField } from './EmployeeField'
 
 type Values = {
@@ -43,6 +44,7 @@ type Props = {
 // its card with onClose); otherwise it is read-only.
 export function OvertimeForm({ overtime, self, chooseEmployee, onCreated, onClose }: Props) {
   const { t } = useTranslation()
+  const paths = useRequestPaths('overtime')
   // One id per opened form: sending it twice returns the document made the first time.
   const [requestId] = useState(() => crypto.randomUUID())
   const mutation = useDocumentMutation(overtimeDocType, overtime?.id ?? 0, overtime?.version ?? 0)
@@ -112,7 +114,7 @@ export function OvertimeForm({ overtime, self, chooseEmployee, onCreated, onClos
       <FormSection title={t('hrm.overtime.section')} description={t('hrm.overtime.section_hint')} icon={IconClockHour4} compact>
         {inputs}
       </FormSection>
-      {editable && <FormActions submitLabel={overtime ? t('hrm.common.save') : t('hrm.common.create_draft')} cancelTo={overtime ? undefined : '/hrm/overtimes'} />}
+      {editable && <FormActions submitLabel={overtime ? t('hrm.common.save') : t('hrm.common.create_draft')} cancelTo={overtime ? undefined : paths.list} />}
       {mutation.dialog}
     </Form>
   )

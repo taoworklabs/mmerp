@@ -17,7 +17,7 @@ import { ApprovalPanelDoc, ActivityFeedDoc, AttachmentPanelDoc, DocumentPreviewD
 import { BulkBarDoc, MoreActionsDoc, NoticeDoc, NotifyDoc, QueryViewDoc, SidePanelDoc, StatesDoc, UseActionDoc, UseConfirmDoc } from './actions'
 import { BulkPattern, ConfirmDeletePattern, CreateEditPattern, DocumentApprovalPattern, FilterSearchPattern, LoadingEmptyErrorPattern } from './patterns'
 import { EditablePanelDoc, FiltersDoc, FormDoc, FormModalDoc, InlineEditFieldDoc, LinesTableDoc } from './forms'
-import { CellGridDoc, DataTableDoc, FieldListDoc, KeyFactsDoc, PanelDoc, PersonAvatarDoc, SectionDoc, StatusBadgeDoc, TilesDoc, TreeListDoc } from './display'
+import { CellGridDoc, DataTableDoc, DayGridDoc, FieldListDoc, KeyFactsDoc, PanelDoc, PersonAvatarDoc, SectionDoc, StatusBadgeDoc, TilesDoc, TreeListDoc } from './display'
 import { AnchorDoc, ButtonDoc, LayoutTextDoc, LoaderDoc, SkeletonDoc, TooltipDoc } from './kit'
 import { Colour, Icons, Principles, Spacing, Surfaces, Typography } from './foundations'
 import { AuthTemplate, DocumentTemplate, InboxTemplate, ListTemplate, PageTemplate, RecordTemplate } from './templates'
@@ -43,6 +43,7 @@ const pages: Record<Path, ComponentType> = {
   'mmerp/bulk-bar': BulkBarDoc,
   'mmerp/cell-grid': CellGridDoc,
   'mmerp/data-table': DataTableDoc,
+  'mmerp/day-grid': DayGridDoc,
   'mmerp/document-preview': DocumentPreviewDoc,
   'mmerp/document-status': DocumentStatusDoc,
   'mmerp/editable-panel': EditablePanelDoc,

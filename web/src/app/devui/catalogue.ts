@@ -42,6 +42,7 @@ export const entries = [
   { layer: 'mmerp', path: 'mmerp/bulk-bar', name: 'BulkBar', source: '@/shared/ui/BulkBar', related: ['patterns/bulk', 'mmerp/data-table'] },
   { layer: 'mmerp', path: 'mmerp/cell-grid', name: 'CellGrid', source: '@/shared/ui/CellGrid', related: ['mmerp/lines-table'] },
   { layer: 'mmerp', path: 'mmerp/data-table', name: 'DataTable', source: '@/shared/ui/DataTable', related: ['templates/list', 'patterns/filter-search', 'patterns/bulk', 'mmerp/query-view'] },
+  { layer: 'mmerp', path: 'mmerp/day-grid', name: 'DayGrid', source: '@/shared/ui/DayGrid', exports: ['DayGrid', 'PeriodNav'], related: ['mmerp/cell-grid', 'mmerp/data-table'] },
   { layer: 'mmerp', path: 'mmerp/document-preview', name: 'DocumentPreview', source: '@/shared/document', related: ['templates/inbox', 'mmerp/side-panel'] },
   { layer: 'mmerp', path: 'mmerp/document-status', name: 'DocumentStatus', source: '@/shared/document', related: ['mmerp/status-badge', 'patterns/document-approval'] },
   { layer: 'mmerp', path: 'mmerp/editable-panel', name: 'EditablePanel', source: '@/shared/ui/form', related: ['mmerp/inline-edit-field', 'patterns/create-edit', 'templates/record'] },

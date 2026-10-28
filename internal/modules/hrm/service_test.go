@@ -18,6 +18,7 @@ import (
 
 	"github.com/taoworklabs/mmerp/internal/core/approval"
 	"github.com/taoworklabs/mmerp/internal/core/coretest"
+	"github.com/taoworklabs/mmerp/internal/core/dataio"
 	"github.com/taoworklabs/mmerp/internal/core/iam"
 	"github.com/taoworklabs/mmerp/internal/core/notification"
 	"github.com/taoworklabs/mmerp/internal/core/numbering"
@@ -55,10 +56,12 @@ func newFixture(t *testing.T) *fixture {
 	// Jobs are queued in ctx's transaction and worked only once work is called.
 	workers := river.NewWorkers()
 	hrm.Module(h).Workers(workers)
+	dataio.Module(core.DataIO).Workers(workers)
+	files := platform.Files{Dir: t.TempDir()}
 	var jobs *river.Client[pgx.Tx]
 	base := func(c context.Context) context.Context {
 		c = platform.WithJobNotifier(platform.WithKeyring(platform.WithProducts(platform.WithDB(c, pool), []string{"hrm"}), pgtest.Keyring()), notification.JobEnded)
-		return platform.WithJobs(c, jobs)
+		return platform.WithFiles(platform.WithJobs(c, jobs), files)
 	}
 	jobs, err := river.NewClient(riverpgxv5.New(pgtest.System(t, pool)), &river.Config{
 		Queues: map[string]river.QueueConfig{river.QueueDefault: {MaxWorkers: 2}}, Workers: workers,
@@ -68,7 +71,7 @@ func newFixture(t *testing.T) *fixture {
 	if err != nil {
 		t.Fatal(err)
 	}
-	ctx = platform.WithJobs(ctx, jobs)
+	ctx = platform.WithFiles(platform.WithJobs(ctx, jobs), files)
 	admin := platform.WithJobs(core.Admin, jobs)
 	c := must(t)(ids.CreateOrgUnit(admin, iam.OrgUnitInput{Kind: "company", Name: "C"}))
 	f := &fixture{t: t, core: core, system: pgtest.System(t, pool), iam: ids, rec: rec, appr: core.Approval, hrm: h, num: num, jobs: jobs, admin: admin, c: c}

@@ -52,12 +52,12 @@ test('the notification and job links open inside the current area', async ({ pag
 
   await header.getByRole('link', { name: /^Thông báo/ }).click()
   await expect(page).toHaveURL(/\/hrm\/notifications$/)
-  await expect(header.getByText('Quản lý nhân sự')).toBeVisible()
+  await expect(header.getByText('Nhân sự')).toBeVisible()
   await expect(nav).toHaveCount(1)
 
   await header.getByRole('link', { name: /^Việc chạy nền/ }).click()
   await expect(page).toHaveURL(/\/hrm\/jobs$/)
-  await expect(header.getByText('Quản lý nhân sự')).toBeVisible()
+  await expect(header.getByText('Nhân sự')).toBeVisible()
 
   // From home the same links sit at the root, with no area menu.
   await page.goto('/')

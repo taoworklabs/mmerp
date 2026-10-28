@@ -97,7 +97,7 @@ test('a quote selling the special item goes to the manager', async ({ browser })
   await page.getByRole('button', { name: 'Cài đặt chung' }).click()
   await pick(panel, page, 'Không tìm được người duyệt thì chuyển cho', 'Quản lý bán hàng')
   await page.getByRole('button', { name: 'Lưu' }).click()
-  await expect(page.getByText('Đã lưu quy tắc duyệt.')).toBeVisible()
+  await expect(page.getByText('Đã lưu quy trình duyệt.')).toBeVisible()
 
   const rules = (await (await api.get('/api/approval-rules?product=sales')).json()) as { doc_type: string; action: string; rule: { flow: unknown } | null }[]
   const flow = rules.find((r) => r.doc_type === 'sales.quote' && r.action === 'post')?.rule?.flow

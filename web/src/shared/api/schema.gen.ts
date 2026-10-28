@@ -787,6 +787,74 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/hrm/me": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description The actor's own employee record, without sensitive fields. */
+        get: operations["get-my-profile"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/hrm/me/days": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description The actor's month day by day: worked days, posted leave and overtime, the calendar. */
+        get: operations["get-my-days"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/hrm/me/payslips": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description The actor's payslips of posted payrolls, newest first; every read is audited. */
+        get: operations["list-my-payslips"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/hrm/me/payslips/{payroll_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description The actor's part of a posted payroll; every read is audited. */
+        get: operations["get-my-payslip"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/hrm/overtimes": {
         parameters: {
             query?: never;
@@ -829,6 +897,23 @@ export interface paths {
         };
         get: operations["get-overtime"];
         put: operations["update-overtime"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/hrm/overview/month-close": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Org units without a posted timesheet and legal entities without a posted payroll for last month, within the actor's scope. */
+        get: operations["get-month-close"];
+        put?: never;
         post?: never;
         delete?: never;
         options?: never;
@@ -3081,6 +3166,106 @@ export interface components {
             login: string;
             name: string;
         };
+        MonthClose: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example /api/schemas/MonthClose.json
+             */
+            readonly $schema?: string;
+            /** Format: int64 */
+            open_payroll_entities: number | null;
+            /** Format: int64 */
+            open_timesheet_units: number | null;
+            period_start: string;
+        };
+        MyContract: {
+            /** Format: date */
+            end_date: string | null;
+            /** Format: date */
+            start_date: string;
+            type_name: string;
+        };
+        MyDay: {
+            /** Format: date */
+            date: string;
+            /** @enum {string} */
+            kind: "work" | "rest" | "holiday";
+            leave: components["schemas"]["MyDayLeave"];
+            overtime_hours: string | null;
+            worked: string | null;
+            worked_closed: boolean;
+        };
+        MyDayLeave: {
+            days: string;
+            paid: boolean;
+            type_name: string;
+        };
+        MyDays: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example /api/schemas/MyDays.json
+             */
+            readonly $schema?: string;
+            days: components["schemas"]["MyDay"][];
+            month: string;
+            /** Format: int64 */
+            standard_days: number;
+        };
+        MyPayslip: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example /api/schemas/MyPayslip.json
+             */
+            readonly $schema?: string;
+            adjustments: components["schemas"]["PayrollAdjustmentInput"][];
+            amounts: components["schemas"]["PayrollAmounts"];
+            number: string;
+            overtime_hours: string;
+            paid_days: string;
+            /** Format: int64 */
+            payroll_id: number;
+            /** Format: date */
+            period_start: string;
+            /** Format: int64 */
+            standard_days: number;
+        };
+        MyPayslipSummary: {
+            /** Format: int64 */
+            net: number;
+            /** Format: int64 */
+            payroll_id: number;
+            /** Format: date */
+            period_start: string;
+        };
+        MyProfile: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example /api/schemas/MyProfile.json
+             */
+            readonly $schema?: string;
+            address: string | null;
+            code: string;
+            contract: components["schemas"]["MyContract"];
+            /** Format: date */
+            date_of_birth: string | null;
+            email: string | null;
+            /** Format: int64 */
+            employee_id: number;
+            full_name: string;
+            /** @enum {string|null} */
+            gender: "male" | "female" | "other" | null;
+            /** Format: date */
+            hire_date: string;
+            manager_name: string | null;
+            org_unit_name: string;
+            phone: string | null;
+            /** Format: date */
+            termination_date: string | null;
+        };
         NewContract: {
             /**
              * Format: uri
@@ -3586,6 +3771,66 @@ export interface components {
             items: components["schemas"]["PayrollAdjustmentInput"][];
             /** Format: int32 */
             version: number;
+        };
+        PayrollAmounts: {
+            /**
+             * Format: int64
+             * @description Back pay (+) or recovery (-)
+             */
+            adjustment: number;
+            /**
+             * Format: int64
+             * @description Gross plus the employer's contributions
+             */
+            cost: number;
+            /** Format: int64 */
+            dependent_deduction: number;
+            /**
+             * Format: int64
+             * @description Pay for the paid days
+             */
+            earned: number;
+            /** Format: int64 */
+            employer_health_insurance: number;
+            /** Format: int64 */
+            employer_social_insurance: number;
+            /** Format: int64 */
+            employer_unemployment_insurance: number;
+            /** Format: int64 */
+            employer_union_fee: number;
+            /**
+             * Format: int64
+             * @description Tax-free income
+             */
+            exempt: number;
+            /** Format: int64 */
+            gross: number;
+            /** Format: int64 */
+            health_insurance: number;
+            /** Format: int64 */
+            income_tax: number;
+            /** Format: int64 */
+            insurance_base: number;
+            /** Format: int64 */
+            net: number;
+            /** Format: int64 */
+            overtime: number;
+            /** Format: int64 */
+            personal_deduction: number;
+            /** Format: int64 */
+            social_insurance: number;
+            /**
+             * Format: int64
+             * @description Income the tax brackets apply to
+             */
+            taxable: number;
+            /** Format: int64 */
+            unemployment_insurance: number;
+            /**
+             * Format: int64
+             * @description Unused leave paid on leaving
+             */
+            unused_leave: number;
         };
         PayrollJob: {
             /**
@@ -6286,6 +6531,127 @@ export interface operations {
             };
         };
     };
+    "get-my-profile": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MyProfile"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "get-my-days": {
+        parameters: {
+            query: {
+                /** @description YYYY-MM */
+                month: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MyDays"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "list-my-payslips": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MyPayslipSummary"][] | null;
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "get-my-payslip": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                payroll_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MyPayslip"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
     "list-overtimes": {
         parameters: {
             query?: {
@@ -6440,6 +6806,35 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "get-month-close": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MonthClose"];
+                };
             };
             /** @description Error */
             default: {

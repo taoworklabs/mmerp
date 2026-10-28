@@ -887,5 +887,15 @@
   "shared.partner.phone": "Phone",
   "shared.partner.email": "Email",
   "shared.partner.address": "Address",
-  "shared.toast.close": "Close notification"
+  "shared.toast.close": "Close notification",
+  "shared.devui.about_day_grid": "A calendar by day, seven cells to a row, with a month or week switch; on a phone the days stack in one column.",
+  "shared.devui.use_day_grid": "reading a month or a week day by day.",
+  "shared.devui.avoid_day_grid": "entering values by day: use CellGrid; listing records: use DataTable.",
+  "shared.devui.day_note": "Worked: {{n}}",
+  "shared.devui.day_month": "Month",
+  "shared.devui.day_week": "Week",
+  "shared.devui.day_mode": "View",
+  "shared.devui.day_prev": "Previous",
+  "shared.devui.day_next": "Next",
+  "shared.devui.day_grid": "Day calendar"
 }

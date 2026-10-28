@@ -1,7 +1,10 @@
+import { Stack, Text } from '@mmerp/ui'
 import { useQuery, type QueryKey } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
+import { api as coreApi, unwrap as coreUnwrap } from '@/shared/api/core'
 import { api, unwrap } from '@/shared/api/hrm'
 import { can, useMe } from '@/shared/auth/me'
+import { documentKeys } from '@/shared/document'
 import { errorText } from '@/shared/i18n'
 import { Page } from '@/shared/ui/page'
 import { EmptyState } from '@/shared/ui/states'
@@ -58,6 +61,7 @@ export function OverviewPage() {
   const shown = blocks.filter((b) => can(me, b.permission))
   return (
     <Page title={t('hrm.overview.title')} description={t('hrm.overview.description')}>
+      <NeedsAttention />
       {shown.length === 0 ? (
         <EmptyState title={t('hrm.overview.empty')} description={t('hrm.overview.empty_description')} />
       ) : (
@@ -82,5 +86,33 @@ function BlockTile({ block }: { block: Block }) {
       error={total.isError ? errorText(t, total.error) : undefined}
       onRetry={() => void total.refetch()}
     />
+  )
+}
+
+const approvalTypes = ['hrm.leave_request', 'hrm.overtime_request']
+
+// NeedsAttention: what waits for this user, each entry hidden when zero or not theirs to
+// see; the whole block disappears when nothing waits. A failed count hides its entry.
+function NeedsAttention() {
+  const { t } = useTranslation()
+  const inbox = useQuery({ queryKey: documentKeys.inbox(), queryFn: () => coreUnwrap(coreApi.GET('/approvals/inbox')) })
+  const close = useQuery({ queryKey: [...hrmKeys.timesheets.lists(), 'month-close'], queryFn: () => unwrap(api.GET('/hrm/overview/month-close')) })
+  const approvals = inbox.data?.items.filter((i) => approvalTypes.includes(i.doc_type)).length ?? 0
+  const month = close.data?.period_start.slice(0, 7)
+  const entries = [
+    { label: 'hrm.overview.attention_approvals', value: approvals, to: '/hrm/inbox' },
+    { label: 'hrm.overview.attention_timesheets', value: close.data?.open_timesheet_units ?? 0, to: `/hrm/timesheets?month=${month}` },
+    { label: 'hrm.overview.attention_payrolls', value: close.data?.open_payroll_entities ?? 0, to: '/hrm/payrolls' },
+  ].filter((e) => e.value > 0)
+  if (entries.length === 0) return null
+  return (
+    <Stack gap="sm">
+      <Text weight={600}>{t('hrm.overview.attention')}</Text>
+      <TileGrid>
+        {entries.map((e) => (
+          <StatTile key={e.label} label={t(e.label)} value={e.value} to={e.to} />
+        ))}
+      </TileGrid>
+    </Stack>
   )
 }

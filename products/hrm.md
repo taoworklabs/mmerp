@@ -285,7 +285,7 @@ Only payrolls produce business lines, on moving to `posted`:
 
 The system does not collect health information. A leave request's `reason` is plain text, not encrypted, so it must not contain a diagnosis; the leave request form reminds users of this. A medical certificate attached to a leave request is an attachment: not encrypted, anyone who can view the request can download it, and every download is audited.
 
-Dedicated view permissions: `hrm.employee.sensitive` (role `sensitive_viewer`) for sensitive fields of profiles and dependants; `hrm.salary.view` (role `payroll`) for every per-person amount: contract amounts, payroll lines and adjustments; calculating and exporting payrolls also need this permission. The `payroll_viewer` role only sees payroll totals by department, not anyone's amounts.
+Dedicated view permissions: `hrm.employee.sensitive` (role `sensitive_viewer`) for sensitive fields of profiles and dependants; `hrm.salary.view` (role `payroll`) for every per-person amount: contract amounts, payroll lines and adjustments; calculating and exporting payrolls also need this permission. The `payroll_viewer` role only sees payroll totals by department, not anyone's amounts. An employee reads their own payslips (posted payrolls only) without these permissions; every such read is audited, and amounts never enter the audit data.
 
 **Copies of salary data** are protected like the original:
 
@@ -305,9 +305,10 @@ Because salaries are encrypted, SQL cannot sum them. Every aggregation (payroll 
 
 The `web/src/hrm` area follows the pattern in [frontend.md](../docs/frontend.md). The manifest declares `recordTypes` for leave requests, overtime requests, contracts, timesheets and payrolls. When a leave request changes, including when it is approved from the `core` approval inbox, `invalidate` refreshes the request detail, the request list and the leave balance.
 
-- The menu is grouped: overview; people (employees, org structure, contracts); time (timesheets, leave requests, overtime requests); payroll; configuration (collapsible: contract types, leave types, work calendar, legal parameters, approval rules).
-- The overview page is the area's entry page and shows counts.
-- The org structure page is open to every signed-in user.
+- The menu is in HR's words and grouped: overview; Nhân sự (employee records, employment contracts, org chart); Chấm công & nghỉ phép (timesheets (bảng chấm công), leave requests, overtime requests); Tiền lương (payrolls); Thiết lập (collapsible, folded by default: contract types, leave types, work calendar & holidays, legal parameters (mức đóng bảo hiểm & thuế), approval rules (quy trình duyệt)). The home tile is "Nhân sự".
+- The overview page is the area's entry page. A "Cần xử lý" block above the counts lists, each hidden when zero or out of the user's scope: requests waiting for the user's approval (links to the approval inbox), org units without a closed timesheet last month, legal entities without a closed payroll last month.
+- The org chart is open to every signed-in user.
+- Employees use the personal space (`web/src/hrm/me`, home tile "Cá nhân"): own timekeeping, payslips, leave and overtime requests, profile and org chart. People without HRM permissions see only that tile.
 - The HRM approval rules screen lives in the HRM area (`/hrm/approval-rules`) and shares components with `core`.
 
 ## Proving flow

@@ -123,7 +123,7 @@ test('an administrator builds a flow with a choose-one and a parallel split, and
   await page.getByRole('button', { name: 'Cài đặt chung' }).click()
   await pick(panel(page), page, 'Không tìm được người duyệt thì chuyển cho', 'Nhân sự')
   await page.getByRole('button', { name: 'Lưu' }).click()
-  await expect(page.getByText('Đã lưu quy tắc duyệt.')).toBeVisible()
+  await expect(page.getByText('Đã lưu quy trình duyệt.')).toBeVisible()
 
   const saved = (await (await api.get('/api/approval-rules?product=hrm')).json()) as { doc_type: string; rule: { flow: unknown } | null }[]
   expect(saved.find((r) => r.doc_type === 'hrm.leave_request')?.rule?.flow).toEqual(built())
@@ -269,7 +269,7 @@ test('below 1280px the panel slides up, closes for good, and the rule saves', as
   await page.waitForTimeout(500)
   await expect(drawer).toBeHidden()
   await page.getByRole('button', { name: 'Lưu' }).click()
-  await expect(page.getByText('Đã lưu quy tắc duyệt.')).toBeVisible()
+  await expect(page.getByText('Đã lưu quy trình duyệt.')).toBeVisible()
 })
 
 test('tabbing through the diagram leaves the selection alone', async ({ browser }) => {
@@ -294,7 +294,7 @@ test('clearing a due time saves as no due time', async ({ browser }) => {
   await page.getByRole('button', { name: 'Cài đặt chung' }).click()
   await panel(page).getByRole('textbox', { name: /^Khi quản lý trực tiếp lại chính là người gửi/ }).fill('4')
   await page.getByRole('button', { name: 'Lưu' }).click()
-  await expect(page.getByText('Đã lưu quy tắc duyệt.')).toBeVisible()
+  await expect(page.getByText('Đã lưu quy trình duyệt.')).toBeVisible()
 })
 
 test('a step cut down to one user keeps its approvals field while it asks for more', async ({ browser }) => {
