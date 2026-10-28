@@ -148,7 +148,7 @@ func (s *Service) readBasis(ctx context.Context, legalEntity, payrollID int64, s
 			if err != nil {
 				return b, err
 			}
-			if earned.IsPositive() {
+			if !earned.IsZero() {
 				// In the balance's own text form, so the sum reads the same once the job credits it.
 				e.LeaveBalance = decimal.RequireFromString(cmp.Or(e.LeaveBalance, "0")).Add(earned).StringFixed(1)
 			}

@@ -279,9 +279,9 @@ func (s *Service) accrueMonths(ctx context.Context, e store.AccrualEmployeesRow,
 	return nil
 }
 
-// earnedNotCredited is the leave earned by termination that the job has not credited yet,
-// the termination month at least: the job credits a month once it has ended. It shares the
-// job's arithmetic, so the two never disagree.
+// earnedNotCredited is the leave earned by termination less what the job has credited: the
+// termination month, credited only once it has ended, or negative when the termination was
+// entered after the job credited later months. It shares the job's arithmetic.
 func (s *Service) earnedNotCredited(ctx context.Context, legalEntity, employee int64, hire, termination string) (decimal.Decimal, error) {
 	mode, err := s.d.Setting.GetFor(ctx, legalEntity, SettingLeaveAccrual)
 	if err != nil || mode != "monthly" {
@@ -296,6 +296,5 @@ func (s *Service) earnedNotCredited(ctx context.Context, legalEntity, employee i
 	if err != nil {
 		return decimal.Zero, err
 	}
-	left := entitlementThrough(cal, hire, &termination, t.Year(), int(t.Month())).Sub(decimal.RequireFromString(credited))
-	return decimal.Max(left, decimal.Zero), nil
+	return entitlementThrough(cal, hire, &termination, t.Year(), int(t.Month())).Sub(decimal.RequireFromString(credited)), nil
 }

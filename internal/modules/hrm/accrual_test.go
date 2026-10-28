@@ -319,3 +319,33 @@ func (f *payrollFixture) balanceOfEmp(emp int64) string {
 	}
 	return "0"
 }
+
+// A termination entered after the job credited later months: the payout counts only what the
+// employee earned up to leaving, not the months credited since.
+func TestPayrollLateTerminationTakesBackLaterCredits(t *testing.T) {
+	f := newPayrollFixture(t)
+	f.setting(hrm.SettingLeaveAccrual, "monthly")
+	x := employee("X", f.a)
+	x.HireDate = "2023-01-01"
+	emp := must(t)(f.hrm.CreateEmployee(f.hr, x))
+	// 23,000,000 over July's 23 working days: a day of leave is worth 1,000,000.
+	f.contract(emp, sample{salary: 23_000_000}, "2026-01-01", "2026-12-31")
+	f.accrue("2026-10-01")
+	if got := f.balanceOfEmp(emp); got != "9" {
+		t.Fatalf("balance through September: %s", got)
+	}
+	// Left on 15 August, entered only now: August holds 10 of 21 working days, so it does not count.
+	if _, err := f.system.Exec(f.admin, `UPDATE hrm.employees SET termination_date = '2026-08-15' WHERE id = $1`, emp); err != nil {
+		t.Fatal(err)
+	}
+	f.timesheet(f.a, "2026-08", map[int64][]string{emp: workdays("2026-08-03", "2026-08-14")})
+	var line hrm.PayrollLine
+	for _, l := range f.payrollDoc(f.payroll("2026-08")).Lines {
+		if l.EmployeeID == emp {
+			line = l
+		}
+	}
+	if line.UnusedLeave != 7_000_000 {
+		t.Fatalf("unused leave paid %d, want seven days", line.UnusedLeave)
+	}
+}

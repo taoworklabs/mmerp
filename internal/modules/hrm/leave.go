@@ -192,7 +192,8 @@ func (s *Service) leaveTransition(ctx context.Context, d record.Doc, from record
 			}
 		}
 	}
-	if delta.IsZero() && fromCarried.IsZero() {
+	// A cancel still clears what the request records as taken, even when nothing comes back.
+	if approved && delta.IsZero() {
 		return nil
 	}
 	days = days.Add(delta)
