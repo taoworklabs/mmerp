@@ -9812,7 +9812,7 @@
     },
     "/hrm/employees/actions": {
       "get": {
-        "description": "What the actor may do before picking an employee: create, view_sensitive, import_leave_balances.",
+        "description": "What the actor may do before picking an employee: create, view_sensitive, import_leave_balances, import_employees.",
         "operationId": "get-employee-actions",
         "responses": {
           "200": {

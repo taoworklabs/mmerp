@@ -57,7 +57,23 @@ func run() error {
 			return err
 		}
 	}
-	return nil
+	return employees()
+}
+
+// Profiles for department "Phòng EI": EI01 (already there) gets a new phone, EI02 is new.
+// The bad file names a department that does not exist.
+func employees() error {
+	header := []any{"Mã NV", "Họ tên", "Ngày sinh", "Giới tính", "SĐT", "Email", "Địa chỉ", "Phòng ban", "Mã người quản lý trực tiếp",
+		"Ngày vào làm", "Ngày nghỉ việc", "CCCD/Hộ chiếu", "Số sổ BHXH", "Mã số thuế", "Số tài khoản"}
+	row := func(code, name, phone, unit string) []any {
+		return []any{code, name, "", "", phone, "", "", unit, "", "05/01/2026", "", "", "", "", ""}
+	}
+	good := [][]any{header, row("EI01", "Nhân viên EI01", "0900000001", "Phòng EI"), row("EI02", "Nhân viên EI02", "0900000002", "Phòng EI")}
+	bad := [][]any{header, row("EI01", "Nhân viên EI01", "0900000001", "Phòng Không Có")}
+	if err := write(filepath.Join(dir, "employees.xlsx"), good); err != nil {
+		return err
+	}
+	return write(filepath.Join(dir, "employees-bad.xlsx"), bad)
 }
 
 func write(path string, rows [][]any) error {

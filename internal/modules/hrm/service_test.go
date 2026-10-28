@@ -442,8 +442,8 @@ func TestEmployeeActions(t *testing.T) {
 		want []string
 	}{
 		{f.ctxFor("viewer", "viewer@*"), []string{}},
-		{f.ctxFor("hr_a", "hr@A"), []string{"create"}},
-		{f.ctxFor("sens_a", "hr@A", "sensitive_viewer@B"), []string{"create", "view_sensitive"}},
+		{f.ctxFor("hr_a", "hr@A"), []string{"create", "import_employees"}},
+		{f.ctxFor("sens_a", "hr@A", "sensitive_viewer@B"), []string{"create", "view_sensitive", "import_employees"}},
 	} {
 		got, err := f.hrm.EmployeeActions(c.ctx)
 		if err != nil || !slices.Equal(got, c.want) {

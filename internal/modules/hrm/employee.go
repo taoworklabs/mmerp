@@ -67,7 +67,7 @@ func (s *Service) Employees(ctx context.Context, f EmployeeFilter) (EmployeeList
 
 // EmployeeActions lists what the actor may do with employees before picking one: create
 // (needs edit somewhere, and the product enabled), view_sensitive (to fill sensitive
-// fields when creating) and import_leave_balances. The frontend shows the create button
+// fields when creating), import_leave_balances and import_employees. The frontend shows the create button
 // and fields from this.
 func (s *Service) EmployeeActions(ctx context.Context) ([]string, error) {
 	out, err := s.d.Record.TypeActions(ctx, employeeType)
@@ -87,6 +87,10 @@ func (s *Service) EmployeeActions(ctx context.Context) ([]string, error) {
 	}
 	if adjust.Any() && platform.ProductGate(ctx, "hrm", platform.ClassWrite) == nil {
 		out = append(out, "import_leave_balances")
+	}
+	// "create" already means edit somewhere with the product enabled.
+	if slices.Contains(out, "create") {
+		out = append(out, "import_employees")
 	}
 	return out, nil
 }

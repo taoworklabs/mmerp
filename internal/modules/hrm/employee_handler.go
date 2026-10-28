@@ -60,7 +60,7 @@ func registerEmployeeHandlers(api huma.API, s *Service) {
 			return &employeesOutput{Body: list}, err
 		})
 	huma.Register(api, huma.Operation{OperationID: "get-employee-actions", Method: http.MethodGet, Path: "/hrm/employees/actions",
-		Description: "What the actor may do before picking an employee: create, view_sensitive, import_leave_balances."},
+		Description: "What the actor may do before picking an employee: create, view_sensitive, import_leave_balances, import_employees."},
 		func(ctx context.Context, _ *struct{}) (*platform.ActionsOutput, error) {
 			actions, err := s.EmployeeActions(ctx)
 			out := &platform.ActionsOutput{}
