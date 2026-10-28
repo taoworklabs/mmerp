@@ -41,6 +41,7 @@ A single module `internal/modules/hrm`, schema `hrm`, belonging to the `hrm` pro
 | `hrm.payroll_adjustments` | Back-pay and clawback amounts on a draft payroll; amount and reason encrypted |
 | `hrm.legal_params` | Legal parameters with effective dates |
 | `hrm.work_weeks`, `hrm.holidays` | Work calendar per legal entity: work-week versions; public holidays and substitute days off |
+| `hrm.terminations` | Terminations: employee, reason code, decision date, months in unemployment insurance and already paid, pension flag, handover; the termination date is the document's date (see [Termination](#termination-1)) |
 
 Departments and branches are nodes in the `iam` permission-scope tree, with `kind` `department` and `branch` respectively. Which department an employee belongs to, and who their direct manager is, are HRM business relations, independent of the permission-scope tree.
 
@@ -54,9 +55,10 @@ Departments and branches are nodes in the `iam` permission-scope tree, with `kin
 | `hrm.overtime_request` | document | Overtime granted | Overtime date | Payroll period check | `hours`, `day_kind` |
 | `hrm.timesheet` | document | Timesheet closed | `period_end` | Payroll period check | — |
 | `hrm.payroll` | document | Payroll closed | `period_end` | Close the pay period; `posting.Record` (cancelling runs `posting.Void` and reopens the period) | — |
+| `hrm.termination` | document | Termination in force | Termination date | Payroll period check from the earlier of the new and replaced dates on; set the employee's termination date (cancelling restores the one it replaced) | `reason` |
 
-- Every document type uses approval and audit. Employee profiles use audit. Excel import/export through `dataio` currently covers: employee profile export and import (`hrm.employees`: the export's 15 columns are the import template; the employee code is the key, an empty cell keeps the current value, sensitive columns are exported only on request and need `hrm.employee.sensitive`), timesheet import and export, payroll export, leave balance adjustment import.
-- Discussion is available on every record type. Attachments are only on contracts, leave and overtime requests, and employee profiles ([ADR-0024](../docs/adr/0024-attachments-and-discussion.md)):
+- Every document type uses approval and audit. Employee profiles use audit. Excel import/export through `dataio` currently covers: employee profile export and import (`hrm.employees`: the export's 15 columns are the import template; the employee code is the key, an empty cell keeps the current value, a changed termination date on an existing employee is a row error (only a termination changes it), sensitive columns are exported only on request and need `hrm.employee.sensitive`), timesheet import and export, payroll export, leave balance adjustment import.
+- Discussion is available on every record type. Attachments are only on contracts, leave and overtime requests, terminations (any viewer of the termination; it holds no amount) and employee profiles ([ADR-0024](../docs/adr/0024-attachments-and-discussion.md)):
 
   | Type | View attachments | Add attachments |
   | --- | --- | --- |
@@ -77,6 +79,7 @@ Departments and branches are nodes in the `iam` permission-scope tree, with `kin
 | `hrm.leave_request` | `days` (number), `leave_type` (list: annual leave, sick leave, unpaid, statutory leave…) |
 | `hrm.overtime_request` | `hours` (number), `day_kind` (list: working day, rest day, public holiday) |
 | `hrm.contract` | `contract_kind` (list) |
+| `hrm.termination` | `reason` (list: the termination reasons) |
 
 `day_kind` is entered by hand but must be the kind the legal entity's work calendar gives the date (a public holiday wins over a weekly day off), checked on save and again when the request goes into force; otherwise `overtime_day_kind_mismatch` names the right kind. Deriving it from the calendar comes later. Overtime requests record day-shift and night-shift hours separately; `hours` is their sum.
 
@@ -225,7 +228,7 @@ How the first release calculates. Every figure below is checked by the **payroll
 ### Termination
 
 - Untaken annual leave is paid at the contract salary of the month before the termination month / that month's standard workdays × the days left in the leave balance (clause 3, Article 113, Labour Code 2019 (khoản 3 Điều 113 BLLĐ 2019); Article 67, Decree 145/2020). Not subject to insurance, tax-exempt.
-- Severance allowance (trợ cấp thôi việc) is not in the first release.
+- The severance or job-loss allowance of a posted termination dated in the period is paid by that period's payroll; see [Termination](#termination-1).
 
 ### Back pay and clawback
 
@@ -244,6 +247,56 @@ To be settled before loading real data (the production-readiness gate in the roa
 - Employees hired after the 15th: use the 14-day rule above, or start contributions the following month. Ask the social insurance (BHXH) office that manages the company.
 - Recovering an amount from a previous tax year (e.g. in January recovering an overpayment from December): deducting it in the current year means the previous year's tax finalisation does not balance on its own. No rule yet.
 - An accountant reviews all the samples and the assumptions in the "Giả định" (Assumptions) sheet.
+
+## Termination
+
+A termination (`hrm.termination`, [ADR-0046](../docs/adr/0046-termination-document.md)) records that an employee leaves. Only posting one sets the employee's `termination_date`: editing a profile or importing profiles refuses a changed date (`termination_via_document`); creating a profile may still carry one, for former employees loaded without documents, and such legacy dates stay until a termination replaces them. Cancelling restores the date a termination replaced (`previous_date`).
+
+- One termination per employee that is not cancelled (`termination_exists`). Its legal entity and org unit are the employee's when drafted; posting or cancelling after the employee moved to another legal entity is refused (`termination_legal_entity_changed`).
+- Lock order: record row → `hrm.payroll_locks` `FOR SHARE` with the payroll period check from the earlier of the new and the replaced date, to infinity → employee row `FOR NO KEY UPDATE`.
+- **Late entry.** An employee leaves 31/03, March's payroll closes, then HR enters the termination: posting is refused (`payroll_period_closed`, naming March). While March's pay is not paid out and not filed, HR cancels March's payroll, posts the termination, recalculates and closes again. Once paid out, the allowance does not go through mmerp yet (Still open).
+- Warnings on the termination, refusing nothing: `contract_in_force_after`, `leave_after_termination`, `overtime_after_termination`, `leave_balance_to_pay`. Posted contracts are not changed.
+- The profile's "Cho nghỉ việc" opens a new termination (`create_termination` in the employee's actions); the profile links to the termination that stands.
+
+### Reasons
+
+Stable codes in `hrm.terminations.reason`; reports may read them.
+
+| Code | Labour Code 2019 | Allowance |
+| --- | --- | --- |
+| `contract_expired` | Art 34.1 | severance |
+| `work_completed` | Art 34.2 | severance |
+| `mutual_agreement` | Art 34.3 | severance |
+| `imprisonment` | Art 34.4 | severance |
+| `foreigner_expelled` | Art 34.5 | none |
+| `death` | Art 34.6 | severance |
+| `employer_ceased` | Art 34.7 | severance |
+| `dismissal` | Art 34.8 | none |
+| `employee_resignation` | Art 34.9 (Art 35) | severance |
+| `employer_unilateral` | Art 34.10 (Art 36) | severance |
+| `absent_without_reason` | Art 36.1(e) | none |
+| `restructuring` | Art 34.11 (Art 42, 43) | job loss |
+| `work_permit_expired` | Art 34.12 | none |
+| `probation_failed` | Art 34.13 | none |
+
+An employee eligible for a pension (`pension_eligible`) gets no severance allowance; the job-loss allowance is not affected. Retirement is `contract_expired` or `mutual_agreement` with that flag.
+
+### Allowance
+
+- Paid only after at least 12 months worked: whole months from the hire date to the termination date, leftover days dropped.
+- Months counted = months worked − months in unemployment insurance − months already paid (both entered by HR from the social insurance book); years = whole years, a remainder of 1–6 months is ½, 7–11 is 1 (clause 3, Article 8, Decree 145/2020).
+- Average salary = salary + salary allowances of the contract in force at the end of each of the six months before the termination month, averaged over the months with one (clause 5, Article 8, Decree 145/2020).
+- Severance = years × ½ × average; job loss = max(years, 2) × average; rounded once to the dong.
+- The payroll of the termination month pays it: the termination's figures go into the hashed basis (a change marks a draft payroll stale), the six monthly amounts are captured encrypted with the line. Gross and exempt income, never insured; the export and payslip show it. Article 48 (pay within 14 working days) is an operating rule, not enforced.
+- The termination previews the allowance; the average and amount need `hrm.salary.view` at the termination's unit and at every contract read, and the read is audited.
+
+### Still open
+
+- Leftover days in months worked are dropped; some practice rounds a part month up.
+- A month without a contract in force among the six is left out of the average; whether the six months include the termination month when it ends on its last day.
+- The exact PIT provision for periods from 01/07/2026 (Law 109/2025/QH15, Decree 253/2026/NĐ-CP).
+- A termination entered after its period's pay is paid out: a back-pay style allowance line on the open payroll is the follow-up.
+- The two payroll samples C18 and C19 need the accountant's review like the others.
 
 ## Legal parameters
 
@@ -303,9 +356,9 @@ Because salaries are encrypted, SQL cannot sum them. Every aggregation (payroll 
 
 ## Frontend
 
-The `web/src/hrm` area follows the pattern in [frontend.md](../docs/frontend.md). The manifest declares `recordTypes` for leave requests, overtime requests, contracts, timesheets and payrolls. When a leave request changes, including when it is approved from the `core` approval inbox, `invalidate` refreshes the request detail, the request list and the leave balance.
+The `web/src/hrm` area follows the pattern in [frontend.md](../docs/frontend.md). The manifest declares `recordTypes` for leave requests, overtime requests, contracts, timesheets, payrolls and terminations. When a leave request changes, including when it is approved from the `core` approval inbox, `invalidate` refreshes the request detail, the request list and the leave balance.
 
-- The menu is in HR's words and grouped: overview; Nhân sự (employee records, employment contracts, org chart); Chấm công & nghỉ phép (timesheets (bảng chấm công), leave requests, overtime requests); Tiền lương (payrolls); Thiết lập (collapsible, folded by default: contract types, leave types, work calendar & holidays, legal parameters (mức đóng bảo hiểm & thuế), approval rules (quy trình duyệt)). The home tile is "Nhân sự".
+- The menu is in HR's words and grouped: overview; Nhân sự (employee records, org chart, employment contracts, terminations (nghỉ việc)); Chấm công & nghỉ phép (timesheets (bảng chấm công), leave requests, overtime requests); Tiền lương (payrolls); Thiết lập (collapsible, folded by default: contract types, leave types, work calendar & holidays, legal parameters (mức đóng bảo hiểm & thuế), approval rules (quy trình duyệt)). The home tile is "Nhân sự".
 - The overview page is the area's entry page. A "Cần xử lý" block above the counts lists, each hidden when zero or out of the user's scope: requests waiting for the user's approval (links to the approval inbox), org units without a closed timesheet last month, legal entities without a closed payroll last month.
 - The HRM area is for people with an HRM role; anyone else who opens it is sent home. The org chart is open to every signed-in user, inside HRM and in the personal space.
 - Everyone else, direct managers included, uses the personal space (`web/src/hrm/me`, home tile "Cá nhân"): own timekeeping, payslips, leave and overtime requests, profile and org chart. A direct manager also sees "Nhóm của tôi": their reports' leave and overtime requests, past ones included (`GET /hrm/leaves?reports=true`, `GET /hrm/overtimes?reports=true`; shown when the self-service actions say `has_reports`). Their requests, and links to them from notifications and the approval inbox, open in the personal space, where the approver approves.
