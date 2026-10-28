@@ -79,7 +79,7 @@ export const hrm: AreaManifest = {
   nav: [
     { label: 'hrm.nav.overview',  path: 'overview',  icon: IconLayoutDashboard },
     { label: 'hrm.nav.employees', path: 'employees', icon: IconUsers, permission: 'hrm.employee.view', group: 'hrm.nav.group_people' },
-    // Everyone submits their own leave requests: no permission needed to see this item.
+    // Every HRM user may see leave requests: no permission needed to see this item.
     { label: 'hrm.nav.leaves',    path: 'leaves',    icon: IconCalendarEvent, group: 'hrm.nav.group_time' },
     { label: 'hrm.nav.payrolls',  path: 'payrolls',  icon: IconCash, permission: 'hrm.payroll.view', group: 'hrm.nav.group_pay' },
   ],
@@ -118,7 +118,8 @@ export const areas = [hrm, core]
 | `label` | Translation key of the area name: header title and tile name on the home page | — |
 | `homeIcon` | Icon of the tile on the home page | — |
 | `routes` | The area's route tree, lazy-loaded | `Routes` |
-| `nav` | Menu items: label, path, icon, permission required to show it (one, or one of several), and group | — |
+| `nav` | Menu items: label, path, icon, permission required to show it (one, or one of several), group, and `useShown`, a hook hiding an item that depends on the user's data rather than a permission (the personal space's team items, shown only to a direct manager) | — |
+| `useEntitled` | A hook replacing the permission rule for entering the area (its tile, routes and record links); `undefined` while loading. Without it, the area needs a permission in its product. A user who may not enter an area is sent home | — |
 | `collapsibleGroups` | Menu groups the user can collapse | — |
 | `i18n.meta` | Every string needed before the area's screens load: menu labels, role names (`<product>.role.<role>`, needed by `core`'s user screen), record type names, the wording of the error codes only this product raises (`<product>.error.<code>`); for `core` also the sign-in screen and the app shell. Loaded at once for every visible area | — |
 | `i18n.main` | All other strings of the area; loaded with the screen code | The module's translation files |
@@ -131,10 +132,10 @@ export const areas = [hrm, core]
 The approval inbox, notifications and history belong to `core`, but must be able to open the detail of a leave request belonging to `hrm` without importing `hrm`. `app` collects the `recordTypes` of every manifest into one table and passes it down through context. `shared/area` provides:
 
 ```ts
-const link = useRecordLink('hrm.leave_request', id)   // '/hrm/leaves/123', or null if the area is not visible
+const link = useRecordLink('hrm.leave_request', id)   // '/hrm/leaves/123', or null if the user may enter no area declaring it
 ```
 
-`core` knows only the `doc_type`. Whichever area declares the path, `app` plugs it in, just as hooks are wired in the backend.
+`core` knows only the `doc_type`. Whichever area declares the path, `app` plugs it in, just as hooks are wired in the backend. Several manifests of one product may declare a type: the link goes to the first one, in `areas` order, that the user may enter (a leave request opens in `/hrm` for HR and in `/me` for everyone else); previews and refreshes come from the first that declares it.
 
 Quick-viewing a document (for example the right-hand panel of the approval inbox) uses the same mechanism:
 

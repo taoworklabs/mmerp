@@ -191,7 +191,8 @@ func (s *Service) Leaves(ctx context.Context, f LeaveFilter) (LeaveList, error) 
 	if err != nil {
 		return out, err
 	}
-	page, err := leaveList.Run(ctx, leaveQuery(sc, f))
+	actor, _ := platform.ActorFrom(ctx)
+	page, err := leaveList.Run(ctx, leaveQuery(sc, actor, f))
 	if err != nil {
 		return out, err
 	}

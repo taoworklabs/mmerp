@@ -36,7 +36,7 @@ async function as(browser: Browser, user: string, url: string): Promise<Page> {
 const bell = (page: Page) => page.getByRole('link', { name: /^Thông báo/ })
 
 test('sending and approving a leave request tells the other side, and the unread count follows', async ({ browser }) => {
-  const staff = await as(browser, login.staff, `/hrm/leaves/${leave}`)
+  const staff = await as(browser, login.staff, `/me/requests/leave/${leave}`)
   await expect(bell(staff)).toHaveAccessibleName('Thông báo')
   await staff.getByRole('button', { name: 'Gửi duyệt' }).click()
   await expect(staff.getByText('Chờ duyệt').first()).toBeVisible()
@@ -45,7 +45,7 @@ test('sending and approving a leave request tells the other side, and the unread
   await expect(bell(boss)).toHaveAccessibleName('Thông báo, 1 chưa đọc')
   await bell(boss).click()
   await boss.getByRole('button', { name: /Chờ bạn duyệt/ }).click()
-  await expect(boss).toHaveURL(new RegExp(`/hrm/leaves/${leave}$`))
+  await expect(boss).toHaveURL(new RegExp(`/me/requests/leave/${leave}$`))
   await expect(bell(boss)).toHaveAccessibleName('Thông báo')
   await boss.getByRole('button', { name: 'Duyệt', exact: true }).click()
   await expect(boss.getByText('Đã duyệt.')).toBeVisible()
@@ -53,12 +53,12 @@ test('sending and approving a leave request tells the other side, and the unread
   await staff.goto('/notifications')
   await expect(bell(staff)).toHaveAccessibleName('Thông báo, 1 chưa đọc')
   await staff.getByRole('button', { name: /Đã được duyệt/ }).click()
-  await expect(staff).toHaveURL(new RegExp(`/hrm/leaves/${leave}$`))
+  await expect(staff).toHaveURL(new RegExp(`/me/requests/leave/${leave}$`))
   await expect(bell(staff)).toHaveAccessibleName('Thông báo')
 })
 
 test('a mention picked after @ tells the mentioned user, who opens the request from it', async ({ browser }) => {
-  const staff = await as(browser, login.staff, `/hrm/leaves/${leave}`)
+  const staff = await as(browser, login.staff, `/me/requests/leave/${leave}`)
   const box = staff.getByRole('textbox', { name: 'Bình luận' })
   await box.fill('Nhờ anh xem giúp ')
   await box.pressSequentially(`@${login.boss.slice(0, 7)}`)
@@ -70,7 +70,7 @@ test('a mention picked after @ tells the mentioned user, who opens the request f
   const boss = await as(browser, login.boss, '/notifications')
   await expect(bell(boss)).toHaveAccessibleName('Thông báo, 1 chưa đọc')
   await boss.getByRole('button', { name: /Nhắc tên bạn trong trao đổi/ }).click()
-  await expect(boss).toHaveURL(new RegExp(`/hrm/leaves/${leave}$`))
+  await expect(boss).toHaveURL(new RegExp(`/me/requests/leave/${leave}$`))
 })
 
 test('an administrator sets the mail server; its password never shows again', async ({ browser }) => {

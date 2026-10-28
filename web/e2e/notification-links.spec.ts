@@ -74,11 +74,11 @@ test('the notification and job links open inside the current area', async ({ pag
 // to be explained where the approver is looking, and the explanation has to stay put: the
 // request leaves the inbox at that moment, and the panel explaining it must not leave with it.
 test('approving a request the submitter already withdrew', async ({ browser }) => {
-  const staff = await as(browser, login.staff, `/hrm/leaves/${leave}`)
+  const staff = await as(browser, login.staff, `/me/requests/leave/${leave}`)
   await staff.getByRole('button', { name: 'Gửi duyệt' }).click()
   await expect(staff.getByText('Chờ duyệt').first()).toBeVisible()
 
-  const boss = await as(browser, login.boss, '/hrm/inbox')
+  const boss = await as(browser, login.boss, '/inbox')
   const calls: string[] = []
   boss.on('response', (r) => {
     if (r.url().includes('/approve')) calls.push(String(r.status()))
@@ -142,7 +142,7 @@ test('the same refusal seen from the document page', async ({ browser, baseURL }
   const doc = await (await asStaff.get(`/api/hrm/leaves/${id}`)).json()
   expect((await asStaff.post(`/api/documents/hrm.leave_request/${id}/transitions`, { data: { to: 'posted', version: doc.version } })).status()).toBe(200)
 
-  const boss = await as(browser, login.boss, `/hrm/leaves/${id}`)
+  const boss = await as(browser, login.boss, `/me/requests/leave/${id}`)
   const approve = boss.getByRole('button', { name: 'Duyệt', exact: true })
   await expect(approve).toBeVisible()
 
@@ -193,7 +193,7 @@ test('a notification opens its own document and re-checks the permission', async
 
 // A notification whose record the user may no longer view.
 test('a notification after the permission was revoked', async ({ browser, baseURL }) => {
-  const staff = await as(browser, login.staff, `/hrm/leaves/${leave}`)
+  const staff = await as(browser, login.staff, `/me/requests/leave/${leave}`)
   const box = staff.getByRole('textbox', { name: 'Bình luận' })
   await box.fill('Nhờ anh xem giúp ')
   await box.pressSequentially(`@${login.peer.slice(0, 7)}`)

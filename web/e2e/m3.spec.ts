@@ -51,7 +51,7 @@ async function fillLeave(page: Page, month: string, days: string) {
 }
 
 async function newLeave(page: Page, month: string, days: string) {
-  await page.goto('/hrm/leaves/new')
+  await page.goto('/me/requests/leave/new')
   await fillLeave(page, month, days)
   await page.getByRole('button', { name: 'Tạo bản nháp' }).click()
   await expect(page.getByRole('heading', { name: /^NP-2026-/ })).toBeVisible()
@@ -85,7 +85,7 @@ test('HR grants the start-of-year leave balance through the UI', async ({ page }
 
 test('an employee sends, withdraws and sends again; the manager approves one request and rejects another', async ({ browser }) => {
   const e = await (await browser.newContext()).newPage()
-  await signInAs(e, login.e, '/hrm/leaves')
+  await signInAs(e, login.e, '/me/requests')
   const first = await newLeave(e, '03', '2')
   await status(e, 'Nháp')
   await e.getByRole('button', { name: 'Gửi duyệt' }).click()
@@ -104,11 +104,11 @@ test('an employee sends, withdraws and sends again; the manager approves one req
   await signInAs(m, login.m, '/inbox')
   await m.getByRole('button', { name: new RegExp(`NP-2026-.*`) }).first().waitFor()
   // Approve the first from the inbox.
-  await m.goto(`/hrm/leaves/${first}`)
+  await m.goto(`/me/requests/leave/${first}`)
   await m.getByRole('button', { name: 'Duyệt', exact: true }).click()
   await status(m, 'Đã duyệt')
   // Reject the second, with a reason.
-  await m.goto(`/hrm/leaves/${second}`)
+  await m.goto(`/me/requests/leave/${second}`)
   await m.getByRole('button', { name: 'Từ chối' }).click()
   await m.getByRole('dialog').getByRole('textbox', { name: /^Lý do/ }).fill('Trùng lịch dự án')
   await m.getByRole('dialog').getByRole('button', { name: 'Từ chối' }).click()
@@ -119,10 +119,10 @@ test('an employee sends, withdraws and sends again; the manager approves one req
 test('two tabs editing the same draft: the second save gets the reload dialog', async ({ browser }) => {
   const ctx = await browser.newContext()
   const one = await ctx.newPage()
-  await signInAs(one, login.e, '/hrm/leaves')
+  await signInAs(one, login.e, '/me/requests')
   const id = await newLeave(one, '06', '1')
   const two = await ctx.newPage()
-  await two.goto(`/hrm/leaves/${id}`)
+  await two.goto(`/me/requests/leave/${id}`)
   // A draft reads as values; its card turns into the form on Edit.
   await two.getByRole('button', { name: 'Sửa Thông tin nghỉ' }).click()
   await expect(two.getByRole('textbox', { name: /^Số ngày/ })).toHaveValue('1')
@@ -159,7 +159,7 @@ test('approving from the inbox refreshes the leave balance on the HRM screen', a
 test('at 375px an employee sends a request and the manager approves it', async ({ browser }) => {
   const small = { viewport: { width: 375, height: 800 } }
   const e = await (await browser.newContext(small)).newPage()
-  await signInAs(e, login.e2, '/hrm/leaves')
+  await signInAs(e, login.e2, '/me/requests')
   await e.getByRole('link', { name: 'Tạo đơn nghỉ' }).click()
   await fillLeave(e, '08', '1')
   await e.getByRole('button', { name: 'Tạo bản nháp' }).click()
@@ -183,7 +183,7 @@ test('at 375px an employee sends a request and the manager approves it', async (
 // The form names the ceiling before the user is refused, and the refusal lands on the day
 // count. 2026-08-10 to 14 is a whole working week; 2026-08-08 to 09 is a weekend.
 test('the form shows the working days of the range and refuses more than them', async ({ page }) => {
-  await signInAs(page, login.e3, '/hrm/leaves/new')
+  await signInAs(page, login.e3, '/me/requests/leave/new')
   await page.getByRole('combobox', { name: 'Loại nghỉ' }).click()
   await page.getByRole('option', { name: `Phép năm ${run}` }).click()
   await page.getByRole('textbox', { name: /^Từ ngày/ }).fill('10/08/2026')

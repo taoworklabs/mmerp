@@ -23,13 +23,18 @@ const sorts = ['-date', 'date', '-number', 'number'] as const satisfies readonly
 const defaults = { filters: { q: '', status: '', org_unit: '', month: '' }, sort: '-date', sorts: [...sorts], pageSize: 50 }
 
 // OvertimesPage lists the overtime requests the user may see; a row opens its preview beside the list.
-export function OvertimesPage() {
+// team: in the personal space, only the requests of the user's reports.
+export function OvertimesPage({ team = false }: { team?: boolean }) {
   const { t } = useTranslation()
-  const canCreate = useOvertimeActions().data?.includes('create') ?? false
+  const actions = useOvertimeActions().data
+  const canCreate = !team && (actions?.includes('create') ?? false)
+  const texts = team
+    ? { title: t('hrm.me.team.overtimes.title'), description: t('hrm.me.team.overtimes.description'), empty: t('hrm.me.team.overtimes.empty'), emptyDescription: t('hrm.me.team.overtimes.empty_description') }
+    : { title: t('hrm.overtimes.title'), description: t('hrm.overtimes.description'), empty: t('hrm.overtimes.empty'), emptyDescription: t('hrm.overtimes.empty_description') }
   const [params, set, filterBar] = useListParams(defaults)
   const peek = usePeek()
   const { q, status, org_unit, month } = params.filters as typeof defaults.filters
-  const query = { q, status, orgUnit: org_unit, month, sort: params.sort, page: params.page, pageSize: params.pageSize }
+  const query = { team, q, status, orgUnit: org_unit, month, sort: params.sort, page: params.page, pageSize: params.pageSize }
   const list = useQuery({
     queryKey: hrmKeys.overtimes.list(query),
     queryFn: () =>
@@ -37,6 +42,7 @@ export function OvertimesPage() {
         api.GET('/hrm/overtimes', {
           params: {
             query: {
+              reports: team || undefined,
               q: q || undefined,
               status: (status || undefined) as DocStatus | undefined,
               org_unit_id: org_unit ? Number(org_unit) : undefined,
@@ -60,13 +66,14 @@ export function OvertimesPage() {
     { key: 'night_hours', header: t('hrm.overtime.night_hours'), role: 'hidden', kind: 'number', render: (o) => formatDecimal(o.night_hours) },
     { key: 'status', header: t('hrm.overtime.status'), role: 'status', kind: 'status', render: (o) => <DocumentStatus docType={overtimeDocType} status={o.status} /> },
   ]
-  const view = useListView('hrm.overtimes', columns)
+  const view = useListView(team ? 'hrm.me.team.overtimes' : 'hrm.overtimes', columns)
+  const href = (id: number) => (team ? `/me/requests/overtime/${id}` : `/hrm/overtimes/${id}`)
   const open = list.data?.items.find((l) => String(l.id) === peek.id)
 
   return (
     <ListPage
-      title={t('hrm.overtimes.title')}
-      description={t('hrm.overtimes.description')}
+      title={texts.title}
+      description={texts.description}
       action={
         canCreate && (
           <Button render={<Link to="/hrm/overtimes/new" />} leftSection={<IconPlus {...icon.button} />}>
@@ -79,12 +86,7 @@ export function OvertimesPage() {
         <>
           <SearchInput label={t('hrm.overtimes.search')} placeholder={t('hrm.common.search_request_hint')} value={q} onSearch={(v) => set({ filters: { q: v } })} />
           <DocumentStatusFilter docType={overtimeDocType} {...filterBar.bind('status')} />
-          <OrgUnitFilter
-            product="hrm"
-            permission="hrm.overtime.view"
-            label={t('hrm.common.org_unit')}
-            {...filterBar.bind('org_unit')}
-          />
+          {!team && <OrgUnitFilter product="hrm" permission="hrm.overtime.view" label={t('hrm.common.org_unit')} {...filterBar.bind('org_unit')} />}
           <MonthFilter label={t('hrm.common.month')} {...filterBar.bind('month')} />
         </>
       }
@@ -92,21 +94,21 @@ export function OvertimesPage() {
       list={{
         query: list,
         table: {
-          label: t('hrm.overtimes.title'),
+          label: texts.title,
           columns: view.columns,
           onResize: view.onResize,
           rowKey: (l) => l.id,
-          href: (l) => `/hrm/overtimes/${l.id}`,
+          href: (l) => href(l.id),
           onRowClick: (l) => peek.open(l.id),
           sort: params.sort,
           onSort: (sort) => set({ sort }),
         },
-        empty: { title: t('hrm.overtimes.empty'), description: t('hrm.overtimes.empty_description') },
+        empty: { title: texts.empty, description: texts.emptyDescription },
         noResults: t('hrm.overtimes.no_results'),
         paging: { page: params.page, pageSize: params.pageSize, onPage: (page) => set({ page }), onPageSize: (pageSize) => set({ pageSize }) },
       }}
     >
-      <SidePanel title={open?.number ?? ''} href={`/hrm/overtimes/${open?.id ?? ''}`} opened={!!open} onClose={peek.close}>
+      <SidePanel title={open?.number ?? ''} href={open ? href(open.id) : ''} opened={!!open} onClose={peek.close}>
         {open && <OvertimePreview id={open.id} />}
       </SidePanel>
     </ListPage>

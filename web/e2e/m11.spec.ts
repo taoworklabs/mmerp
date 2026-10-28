@@ -70,7 +70,7 @@ test.describe('attachments', () => {
 
 test.describe('discussion', () => {
   test('the submitter and their manager talk on a leave request, each seeing the other', async ({ browser }) => {
-    const url = `/hrm/leaves/${ids.leave}`
+    const url = `/me/requests/leave/${ids.leave}`
     const staff = await as(browser, login.staff, url)
     await staff.getByRole('textbox', { name: 'Bình luận' }).fill('Em xin nghỉ khám bệnh.\nGiấy hẹn em gửi kèm.')
     await staff.getByRole('button', { name: 'Gửi bình luận' }).click()

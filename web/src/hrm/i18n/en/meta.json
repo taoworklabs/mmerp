@@ -135,5 +135,8 @@
   "hrm.me.nav.payslips": "Payslips",
   "hrm.me.nav.requests": "Leave & overtime",
   "hrm.me.nav.profile": "My profile",
-  "hrm.me.nav.org": "Org chart"
+  "hrm.me.nav.org": "Org chart",
+  "hrm.me.nav.group_team": "My team",
+  "hrm.me.nav.team_leaves": "Leave requests",
+  "hrm.me.nav.team_overtimes": "Overtime requests"
 }

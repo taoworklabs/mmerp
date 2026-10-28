@@ -65,6 +65,9 @@ SELECT m.user_id FROM chain JOIN hrm.employees m ON m.id = chain.id WHERE chain.
 -- name: EmployeeByUser :one
 SELECT id, full_name, org_unit_id FROM hrm.employees WHERE user_id = $1;
 
+-- name: HasReports :one
+SELECT EXISTS (SELECT 1 FROM hrm.employees WHERE manager_id = $1);
+
 -- name: EmployeesByCodes :many
 SELECT id, code, org_unit_id FROM hrm.employees WHERE lower(code) = ANY(@codes::text[]);
 

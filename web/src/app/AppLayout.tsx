@@ -3,10 +3,10 @@ import { IconBell, IconBuildingSkyscraper, IconCheck, IconHourglass, IconInbox, 
 import { useQuery } from '@tanstack/react-query'
 import { Suspense, useEffect, useState, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Link, Outlet, useLocation, useNavigate } from 'react-router'
+import { Link, Navigate, Outlet, useLocation, useNavigate } from 'react-router'
 import { notificationKeys, PasswordPage } from '@/core'
 import { api, unwrap } from '@/shared/api/core'
-import type { AreaManifest, NavItem } from '@/shared/area'
+import { useAreasEntitled, useNavHidden, type AreaManifest, type NavItem } from '@/shared/area'
 import { can, useMe } from '@/shared/auth/me'
 import { endSession } from '@/shared/auth/session'
 import { documentKeys } from '@/shared/document'
@@ -49,12 +49,16 @@ function Shell({ areas }: { areas: AreaManifest[] }) {
   const me = useMe()
   const navigate = useNavigate()
   const { pathname } = useLocation()
-  const area = areas.find((a) => inArea(a, pathname))
+  const at = areas.findIndex((a) => inArea(a, pathname))
+  const area = areas[at]
+  // An area the user may not enter sends them home; its own pages (notifications…) to the root's.
+  const entitled = useAreasEntitled(areas)[at]
+  const hidden = useNavHidden(areas)
   // Notifications, inbox, delegations and jobs open inside the current area; from home, at the root.
   const own = (page: string) => (area ? join(area.basePath, page) : `/${page}`)
   const onOwn = ['notifications', 'inbox', 'delegations', 'jobs'].some((page) => pathname === own(page))
   // Home has no sidebar.
-  const nav = area ? area.nav.filter((item) => can(me, item.permission)) : []
+  const nav = area && entitled ? area.nav.filter((item) => can(me, item.permission) && !hidden.has(item)) : []
   const [drawer, { toggle: toggleDrawer, close: closeDrawer }] = useDisclosure()
   // Capture phase: the burger's tooltip consumes Escape before it bubbles.
   useEffect(() => {
@@ -252,7 +256,7 @@ function Shell({ areas }: { areas: AreaManifest[] }) {
       )}
       {/* Keyed by area, so entering one shows the skeleton rather than the previous page. */}
       <Suspense key={pathname.split('/')[1]} fallback={<PageSkeleton />}>
-        <Outlet />
+        {area && entitled === false ? <Navigate to={onOwn ? pathname.slice(area.basePath.length) : '/'} replace /> : area && entitled === undefined ? <PageSkeleton /> : <Outlet />}
       </Suspense>
     </AppShell>
   )

@@ -1,5 +1,6 @@
 import { IconUsersGroup, IconLayoutDashboard, IconCalendarCog, IconCash, IconCalendarEvent, IconCategory, IconScale, IconSitemap, IconClockHour4, IconFileCertificate, IconFileText, IconGitBranch, IconTable, IconUsers } from '@tabler/icons-react'
 import type { AreaManifest } from '@/shared/area'
+import { leaveRecord, overtimeRecord } from './records'
 import { contractDocType, employeeDocType, hrmKeys, leaveDocType, overtimeDocType, payrollDocType, timesheetDocType } from './keys'
 
 export { hrmMe } from './me'
@@ -38,16 +39,8 @@ export const hrm: AreaManifest = {
       // Names show in pickers and on other records' lines, so every employee query.
       invalidate: () => [hrmKeys.employees.all()],
     },
-    [leaveDocType]: {
-      path: (id) => `leaves/${id}`,
-      preview: () => import('./components/LeavePreview'),
-      invalidate: (id) => [hrmKeys.leaves.detail(id), hrmKeys.leaves.lists(), hrmKeys.balances.all()],
-    },
-    [overtimeDocType]: {
-      path: (id) => `overtimes/${id}`,
-      preview: () => import('./components/OvertimePreview'),
-      invalidate: (id) => [hrmKeys.overtimes.detail(id), hrmKeys.overtimes.lists()],
-    },
+    [leaveDocType]: { ...leaveRecord, path: (id) => `leaves/${id}` },
+    [overtimeDocType]: { ...overtimeRecord, path: (id) => `overtimes/${id}` },
     [contractDocType]: {
       path: (id) => `contracts/${id}`,
       preview: () => import('./components/ContractPreview'),

@@ -82,7 +82,7 @@ test('a waiting step shows when it is due', async ({ baseURL, browser }) => {
   const sent = await asE.post(`/api/documents/hrm.leave_request/${leave}/transitions`, { data: { to: 'posted', version: 1 } })
   expect(sent.status(), await sent.text()).toBe(200)
 
-  const m = await as(browser, login.manager, `/hrm/leaves/${leave}`)
+  const m = await as(browser, login.manager, `/me/requests/leave/${leave}`)
   await expect(m.getByText(/^Hạn: /)).toBeVisible()
   await expect(m.getByText('Quá hạn', { exact: true })).toHaveCount(0)
 })

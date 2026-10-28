@@ -113,3 +113,28 @@ test('with no product enabled the tile and payslips still read, and there is no 
   await expect(page.getByRole('heading', { name: 'Nghỉ phép & tăng ca' })).toBeVisible()
   await expect(page.getByRole('link', { name: /^Tạo đơn/ })).toHaveCount(0)
 })
+
+test('without an HRM role the HRM area sends home; a direct manager sees their report’s request in the team list', async ({ page, browser, baseURL }) => {
+  await signInAs(page, '/hrm/leaves')
+  await expect(page).toHaveURL(/\/$/)
+
+  const company = await created(api.post('/api/org-units', { data: { parent_id: null, kind: 'company', name: `Công ty PS nhóm ${run}` } }))
+  const unit = await created(api.post('/api/org-units', { data: { parent_id: company, kind: 'department', name: `Phòng PS nhóm ${run}` } }))
+  const login = { boss: `ps_boss_${run}`, staff: `ps_staff_${run}` }
+  for (const l of [login.boss, login.staff]) await createUser(api, l, [])
+  const boss = await created(api.post('/api/hrm/employees', { data: employee(`PSM${run}`, unit, { user_login: login.boss }) }))
+  await created(api.post('/api/hrm/employees', { data: employee(`PSS${run}`, unit, { user_login: login.staff, manager_id: boss }) }))
+  const type = await created(api.post('/api/hrm/leave-types', { data: { name: `Nghỉ PS ${run}`, deducts_balance: false, paid: true, active: true } }))
+  const asStaff = await signedInApi(baseURL!, login.staff, password)
+  const leave = await created(asStaff.post('/api/hrm/leaves', { data: { leave_type_id: type, start_date: '2026-06-03', end_date: '2026-06-03', days: '1', reason: null } }))
+  const { number } = (await (await asStaff.get(`/api/hrm/leaves/${leave}`)).json()) as { number: string }
+
+  const m = await (await browser.newContext()).newPage()
+  await m.goto('/me/team/leaves')
+  await m.getByLabel('Tên đăng nhập').fill(login.boss)
+  await m.getByLabel(/^Mật khẩu/).fill(password)
+  await m.getByRole('button', { name: 'Đăng nhập' }).click()
+  await expect(m.getByRole('heading', { name: 'Đơn nghỉ phép của nhóm' })).toBeVisible()
+  await expect(m.getByRole('navigation').getByRole('group', { name: 'Nhóm của tôi' }).getByRole('link', { name: 'Đơn nghỉ phép' })).toBeVisible()
+  await expect(m.getByRole('main').getByRole('link', { name: number })).toHaveAttribute('href', `/me/requests/leave/${leave}`)
+})

@@ -45,6 +45,7 @@ var LockManagerTree = data.Exec("hrm.LockManagerTree", newQ, (*Queries).LockMana
 var IsManager = data.OneArg("hrm.IsManager", newQ, (*Queries).IsManager)
 var ManagerUser = data.OneArg("hrm.ManagerUser", newQ, (*Queries).ManagerUser)
 var EmployeeByUser = data.OneArg("hrm.EmployeeByUser", newQ, (*Queries).EmployeeByUser)
+var HasReports = data.OneArg("hrm.HasReports", newQ, (*Queries).HasReports)
 var EmployeesByCodes = data.ManyArg("hrm.EmployeesByCodes", newQ, (*Queries).EmployeesByCodes)
 var AnyEmployee = data.One("hrm.AnyEmployee", newQ, (*Queries).AnyEmployee)
 var ListLeaveTypes = data.Many("hrm.ListLeaveTypes", newQ, (*Queries).ListLeaveTypes)

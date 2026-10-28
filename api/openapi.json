@@ -6743,6 +6743,9 @@
             },
             "type": "array"
           },
+          "has_reports": {
+            "type": "boolean"
+          },
           "self_employee_id": {
             "format": "int64",
             "type": [
@@ -6760,7 +6763,8 @@
         "required": [
           "allowed_actions",
           "self_employee_id",
-          "self_employee_name"
+          "self_employee_name",
+          "has_reports"
         ],
         "type": "object"
       },
@@ -10517,6 +10521,16 @@
             }
           },
           {
+            "description": "Only requests of the employees below the actor on the manager chain",
+            "explode": false,
+            "in": "query",
+            "name": "reports",
+            "schema": {
+              "description": "Only requests of the employees below the actor on the manager chain",
+              "type": "boolean"
+            }
+          },
+          {
             "description": "Requests ending on or after",
             "explode": false,
             "in": "query",
@@ -11119,6 +11133,16 @@
             "schema": {
               "format": "int64",
               "type": "integer"
+            }
+          },
+          {
+            "description": "Only requests of the employees below the actor on the manager chain",
+            "explode": false,
+            "in": "query",
+            "name": "reports",
+            "schema": {
+              "description": "Only requests of the employees below the actor on the manager chain",
+              "type": "boolean"
             }
           },
           {

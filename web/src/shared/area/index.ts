@@ -10,6 +10,8 @@ export type NavItem = {
   icon: ComponentType<{ size?: number; stroke?: number }>
   permission?: string | string[] // shown only to users who have it (or one of them) somewhere
   group?: string // i18n key of the item's group; ungrouped items come first
+  // A hook that hides the item when false: for items that depend on the user's data, not a permission.
+  useShown?: () => boolean
 }
 
 // RecordTypeEntry is what an area tells the rest of the app about one of its record types.
@@ -31,13 +33,16 @@ export type AreaManifest = {
   collapsibleGroups?: string[] // groups the user may fold; remembered per user
   // The area's tile on the home page; it opens the first nav item the user may see.
   homeIcon: ComponentType<{ size?: number; stroke?: number }>
-  // A hook that replaces the permission rule for the tile; undefined while loading (no tile yet).
+  // A hook that replaces the permission rule for entering the area (its tile, routes and record
+  // links); undefined while loading.
   useEntitled?: () => boolean | undefined
   i18n: {
     meta: Record<Locale, Bundle> // nav labels; loaded at startup
     main?: Record<Locale, Bundle> // the rest; loaded with the routes
   }
+  // Several manifests of a product may declare one type: links go to the first the user may enter.
   recordTypes?: Record<string, RecordTypeEntry>
 }
 
+export { useAreasEntitled, useNavHidden } from './access'
 export { RecordPreview, RecordTypesProvider, useInvalidateRecord, useRecordLink, useRecordLinks } from './records'
