@@ -154,7 +154,7 @@
   "hrm.error.invalid_termination_reason": "The termination reason is not valid.",
   "hrm.error.invalid_termination_months": "Months cannot be negative.",
   "hrm.error.termination_via_document": "The termination date changes only through a termination.",
-  "hrm.error.termination_legal_entity_changed": "The employee moved to another legal entity since the termination was drafted. Draft a new one under the current legal entity.",
+  "hrm.error.termination_legal_entity_changed": "The employee moved to another legal entity since the termination was drafted. Move the employee back to that legal entity to post or cancel it.",
   "hrm.termination.reason.contract_expired": "Contract expired (Art 34.1 Labour Code)",
   "hrm.termination.reason.work_completed": "Work under the contract completed (Art 34.2)",
   "hrm.termination.reason.mutual_agreement": "Mutual agreement (Art 34.3)",

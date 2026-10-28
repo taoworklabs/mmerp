@@ -127,7 +127,8 @@ export function PayrollTable({ payroll, onPrint }: { payroll: Payroll; onPrint?:
       band: t('hrm.payroll.band.attendance'),
       render: (l) => (l.overtime_hours && l.overtime_hours !== '0' ? formatDecimal(l.overtime_hours) : ''),
     },
-    ...moneyColumns<PayrollLine>(t, amounts),
+    // The allowance on leaving shows only on a payroll that pays one.
+    ...moneyColumns<PayrollLine>(t, grand.severance ? amounts : amounts.filter((k) => k !== 'severance')),
   ]
   return (
     <DataTable

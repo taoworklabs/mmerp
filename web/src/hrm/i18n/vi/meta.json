@@ -154,7 +154,7 @@
   "hrm.error.invalid_termination_reason": "Lý do nghỉ việc không hợp lệ.",
   "hrm.error.invalid_termination_months": "Số tháng không được âm.",
   "hrm.error.termination_via_document": "Ngày nghỉ việc chỉ đổi được qua quyết định nghỉ việc.",
-  "hrm.error.termination_legal_entity_changed": "Nhân viên đã chuyển sang pháp nhân khác từ khi lập quyết định. Lập quyết định mới ở pháp nhân hiện tại.",
+  "hrm.error.termination_legal_entity_changed": "Nhân viên đã chuyển sang pháp nhân khác từ khi lập quyết định. Chuyển nhân viên về pháp nhân cũ để duyệt hoặc hủy quyết định này.",
   "hrm.termination.reason.contract_expired": "Hết hạn hợp đồng (khoản 1 Điều 34 BLLĐ)",
   "hrm.termination.reason.work_completed": "Đã hoàn thành công việc theo hợp đồng (khoản 2 Điều 34)",
   "hrm.termination.reason.mutual_agreement": "Hai bên thỏa thuận chấm dứt (khoản 3 Điều 34)",
