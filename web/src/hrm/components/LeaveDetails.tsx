@@ -27,7 +27,8 @@ export function LeaveDetails({ leave: l, deducts }: { leave: Leave; deducts: boo
     const left = formatDecimal(l.balance)
     // Once approved the days are already off the balance; until then, show what approving leaves.
     const waiting = l.status === 'draft' || l.status === 'pending_approval'
-    const after = formatDecimal(String((halves(l.balance) - halves(l.days)) / 2))
+    // The API always returns days on a request; the field is optional only as an input.
+    const after = formatDecimal(String((halves(l.balance) - halves(l.days ?? '0')) / 2))
     balance = waiting ? t('hrm.leave.balance_after', { left, after }) : t('hrm.leave.balance_left', { left })
   }
   const canEdit = l.allowed_actions.includes('edit')

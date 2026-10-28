@@ -1,6 +1,7 @@
 package hrm
 
 import (
+	"cmp"
 	"context"
 	"crypto/sha256"
 	"encoding/json"
@@ -46,6 +47,8 @@ type basisLeave struct {
 	End        string          `json:"end"`
 	Days       decimal.Decimal `json:"days"`
 	Paid       bool            `json:"paid"`
+	// Omitted when false, so the inputs hash of a payroll read before half flags is unchanged.
+	StartHalf bool `json:"start_half,omitempty"`
 }
 
 type basisOvertime struct {
@@ -143,6 +146,14 @@ func (s *Service) readBasis(ctx context.Context, legalEntity, payrollID int64, s
 					e.LeaveBalance = bal.Days
 				}
 			}
+			earned, err := s.earnedNotCredited(ctx, legalEntity, e.ID, e.Hire, *e.Leave)
+			if err != nil {
+				return b, err
+			}
+			if !earned.IsZero() {
+				// In the balance's own text form, so the sum reads the same once the job credits it.
+				e.LeaveBalance = decimal.RequireFromString(cmp.Or(e.LeaveBalance, "0")).Add(earned).StringFixed(1)
+			}
 		}
 	}
 
@@ -170,7 +181,7 @@ func (s *Service) readBasis(ctx context.Context, legalEntity, payrollID int64, s
 	}
 	for _, l := range leaves {
 		b.Leaves = append(b.Leaves, basisLeave{EmployeeID: l.EmployeeID, Start: *platform.DatePtr(l.StartDate), End: *platform.DatePtr(l.EndDate),
-			Days: decimal.RequireFromString(l.Days), Paid: l.Paid})
+			Days: decimal.RequireFromString(l.Days), Paid: l.Paid, StartHalf: l.StartHalf})
 	}
 	ots, err := store.PayrollOvertime.Run(ctx, store.PayrollOvertimeParams{Ids: ids, YearStart: pgYear, PeriodEnd: pgEnd})
 	for _, o := range ots {
@@ -389,6 +400,12 @@ func termsAt(cs []payContract, day string) *payContract {
 // most per day: how much absence a leave request puts on each date. The entry cap keeps the
 // day count within the working days available, so nothing is left over.
 func leaveAllocation(c calendar, start, end string, days decimal.Decimal) map[string]decimal.Decimal {
+	return halfAllocation(c, start, end, days, false)
+}
+
+// halfAllocation is leaveAllocation where the first working date takes at most half a day
+// when startHalf; a half on the last date needs nothing, it is what is left for it.
+func halfAllocation(c calendar, start, end string, days decimal.Decimal, startHalf bool) map[string]decimal.Decimal {
 	out := map[string]decimal.Decimal{}
 	left := days
 	for d := dayOf(start); !d.After(dayOf(end)) && left.IsPositive(); d = d.AddDate(0, 0, 1) {
@@ -396,6 +413,9 @@ func leaveAllocation(c calendar, start, end string, days decimal.Decimal) map[st
 			continue
 		}
 		take := decimal.Min(one, left)
+		if startHalf && len(out) == 0 {
+			take = decimal.Min(decimal.New(5, -1), left)
+		}
 		out[d.Format(time.DateOnly)] = take
 		left = left.Sub(take)
 	}
@@ -415,7 +435,7 @@ func leaveOn(c calendar, leaves []basisLeave, employee int64, paidOnly bool) map
 		if l.EmployeeID != employee || paidOnly && !l.Paid {
 			continue
 		}
-		for d, v := range leaveAllocation(c, l.Start, l.End, l.Days) {
+		for d, v := range halfAllocation(c, l.Start, l.End, l.Days, l.StartHalf) {
 			out[d] = out[d].Add(v)
 		}
 	}

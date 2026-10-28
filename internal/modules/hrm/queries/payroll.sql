@@ -134,7 +134,7 @@ WHERE d.status = 'posted' AND t.period_start = @period_start AND l.employee_id =
 ORDER BY l.employee_id, l.date;
 
 -- name: PayrollLeaves :many
-SELECT r.employee_id, r.start_date, r.end_date, r.days::text AS days, t.paid
+SELECT r.employee_id, r.start_date, r.end_date, r.days::text AS days, t.paid, r.start_half
 FROM hrm.leave_requests r JOIN hrm.leave_types t ON t.id = r.leave_type_id JOIN record.documents d ON d.id = r.id
 WHERE d.status = 'posted' AND r.employee_id = ANY(@ids::bigint[]) AND r.start_date <= @period_end::date AND r.end_date >= @period_start::date
 ORDER BY r.employee_id, r.start_date, r.id;

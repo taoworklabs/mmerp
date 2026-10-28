@@ -334,14 +334,16 @@ func TestLeaveDaysAndDates(t *testing.T) {
 	for _, c := range []struct{ start, end, days, code string }{
 		{"2026-03-10", "2026-03-09", "1", "leave_end_before_start"},
 		{"2026-12-31", "2027-01-01", "2", "leave_spans_years"},
-		{"2026-03-10", "2026-03-11", "2.5", "leave_days_exceed_working_days"},
+		{"2026-03-10", "2026-03-11", "2.5", "leave_days_changed"},
 		{"2026-03-10", "2026-03-11", "1.3", "invalid_leave_days"},
 		{"2026-03-10", "2026-03-11", "0", "invalid_leave_days"},
 	} {
 		_, err := f.hrm.CreateLeave(f.e, hrm.NewLeave{LeaveFields: f.fields(c.start, c.end, c.days)})
 		wantErr(t, err, c.code)
 	}
-	must(t)(f.hrm.CreateLeave(f.e, hrm.NewLeave{LeaveFields: f.fields("2026-03-10", "2026-03-11", "1.5")}))
+	in := f.fields("2026-03-10", "2026-03-11", "1.5")
+	in.EndHalf = true
+	must(t)(f.hrm.CreateLeave(f.e, hrm.NewLeave{LeaveFields: in}))
 }
 
 func TestLeaveRecordContract(t *testing.T) {

@@ -131,6 +131,8 @@ func newPayrollFixture(t *testing.T) *payrollFixture {
 	f.unpaid = must(t)(f.hrm.SaveLeaveType(f.hr, 0, hrm.LeaveTypeInput{Name: "Nghỉ không lương", Active: true}))
 	f.check(f.hrm.SaveHoliday(f.pay, f.c, hrm.Holiday{Date: "2026-04-27", Name: "Nghỉ bù Giỗ Tổ"}))
 	f.check(f.hrm.SaveHoliday(f.pay, f.c, hrm.Holiday{Date: "2026-04-30", Name: "Giải phóng miền Nam"}))
+	// Balances here are granted by hand, as the samples were computed.
+	f.setting(hrm.SettingLeaveAccrual, "manual")
 	return f
 }
 
