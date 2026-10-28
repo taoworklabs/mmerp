@@ -45,7 +45,7 @@ Rows come from comparing the posted payrolls of M and M−1 of the legal entity,
 | M−1 | M | Row | Column 18 (Loại) | Column 13 (effective date) | Columns 14–15 |
 | --- | --- | --- | --- | --- | --- |
 | absent or 0, and not employed by this legal entity in M−1 | > 0 | increase | "Tăng lao động" | the later of the hire date and the start of the employee's first contract with this legal entity in force in M (a move from another legal entity starts with the contract) | from M |
-| 0 (employed, contributions waived) | > 0 | increase | "Đi làm lại" | first day of M | from M |
+| 0 (employed, contributions waived), and insured on an earlier posted payroll of this legal entity (or hired before its payroll history starts) | > 0 | increase | "Đi làm lại" | first day of M | from M |
 | > 0 | absent or 0, `termination_date` in M−1 or M | decrease | "Giảm lao động" | termination date | from M |
 | > 0 | absent, not terminated (moved to another legal entity) | decrease | "Giảm lao động", column 19 "Chuyển đơn vị" | end date of the last contract with this legal entity, else blank | from M |
 | > 0 | 0, not terminated | decrease | "Nghỉ không lương, ốm đau từ 14 ngày" | first day of M | from M to M |
@@ -86,7 +86,7 @@ Indicators [15]–[45] from the three posted payrolls of Q, one row per indicato
 
 **05/QTT-TNCN:** section I is computed like 05/KK over the twelve months, plus [20] = 0 and [21] = people with a dependant deduction in Y. Section II: [37] authorised people; [38] their tax withheld; [39] = 0; [40] sum of [22]; [41] sum of [24] of people with [25] ticked; [42], [43] = 0; [44] = max(0, [40] − [38] − [41] − [42] − [43]); [45] = max(0, −([40] − [38] − [41] − [42] − [43])).
 
-**05-3/BK:** one row per dependant of an employee paid in Y whose deduction period overlaps Y: [07], [08] the employee's name and tax code; [09] name; [10] date of birth; [11] the ID number when it reads as a tax code (10 or 13 digits after removing a dash), otherwise [12] "Số ĐDCN" and [13] the number; [14] relationship (translated); [15], [16] the deduction months clipped to Y.
+**05-3/BK:** one row per dependant of an employee paid in Y whom a posted payroll of Y deducted: [07], [08] the employee's name and tax code; [09] name; [10] date of birth; [11] the ID number when it reads as a tax code (10 or 13 digits after removing a dash), otherwise [12] "Số ĐDCN" and [13] the number; [14] relationship (translated); [15], [16] the first and last month a posted payroll of Y deducted them, by the payroll's own rule (a set first month, only months the employee was paid in); a dependant no payroll of Y deducted is not listed.
 
 ### Permissions, audit, files
 
@@ -131,6 +131,7 @@ Indicators [15]–[45] from the three posted payrolls of Q, one row per indicato
 For an accountant or the BHXH office before loading real data:
 
 - Authorisation: everyone on the December payroll is assumed to authorise the company to finalise for them.
+- Under that assumption, someone who left in October but gets back pay on the December payroll counts as authorising.
 - Whether the BHXH office accepts the D02-LT layout of the QĐ 366 PDF (no part A) or the eBHXH xlsx (with part A, unit details).
 - The free-text values of D02-LT column 18; QĐ 366 lists kinds but no fixed codes.
 - Whether a mid-month termination is a decrease from that month or the next (tied to the open "hired after the 15th" question in `products/hrm.md`).

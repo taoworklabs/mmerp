@@ -290,7 +290,7 @@ Excel files of the statutory filings, one legal entity and one period each, thro
 
 - Figures come only from the posted payrolls of the period (D02-LT: the month and the one before) and the employee profiles; a month without a posted payroll refuses the report (`report_payroll_missing`, naming the months). Nothing is stored.
 - Flat sheets: list forms have the official column headings, with their codes, as the first row; declaration forms are rows of indicator, code and value under the header fields. Each form version is its own layout in code; earlier periods are refused (`report_form_not_supported`).
-- D02-LT: insured salary positive now and not before is an increase ("Đi làm lại" after a month without contributions), the reverse a decrease (the termination date, a move to another legal entity, or the 14-day rule), a changed amount an adjustment.
+- D02-LT: insured salary positive now and not before is an increase ("Đi làm lại" only for who was insured on an earlier posted payroll of the legal entity), the reverse a decrease (the termination date, a move to another legal entity, or the 14-day rule), a changed amount an adjustment.
 - Finalisation: everyone on December's posted payroll authorises the company; the year's tax uses the schedule in force on 31/12 with its monthly bounds × 12; at most 50,000 đồng still due is waived.
 - Every report needs `hrm.salary.view` at the legal entity and `hrm.employee.sensitive` at each employee's current unit, when it runs and at every download; identifiers read are audited (`hrm.employee_sensitive_exported`, `hrm.dependents_viewed`).
 - Not built: withholding certificates (electronic documents with a registered series and a digital signature, Decree 123/2020, Decree 70/2025), electronic filing.
@@ -298,6 +298,7 @@ Excel files of the statutory filings, one legal entity and one period each, thro
 ### Still open (reports)
 
 - Authorisation for the finalisation is assumed from the December payroll, not recorded per employee.
+- Under that assumption, someone who left in October but gets back pay on the December payroll counts as authorising.
 - Whether the BHXH office takes D02-LT as the QĐ 366 PDF layout or the eBHXH xlsx (with unit details), and the wording of its column 18.
 - Whether a termination mid-month is a decrease from that month or the next.
 - Whether [16] of 05-1/BK includes the personal deduction (assumed yes), and the formula of [36] of 05/KK.
