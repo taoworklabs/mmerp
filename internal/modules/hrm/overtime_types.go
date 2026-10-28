@@ -59,6 +59,7 @@ type OvertimeFilter struct {
 	Status     string `query:"status" enum:"draft,pending_approval,posted,cancelled"`
 	OrgUnitID  int64  `query:"org_unit_id"`
 	EmployeeID int64  `query:"employee_id"`
+	Reports    bool   `query:"reports" doc:"Only requests of the employees below the actor on the manager chain"`
 	From       string `query:"from" format:"date"`
 	To         string `query:"to" format:"date"`
 	Sort       string `query:"sort" enum:"date,-date,number,-number" default:"-date"`

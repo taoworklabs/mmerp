@@ -1,10 +1,12 @@
 import { Navigate, Route, Routes } from 'react-router'
 import { NotFoundPage } from '@/shared/ui/states'
 import { LeavePage } from '../pages/LeavePage'
+import { LeavesPage } from '../pages/LeavesPage'
 import { NewLeavePage } from '../pages/NewLeavePage'
 import { NewOvertimePage } from '../pages/NewOvertimePage'
 import { OrgStructurePage } from '../pages/OrgStructurePage'
 import { OvertimePage } from '../pages/OvertimePage'
+import { OvertimesPage } from '../pages/OvertimesPage'
 import { DaysPage } from './DaysPage'
 import { PayslipPage } from './PayslipPage'
 import { PayslipsPage } from './PayslipsPage'
@@ -23,6 +25,8 @@ export default function MeRoutes() {
       <Route path="requests/leave/:id" element={<LeavePage />} />
       <Route path="requests/overtime/new" element={<NewOvertimePage />} />
       <Route path="requests/overtime/:id" element={<OvertimePage />} />
+      <Route path="team/leaves" element={<LeavesPage team />} />
+      <Route path="team/overtimes" element={<OvertimesPage team />} />
       <Route path="profile" element={<ProfilePage />} />
       <Route path="org" element={<OrgStructurePage />} />
       <Route path="*" element={<NotFoundPage />} />

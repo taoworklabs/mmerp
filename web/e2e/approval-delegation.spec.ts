@@ -89,7 +89,7 @@ test('an absent manager’s delegate approves a leave request', async ({ browser
   await expect(c.getByText('Đã duyệt.')).toBeVisible()
 
   // The panel, in the leave page's side column, says who voted and in whose place.
-  const e = await as(browser, login.e, `/hrm/leaves/${leave}`)
+  const e = await as(browser, login.e, `/me/requests/leave/${leave}`)
   await expect(e.getByText(`${login.colleague} thay ${login.manager}`)).toBeVisible()
 })
 

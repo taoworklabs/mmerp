@@ -4139,6 +4139,7 @@ export interface components {
              */
             readonly $schema?: string;
             allowed_actions: string[];
+            has_reports: boolean;
             /** Format: int64 */
             self_employee_id: number | null;
             self_employee_name: string | null;
@@ -6274,6 +6275,8 @@ export interface operations {
                 status?: ("draft" | "pending_approval" | "posted" | "cancelled")[] | null;
                 org_unit_id?: number;
                 employee_id?: number;
+                /** @description Only requests of the employees below the actor on the manager chain */
+                reports?: boolean;
                 /** @description Requests ending on or after */
                 from?: string;
                 /** @description Requests starting on or before */
@@ -6660,6 +6663,8 @@ export interface operations {
                 status?: "draft" | "pending_approval" | "posted" | "cancelled";
                 org_unit_id?: number;
                 employee_id?: number;
+                /** @description Only requests of the employees below the actor on the manager chain */
+                reports?: boolean;
                 from?: string;
                 to?: string;
                 sort?: "date" | "-date" | "number" | "-number";

@@ -67,7 +67,7 @@ test('the administrator sees every number match its list', async ({ page }) => {
   await tilesMatchLists(page)
 })
 
-test('a viewer sees only the employee block; revoking the role mid-session removes it', async ({ page, baseURL }) => {
+test('a viewer sees only the employee block; revoking the role mid-session sends them home', async ({ page, baseURL }) => {
   await signInAs(page, viewer, '/hrm/overview')
   await expect(tile(page, 'Nhân sự đang làm việc')).toContainText('3')
   for (const label of tiles.slice(1)) await expect(tile(page, label)).toHaveCount(0)
@@ -80,8 +80,9 @@ test('a viewer sees only the employee block; revoking the role mid-session remov
   const reloaded = page.waitForEvent('load')
   await page.getByRole('navigation').getByRole('link', { name: 'Đơn nghỉ phép' }).click()
   await reloaded
+  // With no HRM role left, the HRM area sends them home.
   await page.goto('/hrm/overview')
-  await expect(page.getByText('Chưa có số liệu nào cho bạn.')).toBeVisible()
+  await expect(page).toHaveURL(/\/$/)
   await expect(tile(page, 'Nhân sự đang làm việc')).toHaveCount(0)
 })
 

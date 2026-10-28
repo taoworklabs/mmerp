@@ -111,3 +111,22 @@ func TestOvertimeListVisibility(t *testing.T) {
 		})
 	}
 }
+
+// reports=true keeps only the actor's reports, at any depth.
+func TestOvertimeListReports(t *testing.T) {
+	f := newOvertimeListFixture(t)
+	for actor, reports := range map[string][]string{"M": {"E", "E2", "E3"}, "E": {"E3"}, "E2": nil, "HR_A": nil} {
+		t.Run(actor, func(t *testing.T) {
+			var want []int64
+			for _, code := range reports {
+				want = append(want, f.otIDs[code]...)
+			}
+			slices.Sort(want)
+			got, total := f.overtimes(f.actors[actor], hrm.OvertimeFilter{Reports: true, Sort: "-date", Paging: platform.Paging{Page: 1, PageSize: 50}})
+			slices.Sort(got)
+			if !slices.Equal(got, want) || total != int64(len(want)) {
+				t.Fatalf("got %v (total %d), want %v", got, total, want)
+			}
+		})
+	}
+}

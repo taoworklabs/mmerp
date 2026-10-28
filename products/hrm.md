@@ -307,8 +307,8 @@ The `web/src/hrm` area follows the pattern in [frontend.md](../docs/frontend.md)
 
 - The menu is in HR's words and grouped: overview; Nhân sự (employee records, employment contracts, org chart); Chấm công & nghỉ phép (timesheets (bảng chấm công), leave requests, overtime requests); Tiền lương (payrolls); Thiết lập (collapsible, folded by default: contract types, leave types, work calendar & holidays, legal parameters (mức đóng bảo hiểm & thuế), approval rules (quy trình duyệt)). The home tile is "Nhân sự".
 - The overview page is the area's entry page. A "Cần xử lý" block above the counts lists, each hidden when zero or out of the user's scope: requests waiting for the user's approval (links to the approval inbox), org units without a closed timesheet last month, legal entities without a closed payroll last month.
-- The org chart is open to every signed-in user.
-- Employees use the personal space (`web/src/hrm/me`, home tile "Cá nhân"): own timekeeping, payslips, leave and overtime requests, profile and org chart. People without HRM permissions see only that tile.
+- The HRM area is for people with an HRM role; anyone else who opens it is sent home. The org chart is open to every signed-in user, inside HRM and in the personal space.
+- Everyone else, direct managers included, uses the personal space (`web/src/hrm/me`, home tile "Cá nhân"): own timekeeping, payslips, leave and overtime requests, profile and org chart. A direct manager also sees "Nhóm của tôi": their reports' leave and overtime requests, past ones included (`GET /hrm/leaves?reports=true`, `GET /hrm/overtimes?reports=true`; shown when the self-service actions say `has_reports`). Their requests, and links to them from notifications and the approval inbox, open in the personal space, where the approver approves.
 - The HRM approval rules screen lives in the HRM area (`/hrm/approval-rules`) and shares components with `core`.
 
 ## Proving flow

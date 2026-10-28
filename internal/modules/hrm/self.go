@@ -77,9 +77,11 @@ func selfEmployee(ctx context.Context) (SelfServiceActions, error) {
 	if errors.Is(err, pgx.ErrNoRows) {
 		return out, nil
 	}
-	if err == nil {
-		out.SelfEmployeeID, out.SelfEmployeeName = &self.ID, &self.FullName
+	if err != nil {
+		return out, err
 	}
+	out.SelfEmployeeID, out.SelfEmployeeName = &self.ID, &self.FullName
+	out.HasReports, err = store.HasReports.Run(ctx, pgtype.Int8{Int64: self.ID, Valid: true})
 	return out, err
 }
 
@@ -124,4 +126,6 @@ type SelfServiceActions struct {
 	// The actor's own employee record, if linked.
 	SelfEmployeeID   *int64  `json:"self_employee_id"`
 	SelfEmployeeName *string `json:"self_employee_name"`
+	// Some employee has the actor's employee record as direct manager.
+	HasReports bool `json:"has_reports"`
 }

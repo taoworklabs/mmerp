@@ -242,6 +242,17 @@ func (q *Queries) GetEmployee(ctx context.Context, id int64) (GetEmployeeRow, er
 	return i, err
 }
 
+const hasReports = `-- name: HasReports :one
+SELECT EXISTS (SELECT 1 FROM hrm.employees WHERE manager_id = $1)
+`
+
+func (q *Queries) HasReports(ctx context.Context, managerID pgtype.Int8) (bool, error) {
+	row := q.db.QueryRow(ctx, hasReports, managerID)
+	var exists bool
+	err := row.Scan(&exists)
+	return exists, err
+}
+
 const isManager = `-- name: IsManager :one
 WITH RECURSIVE up AS (
     SELECT e.manager_id AS id FROM hrm.employees e WHERE e.id = $2::bigint

@@ -9,6 +9,11 @@ export function useLeaveActions() {
   return useQuery({ ...leaveActions(), select: (d) => d.allowed_actions })
 }
 
+// useHasReports: whether some employee has the user as direct manager; false until known.
+export function useHasReports() {
+  return useQuery({ ...leaveActions(), select: (d) => d.has_reports }).data ?? false
+}
+
 // useLeaveSelf: the user's own employee record, whom a new request is for by default; null without one.
 export function useLeaveSelf() {
   return useQuery({ ...leaveActions(), select: (d) => (d.self_employee_id ? { id: d.self_employee_id, name: d.self_employee_name ?? '' } : null) })

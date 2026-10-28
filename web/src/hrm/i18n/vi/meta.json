@@ -135,5 +135,8 @@
   "hrm.me.nav.payslips": "Phiếu lương",
   "hrm.me.nav.requests": "Nghỉ phép & tăng ca",
   "hrm.me.nav.profile": "Hồ sơ cá nhân",
-  "hrm.me.nav.org": "Sơ đồ tổ chức"
+  "hrm.me.nav.org": "Sơ đồ tổ chức",
+  "hrm.me.nav.group_team": "Nhóm của tôi",
+  "hrm.me.nav.team_leaves": "Đơn nghỉ phép",
+  "hrm.me.nav.team_overtimes": "Đơn tăng ca"
 }

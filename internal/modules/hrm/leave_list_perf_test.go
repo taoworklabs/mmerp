@@ -182,7 +182,7 @@ func (c leavePerfCase) query() data.Query {
 	if c.all {
 		sc = data.GrantAll() //nolint:forbidigo
 	}
-	return leaveQuery(sc, c.f)
+	return leaveQuery(sc, 0, c.f)
 }
 
 func (c leavePerfCase) oldArgs(reports []int64) []any {

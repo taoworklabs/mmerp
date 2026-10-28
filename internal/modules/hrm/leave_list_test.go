@@ -179,6 +179,40 @@ func TestLeaveListVisibility(t *testing.T) {
 	}
 }
 
+// reports=true keeps only the actor's reports, at any depth: never their own requests,
+// nor those their unit scope adds; has_reports says whether there are any.
+func TestLeaveListReports(t *testing.T) {
+	f := newListFixture(t)
+	for _, c := range []struct {
+		actor   string
+		reports []string
+	}{
+		{"M", []string{"E", "E2", "E3"}},
+		{"E", []string{"E3"}},
+		{"E2", nil},
+		{"HR_A", nil},
+		{"ADMIN", nil},
+	} {
+		t.Run(c.actor, func(t *testing.T) {
+			var want []int64
+			for _, code := range c.reports {
+				want = append(want, f.leaveIDs[code]...)
+			}
+			slices.Sort(want)
+			got, total := f.newLeaves(f.actors[c.actor], hrm.LeaveFilter{Reports: true, Sort: "-start_date", Paging: platform.Paging{Page: 1, PageSize: 50}})
+			slices.Sort(got)
+			if !slices.Equal(got, want) || total != int64(len(want)) {
+				t.Fatalf("got %v (total %d), want %v", got, total, want)
+			}
+			acts, err := f.hrm.LeaveActions(f.actors[c.actor])
+			f.check(err)
+			if acts.HasReports != (len(c.reports) > 0) {
+				t.Fatalf("has_reports %v", acts.HasReports)
+			}
+		})
+	}
+}
+
 // Several statuses filter as a union; none filters nothing.
 func TestLeaveListSeveralStatuses(t *testing.T) {
 	f := newListFixture(t)

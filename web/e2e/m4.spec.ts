@@ -235,15 +235,15 @@ test.describe('contracts', () => {
     await hr.goto(`/hrm/contracts/${id}`)
     await expect(hr.getByText('Bạn không có quyền xem lương.')).toBeVisible()
     await expect(hr.getByRole('textbox', { name: /^Lương/ })).toHaveCount(0)
-    // The employee themself has no contract permission.
+    // The employee themself has no HRM role, so the HRM area sends them home.
     const e = await as(browser, login.e, `/hrm/contracts/${id}`)
-    await expect(e.getByText('Không tìm thấy trang')).toBeVisible()
+    await expect(e).toHaveURL(/\/$/)
   })
 })
 
 test.describe('overtime', () => {
   test('an employee files, withdraws and resends; the manager rejects, then approves from the inbox', async ({ browser }) => {
-    const e = await as(browser, login.e, '/hrm/overtimes/new')
+    const e = await as(browser, login.e, '/me/requests/overtime/new')
     await e.getByRole('textbox', { name: /^Ngày tăng ca/ }).fill('15/09/2026')
     await e.getByRole('textbox', { name: /^Giờ ca ngày/ }).fill('0')
     await e.getByRole('button', { name: 'Tạo bản nháp' }).click()
@@ -262,7 +262,7 @@ test.describe('overtime', () => {
     await e.getByRole('button', { name: 'Gửi duyệt' }).click()
     await status(e, 'Chờ duyệt')
 
-    const m = await as(browser, login.m, `/hrm/overtimes`)
+    const m = await as(browser, login.m, '/me/team/overtimes')
     await m.getByRole('link', { name: number }).click()
     await m.getByRole('button', { name: 'Từ chối' }).click()
     await m.getByRole('dialog').getByRole('textbox', { name: /^Lý do/ }).fill('Chưa có kế hoạch tăng ca')
@@ -279,12 +279,12 @@ test.describe('overtime', () => {
     await expect(m.getByText('2,5')).toBeVisible()
     await m.getByRole('button', { name: 'Duyệt', exact: true }).click()
     await expect(m.getByText('Đã duyệt.')).toBeVisible()
-    await m.goto('/hrm/overtimes')
+    await m.goto('/me/team/overtimes')
     await expect(m.getByRole('row', { name: new RegExp(`${number}.*Đã duyệt`) })).toBeVisible()
   })
 
   test('holiday overtime needs the director after the manager', async ({ browser }) => {
-    const e = await as(browser, login.e, '/hrm/overtimes/new')
+    const e = await as(browser, login.e, '/me/requests/overtime/new')
     await e.getByRole('textbox', { name: /^Ngày tăng ca/ }).fill('02/09/2026')
     await e.getByRole('combobox', { name: 'Loại ngày' }).click()
     await e.getByRole('option', { name: 'Ngày lễ' }).click()
@@ -330,7 +330,7 @@ test.describe('overtime', () => {
 
   test('at 375px an employee files overtime and the manager approves it', async ({ browser }) => {
     const small = { width: 375, height: 800 }
-    const e = await as(browser, login.e, '/hrm/overtimes/new', small)
+    const e = await as(browser, login.e, '/me/requests/overtime/new', small)
     await e.getByRole('textbox', { name: /^Ngày tăng ca/ }).fill('22/09/2026')
     await e.getByRole('textbox', { name: /^Giờ ca đêm/ }).fill('2')
     await e.getByRole('button', { name: 'Tạo bản nháp' }).click()
@@ -343,7 +343,7 @@ test.describe('overtime', () => {
     await m.getByRole('button', { name: new RegExp(number) }).click()
     await m.getByRole('button', { name: 'Duyệt', exact: true }).click()
     await expect(m.getByText('Đã duyệt.')).toBeVisible()
-    await m.goto('/hrm/overtimes')
-    await expect(m.getByRole('list', { name: 'Đơn tăng ca' }).getByText(number)).toBeVisible()
+    await m.goto('/me/team/overtimes')
+    await expect(m.getByRole('list', { name: 'Đơn tăng ca của nhóm' }).getByText(number)).toBeVisible()
   })
 })

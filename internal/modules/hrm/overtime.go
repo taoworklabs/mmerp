@@ -110,7 +110,8 @@ func (s *Service) Overtimes(ctx context.Context, f OvertimeFilter) (OvertimeList
 	if err != nil {
 		return out, err
 	}
-	page, err := overtimeList.Run(ctx, overtimeQuery(sc, f))
+	actor, _ := platform.ActorFrom(ctx)
+	page, err := overtimeList.Run(ctx, overtimeQuery(sc, actor, f))
 	if err != nil {
 		return out, err
 	}

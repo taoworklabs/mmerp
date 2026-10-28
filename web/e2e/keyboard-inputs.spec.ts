@@ -58,7 +58,7 @@ test.describe('dates', () => {
   })
 
   async function newLeave(page: Page) {
-    await page.goto('/hrm/leaves/new')
+    await page.goto('/me/requests/leave/new')
     await page.getByLabel('Tên đăng nhập').fill(dates.user)
     await page.getByLabel(/^Mật khẩu/).fill(password)
     await page.getByRole('button', { name: 'Đăng nhập' }).click()

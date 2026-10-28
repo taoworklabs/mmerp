@@ -25,7 +25,7 @@ var overtimeList = data.Register(data.List[store.OvertimeListBaseRow]{
 })
 
 // overtimeQuery turns the API filter into a query over overtimeList.
-func overtimeQuery(sc data.Scope, f OvertimeFilter) data.Query {
+func overtimeQuery(sc data.Scope, actor int64, f OvertimeFilter) data.Query {
 	from, to := platform.NullDate(platform.Optional(f.From)), platform.NullDate(platform.Optional(f.To))
 	return data.Query{
 		Scope: sc, Q: f.Q, Sort: f.Sort, Paging: f.Paging,
@@ -33,6 +33,7 @@ func overtimeQuery(sc data.Scope, f OvertimeFilter) data.Query {
 			data.When(f.Status != "", data.Eq("status", f.Status)),
 			data.When(f.OrgUnitID != 0, data.Eq("org_unit_id", f.OrgUnitID)),
 			data.When(f.EmployeeID != 0, data.Eq("employee_id", f.EmployeeID)),
+			data.When(f.Reports, reportsOnly(actor)),
 			data.When(from.Valid, data.Gte("date", from)),
 			data.When(to.Valid, data.Lte("date", to)),
 		),
