@@ -64,7 +64,10 @@ func (s *Service) exportD02LT(ctx context.Context, params json.RawMessage) (data
 		case cb > 0 && pb == 0:
 			r.kind, r.terms, r.effective = 0, cl.Input.InsuredTerms, month
 			r.label = "Tăng lao động"
-			if inPrev {
+			// A return only for who was already there when M−1 began: someone hired late
+			// in M−1 contributed nothing yet and is new.
+			prevStart := month.AddDate(0, -1, 0)
+			if _, there := contractOn(contracts, e.ID, prevStart); inPrev && there && !e.HireDate.Time.After(prevStart) {
 				r.label = "Đi làm lại"
 			} else {
 				r.effective = joined(contracts, e, month, monthEnd)
@@ -97,7 +100,7 @@ func (s *Service) exportD02LT(ctx context.Context, params json.RawMessage) (data
 		moves = append(moves, r)
 		listed = append(listed, e)
 	}
-	people, err := s.reportPeople(ctx, listed)
+	people, err := s.reportPeople(ctx, listed, "social_insurance_no")
 	if err != nil {
 		return dataio.Sheet{}, err
 	}

@@ -209,7 +209,7 @@ func (s *Service) exportPIT05_1BK(ctx context.Context, params json.RawMessage) (
 	if err != nil {
 		return dataio.Sheet{}, err
 	}
-	people, err := s.reportPeople(ctx, y.emps)
+	people, err := s.reportPeople(ctx, y.emps, "tax_code", "national_id")
 	if err != nil {
 		return dataio.Sheet{}, err
 	}
@@ -335,7 +335,7 @@ func (s *Service) exportPIT05_3BK(ctx context.Context, params json.RawMessage) (
 			withDeps = append(withDeps, e)
 		}
 	}
-	people, err := s.reportPeople(ctx, withDeps)
+	people, err := s.reportPeople(ctx, withDeps, "tax_code")
 	if err != nil {
 		return dataio.Sheet{}, err
 	}

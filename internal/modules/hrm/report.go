@@ -118,30 +118,37 @@ type reportPerson struct {
 	SocialInsuranceNo, TaxCode, NationalID string
 }
 
-// reportPeople decrypts the identifiers of the employees a report lists. The actor must read
-// sensitive values at each one's current unit; every read is audited, never with the values.
-func (s *Service) reportPeople(ctx context.Context, rows []store.ReportEmployeesRow) ([]reportPerson, error) {
+// reportPeople decrypts the identifiers among fields a report shows of the employees it lists;
+// the national ID only for who has no tax code, which it stands in for. The actor must read
+// sensitive values at each one's current unit; every value shown is audited, never the values.
+func (s *Service) reportPeople(ctx context.Context, rows []store.ReportEmployeesRow, fields ...string) ([]reportPerson, error) {
 	if err := s.requireReportSensitive(ctx, rows); err != nil {
 		return nil, err
 	}
 	out := make([]reportPerson, len(rows))
 	for i, r := range rows {
 		p := reportPerson{ReportEmployeesRow: r}
-		var fields []string
-		for f, dst := range map[string]*string{"social_insurance_no": &p.SocialInsuranceNo, "tax_code": &p.TaxCode, "national_id": &p.NationalID} {
-			v, err := open(ctx, f, sealedOf(store.HrmEmployee{NationalID: r.NationalID, SocialInsuranceNo: r.SocialInsuranceNo, TaxCode: r.TaxCode})[f])
+		cols := map[string]struct {
+			sealed []byte
+			dst    *string
+		}{"social_insurance_no": {r.SocialInsuranceNo, &p.SocialInsuranceNo}, "tax_code": {r.TaxCode, &p.TaxCode}, "national_id": {r.NationalID, &p.NationalID}}
+		var shown []string
+		for _, f := range fields {
+			if f == "national_id" && p.TaxCode != "" {
+				continue
+			}
+			v, err := open(ctx, f, cols[f].sealed)
 			if err != nil {
 				return nil, err
 			}
 			if v != nil && *v != "" {
-				*dst = *v
-				fields = append(fields, f)
+				*cols[f].dst = *v
+				shown = append(shown, f)
 			}
 		}
-		if len(fields) > 0 {
-			slices.Sort(fields)
+		if len(shown) > 0 {
 			err := platform.InTx(ctx, func(ctx context.Context) error {
-				return s.d.Audit.RecordFor(ctx, "hrm.employee_sensitive_exported", audit.Ref{Type: employeeType, ID: r.ID}, map[string]any{"fields": fields})
+				return s.d.Audit.RecordFor(ctx, "hrm.employee_sensitive_exported", audit.Ref{Type: employeeType, ID: r.ID}, map[string]any{"fields": shown})
 			})
 			if err != nil {
 				return nil, err

@@ -210,6 +210,17 @@ func TestD02LTMovements(t *testing.T) {
 	wantCells(t, rowOf(t, rows, dName, "Nhân viên U"), map[int]string{dKind: "Đi làm lại", dEff: "01/07/2026", dFrom: "07/2026"})
 }
 
+// H joins on 25 May: too few days in May to contribute, so June is the increase, not a return.
+func TestD02LTLateHire(t *testing.T) {
+	f := newReportFixture(t)
+	f.contract(f.emp, sample{salary: 22_000_000}, "2026-01-01", "2026-12-31")
+	late := f.hire("H", f.a, "2026-05-25", 10_000_000)
+	f.close(f.c, "2026-05", map[int64]map[int64][]string{f.a: {f.emp: full("2026-05"), late: workdays("2026-05-25", "2026-05-31")}})
+	f.close(f.c, "2026-06", map[int64]map[int64][]string{f.a: {f.emp: full("2026-06"), late: full("2026-06")}})
+	rows, _ := f.exportReport(f.rep, "hrm.report.d02lt", `{"legal_entity_id":`+itoa(f.c)+`,"month":"2026-06"}`)
+	wantCells(t, rowOf(t, rows, dName, "Nhân viên H"), map[int]string{dKind: "Tăng lao động", dEff: "25/05/2026", dFrom: "06/2026"})
+}
+
 // E moves from C to C2 on 1 June: a decrease for C, an increase for C2.
 func TestD02LTMoveBetweenEntities(t *testing.T) {
 	f := newReportFixture(t)
@@ -301,6 +312,12 @@ func TestReportAuditsIdentifiers(t *testing.T) {
 	f.exportReport(f.rep, "hrm.report.d02lt", `{"legal_entity_id":`+itoa(f.c)+`,"month":"2026-06"}`)
 	if got := f.auditCount("hrm.employee_sensitive_exported") - before; got != 1 {
 		t.Fatalf("%d audit rows", got)
+	}
+	// D02-LT shows the social insurance number only; the audit names what the file holds.
+	var data string
+	f.check(f.system.QueryRow(f.admin, `SELECT data::text FROM audit.log WHERE action = 'hrm.employee_sensitive_exported' ORDER BY id DESC LIMIT 1`).Scan(&data))
+	if !strings.Contains(data, "social_insurance_no") || strings.Contains(data, "tax_code") || strings.Contains(data, "national_id") {
+		t.Fatalf("audited %s", data)
 	}
 }
 

@@ -72,7 +72,13 @@ export function ReportsPage() {
       role: 'status',
       render: (r) =>
         entities.chosen && (
-          <ExportButton kind={r.kind} params={{ legal_entity_id: entities.chosen, ...periodParam(r.period) }} label={t('hrm.reports.export')} />
+          // Keyed by its params: a finished file of another entity or period must not stay offered.
+          <ExportButton
+            key={`${entities.chosen}-${JSON.stringify(periodParam(r.period))}`}
+            kind={r.kind}
+            params={{ legal_entity_id: entities.chosen, ...periodParam(r.period) }}
+            label={t('hrm.reports.export')}
+          />
         ),
     },
   ]
