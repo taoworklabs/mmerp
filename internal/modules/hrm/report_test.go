@@ -258,6 +258,55 @@ func TestD02LTMoveBetweenEntities(t *testing.T) {
 	wantCells(t, rowOf(t, rows, dName, "Nhân viên E"), map[int]string{dKind: "Tăng lao động", dEff: "01/06/2026", dSal: "24000000"})
 }
 
+// U, hired before the first posted payroll and below the 14 days in April and May, starts
+// contributing in June: with no history to show otherwise, U counts as insured before mmerp.
+func TestD02LTReturnAtHistoryStart(t *testing.T) {
+	f := newReportFixture(t)
+	f.contract(f.emp, sample{salary: 22_000_000}, "2026-01-01", "2026-12-31")
+	u := f.hire("U", f.a, "2026-01-05", 12_000_000)
+	few := func(month string) []string { return workdays(month+"-04", month+"-05") }
+	f.close(f.c, "2026-04", map[int64]map[int64][]string{f.a: {f.emp: full("2026-04"), u: workdays("2026-04-01", "2026-04-02")}})
+	f.close(f.c, "2026-05", map[int64]map[int64][]string{f.a: {f.emp: full("2026-05"), u: few("2026-05")}})
+	f.close(f.c, "2026-06", map[int64]map[int64][]string{f.a: {f.emp: full("2026-06"), u: full("2026-06")}})
+	rows, _ := f.exportReport(f.rep, "hrm.report.d02lt", `{"legal_entity_id":`+itoa(f.c)+`,"month":"2026-06"}`)
+	wantCells(t, rowOf(t, rows, dName, "Nhân viên U"), map[int]string{dKind: "Đi làm lại", dEff: "01/06/2026"})
+}
+
+// U contributed in February; March has no posted payroll; April and May are below the 14
+// days. The walk back crosses the missing month and June is a return.
+func TestD02LTReturnAcrossMissingMonth(t *testing.T) {
+	f := newReportFixture(t)
+	f.contract(f.emp, sample{salary: 22_000_000}, "2026-01-01", "2026-12-31")
+	u := f.hire("U", f.a, "2026-01-05", 12_000_000)
+	f.close(f.c, "2026-02", map[int64]map[int64][]string{f.a: {f.emp: full("2026-02"), u: full("2026-02")}})
+	f.close(f.c, "2026-04", map[int64]map[int64][]string{f.a: {f.emp: full("2026-04"), u: workdays("2026-04-01", "2026-04-02")}})
+	f.close(f.c, "2026-05", map[int64]map[int64][]string{f.a: {f.emp: full("2026-05"), u: workdays("2026-05-04", "2026-05-05")}})
+	f.close(f.c, "2026-06", map[int64]map[int64][]string{f.a: {f.emp: full("2026-06"), u: full("2026-06")}})
+	rows, _ := f.exportReport(f.rep, "hrm.report.d02lt", `{"legal_entity_id":`+itoa(f.c)+`,"month":"2026-06"}`)
+	wantCells(t, rowOf(t, rows, dName, "Nhân viên U"), map[int]string{dKind: "Đi làm lại", dEff: "01/06/2026"})
+}
+
+// E contributed to C until April, joins C2 in May below the 14 days and contributes from June:
+// for C2 that is an increase, since E was never insured there.
+func TestD02LTMoverWaivedFirstMonth(t *testing.T) {
+	f := newReportFixture(t)
+	c2 := must(t)(f.iam.CreateOrgUnit(f.admin, iam.OrgUnitInput{Kind: "company", Name: "C2"}))
+	d2 := must(t)(f.iam.CreateOrgUnit(f.admin, iam.OrgUnitInput{ParentID: &c2, Kind: "department", Name: "D2"}))
+	if _, err := f.system.Exec(f.admin, `INSERT INTO hrm.payroll_locks (legal_entity_id) VALUES ($1)`, c2); err != nil {
+		t.Fatal(err)
+	}
+	f.contract(f.emp, sample{salary: 22_000_000}, "2026-01-01", "2026-04-30")
+	other := f.hire("X", d2, "2026-01-05", 9_000_000)
+	f.close(f.c, "2026-04", map[int64]map[int64][]string{f.a: {f.emp: full("2026-04")}})
+	f.close(c2, "2026-04", map[int64]map[int64][]string{d2: {other: full("2026-04")}})
+	f.edit(f.emp, func(e *hrm.EmployeeFields) { e.OrgUnitID = d2; e.ManagerID = nil })
+	f.contract(f.emp, sample{salary: 24_000_000}, "2026-05-01", "2026-12-31")
+	f.close(c2, "2026-05", map[int64]map[int64][]string{d2: {other: full("2026-05"), f.emp: workdays("2026-05-04", "2026-05-05")}})
+	f.close(c2, "2026-06", map[int64]map[int64][]string{d2: {other: full("2026-06"), f.emp: full("2026-06")}})
+	rows, _ := f.exportReport(f.rep, "hrm.report.d02lt", `{"legal_entity_id":`+itoa(c2)+`,"month":"2026-06"}`)
+	wantCells(t, rowOf(t, rows, dName, "Nhân viên E"), map[int]string{dKind: "Tăng lao động", dSal: "24000000"})
+}
+
 func TestD02LTPreviousMonthMissing(t *testing.T) {
 	f := newReportFixture(t)
 	f.contract(f.emp, sample{salary: 22_000_000}, "2026-01-01", "2026-12-31")

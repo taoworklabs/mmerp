@@ -138,5 +138,6 @@ For an accountant or the BHXH office before loading real data:
 - Whether [16] of 05-1/BK includes the personal deduction, and the formula for [36] of 05/KK.
 - The employer's finalisation deadline for tax year 2026 under the Law on Tax Administration 108/2025/QH15.
 - A company that starts using mmerp mid-year needs its earlier months' income and tax to finalise; importing that history is not built.
+- D02-LT treats anyone hired before the first posted payroll as insured before mmerp, and a missing payroll month like the start of that history: a long-term employee who never contributed and starts now is listed as "Đi làm lại" instead of "Tăng lao động".
 - The TT 89 forms were read from form files and secondary sources, not from the text on chinhphu.vn or gdt.gov.vn; the accountant checks the indicator mapping against the official text.
 - HTKK does not yet ship the TT 89 05/KK (reported for HTKK 5.7.9); the files are checked against the form, not against HTKK's import.
