@@ -1,6 +1,6 @@
 # Termination workflow and severance allowance
 
-Date: 2026-10-28 · Status: draft, awaiting approval (lead session, on the user's behalf)
+Date: 2026-10-28 · Status: approved by the lead session on the user's behalf, 2026-10-28
 
 ## Intent
 
@@ -64,7 +64,7 @@ All from Art 46–47 Labour Code 2019 and Art 8 Decree 145/2020 (NĐ 145/2020):
 4. **Years counted** = whole years of months counted, plus a remainder of 1–6 months counted as ½ year and 7–11 months as 1 year (Art 8.3 NĐ 145/2020: "tháng lẻ ít hơn hoặc bằng 06 tháng được tính bằng 1/2 năm; trên 06 tháng được tính bằng 01 năm").
 5. **Average salary** = average over the 6 consecutive calendar months before the termination month of the contract amount in force on each month's last day, salary + salary allowances (the payroll's insured amount, `ContractTerms.insured()`), benefits excluded (Art 8.5 NĐ 145/2020; Art 3 Circular 10/2020/TT-BLĐTBXH leaves allowances like meals, fuel, phone out of salary). Several contracts or addenda over those months: each month takes the one in force. A month with no contract in force is left out of the average *(assumption)*; none at all gives none.
 6. **Amount:** severance = years × ½ × average; job loss = max(years × 1, 2) × average (Art 47.1: "nhưng ít nhất bằng 02 tháng tiền lương"). Rounded once, to the dong, with the platform rounding.
-7. **Not subject to insurance** (not part of the insured salary). **Not taxable**: Art 2.2(b) Circular 111/2013/TT-BTC (the severance and job-loss allowances paid under the Labour Code are not counted in taxable income from wages); in the payroll it is gross income and exempt income, as untaken leave already is.
+7. **Not subject to insurance** (not part of the insured salary). **Not taxable**: for periods before 01/07/2026, Art 2.2(b) Circular 111/2013/TT-BTC (severance and job-loss allowances under the Labour Code are not counted in taxable income from wages); from 01/07/2026, the PIT Law 109/2025/QH15 keeps them out of taxable wage income (point h, clause 3, Art 8 Decree 253/2026/NĐ-CP, as cited by secondary sources; exact citation Still open). In the payroll it is gross income and exempt income, as untaken leave already is. An amount above the legal one is not possible here (the system computes only the legal amount).
 8. **Payment deadline** is Art 48.1: within 14 working days of termination (30 days in the listed exceptions). Operating note only; mmerp does not enforce or track payment.
 
 ### Payroll
@@ -77,13 +77,14 @@ All from Art 46–47 Labour Code 2019 and Art 8 Decree 145/2020 (NĐ 145/2020):
 - **Payroll samples:** two new C rows in 04/2026, each justified article by article in the "Giả định" sheet:
   - mutual agreement, hired 01/07/2007, terminated 15/04/2026, BHTN from 01/01/2009: months worked 225, BHTN 207 → 18 months counted → 1.5 years × ½ × average (with an addendum raising the salary in 01/2026 so the average spans two amounts);
   - restructuring, hired 01/03/2024, all months in BHTN: years 0 → the 2-month floor.
-  They need the accountant's review like the existing ones.
+  They need the accountant's review like the existing ones. The mutual-agreement case's window (10/2025–03/2026) holds both amounts, and the test asserts the six captured `monthly` figures, not only the result. The existing 28 samples' figures do not move (`TestPayrollSamples` unchanged for them).
 
 ### Effects when it is posted and cancelled
 
 - `OnTransition` to `posted`, in this lock order: record row (by `record`) → `hrm.payroll_locks` row `FOR SHARE` with the payroll period check on the **affected range** [termination date, ∞) (a later termination date changes the pay of every period from its month on) → employee row `FOR NO KEY UPDATE` (`LockEmployee`) → nothing further (leave balances are only read by the payroll). Under the lock: refuse if another termination of the employee is posted (`termination_exists`) or the termination date is before the hire date; refuse if the employee's org unit now belongs to another legal entity than the document's (`termination_legal_entity_changed`: recreate it) *(my call)*; then keep the employee's current `termination_date` in the termination row (`previous_date`, usually null) and set it to the termination date, audited as an employee change.
 - **Cancelling** a posted termination: same locks and the same payroll period check (so a termination already paid by a closed payroll cannot be cancelled: `payroll_period_closed`), then restore `termination_date` to `previous_date` (null for anyone terminated only through documents) *(my call: a legacy date survives a post and cancel)*.
 - A draft or pending termination changes nothing on the employee.
+- **Late entry, the common case.** An employee leaves 31/03, the March payroll closes on 05/04, HR enters the termination on 10/04. The range [31/03, ∞) overlaps the closed March period, so posting is refused (`payroll_period_closed`, naming March) and the allowance cannot be paid through mmerp from that state. The way out is the existing operating rule (products/hrm.md, "After closing"): while March's pay is not yet paid out and its insurance and tax not filed, HR cancels the March payroll, posts the termination, recalculates and closes March again. Once paid out, the allowance cannot go through mmerp in this release (Still open). A Go test pins the refusal so the gap is documented in code. The UI shows the refusal's periods, as for other documents.
 - Posted contracts are **not** changed. The payroll already stops at the termination date. A contract in force after it is a warning.
 
 ### Warnings
@@ -143,6 +144,8 @@ The allowance preview (kind, months worked, months counted, years; and the amoun
 - Leftover days in months worked: dropped here; some practice rounds a part month up.
 - A month without a contract in force among the 6: left out of the average here.
 - Whether the 6 months end with the month before termination (here) or include the termination month when it ends on its last day.
+- A termination entered after its period's payroll is paid out: the allowance cannot go through mmerp. Follow-up: a back-pay style allowance line on the open payroll.
+- The exact PIT citation for periods from 01/07/2026 (Law 109/2025/QH15, Decree 253/2026/NĐ-CP).
 - The two new payroll samples, like all samples, need the accountant's review. Not blocking: they ship marked as awaiting review, as the existing 28 did.
 
 ## Left to the builder
