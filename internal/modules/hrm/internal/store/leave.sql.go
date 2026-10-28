@@ -51,7 +51,8 @@ func (q *Queries) AccrualEmployees(ctx context.Context, since pgtype.Date) ([]Ac
 }
 
 const addLeaveBalance = `-- name: AddLeaveBalance :one
-UPDATE hrm.leave_balances SET days = days + CAST($1::text AS numeric)
+UPDATE hrm.leave_balances SET days = days + CAST($1::text AS numeric),
+    carried = LEAST(carried, GREATEST(days + CAST($1::text AS numeric), 0))
 WHERE employee_id = $2 AND year = $3
 RETURNING days::text
 `
@@ -62,7 +63,8 @@ type AddLeaveBalanceParams struct {
 	Year       int32
 }
 
-// Locks the row until commit; a negative result fails leave_balances_days_check.
+// Locks the row until commit; a negative result fails leave_balances_days_check. Carried
+// days are part of days, so they shrink with it.
 func (q *Queries) AddLeaveBalance(ctx context.Context, arg AddLeaveBalanceParams) (string, error) {
 	row := q.db.QueryRow(ctx, addLeaveBalance, arg.Delta, arg.EmployeeID, arg.Year)
 	var days string
@@ -208,7 +210,7 @@ func (q *Queries) EnsureLeaveBalance(ctx context.Context, arg EnsureLeaveBalance
 
 const getLeaveRequest = `-- name: GetLeaveRequest :one
 SELECT r.id, r.employee_id, r.leave_type_id, r.start_date, r.end_date, r.days::text AS days, r.reason,
-       r.deducted::text AS deducted,
+       r.deducted::text AS deducted, r.deducted_carried::text AS deducted_carried,
        e.code AS employee_code, e.full_name AS employee_name, e.user_id AS employee_user_id,
        t.name AS leave_type_name, t.deducts_balance, t.max_days, t.requires_attachment, d.org_unit_id
 FROM hrm.leave_requests r
@@ -227,6 +229,7 @@ type GetLeaveRequestRow struct {
 	Days               string
 	Reason             pgtype.Text
 	Deducted           string
+	DeductedCarried    string
 	EmployeeCode       string
 	EmployeeName       string
 	EmployeeUserID     pgtype.Int8
@@ -249,6 +252,7 @@ func (q *Queries) GetLeaveRequest(ctx context.Context, id int64) (GetLeaveReques
 		&i.Days,
 		&i.Reason,
 		&i.Deducted,
+		&i.DeductedCarried,
 		&i.EmployeeCode,
 		&i.EmployeeName,
 		&i.EmployeeUserID,
@@ -369,12 +373,14 @@ func (q *Queries) LeaveBalanceDays(ctx context.Context, arg LeaveBalanceDaysPara
 }
 
 const leaveBalances = `-- name: LeaveBalances :many
-SELECT year, days::text AS days FROM hrm.leave_balances WHERE employee_id = $1 ORDER BY year DESC
+SELECT year, days::text AS days, carried::text AS carried, carried_until FROM hrm.leave_balances WHERE employee_id = $1 ORDER BY year DESC
 `
 
 type LeaveBalancesRow struct {
-	Year int32
-	Days string
+	Year         int32
+	Days         string
+	Carried      string
+	CarriedUntil pgtype.Date
 }
 
 func (q *Queries) LeaveBalances(ctx context.Context, employeeID int64) ([]LeaveBalancesRow, error) {
@@ -386,7 +392,12 @@ func (q *Queries) LeaveBalances(ctx context.Context, employeeID int64) ([]LeaveB
 	var items []LeaveBalancesRow
 	for rows.Next() {
 		var i LeaveBalancesRow
-		if err := rows.Scan(&i.Year, &i.Days); err != nil {
+		if err := rows.Scan(
+			&i.Year,
+			&i.Days,
+			&i.Carried,
+			&i.CarriedUntil,
+		); err != nil {
 			return nil, err
 		}
 		items = append(items, i)
@@ -497,17 +508,66 @@ func (q *Queries) ListLeaveTypes(ctx context.Context) ([]HrmLeaveType, error) {
 	return items, nil
 }
 
+const lockLeaveBalance = `-- name: LockLeaveBalance :one
+SELECT days::text AS days, carried::text AS carried, carried_until FROM hrm.leave_balances
+WHERE employee_id = $1 AND year = $2 FOR UPDATE
+`
+
+type LockLeaveBalanceParams struct {
+	EmployeeID int64
+	Year       int32
+}
+
+type LockLeaveBalanceRow struct {
+	Days         string
+	Carried      string
+	CarriedUntil pgtype.Date
+}
+
+func (q *Queries) LockLeaveBalance(ctx context.Context, arg LockLeaveBalanceParams) (LockLeaveBalanceRow, error) {
+	row := q.db.QueryRow(ctx, lockLeaveBalance, arg.EmployeeID, arg.Year)
+	var i LockLeaveBalanceRow
+	err := row.Scan(&i.Days, &i.Carried, &i.CarriedUntil)
+	return i, err
+}
+
+const setLeaveBalance = `-- name: SetLeaveBalance :exec
+UPDATE hrm.leave_balances SET days = CAST($1::text AS numeric), carried = CAST($2::text AS numeric), carried_until = $3
+WHERE employee_id = $4 AND year = $5
+`
+
+type SetLeaveBalanceParams struct {
+	Days         string
+	Carried      string
+	CarriedUntil pgtype.Date
+	EmployeeID   int64
+	Year         int32
+}
+
+// Only on a row locked by LockLeaveBalance in the same transaction.
+func (q *Queries) SetLeaveBalance(ctx context.Context, arg SetLeaveBalanceParams) error {
+	_, err := q.db.Exec(ctx, setLeaveBalance,
+		arg.Days,
+		arg.Carried,
+		arg.CarriedUntil,
+		arg.EmployeeID,
+		arg.Year,
+	)
+	return err
+}
+
 const setLeaveDeducted = `-- name: SetLeaveDeducted :exec
-UPDATE hrm.leave_requests SET deducted = CAST($1::text AS numeric) WHERE id = $2
+UPDATE hrm.leave_requests SET deducted = CAST($1::text AS numeric), deducted_carried = CAST($2::text AS numeric) WHERE id = $3
 `
 
 type SetLeaveDeductedParams struct {
-	Deducted string
-	ID       int64
+	Deducted        string
+	DeductedCarried string
+	ID              int64
 }
 
 func (q *Queries) SetLeaveDeducted(ctx context.Context, arg SetLeaveDeductedParams) error {
-	_, err := q.db.Exec(ctx, setLeaveDeducted, arg.Deducted, arg.ID)
+	_, err := q.db.Exec(ctx, setLeaveDeducted, arg.Deducted, arg.DeductedCarried, arg.ID)
 	return err
 }
 

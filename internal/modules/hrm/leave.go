@@ -150,33 +150,61 @@ func (s *Service) leaveTransition(ctx context.Context, d record.Doc, from record
 			return err
 		}
 	}
-	var delta decimal.Decimal
-	switch {
-	case approved && r.DeductsBalance:
-		if delta, err = decimal.NewFromString(r.Days); err != nil {
-			return err
-		}
-		delta = delta.Neg()
-	case !approved:
-		if delta, err = decimal.NewFromString(r.Deducted); err != nil {
-			return err
-		}
-	}
-	if delta.IsZero() {
+	if approved && !r.DeductsBalance {
 		return nil
 	}
-	_, err = store.AddLeaveBalance.Run(ctx, store.AddLeaveBalanceParams{EmployeeID: r.EmployeeID, Year: int32(r.StartDate.Time.Year()), Delta: delta.String()})
-	if errors.Is(err, pgx.ErrNoRows) || platform.Violates(err, "leave_balances_days_check") {
-		return ErrInsufficientBalance
+	year := int32(r.StartDate.Time.Year())
+	bal, err := store.LockLeaveBalance.Run(ctx, store.LockLeaveBalanceParams{EmployeeID: r.EmployeeID, Year: year})
+	if errors.Is(err, pgx.ErrNoRows) {
+		if approved {
+			return ErrInsufficientBalance
+		}
+		// A cancel of a request that took nothing has nothing to give back.
+		return nil
 	}
 	if err != nil {
 		return err
 	}
-	deducted := decimal.Zero
+	days, carried := decimal.RequireFromString(bal.Days), decimal.RequireFromString(bal.Carried)
+	var delta, fromCarried decimal.Decimal
 	if approved {
-		deducted = delta.Neg()
+		delta = decimal.RequireFromString(r.Days).Neg()
+		// Leave dated while carried days last spends them first.
+		if bal.CarriedUntil.Valid && !r.StartDate.Time.After(bal.CarriedUntil.Time) {
+			fromCarried = decimal.Min(carried, delta.Neg())
+		}
+		carried = carried.Sub(fromCarried)
+	} else {
+		delta = decimal.RequireFromString(r.Deducted)
+		// Carried days come back as carried only while they last; afterwards they would have lapsed.
+		if back := decimal.RequireFromString(r.DeductedCarried); back.IsPositive() {
+			today, err := s.d.Setting.Today(ctx)
+			if err != nil {
+				return err
+			}
+			if bal.CarriedUntil.Valid && !today.Time.After(bal.CarriedUntil.Time) {
+				carried = carried.Add(back)
+			} else {
+				delta = delta.Sub(back)
+			}
+		}
 	}
-	return store.SetLeaveDeducted.Run(ctx, store.SetLeaveDeductedParams{ID: d.ID, Deducted: deducted.String()})
+	if delta.IsZero() && fromCarried.IsZero() {
+		return nil
+	}
+	days = days.Add(delta)
+	if days.IsNegative() {
+		return ErrInsufficientBalance
+	}
+	if err := store.SetLeaveBalance.Run(ctx, store.SetLeaveBalanceParams{EmployeeID: r.EmployeeID, Year: year,
+		Days: days.String(), Carried: decimal.Min(carried, days).String(), CarriedUntil: bal.CarriedUntil}); err != nil {
+		return err
+	}
+	deducted, deductedCarried := decimal.Zero, decimal.Zero
+	if approved {
+		deducted, deductedCarried = delta.Neg(), fromCarried
+	}
+	return store.SetLeaveDeducted.Run(ctx, store.SetLeaveDeductedParams{ID: d.ID, Deducted: deducted.String(), DeductedCarried: deductedCarried.String()})
 }
 
 // LeaveActions lists what the actor may do before picking a leave request.
@@ -507,7 +535,7 @@ func (s *Service) LeaveBalances(ctx context.Context, employeeID int64) ([]LeaveB
 	rows, err := store.LeaveBalances.Run(ctx, employeeID)
 	out := make([]LeaveBalance, len(rows))
 	for i, r := range rows {
-		out[i] = LeaveBalance{Year: r.Year, Days: platform.PlainDecimal(r.Days)}
+		out[i] = LeaveBalance{Year: r.Year, Days: platform.PlainDecimal(r.Days), Carried: platform.PlainDecimal(r.Carried), CarriedUntil: platform.DatePtr(r.CarriedUntil)}
 	}
 	return out, err
 }

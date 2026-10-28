@@ -4,6 +4,7 @@ import (
 	"slices"
 	"testing"
 
+	"github.com/taoworklabs/mmerp/internal/core/record"
 	"github.com/taoworklabs/mmerp/internal/modules/hrm"
 )
 
@@ -136,5 +137,126 @@ func TestAccrualFutureHire(t *testing.T) {
 	f.accrue("2026-04-01")
 	if got := f.ledger(2026); len(got) != 0 {
 		t.Fatalf("ledger: %v", got)
+	}
+}
+
+// carryFixture: C on manual, E with 5 days left of 2025, carried for months of 2026.
+func newCarryFixture(t *testing.T, months string, termination *string) *leaveFixture {
+	f := newAccrualFixture(t, "2023-01-01", termination)
+	f.setting(hrm.SettingLeaveAccrual, "manual")
+	f.setting(hrm.SettingCarryOverMonths, months)
+	f.check(f.hrm.AdjustLeaveBalance(f.hr, f.emp, 2025, hrm.BalanceAdjustment{Delta: "5", Reason: "còn lại 2025"}))
+	return f
+}
+
+func (f *leaveFixture) carried() (string, *string) {
+	f.t.Helper()
+	bs, err := f.hrm.LeaveBalances(f.hr, f.emp)
+	f.check(err)
+	for _, b := range bs {
+		if b.Year == 2026 {
+			return b.Carried, b.CarriedUntil
+		}
+	}
+	return "0", nil
+}
+
+func (f *leaveFixture) approved(start, end, days string) int64 {
+	f.t.Helper()
+	id := must(f.t)(f.hrm.CreateLeave(f.e, hrm.NewLeave{LeaveFields: f.fields(start, end, days)}))
+	f.check(f.send(f.e, id))
+	return id
+}
+
+func (f *leaveFixture) cancel(id int64) {
+	f.t.Helper()
+	f.check(errOf(f.rec.Transition(f.hr, record.Ref{Type: "hrm.leave_request", ID: id}, f.leave(id).Version, record.Cancelled)))
+}
+
+// On the new year last year's days move into this year as carried days, once.
+func TestCarryOver(t *testing.T) {
+	f := newCarryFixture(t, "3", nil)
+	f.accrue("2026-01-02")
+	carried, until := f.carried()
+	if f.balanceIn(2025) != "0" || f.balance() != "5" || carried != "5" || until == nil || *until != "2026-03-31" {
+		t.Fatalf("2025 %s, 2026 %s, carried %s until %v", f.balanceIn(2025), f.balance(), carried, until)
+	}
+	if f.auditCount("hrm.leave_carried_over") != 1 {
+		t.Fatal("carry-over not audited")
+	}
+	f.accrue("2026-01-03")
+	if f.balance() != "5" || f.auditCount("hrm.leave_carried_over") != 1 {
+		t.Fatalf("a rerun carried again: %s", f.balance())
+	}
+}
+
+// Leave dated up to the expiry spends carried days first; what is left lapses after it.
+func TestCarryExpires(t *testing.T) {
+	f := newCarryFixture(t, "3", nil)
+	f.accrue("2026-01-02")
+	f.approved("2026-03-02", "2026-03-03", "2")
+	if carried, _ := f.carried(); carried != "3" || f.balance() != "3" {
+		t.Fatalf("carried %s, balance %s", carried, f.balance())
+	}
+	f.accrue("2026-04-01")
+	if carried, _ := f.carried(); carried != "0" || f.balance() != "0" {
+		t.Fatalf("after expiry: carried %s, balance %s", carried, f.balance())
+	}
+	if f.auditCount("hrm.leave_carry_expired") != 1 {
+		t.Fatal("expiry not audited")
+	}
+}
+
+// With no carry-over, last year's days lapse on the new year rather than sit unreachable.
+func TestCarryOverZeroLapses(t *testing.T) {
+	f := newCarryFixture(t, "0", nil)
+	f.accrue("2026-01-02")
+	if f.balanceIn(2025) != "0" || f.balance() != "0" || f.auditCount("hrm.leave_carry_expired") != 1 {
+		t.Fatalf("2025 %s, 2026 %s", f.balanceIn(2025), f.balance())
+	}
+}
+
+// Cancelling gives carried days back while they last, and drops them once expired.
+func TestCarriedRefund(t *testing.T) {
+	// Until the end of 2026: still carried on any day of this test.
+	f := newCarryFixture(t, "12", nil)
+	f.accrue("2026-01-02")
+	id := f.approved("2026-03-02", "2026-03-03", "2")
+	f.cancel(id)
+	if carried, _ := f.carried(); carried != "5" || f.balance() != "5" {
+		t.Fatalf("refund before expiry: carried %s, balance %s", carried, f.balance())
+	}
+
+	// Expired at the end of March, before today: the carried part is dropped, as it would have lapsed.
+	g := newCarryFixture(t, "3", nil)
+	g.accrue("2026-01-02")
+	id = g.approved("2026-03-02", "2026-03-03", "2")
+	g.cancel(id)
+	if carried, _ := g.carried(); carried != "3" || g.balance() != "3" {
+		t.Fatalf("refund after expiry: carried %s, balance %s", carried, g.balance())
+	}
+}
+
+// A hand adjustment below the carried part takes the carried part down with it.
+func TestAdjustBelowCarried(t *testing.T) {
+	f := newCarryFixture(t, "3", nil)
+	f.accrue("2026-01-02")
+	f.check(f.hrm.AdjustLeaveBalance(f.hr, f.emp, 2026, hrm.BalanceAdjustment{Delta: "-3", Reason: "sửa"}))
+	if carried, _ := f.carried(); carried != "2" || f.balance() != "2" {
+		t.Fatalf("carried %s, balance %s", carried, f.balance())
+	}
+}
+
+// A leaver's balance is final once paid out: no expiry after they left, no carry into a later year.
+func TestLeaverNotCarriedNorExpired(t *testing.T) {
+	f := newCarryFixture(t, "3", new("2026-03-15"))
+	f.accrue("2026-01-02")
+	f.accrue("2026-04-01")
+	if carried, _ := f.carried(); carried != "5" || f.balance() != "5" {
+		t.Fatalf("April run touched a leaver: carried %s, balance %s", carried, f.balance())
+	}
+	f.accrue("2027-01-04")
+	if f.balance() != "5" || f.balanceIn(2027) != "0" {
+		t.Fatalf("carried into 2027: 2026 %s, 2027 %s", f.balance(), f.balanceIn(2027))
 	}
 }

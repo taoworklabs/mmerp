@@ -87,6 +87,9 @@ type LeaveFilter struct {
 type LeaveBalance struct {
 	Year int32  `json:"year"`
 	Days string `json:"days"`
+	// Carried over from last year, part of days, until CarriedUntil.
+	Carried      string  `json:"carried"`
+	CarriedUntil *string `json:"carried_until" format:"date"`
 }
 
 type BalanceAdjustment struct {

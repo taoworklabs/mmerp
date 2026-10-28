@@ -5,8 +5,10 @@ import (
 	"errors"
 	"fmt"
 	"slices"
+	"strconv"
 	"time"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/riverqueue/river"
 	"github.com/shopspring/decimal"
 
@@ -121,16 +123,19 @@ func (s *Service) accrueEmployee(ctx context.Context, e store.AccrualEmployeesRo
 		return err
 	}
 	mode, err := s.d.Setting.GetFor(ctx, legalEntity, SettingLeaveAccrual)
-	if err != nil || mode != "monthly" {
+	if err != nil {
 		return err
 	}
+	monthly := mode == "monthly"
 	calOf := func(year int) (calendar, error) {
 		k := [2]int64{legalEntity, int64(year)}
 		if c, ok := cals[k]; ok {
 			return c, nil
 		}
 		c, err := workCalendar(ctx, legalEntity, fmt.Sprintf("%d-01-01", year), fmt.Sprintf("%d-12-31", year))
-		cals[k] = c
+		if err == nil {
+			cals[k] = c
+		}
 		return c, err
 	}
 	year := today.Year()
@@ -140,7 +145,7 @@ func (s *Service) accrueEmployee(ctx context.Context, e store.AccrualEmployeesRo
 	if err != nil {
 		return err
 	}
-	if today.Month() == time.January || len(last) > 0 {
+	if monthly && (today.Month() == time.January || len(last) > 0) {
 		cal, err := calOf(year - 1)
 		if err != nil {
 			return err
@@ -149,15 +154,97 @@ func (s *Service) accrueEmployee(ctx context.Context, e store.AccrualEmployeesRo
 			return err
 		}
 	}
-	done, err := store.LeaveAccrualMonths.Run(ctx, store.LeaveAccrualMonthsParams{EmployeeID: e.ID, Year: int32(year)})
+	// A leaver's balance is final once paid out: it is neither carried past the year they
+	// left in nor expired after they left.
+	termination := platform.DatePtr(e.TerminationDate)
+	if termination == nil || dayOf(*termination).Year() >= year {
+		if err := s.carryOver(ctx, e.ID, legalEntity, year); err != nil {
+			return err
+		}
+	}
+	if monthly {
+		done, err := store.LeaveAccrualMonths.Run(ctx, store.LeaveAccrualMonthsParams{EmployeeID: e.ID, Year: int32(year)})
+		if err != nil {
+			return err
+		}
+		cal, err := calOf(year)
+		if err != nil {
+			return err
+		}
+		if err := s.accrueMonths(ctx, e, cal, year, int(today.Month())-1, done); err != nil {
+			return err
+		}
+	}
+	if termination == nil || !dayOf(*termination).Before(today) {
+		return s.expireCarried(ctx, e.ID, year, today)
+	}
+	return nil
+}
+
+// carryOver moves what is left of last year into this year's carried days, lasting to the
+// end of the setting's month (0: the end of last year, so they lapse at once). Last year is
+// left at 0, so a rerun moves only what reached it since.
+func (s *Service) carryOver(ctx context.Context, employee, legalEntity int64, year int) error {
+	prev, err := store.LockLeaveBalance.Run(ctx, store.LockLeaveBalanceParams{EmployeeID: employee, Year: int32(year - 1)})
+	if errors.Is(err, pgx.ErrNoRows) {
+		return nil
+	}
 	if err != nil {
 		return err
 	}
-	cal, err := calOf(year)
+	moved := decimal.RequireFromString(prev.Days)
+	if !moved.IsPositive() {
+		return nil
+	}
+	v, err := s.d.Setting.GetFor(ctx, legalEntity, SettingCarryOverMonths)
 	if err != nil {
 		return err
 	}
-	return s.accrueMonths(ctx, e, cal, year, int(today.Month())-1, done)
+	months, err := strconv.Atoi(v)
+	if err != nil {
+		return err
+	}
+	until := time.Date(year, time.Month(months)+1, 0, 0, 0, 0, 0, time.UTC).Format(time.DateOnly)
+	if err := store.SetLeaveBalance.Run(ctx, store.SetLeaveBalanceParams{EmployeeID: employee, Year: int32(year - 1), Days: "0", Carried: "0", CarriedUntil: prev.CarriedUntil}); err != nil {
+		return err
+	}
+	if err := store.EnsureLeaveBalance.Run(ctx, store.EnsureLeaveBalanceParams{EmployeeID: employee, Year: int32(year)}); err != nil {
+		return err
+	}
+	cur, err := store.LockLeaveBalance.Run(ctx, store.LockLeaveBalanceParams{EmployeeID: employee, Year: int32(year)})
+	if err != nil {
+		return err
+	}
+	days := decimal.RequireFromString(cur.Days).Add(moved)
+	carried := decimal.RequireFromString(cur.Carried).Add(moved)
+	if err := store.SetLeaveBalance.Run(ctx, store.SetLeaveBalanceParams{EmployeeID: employee, Year: int32(year),
+		Days: days.String(), Carried: carried.String(), CarriedUntil: platform.NullDate(&until)}); err != nil {
+		return err
+	}
+	return s.d.Audit.RecordFor(ctx, "hrm.leave_carried_over", audit.Ref{Type: employeeType, ID: employee},
+		map[string]any{"year": year, "days": moved.String(), "until": until, "balance": days.String()})
+}
+
+// expireCarried takes the carried days still unspent out of the balance once they have lapsed.
+func (s *Service) expireCarried(ctx context.Context, employee int64, year int, today time.Time) error {
+	cur, err := store.LockLeaveBalance.Run(ctx, store.LockLeaveBalanceParams{EmployeeID: employee, Year: int32(year)})
+	if errors.Is(err, pgx.ErrNoRows) {
+		return nil
+	}
+	if err != nil {
+		return err
+	}
+	carried := decimal.RequireFromString(cur.Carried)
+	if !carried.IsPositive() || !cur.CarriedUntil.Valid || !today.After(cur.CarriedUntil.Time) {
+		return nil
+	}
+	days := decimal.RequireFromString(cur.Days).Sub(carried)
+	if err := store.SetLeaveBalance.Run(ctx, store.SetLeaveBalanceParams{EmployeeID: employee, Year: int32(year),
+		Days: days.String(), Carried: "0", CarriedUntil: cur.CarriedUntil}); err != nil {
+		return err
+	}
+	return s.d.Audit.RecordFor(ctx, "hrm.leave_carry_expired", audit.Ref{Type: employeeType, ID: employee},
+		map[string]any{"year": year, "days": carried.String(), "balance": days.String()})
 }
 
 // accrueMonths decides months 1 to through of year that are not done, within the employment.
