@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"slices"
@@ -13,12 +14,13 @@ import (
 
 	"github.com/taoworklabs/mmerp/internal/core/iam"
 	"github.com/taoworklabs/mmerp/internal/modules/hrm"
+	"github.com/taoworklabs/mmerp/internal/platform"
 )
 
 // exportEmployees runs the employee export as ctx's actor and returns the sheet's rows.
 func (f *fixture) exportEmployees(ctx context.Context, params string) [][]string {
 	f.t.Helper()
-	job, err := f.core.DataIO.StartExport(ctx, "hrm.employee", []byte(params))
+	job, err := f.core.DataIO.StartExport(ctx, "hrm.employees", []byte(params))
 	f.check(err)
 	f.wantJob(job, "completed")
 	j, err := f.core.DataIO.Job(ctx, job)
@@ -33,6 +35,14 @@ func (f *fixture) exportEmployees(ctx context.Context, params string) [][]string
 	rows, err := x.GetRows("Sheet1", excelize.Options{RawCellValue: true})
 	f.check(err)
 	return rows
+}
+
+// exportEmployeesEnding starts an export that must end as want.
+func (f *fixture) exportEmployeesEnding(ctx context.Context, params, want string) {
+	f.t.Helper()
+	job, err := f.core.DataIO.StartExport(ctx, "hrm.employees", []byte(params))
+	f.check(err)
+	f.wantJob(job, want)
 }
 
 func codes(rows [][]string) []string {
@@ -93,20 +103,24 @@ func TestEmployeeExportFilters(t *testing.T) {
 
 func TestEmployeeExportSensitive(t *testing.T) {
 	f := newFixture(t)
-	hr := f.ctxFor("hr", "hr@*")
+	both := f.ctxFor("both", "hr@*", "sensitive_viewer@*")
 	in := employee("E1", f.a)
 	in.Sensitive = &hrm.SensitiveValues{NationalID: str("012345678901"), TaxCode: str("8888888888"), BankAccount: str("123456")}
-	both := f.ctxFor("both", "hr@*", "sensitive_viewer@*")
 	id := must(t)(f.hrm.CreateEmployee(both, in))
+	must(t)(f.hrm.CreateEmployee(both, employee("E2", f.b)))
 
 	pad := func(r []string) []string { return append(r, make([]string, 15-len(r))...) }
-	if got := pad(f.exportEmployees(hr, `{}`)[1])[11:]; !slices.Equal(got, []string{"", "", "", ""}) {
-		t.Fatalf("without permission: %q", got)
+	// Not asked for: empty for everyone, nothing audited.
+	if got := pad(f.exportEmployees(both, `{"q":"E1"}`)[1])[11:]; !slices.Equal(got, []string{"", "", "", ""}) {
+		t.Fatalf("not asked: %q", got)
 	}
 	if n := f.auditCount("hrm.employee_sensitive_exported"); n != 0 {
 		t.Fatalf("audited %d", n)
 	}
-	if got := pad(f.exportEmployees(both, `{}`)[1])[11:]; !slices.Equal(got, []string{"012345678901", "", "8888888888", "123456"}) {
+	// Asked for over employees the actor may not read in full: refused.
+	mixed := f.ctxFor("mixed", "hr@*", "sensitive_viewer@A")
+	f.exportEmployeesEnding(mixed, `{"include_sensitive":true}`, "forbidden")
+	if got := pad(f.exportEmployees(mixed, fmt.Sprintf(`{"org_unit_id":%d,"include_sensitive":true}`, f.a))[1])[11:]; !slices.Equal(got, []string{"012345678901", "", "8888888888", "123456"}) {
 		t.Fatalf("with permission: %q", got)
 	}
 	var n int
@@ -122,12 +136,47 @@ func TestEmployeeExportSensitive(t *testing.T) {
 	}
 }
 
+// A download asks again: the file with sensitive values closes when the permission is revoked.
+func TestEmployeeExportSensitiveRevoked(t *testing.T) {
+	f := newFixture(t)
+	hr := f.ctxFor("hr", "hr@*")
+	must(t)(f.hrm.CreateEmployee(hr, employee("E1", f.a)))
+	uid, _ := platform.ActorFrom(hr)
+	grant := must(t)(f.iam.GrantRole(f.admin, uid, "hrm", "sensitive_viewer", nil))
+	job, err := f.core.DataIO.StartExport(hr, "hrm.employees", []byte(`{"include_sensitive":true}`))
+	f.check(err)
+	f.wantJob(job, "completed")
+	j, err := f.core.DataIO.Job(hr, job)
+	f.check(err)
+	_, file, err := f.core.DataIO.File(hr, *j.FileID)
+	f.check(err)
+	f.check(file.Close())
+	f.check(f.iam.RevokeRole(f.admin, uid, grant))
+	// The download maps a permission error to not found, so the file's existence is not told.
+	if _, _, err := f.core.DataIO.File(hr, *j.FileID); !errors.Is(err, platform.ErrNotFound) {
+		t.Fatalf("download after revoke: %v", err)
+	}
+}
+
 func TestEmployeeExportNeedsView(t *testing.T) {
 	f := newFixture(t)
 	nobody := f.ctxFor("nobody")
-	job, err := f.core.DataIO.StartExport(nobody, "hrm.employee", []byte(`{}`))
-	if err == nil {
-		f.wantJob(job, "forbidden")
+	job, err := f.core.DataIO.StartExport(nobody, "hrm.employees", []byte(`{}`))
+	if err != nil {
+		if !errors.Is(err, platform.ErrForbidden) {
+			t.Fatalf("start: %v", err)
+		}
+		return
+	}
+	f.wantJob(job, "forbidden")
+}
+
+func TestEmployeeExportWhileProductDisabled(t *testing.T) {
+	f := newFixture(t)
+	hr := f.ctxFor("hr", "hr@*")
+	must(t)(f.hrm.CreateEmployee(hr, employee("E1", f.a)))
+	if got := codes(f.exportEmployees(platform.WithProducts(hr, nil), `{}`)); !slices.Equal(got, []string{"E1"}) {
+		t.Fatalf("disabled: %v", got)
 	}
 }
 

@@ -110,4 +110,6 @@ type EmployeeExportParams struct {
 	OrgUnitID int64  `json:"org_unit_id"`
 	Status    string `json:"status"`
 	Q         string `json:"q"`
+	// Needs hrm.employee.sensitive on every exported employee.
+	IncludeSensitive bool `json:"include_sensitive"`
 }

@@ -13,7 +13,7 @@ import (
 )
 
 const (
-	employeeIO = employeeType
+	employeeIO = "hrm.employees"
 	dateLayout = "02/01/2006"
 )
 
@@ -22,7 +22,49 @@ var employeeHeaderKeys = []string{"code", "name", "date_of_birth", "gender", "ph
 
 func (s *Service) registerEmployeeIO() {
 	s.d.DataIO.RegisterExport(dataio.Export{Kind: employeeIO, Product: "hrm", Run: s.exportEmployees,
-		Check: func(ctx context.Context, _ json.RawMessage) error { return s.requireEmployeeView(ctx) }})
+		Check: func(ctx context.Context, params json.RawMessage) error {
+			_, err := s.exportedEmployees(ctx, params)
+			return err
+		}})
+}
+
+// exportedEmployees lists who the export holds: the filter within the actor's view scope. With
+// sensitive values asked for, the actor must also read those of every one of them.
+func (s *Service) exportedEmployees(ctx context.Context, params json.RawMessage) ([]store.EmployeeExportBaseRow, error) {
+	if err := s.requireEmployeeView(ctx); err != nil {
+		return nil, err
+	}
+	var p EmployeeExportParams
+	if len(params) > 0 {
+		if err := json.Unmarshal(params, &p); err != nil {
+			return nil, dataio.ErrInvalidParams
+		}
+	}
+	sc, err := s.d.IAM.DataScope(ctx, "hrm", PermView)
+	if err != nil {
+		return nil, err
+	}
+	today, err := s.d.Setting.Today(ctx)
+	if err != nil {
+		return nil, err
+	}
+	// ponytail: one unpaged read; stream if tenants pass tens of thousands of employees
+	page, err := employeeExportList.Run(ctx, employeeQuery(sc, EmployeeFilter{OrgUnitID: p.OrgUnitID, Status: p.Status, Q: p.Q, Paging: platform.Paging{Page: 1, PageSize: 1 << 30}}, today))
+	if err != nil {
+		return nil, err
+	}
+	if p.IncludeSensitive {
+		sens, err := s.d.IAM.Scope(ctx, "hrm", PermSensitive)
+		if err != nil {
+			return nil, err
+		}
+		for _, e := range page.Items {
+			if !sens.Has(e.OrgUnitID) {
+				return nil, platform.ErrForbidden
+			}
+		}
+	}
+	return page.Items, nil
 }
 
 // requireEmployeeView refuses whoever may view no employee.
@@ -124,14 +166,15 @@ func resolveUnit(units []iam.OrgUnit, path string) (id int64, matches int) {
 // exportEmployees writes the employees the list shows, in the import's layout. Sensitive
 // cells are filled only where the actor may read them, and each such read is audited.
 func (s *Service) exportEmployees(ctx context.Context, params json.RawMessage) (dataio.Sheet, error) {
-	if err := s.requireEmployeeView(ctx); err != nil {
-		return dataio.Sheet{}, err
-	}
 	var p EmployeeExportParams
 	if len(params) > 0 {
 		if err := json.Unmarshal(params, &p); err != nil {
 			return dataio.Sheet{}, dataio.ErrInvalidParams
 		}
+	}
+	items, err := s.exportedEmployees(ctx, params)
+	if err != nil {
+		return dataio.Sheet{}, err
 	}
 	header, err := s.employeeColumns(ctx)
 	if err != nil {
@@ -141,26 +184,13 @@ func (s *Service) exportEmployees(ctx context.Context, params json.RawMessage) (
 	if err != nil {
 		return dataio.Sheet{}, err
 	}
-	sc, err := s.d.IAM.DataScope(ctx, "hrm", PermView)
-	if err != nil {
-		return dataio.Sheet{}, err
-	}
-	today, err := s.d.Setting.Today(ctx)
-	if err != nil {
-		return dataio.Sheet{}, err
-	}
-	// ponytail: one unpaged read; stream if tenants pass tens of thousands of employees
-	page, err := employeeExportList.Run(ctx, employeeQuery(sc, EmployeeFilter{OrgUnitID: p.OrgUnitID, Status: p.Status, Q: p.Q, Paging: platform.Paging{Page: 1, PageSize: 1 << 30}}, today))
-	if err != nil {
-		return dataio.Sheet{}, err
-	}
 	units, err := s.d.IAM.OrgUnits(ctx, "", "")
 	if err != nil {
 		return dataio.Sheet{}, err
 	}
 	paths := unitPaths(units)
-	rows := make([][]any, 0, len(page.Items))
-	for _, e := range page.Items {
+	rows := make([][]any, 0, len(items))
+	for _, e := range items {
 		row := make([]any, len(header))
 		row[0], row[1] = e.Code, e.FullName
 		if e.DateOfBirth.Valid {
@@ -173,11 +203,7 @@ func (s *Service) exportEmployees(ctx context.Context, params json.RawMessage) (
 		if e.TerminationDate.Valid {
 			row[10] = e.TerminationDate.Time.Format(dateLayout)
 		}
-		ok, err := s.d.IAM.Allowed(ctx, "hrm", PermSensitive, e.OrgUnitID)
-		if err != nil {
-			return dataio.Sheet{}, err
-		}
-		if ok {
+		if p.IncludeSensitive {
 			var fields []string
 			sealed := sealedOf(store.HrmEmployee{NationalID: e.NationalID, SocialInsuranceNo: e.SocialInsuranceNo, TaxCode: e.TaxCode, BankAccount: e.BankAccount})
 			for i, f := range sensitiveFields {
