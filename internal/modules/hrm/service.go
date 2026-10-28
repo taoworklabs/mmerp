@@ -54,7 +54,8 @@ func NewService(d Deps) *Service {
 	d.Setting.RegisterLegalEntityKey("hrm", SettingCarryOverMonths, "3", []string{"0", "3", "6", "12"})
 	d.IAM.RegisterRoles("hrm", map[string][]string{
 		"hr": {PermView, PermEdit, PermLeaveView, PermLeaveEdit, PermOvertimeView, PermOvertimeEdit,
-			PermContractView, PermContractEdit, PermContractTypeManage, PermTimesheetView, PermTimesheetEdit},
+			PermContractView, PermContractEdit, PermContractTypeManage, PermTimesheetView, PermTimesheetEdit,
+			PermTerminationView, PermTerminationEdit},
 		"viewer":           {PermView},
 		"sensitive_viewer": {PermSensitive},
 		"leave_admin":      {PermBalanceAdjust, PermLeaveTypeManage},
@@ -127,6 +128,13 @@ func NewService(d Deps) *Service {
 		Perms:  record.Perms{View: PermPayrollView, Edit: PermPayrollEdit},
 		Refine: s.payrollRefine, OnTransition: s.payrollTransition, BeforeSubmit: s.payrollBeforeSubmit,
 		OnDelete: deletePayroll,
+	})
+	// Papers (the signed decision, the resignation letter) carry no amount.
+	d.Record.Register(record.Type{
+		Code: terminationType, Product: "hrm", Kind: record.Document, NumberPrefix: "NV",
+		Fields:       []record.Field{{Key: "reason", Kind: record.Choice, Label: "hrm.termination.reason", Options: s.reasonOptions}},
+		Perms:        record.Perms{View: PermTerminationView, Edit: PermTerminationEdit, ViewFiles: PermTerminationView, Attach: PermTerminationEdit},
+		OnTransition: s.terminationTransition, Subjects: s.terminationSubjects, OnDelete: deleteTermination,
 	})
 	s.registerDataIO()
 	s.registerPrints()

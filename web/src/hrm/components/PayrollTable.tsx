@@ -12,7 +12,7 @@ type Key = keyof Amounts
 // The money columns by band, so each band reads as one step of the computation: earnings,
 // the employee's insurance, income tax, net pay, then what the employer pays on top.
 const bands: [string | null, Key[]][] = [
-  ['income', ['earned', 'overtime', 'unused_leave', 'adjustment', 'gross']],
+  ['income', ['earned', 'overtime', 'unused_leave', 'severance', 'adjustment', 'gross']],
   ['insurance', ['insurance_base', 'social_insurance', 'health_insurance', 'unemployment_insurance']],
   ['tax', ['exempt', 'personal_deduction', 'dependent_deduction', 'taxable', 'income_tax']],
   [null, ['net']],
@@ -127,7 +127,8 @@ export function PayrollTable({ payroll, onPrint }: { payroll: Payroll; onPrint?:
       band: t('hrm.payroll.band.attendance'),
       render: (l) => (l.overtime_hours && l.overtime_hours !== '0' ? formatDecimal(l.overtime_hours) : ''),
     },
-    ...moneyColumns<PayrollLine>(t, amounts),
+    // The allowance on leaving shows only on a payroll that pays one.
+    ...moneyColumns<PayrollLine>(t, grand.severance ? amounts : amounts.filter((k) => k !== 'severance')),
   ]
   return (
     <DataTable

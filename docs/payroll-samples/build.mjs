@@ -128,7 +128,30 @@ const rows = [
   { code: 'C17', title: 'Tăng ca vượt 40 giờ/tháng', salary: 20_000_000, ot: ['weekday/day', 44],
     event: '44 giờ tăng ca ngày thường (11 ngày × 4 giờ)',
     note: '40 giờ đầu miễn thuế, 4 giờ vượt giới hạn chịu thuế. Hệ thống phải cảnh báo khi vượt' },
+  { code: 'C18', title: 'Nghỉ việc theo thỏa thuận, có trợ cấp thôi việc', salary: 24_000_000, paid: 11,
+    sev: { kind: 'severance', worked: 225, insured: 207, monthly: [20e6, 20e6, 20e6, 24e6, 24e6, 24e6] },
+    event: 'Vào làm 01/07/2007, ngày làm cuối 15/04/2026 (thỏa thuận chấm dứt). Lương 20.000.000, phụ lục 24.000.000 từ 01/01/2026. '
+      + 'Tham gia BHTN từ 01/01/2009: 207 tháng. Công hưởng lương 11',
+    note: 'Thời gian làm việc 225 tháng − 207 tháng đóng BHTN = 18 tháng = 1,5 năm (tháng lẻ ≤ 6 tính 1/2 năm, khoản 3 Điều 8 NĐ 145/2020). '
+      + 'Lương bình quân 6 tháng liền kề 10/2025–03/2026 = 22.000.000 (khoản 5 Điều 8 NĐ 145/2020). '
+      + 'Trợ cấp = 1,5 × 1/2 × 22.000.000 (Điều 46 BLLĐ 2019); không tính BH, không chịu thuế TNCN' },
+  { code: 'C19', title: 'Cho thôi việc do cơ cấu lại, trợ cấp mất việc tối thiểu', salary: 15_000_000,
+    sev: { kind: 'job_loss', worked: 26, insured: 26, monthly: [15e6, 15e6, 15e6, 15e6, 15e6, 15e6] },
+    event: 'Vào làm 01/03/2024, ngày làm cuối 30/04/2026 (cơ cấu lại, Điều 42 BLLĐ 2019). Đóng BHTN cả 26 tháng',
+    note: 'Thời gian tính trợ cấp 26 − 26 = 0 năm, nhưng trợ cấp mất việc ít nhất 2 tháng lương: 2 × 15.000.000 (Điều 47 BLLĐ 2019); '
+      + 'không tính BH, không chịu thuế TNCN' },
 ];
+
+// Trợ cấp thôi việc (1/2 tháng mỗi năm) hoặc mất việc (1 tháng mỗi năm, ít nhất 2 tháng) trên
+// lương bình quân 6 tháng; số năm làm tròn theo khoản 3 Điều 8 NĐ 145/2020.
+function severanceOf(sev) {
+  if (!sev || sev.worked < 12) return 0;
+  const months = Math.max(0, sev.worked - sev.insured);
+  const rest = months % 12;
+  const years = Math.floor(months / 12) + (rest > 6 ? 1 : rest > 0 ? 0.5 : 0);
+  const avg = sev.monthly.reduce((a, b) => a + b, 0) / sev.monthly.length;
+  return round(sev.kind === 'severance' ? years * avg / 2 : Math.max(years, 2) * avg);
+}
 
 function compute(r) {
   const period = r.period ?? P;
@@ -168,8 +191,9 @@ function compute(r) {
     kpcd: round(Math.min(base, capSI) * EMPLOYER.kpcd),
   };
 
-  const total = earned + ot + leavePay + adj;
-  const exempt = otExempt + leavePay;
+  const sevPay = severanceOf(r.sev);
+  const total = earned + ot + leavePay + adj + sevPay;
+  const exempt = otExempt + leavePay + sevPay;
   const taxableGross = total - exempt;
   const taxable = Math.max(0, taxableGross - ins - PERSONAL - deps * DEPENDENT);
   const tax = pitOf(taxable);
@@ -209,9 +233,10 @@ function compute(r) {
   const sources = ['thuế, BH người lao động và doanh nghiệp: khớp thue-2026; thuế khớp pit'];
   if (otKind) sources.push('tăng ca: khớp thue-2026');
   if (r.segments || r.paid != null || r.leave) sources.push('chia lương theo công, phép chưa nghỉ: tự tính');
+  if (r.sev) sources.push('trợ cấp thôi việc/mất việc: tự tính');
   return {
     period, std, paid, earned, earnedF, otHours, otRate, ot, exempt, leavePay, leaveF, adj, total, base, bhxh, bhyt, bhtn,
-    personal: PERSONAL, dependent: deps * DEPENDENT, taxable, tax, net, er, cost, deps, insA, nonInsA, sources: sources.join('; '),
+    personal: PERSONAL, dependent: deps * DEPENDENT, taxable, tax, net, er, cost, deps, insA, nonInsA, sevPay, sources: sources.join('; '),
   };
 }
 
@@ -234,7 +259,7 @@ ws.columns = [
   ['Lương đóng BH', 14], ['BHXH 8%', 11], ['BHYT 1,5%', 11], ['BHTN 1%', 11], ['Giảm trừ bản thân', 13],
   ['Giảm trừ NPT', 13], ['Thu nhập tính thuế', 14], ['Thuế TNCN', 12], ['Thực lĩnh', 14],
   ['DN: BHXH 17,5%', 12], ['DN: BHYT 3%', 11], ['DN: BHTN 1%', 11], ['DN: KPCĐ 2%', 11], ['Tổng chi phí lương của DN', 15],
-  ['Giả định riêng của dòng', 48], ['Nguồn số liệu', 40],
+  ['Giả định riêng của dòng', 48], ['Nguồn số liệu', 40], ['Trợ cấp thôi việc/mất việc', 14],
 ].map(([header, width]) => ({ header, width }));
 ws.getRow(1).font = { bold: true };
 ws.getRow(1).alignment = { wrapText: true, vertical: 'top' };
@@ -246,13 +271,14 @@ for (const r of rows) {
   ws.addRow([
     r.code, r.title, c.period, r.salary, c.insA, c.nonInsA, r.event ?? 'Đủ công cả tháng', c.deps, c.std, c.paid,
     f(c.earnedF, c.earned), c.otHours, c.otRate, f('ROUND((D{r}+E{r})/I{r}/8*M{r}*L{r},0)', c.ot), f(c.leaveF, c.leavePay), c.adj,
-    f('K{r}+N{r}+O{r}+P{r}', c.total), f(`ROUND((D{r}+E{r})/I{r}/8*M{r}*MIN(L{r},${OT_MONTH_LIMIT}),0)+O{r}`, c.exempt),
+    f('K{r}+N{r}+O{r}+P{r}+AI{r}', c.total), f(`ROUND((D{r}+E{r})/I{r}/8*M{r}*MIN(L{r},${OT_MONTH_LIMIT}),0)+O{r}+AI{r}`, c.exempt),
     c.base, c.bhxh, c.bhyt, c.bhtn, c.personal, c.dependent, c.taxable, c.tax, f('Q{r}-T{r}-U{r}-V{r}-Z{r}', c.net),
-    c.er.bhxh, c.er.bhyt, c.er.bhtn, c.er.kpcd, f('Q{r}+AB{r}+AC{r}+AD{r}+AE{r}', c.cost), r.note ?? '', c.sources,
+    c.er.bhxh, c.er.bhyt, c.er.bhtn, c.er.kpcd, f('Q{r}+AB{r}+AC{r}+AD{r}+AE{r}', c.cost), r.note ?? '', c.sources, c.sevPay,
   ]);
 }
 const textCols = [7, 8, 9, 10, 12, 13, 33, 34];
 for (let col = 4; col <= 32; col++) if (!textCols.includes(col)) ws.getColumn(col).numFmt = money;
+ws.getColumn(35).numFmt = money;
 for (const col of [7, 33]) ws.getColumn(col).alignment = { wrapText: true, vertical: 'top' };
 
 const g = wb.addWorksheet('Giả định');
@@ -268,6 +294,7 @@ g.getRow(1).font = { bold: true };
   ['Hệ số tăng ca', 'Ngày thường 150%, nghỉ tuần 200%, lễ 300% (chưa gồm lương ngày lễ), đêm ngày thường không tăng ca ban ngày 200%.', 'Điều 98 BLLĐ 2019; Điều 55, 57 NĐ 145/2020'],
   ['Thuế tiền tăng ca', 'Miễn toàn bộ phần trong giới hạn: 40 giờ/tháng và 200 giờ/năm (300 giờ với ngành được phép). Phần vượt chịu thuế toàn bộ. Hệ thống phải cộng dồn giờ trong năm và cảnh báo khi vượt; bộ mẫu chỉ có trường hợp vượt giới hạn tháng.', 'Luật Thuế TNCN 109/2025/QH15 khoản 8 Điều 4; Điều 107 BLLĐ 2019; Điều 60 NĐ 145/2020'],
   ['Phép năm chưa nghỉ khi thôi việc', 'Lương HĐ của tháng liền trước tháng thôi việc / số ngày làm việc bình thường của tháng đó × số ngày chưa nghỉ. Miễn thuế, không tính BH.', 'Khoản 3 Điều 113 BLLĐ 2019; Điều 67 NĐ 145/2020; khoản 8 Điều 4 Luật 109/2025 (Bộ Tài chính trả lời: gồm cả phép chưa nghỉ khi thôi việc)'],
+  ['Trợ cấp thôi việc, mất việc', 'Thời gian tính = số tháng làm việc (bỏ ngày lẻ) − số tháng đóng BHTN − số tháng đã chi trợ cấp; tháng lẻ ≤ 6 tính 1/2 năm, > 6 tính 1 năm; làm đủ 12 tháng mới hưởng. Lương bình quân = lương + phụ cấp lương của hợp đồng hiệu lực cuối mỗi tháng trong 6 tháng liền trước tháng nghỉ việc. Thôi việc 1/2 tháng mỗi năm; mất việc 1 tháng mỗi năm, ít nhất 2 tháng. Trả ở bảng lương tháng nghỉ việc; không tính BH, không chịu thuế TNCN.', 'Điều 46, 47, 48 BLLĐ 2019; khoản 3, 5 Điều 8 NĐ 145/2020; không tính vào thu nhập chịu thuế từ tiền lương (điểm b khoản 2 Điều 2 TT 111/2013/TT-BTC; Luật Thuế TNCN 109/2025/QH15, CẦN kế toán xác nhận điều khoản). Bỏ ngày lẻ và cách lấy 6 tháng là giả định'],
   ['Lương đóng BH', 'Lương hợp đồng + phụ cấp lương, không chia theo công. Đổi lương giữa tháng: lấy mức hiệu lực cuối tháng.', 'Luật BHXH 2024; mức cuối tháng là giả định'],
   ['Tháng nghỉ nhiều', 'Không làm việc và không hưởng lương từ 14 ngày làm việc trở lên (gồm ngày trước khi vào làm, sau khi nghỉ việc, nghỉ ốm): không đóng BHXH, BHYT, BHTN, KPCĐ tháng đó.', 'Luật BHXH 2024. Tính ngày trước khi vào làm là giả định: CẦN HỎI cơ quan BHXH quản lý đơn vị'],
   ['Phần doanh nghiệp đóng', 'BHXH 17,5% (gồm TNLĐ-BNN 0,5%), BHYT 3%, KPCĐ 2% trên lương đóng BH, trần 20 × lương cơ sở; BHTN 1%, trần 20 × lương tối thiểu vùng.', 'Luật BHXH 2024; Luật Việc làm 2025; Luật Công đoàn 2024 Điều 29'],
@@ -276,7 +303,7 @@ g.getRow(1).font = { bold: true };
   ['Truy thu khác năm (CHƯA CHỐT)', 'Ví dụ 01/2027 thu lại khoản trả thừa của 12/2026: trừ vào kỳ hiện tại thì quyết toán năm 2026 không tự cân. Cần quy tắc riêng; chưa có dòng mẫu.', 'Cần tìm hướng dẫn của cơ quan thuế'],
   ['Khấu trừ thuế', 'Mọi người là cá nhân cư trú, HĐ từ 3 tháng, khấu trừ theo biểu lũy tiến từng tháng.', 'Luật Thuế TNCN 109/2025/QH15'],
   ['Làm tròn', 'Từng khoản của từng người làm tròn tới đồng, nửa xa số 0 (chế độ line). Thực lĩnh không làm tròn thêm.', 'ADR-0006'],
-  ['Chưa có trong mẫu', 'Đoàn phí công đoàn của người lao động, khoản hỗ trợ miễn thuế (ăn ca…), người không cư trú, HĐ dưới 3 tháng, truy thu khác năm, vượt giới hạn tăng ca năm.', 'Bổ sung khi cần'],
+  ['Chưa có trong mẫu', 'Trợ cấp thôi việc khi nhập muộn sau kỳ đã chốt, đoàn phí công đoàn của người lao động, khoản hỗ trợ miễn thuế (ăn ca…), người không cư trú, HĐ dưới 3 tháng, truy thu khác năm, vượt giới hạn tăng ca năm.', 'Bổ sung khi cần'],
 ].forEach((r, i) => g.addRow([i + 1, ...r]));
 for (const col of [2, 3, 4]) g.getColumn(col).alignment = { wrapText: true, vertical: 'top' };
 

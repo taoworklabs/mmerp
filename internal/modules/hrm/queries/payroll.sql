@@ -108,7 +108,16 @@ WHERE d.legal_entity_id = @legal_entity_id AND d.status = 'posted' AND (
     OR (d.doc_type = 'hrm.leave_request' AND EXISTS (
             SELECT 1 FROM hrm.leave_requests r WHERE r.id = d.id AND r.start_date <= @period_end AND r.end_date >= @period_start))
     OR (d.doc_type = 'hrm.overtime_request' AND EXISTS (
-            SELECT 1 FROM hrm.overtime_requests o WHERE o.id = d.id AND o.date BETWEEN @year_start::date AND @period_end)))
+            SELECT 1 FROM hrm.overtime_requests o WHERE o.id = d.id AND o.date BETWEEN @year_start::date AND @period_end))
+    OR (d.doc_type = 'hrm.termination' AND d.date BETWEEN @period_start::date AND @period_end)
+    -- Contracts an allowance averages over: the six months before a termination in the period.
+    OR (d.doc_type = 'hrm.contract' AND EXISTS (
+            SELECT 1 FROM hrm.contracts c LEFT JOIN hrm.contracts p ON p.id = c.parent_id
+            JOIN hrm.terminations t ON t.employee_id = c.employee_id JOIN record.documents td ON td.id = t.id
+            WHERE c.id = d.id AND td.status = 'posted' AND td.date BETWEEN @period_start::date AND @period_end
+              AND c.start_date <= td.date
+              AND (coalesce(p.end_date, c.end_date) IS NULL
+                   OR coalesce(p.end_date, c.end_date) >= (date_trunc('month', td.date) - interval '6 months')::date))))
 ORDER BY d.doc_type, d.id;
 
 -- name: PostedTimesheetUnits :many

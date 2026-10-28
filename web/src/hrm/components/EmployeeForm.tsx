@@ -71,7 +71,8 @@ const errorFields: ErrorFields<EmployeeValues> = {
   manager_not_found: 'manager_id',
   manager_cycle: 'manager_id',
   manager_self: 'manager_id',
-  termination_before_hire: 'termination_date',
+  // The termination date is not on the form; the hire date is what moved before it.
+  termination_before_hire: 'hire_date',
 }
 
 // useEmployeeForm holds the whole employee whichever part of it is on screen: the API saves it as a whole.
@@ -120,8 +121,6 @@ export function MainFields({ employee }: { employee?: Employee }) {
         }
       />
       <TextField name="user_login" label={t('hrm.employee.user_login')} description={t('hrm.employee.user_login_hint')} maxLength={200} />
-      {/* Leaving is recorded on an existing employee, never when creating one. */}
-      {employee && <DateField name="termination_date" label={t('hrm.employee.termination_date')} clearable />}
     </>
   )
 }

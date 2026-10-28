@@ -1006,6 +1006,38 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/hrm/terminations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["list-terminations"];
+        put?: never;
+        post: operations["create-termination"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/hrm/terminations/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["get-termination"];
+        put: operations["update-termination"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/hrm/timesheets": {
         parameters: {
             query?: never;
@@ -2548,6 +2580,7 @@ export interface components {
             sensitive_tail: components["schemas"]["SensitiveTails"];
             /** @enum {string} */
             status: "active" | "terminated";
+            termination: components["schemas"]["TerminationRef"];
             /** Format: date */
             termination_date: string | null;
             /** @description Login of the linked account */
@@ -3496,6 +3529,44 @@ export interface components {
              */
             request_id?: string;
         };
+        NewTermination: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example /api/schemas/NewTermination.json
+             */
+            readonly $schema?: string;
+            /** Format: date */
+            decision_date: string | null;
+            /** Format: int64 */
+            employee_id: number;
+            handover: string | null;
+            /**
+             * Format: int64
+             * @description Months in unemployment insurance, from the social insurance book
+             */
+            insured_months: number;
+            note: string | null;
+            /**
+             * Format: int64
+             * @description Months this employer already paid an allowance for
+             */
+            paid_months: number;
+            /** @description Eligible for a pension: no severance allowance */
+            pension_eligible: boolean;
+            /** @enum {string} */
+            reason: "contract_expired" | "work_completed" | "mutual_agreement" | "imprisonment" | "foreigner_expelled" | "death" | "employer_ceased" | "dismissal" | "employee_resignation" | "employer_unilateral" | "absent_without_reason" | "restructuring" | "work_permit_expired" | "probation_failed";
+            /**
+             * Format: uuid
+             * @description Generated once per form: sending it again returns the first document
+             */
+            request_id?: string;
+            /**
+             * Format: date
+             * @description Last day employed
+             */
+            termination_date: string;
+        };
         NewTimesheet: {
             /**
              * Format: uri
@@ -3832,6 +3903,11 @@ export interface components {
             overtime: number;
             /** Format: int64 */
             personal_deduction: number;
+            /**
+             * Format: int64
+             * @description Severance or job-loss allowance on leaving; in gross and exempt
+             */
+            severance: number;
             /** Format: int64 */
             social_insurance: number;
             /**
@@ -3915,6 +3991,11 @@ export interface components {
             paid_days: string;
             /** Format: int64 */
             personal_deduction: number;
+            /**
+             * Format: int64
+             * @description Severance or job-loss allowance on leaving; in gross and exempt
+             */
+            severance: number;
             /** Format: int64 */
             social_insurance: number;
             /** Format: int64 */
@@ -4010,6 +4091,11 @@ export interface components {
             overtime: number;
             /** Format: int64 */
             personal_deduction: number;
+            /**
+             * Format: int64
+             * @description Severance or job-loss allowance on leaving; in gross and exempt
+             */
+            severance: number;
             /** Format: int64 */
             social_insurance: number;
             /**
@@ -4275,6 +4361,141 @@ export interface components {
             id: number;
             name: string;
             reason: string | null;
+        };
+        Termination: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example /api/schemas/Termination.json
+             */
+            readonly $schema?: string;
+            allowance: components["schemas"]["TerminationAllowance"];
+            allowed_actions: string[];
+            /** Format: date */
+            decision_date: string | null;
+            employee_code: string;
+            /** Format: int64 */
+            employee_id: number;
+            employee_name: string;
+            handover: string | null;
+            /** Format: int64 */
+            id: number;
+            /**
+             * Format: int64
+             * @description Months in unemployment insurance, from the social insurance book
+             */
+            insured_months: number;
+            note: string | null;
+            number: string;
+            /**
+             * Format: int64
+             * @description Months this employer already paid an allowance for
+             */
+            paid_months: number;
+            /** @description Eligible for a pension: no severance allowance */
+            pension_eligible: boolean;
+            /** @enum {string} */
+            reason: "contract_expired" | "work_completed" | "mutual_agreement" | "imprisonment" | "foreigner_expelled" | "death" | "employer_ceased" | "dismissal" | "employee_resignation" | "employer_unilateral" | "absent_without_reason" | "restructuring" | "work_permit_expired" | "probation_failed";
+            /** @enum {string} */
+            status: "draft" | "pending_approval" | "posted" | "cancelled";
+            /**
+             * Format: date
+             * @description Last day employed
+             */
+            termination_date: string;
+            /** Format: int32 */
+            version: number;
+            warnings: components["schemas"]["TerminationWarning"][];
+        };
+        TerminationAllowance: {
+            /** Format: int64 */
+            amount?: number;
+            /**
+             * Format: int64
+             * @description Average monthly salary of the six months before the termination month
+             */
+            average?: number;
+            /** @enum {string} */
+            kind: "none" | "severance" | "job_loss";
+            /**
+             * Format: int64
+             * @description Worked, less unemployment insurance and months already paid
+             */
+            months_counted: number;
+            /** Format: int64 */
+            months_worked: number;
+            years: string;
+        };
+        TerminationList: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example /api/schemas/TerminationList.json
+             */
+            readonly $schema?: string;
+            allowed_actions: string[];
+            items: components["schemas"]["TerminationListItem"][];
+            /** Format: int64 */
+            total: number;
+        };
+        TerminationListItem: {
+            employee_code: string;
+            /** Format: int64 */
+            employee_id: number;
+            employee_name: string;
+            /** Format: int64 */
+            id: number;
+            number: string;
+            org_unit_name: string;
+            reason: string;
+            /** @enum {string} */
+            status: "draft" | "pending_approval" | "posted" | "cancelled";
+            /** Format: date */
+            termination_date: string;
+        };
+        TerminationRef: {
+            /** Format: int64 */
+            id: number;
+            number: string;
+        };
+        TerminationUpdate: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example /api/schemas/TerminationUpdate.json
+             */
+            readonly $schema?: string;
+            /** Format: date */
+            decision_date: string | null;
+            handover: string | null;
+            /**
+             * Format: int64
+             * @description Months in unemployment insurance, from the social insurance book
+             */
+            insured_months: number;
+            note: string | null;
+            /**
+             * Format: int64
+             * @description Months this employer already paid an allowance for
+             */
+            paid_months: number;
+            /** @description Eligible for a pension: no severance allowance */
+            pension_eligible: boolean;
+            /** @enum {string} */
+            reason: "contract_expired" | "work_completed" | "mutual_agreement" | "imprisonment" | "foreigner_expelled" | "death" | "employer_ceased" | "dismissal" | "employee_resignation" | "employer_unilateral" | "absent_without_reason" | "restructuring" | "work_permit_expired" | "probation_failed";
+            /**
+             * Format: date
+             * @description Last day employed
+             */
+            termination_date: string;
+            /** Format: int32 */
+            version: number;
+        };
+        TerminationWarning: {
+            code: string;
+            params: {
+                [key: string]: unknown;
+            };
         };
         Timesheet: {
             /**
@@ -7054,6 +7275,141 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["JobOutputBody"];
                 };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "list-terminations": {
+        parameters: {
+            query?: {
+                /** @description Number, or the employee's code or name */
+                q?: string;
+                status?: "draft" | "pending_approval" | "posted" | "cancelled";
+                org_unit_id?: number;
+                employee_id?: number;
+                sort?: "date" | "-date" | "number" | "-number";
+                page?: number;
+                page_size?: 20 | 50 | 100;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TerminationList"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "create-termination": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NewTermination"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CreatedOutputBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "get-termination": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Termination"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "update-termination": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TerminationUpdate"];
+            };
+        };
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Error */
             default: {

@@ -134,6 +134,10 @@ func (s *Service) Employee(ctx context.Context, id int64) (Employee, error) {
 	} else if ok && platform.ProductGate(ctx, "hrm", platform.ClassWrite) == nil {
 		actions = append(actions, "create_contract")
 	}
+	termination, actions, err := s.employeeTermination(ctx, e.ID, e.OrgUnitID, actions)
+	if err != nil {
+		return Employee{}, err
+	}
 	today, err := s.d.Setting.Today(ctx)
 	if err != nil {
 		return Employee{}, err
@@ -167,6 +171,7 @@ func (s *Service) Employee(ctx context.Context, id int64) (Employee, error) {
 		},
 		SensitiveTail:   tails,
 		CurrentContract: current,
+		Termination:     termination,
 		AllowedActions:  actions,
 	}, nil
 }
@@ -289,6 +294,10 @@ func (s *Service) prepare(ctx context.Context, old store.HrmEmployee, in Employe
 	}
 	if in.TerminationDate != nil && *in.TerminationDate < in.HireDate {
 		return old, ErrTerminationBeforeHire
+	}
+	// Only a termination changes the date once the employee exists.
+	if was, now := platform.DatePtr(old.TerminationDate), in.TerminationDate; old.ID != 0 && ((was == nil) != (now == nil) || was != nil && *was != *now) {
+		return old, ErrTerminationViaDocument
 	}
 	row := store.HrmEmployee{
 		ID: old.ID, Code: old.Code, FullName: in.FullName, DateOfBirth: platform.NullDate(in.DateOfBirth), Gender: platform.NullText(in.Gender),

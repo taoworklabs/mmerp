@@ -14,10 +14,13 @@ import { NewEmployeePage } from './pages/NewEmployeePage'
 import { NewContractPage } from './pages/NewContractPage'
 import { NewLeavePage } from './pages/NewLeavePage'
 import { NewOvertimePage } from './pages/NewOvertimePage'
+import { NewTerminationPage } from './pages/NewTerminationPage'
 import { OverviewPage } from './pages/OverviewPage'
 import { OrgStructurePage } from './pages/OrgStructurePage'
 import { OvertimePage } from './pages/OvertimePage'
 import { OvertimesPage } from './pages/OvertimesPage'
+import { TerminationPage } from './pages/TerminationPage'
+import { TerminationsPage } from './pages/TerminationsPage'
 import { TimesheetPage } from './pages/TimesheetPage'
 import { TimesheetsPage } from './pages/TimesheetsPage'
 import { LegalParamsPage } from './pages/LegalParamsPage'
@@ -31,6 +34,7 @@ export default function HrmRoutes() {
   const canTypes = useCan('hrm.leave_type.manage')
   const canContractTypes = useCan('hrm.contract_type.manage')
   const canContracts = useCan('hrm.contract.view')
+  const canTerminations = useCan('hrm.termination.view')
   const canTimesheets = useCan('hrm.timesheet.view')
   const canCalendar = useCan('hrm.calendar.manage')
   const canPayrolls = useCan('hrm.payroll.view')
@@ -58,6 +62,9 @@ export default function HrmRoutes() {
       <Route path="contracts" element={canContracts ? <ContractsPage /> : <ForbiddenPage />} />
       <Route path="contracts/new" element={<NewContractPage />} />
       <Route path="contracts/:id" element={<ContractPage />} />
+      <Route path="terminations" element={canTerminations ? <TerminationsPage /> : <ForbiddenPage />} />
+      <Route path="terminations/new" element={<NewTerminationPage />} />
+      <Route path="terminations/:id" element={<TerminationPage />} />
       <Route path="contract-types" element={canContractTypes ? <ContractTypesPage /> : <ForbiddenPage />} />
       <Route path="timesheets" element={canTimesheets ? <TimesheetsPage /> : <ForbiddenPage />} />
       <Route path="timesheets/:id" element={canTimesheets ? <TimesheetPage /> : <ForbiddenPage />} />

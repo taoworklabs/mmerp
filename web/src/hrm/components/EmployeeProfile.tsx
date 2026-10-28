@@ -2,24 +2,24 @@ import { Anchor, Button, FieldList } from '@mmerp/ui'
 import { IconAddressBook, IconEye, IconEyeOff, IconLock, IconUser } from '@tabler/icons-react'
 import { useState, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
+import { Link } from 'react-router'
 import { type Employee } from '@/shared/api/hrm'
 import { useInvalidateRecord } from '@/shared/area'
 import { useMe } from '@/shared/auth/me'
 import { formatDate, today } from '@/shared/i18n'
 import { MissingValue } from '@/shared/ui/MissingValue'
-import { DateField, EditablePanel, Form, FormActions, FormFields, OrgUnitField, SensitiveValue } from '@/shared/ui/form'
+import { EditablePanel, Form, FormActions, FormFields, OrgUnitField, SensitiveValue } from '@/shared/ui/form'
 import { FormModal } from '@/shared/ui/page'
 import { icon } from '@/shared/ui/theme'
 import { employeeDocType } from '../keys'
 import { tenure } from '../tenure'
 import { EmployeeField } from './EmployeeField'
 import { EmployeeLink } from './EmployeeLink'
-import { useConfirm } from '@/shared/ui/confirm'
-import { MainFields, PersonalFields, revealSensitive, SensitiveFields, sensitiveFields, useEmployeeForm, type EmployeeValues } from './EmployeeForm'
+import { MainFields, PersonalFields, revealSensitive, SensitiveFields, sensitiveFields, useEmployeeForm } from './EmployeeForm'
 
 type Part = 'main' | 'personal' | 'sensitive'
 // A move is saved like any edit, through a form that holds only what it changes.
-export type Move = 'transfer' | 'terminate'
+export type Move = 'transfer'
 
 // EmployeeProfile is an employee's values in three cards, each read as label–value pairs and
 // edited in place. A card shows every value its form edits, those in the page header included, so
@@ -65,8 +65,11 @@ export function EmployeeProfile({ employee: e, onSaved }: { employee: Employee; 
                 or(open, t('hrm.employee.manager'), e.manager_id && e.manager_code && e.manager_name && <EmployeeLink id={e.manager_id}>{`${e.manager_code} · ${e.manager_name}`}</EmployeeLink>),
               ],
               [t('hrm.employee.user_login'), or(open, t('hrm.employee.user_login'), e.user_login)],
-              // Leaving is recorded through "Cho nghỉ việc"; the date shows once there is one.
+              // Leaving is recorded by a termination; the date shows once there is one, with the termination.
               ...(e.termination_date ? [[t('hrm.employee.termination_date'), formatDate(e.termination_date)] as [string, ReactNode]] : []),
+              ...(e.termination
+                ? [[t('hrm.employee.termination'), <Anchor key="t" render={<Link to={`/hrm/terminations/${e.termination.id}`} />}>{e.termination.number}</Anchor>] as [string, ReactNode]]
+                : []),
             ]}
           />
         )}
@@ -152,41 +155,25 @@ function PartForm({ employee: e, part, onClose, onSaved }: { employee: Employee;
   )
 }
 
-// MoveModal moves an employee to another department (and manager), or records their leaving.
+// MoveModal moves an employee to another department (and manager).
 export function MoveModal({ employee: e, move, onClose, onSaved }: { employee: Employee; move: Move; onClose: () => void; onSaved: () => Promise<void> }) {
   const { t } = useTranslation()
-  const [ask, dialog] = useConfirm()
   const { form, save, errorFields } = useEmployeeForm(e, async () => {
     await onSaved()
     onClose()
   })
-  // Leaving cannot be taken back from here: the date is asked for, then confirmed.
-  const submit = async (v: EmployeeValues) => {
-    if (move === 'terminate') {
-      const message = t('hrm.employee.terminate_confirm', { name: e.full_name, date: formatDate(v.termination_date) })
-      if (!(await ask({ title: t('hrm.employee.terminate'), message, confirmLabel: t('hrm.employee.terminate'), danger: true }))) return
-    }
-    await save(v)
-  }
   return (
     <FormModal opened title={t(`hrm.employee.${move}_title`, { name: e.full_name })} onClose={onClose}>
-      <Form form={form} onSubmit={submit} errorFields={errorFields}>
-        {move === 'transfer' ? (
-          <>
-            <OrgUnitField name="org_unit_id" label={t('hrm.employee.org_unit')} required product="hrm" permission="hrm.employee.edit" />
-            <EmployeeField
-              name="manager_id"
-              label={t('hrm.employee.manager')}
-              managerOf={e.id}
-              current={e.manager_id && e.manager_code && e.manager_name ? { id: e.manager_id, code: e.manager_code, name: e.manager_name } : undefined}
-            />
-          </>
-        ) : (
-          <DateField name="termination_date" label={t('hrm.employee.termination_date')} description={t('hrm.employee.terminate_hint')} required />
-        )}
+      <Form form={form} onSubmit={save} errorFields={errorFields}>
+        <OrgUnitField name="org_unit_id" label={t('hrm.employee.org_unit')} required product="hrm" permission="hrm.employee.edit" />
+        <EmployeeField
+          name="manager_id"
+          label={t('hrm.employee.manager')}
+          managerOf={e.id}
+          current={e.manager_id && e.manager_code && e.manager_name ? { id: e.manager_id, code: e.manager_code, name: e.manager_name } : undefined}
+        />
         <FormActions submitLabel={t(`hrm.employee.${move}`)} onCancel={onClose} cancelLabel={t('hrm.common.cancel')} />
       </Form>
-      {dialog}
     </FormModal>
   )
 }

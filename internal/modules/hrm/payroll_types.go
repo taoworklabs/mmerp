@@ -42,6 +42,7 @@ type PayrollAmounts struct {
 	EmployerUnemploy   int64 `json:"employer_unemployment_insurance"`
 	EmployerUnion      int64 `json:"employer_union_fee"`
 	Cost               int64 `json:"cost" doc:"Gross plus the employer's contributions"`
+	Severance          int64 `json:"severance" doc:"Severance or job-loss allowance on leaving; in gross and exempt"`
 }
 
 // PayrollTotal sums the amounts of a department's employees.

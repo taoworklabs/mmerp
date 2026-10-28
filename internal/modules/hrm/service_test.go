@@ -188,7 +188,7 @@ func TestScopeLimitsEmployees(t *testing.T) {
 	}
 
 	e, _ = f.hrm.Employee(hrA, ea)
-	if !slices.Equal(e.AllowedActions, []string{"edit", "view_contracts"}) {
+	if !slices.Equal(e.AllowedActions, []string{"edit", "view_contracts", "create_termination"}) {
 		t.Fatalf("hr_a actions = %v", e.AllowedActions)
 	}
 	disabled := platform.WithProducts(hrA, nil)

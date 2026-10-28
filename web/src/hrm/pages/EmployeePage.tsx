@@ -3,7 +3,7 @@ import { IconArrowsExchange, IconUserOff } from '@tabler/icons-react'
 import { useQuery } from '@tanstack/react-query'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { useParams } from 'react-router'
+import { useNavigate, useParams } from 'react-router'
 import { api, unwrap } from '@/shared/api/hrm'
 import { useInvalidateRecord } from '@/shared/area'
 import { ActivityFeed, useAttachmentSection } from '@/shared/document'
@@ -27,6 +27,7 @@ export function EmployeePage() {
   const { t } = useTranslation()
   const invalidate = useInvalidateRecord()
   const id = Number(useParams().id)
+  const navigate = useNavigate()
   const [move, setMove] = useState<Move | null>(null)
   const employee = useQuery({
     queryKey: hrmKeys.employees.detail(id),
@@ -74,9 +75,9 @@ export function EmployeePage() {
         )
       }
       more={
-        canEdit &&
-        !e.termination_date && (
-          <MenuAction icon={IconUserOff} danger onClick={() => setMove('terminate')}>
+        // Leaving is a termination document; the profile only links to it.
+        e.allowed_actions.includes('create_termination') && (
+          <MenuAction icon={IconUserOff} danger onClick={() => void navigate(`/hrm/terminations/new?employee=${e.id}`)}>
             {t('hrm.employee.terminate')}
           </MenuAction>
         )

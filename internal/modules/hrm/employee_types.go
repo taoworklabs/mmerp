@@ -66,7 +66,9 @@ type Employee struct {
 	SensitiveTail SensitiveTails    `json:"sensitive_tail"`
 	// The posted contract in force today; null without one or without hrm.contract.view.
 	CurrentContract *CurrentContract `json:"current_contract"`
-	// view, edit, view_sensitive, adjust_leave_balance, view_contracts, create_contract.
+	// The termination that stands; null without one or without hrm.termination.view.
+	Termination *TerminationRef `json:"termination"`
+	// view, edit, view_sensitive, adjust_leave_balance, view_contracts, create_contract, create_termination.
 	AllowedActions []string `json:"allowed_actions" nullable:"false"`
 }
 

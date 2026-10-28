@@ -741,7 +741,16 @@ WHERE d.legal_entity_id = $1 AND d.status = 'posted' AND (
     OR (d.doc_type = 'hrm.leave_request' AND EXISTS (
             SELECT 1 FROM hrm.leave_requests r WHERE r.id = d.id AND r.start_date <= $2 AND r.end_date >= $4))
     OR (d.doc_type = 'hrm.overtime_request' AND EXISTS (
-            SELECT 1 FROM hrm.overtime_requests o WHERE o.id = d.id AND o.date BETWEEN $5::date AND $2)))
+            SELECT 1 FROM hrm.overtime_requests o WHERE o.id = d.id AND o.date BETWEEN $5::date AND $2))
+    OR (d.doc_type = 'hrm.termination' AND d.date BETWEEN $4::date AND $2)
+    -- Contracts an allowance averages over: the six months before a termination in the period.
+    OR (d.doc_type = 'hrm.contract' AND EXISTS (
+            SELECT 1 FROM hrm.contracts c LEFT JOIN hrm.contracts p ON p.id = c.parent_id
+            JOIN hrm.terminations t ON t.employee_id = c.employee_id JOIN record.documents td ON td.id = t.id
+            WHERE c.id = d.id AND td.status = 'posted' AND td.date BETWEEN $4::date AND $2
+              AND c.start_date <= td.date
+              AND (coalesce(p.end_date, c.end_date) IS NULL
+                   OR coalesce(p.end_date, c.end_date) >= (date_trunc('month', td.date) - interval '6 months')::date))))
 ORDER BY d.doc_type, d.id
 `
 

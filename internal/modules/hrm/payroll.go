@@ -661,12 +661,14 @@ func deletePayroll(ctx context.Context, id int64) error {
 // payrollColumns are the money columns of the export, in order.
 var payrollColumns = []string{"earned", "overtime", "unused_leave", "adjustment", "gross", "exempt", "insurance_base",
 	"social_insurance", "health_insurance", "unemployment_insurance", "personal_deduction", "dependent_deduction", "taxable",
-	"income_tax", "net", "employer_social_insurance", "employer_health_insurance", "employer_unemployment_insurance", "employer_union_fee", "cost"}
+	"income_tax", "net", "employer_social_insurance", "employer_health_insurance", "employer_unemployment_insurance", "employer_union_fee", "cost",
+	"severance"}
 
 func (a PayrollAmounts) columns() []any {
 	return []any{a.Earned, a.Overtime, a.UnusedLeave, a.Adjustment, a.Gross, a.Exempt, a.InsuranceBase, a.SocialInsurance,
 		a.HealthInsurance, a.UnemploymentIns, a.PersonalDeduction, a.DependentDeduction, a.Taxable, a.IncomeTax, a.Net,
-		a.EmployerSocial, a.EmployerHealth, a.EmployerUnemploy, a.EmployerUnion, a.Cost}
+		a.EmployerSocial, a.EmployerHealth, a.EmployerUnemploy, a.EmployerUnion, a.Cost,
+		a.Severance}
 }
 
 // exportablePayroll reads the params of a payroll export the actor may run: it needs
