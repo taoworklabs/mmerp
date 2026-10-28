@@ -226,10 +226,29 @@ func TestUnitPaths(t *testing.T) {
 			t.Errorf("unit %d: %q, want %q", i, paths[i], want)
 		}
 	}
-	for path, want := range map[string]int{"Kinh doanh": 2, "HN / Kinh doanh": 1, "C / HN / Kinh doanh": 1, "X": 0, " HN /  Kinh doanh ": 1} {
+	for path, want := range map[string]int{"Kinh doanh": 2, "HN / Kinh doanh": 1, "C / HN / Kinh doanh": 1, "X": 0, "  HN / Kinh doanh ": 1, "HN/Kinh doanh": 0} {
 		if _, n := hrm.ResolveUnit(units, path); n != want {
 			t.Errorf("%q: %d matches, want %d", path, n, want)
 		}
+	}
+}
+
+// Unit names with "/" or outer spaces export as they resolve back.
+func TestEmployeeImportUnitNamesRoundTrip(t *testing.T) {
+	f := newFixture(t)
+	hr := f.ctxFor("hr", "hr@*")
+	slash := must(t)(f.iam.CreateOrgUnit(f.admin, iam.OrgUnitInput{ParentID: &f.c, Kind: "department", Name: "Hành chính/Nhân sự"}))
+	spaced := must(t)(f.iam.CreateOrgUnit(f.admin, iam.OrgUnitInput{ParentID: &f.c, Kind: "department", Name: " Kế toán"}))
+	must(t)(f.hrm.CreateEmployee(hr, employee("E1", slash)))
+	must(t)(f.hrm.CreateEmployee(hr, employee("E2", spaced)))
+	rows := asRows(f.exportEmployees(hr, `{}`))
+	if rows[0][7] != "Hành chính/Nhân sự" || rows[1][7] != "Kế toán" {
+		t.Fatalf("paths %q, %q", rows[0][7], rows[1][7])
+	}
+	rows[0][7], rows[1][7] = rows[1][7], rows[0][7]
+	f.importEmployees(hr, "completed", rows...)
+	if e1, e2 := f.employeeByCode(hr, "E1"), f.employeeByCode(hr, "E2"); e1.OrgUnitID != spaced || e2.OrgUnitID != slash {
+		t.Fatalf("units %d, %d", e1.OrgUnitID, e2.OrgUnitID)
 	}
 }
 

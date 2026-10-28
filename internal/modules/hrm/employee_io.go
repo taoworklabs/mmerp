@@ -117,33 +117,50 @@ func genderLabel(loc string, g *string) string {
 	return platform.Translate(loc, "hrm.import.gender."+*g, nil)
 }
 
-// unitPaths gives every unit its shortest unique path, `name` or `parent / name` up the tree;
-// a unit whose full path is still shared gets the full path.
-func unitPaths(units []iam.OrgUnit) map[int64]string {
+// unitSuffixes gives each unit the paths that name it, shortest first: its trimmed name, then
+// preceded by each trimmed ancestor's name in turn, joined by " / ".
+func unitSuffixes(units []iam.OrgUnit) map[int64][]string {
 	byID := make(map[int64]iam.OrgUnit, len(units))
 	for _, u := range units {
 		byID[u.ID] = u
 	}
-	chain := func(u iam.OrgUnit) []string { // root first
-		names := []string{u.Name}
+	out := make(map[int64][]string, len(units))
+	for _, u := range units {
+		paths := []string{strings.TrimSpace(u.Name)}
 		for p := u.ParentID; p != nil; {
 			pu, ok := byID[*p]
 			if !ok {
 				break
 			}
-			names = append([]string{pu.Name}, names...)
+			paths = append(paths, strings.TrimSpace(pu.Name)+" / "+paths[len(paths)-1])
 			p = pu.ParentID
 		}
-		return names
+		out[u.ID] = paths
 	}
+	return out
+}
+
+// unitIndex maps every path to the units it names.
+func unitIndex(units []iam.OrgUnit) map[string][]int64 {
+	out := map[string][]int64{}
+	for id, paths := range unitSuffixes(units) {
+		for _, p := range paths {
+			out[p] = append(out[p], id)
+		}
+	}
+	return out
+}
+
+// unitPaths gives every unit its shortest unique path, `name` or `parent / name` up the tree;
+// a unit whose full path is still shared gets the full path.
+func unitPaths(units []iam.OrgUnit) map[int64]string {
+	idx := unitIndex(units)
 	out := make(map[int64]string, len(units))
-	for _, u := range units {
-		names := chain(u)
-		out[u.ID] = strings.Join(names, " / ")
-		for n := 1; n <= len(names); n++ {
-			path := strings.Join(names[len(names)-n:], " / ")
-			if _, matches := resolveUnit(units, path); matches == 1 {
-				out[u.ID] = path
+	for id, paths := range unitSuffixes(units) {
+		out[id] = paths[len(paths)-1]
+		for _, p := range paths {
+			if len(idx[p]) == 1 {
+				out[id] = p
 				break
 			}
 		}
@@ -151,37 +168,13 @@ func unitPaths(units []iam.OrgUnit) map[int64]string {
 	return out
 }
 
-// resolveUnit finds the units a path names: the last segment is the unit's name, the
-// segments before it a suffix of its ancestors' names.
-func resolveUnit(units []iam.OrgUnit, path string) (id int64, matches int) {
-	var segs []string
-	for _, p := range strings.Split(path, "/") {
-		segs = append(segs, strings.TrimSpace(p))
+// resolveUnit finds the units a cell names, as unitIndex spells their paths.
+func resolveUnit(idx map[string][]int64, cell string) (id int64, matches int) {
+	ids := idx[strings.TrimSpace(cell)]
+	if len(ids) == 0 {
+		return 0, 0
 	}
-	byID := make(map[int64]iam.OrgUnit, len(units))
-	for _, u := range units {
-		byID[u.ID] = u
-	}
-	for _, u := range units {
-		cur, ok := u, true
-		for i := len(segs) - 1; i >= 0 && ok; i-- {
-			if cur.Name != segs[i] {
-				ok = false
-				break
-			}
-			if i > 0 {
-				if cur.ParentID == nil {
-					ok = false
-					break
-				}
-				cur, ok = byID[*cur.ParentID]
-			}
-		}
-		if ok {
-			id, matches = u.ID, matches+1
-		}
-	}
-	return id, matches
+	return ids[0], len(ids)
 }
 
 // exportEmployees writes the employees the list shows, in the import's layout. Sensitive
@@ -262,6 +255,7 @@ func (s *Service) importEmployees(ctx context.Context, _ json.RawMessage, rows [
 	if err != nil {
 		return nil, err
 	}
+	unitIdx := unitIndex(units)
 	view, err := s.d.IAM.Scope(ctx, "hrm", PermView)
 	if err != nil {
 		return nil, err
@@ -360,7 +354,7 @@ func (s *Service) importEmployees(ctx context.Context, _ json.RawMessage, rows [
 		text(&in.Email, strings.TrimSpace(r[5]))
 		text(&in.Address, strings.TrimSpace(r[6]))
 		if v := strings.TrimSpace(r[7]); v != "" {
-			switch id, matches := resolveUnit(units, v); {
+			switch id, matches := resolveUnit(unitIdx, v); {
 			case matches == 0:
 				fail("unknown_org_unit", map[string]any{"value": v})
 			case matches > 1:

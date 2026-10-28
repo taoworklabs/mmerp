@@ -3,6 +3,7 @@ package hrm
 import (
 	"context"
 
+	"github.com/taoworklabs/mmerp/internal/core/iam"
 	"github.com/taoworklabs/mmerp/internal/core/printing"
 )
 
@@ -16,7 +17,8 @@ func (s *Service) Payslips(ctx context.Context, id int64) ([]printing.Part, erro
 	return s.payslips(ctx, id)
 }
 
-var (
-	UnitPaths   = unitPaths
-	ResolveUnit = resolveUnit
-)
+var UnitPaths = unitPaths
+
+func ResolveUnit(units []iam.OrgUnit, cell string) (int64, int) {
+	return resolveUnit(unitIndex(units), cell)
+}
