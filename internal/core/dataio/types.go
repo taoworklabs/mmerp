@@ -44,6 +44,9 @@ type Sheet struct {
 	Rows   [][]any
 	// TextColumns (0-based) are text-formatted, so a value typed there keeps its leading zeros.
 	TextColumns []int
+	// Pin, when set, replaces the request's params as what every download's Check gets,
+	// so a sheet built from a filter can be checked against the rows it really holds.
+	Pin json.RawMessage
 }
 
 // File is an exported file other than a sheet; its name's extension gives its type.

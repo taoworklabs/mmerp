@@ -192,6 +192,39 @@ func TestEmployeeExportSensitiveRevoked(t *testing.T) {
 	}
 }
 
+// The download checks the employees the file holds, not who the filter finds now: one
+// moved out of the actor's reach closes the file, sensitive values or not.
+func TestEmployeeExportMovedOutOfReach(t *testing.T) {
+	for _, params := range []string{`{"include_sensitive":true}`, `{}`} {
+		t.Run(params, func(t *testing.T) {
+			f := newFixture(t)
+			boss := f.ctxFor("boss", "hr@*", "sensitive_viewer@*")
+			hr := f.ctxFor("hr", "hr@A", "sensitive_viewer@A")
+			id := must(t)(f.hrm.CreateEmployee(boss, hrm.NewEmployee{Code: "E1", EmployeeInput: hrm.EmployeeInput{
+				EmployeeFields: hrm.EmployeeFields{FullName: "Nhân viên E1", OrgUnitID: f.a, HireDate: "2026-01-05"},
+				Sensitive:      &hrm.SensitiveValues{TaxCode: str("0101234567")}}}))
+			job, err := f.core.DataIO.StartExport(hr, "hrm.employees", []byte(params))
+			f.check(err)
+			f.wantJob(job, "completed")
+			j, err := f.core.DataIO.Job(hr, job)
+			f.check(err)
+			moved := employee("E1", f.b).EmployeeInput
+			f.check(f.hrm.UpdateEmployee(boss, id, moved))
+			if _, _, err := f.core.DataIO.File(hr, *j.FileID); !errors.Is(err, platform.ErrNotFound) {
+				t.Fatalf("download after the move: %v", err)
+			}
+		})
+	}
+}
+
+// An empty export still downloads.
+func TestEmployeeExportEmptyDownloads(t *testing.T) {
+	f := newFixture(t)
+	if rows := f.exportEmployees(f.ctxFor("hr", "hr@A"), `{}`); len(rows) != 1 {
+		t.Fatalf("rows %v", rows)
+	}
+}
+
 func TestEmployeeExportNeedsView(t *testing.T) {
 	f := newFixture(t)
 	nobody := f.ctxFor("nobody")

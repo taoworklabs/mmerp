@@ -214,6 +214,35 @@ func (q *Queries) EmployeeListBase(ctx context.Context) ([]EmployeeListBaseRow, 
 	return items, nil
 }
 
+const employeeUnits = `-- name: EmployeeUnits :many
+SELECT id, org_unit_id FROM hrm.employees WHERE id = ANY($1::bigint[])
+`
+
+type EmployeeUnitsRow struct {
+	ID        int64
+	OrgUnitID int64
+}
+
+func (q *Queries) EmployeeUnits(ctx context.Context, ids []int64) ([]EmployeeUnitsRow, error) {
+	rows, err := q.db.Query(ctx, employeeUnits, ids)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []EmployeeUnitsRow
+	for rows.Next() {
+		var i EmployeeUnitsRow
+		if err := rows.Scan(&i.ID, &i.OrgUnitID); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const employeesByCodes = `-- name: EmployeesByCodes :many
 SELECT id, code, org_unit_id FROM hrm.employees WHERE lower(code) = ANY($1::text[])
 `

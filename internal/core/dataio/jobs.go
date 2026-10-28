@@ -220,7 +220,7 @@ func (s *Service) runExport(ctx context.Context, j *river.Job[exportArgs]) error
 	if !ok {
 		return platform.ErrNotFound
 	}
-	file, rows, err := export(ctx, exp, a.Params)
+	file, rows, pin, err := export(ctx, exp, a.Params)
 	if err != nil {
 		return err
 	}
@@ -228,8 +228,11 @@ func (s *Service) runExport(ctx context.Context, j *river.Job[exportArgs]) error
 	if err != nil {
 		return err
 	}
+	if pin == nil {
+		pin = a.Params
+	}
 	return platform.InTx(ctx, func(ctx context.Context) error {
-		export := store.CreateFileParams{ExportKind: pgtype.Text{String: a.Target, Valid: true}, ExportParams: a.Params}
+		export := store.CreateFileParams{ExportKind: pgtype.Text{String: a.Target, Valid: true}, ExportParams: pin}
 		if err := s.keep(ctx, id, file.Name, export); err != nil {
 			return err
 		}
@@ -245,22 +248,22 @@ func (s *Service) runExport(ctx context.Context, j *river.Job[exportArgs]) error
 }
 
 // export runs a module's export into a file.
-// export also returns how many data rows a sheet holds, nil for a rendered file.
-func export(ctx context.Context, exp Export, params json.RawMessage) (File, *int, error) {
+// export also returns how many data rows a sheet holds, nil for a rendered file, and the sheet's pin.
+func export(ctx context.Context, exp Export, params json.RawMessage) (File, *int, json.RawMessage, error) {
 	if exp.Render != nil {
 		f, err := exp.Render(ctx, params)
-		return f, nil, err
+		return f, nil, nil, err
 	}
 	sheet, err := exp.Run(ctx, params)
 	if err != nil {
-		return File{}, nil, err
+		return File{}, nil, nil, err
 	}
 	b, err := writeSheet(sheet)
 	if err != nil {
-		return File{}, nil, err
+		return File{}, nil, nil, err
 	}
 	rows := len(sheet.Rows)
-	return File{Name: sheet.Name + ".xlsx", Body: b.Bytes()}, &rows, nil
+	return File{Name: sheet.Name + ".xlsx", Body: b.Bytes()}, &rows, sheet.Pin, nil
 }
 
 // writeSheet writes the header in bold, frozen, and the rows below it; text columns get the text format.

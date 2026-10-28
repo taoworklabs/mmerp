@@ -49,6 +49,7 @@ var EmployeeByUser = data.OneArg("hrm.EmployeeByUser", newQ, (*Queries).Employee
 var HasReports = data.OneArg("hrm.HasReports", newQ, (*Queries).HasReports)
 var EmployeesByCodes = data.ManyArg("hrm.EmployeesByCodes", newQ, (*Queries).EmployeesByCodes)
 var AnyEmployee = data.One("hrm.AnyEmployee", newQ, (*Queries).AnyEmployee)
+var EmployeeUnits = data.ManyArg("hrm.EmployeeUnits", newQ, (*Queries).EmployeeUnits)
 var ListLeaveTypes = data.Many("hrm.ListLeaveTypes", newQ, (*Queries).ListLeaveTypes)
 var GetLeaveType = data.OneArg("hrm.GetLeaveType", newQ, (*Queries).GetLeaveType)
 var CreateLeaveType = data.OneArg("hrm.CreateLeaveType", newQ, (*Queries).CreateLeaveType)

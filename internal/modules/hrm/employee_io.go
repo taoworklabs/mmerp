@@ -53,10 +53,7 @@ var employeeTextColumns = []int{0, 4, 8, 11, 12, 13, 14}
 
 func (s *Service) registerEmployeeIO() {
 	s.d.DataIO.RegisterExport(dataio.Export{Kind: employeeIO, Product: "hrm", Run: s.exportEmployees,
-		Check: func(ctx context.Context, params json.RawMessage) error {
-			_, err := s.exportedEmployees(ctx, params)
-			return err
-		}})
+		Check: s.checkEmployeeFile})
 	s.d.DataIO.RegisterImport(dataio.Import{Kind: employeeIO, Product: "hrm", Run: s.importEmployees, TextColumns: employeeTextColumns,
 		Header: func(ctx context.Context, _ json.RawMessage) ([]string, error) {
 			sc, err := s.d.IAM.Scope(ctx, "hrm", PermEdit)
@@ -107,6 +104,43 @@ func (s *Service) exportedEmployees(ctx context.Context, params json.RawMessage)
 		}
 	}
 	return page.Items, nil
+}
+
+// employeeFile is what an employee export file holds, pinned when it is made.
+type employeeFile struct {
+	EmployeeIDs      []int64 `json:"employee_ids"`
+	IncludeSensitive bool    `json:"include_sensitive"`
+}
+
+// checkEmployeeFile lets a download through only while the actor may still read every
+// employee in the file, and their sensitive values when the file has them.
+func (s *Service) checkEmployeeFile(ctx context.Context, pin json.RawMessage) error {
+	var p employeeFile
+	// A file without a pin predates it, or is not one; refuse rather than guess what it holds.
+	if err := json.Unmarshal(pin, &p); err != nil || p.EmployeeIDs == nil {
+		return platform.ErrForbidden
+	}
+	view, err := s.d.IAM.Scope(ctx, "hrm", PermView)
+	if err != nil {
+		return err
+	}
+	sens, err := s.d.IAM.Scope(ctx, "hrm", PermSensitive)
+	if err != nil {
+		return err
+	}
+	units, err := store.EmployeeUnits.Run(ctx, p.EmployeeIDs)
+	if err != nil {
+		return err
+	}
+	if len(units) != len(slices.Compact(slices.Sorted(slices.Values(p.EmployeeIDs)))) {
+		return platform.ErrForbidden
+	}
+	for _, u := range units {
+		if !view.Has(u.OrgUnitID) || (p.IncludeSensitive && !sens.Has(u.OrgUnitID)) {
+			return platform.ErrForbidden
+		}
+	}
+	return nil
 }
 
 // requireEmployeeView refuses whoever may view no employee.
@@ -262,7 +296,15 @@ func (s *Service) exportEmployees(ctx context.Context, params json.RawMessage) (
 		}
 		rows = append(rows, row)
 	}
-	return dataio.Sheet{Name: platform.Translate(loc, "hrm.import.sheet.employees", nil), Header: header, Rows: rows, TextColumns: employeeTextColumns}, nil
+	ids := make([]int64, len(items))
+	for i, e := range items {
+		ids[i] = e.ID
+	}
+	pin, err := json.Marshal(employeeFile{EmployeeIDs: ids, IncludeSensitive: p.IncludeSensitive})
+	if err != nil {
+		return dataio.Sheet{}, err
+	}
+	return dataio.Sheet{Name: platform.Translate(loc, "hrm.import.sheet.employees", nil), Header: header, Rows: rows, TextColumns: employeeTextColumns, Pin: pin}, nil
 }
 
 // importEmployees creates the rows whose code is new or empty and edits the others. An empty

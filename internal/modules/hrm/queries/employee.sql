@@ -81,3 +81,6 @@ SELECT id, code, org_unit_id FROM hrm.employees WHERE lower(code) = ANY(@codes::
 
 -- name: AnyEmployee :one
 SELECT EXISTS (SELECT 1 FROM hrm.employees);
+
+-- name: EmployeeUnits :many
+SELECT id, org_unit_id FROM hrm.employees WHERE id = ANY(@ids::bigint[]);
