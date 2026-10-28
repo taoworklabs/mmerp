@@ -34,6 +34,7 @@ func (s *Service) registerDataIO() {
 			return err
 		}})
 	s.registerEmployeeIO()
+	s.registerReports()
 	s.d.DataIO.RegisterImport(dataio.Import{Kind: leaveBalanceImport, Product: "hrm", Header: s.leaveBalanceHeader, Run: s.importLeaveBalances})
 }
 

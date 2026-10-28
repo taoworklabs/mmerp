@@ -1,5 +1,6 @@
-import { IconUsersGroup, IconLayoutDashboard, IconCalendarCog, IconCash, IconCalendarEvent, IconCategory, IconScale, IconSitemap, IconClockHour4, IconFileCertificate, IconFileText, IconGitBranch, IconTable, IconUsers } from '@tabler/icons-react'
+import { IconUsersGroup, IconLayoutDashboard, IconCalendarCog, IconCash, IconCalendarEvent, IconCategory, IconScale, IconSitemap, IconClockHour4, IconFileCertificate, IconFileText, IconGitBranch, IconTable, IconUsers, IconReportAnalytics } from '@tabler/icons-react'
 import type { AreaManifest } from '@/shared/area'
+import { useCan } from '@/shared/auth/me'
 import { leaveRecord, overtimeRecord } from './records'
 import { contractDocType, employeeDocType, hrmKeys, leaveDocType, overtimeDocType, payrollDocType, timesheetDocType } from './keys'
 
@@ -21,6 +22,8 @@ export const hrm: AreaManifest = {
     { label: 'hrm.nav.leaves', path: 'leaves', icon: IconCalendarEvent, group: 'hrm.nav.group_time' },
     { label: 'hrm.nav.overtimes', path: 'overtimes', icon: IconClockHour4, group: 'hrm.nav.group_time' },
     { label: 'hrm.nav.payrolls', path: 'payrolls', icon: IconCash, permission: 'hrm.payroll.view', group: 'hrm.nav.group_pay' },
+    // Reports also need the sensitive permission, which a permission list (any of) cannot say.
+    { label: 'hrm.nav.reports', path: 'reports', icon: IconReportAnalytics, permission: 'hrm.salary.view', useShown: () => useCan('hrm.employee.sensitive'), group: 'hrm.nav.group_reports' },
     { label: 'hrm.nav.contract_types', path: 'contract-types', icon: IconFileCertificate, permission: 'hrm.contract_type.manage', group: 'hrm.nav.group_config' },
     { label: 'hrm.nav.leave_types', path: 'leave-types', icon: IconCategory, permission: 'hrm.leave_type.manage', group: 'hrm.nav.group_config' },
     { label: 'hrm.nav.work_calendar', path: 'work-calendar', icon: IconCalendarCog, permission: 'hrm.calendar.manage', group: 'hrm.nav.group_config' },

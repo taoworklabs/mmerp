@@ -149,5 +149,9 @@
   "hrm.me.nav.org": "Sơ đồ tổ chức",
   "hrm.me.nav.group_team": "Nhóm của tôi",
   "hrm.me.nav.team_leaves": "Đơn nghỉ phép",
-  "hrm.me.nav.team_overtimes": "Đơn tăng ca"
+  "hrm.me.nav.team_overtimes": "Đơn tăng ca",
+  "hrm.error.report_payroll_missing": "Chưa có bảng lương đã chốt của: {{months}}. Chốt bảng lương các tháng đó trước khi lập báo cáo.",
+  "hrm.error.report_form_not_supported": "Kỳ này dùng mẫu biểu cũ, mmerp chưa hỗ trợ.",
+  "hrm.nav.group_reports": "Báo cáo",
+  "hrm.nav.reports": "Báo cáo BHXH & thuế TNCN"
 }
