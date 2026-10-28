@@ -49,6 +49,14 @@ test('HR terminates an employee through a termination, and the profile then show
   await page.goto(`/hrm/employees/${emp}`)
   await expect(page.getByText('31/12/2026')).toBeVisible()
   await expect(page.getByRole('link', { name: number })).toBeVisible()
-  await page.getByRole('button', { name: 'Thao tác khác' }).click()
-  await expect(page.getByRole('menuitem', { name: 'Cho nghỉ việc' })).toHaveCount(0)
+  // The "more" menu is not rendered once it has nothing to offer.
+  const main = page.getByRole('main')
+  const more = main.getByRole('button', { name: 'Thao tác khác' })
+  if (await more.count()) {
+    await more.first().click()
+    await expect(page.getByRole('menuitem', { name: 'Cho nghỉ việc' })).toHaveCount(0)
+  } else {
+    await expect(main.getByRole('button', { name: 'Cho nghỉ việc' })).toHaveCount(0)
+    await expect(page.getByRole('menuitem', { name: 'Cho nghỉ việc' })).toHaveCount(0)
+  }
 })

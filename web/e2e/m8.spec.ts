@@ -55,8 +55,8 @@ test('an HRM approval rule administrator edits HRM rules inside HRM', async ({ p
   await expect(page).toHaveURL(/\/hrm\/approval-rules$/)
   const table = page.getByRole('table', { name: 'Quy trình duyệt' })
   await expect(table.getByRole('link', { name: 'Đơn nghỉ phép · Gửi duyệt' })).toBeVisible()
-  // Five document types, each with a post and a cancel rule.
-  await expect(table.getByRole('link')).toHaveCount(10)
+  // Six document types, each with a post and a cancel rule.
+  await expect(table.getByRole('link')).toHaveCount(12)
 
   await table.getByRole('link', { name: 'Đơn nghỉ phép · Gửi duyệt' }).click()
   await expect(page).toHaveURL(/\/hrm\/approval-rules\/hrm\.leave_request$/)
