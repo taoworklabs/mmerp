@@ -44,7 +44,7 @@ export function PayslipPage() {
           ]}
         />
         <Section title={p('income')}>
-          <FieldList rows={money(['earned', a.earned], ['overtime', a.overtime], ['unused_leave', a.unused_leave], ['adjustment', a.adjustment], ['gross', a.gross])} />
+          <FieldList rows={money(['earned', a.earned], ['overtime', a.overtime], ['unused_leave', a.unused_leave], ['adjustment', a.adjustment], ...(a.severance ? [['severance', a.severance] as [string, number]] : []), ['gross', a.gross])} />
         </Section>
         <Section title={p('deductions')}>
           <FieldList

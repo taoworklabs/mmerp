@@ -2,8 +2,10 @@ package hrm_test
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"slices"
+	"strings"
 	"sync"
 	"testing"
 
@@ -394,4 +396,28 @@ func TestEmployeeTerminationLinkAfterMove(t *testing.T) {
 	if got.Termination != nil || slices.Contains(got.AllowedActions, "create_termination") {
 		t.Fatalf("new unit's HR %v %+v", got.AllowedActions, got.Termination)
 	}
+}
+
+// The decision prints who leaves, when and why, and never an amount.
+func TestTerminationPrint(t *testing.T) {
+	f := newLeaveFixture(t)
+	in := quit("2026-04-15", "restructuring")
+	in.DecisionDate = str("2026-04-01")
+	id := must(t)(f.hrm.CreateTermination(f.hr, hrm.NewTermination{EmployeeID: f.emp, TerminationFields: in}))
+	parts, err := f.hrm.TerminationPrint(f.hr, id)
+	f.check(err)
+	var got map[string]any
+	f.check(json.Unmarshal(parts[0].Data, &got))
+	if got["number"] != "NV-2026-00001" || got["employee_name"] != "Nhân viên E" || got["termination_date"] != "2026-04-15" ||
+		got["decision_date"] != "2026-04-01" || got["reason"] != "restructuring" || got["allowance"] != "none" { // under 12 months worked
+		t.Fatalf("print data %v", got)
+	}
+	for k := range got {
+		if strings.Contains(k, "amount") || strings.Contains(k, "average") {
+			t.Fatalf("print carries %s", k)
+		}
+	}
+	job, err := f.core.DataIO.StartExport(f.hr, "printing.hrm.termination", fmt.Appendf(nil, `{"id":%d}`, id))
+	f.check(err)
+	f.wantJob(job, "completed")
 }

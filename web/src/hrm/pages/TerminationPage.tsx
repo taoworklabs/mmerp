@@ -29,6 +29,7 @@ export function TerminationPage() {
       ]}
       subject={x.employee_name}
       attachments
+      printLabel={t('hrm.termination.print')}
     >
       <TerminationDetails termination={x} />
     </DocumentScreen>

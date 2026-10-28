@@ -586,5 +586,6 @@
   "hrm.termination.warning.overtime_after_termination": "Đơn tăng ca {{number}} ngày {{date}} sau ngày nghỉ việc.",
   "hrm.termination.warning.leave_balance_to_pay": "Còn {{days}} ngày phép năm chưa nghỉ: bảng lương tháng nghỉ việc sẽ thanh toán.",
   "hrm.payroll.col.severance": "Trợ cấp thôi việc",
-  "hrm.print.payslip.severance": "Trợ cấp thôi việc/mất việc"
+  "hrm.print.payslip.severance": "Trợ cấp thôi việc/mất việc",
+  "hrm.termination.print": "In quyết định"
 }

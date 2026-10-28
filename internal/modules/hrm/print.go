@@ -25,6 +25,7 @@ func (s *Service) registerPrints() {
 		Data: s.contractPrint, Layouts: []printing.Layout{contractLayout1}})
 	s.d.Printing.Register(printing.Template{Code: "hrm.payslip", Name: "hrm.print.payslip.name", DocType: payrollType,
 		Data: s.payslips, Owner: s.payslipOwner, Layouts: []printing.Layout{payslipLayout1}})
+	s.registerTerminationPrint()
 }
 
 // payslipOwner is the actor's employee when they have a line on the payroll, else 0.
