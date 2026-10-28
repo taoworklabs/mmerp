@@ -1,6 +1,7 @@
 package hrm_test
 
 import (
+	"cmp"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -30,6 +31,12 @@ type sample struct {
 	overtime   []hrm.OvertimeFields
 	adjustment int64
 	unused     string // leave left on quitting
+	// A termination with an allowance: its reason and months insured, the contract start and
+	// the salary before 01/01/2026 when it changed then.
+	reason  string
+	insured int
+	since   string
+	before  int64
 }
 
 func ot(date, kind, day, night string) hrm.OvertimeFields {
@@ -62,6 +69,8 @@ func samples() []sample {
 		{code: "C15", salary: 60_000_000}, // the July payroll
 		{code: "C16", salary: 20_000_000, allowance: 3_000_000, overtime: []hrm.OvertimeFields{ot("2026-04-09", "weekday", "10", "0")}},
 		{code: "C17", salary: 20_000_000, overtime: c17},
+		{code: "C18", salary: 24_000_000, hire: "2007-07-01", quit: "2026-04-15", reason: "mutual_agreement", insured: 207, since: "2025-01-01", before: 20_000_000},
+		{code: "C19", salary: 15_000_000, hire: "2024-03-01", quit: "2026-04-30", reason: "restructuring", insured: 26, since: "2024-03-01"},
 	}
 }
 
@@ -227,7 +236,7 @@ func TestPayrollSamples(t *testing.T) {
 		if s.hire != "" {
 			e.HireDate = s.hire
 		}
-		if s.quit != "" {
+		if s.quit != "" && s.reason == "" {
 			e.TerminationDate = &s.quit
 		}
 		emp := must(t)(f.hrm.CreateEmployee(f.hr, e))
@@ -237,11 +246,15 @@ func TestPayrollSamples(t *testing.T) {
 			july[emp] = workdays("2026-07-01", "2026-07-31")
 			continue
 		}
-		f.contract(emp, s, "2026-01-01", "2026-06-30")
+		if s.reason != "" {
+			f.allowanceContract(emp, s)
+		} else {
+			f.contract(emp, s, "2026-01-01", "2026-06-30")
+		}
 		for range s.deps {
 			must(t)(f.hrm.SaveDependent(f.pay, emp, 0, hrm.DependentInput{FullName: "Con", Relationship: "child", DeductionFrom: new("2026-01")}))
 		}
-		days := workdays(max(e.HireDate, "2026-04-01"), min(*cmpOr(e.TerminationDate, "2026-04-30"), "2026-04-30"), holidays...)
+		days := workdays(max(e.HireDate, "2026-04-01"), min(*cmpOr(e.TerminationDate, cmp.Or(s.quit, "2026-04-30")), "2026-04-30"), holidays...)
 		if s.leave != "" {
 			types := map[string]int64{"annual": f.annual, "sick": f.sick, "unpaid": f.unpaid}
 			if s.leave == "annual" {
@@ -297,9 +310,15 @@ func TestPayrollSamples(t *testing.T) {
 			"Q": l.Gross, "R": l.Exempt, "S": l.InsuranceBase, "T": l.SocialInsurance, "U": l.HealthInsurance, "V": l.UnemploymentIns,
 			"W": l.PersonalDeduction, "X": l.DependentDeduction, "Y": l.Taxable, "Z": l.IncomeTax, "AA": l.Net,
 			"AB": l.EmployerSocial, "AC": l.EmployerHealth, "AD": l.EmployerUnemploy, "AE": l.EmployerUnion, "AF": l.Cost,
+			"AI": l.Severance,
 		} {
 			if got != w[col] {
 				t.Errorf("%s column %s: got %d, want %d", s.code, col, got, w[col])
+			}
+		}
+		if s.code == "C18" {
+			if got := f.capturedMonthly(id, f.employees[s.code]); !slices.Equal(got, []int64{20_000_000, 20_000_000, 20_000_000, 24_000_000, 24_000_000, 24_000_000}) {
+				t.Errorf("C18 monthly %v", got)
 			}
 		}
 		if s.code == "C17" && !slices.Contains(l.Warnings, "overtime_month_limit") {
@@ -320,4 +339,24 @@ func (f *payrollFixture) payrollDoc(id int64) hrm.Payroll {
 	p, err := f.hrm.Payroll(f.pay, id)
 	f.check(err)
 	return p
+}
+
+// allowanceContract posts s's contract from s.since to the end of 2026, raised to s.salary
+// from 01/01/2026 when s.before is set, and the termination on s.quit.
+func (f *payrollFixture) allowanceContract(emp int64, s sample) {
+	f.t.Helper()
+	first := s.salary
+	if s.before > 0 {
+		first = s.before
+	}
+	end := "2026-12-31"
+	id := must(f.t)(f.hrm.CreateContract(f.pay, hrm.NewContract{EmployeeID: emp, ContractFields: hrm.ContractFields{
+		ContractTypeID: f.fixed, StartDate: s.since, EndDate: &end, Terms: hrm.ContractTerms{Salary: first, Lines: []hrm.ContractLine{}}}}))
+	f.post(record.Ref{Type: "hrm.contract", ID: id}, 1)
+	if s.before > 0 {
+		app := must(f.t)(f.hrm.CreateContract(f.pay, hrm.NewContract{EmployeeID: emp, ParentID: &id, ContractFields: hrm.ContractFields{
+			StartDate: "2026-01-01", Terms: hrm.ContractTerms{Salary: s.salary, Lines: []hrm.ContractLine{}}}}))
+		f.post(record.Ref{Type: "hrm.contract", ID: app}, 1)
+	}
+	f.terminate(emp, s.quit, s.reason, s.insured)
 }
