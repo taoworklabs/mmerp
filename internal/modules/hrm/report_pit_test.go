@@ -41,7 +41,7 @@ func TestPITYear(t *testing.T) {
 	}
 	gone := f.hire("F", f.a, "2026-01-05", 20_000_000)
 	f.setIdentifiers(gone, "", "", "001099000002")
-	f.edit(gone, func(e *hrm.EmployeeFields) { e.TerminationDate = str("2026-06-30") })
+	f.terminate(gone, "2026-06-30", "mutual_agreement", 0)
 	sums := map[int64]*hrm.PayrollAmounts{f.emp: {}, gone: {}}
 	for m := 1; m <= 12; m++ {
 		month := "2026-" + pad2(m)

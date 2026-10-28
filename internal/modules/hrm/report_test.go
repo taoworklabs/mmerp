@@ -169,7 +169,7 @@ func TestD02LTMovements(t *testing.T) {
 	f := newReportFixture(t)
 	f.contract(f.emp, sample{salary: 22_000_000}, "2026-01-01", "2026-12-31")
 	quit := f.hire("T", f.a, "2026-01-05", 15_000_000)
-	f.edit(quit, func(e *hrm.EmployeeFields) { e.TerminationDate = str("2026-05-31") })
+	f.terminate(quit, "2026-05-31", "mutual_agreement", 0)
 	off := f.hire("U", f.a, "2026-01-05", 12_000_000)
 	f.close(f.c, "2026-05", map[int64]map[int64][]string{f.a: {f.emp: full("2026-05"), quit: full("2026-05"), off: full("2026-05")}})
 	f.appendix(f.emp, "2026-06-01", 25_000_000)
