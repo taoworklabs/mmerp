@@ -11,6 +11,64 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const allowanceContracts = `-- name: AllowanceContracts :many
+SELECT c.id, d.org_unit_id, c.parent_id, c.start_date, coalesce(p.end_date, c.end_date) AS end_date, c.terms
+FROM hrm.contracts c JOIN record.documents d ON d.id = c.id LEFT JOIN hrm.contracts p ON p.id = c.parent_id
+WHERE d.status = 'posted' AND d.legal_entity_id = $1 AND c.employee_id = $2 AND c.start_date <= $3::date
+  AND (coalesce(p.end_date, c.end_date) IS NULL OR coalesce(p.end_date, c.end_date) >= $4::date)
+ORDER BY c.start_date, c.id
+`
+
+type AllowanceContractsParams struct {
+	LegalEntityID int64
+	EmployeeID    int64
+	Until         pgtype.Date
+	Since         pgtype.Date
+}
+
+type AllowanceContractsRow struct {
+	ID        int64
+	OrgUnitID int64
+	ParentID  pgtype.Int8
+	StartDate pgtype.Date
+	EndDate   pgtype.Date
+	Terms     []byte
+}
+
+// Posted contracts and appendices of the employee with the legal entity in force from @since to
+// @until, with the unit each is filed under; an appendix runs to its original's end.
+func (q *Queries) AllowanceContracts(ctx context.Context, arg AllowanceContractsParams) ([]AllowanceContractsRow, error) {
+	rows, err := q.db.Query(ctx, allowanceContracts,
+		arg.LegalEntityID,
+		arg.EmployeeID,
+		arg.Until,
+		arg.Since,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []AllowanceContractsRow
+	for rows.Next() {
+		var i AllowanceContractsRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.OrgUnitID,
+			&i.ParentID,
+			&i.StartDate,
+			&i.EndDate,
+			&i.Terms,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const createTermination = `-- name: CreateTermination :exec
 INSERT INTO hrm.terminations (id, employee_id, reason, decision_date, pension_eligible, insured_months, paid_months, handover, note)
 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
@@ -128,6 +186,59 @@ func (q *Queries) OpenTerminationOf(ctx context.Context, arg OpenTerminationOfPa
 	var i OpenTerminationOfRow
 	err := row.Scan(&i.ID, &i.Number)
 	return i, err
+}
+
+const payrollTerminations = `-- name: PayrollTerminations :many
+SELECT t.employee_id, t.reason, t.pension_eligible, t.insured_months, t.paid_months, d.date AS termination_date, e.hire_date
+FROM hrm.terminations t
+JOIN record.documents d ON d.id = t.id
+JOIN hrm.employees e ON e.id = t.employee_id
+WHERE d.status = 'posted' AND t.employee_id = ANY($1::bigint[]) AND d.date BETWEEN $2::date AND $3::date
+`
+
+type PayrollTerminationsParams struct {
+	Ids         []int64
+	PeriodStart pgtype.Date
+	PeriodEnd   pgtype.Date
+}
+
+type PayrollTerminationsRow struct {
+	EmployeeID      int64
+	Reason          string
+	PensionEligible bool
+	InsuredMonths   int32
+	PaidMonths      int32
+	TerminationDate pgtype.Date
+	HireDate        pgtype.Date
+}
+
+// Posted terminations of the employees dated in the period, with the allowance inputs.
+func (q *Queries) PayrollTerminations(ctx context.Context, arg PayrollTerminationsParams) ([]PayrollTerminationsRow, error) {
+	rows, err := q.db.Query(ctx, payrollTerminations, arg.Ids, arg.PeriodStart, arg.PeriodEnd)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []PayrollTerminationsRow
+	for rows.Next() {
+		var i PayrollTerminationsRow
+		if err := rows.Scan(
+			&i.EmployeeID,
+			&i.Reason,
+			&i.PensionEligible,
+			&i.InsuredMonths,
+			&i.PaidMonths,
+			&i.TerminationDate,
+			&i.HireDate,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const setEmployeeTerminationDate = `-- name: SetEmployeeTerminationDate :exec

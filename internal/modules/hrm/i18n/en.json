@@ -160,5 +160,7 @@
   "hrm.termination.reason.restructuring": "Restructuring or economic reasons (Art 42, 43)",
   "hrm.termination.reason.work_permit_expired": "Work permit expired (Art 34.12)",
   "hrm.termination.reason.probation_failed": "Probation not passed (Art 34.13)",
-  "hrm.import.termination_via_document": "The termination date of employee {code} changes only through a termination"
+  "hrm.import.termination_via_document": "The termination date of employee {code} changes only through a termination",
+  "hrm.export.payroll.severance": "Severance/job-loss allowance",
+  "hrm.print.payslip.severance": "Severance/job-loss allowance"
 }

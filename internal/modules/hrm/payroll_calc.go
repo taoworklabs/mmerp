@@ -52,6 +52,7 @@ type payInput struct {
 	Overtime            []overtimeDay   `json:"overtime"`
 	OvertimeHoursBefore decimal.Decimal `json:"overtime_hours_before" doc:"earlier this year"`
 	UnusedLeave         *unusedLeave    `json:"unused_leave"`
+	Severance           *severance      `json:"severance,omitempty"`
 	Adjustment          int64           `json:"adjustment"`
 	Dependents          int             `json:"dependents"`
 	// Days with both work and approved leave: the leave takes the balance, the work earns nothing.
@@ -62,6 +63,7 @@ func (a *PayrollAmounts) add(b PayrollAmounts) {
 	a.Earned += b.Earned
 	a.Overtime += b.Overtime
 	a.UnusedLeave += b.UnusedLeave
+	a.Severance += b.Severance
 	a.Adjustment += b.Adjustment
 	a.Gross += b.Gross
 	a.Exempt += b.Exempt
@@ -193,6 +195,14 @@ func calcPayroll(p params, mode platform.Rounding, in []payInput) []payResult {
 		return decimal.NewFromInt(l.Salary).Mul(l.Days).Div(decimal.NewFromInt(int64(l.StandardDays)))
 	})
 
+	// Severance or job-loss allowance: neither insured nor taxed.
+	sev := col(func(i int) decimal.Decimal {
+		if x := in[i].Severance; x != nil {
+			return allowanceAmount(x.Kind, x.Years, x.Average)
+		}
+		return decimal.Zero
+	})
+
 	// Insurance on the insured salary in force on the last day, capped; none for a month
 	// with too many days neither worked nor paid.
 	base := make([]decimal.Decimal, n)
@@ -214,6 +224,8 @@ func calcPayroll(p params, mode platform.Rounding, in []payInput) []payResult {
 		a.Earned, a.Overtime, a.UnusedLeave, a.Adjustment = earned[i], ot[i], leave[i], x.Adjustment
 		a.Gross = a.Earned + a.Overtime + a.UnusedLeave + a.Adjustment
 		a.Exempt = exemptOT[i] + a.UnusedLeave + taxFree[i]
+		a.Severance = sev[i]
+		a.Gross, a.Exempt = a.Gross+a.Severance, a.Exempt+a.Severance
 		a.InsuranceBase = platform.Round(base[i])
 		a.SocialInsurance, a.HealthInsurance, a.UnemploymentIns = si[i], hi[i], ui[i]
 		a.EmployerSocial, a.EmployerHealth, a.EmployerUnemploy, a.EmployerUnion = erSI[i], erHI[i], erUI[i], erUnion[i]

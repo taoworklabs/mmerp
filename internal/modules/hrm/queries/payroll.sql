@@ -108,7 +108,8 @@ WHERE d.legal_entity_id = @legal_entity_id AND d.status = 'posted' AND (
     OR (d.doc_type = 'hrm.leave_request' AND EXISTS (
             SELECT 1 FROM hrm.leave_requests r WHERE r.id = d.id AND r.start_date <= @period_end AND r.end_date >= @period_start))
     OR (d.doc_type = 'hrm.overtime_request' AND EXISTS (
-            SELECT 1 FROM hrm.overtime_requests o WHERE o.id = d.id AND o.date BETWEEN @year_start::date AND @period_end)))
+            SELECT 1 FROM hrm.overtime_requests o WHERE o.id = d.id AND o.date BETWEEN @year_start::date AND @period_end))
+    OR (d.doc_type = 'hrm.termination' AND d.date BETWEEN @period_start::date AND @period_end))
 ORDER BY d.doc_type, d.id;
 
 -- name: PostedTimesheetUnits :many

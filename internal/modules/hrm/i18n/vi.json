@@ -160,5 +160,7 @@
   "hrm.termination.reason.restructuring": "Cho thôi việc do cơ cấu lại, lý do kinh tế (Điều 42, 43)",
   "hrm.termination.reason.work_permit_expired": "Giấy phép lao động hết hiệu lực (khoản 12 Điều 34)",
   "hrm.termination.reason.probation_failed": "Thử việc không đạt (khoản 13 Điều 34)",
-  "hrm.import.termination_via_document": "Ngày nghỉ việc của nhân viên {code} chỉ đổi qua quyết định nghỉ việc"
+  "hrm.import.termination_via_document": "Ngày nghỉ việc của nhân viên {code} chỉ đổi qua quyết định nghỉ việc",
+  "hrm.export.payroll.severance": "Trợ cấp thôi việc/mất việc",
+  "hrm.print.payslip.severance": "Trợ cấp thôi việc/mất việc"
 }

@@ -59,3 +59,20 @@ ORDER BY o.date, d.id;
 
 -- name: TerminationLeaveBalance :one
 SELECT coalesce((SELECT days::text FROM hrm.leave_balances WHERE employee_id = @employee_id AND year = @year), '0')::text AS days;
+
+-- name: PayrollTerminations :many
+-- Posted terminations of the employees dated in the period, with the allowance inputs.
+SELECT t.employee_id, t.reason, t.pension_eligible, t.insured_months, t.paid_months, d.date AS termination_date, e.hire_date
+FROM hrm.terminations t
+JOIN record.documents d ON d.id = t.id
+JOIN hrm.employees e ON e.id = t.employee_id
+WHERE d.status = 'posted' AND t.employee_id = ANY(@ids::bigint[]) AND d.date BETWEEN @period_start::date AND @period_end::date;
+
+-- name: AllowanceContracts :many
+-- Posted contracts and appendices of the employee with the legal entity in force from @since to
+-- @until, with the unit each is filed under; an appendix runs to its original's end.
+SELECT c.id, d.org_unit_id, c.parent_id, c.start_date, coalesce(p.end_date, c.end_date) AS end_date, c.terms
+FROM hrm.contracts c JOIN record.documents d ON d.id = c.id LEFT JOIN hrm.contracts p ON p.id = c.parent_id
+WHERE d.status = 'posted' AND d.legal_entity_id = @legal_entity_id AND c.employee_id = @employee_id AND c.start_date <= @until::date
+  AND (coalesce(p.end_date, c.end_date) IS NULL OR coalesce(p.end_date, c.end_date) >= @since::date)
+ORDER BY c.start_date, c.id;

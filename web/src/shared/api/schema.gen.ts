@@ -3887,6 +3887,11 @@ export interface components {
             overtime: number;
             /** Format: int64 */
             personal_deduction: number;
+            /**
+             * Format: int64
+             * @description Severance or job-loss allowance on leaving; in gross and exempt
+             */
+            severance: number;
             /** Format: int64 */
             social_insurance: number;
             /**
@@ -3970,6 +3975,11 @@ export interface components {
             paid_days: string;
             /** Format: int64 */
             personal_deduction: number;
+            /**
+             * Format: int64
+             * @description Severance or job-loss allowance on leaving; in gross and exempt
+             */
+            severance: number;
             /** Format: int64 */
             social_insurance: number;
             /** Format: int64 */
@@ -4065,6 +4075,11 @@ export interface components {
             overtime: number;
             /** Format: int64 */
             personal_deduction: number;
+            /**
+             * Format: int64
+             * @description Severance or job-loss allowance on leaving; in gross and exempt
+             */
+            severance: number;
             /** Format: int64 */
             social_insurance: number;
             /**

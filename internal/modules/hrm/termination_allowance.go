@@ -1,9 +1,14 @@
 package hrm
 
 import (
+	"context"
 	"time"
 
+	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/shopspring/decimal"
+
+	"github.com/taoworklabs/mmerp/internal/modules/hrm/internal/store"
+	"github.com/taoworklabs/mmerp/internal/platform"
 )
 
 // allowanceKind is what leaving pays: the severance allowance (Art 46 Labour Code 2019),
@@ -138,4 +143,40 @@ func allowanceAverage(cs []payContract, termination string) ([]int64, decimal.De
 func allowanceWindow(termination string) string {
 	t := dayOf(termination)
 	return time.Date(t.Year(), t.Month()-6, 1, 0, 0, 0, 0, time.UTC).Format(time.DateOnly)
+}
+
+// severance is what the payroll captured for a leaving employee's allowance.
+type severance struct {
+	Kind    allowanceKind   `json:"kind"`
+	Years   decimal.Decimal `json:"years"`
+	Monthly []int64         `json:"monthly"`
+	Average decimal.Decimal `json:"average"`
+}
+
+// addAllowances sets the allowance inputs of the employees with a termination posted in the period.
+func addAllowances(ctx context.Context, emps []basisEmployee, ids []int64, start, end pgtype.Date) error {
+	rows, err := store.PayrollTerminations.Run(ctx, store.PayrollTerminationsParams{Ids: ids, PeriodStart: start, PeriodEnd: end})
+	if err != nil {
+		return err
+	}
+	for _, r := range rows {
+		for i := range emps {
+			if emps[i].ID == r.EmployeeID {
+				b := terminationBasis(r.Reason, *platform.DatePtr(r.HireDate), *platform.DatePtr(r.TerminationDate), r.InsuredMonths, r.PaidMonths, r.PensionEligible)
+				emps[i].Allowance = &b
+			}
+		}
+	}
+	return nil
+}
+
+// severanceOf reads the six months of contract terms of a leaving employee for the allowance.
+func (s *Service) severanceOf(ctx context.Context, legalEntity int64, e basisEmployee) (*severance, error) {
+	// The payroll job already needs the salary permission over the legal entity.
+	cs, _, err := s.allowanceContracts(ctx, legalEntity, e.ID, *e.Leave, nil)
+	if err != nil {
+		return nil, err
+	}
+	monthly, avg := allowanceAverage(cs, *e.Leave)
+	return &severance{Kind: e.Allowance.kind(), Years: e.Allowance.years(), Monthly: monthly, Average: avg}, nil
 }

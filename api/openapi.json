@@ -6006,6 +6006,11 @@
             "format": "int64",
             "type": "integer"
           },
+          "severance": {
+            "description": "Severance or job-loss allowance on leaving; in gross and exempt",
+            "format": "int64",
+            "type": "integer"
+          },
           "social_insurance": {
             "format": "int64",
             "type": "integer"
@@ -6045,7 +6050,8 @@
           "employer_health_insurance",
           "employer_unemployment_insurance",
           "employer_union_fee",
-          "cost"
+          "cost",
+          "severance"
         ],
         "type": "object"
       },
@@ -6168,6 +6174,11 @@
             "format": "int64",
             "type": "integer"
           },
+          "severance": {
+            "description": "Severance or job-loss allowance on leaving; in gross and exempt",
+            "format": "int64",
+            "type": "integer"
+          },
           "social_insurance": {
             "format": "int64",
             "type": "integer"
@@ -6225,7 +6236,8 @@
           "employer_health_insurance",
           "employer_unemployment_insurance",
           "employer_union_fee",
-          "cost"
+          "cost",
+          "severance"
         ],
         "type": "object"
       },
@@ -6394,6 +6406,11 @@
             "format": "int64",
             "type": "integer"
           },
+          "severance": {
+            "description": "Severance or job-loss allowance on leaving; in gross and exempt",
+            "format": "int64",
+            "type": "integer"
+          },
           "social_insurance": {
             "format": "int64",
             "type": "integer"
@@ -6436,7 +6453,8 @@
           "employer_health_insurance",
           "employer_unemployment_insurance",
           "employer_union_fee",
-          "cost"
+          "cost",
+          "severance"
         ],
         "type": "object"
       },

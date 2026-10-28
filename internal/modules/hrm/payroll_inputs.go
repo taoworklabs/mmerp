@@ -36,6 +36,8 @@ type basisEmployee struct {
 	Dependents []byte `json:"dependents"`
 	// Unused leave of an employee leaving during the period.
 	LeaveBalance string `json:"leave_balance"`
+	// Allowance inputs of a termination posted in the period.
+	Allowance *allowanceBasis `json:"allowance,omitempty"`
 }
 
 type basisLeave struct {
@@ -142,6 +144,10 @@ func (s *Service) readBasis(ctx context.Context, legalEntity, payrollID int64, s
 				}
 			}
 		}
+	}
+
+	if err := addAllowances(ctx, b.Employees, ids, pgStart, pgEnd); err != nil {
+		return b, err
 	}
 
 	docs, err := store.PayrollSourceDocs.Run(ctx, store.PayrollSourceDocsParams{LegalEntityID: legalEntity, PeriodStart: pgStart, PeriodEnd: pgEnd, PrevStart: pgPrev, YearStart: pgYear})
@@ -336,6 +342,11 @@ func (s *Service) payInputs(ctx context.Context, b payrollBasis, payrollID int64
 			}
 			if c != nil {
 				x.UnusedLeave = &unusedLeave{Salary: c.Terms.Salary, StandardDays: cal.standardDays(prevStart, prevEnd), Days: days}
+			}
+		}
+		if e.Allowance != nil && e.Allowance.kind() != allowanceNone {
+			if x.Severance, err = s.severanceOf(ctx, b.LegalEntity, e); err != nil {
+				return nil, err
 			}
 		}
 		out[i] = x

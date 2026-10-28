@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"slices"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
@@ -239,8 +240,12 @@ func payslipLayout1(p *printing.Page, raw json.RawMessage) error {
 	cols := []printing.Column{{Title: t("item"), Share: 0.7}, {Title: t("amount"), Share: 0.3, Right: true}}
 	row := func(k string, v int64) []string { return []string{t(k), p.Money(v)} }
 	p.Heading(t("income"))
-	p.Table(cols, [][]string{row("earned", a.Earned), row("overtime", a.Overtime), row("unused_leave", a.UnusedLeave),
-		row("adjustment", a.Adjustment), row("gross", a.Gross)}, true)
+	income := [][]string{row("earned", a.Earned), row("overtime", a.Overtime), row("unused_leave", a.UnusedLeave),
+		row("adjustment", a.Adjustment), row("gross", a.Gross)}
+	if a.Severance != 0 {
+		income = slices.Insert(income, 4, row("severance", a.Severance))
+	}
+	p.Table(cols, income, true)
 	p.Heading(t("deductions"))
 	p.Table(cols, [][]string{row("social_insurance", a.SocialInsurance), row("health_insurance", a.HealthInsurance),
 		row("unemployment_insurance", a.UnemploymentIns), row("income_tax", a.IncomeTax),

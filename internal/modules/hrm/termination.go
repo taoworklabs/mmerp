@@ -141,15 +141,15 @@ func terminationWarnings(ctx context.Context, employee int64, date string) ([]Te
 }
 
 // allowancePreview works the allowance out as the payroll will; the average and amount need
-// hrm.salary.view at the termination's unit, and only then are contract terms read.
+// hrm.salary.view at the termination's unit and at every contract's, and only then are
+// contract terms read.
 func (s *Service) allowancePreview(ctx context.Context, d record.Doc, r store.GetTerminationRow) (TerminationAllowance, error) {
-	b := terminationBasis(r, d.Date)
+	b := terminationBasis(r.Reason, *platform.DatePtr(r.HireDate), d.Date, r.InsuredMonths, r.PaidMonths, r.PensionEligible)
 	out := TerminationAllowance{Kind: string(b.kind()), MonthsWorked: b.Worked, MonthsCounted: max(0, b.Worked-b.Insured-b.Paid), Years: b.years().String()}
-	if ok, err := s.allowed(ctx, PermSalaryView, d.OrgUnitID); err != nil || !ok {
-		return out, err
-	}
-	cs, err := s.allowanceContracts(ctx, d.LegalEntityID, r.EmployeeID, d.Date)
-	if err != nil {
+	cs, ok, err := s.allowanceContracts(ctx, d.LegalEntityID, r.EmployeeID, d.Date, func(units []int64) (bool, error) {
+		return s.allowed(ctx, PermSalaryView, d.OrgUnitID, units...)
+	})
+	if err != nil || !ok {
 		return out, err
 	}
 	_, avg := allowanceAverage(cs, d.Date)
@@ -158,35 +158,44 @@ func (s *Service) allowancePreview(ctx context.Context, d record.Doc, r store.Ge
 	return out, nil
 }
 
-// terminationBasis is the allowance inputs of a termination dated date.
-func terminationBasis(r store.GetTerminationRow, date string) allowanceBasis {
-	kind, _ := reasonAllowance(r.Reason)
-	return allowanceBasis{Kind: kind, Worked: monthsWorked(*platform.DatePtr(r.HireDate), date), Insured: int(r.InsuredMonths),
-		Paid: int(r.PaidMonths), Pension: r.PensionEligible}
+// terminationBasis is the allowance inputs of a termination.
+func terminationBasis(reason, hire, date string, insured, paid int32, pension bool) allowanceBasis {
+	kind, _ := reasonAllowance(reason)
+	return allowanceBasis{Kind: kind, Worked: monthsWorked(hire, date), Insured: int(insured), Paid: int(paid), Pension: pension}
 }
 
 // allowanceContracts reads, audited, the employee's contracts with the legal entity over the
-// six months before the termination month.
-func (s *Service) allowanceContracts(ctx context.Context, legalEntity, employee int64, date string) ([]payContract, error) {
+// six months before the termination month. With a unit check, every contract's unit must
+// pass it before any terms are opened: an employee who moved left contracts behind.
+func (s *Service) allowanceContracts(ctx context.Context, legalEntity, employee int64, date string, check func([]int64) (bool, error)) ([]payContract, bool, error) {
 	from := allowanceWindow(date)
-	rows, err := store.PayrollContracts.Run(ctx, store.PayrollContractsParams{LegalEntityID: legalEntity, Ids: []int64{employee},
-		PeriodEnd: platform.NullDate(&date), PrevStart: platform.NullDate(&from)})
+	rows, err := store.AllowanceContracts.Run(ctx, store.AllowanceContractsParams{LegalEntityID: legalEntity, EmployeeID: employee,
+		Until: platform.NullDate(&date), Since: platform.NullDate(&from)})
 	if err != nil {
-		return nil, err
+		return nil, false, err
+	}
+	if check != nil {
+		units := make([]int64, len(rows))
+		for i, r := range rows {
+			units[i] = r.OrgUnitID
+		}
+		if ok, err := check(units); err != nil || !ok {
+			return nil, false, err
+		}
 	}
 	var out []payContract
 	for _, r := range rows {
 		if err := s.d.Audit.RecordFor(ctx, "hrm.contract_terms_viewed", audit.Ref{Type: contractType, ID: r.ID}, nil); err != nil {
-			return nil, err
+			return nil, false, err
 		}
 		t, err := openTerms(ctx, r.Terms)
 		if err != nil {
-			return nil, err
+			return nil, false, err
 		}
 		out = append(out, payContract{ID: r.ID, Original: !r.ParentID.Valid, Parent: r.ParentID.Int64,
 			Start: *platform.DatePtr(r.StartDate), End: platform.DatePtr(r.EndDate), Terms: t})
 	}
-	return out, nil
+	return out, true, nil
 }
 
 // CreateTermination adds a draft termination of an employee.

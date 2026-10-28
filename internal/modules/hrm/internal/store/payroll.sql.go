@@ -739,7 +739,8 @@ WHERE d.legal_entity_id = $1 AND d.status = 'posted' AND (
     OR (d.doc_type = 'hrm.leave_request' AND EXISTS (
             SELECT 1 FROM hrm.leave_requests r WHERE r.id = d.id AND r.start_date <= $2 AND r.end_date >= $4))
     OR (d.doc_type = 'hrm.overtime_request' AND EXISTS (
-            SELECT 1 FROM hrm.overtime_requests o WHERE o.id = d.id AND o.date BETWEEN $5::date AND $2)))
+            SELECT 1 FROM hrm.overtime_requests o WHERE o.id = d.id AND o.date BETWEEN $5::date AND $2))
+    OR (d.doc_type = 'hrm.termination' AND d.date BETWEEN $4::date AND $2))
 ORDER BY d.doc_type, d.id
 `
 
