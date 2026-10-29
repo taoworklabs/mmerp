@@ -40,8 +40,8 @@ async function company(name: string, userLogin: string | null) {
 
 test.beforeAll(async ({ baseURL }) => {
   api = await signedInApi(baseURL!)
-  // Payrolls post at once here (m6 sets its own rule again).
-  await api.delete('/api/approval-rules/hrm.payroll')
+  // Contracts, timesheets and payrolls post at once here; other files set their own rules again.
+  for (const type of ['hrm.contract', 'hrm.timesheet', 'hrm.overtime_request', 'hrm.payroll']) await api.delete(`/api/approval-rules/${type}`)
   await createUser(api, me, [])
   const mine = await company(`Công ty PS ${run}`, me)
   payroll = mine.payroll
