@@ -22,13 +22,13 @@ import (
 // work and E3 works in department Q. hr has hrm.hr at P; head has it tenant-wide and
 // approves timesheets. Jobs are queued, and only worked once work is called.
 type jobsFixture struct {
-	t                 *testing.T
-	system            *pgxpool.Pool // writable, for the test's own reads and seeding; the app gets env.Pool
-	env               app.Env
-	admin, hr, head   *client
-	p, hrID, hrGrant  int64
-	e1, e2, timesheet int64
-	payID, payGrant   int64
+	t                          *testing.T
+	system                     *pgxpool.Pool // writable, for the test's own reads and seeding; the app gets env.Pool
+	env                        app.Env
+	admin, hr, head            *client
+	p, hrID, hrGrant           int64
+	company, e1, e2, timesheet int64
+	payID, payGrant            int64
 }
 
 func newJobsFixture(t *testing.T) *jobsFixture {
@@ -40,6 +40,7 @@ func newJobsFixture(t *testing.T) *jobsFixture {
 	f := &jobsFixture{t: t, system: e.SystemPool, env: e}
 	f.admin = f.login("admin")
 	c := f.id(f.admin, "/api/org-units", `{"parent_id":null,"kind":"company","name":"C"}`)
+	f.company = c
 	f.p = f.id(f.admin, "/api/org-units", fmt.Sprintf(`{"parent_id":%d,"kind":"department","name":"P"}`, c))
 	q := f.id(f.admin, "/api/org-units", fmt.Sprintf(`{"parent_id":%d,"kind":"department","name":"Q"}`, c))
 	f.hrID = f.id(f.admin, "/api/users", `{"login":"hr","name":"Nhân sự","password":"correct horse"}`)
@@ -375,6 +376,8 @@ func TestJobsWithProductOff(t *testing.T) {
 // Opening leave balances import all or nothing, and never leave a balance below zero.
 func TestLeaveBalanceImport(t *testing.T) {
 	f := newJobsFixture(t)
+	// The accrual job runs when the workers start; it would add to the balances checked here.
+	f.ok(f.admin, "PUT", fmt.Sprintf("/api/legal-entities/%d/settings/hrm.leave_accrual", f.company), `{"value":"manual"}`, 204)
 	f.work([]string{"hrm"})
 	head := []any{"Mã NV", "Năm", "Số ngày", "Lý do"}
 	// hr is no leave_admin.
