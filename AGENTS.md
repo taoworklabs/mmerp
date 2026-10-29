@@ -113,7 +113,7 @@ The reference for every `@mmerp/ui` primitive (props, variants, states) is its S
 
 ## Workflow
 
-- **Remote: GitHub** (`https://github.com/taoworklabs/mmerp`). Each spec gets one branch off `main` holding all its tickets (a commit per ticket) and one PR into `main` that closes the spec and its tickets; never commit directly to `main`. PRs are squash-merged (the only method the repo allows): the squash commit takes the PR title and body, so the title follows Conventional Commits and the body lists every piece of work the PR delivers (per ticket, with its commits), the deliberate behaviour changes and the migrations, then `Closes #<n>` for the spec and each ticket. Only merge when asked. Push to `github`, using the `gh` CLI for GitHub operations.
+- **Remote: GitHub** (`https://github.com/taoworklabs/mmerp`). Each piece of work gets one branch off `main` and one PR into `main`; never commit directly to `main`. A PR needs no issue; when one exists, end the body with `Closes #<n>`. PRs are squash-merged (the only method the repo allows): the squash commit takes the PR title and body, so the title follows Conventional Commits and the body lists the work the PR delivers, the deliberate behaviour changes and the migrations. Only merge when asked. Push to `github`, using the `gh` CLI for GitHub operations.
 - **Use the relevant skills when applying code**:
   - `mattpocock-skills:tdd` when building a feature or fixing a bug test-first;
   - `mattpocock-skills:diagnosing-bugs` when debugging;
