@@ -19,6 +19,15 @@ jobs:
         uses: actions/setup-go@v7
         with:
           go-version-file: go.mod
+          cache: false
+      # Each job builds different things, so each keeps its own module and build cache.
+      - &go-cache
+        uses: actions/cache@v6
+        with:
+          path: |
+            ~/go/pkg/mod
+            ~/.cache/go-build
+          key: go-${{ github.job }}-${{ runner.os }}-${{ hashFiles('go.sum') }}
       - &setup-pnpm
         uses: pnpm/action-setup@v6
         with:
@@ -42,6 +51,7 @@ jobs:
     steps:
       - *checkout
       - *setup-go
+      - *go-cache
       - *setup-pnpm
       - *setup-node
       - uses: actions/cache@v6
@@ -70,6 +80,7 @@ jobs:
     steps:
       - *checkout
       - *setup-go
+      - *go-cache
       - *setup-pnpm
       - *setup-node
       - run: make test
@@ -81,6 +92,7 @@ jobs:
     steps:
       - *checkout
       - *setup-go
+      - *go-cache
       - *setup-pnpm
       - *setup-node
       - run: make web/node_modules
