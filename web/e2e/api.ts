@@ -1,5 +1,7 @@
 import { expect, request, type APIRequestContext } from '@playwright/test'
-import { admin } from './helpers'
+import { admin, password } from './helpers'
+
+export { password }
 
 // signedInApi is an API client with its own session, for setting up data without the UI.
 export async function signedInApi(baseURL: string, login = admin.login, password = admin.password): Promise<APIRequestContext> {
@@ -19,7 +21,10 @@ export async function created(res: Promise<{ status(): number; json(): Promise<u
 // so the time alone can repeat across them; the random tail keeps names apart.
 export const runId = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 6)
 
-export const password = 'e2e password'
+export async function ok(res: Promise<{ status(): number; text(): Promise<string> }>) {
+  const r = await res
+  expect([200, 204], await r.text()).toContain(r.status())
+}
 
 export async function createUser(api: APIRequestContext, login: string, grants: { role: string; unit: number | null }[]) {
   const id = await created(api.post('/api/users', { data: { login, name: login, password } }))

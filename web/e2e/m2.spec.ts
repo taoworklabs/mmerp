@@ -1,6 +1,6 @@
-import { expect, test, type Page } from '@playwright/test'
+import { expect, test } from '@playwright/test'
 import { created, createUser, employee, password, signedInApi, runId } from './api'
-import { admin } from './helpers'
+import { admin, signInAs } from './helpers'
 
 // One run: a company with departments A and B, employees in both, and an HR user scoped to A.
 const run = runId()
@@ -25,14 +25,6 @@ test.beforeAll(async ({ baseURL }) => {
   ])
   ids = { a, b, ea, eb, hrA: hr }
 })
-
-async function signInAs(page: Page, login: string, url: string) {
-  await page.goto(url)
-  await page.getByLabel('Tên đăng nhập').fill(login)
-  await page.getByLabel(/^Mật khẩu/).fill(login === admin.login ? admin.password : password)
-  await page.getByRole('button', { name: 'Đăng nhập' }).click()
-  await expect(page.getByRole('button', { name: /^Tài khoản:/ })).toBeVisible()
-}
 
 test('a user sees only employees within their org units, in the API and the UI', async ({ page, baseURL }) => {
   await signInAs(page, hrA, `/hrm/employees?q=${run}`)

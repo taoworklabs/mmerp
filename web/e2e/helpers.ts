@@ -1,4 +1,4 @@
-import { expect, type Page } from '@playwright/test'
+import { expect, type Browser, type Page } from '@playwright/test'
 
 // Tests run in Node; the web tsconfig has no Node types.
 declare const process: { env: Record<string, string | undefined> }
@@ -9,6 +9,9 @@ export const admin = {
   password: process.env.E2E_ADMIN_PASSWORD ?? '1234@Abcd',
   name: process.env.E2E_ADMIN_NAME ?? 'root',
 }
+
+// The password of every account the tests create.
+export const password = 'e2e password'
 
 export async function signIn(page: Page, password = admin.password) {
   await page.getByLabel('Tên đăng nhập').fill(admin.login)
@@ -21,3 +24,23 @@ export async function signedIn(page: Page, url = '/') {
   await signIn(page)
   await expect(page.getByRole('button', { name: /^Tài khoản:/ })).toBeVisible()
 }
+
+// signInAs opens url and signs in as login; the admin keeps its own password.
+export async function signInAs(page: Page, login: string, url: string) {
+  await page.goto(url)
+  await page.getByLabel('Tên đăng nhập').fill(login)
+  await page.getByLabel(/^Mật khẩu/).fill(login === admin.login ? admin.password : password)
+  await page.getByRole('button', { name: 'Đăng nhập' }).click()
+  await expect(page.getByRole('button', { name: /^Tài khoản:/ })).toBeVisible()
+}
+
+// as signs login in on a page of its own browser context, so several users act side by side.
+export async function as(browser: Browser, login: string, url: string, viewport?: { width: number; height: number }): Promise<Page> {
+  const page = await (await browser.newContext(viewport ? { viewport } : {})).newPage()
+  await signInAs(page, login, url)
+  return page
+}
+
+export const status = (page: Page, text: string) => expect(page.getByRole('main').getByText(text, { exact: true }).first()).toBeVisible()
+
+export const fixture = (name: string) => new URL(`fixtures/${name}`, import.meta.url).pathname

@@ -1,6 +1,6 @@
-import { expect, test, type APIRequestContext, type Browser, type Locator, type Page } from '@playwright/test'
+import { expect, test, type APIRequestContext, type Locator, type Page } from '@playwright/test'
 import { created, createUser, employee, password, signedInApi, runId } from './api'
-import { admin, signedIn } from './helpers'
+import { admin, as, signedIn, status } from './helpers'
 
 // One run: approvers A and B, and employee E who files leave. The leave rule is tenant-wide, so
 // this file runs alone and puts back a plain rule when done.
@@ -33,17 +33,6 @@ test.afterAll(async () => {
   expect(res.status(), await res.text()).toBe(204)
 })
 
-async function as(browser: Browser, user: string, path: string) {
-  const page = await (await browser.newContext()).newPage()
-  await page.goto(path)
-  await page.getByLabel('Tên đăng nhập').fill(user)
-  await page.getByLabel(/^Mật khẩu/).fill(user === admin.login ? admin.password : password)
-  await page.getByRole('button', { name: 'Đăng nhập' }).click()
-  await expect(page.getByRole('button', { name: /^Tài khoản:/ })).toBeVisible()
-  return page
-}
-
-const status = (page: Page, text: string) => expect(page.getByRole('main').getByText(text, { exact: true }).first()).toBeVisible()
 
 const main = (page: Page) => page.getByRole('main')
 const panel = (page: Page) => page.getByRole('complementary')

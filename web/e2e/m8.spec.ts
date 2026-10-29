@@ -1,6 +1,6 @@
-import { expect, test, type Page } from '@playwright/test'
+import { expect, test } from '@playwright/test'
 import { created, createUser, password, signedInApi, runId, toFlow } from './api'
-import { signedIn } from './helpers'
+import { signedIn, signInAs } from './helpers'
 
 // One run: a company with a department, an HR user scoped to that department, and an HRM
 // approval rule administrator.
@@ -20,14 +20,6 @@ test.beforeAll(async ({ baseURL }) => {
   })
   expect(rule.status(), await rule.text()).toBe(204)
 })
-
-async function signInAs(page: Page, login: string, url: string) {
-  await page.goto(url)
-  await page.getByLabel('Tên đăng nhập').fill(login)
-  await page.getByLabel(/^Mật khẩu/).fill(password)
-  await page.getByRole('button', { name: 'Đăng nhập' }).click()
-  await expect(page.getByRole('button', { name: /^Tài khoản:/ })).toBeVisible()
-}
 
 test('an HRM user reads the whole org tree inside HRM, without edit actions', async ({ page, baseURL }) => {
   await signInAs(page, hr, '/hrm/overview')

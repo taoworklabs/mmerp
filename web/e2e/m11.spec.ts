@@ -1,5 +1,6 @@
-import { expect, test, type APIRequestContext, type Browser, type Page } from '@playwright/test'
+import { expect, test, type APIRequestContext } from '@playwright/test'
 import { created, createUser, employee, password, signedInApi, runId } from './api'
+import { as, fixture } from './helpers'
 
 // One run: department Q; pay (HR with the payroll role) handles contracts, hr (no salaries)
 // sees them without their attachments. staff files a leave request; boss is their manager.
@@ -8,7 +9,6 @@ const login = { pay: `m11pay_${run}`, hr: `m11hr_${run}`, staff: `m11staff_${run
 let api: APIRequestContext
 let ids: { contract: number; leave: number }
 
-const fixture = (name: string) => new URL(`fixtures/${name}`, import.meta.url).pathname
 const scan = '%PDF-1.4\n% Hop dong lao dong da ky - ban scan mau cho e2e\n%%EOF\n'
 
 test.beforeAll(async ({ baseURL }) => {
@@ -35,16 +35,6 @@ test.beforeAll(async ({ baseURL }) => {
   const leave = await created(asStaff.post('/api/hrm/leaves', { data: { leave_type_id: type, start_date: '2026-06-01', end_date: '2026-06-01', days: '1', reason: null } }))
   ids = { contract, leave }
 })
-
-async function as(browser: Browser, user: string, url: string): Promise<Page> {
-  const page = await (await browser.newContext()).newPage()
-  await page.goto(url)
-  await page.getByLabel('Tên đăng nhập').fill(user)
-  await page.getByLabel(/^Mật khẩu/).fill(password)
-  await page.getByRole('button', { name: 'Đăng nhập' }).click()
-  await expect(page.getByRole('button', { name: /^Tài khoản:/ })).toBeVisible()
-  return page
-}
 
 test.describe('attachments', () => {
   test('a signed contract is attached and downloads unchanged; without salary rights it stays hidden', async ({ browser }) => {

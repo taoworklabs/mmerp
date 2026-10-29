@@ -1,6 +1,6 @@
 import { expect, test, type Page } from '@playwright/test'
 import { created, createUser, employee, password, signedInApi, runId } from './api'
-import { signedIn } from './helpers'
+import { signedIn, signInAs } from './helpers'
 
 // One run: a company with departments A (3 employees) and B (2), an HR user and a viewer scoped to A.
 const run = runId()
@@ -31,14 +31,6 @@ test.beforeAll(async ({ baseURL }) => {
   await created(asEmp.post('/api/hrm/leaves', { data: { leave_type_id: type, start_date: '2026-05-11', end_date: '2026-05-11', days: '1', reason: null } }))
   timesheet = await created(api.post('/api/hrm/timesheets', { data: { org_unit_id: a, month: '2026-09' } }))
 })
-
-async function signInAs(page: Page, login: string, url: string) {
-  await page.goto(url)
-  await page.getByLabel('Tên đăng nhập').fill(login)
-  await page.getByLabel(/^Mật khẩu/).fill(password)
-  await page.getByRole('button', { name: 'Đăng nhập' }).click()
-  await expect(page.getByRole('button', { name: /^Tài khoản:/ })).toBeVisible()
-}
 
 const tile = (page: Page, label: string) => page.getByRole('link', { name: new RegExp(`^${label}`) })
 

@@ -1,5 +1,6 @@
-import { expect, test, type APIRequestContext, type Browser } from '@playwright/test'
-import { created, createUser, employee, password, signedInApi, runId, toFlow } from './api'
+import { expect, test, type APIRequestContext } from '@playwright/test'
+import { created, createUser, employee, ok, runId, signedInApi, toFlow } from './api'
+import { as } from './helpers'
 
 // One run: a company of its own with department P and employee M6E01 under contract, March
 // timesheet posted. pay runs payrolls; dir approves them.
@@ -8,11 +9,6 @@ const company = `Công ty M6 ${run}`
 const login = { pay: `m6pay_${run}`, dir: `m6dir_${run}` }
 let api: APIRequestContext
 let emp: number
-
-async function ok(res: Promise<{ status(): number; text(): Promise<string> }>) {
-  const r = await res
-  expect([200, 204], await r.text()).toContain(r.status())
-}
 
 test.beforeAll(async ({ baseURL }) => {
   api = await signedInApi(baseURL!)
@@ -43,16 +39,6 @@ test.beforeAll(async ({ baseURL }) => {
   await ok(api.put(`/api/hrm/timesheets/${ts}`, { data: { version: 1, month: '2026-03', lines } }))
   await ok(api.post(`/api/documents/hrm.timesheet/${ts}/transitions`, { data: { to: 'posted', version: 2 } }))
 })
-
-async function as(browser: Browser, user: string, url: string) {
-  const page = await (await browser.newContext()).newPage()
-  await page.goto(url)
-  await page.getByLabel('Tên đăng nhập').fill(user)
-  await page.getByLabel(/^Mật khẩu/).fill(password)
-  await page.getByRole('button', { name: 'Đăng nhập' }).click()
-  await expect(page.getByRole('button', { name: /^Tài khoản:/ })).toBeVisible()
-  return page
-}
 
 test('payroll: computed by a job, refused while sources changed, computed again, approved, exported', async ({ browser }) => {
   const pay = await as(browser, login.pay, '/hrm/payrolls')

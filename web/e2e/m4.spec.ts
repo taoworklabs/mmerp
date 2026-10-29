@@ -1,6 +1,6 @@
-import { expect, test, type APIRequestContext, type Browser, type Page } from '@playwright/test'
+import { expect, test, type APIRequestContext, type Page } from '@playwright/test'
 import { created, createUser, employee, password, signedInApi, runId, toFlow } from './api'
-import { admin } from './helpers'
+import { admin, as, status } from './helpers'
 
 // One run: department Q with manager M; employees E, E2 and E3 report to M. HR users of Q: hr
 // (no salaries) and pay (with the payroll role); dir approves contracts and holiday overtime.
@@ -52,21 +52,6 @@ test.beforeAll(async ({ baseURL }) => {
   ids = { q, m, e, e2, e3, open, fixed }
 })
 
-async function signInAs(page: Page, user: string, url: string) {
-  await page.goto(url)
-  await page.getByLabel('Tên đăng nhập').fill(user)
-  await page.getByLabel(/^Mật khẩu/).fill(user === admin.login ? admin.password : password)
-  await page.getByRole('button', { name: 'Đăng nhập' }).click()
-  await expect(page.getByRole('button', { name: /^Tài khoản:/ })).toBeVisible()
-}
-
-async function as(browser: Browser, user: string, url: string, viewport?: { width: number; height: number }) {
-  const page = await (await browser.newContext(viewport ? { viewport } : {})).newPage()
-  await signInAs(page, user, url)
-  return page
-}
-
-const status = (page: Page, text: string) => expect(page.getByRole('main').getByText(text, { exact: true }).first()).toBeVisible()
 const heading = (page: Page, prefix: string) => page.getByRole('heading', { name: new RegExp(`^${prefix}-\\d{4}-`) })
 
 // approveAsDir approves the step waiting for dir on document id.

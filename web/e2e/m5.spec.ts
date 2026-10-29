@@ -1,12 +1,11 @@
-import { expect, test, type APIRequestContext, type Browser, type Page } from '@playwright/test'
-import { created, createUser, employee, password, signedInApi, runId, toFlow } from './api'
-import { signedIn } from './helpers'
+import { expect, test, type APIRequestContext, type Page } from '@playwright/test'
+import { created, createUser, employee, signedInApi, runId, toFlow } from './api'
+import { as, fixture, signedIn } from './helpers'
 
 // One run: department P with M5E01, M5E02 and M5E03 (who joins on 16/03), the codes the
 // committed Excel files use (go run ./scripts/e2e-fixtures). hr is HR of P; dir approves timesheets.
 const run = runId()
 const login = { hr: `m5hr_${run}`, dir: `m5dir_${run}` }
-const fixture = (name: string) => new URL(`fixtures/${name}`, import.meta.url).pathname
 let api: APIRequestContext
 
 // ensureEmployee creates an employee, or moves the one a previous run on the same database made.
@@ -36,16 +35,6 @@ test.beforeAll(async ({ baseURL }) => {
   })
   expect(rule.status(), await rule.text()).toBe(204)
 })
-
-async function as(browser: Browser, user: string, url: string) {
-  const page = await (await browser.newContext()).newPage()
-  await page.goto(url)
-  await page.getByLabel('Tên đăng nhập').fill(user)
-  await page.getByLabel(/^Mật khẩu/).fill(password)
-  await page.getByRole('button', { name: 'Đăng nhập' }).click()
-  await expect(page.getByRole('button', { name: /^Tài khoản:/ })).toBeVisible()
-  return page
-}
 
 // total reads the Total cell of an employee's row in the grid.
 const total = (page: Page, code: string) =>

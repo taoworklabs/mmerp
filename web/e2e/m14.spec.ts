@@ -1,5 +1,6 @@
-import { expect, test, type Browser, type Page } from '@playwright/test'
-import { created, createUser, password, signedInApi, runId, toFlow } from './api'
+import { expect, test } from '@playwright/test'
+import { created, createUser, signedInApi, runId, toFlow } from './api'
+import { as } from './helpers'
 
 // One run: team A (staff and their manager) and team B; a catalogue admin. Quotations with a
 // discount above 10 % wait for a manager.
@@ -28,16 +29,6 @@ test.beforeAll(async ({ baseURL }) => {
   })
   expect(rule.status(), await rule.text()).toBe(204)
 })
-
-async function as(browser: Browser, user: string, url: string): Promise<Page> {
-  const page = await (await browser.newContext()).newPage()
-  await page.goto(url)
-  await page.getByLabel('Tên đăng nhập').fill(user)
-  await page.getByLabel(/^Mật khẩu/).fill(password)
-  await page.getByRole('button', { name: 'Đăng nhập' }).click()
-  await expect(page.getByRole('button', { name: /^Tài khoản:/ })).toBeVisible()
-  return page
-}
 
 const today = () => {
   const d = new Date()

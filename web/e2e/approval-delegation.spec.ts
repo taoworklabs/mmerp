@@ -1,6 +1,6 @@
-import { expect, test, type APIRequestContext, type Browser } from '@playwright/test'
+import { expect, test, type APIRequestContext } from '@playwright/test'
 import { created, createUser, employee, password, signedInApi, runId, toFlow } from './api'
-import { admin } from './helpers'
+import { admin, as } from './helpers'
 
 // One run: an employee whose manager is away, and a colleague of HR who approves in the
 // manager's place. The leave request's rule is tenant-wide, so this file runs alone and puts back
@@ -47,16 +47,6 @@ test.afterAll(async () => {
   const res = original ? await api.put('/api/approval-rules/hrm.leave_request', { data: original }) : await api.delete('/api/approval-rules/hrm.leave_request')
   expect(res.status(), await res.text()).toBe(204)
 })
-
-async function as(browser: Browser, user: string, path: string) {
-  const page = await (await browser.newContext()).newPage()
-  await page.goto(path)
-  await page.getByLabel('Tên đăng nhập').fill(user)
-  await page.getByLabel(/^Mật khẩu/).fill(user === admin.login ? admin.password : password)
-  await page.getByRole('button', { name: 'Đăng nhập' }).click()
-  await expect(page.getByRole('button', { name: /^Tài khoản:/ })).toBeVisible()
-  return page
-}
 
 test('an absent manager’s delegate approves a leave request', async ({ browser, baseURL }) => {
   // The manager reaches delegations from the inbox and delegates for the next days.

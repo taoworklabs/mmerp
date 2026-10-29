@@ -1,5 +1,6 @@
 import { expect, test, type APIRequestContext, type Page } from '@playwright/test'
-import { created, createUser, employee, password, signedInApi, runId } from './api'
+import { created, createUser, employee, ok, password, runId, signedInApi } from './api'
+import { signInAs } from './helpers'
 
 // One run: two companies, each with one employee under contract and a posted March payroll.
 // The first employee is linked to a no-role account and has a draft April timesheet.
@@ -9,11 +10,6 @@ let api: APIRequestContext
 let payroll: number
 let otherPayroll: number
 let net: number
-
-async function ok(res: Promise<{ status(): number; text(): Promise<string> }>) {
-  const r = await res
-  expect([200, 204], await r.text()).toContain(r.status())
-}
 
 // company builds a company, one employee under contract, a posted March timesheet and a
 // posted payroll; it returns the unit, the employee and the payroll.
@@ -56,19 +52,11 @@ test.beforeAll(async ({ baseURL }) => {
   await ok(api.put(`/api/hrm/timesheets/${ts}`, { data: { version: 1, month: '2026-04', lines: [{ employee_id: mine.emp, date: '2026-04-15', days: '1' }] } }))
 })
 
-async function signInAs(page: Page, url: string) {
-  await page.goto(url)
-  await page.getByLabel('Tên đăng nhập').fill(me)
-  await page.getByLabel(/^Mật khẩu/).fill(password)
-  await page.getByRole('button', { name: 'Đăng nhập' }).click()
-  await expect(page.getByRole('button', { name: /^Tài khoản:/ })).toBeVisible()
-}
-
 const overflow = (page: Page) => () => page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth)
 const money = (n: number) => new Intl.NumberFormat('vi-VN').format(n)
 
 test('the personal space: tile, days, payslip with its PDF, and another payroll is not found', async ({ page }) => {
-  await signInAs(page, '/')
+  await signInAs(page, me, '/')
   const main = page.getByRole('main')
   await expect(main.getByRole('link', { name: 'Cá nhân' })).toBeVisible()
   await expect(main.getByRole('link')).toHaveCount(1)
@@ -96,7 +84,7 @@ test('the personal space: tile, days, payslip with its PDF, and another payroll 
 test('on a phone the days and the payslip do not overflow sideways', async ({ browser }) => {
   const ctx = await browser.newContext({ viewport: { width: 375, height: 800 }, locale: 'vi-VN' })
   const page = await ctx.newPage()
-  await signInAs(page, '/me/days?mode=month&date=2026-04-01')
+  await signInAs(page, me, '/me/days?mode=month&date=2026-04-01')
   await expect(page.getByText('chưa chốt', { exact: true })).toBeVisible()
   await expect.poll(overflow(page)).toBe(false)
   await page.goto(`/me/payslips/${payroll}`)
@@ -105,7 +93,7 @@ test('on a phone the days and the payslip do not overflow sideways', async ({ br
 })
 
 test('with no product enabled the tile and payslips still read, and there is no request button', async ({ page }) => {
-  await signInAs(page, 'http://localhost:8091/')
+  await signInAs(page, me, 'http://localhost:8091/')
   await expect(page.getByRole('main').getByRole('link', { name: 'Cá nhân' })).toBeVisible()
   await page.goto('http://localhost:8091/me/payslips')
   await expect(page.getByRole('main')).toContainText(money(net))
@@ -115,7 +103,7 @@ test('with no product enabled the tile and payslips still read, and there is no 
 })
 
 test('without an HRM role the HRM area sends home; a direct manager sees their report’s request in the team list', async ({ page, browser, baseURL }) => {
-  await signInAs(page, '/hrm/leaves')
+  await signInAs(page, me, '/hrm/leaves')
   await expect(page).toHaveURL(/\/$/)
 
   const company = await created(api.post('/api/org-units', { data: { parent_id: null, kind: 'company', name: `Công ty PS nhóm ${run}` } }))
