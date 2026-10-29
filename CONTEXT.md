@@ -129,7 +129,7 @@ Product description: [products/hrm.md](./products/hrm.md).
 - **Severance allowance** (`severance`, vi: "Trợ cấp thôi việc"): half a month's average salary per year of service not covered by unemployment insurance, for an employee who worked at least 12 months (Article 46). **Job-loss allowance** (`job_loss`, vi: "Trợ cấp mất việc làm"): one month per such year, at least two months, when let go for restructuring (Article 47). Paid by the payroll of the termination month, untaxed and uninsured.
 - **Insurance enrolment list** (D02-LT, vi: "Danh sách tham gia, điều chỉnh BHXH, BHYT, BHTN"): a month's increases, decreases and salary adjustments of a legal entity's insured staff, found by comparing the insured salary on the posted payrolls of that month and the one before.
 - **PIT withholding return** (05/KK-TNCN, vi: "Tờ khai khấu trừ thuế TNCN"): a quarter's totals of taxable income and tax withheld of a legal entity, from its posted payrolls.
-- **PIT finalisation** (05/QTT-TNCN, vi: "Quyết toán thuế TNCN"): a year's totals and, for each **authorising employee** (vi: "Cá nhân ủy quyền quyết toán"; taken to be everyone on the posted payroll of December), the year's tax due against the tax withheld; listed per employee in 05-1/BK and with dependants in 05-3/BK.
+- **PIT finalisation** (05/QTT-TNCN, vi: "Quyết toán thuế TNCN"): a year's totals and, for each **authorising employee** (vi: "Cá nhân ủy quyền quyết toán"; who HR recorded as having authorised the legal entity for the year, form 08/UQ-QTT-TNCN, among those it paid that year; [ADR-0048](./docs/adr/0048-pit-authorisation-recorded.md)), the year's tax due against the tax withheld; listed per employee in 05-1/BK and with dependants in 05-3/BK.
 
 ## Shared master data
 

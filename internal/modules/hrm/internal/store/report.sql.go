@@ -11,6 +11,117 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const deletePITAuthorisations = `-- name: DeletePITAuthorisations :exec
+DELETE FROM hrm.pit_authorisations WHERE legal_entity_id = $1 AND year = $2
+`
+
+type DeletePITAuthorisationsParams struct {
+	LegalEntityID int64
+	Year          int32
+}
+
+func (q *Queries) DeletePITAuthorisations(ctx context.Context, arg DeletePITAuthorisationsParams) error {
+	_, err := q.db.Exec(ctx, deletePITAuthorisations, arg.LegalEntityID, arg.Year)
+	return err
+}
+
+const insertPITAuthorisations = `-- name: InsertPITAuthorisations :exec
+INSERT INTO hrm.pit_authorisations (employee_id, year, legal_entity_id)
+SELECT unnest($1::bigint[]), $2::int, $3
+`
+
+type InsertPITAuthorisationsParams struct {
+	EmployeeIds   []int64
+	Year          int32
+	LegalEntityID int64
+}
+
+func (q *Queries) InsertPITAuthorisations(ctx context.Context, arg InsertPITAuthorisationsParams) error {
+	_, err := q.db.Exec(ctx, insertPITAuthorisations, arg.EmployeeIds, arg.Year, arg.LegalEntityID)
+	return err
+}
+
+const pITAuthorisationCandidates = `-- name: PITAuthorisationCandidates :many
+SELECT e.id, e.code, e.full_name, bool_or(pp.period_start = make_date($1::int, 12, 1))::bool AS december,
+  a.legal_entity_id AS authorised_to
+FROM hrm.payroll_periods pp JOIN hrm.payroll_lines l ON l.payroll_id = pp.posted_payroll_id
+  JOIN hrm.employees e ON e.id = l.employee_id
+  LEFT JOIN hrm.pit_authorisations a ON a.employee_id = e.id AND a.year = $1::int
+WHERE pp.legal_entity_id = $2 AND pp.period_start >= make_date($1::int, 1, 1)
+  AND pp.period_start <= make_date($1::int, 12, 1)
+GROUP BY e.id, a.legal_entity_id ORDER BY lower(e.code)
+`
+
+type PITAuthorisationCandidatesParams struct {
+	Year          int32
+	LegalEntityID int64
+}
+
+type PITAuthorisationCandidatesRow struct {
+	ID           int64
+	Code         string
+	FullName     string
+	December     bool
+	AuthorisedTo pgtype.Int8
+}
+
+// Everyone on a posted payroll of the legal entity in the year, whether on December's, and
+// which legal entity, if any, they authorised for the year.
+func (q *Queries) PITAuthorisationCandidates(ctx context.Context, arg PITAuthorisationCandidatesParams) ([]PITAuthorisationCandidatesRow, error) {
+	rows, err := q.db.Query(ctx, pITAuthorisationCandidates, arg.Year, arg.LegalEntityID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []PITAuthorisationCandidatesRow
+	for rows.Next() {
+		var i PITAuthorisationCandidatesRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Code,
+			&i.FullName,
+			&i.December,
+			&i.AuthorisedTo,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const pITAuthorised = `-- name: PITAuthorised :many
+SELECT employee_id FROM hrm.pit_authorisations WHERE legal_entity_id = $1 AND year = $2
+`
+
+type PITAuthorisedParams struct {
+	LegalEntityID int64
+	Year          int32
+}
+
+func (q *Queries) PITAuthorised(ctx context.Context, arg PITAuthorisedParams) ([]int64, error) {
+	rows, err := q.db.Query(ctx, pITAuthorised, arg.LegalEntityID, arg.Year)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []int64
+	for rows.Next() {
+		var employee_id int64
+		if err := rows.Scan(&employee_id); err != nil {
+			return nil, err
+		}
+		items = append(items, employee_id)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const reportContracts = `-- name: ReportContracts :many
 SELECT c.employee_id, c.parent_id, c.start_date, coalesce(p.end_date, c.end_date) AS end_date, t.fixed_term
 FROM hrm.contracts c JOIN record.documents d ON d.id = c.id LEFT JOIN hrm.contracts p ON p.id = c.parent_id

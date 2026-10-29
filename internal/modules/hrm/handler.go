@@ -17,4 +17,5 @@ func registerHandlers(api huma.API, s *Service) {
 	registerMeHandlers(api, s)
 	registerOverviewHandlers(api, s)
 	registerTerminationHandlers(api, s)
+	registerPITAuthorisationHandlers(api, s)
 }

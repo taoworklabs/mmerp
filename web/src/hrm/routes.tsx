@@ -26,6 +26,7 @@ import { TimesheetsPage } from './pages/TimesheetsPage'
 import { LegalParamsPage } from './pages/LegalParamsPage'
 import { PayrollPage } from './pages/PayrollPage'
 import { PayrollsPage } from './pages/PayrollsPage'
+import { PITAuthorisationsPage } from './pages/PITAuthorisationsPage'
 import { ReportsPage } from './pages/ReportsPage'
 import { WorkCalendarPage } from './pages/WorkCalendarPage'
 
@@ -71,6 +72,7 @@ export default function HrmRoutes() {
       <Route path="payrolls" element={canPayrolls ? <PayrollsPage /> : <ForbiddenPage />} />
       <Route path="payrolls/:id" element={canPayrolls ? <PayrollPage /> : <ForbiddenPage />} />
       <Route path="reports" element={canSalary && canSensitive ? <ReportsPage /> : <ForbiddenPage />} />
+      <Route path="reports/pit-authorisations" element={canSalary ? <PITAuthorisationsPage /> : <ForbiddenPage />} />
       <Route path="work-calendar" element={canCalendar ? <WorkCalendarPage /> : <ForbiddenPage />} />
       <Route path="legal-params" element={canParams ? <LegalParamsPage /> : <ForbiddenPage />} />
       <Route path="approval-rules/*" element={canRules ? <ApprovalRules product="hrm" basePath="/hrm/approval-rules" /> : <ForbiddenPage />} />

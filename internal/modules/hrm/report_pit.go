@@ -161,7 +161,8 @@ func finalise(p pitPerson, monthly []bracket) finalised {
 }
 
 // pitYear is a year's posted payrolls, each employee's sums, who the company finalises for
-// (everyone on December's payroll) and their result under the schedule in force on 31/12.
+// (who authorised it for the year and was paid in it) and their result under the schedule
+// in force on 31/12.
 type pitYear struct {
 	reportBasis
 	year       int
@@ -196,9 +197,15 @@ func (s *Service) pitYear(ctx context.Context, params json.RawMessage) (pitYear,
 	if !ok {
 		return y, fmt.Errorf("hrm: stored legal parameters are malformed")
 	}
+	ids, err := store.PITAuthorised.Run(ctx, store.PITAuthorisedParams{LegalEntityID: p.LegalEntityID, Year: int32(p.Year)})
+	if err != nil {
+		return y, err
+	}
 	y.people, y.authorised = sumPIT(y.Months), map[int64]finalised{}
-	for id := range y.Months[11].Lines {
-		y.authorised[id] = finalise(*y.people[id], brackets)
+	for _, id := range ids {
+		if person := y.people[id]; person != nil {
+			y.authorised[id] = finalise(*person, brackets)
+		}
 	}
 	return y, nil
 }
