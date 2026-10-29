@@ -301,7 +301,7 @@ than what its name suggests.
 | NP-16 | `TestPendingLeaveBlocksPeriodLock` covers "cancel or approve a request affecting a closed period" | It tests the opposite direction: a pending document refusing the lock, with `period_has_pending_documents`. NP-16's own direction is covered, but by `TestLeaveSampleFlow` step 12 and two `recordtest` rows |
 | NP-01 | Covered by two tests | Reason and upward adjustment yes; **the permission and the audit entry are asserted nowhere**, and no test makes a downward adjustment succeed. The only test naming `hrm.leave_balance_adjusted` checks who may *not* see it in the history, never that it is written |
 | NP-03 | `TestLeaveDaysAndDates` covers half days | It only creates a 1.5-day request: no approval, no balance, no paid days. The real coverage came with ADR-0030's tests |
-| NP-07 | Partly covered by the contract suite | The suite covers a **withdrawal**, not a rejection. **No Go test rejects a leave request**; only `web/e2e/m3.spec.ts` does |
+| NP-07 | Partly covered by the contract suite | The suite covers a **withdrawal**, not a rejection. **No Go test rejects a leave request**; only `web/e2e/leave-requests.spec.ts` does |
 | NP-08 | Partly covered | Fully covered in fact: `TestLeaveSampleFlow` steps 3–5 are exactly this scenario, and `recordtest` holds it for every document type |
 
 Two of these are gaps worth filling rather than mapping errors: **NP-01's permission and audit entry**,
@@ -318,7 +318,7 @@ and still open; the scenario title has been corrected.
 
 - Nothing in sections 5, 6 or 7 of the plan: profiles, contracts, timesheets, payroll. Round one is
   the leave flow plus section 8, per the plan's scope.
-- TB-02 was not run. TB-03 and TB-06 were not re-run, since `web/e2e/m12.spec.ts` covers them and
+- TB-02 was not run. TB-03 and TB-06 were not re-run, since `web/e2e/notifications.spec.ts` covers them and
   that spec passes; its mapping has not been read against the test body the way section 4.2's was.
 - Every figure here comes from Postgres 17, not the Postgres 18 the project targets.
 

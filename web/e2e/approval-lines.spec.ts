@@ -1,6 +1,6 @@
-import { expect, test, type APIRequestContext, type Browser, type Locator, type Page } from '@playwright/test'
+import { expect, test, type APIRequestContext, type Locator, type Page } from '@playwright/test'
 import { created, createUser, password, signedInApi, runId } from './api'
-import { admin } from './helpers'
+import { admin, as } from './helpers'
 
 // One run: a sales team's staff and manager, a special item and a plain one. The post rule of
 // quotations is tenant-wide, so this file runs alone and puts back what it found.
@@ -36,16 +36,6 @@ test.afterAll(async () => {
   const res = originalRule ? await api.put('/api/approval-rules/sales.quote', { data: originalRule }) : await api.delete('/api/approval-rules/sales.quote')
   expect(res.status(), await res.text()).toBe(204)
 })
-
-async function as(browser: Browser, user: string, path: string) {
-  const page = await (await browser.newContext()).newPage()
-  await page.goto(path)
-  await page.getByLabel('Tên đăng nhập').fill(user)
-  await page.getByLabel(/^Mật khẩu/).fill(user === admin.login ? admin.password : password)
-  await page.getByRole('button', { name: 'Đăng nhập' }).click()
-  await expect(page.getByRole('button', { name: /^Tài khoản:/ })).toBeVisible()
-  return page
-}
 
 async function pick(scope: Locator, page: Page, field: string, option: string) {
   await scope.getByRole('combobox', { name: field, exact: true }).click()

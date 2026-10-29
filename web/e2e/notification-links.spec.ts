@@ -1,6 +1,6 @@
-import { expect, test, type Browser, type Page } from '@playwright/test'
+import { expect, test } from '@playwright/test'
 import { created, createUser, employee, password, signedInApi, runId, toFlow } from './api'
-import { signedIn } from './helpers'
+import { as, signedIn } from './helpers'
 
 // Covers the parts of notifications and the approval inbox the other specs leave out: the
 // notification and job links staying in the area, a notification opening its own document
@@ -33,16 +33,6 @@ test.beforeAll(async ({ baseURL }) => {
   const asStaff = await signedInApi(baseURL!, login.staff, password)
   leave = await created(asStaff.post('/api/hrm/leaves', { data: { leave_type_id: type, start_date: '2026-08-03', end_date: '2026-08-03', days: '1', reason: null } }))
 })
-
-async function as(browser: Browser, user: string, url: string): Promise<Page> {
-  const page = await (await browser.newContext()).newPage()
-  await page.goto(url)
-  await page.getByLabel('Tên đăng nhập').fill(user)
-  await page.getByLabel(/^Mật khẩu/).fill(password)
-  await page.getByRole('button', { name: 'Đăng nhập' }).click()
-  await expect(page.getByRole('button', { name: /^Tài khoản:/ })).toBeVisible()
-  return page
-}
 
 // The two header links no other spec asserts: notifications and background jobs.
 test('the notification and job links open inside the current area', async ({ page }) => {

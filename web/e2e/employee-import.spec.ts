@@ -1,5 +1,6 @@
 import { expect, test, type APIRequestContext } from '@playwright/test'
 import { created, createUser, employee, password, signedInApi, runId } from './api'
+import { fixture } from './helpers'
 
 // Department "Phòng EI" has a fixed name because the committed Excel files (go run
 // ./scripts/e2e-fixtures) name it; a rerun on the same database reuses it. hr is HR of it.
@@ -7,7 +8,6 @@ const hr = `eihr_${runId()}`
 let api: APIRequestContext
 let unit: number
 
-const fixture = (name: string) => new URL(`fixtures/${name}`, import.meta.url).pathname
 
 test.beforeAll(async ({ baseURL }) => {
   api = await signedInApi(baseURL!)

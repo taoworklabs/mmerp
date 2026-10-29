@@ -47,7 +47,7 @@ test('HR terminates an employee through a termination, and the profile then show
   expect(await employeeDate()).toBe('2026-12-31')
 
   await page.goto(`/hrm/employees/${emp}`)
-  await expect(page.getByText('31/12/2026')).toBeVisible()
+  await expect(page.getByRole('region', { name: 'Thông tin chính' }).getByText('31/12/2026')).toBeVisible()
   await expect(page.getByRole('link', { name: number })).toBeVisible()
   // The "more" menu is not rendered once it has nothing to offer.
   const main = page.getByRole('main')

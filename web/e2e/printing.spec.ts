@@ -4,19 +4,19 @@ import { signedIn } from './helpers'
 
 // One run: department Q, where pay (HR with the payroll role) prints a draft contract.
 const run = runId()
-const login = { pay: `m13pay_${run}` }
+const login = { pay: `ptpay_${run}` }
 let api: APIRequestContext
 let contract: { id: number; number: string }
 
 test.beforeAll(async ({ baseURL }) => {
   api = await signedInApi(baseURL!)
-  const company = await created(api.post('/api/org-units', { data: { parent_id: null, kind: 'company', name: `Công ty M13 ${run}` } }))
+  const company = await created(api.post('/api/org-units', { data: { parent_id: null, kind: 'company', name: `Công ty PT ${run}` } }))
   const q = await created(api.post('/api/org-units', { data: { parent_id: company, kind: 'department', name: `Phòng Q ${run}` } }))
   await createUser(api, login.pay, [
     { role: 'hrm.hr', unit: q },
     { role: 'hrm.payroll', unit: q },
   ])
-  const e = await created(api.post('/api/hrm/employees', { data: employee(`M13E${run}`, q) }))
+  const e = await created(api.post('/api/hrm/employees', { data: employee(`PTE${run}`, q) }))
   const kind = await created(api.post('/api/hrm/contract-types', { data: { name: `Không xác định thời hạn ${run}`, fixed_term: false, active: true } }))
   const id = await created(
     api.post('/api/hrm/contracts', {

@@ -1,6 +1,6 @@
-import { expect, test, type APIRequestContext, type Browser } from '@playwright/test'
+import { expect, test, type APIRequestContext } from '@playwright/test'
 import { created, createUser, employee, password, signedInApi, runId } from './api'
-import { admin } from './helpers'
+import { admin, as } from './helpers'
 
 // One run: an employee whose manager approves leave within a due time. The leave rule is
 // tenant-wide, so this file runs alone and puts back what it found.
@@ -45,16 +45,6 @@ test.afterAll(async () => {
   const res = original ? await api.put('/api/approval-rules/hrm.leave_request', { data: original }) : await api.delete('/api/approval-rules/hrm.leave_request')
   expect(res.status(), await res.text()).toBe(204)
 })
-
-async function as(browser: Browser, user: string, path: string) {
-  const page = await (await browser.newContext()).newPage()
-  await page.goto(path)
-  await page.getByLabel('Tên đăng nhập').fill(user)
-  await page.getByLabel(/^Mật khẩu/).fill(user === admin.login ? admin.password : password)
-  await page.getByRole('button', { name: 'Đăng nhập' }).click()
-  await expect(page.getByRole('button', { name: /^Tài khoản:/ })).toBeVisible()
-  return page
-}
 
 test('an administrator gives a step a due time and it stays after reload', async ({ browser }) => {
   await putRule()

@@ -1,6 +1,6 @@
-import { expect, test, type APIRequestContext, type Browser, type Page } from '@playwright/test'
+import { expect, test, type APIRequestContext, type Browser } from '@playwright/test'
 import { created, createUser, password, signedInApi, runId, toFlow } from './api'
-import { admin } from './helpers'
+import { admin, as, status } from './helpers'
 
 // One run: a sales team's staff and manager. The cancel rule of orders and the create_order rule
 // of quotations are tenant-wide, so this file runs alone and puts back what it found.
@@ -42,16 +42,6 @@ test.afterAll(async () => {
     expect(res.status(), await res.text()).toBe(204)
   }
 })
-
-async function as(browser: Browser, user: string, path: string) {
-  const page = await (await browser.newContext()).newPage()
-  await page.goto(path)
-  await page.getByLabel('Tên đăng nhập').fill(user)
-  await page.getByLabel(/^Mật khẩu/).fill(user === admin.login ? admin.password : password)
-  await page.getByRole('button', { name: 'Đăng nhập' }).click()
-  await expect(page.getByRole('button', { name: /^Tài khoản:/ })).toBeVisible()
-  return page
-}
 
 const managerRule = { flow: toFlow([{ approver: { kind: 'role', product: 'sales', role: 'manager' } }]), max_levels: 3, fallback_product: 'sales', fallback_role: 'manager' }
 
@@ -103,7 +93,6 @@ async function orderRules() {
   return { post: of('post'), cancel: of('cancel') }
 }
 
-const status = (page: Page, text: string) => expect(page.getByRole('main').getByText(text, { exact: true }).first()).toBeVisible()
 
 test('cancelling a posted order waits for the manager', async ({ browser }) => {
   await api.delete('/api/approval-rules/sales.order?action=cancel')

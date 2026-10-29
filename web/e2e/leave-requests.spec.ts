@@ -1,6 +1,6 @@
 import { expect, test, type APIRequestContext, type Page } from '@playwright/test'
 import { created, createUser, employee, password, signedInApi, runId, toFlow } from './api'
-import { admin } from './helpers'
+import { admin, signInAs, status } from './helpers'
 
 // One run: department P with manager M and employees E and E2 (both reporting to M), E3
 // reporting to B, an HR user of P, all with accounts. Every leave request needs the direct manager.
@@ -34,14 +34,6 @@ test.beforeAll(async ({ baseURL }) => {
   ids = { e, e2, e3, annual }
 })
 
-async function signInAs(page: Page, user: string, url: string) {
-  await page.goto(url)
-  await page.getByLabel('Tên đăng nhập').fill(user)
-  await page.getByLabel(/^Mật khẩu/).fill(user === admin.login ? admin.password : password)
-  await page.getByRole('button', { name: 'Đăng nhập' }).click()
-  await expect(page.getByRole('button', { name: /^Tài khoản:/ })).toBeVisible()
-}
-
 // fillLeave fills the leave form for a request from `from` to `to` (dd/mm/yyyy); the days
 // are the working days between them.
 async function fillLeave(page: Page, from: string, to: string) {
@@ -69,7 +61,6 @@ async function sendViaApi(baseURL: string, user: string, start: string, end: str
   return id
 }
 
-const status = (page: Page, text: string) => expect(page.getByRole('main').getByText(text, { exact: true }).first()).toBeVisible()
 
 test('HR grants the start-of-year leave balance through the UI', async ({ page }) => {
   await signInAs(page, admin.login, `/hrm/employees/${ids.e}?tab=balances`)

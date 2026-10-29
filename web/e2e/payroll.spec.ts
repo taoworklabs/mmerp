@@ -1,24 +1,20 @@
-import { expect, test, type APIRequestContext, type Browser } from '@playwright/test'
-import { created, createUser, employee, password, signedInApi, runId, toFlow } from './api'
+import { expect, test, type APIRequestContext } from '@playwright/test'
+import { created, createUser, employee, ok, runId, signedInApi, toFlow } from './api'
+import { as } from './helpers'
 
-// One run: a company of its own with department P and employee M6E01 under contract, March
+// One run: a company of its own with department P and employee PRE01 under contract, March
 // timesheet posted. pay runs payrolls; dir approves them.
 const run = runId()
-const company = `Công ty M6 ${run}`
-const login = { pay: `m6pay_${run}`, dir: `m6dir_${run}` }
+const company = `Công ty PR ${run}`
+const login = { pay: `prpay_${run}`, dir: `prdir_${run}` }
 let api: APIRequestContext
 let emp: number
-
-async function ok(res: Promise<{ status(): number; text(): Promise<string> }>) {
-  const r = await res
-  expect([200, 204], await r.text()).toContain(r.status())
-}
 
 test.beforeAll(async ({ baseURL }) => {
   api = await signedInApi(baseURL!)
   const c = await created(api.post('/api/org-units', { data: { parent_id: null, kind: 'company', name: company } }))
   const p = await created(api.post('/api/org-units', { data: { parent_id: c, kind: 'department', name: `Phòng P ${run}` } }))
-  emp = await created(api.post('/api/hrm/employees', { data: employee(`M6E${run}`, p, { hire_date: '2026-01-05' }) }))
+  emp = await created(api.post('/api/hrm/employees', { data: employee(`PRE${run}`, p, { hire_date: '2026-01-05' }) }))
   await createUser(api, login.pay, [
     { role: 'hrm.payroll', unit: c },
     { role: 'hrm.hr', unit: c },
@@ -44,16 +40,6 @@ test.beforeAll(async ({ baseURL }) => {
   await ok(api.post(`/api/documents/hrm.timesheet/${ts}/transitions`, { data: { to: 'posted', version: 2 } }))
 })
 
-async function as(browser: Browser, user: string, url: string) {
-  const page = await (await browser.newContext()).newPage()
-  await page.goto(url)
-  await page.getByLabel('Tên đăng nhập').fill(user)
-  await page.getByLabel(/^Mật khẩu/).fill(password)
-  await page.getByRole('button', { name: 'Đăng nhập' }).click()
-  await expect(page.getByRole('button', { name: /^Tài khoản:/ })).toBeVisible()
-  return page
-}
-
 test('payroll: computed by a job, refused while sources changed, computed again, approved, exported', async ({ browser }) => {
   const pay = await as(browser, login.pay, '/hrm/payrolls')
   await pay.getByRole('button', { name: 'Lập bảng lương' }).click()
@@ -65,7 +51,7 @@ test('payroll: computed by a job, refused while sources changed, computed again,
   await create.getByRole('button', { name: 'Lập và tính lương' }).click()
   await expect(pay.getByRole('heading', { name: /^BL-2026-/ })).toBeVisible()
   const lines = pay.getByRole('table', { name: 'Lương từng nhân viên' })
-  await expect(lines.getByRole('row', { name: new RegExp(`^M6E${run}`) })).toContainText('22.000.000')
+  await expect(lines.getByRole('row', { name: new RegExp(`^PRE${run}`) })).toContainText('22.000.000')
   const number = (await pay.getByRole('heading', { name: /^BL-2026-/ }).textContent())!
 
   // An overtime request approved since: warned, and sending is refused until computed again.
@@ -77,7 +63,7 @@ test('payroll: computed by a job, refused while sources changed, computed again,
   await expect(pay.getByRole('alert').filter({ hasText: 'rồi gửi lại' })).toBeVisible()
   await pay.getByRole('button', { name: 'Tính lại' }).click()
   await expect(pay.getByText('Dữ liệu nguồn đã thay đổi', { exact: true })).toHaveCount(0)
-  await expect(lines.getByRole('row', { name: new RegExp(`^M6E${run}`) })).toContainText('375.000')
+  await expect(lines.getByRole('row', { name: new RegExp(`^PRE${run}`) })).toContainText('375.000')
 
   await pay.getByRole('button', { name: 'Gửi duyệt' }).click()
   await expect(pay.getByRole('main').getByText('Chờ duyệt', { exact: true }).first()).toBeVisible()
