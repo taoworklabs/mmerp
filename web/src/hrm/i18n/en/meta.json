@@ -181,6 +181,7 @@
   "hrm.termination.reason.work_permit_expired": "Work permit expired (Art 34.12)",
   "hrm.termination.reason.probation_failed": "Probation not passed (Art 34.13)",
   "hrm.error.report_payroll_missing": "No posted payroll for: {{months}}. Post those payrolls before running the report.",
+  "hrm.error.pit_authorised_elsewhere": "Already authorised another legal entity for the year: {{employees}}.",
   "hrm.error.report_form_not_supported": "This period uses an older version of the form, which mmerp does not produce.",
   "hrm.nav.group_reports": "Reports",
   "hrm.nav.reports": "Insurance & PIT reports"

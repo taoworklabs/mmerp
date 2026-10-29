@@ -610,5 +610,20 @@
   "hrm.reports.pit_05kk": "Quarterly PIT withholding return",
   "hrm.reports.pit_05qtt": "PIT finalisation return",
   "hrm.reports.pit_05_1bk": "Income and tax per employee",
-  "hrm.reports.pit_05_3bk": "Dependants"
+  "hrm.reports.pit_05_3bk": "Dependants",
+  "hrm.pit_authorisations.title": "PIT finalisation authorisations",
+  "hrm.pit_authorisations.description": "Who authorised the legal entity to finalise their PIT for the year. Only they are finalised on 05/QTT-TNCN and 05-1/BK-QTT-TNCN.",
+  "hrm.pit_authorisations.people": "Paid in {{year}}",
+  "hrm.pit_authorisations.evidence": "Attach the signed authorisation (form 08/UQ-QTT-TNCN) to the employee's profile.",
+  "hrm.pit_authorisations.empty": "The legal entity has no posted payroll in {{year}}.",
+  "hrm.pit_authorisations.december": "December payroll",
+  "hrm.pit_authorisations.yes": "Yes",
+  "hrm.pit_authorisations.status": "Authorisation",
+  "hrm.pit_authorisations.authorised": "Authorised",
+  "hrm.pit_authorisations.not_authorised": "Not authorised",
+  "hrm.pit_authorisations.elsewhere": "Authorised another legal entity",
+  "hrm.pit_authorisations.pick_december": "Pick those on December's payroll",
+  "hrm.pit_authorisations.save": "Save authorisations",
+  "hrm.pit_authorisations.saved": "PIT finalisation authorisations saved.",
+  "hrm.reports.authorisations": "Finalisation authorisations"
 }

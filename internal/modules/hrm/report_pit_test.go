@@ -1,8 +1,10 @@
 package hrm_test
 
 import (
+	"slices"
 	"testing"
 
+	"github.com/taoworklabs/mmerp/internal/core/iam"
 	"github.com/taoworklabs/mmerp/internal/modules/hrm"
 )
 
@@ -62,6 +64,7 @@ func TestPITYear(t *testing.T) {
 	}
 	e, fl := sums[f.emp], sums[gone]
 	params := `{"legal_entity_id":` + itoa(f.c) + `,"year":2026}`
+	f.check(f.hrm.SavePITAuthorisations(f.rep, f.c, 2026, []int64{f.emp}))
 
 	rows, name := f.exportReport(f.rep, "hrm.report.pit_05_1bk", params)
 	if name != "05-1BK-QTT-TNCN C 2026.xlsx" {
@@ -99,6 +102,15 @@ func TestPITYear(t *testing.T) {
 		"[33]": e.IncomeTax + fl.IncomeTax, "[34]": e.IncomeTax + fl.IncomeTax,
 		"[37]": 1, "[38]": e.IncomeTax, "[39]": 0, "[40]": due, "[41]": waived,
 		"[44]": max(0, due-e.IncomeTax-waived), "[45]": max(0, e.IncomeTax-due)})
+
+	// Being on December's payroll is not authorising; F, gone since June, is what was recorded.
+	t.Run("authorised as recorded", func(t *testing.T) {
+		f.check(f.hrm.SavePITAuthorisations(f.rep, f.c, 2026, []int64{gone}))
+		rows, _ := f.exportReport(f.rep, "hrm.report.pit_05_1bk", params)
+		wantCells(t, rowOf(t, rows, 1, "Nhân viên E"), map[int]string{bk(10): "", bk(22): ""})
+		fDue := yearTax(fl.Gross - fl.Exempt - fl.PersonalDeduction - fl.SocialInsurance)
+		wantCells(t, rowOf(t, rows, 1, "Nhân viên F"), map[int]string{bk(10): "x", bk(22): itoa(fDue)})
+	})
 }
 
 func pad2(m int) string {
@@ -168,5 +180,54 @@ func TestPIT05_3BK(t *testing.T) {
 		bk(14): "Cha/mẹ", bk(15): "03/2026", bk(16): "08/2026"})
 	if got := f.auditCount("hrm.dependents_viewed") - before; got != 2 {
 		t.Errorf("%d dependants reads audited, want one per export", got)
+	}
+}
+
+// E is paid by C until April, then by C2; X only by C2. Each authorises one legal entity a year,
+// among those that paid them in it.
+func TestPITAuthorisations(t *testing.T) {
+	f := newReportFixture(t)
+	c2 := must(t)(f.iam.CreateOrgUnit(f.admin, iam.OrgUnitInput{Kind: "company", Name: "C2"}))
+	d2 := must(t)(f.iam.CreateOrgUnit(f.admin, iam.OrgUnitInput{ParentID: &c2, Kind: "department", Name: "D2"}))
+	if _, err := f.system.Exec(f.admin, `INSERT INTO hrm.payroll_locks (legal_entity_id) VALUES ($1)`, c2); err != nil {
+		t.Fatal(err)
+	}
+	f.contract(f.emp, sample{salary: 22_000_000}, "2026-01-01", "2026-04-30")
+	x := f.hire("X", d2, "2026-01-05", 9_000_000)
+	f.close(f.c, "2026-04", map[int64]map[int64][]string{f.a: {f.emp: full("2026-04")}})
+	f.edit(f.emp, func(e *hrm.EmployeeFields) { e.OrgUnitID = d2; e.ManagerID = nil })
+	f.contract(f.emp, sample{salary: 24_000_000}, "2026-05-01", "2026-12-31")
+	f.close(c2, "2026-12", map[int64]map[int64][]string{d2: {x: full("2026-12"), f.emp: full("2026-12")}})
+
+	list := func(entity int64) hrm.PITAuthorisations {
+		t.Helper()
+		a, err := f.hrm.PITAuthorisations(f.rep, entity, 2026)
+		f.check(err)
+		return a
+	}
+	if a := list(f.c); len(a.People) != 1 || a.People[0] != (hrm.PITAuthorisationPerson{EmployeeID: f.emp, Code: "E", FullName: "Nhân viên E"}) ||
+		!slices.Equal(a.AllowedActions, []string{"edit"}) {
+		t.Fatalf("C: %+v", a)
+	}
+	f.check(f.hrm.SavePITAuthorisations(f.rep, c2, 2026, []int64{f.emp, x, f.emp}))
+	if a := list(c2); len(a.People) != 2 || !a.People[0].Authorised || !a.People[0].December || !a.People[1].Authorised {
+		t.Errorf("C2: %+v", a)
+	}
+	if a := list(f.c); !a.People[0].Elsewhere || a.People[0].Authorised {
+		t.Errorf("C after C2: %+v", a)
+	}
+	if err := f.hrm.SavePITAuthorisations(f.rep, f.c, 2026, []int64{f.emp}); errCode(err) != "pit_authorised_elsewhere" {
+		t.Errorf("authorised twice: %v", err)
+	}
+	if err := f.hrm.SavePITAuthorisations(f.rep, f.c, 2026, []int64{x}); errCode(err) != "invalid_request" {
+		t.Errorf("not paid by C: %v", err)
+	}
+	f.check(f.hrm.SavePITAuthorisations(f.rep, c2, 2026, []int64{}))
+	f.check(f.hrm.SavePITAuthorisations(f.rep, f.c, 2026, []int64{f.emp}))
+	if _, err := f.hrm.PITAuthorisations(f.hr, f.c, 2026); errCode(err) != "forbidden" {
+		t.Errorf("without the salary permission: %v", err)
+	}
+	if err := f.hrm.SavePITAuthorisations(f.hr, f.c, 2026, []int64{}); errCode(err) != "forbidden" {
+		t.Errorf("without the payroll permission: %v", err)
 	}
 }

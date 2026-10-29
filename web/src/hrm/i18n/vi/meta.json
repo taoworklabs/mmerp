@@ -181,6 +181,7 @@
   "hrm.termination.reason.work_permit_expired": "Giấy phép lao động hết hiệu lực (khoản 12 Điều 34)",
   "hrm.termination.reason.probation_failed": "Thử việc không đạt (khoản 13 Điều 34)",
   "hrm.error.report_payroll_missing": "Chưa có bảng lương đã chốt của: {{months}}. Chốt bảng lương các tháng đó trước khi lập báo cáo.",
+  "hrm.error.pit_authorised_elsewhere": "Đã ủy quyền cho pháp nhân khác trong năm: {{employees}}.",
   "hrm.error.report_form_not_supported": "Kỳ này dùng mẫu biểu cũ, mmerp chưa hỗ trợ.",
   "hrm.nav.group_reports": "Báo cáo",
   "hrm.nav.reports": "Báo cáo BHXH & thuế TNCN"

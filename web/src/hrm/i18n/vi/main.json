@@ -610,5 +610,20 @@
   "hrm.reports.pit_05kk": "Tờ khai khấu trừ thuế TNCN theo quý",
   "hrm.reports.pit_05qtt": "Tờ khai quyết toán thuế TNCN",
   "hrm.reports.pit_05_1bk": "Bảng kê thu nhập, thuế từng người",
-  "hrm.reports.pit_05_3bk": "Bảng kê người phụ thuộc"
+  "hrm.reports.pit_05_3bk": "Bảng kê người phụ thuộc",
+  "hrm.pit_authorisations.title": "Ủy quyền quyết toán thuế TNCN",
+  "hrm.pit_authorisations.description": "Người ủy quyền cho pháp nhân quyết toán thay trong năm. Chỉ những người này được quyết toán trên 05/QTT-TNCN và 05-1/BK-QTT-TNCN.",
+  "hrm.pit_authorisations.people": "Người có lương năm {{year}}",
+  "hrm.pit_authorisations.evidence": "Đính kèm giấy ủy quyền đã ký (mẫu 08/UQ-QTT-TNCN) vào hồ sơ nhân viên.",
+  "hrm.pit_authorisations.empty": "Pháp nhân chưa có bảng lương đã chốt nào trong năm {{year}}.",
+  "hrm.pit_authorisations.december": "Lương tháng 12",
+  "hrm.pit_authorisations.yes": "Có",
+  "hrm.pit_authorisations.status": "Ủy quyền",
+  "hrm.pit_authorisations.authorised": "Đã ủy quyền",
+  "hrm.pit_authorisations.not_authorised": "Chưa ủy quyền",
+  "hrm.pit_authorisations.elsewhere": "Đã ủy quyền cho pháp nhân khác",
+  "hrm.pit_authorisations.pick_december": "Chọn người có lương tháng 12",
+  "hrm.pit_authorisations.save": "Lưu ủy quyền",
+  "hrm.pit_authorisations.saved": "Đã lưu ủy quyền quyết toán.",
+  "hrm.reports.authorisations": "Ủy quyền quyết toán"
 }

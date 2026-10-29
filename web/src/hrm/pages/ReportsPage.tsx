@@ -1,6 +1,7 @@
+import { Button } from '@mmerp/ui'
 import { IconCalendarStats } from '@tabler/icons-react'
 import { useTranslation } from 'react-i18next'
-import { useSearchParams } from 'react-router'
+import { Link, useSearchParams } from 'react-router'
 import { useMe } from '@/shared/auth/me'
 import { formatMonthShort, today } from '@/shared/i18n'
 import { ExportButton } from '@/shared/jobs'
@@ -87,6 +88,14 @@ export function ReportsPage() {
     <ListPage
       title={t('hrm.reports.title')}
       description={t('hrm.reports.description')}
+      action={
+        <Button
+          variant="default"
+          render={<Link to={`/hrm/reports/pit-authorisations?${new URLSearchParams({ ...(entities.chosen ? { legal_entity_id: String(entities.chosen) } : {}), year: String(year) })}`} />}
+        >
+          {t('hrm.reports.authorisations')}
+        </Button>
+      }
       filters={
         <>
           <LegalEntityFilter label={t('hrm.reports.legal_entity')} options={entities.options} value={entities.chosen} onChange={(v) => set('legal_entity_id', v)} />

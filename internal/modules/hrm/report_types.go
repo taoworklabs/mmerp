@@ -19,4 +19,6 @@ var (
 	ErrReportPayrollMissing = &platform.Error{Status: http.StatusConflict, Code: "report_payroll_missing"}
 	// The period predates the form version mmerp produces.
 	ErrReportFormNotSupported = &platform.Error{Status: http.StatusUnprocessableEntity, Code: "report_form_not_supported"}
+	// An employee authorised another legal entity for the year; params: employees, their codes.
+	ErrPITAuthorisedElsewhere = &platform.Error{Status: http.StatusConflict, Code: "pit_authorised_elsewhere"}
 )

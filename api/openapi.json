@@ -5500,6 +5500,72 @@
         ],
         "type": "object"
       },
+      "PITAuthorisationPerson": {
+        "additionalProperties": false,
+        "properties": {
+          "authorised": {
+            "type": "boolean"
+          },
+          "code": {
+            "type": "string"
+          },
+          "december": {
+            "description": "On the posted payroll of December",
+            "type": "boolean"
+          },
+          "elsewhere": {
+            "description": "Authorised another legal entity for the year",
+            "type": "boolean"
+          },
+          "employee_id": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "full_name": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "employee_id",
+          "code",
+          "full_name",
+          "december",
+          "authorised",
+          "elsewhere"
+        ],
+        "type": "object"
+      },
+      "PITAuthorisations": {
+        "additionalProperties": false,
+        "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "/api/schemas/PITAuthorisations.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
+          "allowed_actions": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "people": {
+            "items": {
+              "$ref": "#/components/schemas/PITAuthorisationPerson"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "people",
+          "allowed_actions"
+        ],
+        "type": "object"
+      },
       "Page": {
         "additionalProperties": false,
         "properties": {
@@ -6875,6 +6941,32 @@
           "max_levels",
           "fallback_product",
           "fallback_role"
+        ],
+        "type": "object"
+      },
+      "SavePITAuthorisationsInputBody": {
+        "additionalProperties": false,
+        "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "/api/schemas/SavePITAuthorisationsInputBody.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
+          "employee_ids": {
+            "items": {
+              "format": "int64",
+              "type": "integer"
+            },
+            "maxItems": 10000,
+            "type": "array"
+          }
+        },
+        "required": [
+          "employee_ids"
         ],
         "type": "object"
       },
@@ -12277,6 +12369,115 @@
               }
             },
             "description": "Accepted"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "tags": [
+          "hrm",
+          "hrm"
+        ]
+      }
+    },
+    "/hrm/pit-authorisations/{legal_entity}/{year}": {
+      "get": {
+        "description": "Everyone on a posted payroll of the legal entity in the year, and who authorised it to finalise their PIT; allowed_actions has edit.",
+        "operationId": "get-pit-authorisations",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "legal_entity",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "path",
+            "name": "year",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "maximum": 2100,
+              "minimum": 2000,
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PITAuthorisations"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "tags": [
+          "hrm",
+          "hrm"
+        ]
+      },
+      "put": {
+        "description": "Replaces who authorised the legal entity to finalise their PIT for the year.",
+        "operationId": "save-pit-authorisations",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "legal_entity",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "path",
+            "name": "year",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "maximum": 2100,
+              "minimum": 2000,
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SavePITAuthorisationsInputBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "No Content"
           },
           "default": {
             "content": {

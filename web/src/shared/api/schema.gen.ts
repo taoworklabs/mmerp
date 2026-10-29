@@ -1006,6 +1006,24 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/hrm/pit-authorisations/{legal_entity}/{year}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Everyone on a posted payroll of the legal entity in the year, and who authorised it to finalise their PIT; allowed_actions has edit. */
+        get: operations["get-pit-authorisations"];
+        /** @description Replaces who authorised the legal entity to finalise their PIT for the year. */
+        put: operations["save-pit-authorisations"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/hrm/terminations": {
         parameters: {
             query?: never;
@@ -3727,6 +3745,27 @@ export interface components {
             /** Format: int32 */
             version: number;
         };
+        PITAuthorisationPerson: {
+            authorised: boolean;
+            code: string;
+            /** @description On the posted payroll of December */
+            december: boolean;
+            /** @description Authorised another legal entity for the year */
+            elsewhere: boolean;
+            /** Format: int64 */
+            employee_id: number;
+            full_name: string;
+        };
+        PITAuthorisations: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example /api/schemas/PITAuthorisations.json
+             */
+            readonly $schema?: string;
+            allowed_actions: string[];
+            people: components["schemas"]["PITAuthorisationPerson"][];
+        };
         Page: {
             /**
              * Format: uri
@@ -4231,6 +4270,15 @@ export interface components {
              * @default 3
              */
             max_levels: number;
+        };
+        SavePITAuthorisationsInputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example /api/schemas/SavePITAuthorisationsInputBody.json
+             */
+            readonly $schema?: string;
+            employee_ids: number[];
         };
         SelfServiceActions: {
             /**
@@ -7275,6 +7323,72 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["JobOutputBody"];
                 };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "get-pit-authorisations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                legal_entity: number;
+                year: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PITAuthorisations"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "save-pit-authorisations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                legal_entity: number;
+                year: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SavePITAuthorisationsInputBody"];
+            };
+        };
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Error */
             default: {

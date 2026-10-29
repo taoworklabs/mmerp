@@ -80,6 +80,7 @@ export const hrmKeys = {
   leaveTypes: () => ['hrm', 'leave-types'] as const,
   calendar: (legalEntity: number, year: number) => ['hrm', 'calendar', legalEntity, year] as const,
   calendars: () => ['hrm', 'calendar'] as const,
+  pitAuthorisations: (legalEntity: number, year: number) => ['hrm', 'pit-authorisations', legalEntity, year] as const,
   legalParams: () => ['hrm', 'legal-params'] as const,
   contractTypes: () => ['hrm', 'contract-types'] as const,
 }
