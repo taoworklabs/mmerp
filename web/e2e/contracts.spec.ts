@@ -3,9 +3,9 @@ import { created, createUser, employee, password, signedInApi, runId, toFlow } f
 import { admin, as, status } from './helpers'
 
 // One run: department Q with manager M; employees E, E2 and E3 report to M. HR users of Q: hr
-// (no salaries) and pay (with the payroll role); dir approves contracts and holiday overtime.
+// (no salaries) and pay (with the payroll role); dir approves contracts.
 const run = runId()
-const login = { m: `m4m_${run}`, e: `m4e_${run}`, hr: `m4hr_${run}`, pay: `m4pay_${run}`, dir: `m4dir_${run}` }
+const login = { m: `ctm_${run}`, e: `cte_${run}`, hr: `cthr_${run}`, pay: `ctpay_${run}`, dir: `ctdir_${run}` }
 const kinds = { open: `Không xác định thời hạn ${run}`, fixed: `Có thời hạn 12 tháng ${run}` }
 let ids: { q: number; m: number; e: number; e2: number; e3: number; open: number; fixed: number }
 let api: APIRequestContext
@@ -17,11 +17,8 @@ const vn = (s: string) => s.split('-').reverse().join('/')
 
 test.beforeAll(async ({ baseURL }) => {
   api = await signedInApi(baseURL!)
-  const company = await created(api.post('/api/org-units', { data: { parent_id: null, kind: 'company', name: `Công ty M4 ${run}` } }))
+  const company = await created(api.post('/api/org-units', { data: { parent_id: null, kind: 'company', name: `Công ty CT ${run}` } }))
   const q = await created(api.post('/api/org-units', { data: { parent_id: company, kind: 'department', name: `Phòng Q ${run}` } }))
-  // The holiday overtime below must fall on a holiday of the company's calendar.
-  const holiday = await api.put(`/api/hrm/calendars/${company}/holidays/2026-09-02`, { data: { name: 'Quốc khánh' } })
-  expect(holiday.ok(), await holiday.text()).toBe(true)
   for (const l of [login.m, login.e]) await createUser(api, l, [])
   await createUser(api, login.hr, [{ role: 'hrm.hr', unit: q }])
   await createUser(api, login.pay, [
@@ -33,22 +30,16 @@ test.beforeAll(async ({ baseURL }) => {
     { role: 'hrm.payroll', unit: null },
   ])
   dir = await signedInApi(baseURL!, login.dir, password)
-  const m = await created(api.post('/api/hrm/employees', { data: employee(`M4M${run}`, q, { user_login: login.m }) }))
-  const e = await created(api.post('/api/hrm/employees', { data: employee(`M4E${run}`, q, { user_login: login.e, manager_id: m }) }))
-  const e2 = await created(api.post('/api/hrm/employees', { data: employee(`M4F${run}`, q, { manager_id: m }) }))
-  const e3 = await created(api.post('/api/hrm/employees', { data: employee(`M4G${run}`, q, { manager_id: m }) }))
+  const m = await created(api.post('/api/hrm/employees', { data: employee(`CTM${run}`, q, { user_login: login.m }) }))
+  const e = await created(api.post('/api/hrm/employees', { data: employee(`CTE${run}`, q, { user_login: login.e, manager_id: m }) }))
+  const e2 = await created(api.post('/api/hrm/employees', { data: employee(`CTF${run}`, q, { manager_id: m }) }))
+  const e3 = await created(api.post('/api/hrm/employees', { data: employee(`CTG${run}`, q, { manager_id: m }) }))
   const open = await created(api.post('/api/hrm/contract-types', { data: { name: kinds.open, fixed_term: false, active: true } }))
   const fixed = await created(api.post('/api/hrm/contract-types', { data: { name: kinds.fixed, fixed_term: true, active: true } }))
-  for (const [type, steps] of [
-    ['hrm.contract', [{ approver: { kind: 'user', user_ids: [dirId] } }]],
-    [
-      'hrm.overtime_request',
-      [{ approver: { kind: 'module' } }, { condition: { field: 'day_kind', op: 'eq', value: 'holiday' }, approver: { kind: 'user', user_ids: [dirId] } }],
-    ],
-  ] as const) {
-    const rule = await api.put(`/api/approval-rules/${type}`, { data: { flow: toFlow(steps), max_levels: 3, fallback_product: 'hrm', fallback_role: 'hr' } })
-    expect(rule.status(), await rule.text()).toBe(204)
-  }
+  const rule = await api.put('/api/approval-rules/hrm.contract', {
+    data: { flow: toFlow([{ approver: { kind: 'user', user_ids: [dirId] } }]), max_levels: 3, fallback_product: 'hrm', fallback_role: 'hr' },
+  })
+  expect(rule.status(), await rule.text()).toBe(204)
   ids = { q, m, e, e2, e3, open, fixed }
 })
 
@@ -177,7 +168,7 @@ test.describe('contracts', () => {
   })
 
   test('approving a contract that overlaps one in force fails at the approver', async ({ browser }) => {
-    const h = await created(api.post('/api/hrm/employees', { data: employee(`M4H${run}`, ids.q, { manager_id: ids.m }) }))
+    const h = await created(api.post('/api/hrm/employees', { data: employee(`CTH${run}`, ids.q, { manager_id: ids.m }) }))
     await contractViaApi(h, ids.open, '2024-01-01', null)
     const second = await contractViaApi(h, ids.fixed, '2026-03-01', '2026-08-31', false)
     expect((await api.post(`/api/documents/hrm.contract/${second}/transitions`, { data: { to: 'posted', version: 1 } })).status()).toBe(200)
@@ -223,112 +214,5 @@ test.describe('contracts', () => {
     // The employee themself has no HRM role, so the HRM area sends them home.
     const e = await as(browser, login.e, `/hrm/contracts/${id}`)
     await expect(e).toHaveURL(/\/$/)
-  })
-})
-
-test.describe('overtime', () => {
-  test('an employee files, withdraws and resends; the manager rejects, then approves from the inbox', async ({ browser }) => {
-    const e = await as(browser, login.e, '/me/requests/overtime/new')
-    await e.getByRole('textbox', { name: /^Ngày tăng ca/ }).fill('15/09/2026')
-    await e.getByRole('textbox', { name: /^Giờ ca ngày/ }).fill('0')
-    await e.getByRole('button', { name: 'Tạo bản nháp' }).click()
-    await expect(e.getByText('Số giờ theo nửa giờ, tổng giờ ca ngày và ca đêm lớn hơn 0 và không quá 24.')).toBeVisible()
-    await e.getByRole('textbox', { name: /^Giờ ca ngày/ }).fill('2,5')
-    await e.getByRole('textbox', { name: /^Giờ ca đêm/ }).fill('1')
-    await e.getByRole('button', { name: 'Tạo bản nháp' }).click()
-    await expect(heading(e, 'TC')).toBeVisible()
-    const number = (await heading(e, 'TC').textContent())!
-    await e.getByRole('button', { name: 'Gửi duyệt' }).click()
-    await status(e, 'Chờ duyệt')
-    await e.getByRole('button', { name: 'Rút lại' }).click()
-    // Withdrawing undoes the approvals so far, so it asks first.
-    await e.getByRole('dialog').getByRole('button', { name: 'Rút lại' }).click()
-    await status(e, 'Nháp')
-    await e.getByRole('button', { name: 'Gửi duyệt' }).click()
-    await status(e, 'Chờ duyệt')
-
-    const m = await as(browser, login.m, '/me/team/overtimes')
-    await m.getByRole('link', { name: number }).click()
-    await m.getByRole('button', { name: 'Từ chối' }).click()
-    await m.getByRole('dialog').getByRole('textbox', { name: /^Lý do/ }).fill('Chưa có kế hoạch tăng ca')
-    await m.getByRole('dialog').getByRole('button', { name: 'Từ chối' }).click()
-    await status(m, 'Nháp')
-
-    await e.reload()
-    await expect(e.getByText('Lý do: Chưa có kế hoạch tăng ca')).toBeVisible()
-    await e.getByRole('button', { name: 'Gửi duyệt' }).click()
-    await status(e, 'Chờ duyệt')
-
-    await m.goto('/inbox')
-    await m.getByRole('button', { name: new RegExp(number) }).click()
-    await expect(m.getByText('2,5')).toBeVisible()
-    await m.getByRole('button', { name: 'Duyệt', exact: true }).click()
-    await expect(m.getByText('Đã duyệt.')).toBeVisible()
-    await m.goto('/me/team/overtimes')
-    await expect(m.getByRole('row', { name: new RegExp(`${number}.*Đã duyệt`) })).toBeVisible()
-  })
-
-  test('holiday overtime needs the director after the manager', async ({ browser }) => {
-    const e = await as(browser, login.e, '/me/requests/overtime/new')
-    await e.getByRole('textbox', { name: /^Ngày tăng ca/ }).fill('02/09/2026')
-    await e.getByRole('combobox', { name: 'Loại ngày' }).click()
-    await e.getByRole('option', { name: 'Ngày lễ' }).click()
-    await e.getByRole('textbox', { name: /^Giờ ca ngày/ }).fill('8')
-    await e.getByRole('button', { name: 'Tạo bản nháp' }).click()
-    await expect(heading(e, 'TC')).toBeVisible()
-    const number = (await heading(e, 'TC').textContent())!
-    await e.getByRole('button', { name: 'Gửi duyệt' }).click()
-    await status(e, 'Chờ duyệt')
-
-    const m = await as(browser, login.m, '/inbox')
-    await m.getByRole('button', { name: new RegExp(number) }).click()
-    await m.getByRole('button', { name: 'Duyệt', exact: true }).click()
-    await expect(m.getByText('Đã duyệt.')).toBeVisible()
-    await e.reload()
-    await status(e, 'Chờ duyệt')
-
-    const d = await as(browser, login.dir, '/inbox')
-    await d.getByRole('button', { name: new RegExp(number) }).click()
-    await d.getByRole('button', { name: 'Duyệt', exact: true }).click()
-    await expect(d.getByText('Đã duyệt.')).toBeVisible()
-    await e.reload()
-    await status(e, 'Đã duyệt')
-  })
-
-  test('HR files overtime for an employee without an account', async ({ browser }) => {
-    const hr = await as(browser, login.hr, '/hrm/overtimes/new')
-    await hr.getByRole('combobox', { name: 'Nhân viên' }).fill(`M4F${run}`)
-    await hr.getByRole('option', { name: new RegExp(`M4F${run}`) }).click()
-    await hr.getByRole('textbox', { name: /^Ngày tăng ca/ }).fill('20/09/2026')
-    await hr.getByRole('combobox', { name: 'Loại ngày' }).click()
-    await hr.getByRole('option', { name: 'Ngày nghỉ hằng tuần' }).click()
-    await hr.getByRole('textbox', { name: /^Giờ ca ngày/ }).fill('6')
-    await hr.getByRole('button', { name: 'Tạo bản nháp' }).click()
-    await expect(heading(hr, 'TC')).toBeVisible()
-    await expect(hr.getByText(`Nhân viên M4F${run}`).first()).toBeVisible()
-  })
-
-  test('the rule editor names day kinds in the user language', async ({ browser }) => {
-    const page = await as(browser, admin.login, '/hrm/approval-rules/hrm.overtime_request')
-    await expect(page.getByRole('main').getByRole('button', { name: /Ngày lễ/ }).first()).toBeVisible()
-  })
-
-  test('at 375px an employee files overtime and the manager approves it', async ({ browser }) => {
-    const small = { width: 375, height: 800 }
-    const e = await as(browser, login.e, '/me/requests/overtime/new', small)
-    await e.getByRole('textbox', { name: /^Ngày tăng ca/ }).fill('22/09/2026')
-    await e.getByRole('textbox', { name: /^Giờ ca đêm/ }).fill('2')
-    await e.getByRole('button', { name: 'Tạo bản nháp' }).click()
-    await expect(heading(e, 'TC')).toBeVisible()
-    const number = (await heading(e, 'TC').textContent())!
-    await e.getByRole('button', { name: 'Gửi duyệt' }).click()
-    await status(e, 'Chờ duyệt')
-
-    const m = await as(browser, login.m, '/inbox', small)
-    await m.getByRole('button', { name: new RegExp(number) }).click()
-    await m.getByRole('button', { name: 'Duyệt', exact: true }).click()
-    await expect(m.getByText('Đã duyệt.')).toBeVisible()
-    await m.goto('/me/team/overtimes')
-    await expect(m.getByRole('list', { name: 'Đơn tăng ca của nhóm' }).getByText(number)).toBeVisible()
   })
 })
