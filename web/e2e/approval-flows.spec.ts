@@ -133,8 +133,7 @@ test('an administrator builds a flow with a choose-one and a parallel split, and
 
   for (const [user, after] of [
     [login.a, 'Chờ duyệt'],
-    // Step badges also read "Đã duyệt"; the finished submission is unambiguous.
-    [login.b, 'Lần duyệt này đã hoàn tất.'],
+    [login.b, 'Đã duyệt'],
   ] as const) {
     const p = await as(browser, user, '/inbox')
     await p.getByRole('button', { name: /NP-2026-/ }).first().click()

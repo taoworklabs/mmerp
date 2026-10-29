@@ -41,6 +41,7 @@ export async function as(browser: Browser, login: string, url: string, viewport?
   return page
 }
 
-export const status = (page: Page, text: string) => expect(page.getByRole('main').getByText(text, { exact: true }).first()).toBeVisible()
+// status reads the badge in the page header: the activity below still lists earlier statuses.
+export const status = (page: Page, text: string) => expect(page.getByRole('main').locator('[data-page-header]').getByText(text, { exact: true })).toBeVisible()
 
 export const fixture = (name: string) => new URL(`fixtures/${name}`, import.meta.url).pathname
