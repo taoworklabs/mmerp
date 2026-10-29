@@ -86,7 +86,7 @@ a salary of 22,000,000, so one hour of overtime is 125,000 before the multiplier
 | CC-01 | Covered. A second timesheet for the same unit and period is refused; a partial unique index holds it under concurrency too | `TestTimesheet`, `timesheets_org_unit_period_key` |
 | CC-02 | Covered. 0.5 and 1 stored and read back; other values refused | `TestTimesheet` |
 | CC-03 | Settled 2026-10-12 and built: the timesheet cell and the payroll line warn of work on a day of approved leave | `TestWorkOnALeaveDayWarns` |
-| CC-04 | Settled 2026-10-12 and built: the grid shows work on a day off, tinted, with the reason; it was hidden before | `TestTimesheetWarnsOfWorkOnDaysOff`, `m5.spec.ts` |
+| CC-04 | Settled 2026-10-12 and built: the grid shows work on a day off, tinted, with the reason; it was hidden before | `TestTimesheetWarnsOfWorkOnDaysOff`, `timesheets.spec.ts` |
 | CC-05 | Covered. Bad rows are named with their Excel row number and reason, and nothing is written | `TestImportRowErrors` |
 | CC-06 | Covered. A save or import replaces every line of the draft (**new** test with a shorter set of lines); the import dialog says so ("File thay toàn bộ ngày công của bảng công nháp này") | `TestTimesheetSaveReplacesEveryLine`, `hrm.timesheet.import_hint` |
 | CC-07 | Covered. The grid and the working days use the week version in force on each date | `TestWorkCalendar`, `TestWorkingDaysUsesTheWeekVersionInForce` |

@@ -5,7 +5,7 @@ import { as, fixture, signedIn } from './helpers'
 // One run: department P with M5E01, M5E02 and M5E03 (who joins on 16/03), the codes the
 // committed Excel files use (go run ./scripts/e2e-fixtures). hr is HR of P; dir approves timesheets.
 const run = runId()
-const login = { hr: `m5hr_${run}`, dir: `m5dir_${run}` }
+const login = { hr: `tshr_${run}`, dir: `tsdir_${run}` }
 let api: APIRequestContext
 
 // ensureEmployee creates an employee, or moves the one a previous run on the same database made.
@@ -23,7 +23,7 @@ async function ensureEmployee(code: string, unit: number, hire: string) {
 
 test.beforeAll(async ({ baseURL }) => {
   api = await signedInApi(baseURL!)
-  const company = await created(api.post('/api/org-units', { data: { parent_id: null, kind: 'company', name: `Công ty M5 ${run}` } }))
+  const company = await created(api.post('/api/org-units', { data: { parent_id: null, kind: 'company', name: `Công ty TS ${run}` } }))
   const p = await created(api.post('/api/org-units', { data: { parent_id: company, kind: 'department', name: `Phòng P ${run}` } }))
   await ensureEmployee('M5E01', p, '2026-01-05')
   await ensureEmployee('M5E02', p, '2026-01-05')
@@ -109,9 +109,9 @@ test('HR imports the March timesheet from Excel, fixes a bad file, follows the j
 // Work entered on a Sunday saves, but the payroll pays nothing for it: the grid shows the
 // value tinted, with the reason on the cell and once above the grid.
 test('the grid warns of work entered on a day off', async ({ page }) => {
-  const company = await created(api.post('/api/org-units', { data: { parent_id: null, kind: 'company', name: `Công ty M5W ${run}` } }))
+  const company = await created(api.post('/api/org-units', { data: { parent_id: null, kind: 'company', name: `Công ty TSW ${run}` } }))
   const unit = await created(api.post('/api/org-units', { data: { parent_id: company, kind: 'department', name: `Phòng W ${run}` } }))
-  const emp = await created(api.post('/api/hrm/employees', { data: employee(`M5W${run}`, unit, { hire_date: '2026-01-05' }) }))
+  const emp = await created(api.post('/api/hrm/employees', { data: employee(`TSW${run}`, unit, { hire_date: '2026-01-05' }) }))
   const ts = await created(api.post('/api/hrm/timesheets', { data: { org_unit_id: unit, month: '2026-04' } }))
   const lines = ['2026-04-03', '2026-04-05'].map((date) => ({ employee_id: emp, date, days: '1' }))
   const saved = await api.put(`/api/hrm/timesheets/${ts}`, { data: { version: 1, month: '2026-04', lines } })

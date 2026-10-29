@@ -5,13 +5,13 @@ import { as } from './helpers'
 // One run: team A (staff and their manager) and team B; a catalogue admin. Quotations with a
 // discount above 10 % wait for a manager.
 const run = runId()
-const login = { staff: `m14staff_${run}`, manager: `m14mgr_${run}`, other: `m14b_${run}`, catalog: `m14cat_${run}` }
+const login = { staff: `sqstaff_${run}`, manager: `sqmgr_${run}`, other: `sqb_${run}`, catalog: `sqcat_${run}` }
 const team = `Kinh doanh A ${run}`
 
 test.beforeAll(async ({ baseURL }) => {
   const api = await signedInApi(baseURL!)
   const company = await created(
-    api.post('/api/org-units', { data: { parent_id: null, kind: 'company', name: `Công ty M14 ${run}`, legal_name: `Công ty TNHH M14 ${run}` } }),
+    api.post('/api/org-units', { data: { parent_id: null, kind: 'company', name: `Công ty SQ ${run}`, legal_name: `Công ty TNHH SQ ${run}` } }),
   )
   const a = await created(api.post('/api/org-units', { data: { parent_id: company, kind: 'department', name: team } }))
   const b = await created(api.post('/api/org-units', { data: { parent_id: company, kind: 'department', name: `Kinh doanh B ${run}` } }))
