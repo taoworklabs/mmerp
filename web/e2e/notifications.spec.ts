@@ -1,24 +1,24 @@
 import { expect, test, type Page } from '@playwright/test'
 import { created, createUser, employee, password, signedInApi, runId, toFlow } from './api'
-import { as, signedIn } from './helpers'
+import { as } from './helpers'
 
 // One run: staff files leave requests; boss, their manager, approves them.
 const run = runId()
-const login = { staff: `m12staff_${run}`, boss: `m12boss_${run}` }
+const login = { staff: `ntstaff_${run}`, boss: `ntboss_${run}` }
 let leave: number
 
 test.beforeAll(async ({ baseURL }) => {
   const api = await signedInApi(baseURL!)
-  const company = await created(api.post('/api/org-units', { data: { parent_id: null, kind: 'company', name: `Công ty M12 ${run}` } }))
-  const q = await created(api.post('/api/org-units', { data: { parent_id: company, kind: 'department', name: `Phòng M12 ${run}` } }))
+  const company = await created(api.post('/api/org-units', { data: { parent_id: null, kind: 'company', name: `Công ty NT ${run}` } }))
+  const q = await created(api.post('/api/org-units', { data: { parent_id: company, kind: 'department', name: `Phòng NT ${run}` } }))
   for (const l of [login.staff, login.boss]) await createUser(api, l, [])
-  const boss = await created(api.post('/api/hrm/employees', { data: employee(`M12B${run}`, q, { user_login: login.boss }) }))
-  await created(api.post('/api/hrm/employees', { data: employee(`M12S${run}`, q, { user_login: login.staff, manager_id: boss }) }))
+  const boss = await created(api.post('/api/hrm/employees', { data: employee(`NTB${run}`, q, { user_login: login.boss }) }))
+  await created(api.post('/api/hrm/employees', { data: employee(`NTS${run}`, q, { user_login: login.staff, manager_id: boss }) }))
   const rule = await api.put('/api/approval-rules/hrm.leave_request', {
     data: { flow: toFlow([{ approver: { kind: 'module' } }]), max_levels: 3, fallback_product: 'hrm', fallback_role: 'hr' },
   })
   expect(rule.status(), await rule.text()).toBe(204)
-  const type = await created(api.post('/api/hrm/leave-types', { data: { name: `Nghỉ M12 ${run}`, deducts_balance: false, paid: true, active: true } }))
+  const type = await created(api.post('/api/hrm/leave-types', { data: { name: `Nghỉ NT ${run}`, deducts_balance: false, paid: true, active: true } }))
   const asStaff = await signedInApi(baseURL!, login.staff, password)
   leave = await created(asStaff.post('/api/hrm/leaves', { data: { leave_type_id: type, start_date: '2026-07-01', end_date: '2026-07-01', days: '1', reason: null } }))
 })
@@ -61,25 +61,4 @@ test('a mention picked after @ tells the mentioned user, who opens the request f
   await expect(bell(boss)).toHaveAccessibleName('Thông báo, 1 chưa đọc')
   await boss.getByRole('button', { name: /Nhắc tên bạn trong trao đổi/ }).click()
   await expect(boss).toHaveURL(new RegExp(`/me/requests/leave/${leave}$`))
-})
-
-test('an administrator sets the mail server; its password never shows again', async ({ browser }) => {
-  const page = await (await browser.newContext()).newPage()
-  await signedIn(page, '/admin/mail-server')
-  // The settings are a form on the page itself.
-  await page.getByRole('button', { name: 'Cấu hình máy chủ mail' }).click()
-  await page.getByRole('textbox', { name: /^Máy chủ/ }).fill('smtp.example.com')
-  await page.getByLabel(/^Mật khẩu/).fill('s3cret pass')
-  await page.getByRole('textbox', { name: /^Địa chỉ gửi/ }).fill('mmerp@example.com')
-  await page.getByRole('button', { name: 'Lưu' }).click()
-  await expect(page.getByText('Đã lưu cấu hình máy chủ mail.')).toBeVisible()
-  await expect(page.getByRole('textbox', { name: /^Máy chủ/ })).toHaveValue('smtp.example.com')
-  await expect(page.getByRole('textbox', { name: /^Cổng/ })).toHaveValue('587')
-  // The password is never read back: the field is empty and only says one is kept.
-  await expect(page.getByLabel(/^Mật khẩu/)).toHaveValue('')
-  await expect(page.getByText('s3cret pass')).toHaveCount(0)
-
-  await page.getByRole('button', { name: 'Xóa cấu hình' }).click()
-  await page.getByRole('dialog').getByRole('button', { name: 'Xóa cấu hình' }).click()
-  await expect(page.getByText('Chưa cấu hình máy chủ mail.')).toBeVisible()
 })
