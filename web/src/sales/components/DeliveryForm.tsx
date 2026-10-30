@@ -151,7 +151,8 @@ function Fields({ order, doc, onCreated, ro, initial }: Props & { ro: boolean; i
   }
 
   async function save(v: Values) {
-    if (switching.current) return false
+    // Shown in the form's banner; the edits stay.
+    if (switching.current) throw new ApiError(409, 'delivery_options_loading')
     const body = {
       date: v.date ?? '',
       warehouse_id: Number(v.warehouse_id),

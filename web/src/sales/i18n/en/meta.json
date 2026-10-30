@@ -58,5 +58,6 @@
   "sales.preview.reason": "Reason",
   "sales.nav.deliveries": "Deliveries",
   "sales.delivery.name": "Delivery",
-  "sales.preview.order": "Sales order"
+  "sales.preview.order": "Sales order",
+  "sales.error.delivery_options_loading": "Loading suggestions for the new warehouse; try again in a moment."
 }

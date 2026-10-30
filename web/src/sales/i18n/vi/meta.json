@@ -58,5 +58,6 @@
   "sales.preview.reason": "Lý do",
   "sales.nav.deliveries": "Phiếu giao hàng",
   "sales.delivery.name": "Phiếu giao hàng",
-  "sales.preview.order": "Đơn bán hàng"
+  "sales.preview.order": "Đơn bán hàng",
+  "sales.error.delivery_options_loading": "Đang tải gợi ý cho kho mới, vui lòng thử lại sau giây lát."
 }
