@@ -58,8 +58,14 @@ export const sales: AreaManifest = {
     [adjustmentDocType]: {
       path: (id) => `stock/adjustments/${id}`,
       preview: () => import('./components/AdjustmentPreview'),
-      // Posting or cancelling one moves stock.
-      invalidate: () => [salesKeys.stock.adjustments.all(), salesKeys.stock.onHand.all(), salesKeys.stock.cards()],
+      // Posting or cancelling one moves stock, which delivery options and draft orders' availability read.
+      invalidate: () => [
+        salesKeys.stock.adjustments.all(),
+        salesKeys.stock.onHand.all(),
+        salesKeys.stock.cards(),
+        salesKeys.deliveries.all(),
+        salesKeys.docs.all('order'),
+      ],
     },
     // Partners open in Sales for now; their identity shows on every customer of theirs.
     [partnerType]: {

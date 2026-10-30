@@ -134,7 +134,8 @@ function WarehouseModal({ warehouse: w, entities, onClose }: { warehouse: Wareho
     const body = { name: v.name.trim(), active: v.active }
     if (w) await unwrap(api.PUT('/stock/warehouses/{id}', { params: { path: { id: w.id } }, body }))
     else await unwrap(api.POST('/stock/warehouses', { body: { ...body, code: v.code.trim(), legal_entity_id: Number(v.legal_entity_id) } }))
-    await qc.invalidateQueries({ queryKey: salesKeys.stock.warehouses.all() })
+    // Delivery options list the warehouses in use.
+    await Promise.all([qc.invalidateQueries({ queryKey: salesKeys.stock.warehouses.all() }), qc.invalidateQueries({ queryKey: salesKeys.deliveries.all() })])
     notifySuccess(t('sales.warehouses.saved'))
     onClose()
   }
