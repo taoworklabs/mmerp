@@ -9,6 +9,21 @@ import (
 
 func newQ(c platform.Conn) *Queries { return New(c) }
 
+var DocumentHeader = data.OneArg("stock.DocumentHeader", newQ, (*Queries).DocumentHeader)
+var HasLiveMoves = data.OneArg("stock.HasLiveMoves", newQ, (*Queries).HasLiveMoves)
+var MoveWarehouses = data.ManyArg("stock.MoveWarehouses", newQ, (*Queries).MoveWarehouses)
+var MoveItems = data.ManyArg("stock.MoveItems", newQ, (*Queries).MoveItems)
+var InsertLot = data.ExecArg("stock.InsertLot", newQ, (*Queries).InsertLot)
+var LotByCode = data.OneArg("stock.LotByCode", newQ, (*Queries).LotByCode)
+var InsertSerial = data.ExecArg("stock.InsertSerial", newQ, (*Queries).InsertSerial)
+var SerialByCode = data.OneArg("stock.SerialByCode", newQ, (*Queries).SerialByCode)
+var LockSerials = data.ExecArg("stock.LockSerials", newQ, (*Queries).LockSerials)
+var InsertBalances = data.ExecArg("stock.InsertBalances", newQ, (*Queries).InsertBalances)
+var LockBalances = data.ExecArg("stock.LockBalances", newQ, (*Queries).LockBalances)
+var ApplyDeltas = data.ManyArg("stock.ApplyDeltas", newQ, (*Queries).ApplyDeltas)
+var SerialsOverOne = data.ManyArg("stock.SerialsOverOne", newQ, (*Queries).SerialsOverOne)
+var InsertMoves = data.ExecArg("stock.InsertMoves", newQ, (*Queries).InsertMoves)
+var LotsOnHand = data.ManyArg("stock.LotsOnHand", newQ, (*Queries).LotsOnHand)
 var CreateWarehouse = data.OneArg("stock.CreateWarehouse", newQ, (*Queries).CreateWarehouse)
 var UpdateWarehouse = data.OneArg("stock.UpdateWarehouse", newQ, (*Queries).UpdateWarehouse)
 var WarehouseCodeTaken = data.OneArg("stock.WarehouseCodeTaken", newQ, (*Queries).WarehouseCodeTaken)

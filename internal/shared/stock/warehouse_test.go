@@ -7,9 +7,12 @@ import (
 
 	"github.com/taoworklabs/mmerp/internal/core/coretest"
 	"github.com/taoworklabs/mmerp/internal/core/iam"
+	"github.com/taoworklabs/mmerp/internal/core/record"
 	"github.com/taoworklabs/mmerp/internal/platform"
 	"github.com/taoworklabs/mmerp/internal/shared/stock"
 )
+
+const testDoc = "stock.testdoc"
 
 type fixture struct {
 	core  *coretest.Core
@@ -25,7 +28,10 @@ func newFixture(t *testing.T) *fixture {
 	if f.unit, err = core.IAM.CreateOrgUnit(core.Admin, iam.OrgUnitInput{Kind: "company", Name: "C"}); err != nil {
 		t.Fatal(err)
 	}
-	f.stock = stock.NewService(stock.Deps{IAM: core.IAM, Audit: core.Audit, Numbering: core.Numbering})
+	f.stock = stock.NewService(stock.Deps{IAM: core.IAM, Audit: core.Audit, Numbering: core.Numbering, Record: core.Record})
+	// A bare document type, so ledger tests have documents to move stock for.
+	core.Record.Register(record.Type{Code: testDoc, Product: "stock", Shared: true, Kind: record.Document, NumberPrefix: "TT",
+		Perms: record.Perms{View: stock.PermView, Edit: stock.PermManage}, OnDelete: func(context.Context, int64) error { return nil }})
 	return f
 }
 

@@ -93,7 +93,7 @@ func Modules() []platform.Module {
 	pst := posting.NewService(posting.Hooks{})
 	h := hrm.NewService(hrm.Deps{IAM: ids, Record: rec, Audit: audit.NewService(), Setting: set, DataIO: dio, Printing: prn, Posting: pst, Numbering: num})
 	itm := item.NewService(item.Deps{IAM: ids, Audit: audit.NewService(), Numbering: num})
-	stk := stock.NewService(stock.Deps{IAM: ids, Audit: audit.NewService(), Numbering: num})
+	stk := stock.NewService(stock.Deps{IAM: ids, Audit: audit.NewService(), Numbering: num, Record: rec})
 	prt := partner.NewService(partner.Deps{IAM: ids, Record: rec, Audit: audit.NewService(), Numbering: num})
 	sal := sales.NewService(sales.Deps{IAM: ids, Record: rec, Audit: audit.NewService(), Setting: set, Printing: prn, Numbering: num, Partner: prt})
 	return []platform.Module{iam.Module(ids), setting.Module(set), numbering.Module(num), record.Module(rec), approval.Module(appr), dataio.Module(dio), attachment.Module(att), printing.Module(prn), discussion.Module(dis), notification.Module(ntf), item.Module(itm), stock.Module(stk), partner.Module(prt), hrm.Module(h), sales.Module(sal)}
