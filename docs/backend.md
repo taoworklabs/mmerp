@@ -13,7 +13,7 @@ internal/
 │   ├── iam/  setting/  numbering/  audit/
 │   └── record/  approval/  attachment/  discussion/  notification/  printing/  dataio/
 ├── shared/           # master data and data shared between products
-│   └── partner/  item/  tax/  posting/
+│   └── partner/  item/  tax/  posting/  stock/
 ├── modules/          # business modules of each product, including accounting
 │   └── <module>/
 └── integration/      # one package per external provider (see platform.md)
