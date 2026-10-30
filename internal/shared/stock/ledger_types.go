@@ -38,7 +38,7 @@ type Move struct {
 // LotRef names a lot by code; a move creates it when missing, with Expiry (YYYY-MM-DD).
 type LotRef struct {
 	Code   string  `json:"code" minLength:"1" maxLength:"100"`
-	Expiry *string `json:"expiry" format:"date"`
+	Expiry *string `json:"expiry,omitempty" format:"date"`
 }
 
 // LotPick is a lot suggested for an outgoing quantity.

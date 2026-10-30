@@ -130,7 +130,9 @@ func (s *Service) UpdateAdjustment(ctx context.Context, id int64, in AdjustmentU
 // prepareAdjustment checks what a draft can check without touching stock and returns its
 // header, at the warehouse's legal entity. Tracking and balances are checked at posting.
 func prepareAdjustment(ctx context.Context, f *AdjustmentFields) (record.Header, error) {
-	f.Reason = strings.TrimSpace(f.Reason)
+	if f.Reason = strings.TrimSpace(f.Reason); f.Reason == "" {
+		return record.Header{}, ErrReasonRequired
+	}
 	w, err := store.AdjustmentWarehouse.Run(ctx, f.WarehouseID)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return record.Header{}, platform.ErrNotFound
@@ -144,6 +146,9 @@ func prepareAdjustment(ctx context.Context, f *AdjustmentFields) (record.Header,
 	ids := make([]int64, len(f.Lines))
 	for i, l := range f.Lines {
 		ids[i] = l.ItemID
+		if l.Lot != nil && strings.TrimSpace(l.Lot.Code) == "" || l.Serial != nil && strings.TrimSpace(*l.Serial) == "" {
+			return record.Header{}, lineErr(ErrCodeBlank, Move{LineNo: i + 1})
+		}
 		q, err := decimal.NewFromString(l.Quantity)
 		if err != nil || q.IsZero() || !q.Equal(q.Truncate(3)) || q.Abs().GreaterThanOrEqual(maxQuantity) {
 			return record.Header{}, lineErr(ErrQuantityInvalid, Move{LineNo: i + 1})

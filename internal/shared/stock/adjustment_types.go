@@ -1,12 +1,22 @@
 package stock
 
-import "github.com/taoworklabs/mmerp/internal/platform"
+import (
+	"net/http"
+
+	"github.com/taoworklabs/mmerp/internal/platform"
+)
+
+var (
+	ErrReasonRequired = &platform.Error{Status: http.StatusUnprocessableEntity, Code: "stock_reason_required"}
+	// ErrCodeBlank: a lot code or serial of only spaces; params name the line.
+	ErrCodeBlank = &platform.Error{Status: http.StatusUnprocessableEntity, Code: "stock_code_blank"}
+)
 
 // AdjustmentLine is one line of a stock adjustment: positive brings stock in, negative takes it out.
 type AdjustmentLine struct {
 	ItemID   int64   `json:"item_id"`
-	Lot      *LotRef `json:"lot" doc:"Lot-tracked items: created at posting when missing"`
-	Serial   *string `json:"serial" minLength:"1" maxLength:"100" doc:"Serial-tracked items"`
+	Lot      *LotRef `json:"lot,omitempty" doc:"Lot-tracked items: created at posting when missing"`
+	Serial   *string `json:"serial,omitempty" minLength:"1" maxLength:"100" doc:"Serial-tracked items"`
 	Quantity string  `json:"quantity" pattern:"^-?[0-9]{1,12}(\\.[0-9]{1,3})?$" doc:"Signed, not 0, up to 3 decimals"`
 }
 

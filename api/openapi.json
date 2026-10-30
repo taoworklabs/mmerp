@@ -196,16 +196,11 @@
             "description": "Serial-tracked items",
             "maxLength": 100,
             "minLength": 1,
-            "type": [
-              "string",
-              "null"
-            ]
+            "type": "string"
           }
         },
         "required": [
           "item_id",
-          "lot",
-          "serial",
           "quantity"
         ],
         "type": "object"
@@ -236,10 +231,7 @@
             "description": "Serial-tracked items",
             "maxLength": 100,
             "minLength": 1,
-            "type": [
-              "string",
-              "null"
-            ]
+            "type": "string"
           },
           "unit": {
             "type": "string"
@@ -250,8 +242,6 @@
           "item_name",
           "unit",
           "item_id",
-          "lot",
-          "serial",
           "quantity"
         ],
         "type": "object"
@@ -4133,15 +4123,11 @@
           },
           "expiry": {
             "format": "date",
-            "type": [
-              "string",
-              "null"
-            ]
+            "type": "string"
           }
         },
         "required": [
-          "code",
-          "expiry"
+          "code"
         ],
         "type": "object"
       },

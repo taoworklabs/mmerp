@@ -2119,11 +2119,11 @@ export interface components {
             /** Format: int64 */
             item_id: number;
             /** @description Lot-tracked items: created at posting when missing */
-            lot: components["schemas"]["LotRef"];
+            lot?: components["schemas"]["LotRef"];
             /** @description Signed, not 0, up to 3 decimals */
             quantity: string;
             /** @description Serial-tracked items */
-            serial: string | null;
+            serial?: string;
         };
         AdjustmentLineOut: {
             item_code: string;
@@ -2131,11 +2131,11 @@ export interface components {
             item_id: number;
             item_name: string;
             /** @description Lot-tracked items: created at posting when missing */
-            lot: components["schemas"]["LotRef"];
+            lot?: components["schemas"]["LotRef"];
             /** @description Signed, not 0, up to 3 decimals */
             quantity: string;
             /** @description Serial-tracked items */
-            serial: string | null;
+            serial?: string;
             unit: string;
         };
         AdjustmentList: {
@@ -3355,7 +3355,7 @@ export interface components {
         LotRef: {
             code: string;
             /** Format: date */
-            expiry: string | null;
+            expiry?: string;
         };
         MailServer: {
             /**
