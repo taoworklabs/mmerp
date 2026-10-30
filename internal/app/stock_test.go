@@ -46,14 +46,18 @@ func TestStockCardHidesUnreadableDocuments(t *testing.T) {
 	f := newSalesFixture(t, []string{"sales", "stock"})
 	// The fixture's item becomes stock-tracked so it can be delivered.
 	var items struct{ Items []struct{ ID int64 } }
-	_ = json.Unmarshal(f.ok(f.admin, "GET", "/api/items", "", 200), &items)
+	if err := json.Unmarshal(f.ok(f.admin, "GET", "/api/items", "", 200), &items); err != nil {
+		t.Fatal(err)
+	}
 	item := items.Items[0].ID
 	f.ok(f.admin, "PUT", fmt.Sprintf("/api/items/%d", item), `{"name":"Bút bi","unit":"hộp","price":10005,"vat_rate":"8","active":true,"tracking":"quantity"}`, 204)
 	wh := f.id(f.admin, "/api/stock/warehouses", fmt.Sprintf(`{"name":"Kho 1","legal_entity_id":%d,"active":true}`, f.company))
 	move := func(c *client, typ string, id int64, to string) {
 		var d struct{ Version int32 }
 		path := map[string]string{"sales.order": "/api/sales/orders/%d", "sales.delivery": "/api/sales/deliveries/%d", "stock.adjustment": "/api/stock/adjustments/%d"}[typ]
-		_ = json.Unmarshal(f.ok(c, "GET", fmt.Sprintf(path, id), "", 200), &d)
+		if err := json.Unmarshal(f.ok(c, "GET", fmt.Sprintf(path, id), "", 200), &d); err != nil {
+			t.Fatal(err)
+		}
 		f.ok(c, "POST", fmt.Sprintf("/api/documents/%s/%d/transitions", typ, id), fmt.Sprintf(`{"to":%q,"version":%d}`, to, d.Version), 200)
 	}
 	adj := f.id(f.admin, "/api/stock/adjustments", fmt.Sprintf(`{"request_id":"00000000-0000-4000-8000-000000000001","date":"2026-03-01","warehouse_id":%d,
@@ -61,7 +65,9 @@ func TestStockCardHidesUnreadableDocuments(t *testing.T) {
 	move(f.admin, "stock.adjustment", adj, "posted")
 	f.moveQuote("posted")
 	var o struct{ ID int64 }
-	_ = json.Unmarshal(f.ok(f.staffA, "POST", fmt.Sprintf("/api/sales/quotes/%d/order", f.quote), "", 200), &o)
+	if err := json.Unmarshal(f.ok(f.staffA, "POST", fmt.Sprintf("/api/sales/quotes/%d/order", f.quote), "", 200), &o); err != nil {
+		t.Fatal(err)
+	}
 	move(f.staffA, "sales.order", o.ID, "posted")
 	del := f.id(f.staffA, "/api/sales/deliveries", fmt.Sprintf(`{"request_id":"00000000-0000-4000-8000-000000000002","order_id":%d,"date":"2026-03-11",
 		"warehouse_id":%d,"note":null,"lines":[{"order_position":1,"quantity":"4"}]}`, o.ID, wh))
@@ -91,7 +97,9 @@ func TestStockCardHidesUnreadableDocuments(t *testing.T) {
 				Number  string `json:"number"`
 			}
 		}
-		_ = json.Unmarshal(f.ok(c, "GET", fmt.Sprintf("/api/stock/card?warehouse_id=%d&item_id=%d&from=2026-03-01&to=2026-03-31", wh, item), "", 200), &out)
+		if err := json.Unmarshal(f.ok(c, "GET", fmt.Sprintf("/api/stock/card?warehouse_id=%d&item_id=%d&from=2026-03-01&to=2026-03-31", wh, item), "", 200), &out); err != nil {
+			t.Fatal(err)
+		}
 		return out.Rows
 	}
 	rows := card(viewer)
