@@ -1,4 +1,4 @@
-import { IconAddressBook, IconFileDollar, IconGitBranch, IconPackage, IconReceipt, IconShoppingCart } from '@tabler/icons-react'
+import { IconAddressBook, IconBuildingWarehouse, IconFileDollar, IconGitBranch, IconPackage, IconReceipt, IconShoppingCart } from '@tabler/icons-react'
 import type { AreaManifest } from '@/shared/area'
 import { masterKeys } from '@/shared/master'
 import { customerDocType, orderDocType, partnerType, quoteDocType, salesKeys } from './keys'
@@ -12,6 +12,7 @@ export const sales: AreaManifest = {
     { label: 'sales.nav.customers', path: 'customers', icon: IconAddressBook, permission: 'sales.customer.view' },
     { label: 'sales.nav.quotes', path: 'quotes', icon: IconFileDollar, permission: 'sales.quote.view' },
     { label: 'sales.nav.orders', path: 'orders', icon: IconReceipt, permission: 'sales.order.view' },
+    { label: 'sales.nav.warehouses', path: 'stock/warehouses', icon: IconBuildingWarehouse, permission: 'stock.view', group: 'sales.nav.group_stock' },
     { label: 'sales.nav.items', path: 'items', icon: IconPackage, permission: 'item.view', group: 'sales.nav.group_config' },
     {
       label: 'sales.nav.approval_rules',
@@ -21,7 +22,7 @@ export const sales: AreaManifest = {
       group: 'sales.nav.group_config',
     },
   ],
-  collapsibleGroups: ['sales.nav.group_config'],
+  collapsibleGroups: ['sales.nav.group_stock', 'sales.nav.group_config'],
   homeIcon: IconShoppingCart,
   i18n: {
     meta: { vi: () => import('./i18n/vi/meta.json'), en: () => import('./i18n/en/meta.json') },

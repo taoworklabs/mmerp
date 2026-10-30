@@ -47,5 +47,7 @@
   "sales.error.sales_delivery_warehouse": "The warehouse is inactive or of another legal entity than the order. Pick another.",
   "sales.error.sales_delivery_date": "The delivery date cannot be before the sales order date.",
   "sales.error.sales_lot_expired": "Line {{line_no}}: lot {{lot_code}} expires on {{expiry}}. Pick another lot.",
-  "sales.action.create_order": "Create sales order"
+  "sales.action.create_order": "Create sales order",
+  "sales.nav.group_stock": "Stock",
+  "sales.nav.warehouses": "Warehouses"
 }

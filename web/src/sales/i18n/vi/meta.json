@@ -47,5 +47,7 @@
   "sales.error.sales_delivery_warehouse": "Kho đã ngừng sử dụng hoặc thuộc pháp nhân khác với đơn bán hàng. Chọn kho khác.",
   "sales.error.sales_delivery_date": "Ngày giao hàng không được trước ngày đơn bán hàng.",
   "sales.error.sales_lot_expired": "Dòng {{line_no}}: lô {{lot_code}} hết hạn ngày {{expiry}}. Chọn lô khác.",
-  "sales.action.create_order": "Tạo đơn bán hàng"
+  "sales.action.create_order": "Tạo đơn bán hàng",
+  "sales.nav.group_stock": "Kho",
+  "sales.nav.warehouses": "Kho"
 }

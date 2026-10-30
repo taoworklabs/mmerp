@@ -15,6 +15,7 @@ export const pathOf = (k: Kind) => (k === 'quote' ? 'quotes' : 'orders')
 // Query keys of the sales area; every parameter that changes a result is part of its key.
 export type CustomerQuery = { q: string; active: string; sort: string; page: number; pageSize: number }
 export type ItemQuery = { q: string; active: string; page: number; pageSize: number }
+export type WarehouseQuery = { q: string; active: string; sort: string; page: number; pageSize: number }
 export type DocQuery = { q: string; status: string; sort: string; page: number; pageSize: number }
 
 export const salesKeys = {
@@ -32,6 +33,13 @@ export const salesKeys = {
     all: () => ['sales', 'items'] as const,
     list: (q: ItemQuery) => ['sales', 'items', 'list', q] as const,
     picker: (q: string) => ['sales', 'items', 'picker', q] as const,
+  },
+  // Stock is a shared module; its screens live in this area.
+  stock: {
+    warehouses: {
+      all: () => ['sales', 'stock', 'warehouses'] as const,
+      list: (q: WarehouseQuery) => ['sales', 'stock', 'warehouses', 'list', q] as const,
+    },
   },
   docs: {
     all: (k: Kind) => ['sales', k] as const,
