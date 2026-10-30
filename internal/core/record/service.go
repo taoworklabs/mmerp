@@ -229,6 +229,12 @@ func (s *Service) answer(ctx context.Context, t Type, id, unit int64, action Act
 	return gate(ctx, t, action.class()) == nil, nil
 }
 
+// Gate is the product gate of the record type code, for core modules acting on its
+// records; a shared type has no product to gate.
+func (s *Service) Gate(ctx context.Context, code string, c platform.Class) error {
+	return gate(ctx, s.types[code], c)
+}
+
 // gate is the product gate of t; a shared type has no product to gate.
 func gate(ctx context.Context, t Type, c platform.Class) error {
 	if t.Shared {

@@ -991,3 +991,36 @@ func TestFieldOptionsNeedRulePermission(t *testing.T) {
 		}
 	}
 }
+
+// A shared namespace is never a product: its documents go through approval with it absent
+// from the enabled products.
+func TestSharedTypeNeedsNoProduct(t *testing.T) {
+	f := newFixture(t)
+	f.ids.RegisterRoles("shared", map[string][]string{"member": {"shared.doc.edit"}})
+	f.rec.Register(record.Type{Code: "shared.doc", Product: "shared", Shared: true, Kind: record.Document, NumberPrefix: "S",
+		Perms: record.Perms{View: "shared.doc.edit", Edit: "shared.doc.edit"}, OnDelete: func(context.Context, int64) error { return nil }})
+	for _, login := range []string{"submitter", "boss"} {
+		_, err := f.ids.GrantRole(f.admin, f.users[login], "shared", "member", nil)
+		f.check(err)
+	}
+	f.check(f.appr.SaveRule(f.admin, "shared.doc", record.Post, approval.RuleInput{Flow: approval.Flow{f.user("boss")},
+		MaxLevels: 3, FallbackProduct: "shared", FallbackRole: "member"}))
+	rules, err := f.appr.Rules(f.admin, "shared")
+	f.check(err)
+	if len(rules) == 0 || !slices.Contains(rules[0].AllowedActions, "save") {
+		t.Fatalf("rules %+v", rules)
+	}
+	d, err := f.rec.Create(f.as("submitter"), "shared.doc", record.Header{Date: "2026-03-10", OrgUnitID: f.unit})
+	f.check(err)
+	_, err = f.rec.Transition(f.as("submitter"), d.Ref, d.Version, record.Posted)
+	f.check(err)
+	d, err = f.rec.Get(f.admin, d.Ref)
+	f.check(err)
+	if inst := f.panel("boss", d); !slices.Contains(inst.Steps[0].AllowedActions, "approve") {
+		t.Fatalf("boss may not approve: %+v", inst.Steps[0])
+	}
+	f.check(f.appr.Approve(f.as("boss"), *d.ApprovalTicket, 1))
+	if s := f.status(d); s != record.Posted {
+		t.Fatalf("status %s", s)
+	}
+}

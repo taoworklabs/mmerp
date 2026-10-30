@@ -130,7 +130,7 @@ func (s *Service) SaveBlocks(ctx context.Context, code string, in []BlockText) e
 	if !ok {
 		return platform.ErrNotFound
 	}
-	if err := platform.ProductGate(ctx, t.product, platform.ClassWrite); err != nil {
+	if err := s.d.Record.Gate(ctx, t.DocType, platform.ClassWrite); err != nil {
 		return err
 	}
 	if len(in) != len(t.Blocks) {
