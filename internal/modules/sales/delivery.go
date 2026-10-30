@@ -3,7 +3,6 @@ package sales
 import (
 	"context"
 	"errors"
-	"fmt"
 	"maps"
 	"slices"
 	"strings"
@@ -232,29 +231,25 @@ func (s *Service) checkDelivery(ctx context.Context, id, orderID int64, f Delive
 // not exist is left to posting.
 func checkLotExpiry(ctx context.Context, lines []DeliveryLine, date string) error {
 	var p store.LotExpiriesParams
-	for _, l := range lines {
+	var at []int // line index of each pair
+	for i, l := range lines {
 		if l.LotCode != nil {
 			p.ItemIds = append(p.ItemIds, l.ItemID)
-			p.Codes = append(p.Codes, strings.ToLower(*l.LotCode))
+			p.Codes = append(p.Codes, *l.LotCode)
+			at = append(at, i)
 		}
 	}
-	if len(p.Codes) == 0 {
+	if len(at) == 0 {
 		return nil
 	}
 	rows, err := store.LotExpiries.Run(ctx, p)
 	if err != nil {
 		return err
 	}
-	exp := map[string]string{}
 	for _, r := range rows {
-		exp[fmt.Sprint(r.ItemID, "/", r.Code)] = *platform.DatePtr(r.Expiry)
-	}
-	for i, l := range lines {
-		if l.LotCode == nil {
-			continue
-		}
-		if e, ok := exp[fmt.Sprint(l.ItemID, "/", strings.ToLower(*l.LotCode))]; ok && e < date {
-			return deliveryErr(ErrLotExpired, i+1, map[string]any{"lot_code": *l.LotCode, "expiry": e})
+		if e := *platform.DatePtr(r.Expiry); e < date {
+			i := at[r.Pos-1]
+			return deliveryErr(ErrLotExpired, i+1, map[string]any{"lot_code": *lines[i].LotCode, "expiry": e})
 		}
 	}
 	return nil

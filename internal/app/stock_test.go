@@ -60,17 +60,25 @@ func TestStockCardHidesUnreadableDocuments(t *testing.T) {
 		}
 		f.ok(c, "POST", fmt.Sprintf("/api/documents/%s/%d/transitions", typ, id), fmt.Sprintf(`{"to":%q,"version":%d}`, to, d.Version), 200)
 	}
-	adj := f.id(f.admin, "/api/stock/adjustments", fmt.Sprintf(`{"request_id":"00000000-0000-4000-8000-000000000001","date":"2026-12-30","warehouse_id":%d,
-		"reason":"Kiểm kê","lines":[{"item_id":%d,"quantity":"10"}]}`, wh, item))
-	move(f.admin, "stock.adjustment", adj, "posted")
 	f.moveQuote("posted")
-	var o struct{ ID int64 }
+	var o struct {
+		ID   int64
+		Date string
+	}
 	if err := json.Unmarshal(f.ok(f.staffA, "POST", fmt.Sprintf("/api/sales/quotes/%d/order", f.quote), "", 200), &o); err != nil {
 		t.Fatal(err)
 	}
 	move(f.staffA, "sales.order", o.ID, "posted")
-	del := f.id(f.staffA, "/api/sales/deliveries", fmt.Sprintf(`{"request_id":"00000000-0000-4000-8000-000000000002","order_id":%d,"date":"2026-12-31",
-		"warehouse_id":%d,"note":null,"lines":[{"order_position":1,"quantity":"4"}]}`, o.ID, wh))
+	// The order is dated the day it was made: the stock and the delivery use that day.
+	if err := json.Unmarshal(f.ok(f.staffA, "GET", fmt.Sprintf("/api/sales/orders/%d", o.ID), "", 200), &o); err != nil {
+		t.Fatal(err)
+	}
+	day := o.Date
+	adj := f.id(f.admin, "/api/stock/adjustments", fmt.Sprintf(`{"request_id":"00000000-0000-4000-8000-000000000001","date":%q,"warehouse_id":%d,
+		"reason":"Kiểm kê","lines":[{"item_id":%d,"quantity":"10"}]}`, day, wh, item))
+	move(f.admin, "stock.adjustment", adj, "posted")
+	del := f.id(f.staffA, "/api/sales/deliveries", fmt.Sprintf(`{"request_id":"00000000-0000-4000-8000-000000000002","order_id":%d,"date":%q,
+		"warehouse_id":%d,"note":null,"lines":[{"order_position":1,"quantity":"4"}]}`, o.ID, day, wh))
 	move(f.staffA, "sales.delivery", del, "posted")
 
 	user := func(login string, roles ...string) *client {
@@ -97,7 +105,7 @@ func TestStockCardHidesUnreadableDocuments(t *testing.T) {
 				Number  string `json:"number"`
 			}
 		}
-		if err := json.Unmarshal(f.ok(c, "GET", fmt.Sprintf("/api/stock/card?warehouse_id=%d&item_id=%d&from=2026-12-01&to=2026-12-31", wh, item), "", 200), &out); err != nil {
+		if err := json.Unmarshal(f.ok(c, "GET", fmt.Sprintf("/api/stock/card?warehouse_id=%d&item_id=%d&from=%s&to=%s", wh, item, day, day), "", 200), &out); err != nil {
 			t.Fatal(err)
 		}
 		return out.Rows

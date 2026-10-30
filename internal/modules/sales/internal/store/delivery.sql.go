@@ -376,26 +376,26 @@ func (q *Queries) LiveDeliveryOfOrder(ctx context.Context, orderID int64) (int64
 }
 
 const lotExpiries = `-- name: LotExpiries :many
-SELECT item_id, lower(code) AS code, expiry
-FROM stock.lots
-WHERE item_id = ANY($1::bigint[]) AND lower(code) = ANY($2::text[]) AND expiry IS NOT NULL
+SELECT n::int AS pos, l.expiry
+FROM generate_series(1, cardinality($1::text[])) AS n
+JOIN stock.lots l ON l.item_id = ($2::bigint[])[n] AND lower(l.code) = lower(($1::text[])[n])
+WHERE l.expiry IS NOT NULL
 `
 
 type LotExpiriesParams struct {
-	ItemIds []int64
 	Codes   []string
+	ItemIds []int64
 }
 
 type LotExpiriesRow struct {
-	ItemID int64
-	Code   string
+	Pos    int32
 	Expiry pgtype.Date
 }
 
-// Expiry of lots among the given items and codes (a superset of the pairs; callers match
-// the pairs), codes without regard to case.
+// Expiry of the lot named by each (item, code) input pair, by 1-based position in the
+// inputs; case is folded here only, as the lot index does.
 func (q *Queries) LotExpiries(ctx context.Context, arg LotExpiriesParams) ([]LotExpiriesRow, error) {
-	rows, err := q.db.Query(ctx, lotExpiries, arg.ItemIds, arg.Codes)
+	rows, err := q.db.Query(ctx, lotExpiries, arg.Codes, arg.ItemIds)
 	if err != nil {
 		return nil, err
 	}
@@ -403,7 +403,7 @@ func (q *Queries) LotExpiries(ctx context.Context, arg LotExpiriesParams) ([]Lot
 	var items []LotExpiriesRow
 	for rows.Next() {
 		var i LotExpiriesRow
-		if err := rows.Scan(&i.ItemID, &i.Code, &i.Expiry); err != nil {
+		if err := rows.Scan(&i.Pos, &i.Expiry); err != nil {
 			return nil, err
 		}
 		items = append(items, i)

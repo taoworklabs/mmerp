@@ -643,3 +643,15 @@ func TestDeliveryDateBeforeOrder(t *testing.T) {
 		t.Fatalf("early delivery: %v", err)
 	}
 }
+
+// The lot is found by the database's case folding, so a differently cased code is still refused.
+func TestDeliveryRefusesExpiredLotAnyCase(t *testing.T) {
+	d := newDeliveries(t)
+	exp := "2026-11-01"
+	d.adjust(stock.AdjustmentLine{ItemID: d.lotted, Lot: &stock.LotRef{Code: "Lô-a", Expiry: &exp}, Quantity: "3"})
+	f := d.fields(lotted(2, "LÔ-A", "1"))
+	f.Date = "2026-11-02"
+	if _, err := d.create(d.staff, d.order, f); !errors.Is(err, sales.ErrLotExpired) {
+		t.Fatalf("mixed-case expired lot: %v", err)
+	}
+}

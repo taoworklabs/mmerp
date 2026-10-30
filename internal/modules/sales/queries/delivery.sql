@@ -74,8 +74,9 @@ SELECT id, code, name, is_default FROM stock.warehouses
 WHERE legal_entity_id = $1 AND active ORDER BY is_default DESC, lower(code), id;
 
 -- name: LotExpiries :many
--- Expiry of lots among the given items and codes (a superset of the pairs; callers match
--- the pairs), codes without regard to case.
-SELECT item_id, lower(code) AS code, expiry
-FROM stock.lots
-WHERE item_id = ANY(@item_ids::bigint[]) AND lower(code) = ANY(@codes::text[]) AND expiry IS NOT NULL;
+-- Expiry of the lot named by each (item, code) input pair, by 1-based position in the
+-- inputs; case is folded here only, as the lot index does.
+SELECT n::int AS pos, l.expiry
+FROM generate_series(1, cardinality(@codes::text[])) AS n
+JOIN stock.lots l ON l.item_id = (@item_ids::bigint[])[n] AND lower(l.code) = lower((@codes::text[])[n])
+WHERE l.expiry IS NOT NULL;
