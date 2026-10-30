@@ -1824,6 +1824,38 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/stock/warehouses": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["list-warehouses"];
+        put?: never;
+        post: operations["create-warehouse"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/stock/warehouses/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put: operations["update-warehouse"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/users": {
         parameters: {
             query?: never;
@@ -3611,6 +3643,23 @@ export interface components {
              */
             request_id?: string;
         };
+        NewWarehouse: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example /api/schemas/NewWarehouse.json
+             */
+            readonly $schema?: string;
+            active: boolean;
+            /** @description Empty or absent: issued from the stock.warehouse code series */
+            code?: string;
+            /**
+             * Format: int64
+             * @description A company org unit; ignored on update
+             */
+            legal_entity_id: number;
+            name: string;
+        };
         Notification: {
             actor_name: string | null;
             /** Format: date-time */
@@ -4713,6 +4762,45 @@ export interface components {
             login: string;
             name: string;
             root: boolean;
+        };
+        Warehouse: {
+            active: boolean;
+            code: string;
+            /** Format: int64 */
+            id: number;
+            is_default: boolean;
+            /**
+             * Format: int64
+             * @description A company org unit; ignored on update
+             */
+            legal_entity_id: number;
+            name: string;
+        };
+        WarehouseFields: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example /api/schemas/WarehouseFields.json
+             */
+            readonly $schema?: string;
+            active: boolean;
+            /**
+             * Format: int64
+             * @description A company org unit; ignored on update
+             */
+            legal_entity_id: number;
+            name: string;
+        };
+        WarehouseList: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example /api/schemas/WarehouseList.json
+             */
+            readonly $schema?: string;
+            items: components["schemas"]["Warehouse"][];
+            /** Format: int64 */
+            total: number;
         };
         WorkCalendar: {
             /**
@@ -9705,6 +9793,107 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["OrderFromQuoteOutputBody"];
                 };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "list-warehouses": {
+        parameters: {
+            query?: {
+                q?: string;
+                active?: "true" | "false";
+                sort?: "code" | "-code" | "name" | "-name";
+                page?: number;
+                page_size?: 20 | 50 | 100;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WarehouseList"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "create-warehouse": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NewWarehouse"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CreatedOutputBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "update-warehouse": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["WarehouseFields"];
+            };
+        };
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Error */
             default: {
