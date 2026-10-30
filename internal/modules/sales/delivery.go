@@ -89,6 +89,7 @@ func (s *Service) CreateDelivery(ctx context.Context, in NewDelivery) (id int64,
 	})
 }
 
+// UpdateDelivery saves a draft delivery again, checked as on creation.
 func (s *Service) UpdateDelivery(ctx context.Context, id int64, in DeliveryUpdate) error {
 	ref := record.Ref{Type: deliveryType, ID: id}
 	return platform.InTx(ctx, func(ctx context.Context) error {
@@ -118,10 +119,10 @@ func (s *Service) UpdateDelivery(ctx context.Context, id int64, in DeliveryUpdat
 }
 
 // checkDelivery locks the order, after the delivery's own row, so saves and posting of its
-// deliveries take turns; it then checks the order, the warehouse and every line, and returns
+// deliveries take turns, and refuses while an action on the order awaits approval; it then checks the order, the warehouse and every line, and returns
 // the lines with the order line's item and texts.
 func (s *Service) checkDelivery(ctx context.Context, id, orderID int64, f DeliveryFields) ([]DeliveryLine, error) {
-	o, err := s.d.Record.Lock(ctx, record.Ref{Type: orderType, ID: orderID})
+	o, err := s.d.Record.LockToDepend(ctx, record.Ref{Type: orderType, ID: orderID})
 	if err != nil {
 		return nil, err
 	}

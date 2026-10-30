@@ -11,6 +11,7 @@ import (
 	"github.com/taoworklabs/mmerp/internal/modules/sales"
 	"github.com/taoworklabs/mmerp/internal/platform"
 	"github.com/taoworklabs/mmerp/internal/shared/item"
+	"github.com/taoworklabs/mmerp/internal/shared/stock"
 )
 
 // deliveries is the fixture plus the company's default warehouse, goods tracked by quantity
@@ -26,7 +27,7 @@ func newDeliveries(t *testing.T) *deliveries {
 	d.wh = d.warehouse(d.c)
 	d.goods = d.trackedItem("HANG", "quantity")
 	d.lotted = d.trackedItem("THUOC", "lot")
-	d.order = d.newOrder()
+	d.order = d.newOrder("0")
 	d.check(d.move(d.staff, "sales.order", d.order, record.Posted))
 	return d
 }
@@ -47,11 +48,11 @@ func (d *deliveries) trackedItem(code, tracking string) int64 {
 		VatRate: "8", Active: true, Tracking: &tracking}}))
 }
 
-// newOrder is a draft order of team A with the fixture's three lines.
-func (d *deliveries) newOrder() int64 {
+// newOrder is a draft order of team A with the fixture's three lines, the first at discount.
+func (d *deliveries) newOrder(discount string) int64 {
 	d.t.Helper()
 	fl := sales.DocFields{Date: "2026-03-10", OrgUnitID: d.a, CustomerID: d.customer, Lines: []sales.LineInput{
-		{ItemID: d.goods, Description: "Hàng", Quantity: "10", UnitPrice: 1_000, DiscountPercent: "0", VatRate: "8"},
+		{ItemID: d.goods, Description: "Hàng", Quantity: "10", UnitPrice: 1_000, DiscountPercent: discount, VatRate: "8"},
 		{ItemID: d.lotted, Description: "Thuốc", Quantity: "5", UnitPrice: 1_000, DiscountPercent: "0", VatRate: "8"},
 		{ItemID: d.fix, Description: "Sửa chữa", Quantity: "2", UnitPrice: 250_000, DiscountPercent: "0", VatRate: "10"},
 	}}
@@ -72,7 +73,7 @@ func dl(position int, qty string) sales.DeliveryLineInput {
 
 func TestDeliveryFromPostedOrderOnly(t *testing.T) {
 	d := newDeliveries(t)
-	draft := d.newOrder()
+	draft := d.newOrder("0")
 	if _, err := d.create(d.staff, draft, d.fields(dl(1, "1"))); !errors.Is(err, sales.ErrOrderNotPosted) {
 		t.Fatalf("delivery of a draft order: %v", err)
 	}
@@ -128,6 +129,11 @@ func TestDeliveryWarehouseOfOtherEntity(t *testing.T) {
 	if _, err := d.create(d.staff, d.order, f); !errors.Is(err, sales.ErrDeliveryWarehouse) {
 		t.Fatalf("warehouse of another company: %v", err)
 	}
+	// An inactive warehouse of the company is refused too.
+	inactive := must(t)(d.stock.CreateWarehouse(d.admin, stock.NewWarehouse{WarehouseFields: stock.WarehouseFields{Name: "Cũ", LegalEntityID: d.c}}))
+	if _, err := d.create(d.staff, d.order, sales.DeliveryFields{Date: "2026-03-11", WarehouseID: inactive, Lines: f.Lines}); !errors.Is(err, sales.ErrDeliveryWarehouse) {
+		t.Fatalf("inactive warehouse: %v", err)
+	}
 	// Changing a draft's warehouse runs the same check.
 	id := must(t)(d.create(d.staff, d.order, d.fields(dl(1, "1"))))
 	if err := d.sales.UpdateDelivery(d.staff, id, sales.DeliveryUpdate{Version: 1, DeliveryFields: f}); !errors.Is(err, sales.ErrDeliveryWarehouse) {
@@ -162,4 +168,17 @@ func TestDeliveryReadBack(t *testing.T) {
 	if _, err := d.sales.Delivery(d.ctxFor("staff_b", "staff@B"), id); !errors.Is(err, platform.ErrNotFound) {
 		t.Fatalf("staff of B opens: %v", err)
 	}
+}
+
+// An order whose cancelling waits for approval takes no new delivery.
+func TestDeliveryRefusedWhileCancelHeld(t *testing.T) {
+	d := newDeliveries(t)
+	d.managerApproves("sales.order", record.Cancel)
+	order := d.newOrder("15")
+	d.check(d.move(d.staff, "sales.order", order, record.Posted))
+	d.check(d.move(d.staff, "sales.order", order, record.Cancelled))
+	if o, _ := d.sales.Order(d.staff, order); o.Status != "posted" {
+		t.Fatalf("cancel not held: %s", o.Status)
+	}
+	wantCode(t, must2(d.create(d.staff, order, d.fields(dl(1, "1")))), "awaiting_approval")
 }
