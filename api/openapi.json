@@ -5552,6 +5552,84 @@
         ],
         "type": "object"
       },
+      "OnHandList": {
+        "additionalProperties": false,
+        "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "/api/schemas/OnHandList.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/OnHandRow"
+            },
+            "type": "array"
+          },
+          "total": {
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "items",
+          "total"
+        ],
+        "type": "object"
+      },
+      "OnHandRow": {
+        "additionalProperties": false,
+        "properties": {
+          "expiry": {
+            "format": "date",
+            "type": "string"
+          },
+          "item_code": {
+            "type": "string"
+          },
+          "item_id": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "item_name": {
+            "type": "string"
+          },
+          "lot_code": {
+            "type": "string"
+          },
+          "quantity": {
+            "description": "Decimal",
+            "type": "string"
+          },
+          "serial_code": {
+            "type": "string"
+          },
+          "unit": {
+            "type": "string"
+          },
+          "warehouse_code": {
+            "type": "string"
+          },
+          "warehouse_id": {
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "warehouse_id",
+          "warehouse_code",
+          "item_id",
+          "item_code",
+          "item_name",
+          "unit",
+          "quantity"
+        ],
+        "type": "object"
+      },
       "Option": {
         "additionalProperties": false,
         "properties": {
@@ -7839,6 +7917,82 @@
           "reason",
           "decided_at",
           "cast_by_name"
+        ],
+        "type": "object"
+      },
+      "StockCard": {
+        "additionalProperties": false,
+        "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "/api/schemas/StockCard.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
+          "closing": {
+            "description": "Decimal",
+            "type": "string"
+          },
+          "opening": {
+            "description": "Decimal: balance before the first day",
+            "type": "string"
+          },
+          "rows": {
+            "items": {
+              "$ref": "#/components/schemas/StockCardRow"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "opening",
+          "rows",
+          "closing"
+        ],
+        "type": "object"
+      },
+      "StockCardRow": {
+        "additionalProperties": false,
+        "properties": {
+          "balance": {
+            "description": "Decimal",
+            "type": "string"
+          },
+          "date": {
+            "format": "date",
+            "type": "string"
+          },
+          "doc_id": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "doc_type": {
+            "type": "string"
+          },
+          "lot_code": {
+            "type": "string"
+          },
+          "number": {
+            "type": "string"
+          },
+          "quantity": {
+            "description": "Decimal, signed",
+            "type": "string"
+          },
+          "serial_code": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "date",
+          "doc_type",
+          "doc_id",
+          "number",
+          "quantity",
+          "balance"
         ],
         "type": "object"
       },
@@ -16719,6 +16873,179 @@
         "responses": {
           "204": {
             "description": "No Content"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "tags": [
+          "core",
+          "core"
+        ]
+      }
+    },
+    "/stock/card": {
+      "get": {
+        "operationId": "get-stock-card",
+        "parameters": [
+          {
+            "explode": false,
+            "in": "query",
+            "name": "warehouse_id",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          },
+          {
+            "explode": false,
+            "in": "query",
+            "name": "item_id",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          },
+          {
+            "explode": false,
+            "in": "query",
+            "name": "from",
+            "required": true,
+            "schema": {
+              "format": "date",
+              "type": "string"
+            }
+          },
+          {
+            "explode": false,
+            "in": "query",
+            "name": "to",
+            "required": true,
+            "schema": {
+              "format": "date",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StockCard"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "tags": [
+          "core",
+          "core"
+        ]
+      }
+    },
+    "/stock/on-hand": {
+      "get": {
+        "operationId": "list-stock-on-hand",
+        "parameters": [
+          {
+            "explode": false,
+            "in": "query",
+            "name": "warehouse_id",
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          },
+          {
+            "explode": false,
+            "in": "query",
+            "name": "item_id",
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Item code or name, lot or serial code",
+            "explode": false,
+            "in": "query",
+            "name": "q",
+            "schema": {
+              "description": "Item code or name, lot or serial code",
+              "maxLength": 100,
+              "type": "string"
+            }
+          },
+          {
+            "description": "Only lots expiring before this date",
+            "explode": false,
+            "in": "query",
+            "name": "expiring_before",
+            "schema": {
+              "description": "Only lots expiring before this date",
+              "format": "date",
+              "type": "string"
+            }
+          },
+          {
+            "explode": false,
+            "in": "query",
+            "name": "page",
+            "schema": {
+              "default": 1,
+              "format": "int64",
+              "maximum": 100000,
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "explode": false,
+            "in": "query",
+            "name": "page_size",
+            "schema": {
+              "default": 50,
+              "enum": [
+                20,
+                50,
+                100
+              ],
+              "format": "int64",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OnHandList"
+                }
+              }
+            },
+            "description": "OK"
           },
           "default": {
             "content": {

@@ -11,6 +11,10 @@ import (
 
 type warehousesOutput struct{ Body WarehouseList }
 
+type onHandOutput struct{ Body OnHandList }
+
+type cardOutput struct{ Body StockCard }
+
 type warehouseInput struct{ Body NewWarehouse }
 
 type updateWarehouseInput struct {
@@ -20,6 +24,16 @@ type updateWarehouseInput struct {
 
 func registerHandlers(api huma.API, s *Service) {
 	registerAdjustmentHandlers(api, s)
+	huma.Register(api, huma.Operation{OperationID: "list-stock-on-hand", Method: http.MethodGet, Path: "/stock/on-hand"},
+		func(ctx context.Context, in *OnHandFilter) (*onHandOutput, error) {
+			l, err := s.OnHand(ctx, *in)
+			return &onHandOutput{Body: l}, err
+		})
+	huma.Register(api, huma.Operation{OperationID: "get-stock-card", Method: http.MethodGet, Path: "/stock/card"},
+		func(ctx context.Context, in *StockCardFilter) (*cardOutput, error) {
+			c, err := s.StockCard(ctx, in.WarehouseID, in.ItemID, in.From, in.To)
+			return &cardOutput{Body: c}, err
+		})
 	huma.Register(api, huma.Operation{OperationID: "list-warehouses", Method: http.MethodGet, Path: "/stock/warehouses"},
 		func(ctx context.Context, in *WarehouseFilter) (*warehousesOutput, error) {
 			l, err := s.Warehouses(ctx, *in)

@@ -1873,6 +1873,38 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/stock/card": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["get-stock-card"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/stock/on-hand": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["list-stock-on-hand"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/stock/warehouses": {
         parameters: {
             query?: never;
@@ -3850,6 +3882,33 @@ export interface components {
             /** @description e.g. hrm.leave_request; null for a job */
             record_type: string | null;
         };
+        OnHandList: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example /api/schemas/OnHandList.json
+             */
+            readonly $schema?: string;
+            items: components["schemas"]["OnHandRow"][];
+            /** Format: int64 */
+            total: number;
+        };
+        OnHandRow: {
+            /** Format: date */
+            expiry?: string;
+            item_code: string;
+            /** Format: int64 */
+            item_id: number;
+            item_name: string;
+            lot_code?: string;
+            /** @description Decimal */
+            quantity: string;
+            serial_code?: string;
+            unit: string;
+            warehouse_code: string;
+            /** Format: int64 */
+            warehouse_id: number;
+        };
         Option: {
             label: string;
             value: string;
@@ -4639,6 +4698,33 @@ export interface components {
             id: number;
             name: string;
             reason: string | null;
+        };
+        StockCard: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example /api/schemas/StockCard.json
+             */
+            readonly $schema?: string;
+            /** @description Decimal */
+            closing: string;
+            /** @description Decimal: balance before the first day */
+            opening: string;
+            rows: components["schemas"]["StockCardRow"][];
+        };
+        StockCardRow: {
+            /** @description Decimal */
+            balance: string;
+            /** Format: date */
+            date: string;
+            /** Format: int64 */
+            doc_id: number;
+            doc_type: string;
+            lot_code?: string;
+            number: string;
+            /** @description Decimal, signed */
+            quantity: string;
+            serial_code?: string;
         };
         Termination: {
             /**
@@ -10128,6 +10214,78 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "get-stock-card": {
+        parameters: {
+            query: {
+                warehouse_id: number;
+                item_id: number;
+                from: string;
+                to: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StockCard"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "list-stock-on-hand": {
+        parameters: {
+            query?: {
+                warehouse_id?: number;
+                item_id?: number;
+                /** @description Item code or name, lot or serial code */
+                q?: string;
+                /** @description Only lots expiring before this date */
+                expiring_before?: string;
+                page?: number;
+                page_size?: 20 | 50 | 100;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OnHandList"];
+                };
             };
             /** @description Error */
             default: {

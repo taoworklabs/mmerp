@@ -44,3 +44,54 @@ type WarehouseList struct {
 	Items []Warehouse `json:"items" nullable:"false"`
 	Total int64       `json:"total"`
 }
+
+type OnHandFilter struct {
+	WarehouseID    int64  `query:"warehouse_id"`
+	ItemID         int64  `query:"item_id"`
+	Q              string `query:"q" maxLength:"100" doc:"Item code or name, lot or serial code"`
+	ExpiringBefore string `query:"expiring_before" format:"date" doc:"Only lots expiring before this date"`
+	platform.Paging
+}
+
+type OnHandRow struct {
+	WarehouseID   int64   `json:"warehouse_id"`
+	WarehouseCode string  `json:"warehouse_code"`
+	ItemID        int64   `json:"item_id"`
+	ItemCode      string  `json:"item_code"`
+	ItemName      string  `json:"item_name"`
+	Unit          string  `json:"unit"`
+	LotCode       *string `json:"lot_code,omitempty"`
+	Expiry        *string `json:"expiry,omitempty" format:"date"`
+	SerialCode    *string `json:"serial_code,omitempty"`
+	Quantity      string  `json:"quantity" doc:"Decimal"`
+}
+
+type OnHandList struct {
+	Items []OnHandRow `json:"items" nullable:"false"`
+	Total int64       `json:"total"`
+}
+
+type StockCardFilter struct {
+	WarehouseID int64  `query:"warehouse_id" required:"true"`
+	ItemID      int64  `query:"item_id" required:"true"`
+	From        string `query:"from" format:"date" required:"true"`
+	To          string `query:"to" format:"date" required:"true"`
+}
+
+// StockCardRow is one move; Quantity is signed and Balance the running total after it.
+type StockCardRow struct {
+	Date       string  `json:"date" format:"date"`
+	DocType    string  `json:"doc_type"`
+	DocID      int64   `json:"doc_id"`
+	Number     string  `json:"number"`
+	LotCode    *string `json:"lot_code,omitempty"`
+	SerialCode *string `json:"serial_code,omitempty"`
+	Quantity   string  `json:"quantity" doc:"Decimal, signed"`
+	Balance    string  `json:"balance" doc:"Decimal"`
+}
+
+type StockCard struct {
+	Opening string         `json:"opening" doc:"Decimal: balance before the first day"`
+	Rows    []StockCardRow `json:"rows" nullable:"false"`
+	Closing string         `json:"closing" doc:"Decimal"`
+}
