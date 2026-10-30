@@ -175,3 +175,34 @@ func TestTrackingAndNegative(t *testing.T) {
 		t.Fatalf("after update %+v", it)
 	}
 }
+
+func TestTrackingLockedOnceMoved(t *testing.T) {
+	f := newFixture(t)
+	admin := f.user(t, "mv", "admin")
+	tr := "lot"
+	in := fields("X", true)
+	in.Tracking = &tr
+	id := must(t)(f.items.CreateItem(admin, item.NewItem{Code: "MV", ItemFields: in}))
+	sys := f.core.System
+	if _, err := sys.Exec(f.core.Ctx, `WITH w AS (INSERT INTO stock.warehouses (code, name, legal_entity_id) VALUES ('W', 'W', $2) RETURNING id)
+		INSERT INTO stock.moves (doc_type, doc_id, line_no, warehouse_id, item_id, quantity, date) SELECT 'x', 1, 1, w.id, $1, 1, current_date FROM w`, id, f.unit); err != nil {
+		t.Fatal(err)
+	}
+	other := "none"
+	chg := fields("X", true)
+	chg.Tracking = &other
+	if err := f.items.UpdateItem(admin, id, chg); !errors.Is(err, item.ErrTrackingLocked) {
+		t.Fatalf("change: got %v, want ErrTrackingLocked", err)
+	}
+	same := fields("Renamed", true)
+	same.Tracking = &tr
+	if err := f.items.UpdateItem(admin, id, same); err != nil {
+		t.Fatalf("same tracking: %v", err)
+	}
+	if err := f.items.UpdateItem(admin, id, fields("Again", true)); err != nil {
+		t.Fatalf("absent tracking: %v", err)
+	}
+	if err := f.items.UpdateItem(admin, id+999, fields("Z", true)); !errors.Is(err, platform.ErrNotFound) {
+		t.Fatalf("missing: %v", err)
+	}
+}

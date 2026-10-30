@@ -14,6 +14,9 @@ const (
 
 var ErrCodeTaken = &platform.Error{Status: http.StatusConflict, Code: "item_code_taken"}
 
+// ErrTrackingLocked: an item with stock moves keeps its tracking.
+var ErrTrackingLocked = &platform.Error{Status: http.StatusConflict, Code: "item_tracking_locked"}
+
 // ErrNegativeNotQuantity: only quantity-tracked items may go below zero.
 var ErrNegativeNotQuantity = &platform.Error{Status: http.StatusUnprocessableEntity, Code: "item_negative_not_quantity"}
 

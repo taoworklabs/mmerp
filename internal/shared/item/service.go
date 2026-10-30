@@ -81,7 +81,15 @@ func (s *Service) UpdateItem(ctx context.Context, id int64, in ItemFields) error
 			Tracking:      pgtype.Text{String: deref(in.Tracking), Valid: in.Tracking != nil},
 			AllowNegative: pgtype.Bool{Bool: deref(in.AllowNegative), Valid: in.AllowNegative != nil}})
 		if errors.Is(err, pgx.ErrNoRows) {
-			return platform.ErrNotFound
+			// The statement refused: either no such item or a tracking change after moves.
+			found, err := store.ItemExists.Run(ctx, id)
+			if err != nil {
+				return err
+			}
+			if !found {
+				return platform.ErrNotFound
+			}
+			return ErrTrackingLocked
 		}
 		if err != nil {
 			return err

@@ -53,6 +53,17 @@ func (q *Queries) ItemCodeTaken(ctx context.Context, lower string) (bool, error)
 	return exists, err
 }
 
+const itemExists = `-- name: ItemExists :one
+SELECT EXISTS (SELECT 1 FROM item.items WHERE id = $1)
+`
+
+func (q *Queries) ItemExists(ctx context.Context, id int64) (bool, error) {
+	row := q.db.QueryRow(ctx, itemExists, id)
+	var exists bool
+	err := row.Scan(&exists)
+	return exists, err
+}
+
 const itemListBase = `-- name: ItemListBase :many
 SELECT id, code, name, unit, price, vat_rate, active, tracking, allow_negative FROM item.items
 `
@@ -89,9 +100,10 @@ func (q *Queries) ItemListBase(ctx context.Context) ([]ItemItem, error) {
 }
 
 const updateItem = `-- name: UpdateItem :one
-UPDATE item.items SET name = $2, unit = $3, price = $4, vat_rate = $5, active = $6,
+UPDATE item.items AS i SET name = $2, unit = $3, price = $4, vat_rate = $5, active = $6,
     tracking = coalesce($7, tracking), allow_negative = coalesce($8, allow_negative)
-WHERE id = $1 RETURNING code
+WHERE i.id = $1 AND ($7::text IS NULL OR $7 = i.tracking
+    OR NOT EXISTS (SELECT 1 FROM stock.moves m WHERE m.item_id = i.id)) RETURNING code
 `
 
 type UpdateItemParams struct {
