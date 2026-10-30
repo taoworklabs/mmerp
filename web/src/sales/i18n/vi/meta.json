@@ -55,5 +55,8 @@
   "sales.nav.adjustments": "Phiếu điều chỉnh kho",
   "stock.adjustment.name": "Phiếu điều chỉnh kho",
   "sales.preview.warehouse": "Kho",
-  "sales.preview.reason": "Lý do"
+  "sales.preview.reason": "Lý do",
+  "sales.nav.deliveries": "Phiếu giao hàng",
+  "sales.delivery.name": "Phiếu giao hàng",
+  "sales.preview.order": "Đơn bán hàng"
 }

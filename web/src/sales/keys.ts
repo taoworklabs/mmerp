@@ -4,6 +4,7 @@ import type { Doc } from '@/shared/api/sales'
 export const quoteDocType = 'sales.quote'
 export const orderDocType = 'sales.order'
 export const customerDocType = 'sales.customer'
+export const deliveryDocType = 'sales.delivery'
 // Stock is a shared module; its documents open in this area.
 export const adjustmentDocType = 'stock.adjustment'
 // Shared master data, opened in this area.
@@ -21,6 +22,7 @@ export type WarehouseQuery = { q: string; active: string; sort: string; page: nu
 export type OnHandQuery = { warehouse: string; item: string; q: string; expiring: string; page: number; pageSize: number }
 export type StockCardQuery = { warehouse_id: string; item_id: string; from: string; to: string }
 export type DocQuery = { q: string; status: string; sort: string; page: number; pageSize: number }
+export type DeliveryQuery = DocQuery & { order: string }
 
 export const salesKeys = {
   customers: {
@@ -59,6 +61,13 @@ export const salesKeys = {
     },
     // The core item list, unlike items.picker which searches document line items.
     items: (q: string) => ['sales', 'stock', 'items', q] as const,
+  },
+  deliveries: {
+    all: () => ['sales', 'deliveries'] as const,
+    list: (q: DeliveryQuery) => ['sales', 'deliveries', 'list', q] as const,
+    detail: (id: number) => ['sales', 'deliveries', 'detail', id] as const,
+    // Under all, so a saved delivery refreshes what is left to deliver.
+    options: (order: number, warehouse: number) => ['sales', 'deliveries', 'options', order, warehouse] as const,
   },
   docs: {
     all: (k: Kind) => ['sales', k] as const,
