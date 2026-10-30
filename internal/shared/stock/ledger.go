@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/shopspring/decimal"
 
 	"github.com/taoworklabs/mmerp/internal/core/record"
@@ -74,27 +75,45 @@ func (s *Service) Record(ctx context.Context, ref record.Ref, moves []Move) erro
 		keyOf[i] = k
 	}
 
-	ins := store.InsertMovesParams{DocType: ref.Type, DocID: ref.ID, Date: h.Date}
-	deltas := map[key]decimal.Decimal{}
-	firstLine := map[key]Move{}
-	var serials []int64
+	lines := make([]line, len(moves))
 	for i, m := range moves {
-		k := keyOf[i]
+		lines[i] = line{k: keyOf[i], lineNo: m.LineNo, qty: m.Quantity}
+	}
+	return apply(ctx, ref, h.Date, items, lines)
+}
+
+// line is one resolved move to write; reverses is the id of the move it undoes, or 0.
+type line struct {
+	k        key
+	lineNo   int
+	qty      decimal.Decimal
+	reverses int64
+}
+
+// apply locks and updates the balances of lines, refuses what would go short, and inserts
+// the moves. Record and Void share it so both queue and check the same way.
+func apply(ctx context.Context, ref record.Ref, date pgtype.Date, items map[int64]store.MoveItemsRow, lines []line) error {
+	ins := store.InsertMovesParams{DocType: ref.Type, DocID: ref.ID, Date: date}
+	deltas := map[key]decimal.Decimal{}
+	firstLine := map[key]int{}
+	var serials []int64
+	for _, l := range lines {
+		k := l.k
 		if k.s != 0 {
 			serials = append(serials, k.s)
 		}
 		if _, seen := firstLine[k]; !seen {
-			firstLine[k] = m
+			firstLine[k] = l.lineNo
 		}
-		deltas[k] = deltas[k].Add(m.Quantity)
-		ins.LineNos = append(ins.LineNos, int32(m.LineNo))
+		deltas[k] = deltas[k].Add(l.qty)
+		ins.LineNos = append(ins.LineNos, int32(l.lineNo))
 		ins.WarehouseIds = append(ins.WarehouseIds, k.w)
 		ins.ItemIds = append(ins.ItemIds, k.i)
 		ins.LotIds = append(ins.LotIds, k.l)
 		ins.SerialIds = append(ins.SerialIds, k.s)
-		ins.Quantities = append(ins.Quantities, m.Quantity.String())
+		ins.Quantities = append(ins.Quantities, l.qty.String())
+		ins.ReversesIds = append(ins.ReversesIds, l.reverses)
 	}
-
 	// Lock order: serials, then balances by key, so documents touching the same rows queue.
 	slices.Sort(serials)
 	serials = slices.Compact(serials)
@@ -131,7 +150,7 @@ func (s *Service) Record(ctx context.Context, ref record.Ref, moves []Move) erro
 			continue
 		}
 		return &platform.Error{Status: ErrInsufficient.Status, Code: ErrInsufficient.Code, Params: map[string]any{
-			"line_no": firstLine[k].LineNo, "warehouse_id": k.w, "item_id": k.i,
+			"line_no": firstLine[k], "warehouse_id": k.w, "item_id": k.i,
 			"lot_id": nullID(k.l), "serial_id": nullID(k.s), "missing": q.Neg().String()}}
 	}
 	if len(serials) > 0 {
@@ -141,11 +160,47 @@ func (s *Service) Record(ctx context.Context, ref record.Ref, moves []Move) erro
 		}
 		for _, k := range keys {
 			if k.s != 0 && slices.Contains(over, k.s) {
-				return lineErr(ErrSerialQuantity, firstLine[k])
+				return &platform.Error{Status: ErrSerialQuantity.Status, Code: ErrSerialQuantity.Code, Params: map[string]any{"line_no": firstLine[k]}}
 			}
 		}
 	}
 	return store.InsertMoves.Run(ctx, ins)
+}
+
+// Void cancels the moves of a document by inserting a reversal for each one not yet
+// reversed, in the caller's transaction. It goes through the same balance checks as Record,
+// so goods already issued elsewhere refuse it. A document without moves is a no-op.
+func (s *Service) Void(ctx context.Context, ref record.Ref) error {
+	h, err := store.DocumentHeader.Run(ctx, store.DocumentHeaderParams{DocType: ref.Type, ID: ref.ID})
+	if errors.Is(err, pgx.ErrNoRows) {
+		return platform.ErrNotFound
+	}
+	if err != nil {
+		return err
+	}
+	rows, err := store.OpenMoves.Run(ctx, store.OpenMovesParams{DocType: ref.Type, DocID: ref.ID})
+	if err != nil || len(rows) == 0 {
+		return err
+	}
+	var ids []int64
+	lines := make([]line, len(rows))
+	for i, r := range rows {
+		q, err := decimal.NewFromString(r.Quantity)
+		if err != nil {
+			return err
+		}
+		ids = append(ids, r.ItemID)
+		lines[i] = line{k: key{r.WarehouseID, r.ItemID, r.LotID, r.SerialID}, lineNo: int(r.LineNo), qty: q.Neg(), reverses: r.ID}
+	}
+	irows, err := store.MoveItems.Run(ctx, ids)
+	if err != nil {
+		return err
+	}
+	items := map[int64]store.MoveItemsRow{}
+	for _, i := range irows {
+		items[i.ID] = i
+	}
+	return apply(ctx, ref, h.Date, items, lines)
 }
 
 // nullID is nil for no lot or serial, so the API sends null.

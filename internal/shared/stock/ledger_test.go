@@ -358,3 +358,98 @@ func TestOppositeOrderNoDeadlock(t *testing.T) {
 		t.Fatalf("on hand %s %s", a, b)
 	}
 }
+
+func (l *ledger) void(ref record.Ref) error {
+	return platform.InTx(l.core.Ctx, func(ctx context.Context) error { return l.stock.Void(ctx, ref) })
+}
+
+func (l *ledger) moveRows(t *testing.T) int {
+	t.Helper()
+	var n int
+	if err := l.core.Pool.QueryRow(l.core.Ctx, `SELECT count(*) FROM stock.moves`).Scan(&n); err != nil {
+		t.Fatal(err)
+	}
+	return n
+}
+
+func TestVoidRestores(t *testing.T) {
+	l := newLedger(t)
+	it := l.item(t, item.TrackLot, false)
+	if err := l.move(t, stock.Move{LineNo: 1, WarehouseID: l.wh, ItemID: it, Lot: lot("L1", nil), Quantity: qty(10)}); err != nil {
+		t.Fatal(err)
+	}
+	out := l.doc(t, l.unit)
+	if err := l.recordFor(out, stock.Move{LineNo: 1, WarehouseID: l.wh, ItemID: it, Lot: lot("L1", nil), Quantity: qty(-4)}); err != nil {
+		t.Fatal(err)
+	}
+	if err := l.void(out); err != nil {
+		t.Fatal(err)
+	}
+	if got := l.onHand(t, l.wh, it); got != "10" {
+		t.Fatalf("on hand %s", got)
+	}
+	var rev int
+	if err := l.core.Pool.QueryRow(l.core.Ctx, `SELECT count(*) FROM stock.moves r JOIN stock.moves o ON o.id = r.reverses
+		WHERE r.doc_id = $1 AND r.quantity = 4 AND o.quantity = -4 AND r.date = '2026-11-01' AND r.line_no = o.line_no`, out.ID).Scan(&rev); err != nil || rev != 1 || l.moveRows(t) != 3 {
+		t.Fatalf("reversals %d moves %d %v", rev, l.moveRows(t), err)
+	}
+	// Once reversed, the document may record again.
+	if err := l.recordFor(out, stock.Move{LineNo: 1, WarehouseID: l.wh, ItemID: it, Lot: lot("L1", nil), Quantity: qty(-1)}); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestVoidRefusedWhenGoodsGone(t *testing.T) {
+	l := newLedger(t)
+	it := l.item(t, item.TrackLot, false)
+	a := l.doc(t, l.unit)
+	if err := l.recordFor(a, stock.Move{LineNo: 1, WarehouseID: l.wh, ItemID: it, Lot: lot("L1", nil), Quantity: qty(5)}); err != nil {
+		t.Fatal(err)
+	}
+	if err := l.move(t, stock.Move{LineNo: 1, WarehouseID: l.wh, ItemID: it, Lot: lot("L1", nil), Quantity: qty(-5)}); err != nil {
+		t.Fatal(err)
+	}
+	e := wantCode(t, l.void(a), stock.ErrInsufficient)
+	if e.Params["missing"] != "5" {
+		t.Fatalf("params %v", e.Params)
+	}
+	if l.moveRows(t) != 2 {
+		t.Fatal("refused void wrote moves")
+	}
+}
+
+func TestVoidNegativeAllowed(t *testing.T) {
+	l := newLedger(t)
+	it := l.item(t, item.TrackQuantity, true)
+	a := l.doc(t, l.unit)
+	if err := l.recordFor(a, stock.Move{LineNo: 1, WarehouseID: l.wh, ItemID: it, Quantity: qty(5)}); err != nil {
+		t.Fatal(err)
+	}
+	if err := l.move(t, stock.Move{LineNo: 1, WarehouseID: l.wh, ItemID: it, Quantity: qty(-5)}); err != nil {
+		t.Fatal(err)
+	}
+	if err := l.void(a); err != nil {
+		t.Fatal(err)
+	}
+	if got := l.onHand(t, l.wh, it); got != "-5" {
+		t.Fatalf("on hand %s", got)
+	}
+}
+
+func TestVoidTwiceNoop(t *testing.T) {
+	l := newLedger(t)
+	it := l.item(t, item.TrackQuantity, false)
+	a := l.doc(t, l.unit)
+	if err := l.recordFor(a, stock.Move{LineNo: 1, WarehouseID: l.wh, ItemID: it, Quantity: qty(5)}); err != nil {
+		t.Fatal(err)
+	}
+	if err := l.void(a); err != nil {
+		t.Fatal(err)
+	}
+	if err := l.void(a); err != nil || l.moveRows(t) != 2 {
+		t.Fatalf("second void: %v, moves %d", err, l.moveRows(t))
+	}
+	if err := l.void(l.doc(t, l.unit)); err != nil {
+		t.Fatalf("void without moves: %v", err)
+	}
+}

@@ -151,10 +151,10 @@ func (q *Queries) InsertLot(ctx context.Context, arg InsertLotParams) error {
 }
 
 const insertMoves = `-- name: InsertMoves :exec
-INSERT INTO stock.moves (doc_type, doc_id, line_no, warehouse_id, item_id, lot_id, serial_id, quantity, date)
-SELECT $1::text, $2::bigint, k.n, k.w, k.i, nullif(k.l, 0), nullif(k.s, 0), k.q::numeric, $3::date
+INSERT INTO stock.moves (doc_type, doc_id, line_no, warehouse_id, item_id, lot_id, serial_id, quantity, date, reverses)
+SELECT $1::text, $2::bigint, k.n, k.w, k.i, nullif(k.l, 0), nullif(k.s, 0), k.q::numeric, $3::date, nullif(k.r, 0)
 FROM (SELECT unnest($4::int[]) AS n, unnest($5::bigint[]) AS w, unnest($6::bigint[]) AS i,
-             unnest($7::bigint[]) AS l, unnest($8::bigint[]) AS s, unnest($9::text[]) AS q) AS k
+             unnest($7::bigint[]) AS l, unnest($8::bigint[]) AS s, unnest($9::text[]) AS q, unnest($10::bigint[]) AS r) AS k
 `
 
 type InsertMovesParams struct {
@@ -167,6 +167,7 @@ type InsertMovesParams struct {
 	LotIds       []int64
 	SerialIds    []int64
 	Quantities   []string
+	ReversesIds  []int64
 }
 
 func (q *Queries) InsertMoves(ctx context.Context, arg InsertMovesParams) error {
@@ -180,6 +181,7 @@ func (q *Queries) InsertMoves(ctx context.Context, arg InsertMovesParams) error 
 		arg.LotIds,
 		arg.SerialIds,
 		arg.Quantities,
+		arg.ReversesIds,
 	)
 	return err
 }
@@ -351,6 +353,58 @@ func (q *Queries) MoveWarehouses(ctx context.Context, ids []int64) ([]MoveWareho
 	for rows.Next() {
 		var i MoveWarehousesRow
 		if err := rows.Scan(&i.ID, &i.LegalEntityID, &i.Active); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const openMoves = `-- name: OpenMoves :many
+SELECT m.id, m.line_no, m.warehouse_id, m.item_id, coalesce(m.lot_id, 0)::bigint AS lot_id, coalesce(m.serial_id, 0)::bigint AS serial_id, m.quantity::text AS quantity
+FROM stock.moves m
+WHERE m.doc_type = $1 AND m.doc_id = $2 AND m.reverses IS NULL
+  AND NOT EXISTS (SELECT 1 FROM stock.moves r WHERE r.reverses = m.id)
+ORDER BY m.id
+`
+
+type OpenMovesParams struct {
+	DocType string
+	DocID   int64
+}
+
+type OpenMovesRow struct {
+	ID          int64
+	LineNo      int32
+	WarehouseID int64
+	ItemID      int64
+	LotID       int64
+	SerialID    int64
+	Quantity    string
+}
+
+// Original moves of a document with no reversal yet.
+func (q *Queries) OpenMoves(ctx context.Context, arg OpenMovesParams) ([]OpenMovesRow, error) {
+	rows, err := q.db.Query(ctx, openMoves, arg.DocType, arg.DocID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []OpenMovesRow
+	for rows.Next() {
+		var i OpenMovesRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.LineNo,
+			&i.WarehouseID,
+			&i.ItemID,
+			&i.LotID,
+			&i.SerialID,
+			&i.Quantity,
+		); err != nil {
 			return nil, err
 		}
 		items = append(items, i)

@@ -11,6 +11,7 @@ func newQ(c platform.Conn) *Queries { return New(c) }
 
 var DocumentHeader = data.OneArg("stock.DocumentHeader", newQ, (*Queries).DocumentHeader)
 var HasLiveMoves = data.OneArg("stock.HasLiveMoves", newQ, (*Queries).HasLiveMoves)
+var OpenMoves = data.ManyArg("stock.OpenMoves", newQ, (*Queries).OpenMoves)
 var MoveWarehouses = data.ManyArg("stock.MoveWarehouses", newQ, (*Queries).MoveWarehouses)
 var MoveItems = data.ManyArg("stock.MoveItems", newQ, (*Queries).MoveItems)
 var InsertLot = data.ExecArg("stock.InsertLot", newQ, (*Queries).InsertLot)

@@ -9,6 +9,14 @@ SELECT EXISTS (
       AND NOT EXISTS (SELECT 1 FROM stock.moves r WHERE r.reverses = m.id)
 );
 
+-- name: OpenMoves :many
+-- Original moves of a document with no reversal yet.
+SELECT m.id, m.line_no, m.warehouse_id, m.item_id, coalesce(m.lot_id, 0)::bigint AS lot_id, coalesce(m.serial_id, 0)::bigint AS serial_id, m.quantity::text AS quantity
+FROM stock.moves m
+WHERE m.doc_type = $1 AND m.doc_id = $2 AND m.reverses IS NULL
+  AND NOT EXISTS (SELECT 1 FROM stock.moves r WHERE r.reverses = m.id)
+ORDER BY m.id;
+
 -- name: MoveWarehouses :many
 SELECT id, legal_entity_id, active FROM stock.warehouses WHERE id = ANY(@ids::bigint[]);
 
@@ -57,10 +65,10 @@ RETURNING b.warehouse_id, b.item_id, coalesce(b.lot_id, 0)::bigint AS lot_id, co
 SELECT serial_id::bigint FROM stock.balances WHERE serial_id = ANY(@ids::bigint[]) GROUP BY serial_id HAVING sum(quantity) > 1;
 
 -- name: InsertMoves :exec
-INSERT INTO stock.moves (doc_type, doc_id, line_no, warehouse_id, item_id, lot_id, serial_id, quantity, date)
-SELECT @doc_type::text, @doc_id::bigint, k.n, k.w, k.i, nullif(k.l, 0), nullif(k.s, 0), k.q::numeric, @date::date
+INSERT INTO stock.moves (doc_type, doc_id, line_no, warehouse_id, item_id, lot_id, serial_id, quantity, date, reverses)
+SELECT @doc_type::text, @doc_id::bigint, k.n, k.w, k.i, nullif(k.l, 0), nullif(k.s, 0), k.q::numeric, @date::date, nullif(k.r, 0)
 FROM (SELECT unnest(@line_nos::int[]) AS n, unnest(@warehouse_ids::bigint[]) AS w, unnest(@item_ids::bigint[]) AS i,
-             unnest(@lot_ids::bigint[]) AS l, unnest(@serial_ids::bigint[]) AS s, unnest(@quantities::text[]) AS q) AS k;
+             unnest(@lot_ids::bigint[]) AS l, unnest(@serial_ids::bigint[]) AS s, unnest(@quantities::text[]) AS q, unnest(@reverses_ids::bigint[]) AS r) AS k;
 
 -- name: LotsOnHand :many
 -- First expiring first; undated lots last, then oldest received.
