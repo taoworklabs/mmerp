@@ -2,12 +2,14 @@ import { expect, test, type APIRequestContext, type APIResponse } from '@playwri
 import { created, signedInApi, toFlow } from './api'
 
 // Sales on top of the Demo demo company (demo.seed.ts runs first): sales roles for the two
-// sales departments, the item catalogue, customers, quotations in every status and orders,
-// from quotations and entered directly. Its own accounts (password Demo@2026) do the work.
+// sales departments, the item catalogue with its stock tracking, opening stock in each legal
+// entity's warehouse, customers, quotations in every status and orders, from quotations and
+// entered directly, one of them partly delivered. Its own accounts (password Demo@2026) do the work.
 // Skipped once quotations exist; catalogue entries and customers already there are reused.
 
 const password = 'Demo@2026'
 type Kind = 'quotes' | 'orders'
+type Tracking = 'none' | 'quantity' | 'lot' | 'serial'
 type Outcome = 'draft' | 'pending' | 'approved' | 'rejected' | 'cancelled'
 
 async function ok(res: Promise<APIResponse>, what: string) {
@@ -36,6 +38,24 @@ const items: [string, string, string, number, string, boolean][] = [
   ['PM-KT', 'Bản quyền phần mềm kế toán (năm)', 'năm', 6_000_000, 'none', true],
   ['FAX-01', 'Máy fax', 'cái', 2_800_000, '10', false],
 ]
+// Goods are tracked by quantity unless listed; services and licences are not tracked.
+const tracked: Record<string, Tracking> = { 'GAO-5KG': 'lot', 'LAP-14': 'serial' }
+const tracking = (code: string): Tracking => tracked[code] ?? (/^(DV|PM)-/.test(code) ? 'none' : 'quantity')
+
+// Opening stock of every warehouse: [item code, quantity, lot]; LAP-14 comes in by serial.
+const opening: [string, string, { code: string; expiry: string }?][] = [
+  ['VPP-A4', '500'],
+  ['BUT-TL', '120'],
+  ['MH-27', '30'],
+  ['MIN-LZ', '12'],
+  ['MUC-LZ', '40'],
+  ['GHE-VP', '60'],
+  ['BAN-LV', '25'],
+  ['NUOC-20L', '200'],
+  ['GAO-5KG', '40', { code: 'G2611', expiry: '2026-11-30' }],
+  ['GAO-5KG', '80', { code: 'G2703', expiry: '2027-03-31' }],
+]
+const serials = 10
 
 type Team = 'hn' | 'hcm'
 // [code, name, team, tax code, address, phone, contact, payment terms, active]
@@ -237,7 +257,8 @@ const quotes: Quote[] = [
   },
 ]
 
-type Order = { by: string; customer: string; date: string; delivery?: string; lines: Line[]; outcome: Outcome }
+// deliver: item codes and quantities sent on the expected delivery date.
+type Order = { by: string; customer: string; date: string; delivery?: string; lines: Line[]; outcome: Outcome; deliver?: [string, string][] }
 const orders: Order[] = [
   {
     by: 'kd.hn',
@@ -249,6 +270,7 @@ const orders: Order[] = [
       ['BUT-TL', '10', '0'],
     ],
     outcome: 'approved',
+    deliver: [['VPP-A4', '30']],
   },
   { by: 'kd.hcm', customer: 'KH006', date: '2026-10-01', delivery: '2026-10-03', lines: [['NUOC-20L', '60', '0']], outcome: 'approved' },
   { by: 'kd.hcm', customer: 'KH008', date: '2026-10-05', lines: [['DV-BT', '6', '0']], outcome: 'cancelled' },
@@ -264,7 +286,7 @@ test('seed Sales on the Demo demo company', async ({ baseURL }) => {
 
   // Roles: two staff in Hà Nội, one in TP.HCM, a manager per department, a sales director who
   // reads everything and approves large quotations.
-  const units = await get<{ id: number; name: string }[]>(admin, '/api/org-units')
+  const units = await get<{ id: number; name: string; kind: string }[]>(admin, '/api/org-units')
   const unit = (name: string) => units.find((u) => u.name === name)!.id
   const team: Record<Team, number> = { hn: unit('Kinh doanh (HN)'), hcm: unit('Kinh doanh (HCM)') }
   for (const [login, name] of [
@@ -312,12 +334,32 @@ test('seed Sales on the Demo demo company', async ({ baseURL }) => {
   const itemOf: Record<string, (typeof items)[number]> = {}
   for (const it of items) {
     const [code, name, unitName, price, vat_rate, active] = it
-    const r = await admin.post('/api/items', { data: { code, name, unit: unitName, price, vat_rate, active } })
-    itemId[code] =
-      r.status() === 409
-        ? (await get<{ items: { id: number; code: string }[] }>(admin, `/api/items?q=${code}&page_size=20`)).items.find((x) => x.code === code)!.id
-        : await created(Promise.resolve(r))
+    const fields = { name, unit: unitName, price, vat_rate, active, tracking: tracking(code) }
+    const r = await admin.post('/api/items', { data: { code, ...fields } })
+    if (r.status() === 409) {
+      itemId[code] = (await get<{ items: { id: number; code: string }[] }>(admin, `/api/items?q=${code}&page_size=20`)).items.find((x) => x.code === code)!.id
+      await ok(admin.put(`/api/items/${itemId[code]}`, { data: fields }), `item ${code}`)
+    } else itemId[code] = await created(Promise.resolve(r))
     itemOf[code] = it
+  }
+
+  // Opening stock in each legal entity's warehouse: its default one, or a main warehouse made
+  // for it when it has none (nothing makes a default for legal entities added later).
+  const postDoc = async (as: APIRequestContext, type: string, path: string, id: number) =>
+    ok(as.post(`/api/documents/${type}/${id}/transitions`, { data: { to: 'posted', version: (await get<{ version: number }>(as, `${path}/${id}`)).version } }), `post ${type} ${id}`)
+  const warehouses = (await get<{ items: { id: number; legal_entity_id: number; is_default: boolean }[] }>(admin, '/api/stock/warehouses?page_size=100')).items
+  for (const company of units.filter((u) => u.kind === 'company')) {
+    const own = warehouses.filter((w) => w.legal_entity_id === company.id).sort((a, b) => Number(b.is_default) - Number(a.is_default))
+    const wh =
+      own[0]?.id ?? (await created(admin.post('/api/stock/warehouses', { data: { name: `Kho chính ${company.name}`, legal_entity_id: company.id, active: true } })))
+    const stock = [
+      ...opening.map(([code, quantity, lot]) => ({ item_id: itemId[code], quantity, lot })),
+      ...Array.from({ length: serials }, (_, n) => ({ item_id: itemId['LAP-14'], quantity: '1', serial: `SN${wh}-${String(n + 1).padStart(3, '0')}` })),
+    ]
+    const id = await created(
+      admin.post('/api/stock/adjustments', { data: { request_id: crypto.randomUUID(), date: '2026-09-01', warehouse_id: wh, reason: 'Tồn đầu kỳ', lines: stock } }),
+    )
+    await postDoc(admin, 'stock.adjustment', '/api/stock/adjustments', id)
   }
   const customerId: Record<string, number> = {}
   const customerTerms: Record<string, string> = {}
@@ -428,5 +470,21 @@ test('seed Sales on the Demo demo company', async ({ baseURL }) => {
       }),
     )
     await play(as, 'orders', id, o.outcome)
+    if (o.deliver) {
+      const options = await get<{ warehouse_id: number; lines: { order_position: number; item_code: string }[] }>(as, `/api/sales/orders/${id}/delivery-options`)
+      const delivery = await created(
+        as.post('/api/sales/deliveries', {
+          data: {
+            request_id: crypto.randomUUID(),
+            order_id: id,
+            date: o.delivery ?? o.date,
+            warehouse_id: options.warehouse_id,
+            note: null,
+            lines: o.deliver.map(([code, quantity]) => ({ order_position: options.lines.find((l) => l.item_code === code)!.order_position, quantity })),
+          },
+        }),
+      )
+      await postDoc(as, 'sales.delivery', '/api/sales/deliveries', delivery)
+    }
   }
 })
