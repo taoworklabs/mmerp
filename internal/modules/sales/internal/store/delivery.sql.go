@@ -380,6 +380,7 @@ SELECT n::int AS pos, l.expiry
 FROM generate_series(1, cardinality($1::text[])) AS n
 JOIN stock.lots l ON l.item_id = ($2::bigint[])[n] AND lower(l.code) = lower(($1::text[])[n])
 WHERE l.expiry IS NOT NULL
+ORDER BY n
 `
 
 type LotExpiriesParams struct {

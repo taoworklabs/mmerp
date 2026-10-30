@@ -79,4 +79,5 @@ WHERE legal_entity_id = $1 AND active ORDER BY is_default DESC, lower(code), id;
 SELECT n::int AS pos, l.expiry
 FROM generate_series(1, cardinality(@codes::text[])) AS n
 JOIN stock.lots l ON l.item_id = (@item_ids::bigint[])[n] AND lower(l.code) = lower((@codes::text[])[n])
-WHERE l.expiry IS NOT NULL;
+WHERE l.expiry IS NOT NULL
+ORDER BY n;
