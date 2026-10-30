@@ -3,7 +3,9 @@ package stock_test
 import (
 	"context"
 	"errors"
+	"sync"
 	"testing"
+	"time"
 
 	"github.com/shopspring/decimal"
 
@@ -272,5 +274,87 @@ func TestSuggestLotsFEFO(t *testing.T) {
 	picks, err = l.stock.SuggestLots(l.core.Ctx, l.wh, it, qty(20), "2026-11-01")
 	if err != nil || len(picks) != 3 || picks[2].Quantity.String() != "5" {
 		t.Fatalf("short %+v %v", picks, err)
+	}
+}
+
+// race runs fn for each document at once and returns the errors in order.
+func race(docs []record.Ref, fn func(i int, ref record.Ref) error) []error {
+	errs := make([]error, len(docs))
+	start := make(chan struct{})
+	var wg sync.WaitGroup
+	for i, ref := range docs {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			<-start
+			errs[i] = fn(i, ref)
+		}()
+	}
+	close(start)
+	wg.Wait()
+	return errs
+}
+
+func TestConcurrentIssueOfLastUnit(t *testing.T) {
+	l := newLedger(t)
+	it := l.item(t, item.TrackLot, false)
+	if err := l.move(t, stock.Move{LineNo: 1, WarehouseID: l.wh, ItemID: it, Lot: lot("L1", nil), Quantity: qty(1)}); err != nil {
+		t.Fatal(err)
+	}
+	docs := []record.Ref{l.doc(t, l.unit), l.doc(t, l.unit)}
+	errs := race(docs, func(_ int, ref record.Ref) error {
+		return l.recordFor(ref, stock.Move{LineNo: 1, WarehouseID: l.wh, ItemID: it, Lot: lot("L1", nil), Quantity: qty(-1)})
+	})
+	ok, short := 0, 0
+	for _, err := range errs {
+		switch {
+		case err == nil:
+			ok++
+		case errors.Is(err, stock.ErrInsufficient):
+			short++
+		default:
+			t.Fatal(err)
+		}
+	}
+	if ok != 1 || short != 1 {
+		t.Fatalf("ok %d short %d", ok, short)
+	}
+	if got := l.onHand(t, l.wh, it); got != "0" {
+		t.Fatalf("on hand %s", got)
+	}
+}
+
+func TestOppositeOrderNoDeadlock(t *testing.T) {
+	l := newLedger(t)
+	x, y := l.item(t, item.TrackQuantity, false), l.item(t, item.TrackQuantity, false)
+	if err := l.move(t,
+		stock.Move{LineNo: 1, WarehouseID: l.wh, ItemID: x, Quantity: qty(5)},
+		stock.Move{LineNo: 2, WarehouseID: l.wh, ItemID: y, Quantity: qty(5)}); err != nil {
+		t.Fatal(err)
+	}
+	docs := []record.Ref{l.doc(t, l.unit), l.doc(t, l.unit)}
+	done := make(chan []error, 1)
+	go func() {
+		done <- race(docs, func(i int, ref record.Ref) error {
+			a := stock.Move{LineNo: 1, WarehouseID: l.wh, ItemID: x, Quantity: qty(-1)}
+			b := stock.Move{LineNo: 2, WarehouseID: l.wh, ItemID: y, Quantity: qty(-1)}
+			if i == 1 {
+				return l.recordFor(ref, b, a)
+			}
+			return l.recordFor(ref, a, b)
+		})
+	}()
+	select {
+	case errs := <-done:
+		for _, err := range errs {
+			if err != nil {
+				t.Fatal(err)
+			}
+		}
+	case <-time.After(5 * time.Second):
+		t.Fatal("deadlock")
+	}
+	if a, b := l.onHand(t, l.wh, x), l.onHand(t, l.wh, y); a != "3" || b != "3" {
+		t.Fatalf("on hand %s %s", a, b)
 	}
 }
