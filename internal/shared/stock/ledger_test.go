@@ -559,3 +559,32 @@ func TestSerialsOnHand(t *testing.T) {
 		t.Fatalf("serials %v %v", got, err)
 	}
 }
+
+func TestOutBeforeInSameNewLot(t *testing.T) {
+	l := newLedger(t)
+	it := l.item(t, item.TrackLot, false)
+	if err := l.move(t,
+		stock.Move{LineNo: 1, WarehouseID: l.wh, ItemID: it, Lot: lot("L", nil), Quantity: qty(-2)},
+		stock.Move{LineNo: 2, WarehouseID: l.wh, ItemID: it, Lot: lot("L", nil), Quantity: qty(5)}); err != nil {
+		t.Fatal(err)
+	}
+	if got := l.onHand(t, l.wh, it); got != "3" {
+		t.Fatalf("on hand %s", got)
+	}
+	only := l.item(t, item.TrackLot, false)
+	_ = wantCode(t, l.move(t, stock.Move{LineNo: 1, WarehouseID: l.wh, ItemID: only, Lot: lot("L", nil), Quantity: qty(-2)}), stock.ErrLotNotFound)
+}
+
+func TestOutBeforeInSameNewSerial(t *testing.T) {
+	l := newLedger(t)
+	it := l.item(t, item.TrackSerial, false)
+	s := "S"
+	if err := l.move(t,
+		stock.Move{LineNo: 1, WarehouseID: l.wh, ItemID: it, Serial: &s, Quantity: qty(-1)},
+		stock.Move{LineNo: 2, WarehouseID: l.wh, ItemID: it, Serial: &s, Quantity: qty(1)}); err != nil {
+		t.Fatal(err)
+	}
+	if got := l.onHand(t, l.wh, it); got != "0" {
+		t.Fatalf("on hand %s", got)
+	}
+}

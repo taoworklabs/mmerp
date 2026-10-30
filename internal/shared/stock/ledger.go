@@ -64,7 +64,9 @@ func (s *Service) Record(ctx context.Context, ref record.Ref, moves []Move) erro
 		order[i] = i
 	}
 	slices.SortFunc(order, func(a, b int) int {
-		return cmp.Or(cmp.Compare(moves[a].ItemID, moves[b].ItemID), cmp.Compare(trackCode(moves[a]), trackCode(moves[b])))
+		// Incoming first for the same code, so an outgoing line sees what the document itself creates.
+		return cmp.Or(cmp.Compare(moves[a].ItemID, moves[b].ItemID), cmp.Compare(trackCode(moves[a]), trackCode(moves[b])),
+			-cmp.Compare(moves[a].Quantity.Sign(), moves[b].Quantity.Sign()), cmp.Compare(moves[a].LineNo, moves[b].LineNo), cmp.Compare(a, b))
 	})
 	keyOf := make([]key, len(moves))
 	for _, i := range order {
@@ -309,12 +311,7 @@ func (s *Service) resolve(ctx context.Context, tracking string, m Move) (lot, se
 			if err != nil {
 				return 0, 0, err
 			}
-			if m.Lot.Expiry != nil {
-				if have := platform.DatePtr(l.Expiry); have == nil || *have != *m.Lot.Expiry {
-					return 0, 0, lineErr(ErrLotExpiryMismatch, m)
-				}
-			}
-			return l.ID, 0, nil
+			return l.ID, 0, expiryMatches(m, l.Expiry)
 		}
 		if err := store.InsertLot.Run(ctx, store.InsertLotParams{ItemID: m.ItemID, Code: code, Expiry: platform.NullDate(m.Lot.Expiry)}); err != nil {
 			return 0, 0, err
@@ -323,12 +320,7 @@ func (s *Service) resolve(ctx context.Context, tracking string, m Move) (lot, se
 		if err != nil {
 			return 0, 0, err
 		}
-		if m.Lot.Expiry != nil {
-			if have := platform.DatePtr(l.Expiry); have == nil || *have != *m.Lot.Expiry {
-				return 0, 0, lineErr(ErrLotExpiryMismatch, m)
-			}
-		}
-		return l.ID, 0, nil
+		return l.ID, 0, expiryMatches(m, l.Expiry)
 	case item.TrackSerial:
 		code := strings.TrimSpace(*m.Serial)
 		if m.Quantity.IsNegative() {
@@ -373,4 +365,15 @@ func (s *Service) SuggestLots(ctx context.Context, warehouse, itemID int64, qty 
 // SerialsOnHand lists the codes of an item's serials on hand in a warehouse, sorted. It checks no permission.
 func (s *Service) SerialsOnHand(ctx context.Context, warehouse, itemID int64) ([]string, error) {
 	return store.SerialsOnHand.Run(ctx, store.SerialsOnHandParams{WarehouseID: warehouse, ItemID: itemID})
+}
+
+// expiryMatches refuses a move naming an expiry other than the lot's.
+func expiryMatches(m Move, have pgtype.Date) error {
+	if m.Lot.Expiry == nil {
+		return nil
+	}
+	if h := platform.DatePtr(have); h == nil || *h != *m.Lot.Expiry {
+		return lineErr(ErrLotExpiryMismatch, m)
+	}
+	return nil
 }
