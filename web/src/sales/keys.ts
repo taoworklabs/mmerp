@@ -17,6 +17,7 @@ export type CustomerQuery = { q: string; active: string; sort: string; page: num
 export type ItemQuery = { q: string; active: string; page: number; pageSize: number }
 export type WarehouseQuery = { q: string; active: string; sort: string; page: number; pageSize: number }
 export type OnHandQuery = { warehouse: string; item: string; q: string; expiring: string; page: number; pageSize: number }
+export type StockCardQuery = { warehouse_id: string; item_id: string; from: string; to: string }
 export type DocQuery = { q: string; status: string; sort: string; page: number; pageSize: number }
 
 export const salesKeys = {
@@ -45,6 +46,9 @@ export const salesKeys = {
       all: () => ['sales', 'stock', 'on-hand'] as const,
       list: (q: OnHandQuery) => ['sales', 'stock', 'on-hand', 'list', q] as const,
     },
+    card: (q: StockCardQuery) => ['sales', 'stock', 'card', q] as const,
+    // The core item list, unlike items.picker which searches document line items.
+    items: (q: string) => ['sales', 'stock', 'items', q] as const,
   },
   docs: {
     all: (k: Kind) => ['sales', k] as const,

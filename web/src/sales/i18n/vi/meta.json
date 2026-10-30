@@ -50,5 +50,6 @@
   "sales.action.create_order": "Tạo đơn bán hàng",
   "sales.nav.group_stock": "Quản lý kho",
   "sales.nav.warehouses": "Kho",
-  "sales.nav.on_hand": "Tồn kho"
+  "sales.nav.on_hand": "Tồn kho",
+  "sales.nav.stock_card": "Thẻ kho"
 }

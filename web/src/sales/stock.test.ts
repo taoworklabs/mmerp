@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { isExpired, monthToDate, stockCardPath } from './stock'
+import { docTypeLabelKey, isExpired, monthToDate, stockCardPath } from './stock'
 
 describe('stock helpers', () => {
   it('defaults the range to the current month up to today', () => {
@@ -12,5 +12,9 @@ describe('stock helpers', () => {
     expect(isExpired('2026-10-29', '2026-10-30')).toBe(true)
     expect(isExpired('2026-10-30', '2026-10-30')).toBe(false)
     expect(isExpired(undefined, '2026-10-30')).toBe(false)
+  })
+  it('names known document types and leaves others raw', () => {
+    expect(docTypeLabelKey('sales.delivery')).toBe('sales.stock_card.doc_delivery')
+    expect(docTypeLabelKey('x.other')).toBeNull()
   })
 })

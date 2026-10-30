@@ -1,4 +1,4 @@
-import { IconAddressBook, IconBuildingWarehouse, IconFileDollar, IconGitBranch, IconPackage, IconPackages, IconReceipt, IconShoppingCart } from '@tabler/icons-react'
+import { IconAddressBook, IconBuildingWarehouse, IconFileDollar, IconGitBranch, IconListDetails, IconPackage, IconPackages, IconReceipt, IconShoppingCart } from '@tabler/icons-react'
 import type { AreaManifest } from '@/shared/area'
 import { masterKeys } from '@/shared/master'
 import { customerDocType, orderDocType, partnerType, quoteDocType, salesKeys } from './keys'
@@ -13,6 +13,7 @@ export const sales: AreaManifest = {
     { label: 'sales.nav.quotes', path: 'quotes', icon: IconFileDollar, permission: 'sales.quote.view' },
     { label: 'sales.nav.orders', path: 'orders', icon: IconReceipt, permission: 'sales.order.view' },
     { label: 'sales.nav.on_hand', path: 'stock/on-hand', icon: IconPackages, permission: 'stock.view', group: 'sales.nav.group_stock' },
+    { label: 'sales.nav.stock_card', path: 'stock/card', icon: IconListDetails, permission: 'stock.view', group: 'sales.nav.group_stock' },
     { label: 'sales.nav.warehouses', path: 'stock/warehouses', icon: IconBuildingWarehouse, permission: 'stock.view', group: 'sales.nav.group_stock' },
     { label: 'sales.nav.items', path: 'items', icon: IconPackage, permission: 'item.view', group: 'sales.nav.group_config' },
     {

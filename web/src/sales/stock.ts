@@ -11,3 +11,11 @@ export function stockCardPath(warehouseId: number, itemId: number, today: string
 
 // A lot is expired once its expiry is before today; both are YYYY-MM-DD, so strings compare.
 export const isExpired = (expiry: string | undefined, today: string) => !!expiry && expiry < today
+
+const docLabels: Record<string, string> = {
+  'stock.adjustment': 'sales.stock_card.doc_adjustment',
+  'sales.delivery': 'sales.stock_card.doc_delivery',
+}
+
+// docTypeLabelKey is the i18n key naming a stock document type, or null for a type not known here.
+export const docTypeLabelKey = (docType: string): string | null => docLabels[docType] ?? null
