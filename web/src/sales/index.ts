@@ -1,7 +1,7 @@
-import { IconAddressBook, IconBuildingWarehouse, IconFileDollar, IconGitBranch, IconListDetails, IconPackage, IconPackages, IconReceipt, IconShoppingCart } from '@tabler/icons-react'
+import { IconAddressBook, IconAdjustmentsHorizontal, IconBuildingWarehouse, IconFileDollar, IconGitBranch, IconListDetails, IconPackage, IconPackages, IconReceipt, IconShoppingCart } from '@tabler/icons-react'
 import type { AreaManifest } from '@/shared/area'
 import { masterKeys } from '@/shared/master'
-import { customerDocType, orderDocType, partnerType, quoteDocType, salesKeys } from './keys'
+import { adjustmentDocType, customerDocType, orderDocType, partnerType, quoteDocType, salesKeys } from './keys'
 
 export const sales: AreaManifest = {
   product: 'sales',
@@ -14,6 +14,7 @@ export const sales: AreaManifest = {
     { label: 'sales.nav.orders', path: 'orders', icon: IconReceipt, permission: 'sales.order.view' },
     { label: 'sales.nav.on_hand', path: 'stock/on-hand', icon: IconPackages, permission: 'stock.view', group: 'sales.nav.group_stock' },
     { label: 'sales.nav.stock_card', path: 'stock/card', icon: IconListDetails, permission: 'stock.view', group: 'sales.nav.group_stock' },
+    { label: 'sales.nav.adjustments', path: 'stock/adjustments', icon: IconAdjustmentsHorizontal, permission: 'stock.view', group: 'sales.nav.group_stock' },
     { label: 'sales.nav.warehouses', path: 'stock/warehouses', icon: IconBuildingWarehouse, permission: 'stock.view', group: 'sales.nav.group_stock' },
     { label: 'sales.nav.items', path: 'items', icon: IconPackage, permission: 'item.view', group: 'sales.nav.group_config' },
     {
@@ -46,6 +47,12 @@ export const sales: AreaManifest = {
       path: (id) => `customers/${id}`,
       // Names show in pickers too, so every customer query; its identity is its partner's.
       invalidate: () => [salesKeys.customers.all(), masterKeys.partners.all()],
+    },
+    [adjustmentDocType]: {
+      path: (id) => `stock/adjustments/${id}`,
+      preview: () => import('./components/AdjustmentPreview'),
+      // Posting or cancelling one moves stock.
+      invalidate: () => [salesKeys.stock.adjustments.all(), salesKeys.stock.onHand.all(), salesKeys.stock.cards()],
     },
     // Partners open in Sales for now; their identity shows on every customer of theirs.
     [partnerType]: {

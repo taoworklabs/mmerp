@@ -51,5 +51,9 @@
   "sales.nav.group_stock": "Quản lý kho",
   "sales.nav.warehouses": "Kho",
   "sales.nav.on_hand": "Tồn kho",
-  "sales.nav.stock_card": "Thẻ kho"
+  "sales.nav.stock_card": "Thẻ kho",
+  "sales.nav.adjustments": "Phiếu điều chỉnh kho",
+  "stock.adjustment.name": "Phiếu điều chỉnh kho",
+  "sales.preview.warehouse": "Kho",
+  "sales.preview.reason": "Lý do"
 }

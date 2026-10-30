@@ -8,25 +8,15 @@ import { api, unwrap, type OnHandRow } from '@/shared/api/core'
 import { useMe } from '@/shared/auth/me'
 import { formatDate, formatDecimal, today as todayIn } from '@/shared/i18n'
 import { type Column } from '@/shared/ui/DataTable'
-import { DateField, FilterChip, SearchInput, type Option } from '@/shared/ui/form'
+import { DateField, FilterChip, SearchInput } from '@/shared/ui/form'
 import { useListView } from '@/shared/ui/ListView'
 import { ListPage } from '@/shared/ui/page'
 import { useListParams } from '@/shared/url/listParams'
+import { useWarehouseOptions } from '../hooks/useStock'
 import { salesKeys } from '../keys'
 import { isExpired, stockCardPath } from '../stock'
 
 const defaults = { filters: { q: '', warehouse: '', expiring: '' }, sort: '', sorts: [], pageSize: 50 }
-
-// useWarehouseOptions lists the active warehouses, "code · name", for a filter or a picker.
-export function useWarehouseOptions(): Option[] {
-  // ponytail: one page of 100 warehouses; a picker with search when tenants have more.
-  const query = { q: '', active: 'true', sort: 'code', page: 1, pageSize: 100 }
-  const list = useQuery({
-    queryKey: salesKeys.stock.warehouses.list(query),
-    queryFn: () => unwrap(api.GET('/stock/warehouses', { params: { query: { active: 'true', sort: 'code', page_size: 100 } } })),
-  })
-  return (list.data?.items ?? []).map((w) => ({ value: String(w.id), label: `${w.code} · ${w.name}` }))
-}
 
 // OnHandPage: what each warehouse holds now, per item, lot and serial; a row opens its stock card.
 export function OnHandPage() {

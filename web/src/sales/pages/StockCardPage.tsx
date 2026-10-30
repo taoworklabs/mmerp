@@ -13,9 +13,9 @@ import { type Column } from '@/shared/ui/DataTable'
 import { DateField, FilterChip, RemoteSelectField } from '@/shared/ui/form'
 import { ListPage } from '@/shared/ui/page'
 import { EmptyState } from '@/shared/ui/states'
+import { useWarehouseOptions } from '../hooks/useStock'
 import { salesKeys, type StockCardQuery } from '../keys'
 import { docTypeLabelKey, monthToDate } from '../stock'
-import { useWarehouseOptions } from './OnHandPage'
 
 type Values = { [K in keyof StockCardQuery]: string | null }
 // The opening balance heads the moves; the closing one is the table's footer.

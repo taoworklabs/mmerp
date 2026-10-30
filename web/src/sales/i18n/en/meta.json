@@ -51,5 +51,9 @@
   "sales.nav.group_stock": "Stock",
   "sales.nav.warehouses": "Warehouses",
   "sales.nav.on_hand": "On hand",
-  "sales.nav.stock_card": "Stock card"
+  "sales.nav.stock_card": "Stock card",
+  "sales.nav.adjustments": "Stock adjustments",
+  "stock.adjustment.name": "Stock adjustment",
+  "sales.preview.warehouse": "Warehouse",
+  "sales.preview.reason": "Reason"
 }

@@ -4,6 +4,8 @@ import type { Doc } from '@/shared/api/sales'
 export const quoteDocType = 'sales.quote'
 export const orderDocType = 'sales.order'
 export const customerDocType = 'sales.customer'
+// Stock is a shared module; its documents open in this area.
+export const adjustmentDocType = 'stock.adjustment'
 // Shared master data, opened in this area.
 export const partnerType = 'partner.partner'
 
@@ -47,6 +49,14 @@ export const salesKeys = {
       list: (q: OnHandQuery) => ['sales', 'stock', 'on-hand', 'list', q] as const,
     },
     card: (q: StockCardQuery) => ['sales', 'stock', 'card', q] as const,
+    // Every stock card, whatever its item and range.
+    cards: () => ['sales', 'stock', 'card'] as const,
+    adjustments: {
+      all: () => ['sales', 'stock', 'adjustments'] as const,
+      actions: () => ['sales', 'stock', 'adjustments', 'actions'] as const,
+      list: (q: DocQuery) => ['sales', 'stock', 'adjustments', 'list', q] as const,
+      detail: (id: number) => ['sales', 'stock', 'adjustments', 'detail', id] as const,
+    },
     // The core item list, unlike items.picker which searches document line items.
     items: (q: string) => ['sales', 'stock', 'items', q] as const,
   },
