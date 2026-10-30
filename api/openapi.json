@@ -4415,6 +4415,15 @@
             "format": "int64",
             "type": "integer"
           },
+          "tracking": {
+            "enum": [
+              "none",
+              "quantity",
+              "lot",
+              "serial"
+            ],
+            "type": "string"
+          },
           "unit": {
             "type": "string"
           },
@@ -4435,7 +4444,8 @@
           "name",
           "unit",
           "price",
-          "vat_rate"
+          "vat_rate",
+          "tracking"
         ],
         "type": "object"
       },

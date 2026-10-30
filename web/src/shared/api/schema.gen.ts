@@ -3545,6 +3545,8 @@ export interface components {
             name: string;
             /** Format: int64 */
             price: number;
+            /** @enum {string} */
+            tracking: "none" | "quantity" | "lot" | "serial";
             unit: string;
             /** @enum {string} */
             vat_rate: "none" | "0" | "5" | "8" | "10";
