@@ -173,21 +173,21 @@ func TestSerialOnHandOnce(t *testing.T) {
 	if err := l.move(t, in); err != nil {
 		t.Fatal(err)
 	}
-	wantCode(t, l.move(t, in), stock.ErrSerialQuantity)
+	_ = wantCode(t, l.move(t, in), stock.ErrSerialQuantity)
 	// Nor in another warehouse.
 	w2, err := l.stock.CreateWarehouse(l.admin, stock.NewWarehouse{WarehouseFields: stock.WarehouseFields{Name: "W2", LegalEntityID: l.unit, Active: true}})
 	if err != nil {
 		t.Fatal(err)
 	}
 	in.WarehouseID = w2
-	wantCode(t, l.move(t, in), stock.ErrSerialQuantity)
+	_ = wantCode(t, l.move(t, in), stock.ErrSerialQuantity)
 	in.Quantity = qty(2)
-	wantCode(t, l.move(t, in), stock.ErrSerialQuantity)
+	_ = wantCode(t, l.move(t, in), stock.ErrSerialQuantity)
 	in.WarehouseID, in.Quantity = l.wh, qty(-1)
 	if err := l.move(t, in); err != nil {
 		t.Fatal(err)
 	}
-	wantCode(t, l.move(t, in), stock.ErrInsufficient)
+	_ = wantCode(t, l.move(t, in), stock.ErrInsufficient)
 }
 
 func TestTrackingChecks(t *testing.T) {
@@ -216,7 +216,7 @@ func TestTrackingChecks(t *testing.T) {
 	if err := l.move(t, stock.Move{LineNo: 1, WarehouseID: l.wh, ItemID: lt, Lot: lot("L", &exp), Quantity: qty(1)}); err != nil {
 		t.Fatal(err)
 	}
-	wantCode(t, l.move(t, stock.Move{LineNo: 1, WarehouseID: l.wh, ItemID: lt, Lot: lot("L", &other), Quantity: qty(1)}), stock.ErrLotExpiryMismatch)
+	_ = wantCode(t, l.move(t, stock.Move{LineNo: 1, WarehouseID: l.wh, ItemID: lt, Lot: lot("L", &other), Quantity: qty(1)}), stock.ErrLotExpiryMismatch)
 	if err := l.move(t, stock.Move{LineNo: 1, WarehouseID: l.wh, ItemID: lt, Lot: lot("L", nil), Quantity: qty(1)}); err != nil {
 		t.Fatal(err)
 	}
@@ -229,11 +229,11 @@ func TestWarehouseOfOtherEntity(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	wantCode(t, l.recordFor(l.doc(t, other), stock.Move{LineNo: 1, WarehouseID: l.wh, ItemID: it, Quantity: qty(1)}), stock.ErrWarehouseEntity)
+	_ = wantCode(t, l.recordFor(l.doc(t, other), stock.Move{LineNo: 1, WarehouseID: l.wh, ItemID: it, Quantity: qty(1)}), stock.ErrWarehouseEntity)
 	if err := l.stock.UpdateWarehouse(l.admin, l.wh, stock.WarehouseFields{Name: "Kho", Active: false}); err != nil {
 		t.Fatal(err)
 	}
-	wantCode(t, l.move(t, stock.Move{LineNo: 1, WarehouseID: l.wh, ItemID: it, Quantity: qty(1)}), stock.ErrWarehouseInactive)
+	_ = wantCode(t, l.move(t, stock.Move{LineNo: 1, WarehouseID: l.wh, ItemID: it, Quantity: qty(1)}), stock.ErrWarehouseInactive)
 }
 
 func TestRecordOncePerDocument(t *testing.T) {
@@ -244,7 +244,7 @@ func TestRecordOncePerDocument(t *testing.T) {
 	if err := l.recordFor(ref, m); err != nil {
 		t.Fatal(err)
 	}
-	wantCode(t, l.recordFor(ref, m), stock.ErrAlreadyRecorded)
+	_ = wantCode(t, l.recordFor(ref, m), stock.ErrAlreadyRecorded)
 }
 
 func TestSuggestLotsFEFO(t *testing.T) {
@@ -334,26 +334,23 @@ func TestConcurrentTrackingChange(t *testing.T) {
 	if _, err := l.core.System.Exec(ctx, `INSERT INTO stock.balances (warehouse_id, item_id, quantity) VALUES ($1, $2, 0)`, l.wh, it); err != nil {
 		t.Fatal(err)
 	}
-	hold, err := l.core.System.Begin(ctx)
+	recorded, updated := make(chan error, 1), make(chan error, 1)
+	err := platform.InTx(ctx, func(ctx context.Context) error {
+		if _, err := platform.DBFrom(ctx).Exec(ctx, `SELECT 1 FROM stock.balances WHERE item_id = $1 FOR UPDATE`, it); err != nil {
+			return err
+		}
+		go func() {
+			recorded <- l.recordFor(ref, stock.Move{LineNo: 1, WarehouseID: l.wh, ItemID: it, Quantity: qty(1)})
+		}()
+		waitLocked(t, l, "%stock.balances%FOR UPDATE%", nil)
+		go func() {
+			tr := item.TrackNone
+			updated <- l.items.UpdateItem(l.admin, it, item.ItemFields{Name: "I", Unit: "cái", VatRate: "8", Active: true, Tracking: &tr})
+		}()
+		waitLocked(t, l, "%item.items%FOR UPDATE%", updated)
+		return nil
+	})
 	if err != nil {
-		t.Fatal(err)
-	}
-	defer func() { _ = hold.Rollback(ctx) }()
-	if _, err := hold.Exec(ctx, `SELECT 1 FROM stock.balances WHERE item_id = $1 FOR UPDATE`, it); err != nil {
-		t.Fatal(err)
-	}
-	recorded := make(chan error, 1)
-	go func() {
-		recorded <- l.recordFor(ref, stock.Move{LineNo: 1, WarehouseID: l.wh, ItemID: it, Quantity: qty(1)})
-	}()
-	waitLocked(t, l, "%stock.balances%FOR UPDATE%", nil)
-	updated := make(chan error, 1)
-	go func() {
-		tr := item.TrackNone
-		updated <- l.items.UpdateItem(l.admin, it, item.ItemFields{Name: "I", Unit: "cái", VatRate: "8", Active: true, Tracking: &tr})
-	}()
-	waitLocked(t, l, "%item.items%FOR UPDATE%", updated)
-	if err := hold.Rollback(ctx); err != nil {
 		t.Fatal(err)
 	}
 	if err := <-recorded; err != nil {

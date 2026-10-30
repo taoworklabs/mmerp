@@ -125,7 +125,7 @@ func TestAdjustmentNeedsManage(t *testing.T) {
 	s := newStocked(t)
 	viewer := s.user(t, "viewer", "viewer")
 	_, err := s.stock.CreateAdjustment(viewer, stock.NewAdjustment{AdjustmentFields: s.fields("2026-11-02")})
-	wantCode(t, err, platform.ErrForbidden)
+	_ = wantCode(t, err, platform.ErrForbidden)
 	l, err := s.stock.Adjustments(viewer, stock.AdjustmentFilter{Paging: page})
 	if err != nil || l.Total != 0 {
 		t.Fatalf("list %+v %v", l, err)
