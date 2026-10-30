@@ -256,30 +256,39 @@ func check(m Move, whs map[int64]store.MoveWarehousesRow, items map[int64]store.
 	case m.Quantity.IsZero() || !m.Quantity.Equal(m.Quantity.Truncate(3)) || m.Quantity.Abs().GreaterThanOrEqual(maxQuantity):
 		return lineErr(ErrQuantityInvalid, m)
 	}
-	hasLot := m.Lot != nil
-	hasSerial := m.Serial != nil
-	switch it.Tracking {
+	var lot *string
+	if m.Lot != nil {
+		lot = &m.Lot.Code
+	}
+	return CheckShape(it.Tracking, lot, m.Serial, m.Quantity, m.LineNo)
+}
+
+// CheckShape refuses a line whose lot, serial and quantity do not fit its item's tracking;
+// documents call it on saving, before posting checks the lots and serials themselves.
+func CheckShape(tracking string, lot, serial *string, qty decimal.Decimal, lineNo int) error {
+	m := Move{LineNo: lineNo}
+	switch tracking {
 	case item.TrackNone:
 		return lineErr(ErrUntracked, m)
 	case item.TrackQuantity:
-		if hasLot || hasSerial {
+		if lot != nil || serial != nil {
 			return lineErr(ErrLotNotTracked, m)
 		}
 	case item.TrackLot:
-		if hasSerial {
+		if serial != nil {
 			return lineErr(ErrLotNotTracked, m)
 		}
-		if trackCode(m) == "" {
+		if lot == nil || strings.TrimSpace(*lot) == "" {
 			return lineErr(ErrLotRequired, m)
 		}
 	default: // serial
-		if hasLot {
+		if lot != nil {
 			return lineErr(ErrLotNotTracked, m)
 		}
-		if trackCode(m) == "" {
+		if serial == nil || strings.TrimSpace(*serial) == "" {
 			return lineErr(ErrSerialRequired, m)
 		}
-		if !m.Quantity.Abs().Equal(decimal.NewFromInt(1)) {
+		if !qty.Abs().Equal(decimal.NewFromInt(1)) {
 			return lineErr(ErrSerialQuantity, m)
 		}
 	}

@@ -198,6 +198,10 @@ func (s *Service) checkDelivery(ctx context.Context, id, orderID int64, f Delive
 		if !ok || !q.IsPositive() || !q.Equal(q.Truncate(3)) {
 			return nil, errLine("invalid_quantity", i+1)
 		}
+		lot, serial := trimmed(l.LotCode), trimmed(l.SerialCode)
+		if err := stock.CheckShape(r.Tracking, lot, serial, q, i+1); err != nil {
+			return nil, err
+		}
 		ordered, err := decimal.NewFromString(r.Quantity)
 		if err != nil {
 			return nil, err
@@ -212,7 +216,7 @@ func (s *Service) checkDelivery(ctx context.Context, id, orderID int64, f Delive
 				"order_position": l.OrderPosition, "remaining": ordered.Sub(taken).StringFixed(3)})
 		}
 		out[i] = DeliveryLine{
-			DeliveryLineInput: DeliveryLineInput{OrderPosition: l.OrderPosition, LotCode: trimmed(l.LotCode), SerialCode: trimmed(l.SerialCode),
+			DeliveryLineInput: DeliveryLineInput{OrderPosition: l.OrderPosition, LotCode: lot, SerialCode: serial,
 				Quantity: q.String()},
 			ItemID: r.ItemID, ItemCode: r.ItemCode, Description: r.Description, Unit: r.Unit,
 		}

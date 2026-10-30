@@ -74,6 +74,10 @@ func dl(position int, qty string) sales.DeliveryLineInput {
 	return sales.DeliveryLineInput{OrderPosition: position, Quantity: qty}
 }
 
+func lotted(position int, lot, qty string) sales.DeliveryLineInput {
+	return sales.DeliveryLineInput{OrderPosition: position, LotCode: &lot, Quantity: qty}
+}
+
 func TestDeliveryFromPostedOrderOnly(t *testing.T) {
 	d := newDeliveries(t)
 	draft := d.newOrder("0")
@@ -103,11 +107,42 @@ func TestDeliveryRefusesServiceLine(t *testing.T) {
 	}
 }
 
+// Each line's lot, serial and quantity must fit its item's tracking already on saving.
+func TestDeliveryLineShapeAtSave(t *testing.T) {
+	d := newDeliveries(t)
+	serial := d.trackedItem("MAY", "serial")
+	fl := sales.DocFields{Date: "2026-03-10", OrgUnitID: d.a, CustomerID: d.customer, Lines: []sales.LineInput{
+		{ItemID: d.goods, Description: "Hàng", Quantity: "10", UnitPrice: 1_000, DiscountPercent: "0", VatRate: "8"},
+		{ItemID: d.lotted, Description: "Thuốc", Quantity: "5", UnitPrice: 1_000, DiscountPercent: "0", VatRate: "8"},
+		{ItemID: serial, Description: "Máy", Quantity: "3", UnitPrice: 1_000, DiscountPercent: "0", VatRate: "8"},
+	}}
+	order := must(t)(d.sales.CreateOrder(d.staff, sales.NewDoc{RequestID: newRequest(), DocFields: fl}))
+	d.check(d.move(d.staff, "sales.order", order, record.Posted))
+	sn := func(code, qty string) sales.DeliveryLineInput {
+		return sales.DeliveryLineInput{OrderPosition: 3, SerialCode: str(code), Quantity: qty}
+	}
+	for name, c := range map[string]struct {
+		line sales.DeliveryLineInput
+		want *platform.Error
+	}{
+		"lot item without lot":     {dl(2, "1"), stock.ErrLotRequired},
+		"serial item without code": {dl(3, "1"), stock.ErrSerialRequired},
+		"serial by two":            {sn("S1", "2"), stock.ErrSerialQuantity},
+		"lot on a quantity item":   {lotted(1, "L1", "1"), stock.ErrLotNotTracked},
+	} {
+		_, err := d.create(d.staff, order, d.fields(lotted(2, "L1", "1"), c.line))
+		if e, ok := errors.AsType[*platform.Error](err); !ok || !errors.Is(err, c.want) || e.Params["line_no"] != 2 {
+			t.Errorf("%s: %v", name, err)
+		}
+	}
+	must(t)(d.create(d.staff, order, d.fields(dl(1, "2"), lotted(2, "L1", "1"), sn("S1", "1"))))
+}
+
 func TestDeliveryOverOrdered(t *testing.T) {
 	d := newDeliveries(t)
 	first := must(t)(d.create(d.staff, d.order, d.fields(dl(1, "6"))))
 	// Two lines of one order line add up: 3 + 2 is over the 4 left.
-	_, err := d.create(d.staff, d.order, d.fields(dl(2, "1"), dl(1, "3"), dl(1, "2")))
+	_, err := d.create(d.staff, d.order, d.fields(lotted(2, "L1", "1"), dl(1, "3"), dl(1, "2")))
 	e, ok := errors.AsType[*platform.Error](err)
 	if !ok || !errors.Is(err, sales.ErrDeliveryOverOrdered) || e.Params["line_no"] != 3 || e.Params["order_position"] != 1 || e.Params["remaining"] != "4.000" {
 		t.Fatalf("over ordered: %v %+v", err, e)
@@ -493,7 +528,7 @@ func TestDeliveryOptions(t *testing.T) {
 		stock.AdjustmentLine{ItemID: d.lotted, Lot: &stock.LotRef{Code: "L1", Expiry: &exp1}, Quantity: "3"},
 		stock.AdjustmentLine{ItemID: d.lotted, Lot: &stock.LotRef{Code: "L2", Expiry: &exp2}, Quantity: "2"})
 	// A draft delivery of 2 lot items leaves 3 to suggest.
-	must(t)(d.create(d.staff, d.order, d.fields(dl(1, "4"), dl(2, "2"))))
+	must(t)(d.create(d.staff, d.order, d.fields(dl(1, "4"), lotted(2, "L1", "2"))))
 	o, err := d.sales.DeliveryOptions(d.staff, d.order, 0)
 	d.check(err)
 	if len(o.Warehouses) != 1 || o.Warehouses[0].ID != d.wh || !o.Warehouses[0].IsDefault {
