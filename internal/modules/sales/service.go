@@ -119,6 +119,16 @@ func (s *Service) transition(ctx context.Context, d record.Doc, _ record.Status)
 			return ErrCustomerInactive
 		}
 	case record.Cancelled:
+		if d.Type == orderType {
+			_, err := store.LiveDeliveryOfOrder.Run(ctx, d.ID)
+			if err == nil {
+				return ErrOrderHasDelivery
+			}
+			if !errors.Is(err, pgx.ErrNoRows) {
+				return err
+			}
+			return nil
+		}
 		if d.Type != quoteType {
 			return nil
 		}

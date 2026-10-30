@@ -27,6 +27,7 @@ var GetDeliveryLines = data.ManyArg("sales.GetDeliveryLines", newQ, (*Queries).G
 var DeliverableLines = data.ManyArg("sales.DeliverableLines", newQ, (*Queries).DeliverableLines)
 var DeleteDeliveryLines = data.ExecArg("sales.DeleteDeliveryLines", newQ, (*Queries).DeleteDeliveryLines)
 var InsertDeliveryLines = data.ExecArg("sales.InsertDeliveryLines", newQ, (*Queries).InsertDeliveryLines)
+var LiveDeliveryOfOrder = data.OneArg("sales.LiveDeliveryOfOrder", newQ, (*Queries).LiveDeliveryOfOrder)
 var InsertHeader = data.ExecArg("sales.InsertHeader", newQ, (*Queries).InsertHeader)
 var UpdateHeader = data.ExecArg("sales.UpdateHeader", newQ, (*Queries).UpdateHeader)
 var DeleteHeader = data.ExecArg("sales.DeleteHeader", newQ, (*Queries).DeleteHeader)

@@ -264,6 +264,19 @@ func (q *Queries) InsertDeliveryLines(ctx context.Context, arg InsertDeliveryLin
 	return err
 }
 
+const liveDeliveryOfOrder = `-- name: LiveDeliveryOfOrder :one
+SELECT v.id FROM sales.deliveries v JOIN record.documents d ON d.id = v.id
+WHERE v.order_id = $1 AND d.status <> 'cancelled' LIMIT 1
+`
+
+// Any delivery of the order that is not cancelled.
+func (q *Queries) LiveDeliveryOfOrder(ctx context.Context, orderID int64) (int64, error) {
+	row := q.db.QueryRow(ctx, liveDeliveryOfOrder, orderID)
+	var id int64
+	err := row.Scan(&id)
+	return id, err
+}
+
 const updateDelivery = `-- name: UpdateDelivery :exec
 UPDATE sales.deliveries SET warehouse_id = $2, note = $3 WHERE id = $1
 `

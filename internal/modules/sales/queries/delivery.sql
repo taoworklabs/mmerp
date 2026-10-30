@@ -51,3 +51,8 @@ INSERT INTO sales.delivery_lines (delivery_id, position, order_position, item_id
 SELECT @delivery_id::bigint, unnest(@positions::int[]), unnest(@order_positions::int[]), unnest(@item_ids::bigint[]),
     unnest(@item_codes::text[]), unnest(@descriptions::text[]), unnest(@units::text[]),
     nullif(unnest(@lot_codes::text[]), ''), nullif(unnest(@serial_codes::text[]), ''), unnest(@quantities::text[])::numeric;
+
+-- name: LiveDeliveryOfOrder :one
+-- Any delivery of the order that is not cancelled.
+SELECT v.id FROM sales.deliveries v JOIN record.documents d ON d.id = v.id
+WHERE v.order_id = $1 AND d.status <> 'cancelled' LIMIT 1;

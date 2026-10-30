@@ -60,6 +60,7 @@ type Delivery struct {
 }
 
 var (
+	ErrOrderHasDelivery     = &platform.Error{Status: http.StatusConflict, Code: "sales_order_has_delivery"}
 	ErrOrderNotPosted       = &platform.Error{Status: http.StatusConflict, Code: "sales_order_not_posted"}
 	ErrDeliveryOverOrdered  = &platform.Error{Status: http.StatusConflict, Code: "sales_delivery_over_ordered"}
 	ErrDeliveryLineNotStock = &platform.Error{Status: http.StatusUnprocessableEntity, Code: "sales_delivery_line_not_stock"}

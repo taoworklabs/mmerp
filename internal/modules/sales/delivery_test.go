@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"slices"
+	"sync"
 	"testing"
 
 	"github.com/taoworklabs/mmerp/internal/core/approval"
@@ -276,10 +277,72 @@ func TestDeliveryPostingRefuses(t *testing.T) {
 	if d.onHand(d.goods) != "3.000" || d.liveMoves(id) != 0 {
 		t.Fatalf("refused posting moved stock: %s", d.onHand(d.goods))
 	}
-	// An order cancelled since the draft was saved refuses it too.
-	d.adjust(stock.AdjustmentLine{ItemID: d.goods, Quantity: "10"})
+}
+
+func TestOrderCancelRefusedWithDelivery(t *testing.T) {
+	d := newDeliveries(t)
+	id := must(t)(d.create(d.staff, d.order, d.fields(dl(1, "1"))))
+	if err := d.move(d.staff, "sales.order", d.order, record.Cancelled); !errors.Is(err, sales.ErrOrderHasDelivery) {
+		t.Fatalf("cancel with a draft delivery: %v", err)
+	}
+	d.check(d.rec.Delete(d.staff, record.Ref{Type: "sales.delivery", ID: id}, 1))
 	d.check(d.move(d.staff, "sales.order", d.order, record.Cancelled))
-	if err := d.move(d.staff, "sales.delivery", id, record.Posted); !errors.Is(err, sales.ErrOrderNotPosted) {
-		t.Fatalf("posting against a cancelled order: %v", err)
+}
+
+// race runs fn in n goroutines released together, each in its own transaction.
+func (d *deliveries) race(n int, fn func(ctx context.Context, i int) error) []error {
+	errs := make([]error, n)
+	start := make(chan struct{})
+	var wg sync.WaitGroup
+	for i := range n {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			<-start
+			errs[i] = platform.InTx(d.staff, func(ctx context.Context) error { return fn(ctx, i) })
+		}()
+	}
+	close(start)
+	wg.Wait()
+	return errs
+}
+
+func TestConcurrentDeliverySaves(t *testing.T) {
+	d := newDeliveries(t)
+	errs := d.race(2, func(ctx context.Context, _ int) error {
+		_, err := d.create(ctx, d.order, d.fields(dl(1, "6")))
+		return err
+	})
+	ok, over := 0, 0
+	for _, err := range errs {
+		switch {
+		case err == nil:
+			ok++
+		case errors.Is(err, sales.ErrDeliveryOverOrdered):
+			over++
+		default:
+			t.Fatalf("unexpected: %v", err)
+		}
+	}
+	if ok != 1 || over != 1 {
+		t.Fatalf("ok=%d over=%d", ok, over)
+	}
+}
+
+func TestCancelOrderVsCreateDelivery(t *testing.T) {
+	d := newDeliveries(t)
+	errs := d.race(2, func(ctx context.Context, i int) error {
+		if i == 0 {
+			return d.move(ctx, "sales.order", d.order, record.Cancelled)
+		}
+		_, err := d.create(ctx, d.order, d.fields(dl(1, "1")))
+		return err
+	})
+	cancelErr, createErr := errs[0], errs[1]
+	switch {
+	case cancelErr == nil && errors.Is(createErr, sales.ErrOrderNotPosted):
+	case createErr == nil && errors.Is(cancelErr, sales.ErrOrderHasDelivery):
+	default:
+		t.Fatalf("cancel: %v, create: %v", cancelErr, createErr)
 	}
 }
