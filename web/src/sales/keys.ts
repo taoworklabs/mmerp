@@ -22,6 +22,7 @@ export type WarehouseQuery = { q: string; active: string; sort: string; page: nu
 export type OnHandQuery = { warehouse: string; item: string; q: string; expiring: string; page: number; pageSize: number }
 export type StockCardQuery = { warehouse_id: string; item_id: string; from: string; to: string }
 export type DocQuery = { q: string; status: string; sort: string; page: number; pageSize: number }
+export type OrderQuery = DocQuery & { delivery_state: string }
 export type DeliveryQuery = DocQuery & { order: string }
 
 export const salesKeys = {
@@ -73,7 +74,7 @@ export const salesKeys = {
     all: (k: Kind) => ['sales', k] as const,
     actions: (k: Kind) => ['sales', k, 'actions'] as const,
     lists: (k: Kind) => ['sales', k, 'list'] as const,
-    list: (k: Kind, q: DocQuery) => ['sales', k, 'list', q] as const,
+    list: (k: Kind, q: OrderQuery) => ['sales', k, 'list', q] as const,
     detail: (k: Kind, id: number) => ['sales', k, 'detail', id] as const,
     // Under lists, so whatever refreshes the lists refreshes it too.
     customer: (k: Kind, customer: number) => ['sales', k, 'list', 'customer', customer] as const,

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { DeliveryOptions } from '@/shared/api/sales'
-import { addQuantities, linesFromOptions, withOwnLines } from './deliveryLines'
+import { addQuantities, deliveryStateBadge, isShort, linesFromOptions, withOwnLines } from './deliveryLines'
 
 type Line = DeliveryOptions['lines'][number]
 const line = (l: Partial<Line>): Line => ({
@@ -60,5 +60,28 @@ describe('withOwnLines', () => {
       { order_position: 1, quantity: '2.500' },
       { order_position: 2, quantity: '1.000' },
     ])
+  })
+})
+
+describe('isShort', () => {
+  it('compares decimal strings exactly', () => {
+    expect(isShort('4.999', '5')).toBe(true)
+    expect(isShort('5.000', '5')).toBe(false)
+    expect(isShort('10', '9.5')).toBe(false)
+    expect(isShort('-0.5', '0.001')).toBe(true)
+    expect(isShort('0.3', '0.300')).toBe(false)
+  })
+  it('is never short without a known availability', () => {
+    expect(isShort(undefined, '5')).toBe(false)
+  })
+})
+
+describe('deliveryStateBadge', () => {
+  it('shows only a partial or full delivery', () => {
+    expect(deliveryStateBadge('partial')).toEqual({ tone: 'info', label: 'sales.order.delivery_state.partial' })
+    expect(deliveryStateBadge('full')).toEqual({ tone: 'positive', label: 'sales.order.delivery_state.full' })
+    expect(deliveryStateBadge('none')).toBeNull()
+    expect(deliveryStateBadge('not_applicable')).toBeNull()
+    expect(deliveryStateBadge(undefined)).toBeNull()
   })
 })

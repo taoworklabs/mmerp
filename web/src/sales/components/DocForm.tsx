@@ -1,3 +1,4 @@
+import { Group } from '@mmerp/ui'
 import { IconFileDollar, IconListDetails, IconNotes } from '@tabler/icons-react'
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
@@ -5,7 +6,9 @@ import { useTranslation } from 'react-i18next'
 import { api, unwrap, type Doc, type DocFields, type LineInput } from '@/shared/api/sales'
 import { useDocumentMutation } from '@/shared/document'
 import { formatDecimal, formatNumber } from '@/shared/i18n'
+import { StatusBadge } from '@/shared/ui/StatusBadge'
 import { DateField, DecimalField, Form, FormActions, FormRow, FormSection, LinesTable, LinesTotals, MoneyField, OrgUnitField, SelectField, TextField, type ErrorFields, type LineColumn } from '@/shared/ui/form'
+import { isShort } from '../deliveryLines'
 import { docTypeOf, pathOf, type Kind } from '../keys'
 import { CustomerField, ItemField } from './pickers'
 import { useVatOptions } from './vat'
@@ -165,7 +168,17 @@ export function DocForm({ kind, doc, onCreated }: Props) {
       numeric: true,
       required: true,
       width: 96,
-      value: (l) => `${formatDecimal(l.quantity, 3)} ${l.unit}`,
+      // The stock still free while the order waits: a warning only, sending is never blocked.
+      value: (l) => {
+        const qty = `${formatDecimal(l.quantity, 3)} ${l.unit}`
+        if (!isShort(l.available, l.quantity)) return qty
+        return (
+          <Group gap="xs" justify="end" wrap={false}>
+            {qty}
+            <StatusBadge tone="warning">{t('sales.line.available', { available: formatDecimal(l.available, 3) })}</StatusBadge>
+          </Group>
+        )
+      },
       cell: (i, bare) => <DecimalField name={`lines.${i}.quantity`} label={t('sales.line.quantity', { n: i + 1 })} bare={bare} required scale={3} min={0} />,
     },
     {
@@ -194,6 +207,8 @@ export function DocForm({ kind, doc, onCreated }: Props) {
       cell: (i, bare) => <SelectField name={`lines.${i}.vat_rate`} label={t('sales.line.vat_rate', { n: i + 1 })} bare={bare} required data={vat.options} />,
     },
     { key: 'net', header: t('sales.line.net_col'), numeric: true, value: (l) => formatNumber(l.amount - l.discount) },
+    // Only stock lines carry what was delivered.
+    ...(ro && !quote ? [{ key: 'delivered', header: t('sales.line.delivered_col'), numeric: true, value: (l: Line) => l.delivered && formatDecimal(l.delivered, 3) }] : []),
   ]
 
   return (

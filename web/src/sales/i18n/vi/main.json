@@ -259,5 +259,15 @@
   "sales.delivery.line.remaining": "Còn phải giao",
   "sales.delivery.line.remaining_hint": "Còn phải giao: {{quantity}}",
   "sales.delivery.line.lot": "Lô hàng ({{n}})",
-  "sales.delivery.line.serial": "Số serial ({{n}})"
+  "sales.delivery.line.serial": "Số serial ({{n}})",
+  "sales.order.delivery_state.title": "Giao hàng",
+  "sales.order.delivery_state.none": "Chưa giao",
+  "sales.order.delivery_state.partial": "Giao một phần",
+  "sales.order.delivery_state.full": "Đã giao đủ",
+  "sales.order.delivery_state.not_applicable": "Không cần giao",
+  "sales.order.create_delivery": "Tạo phiếu giao hàng",
+  "sales.order.delivery_link": "Phiếu giao {{number}}",
+  "sales.order.deliveries_all": "Xem tất cả",
+  "sales.line.delivered_col": "Đã giao",
+  "sales.line.available": "Khả dụng {{available}}"
 }

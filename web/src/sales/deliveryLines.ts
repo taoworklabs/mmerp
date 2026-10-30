@@ -1,4 +1,5 @@
-import type { DeliveryLineInput, DeliveryOptions } from '@/shared/api/sales'
+import type { DeliveryLineInput, DeliveryOptions, Doc } from '@/shared/api/sales'
+import type { StatusTone } from '@/shared/ui/StatusBadge'
 
 // Quantities are decimal strings with up to 3 decimals; these count them in thousandths so no
 // float ever touches them.
@@ -10,6 +11,17 @@ const fromMilli = (n: bigint) => `${n / 1000n}.${String(n % 1000n).padStart(3, '
 
 // addQuantities adds two non-negative quantities.
 export const addQuantities = (a: string, b: string) => fromMilli(milli(a) + milli(b))
+
+// isShort: the stock available falls below the quantity; unknown availability is never short.
+export const isShort = (available: string | undefined, quantity: string) => available !== undefined && milli(available) < milli(quantity)
+
+// deliveryStateBadge: an order's delivery progress worth a badge; nothing yet or nothing to
+// deliver shows none.
+export function deliveryStateBadge(state: Doc['delivery_state']): { tone: StatusTone; label: string } | null {
+  if (state === 'partial') return { tone: 'info', label: 'sales.order.delivery_state.partial' }
+  if (state === 'full') return { tone: 'positive', label: 'sales.order.delivery_state.full' }
+  return null
+}
 
 // linesFromOptions suggests a delivery's lines from what is left on the order: a quantity line
 // takes all that remains, a lot line one line per suggested lot with the shortfall left without a

@@ -259,5 +259,15 @@
   "sales.delivery.line.remaining": "Left to deliver",
   "sales.delivery.line.remaining_hint": "Left to deliver: {{quantity}}",
   "sales.delivery.line.lot": "Lot ({{n}})",
-  "sales.delivery.line.serial": "Serial ({{n}})"
+  "sales.delivery.line.serial": "Serial ({{n}})",
+  "sales.order.delivery_state.title": "Delivery",
+  "sales.order.delivery_state.none": "Not delivered",
+  "sales.order.delivery_state.partial": "Partly delivered",
+  "sales.order.delivery_state.full": "Fully delivered",
+  "sales.order.delivery_state.not_applicable": "No delivery needed",
+  "sales.order.create_delivery": "Create delivery",
+  "sales.order.delivery_link": "Delivery {{number}}",
+  "sales.order.deliveries_all": "View all",
+  "sales.line.delivered_col": "Delivered",
+  "sales.line.available": "Available {{available}}"
 }
