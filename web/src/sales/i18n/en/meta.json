@@ -39,5 +39,13 @@
   "sales.error.quote_expired": "The quotation has expired, so no order can be made from it. Make a new quotation or enter the order directly.",
   "sales.error.quote_not_posted": "Only an approved quotation can become an order.",
   "sales.error.quote_has_order": "The quotation has an order. Cancel the order before cancelling the quotation.",
+  "sales.error.sales_order_has_delivery": "The sales order has a delivery. Cancel it first.",
+  "sales.error.sales_order_not_posted": "Only a confirmed sales order can be delivered.",
+  "sales.error.sales_delivery_over_ordered": "Line {{line_no}}: exceeds what is left to deliver ({{remaining}}).",
+  "sales.error.sales_delivery_line_not_stock": "Line {{line_no}}: this order line is not a stock item and cannot be delivered from a warehouse.",
+  "sales.error.sales_delivery_position": "Line {{line_no}}: the sales order has no such line. Pick the order line again.",
+  "sales.error.sales_delivery_warehouse": "The warehouse is inactive or of another legal entity than the order. Pick another.",
+  "sales.error.sales_delivery_date": "The delivery date cannot be before the sales order date.",
+  "sales.error.sales_lot_expired": "Line {{line_no}}: lot {{lot_code}} expires on {{expiry}}. Pick another lot.",
   "sales.action.create_order": "Create sales order"
 }
