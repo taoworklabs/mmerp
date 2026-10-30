@@ -74,6 +74,10 @@ describe('isShort', () => {
   it('is never short without a known availability', () => {
     expect(isShort(undefined, '5')).toBe(false)
   })
+  it('is never short on a quantity that is not a number yet', () => {
+    expect(isShort('1', '')).toBe(false)
+    expect(isShort('1', '1e21')).toBe(false)
+  })
 })
 
 describe('deliveryStateBadge', () => {

@@ -12,8 +12,11 @@ const fromMilli = (n: bigint) => `${n / 1000n}.${String(n % 1000n).padStart(3, '
 // addQuantities adds two non-negative quantities.
 export const addQuantities = (a: string, b: string) => fromMilli(milli(a) + milli(b))
 
-// isShort: the stock available falls below the quantity; unknown availability is never short.
-export const isShort = (available: string | undefined, quantity: string) => available !== undefined && milli(available) < milli(quantity)
+// isShort: the stock available falls below the quantity; unknown availability, or a quantity
+// still being typed, is never short.
+const decimal = /^-?\d+(\.\d+)?$/
+export const isShort = (available: string | undefined, quantity: string) =>
+  available !== undefined && decimal.test(quantity.trim()) && milli(available) < milli(quantity)
 
 // deliveryStateBadge: an order's delivery progress worth a badge; nothing yet or nothing to
 // deliver shows none.
