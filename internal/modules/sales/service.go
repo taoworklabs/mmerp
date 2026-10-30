@@ -1,4 +1,4 @@
-// Package sales owns customers, quotations and sales orders.
+// Package sales owns customers, quotations, sales orders and deliveries.
 package sales
 
 import (
@@ -93,6 +93,7 @@ func NewService(d Deps) *Service {
 			ModuleActions: actions,
 		})
 	}
+	s.registerDelivery()
 	s.registerPrints()
 	return s
 }
