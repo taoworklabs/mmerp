@@ -6,8 +6,10 @@ import (
 	"slices"
 	"testing"
 
+	"github.com/taoworklabs/mmerp/internal/core/approval"
 	"github.com/taoworklabs/mmerp/internal/core/iam"
 	"github.com/taoworklabs/mmerp/internal/core/record"
+	"github.com/taoworklabs/mmerp/internal/core/record/recordtest"
 	"github.com/taoworklabs/mmerp/internal/modules/sales"
 	"github.com/taoworklabs/mmerp/internal/platform"
 	"github.com/taoworklabs/mmerp/internal/shared/item"
@@ -181,4 +183,103 @@ func TestDeliveryRefusedWhileCancelHeld(t *testing.T) {
 		t.Fatalf("cancel not held: %s", o.Status)
 	}
 	wantCode(t, must2(d.create(d.staff, order, d.fields(dl(1, "1")))), "awaiting_approval")
+}
+
+// adjust posts a stock adjustment of the warehouse with lines.
+func (d *deliveries) adjust(lines ...stock.AdjustmentLine) {
+	d.t.Helper()
+	id := must(d.t)(d.stock.CreateAdjustment(d.admin, stock.NewAdjustment{AdjustmentFields: stock.AdjustmentFields{
+		Date: "2026-03-01", WarehouseID: d.wh, Reason: "Kiểm kê", Lines: lines}}))
+	d.check(d.move(d.admin, "stock.adjustment", id, record.Posted))
+}
+
+func (d *deliveries) onHand(itemID int64) string {
+	d.t.Helper()
+	var q string
+	d.check(d.core.Pool.QueryRow(d.ctx, `SELECT coalesce(sum(quantity), 0)::numeric(15,3)::text FROM stock.balances
+		WHERE warehouse_id = $1 AND item_id = $2`, d.wh, itemID).Scan(&q))
+	return q
+}
+
+// liveMoves counts a delivery's moves not reversed.
+func (d *deliveries) liveMoves(id int64) int {
+	d.t.Helper()
+	var n int
+	d.check(d.core.Pool.QueryRow(d.ctx, `SELECT count(*) FROM stock.moves m WHERE m.doc_type = 'sales.delivery' AND m.doc_id = $1
+		AND m.reverses IS NULL AND NOT EXISTS (SELECT 1 FROM stock.moves r WHERE r.reverses = m.id)`, id).Scan(&n))
+	return n
+}
+
+func TestDeliveryRecordContract(t *testing.T) {
+	recordtest.Run(t, func(t *testing.T) recordtest.Harness {
+		d := newDeliveries(t)
+		d.adjust(stock.AdjustmentLine{ItemID: d.goods, Quantity: "100"})
+		fields := func(date string) sales.DeliveryFields {
+			f := d.fields(dl(1, "1"))
+			f.Date = date
+			return f
+		}
+		return recordtest.Harness{
+			Core: d.core, Actor: d.staff, Admin: d.admin, LegalEntity: d.c, Table: "sales.deliveries",
+			Get: func(ctx context.Context, r record.Ref) (any, error) { return d.sales.Delivery(ctx, r.ID) },
+			Create: func(ctx context.Context, date, requestID string) (record.Ref, error) {
+				id, err := d.sales.CreateDelivery(ctx, sales.NewDelivery{RequestID: requestID, OrderID: d.order, DeliveryFields: fields(date)})
+				return record.Ref{Type: "sales.delivery", ID: id}, err
+			},
+			Edit: func(ctx context.Context, r record.Ref, version int32, date string) error {
+				return d.sales.UpdateDelivery(ctx, r.ID, sales.DeliveryUpdate{Version: version, DeliveryFields: fields(date)})
+			},
+			RequireApproval: func(t *testing.T, a record.Action) {
+				d.check(d.appr.SaveRule(d.admin, "sales.delivery", a, approval.RuleInput{
+					Flow:      approval.Flow{{Step: &approval.StepDef{Approver: approval.Approver{Kind: "role", Product: "sales", Role: "manager"}}}},
+					MaxLevels: 3, FallbackProduct: "sales", FallbackRole: "manager",
+				}))
+			},
+			Approve: func(instance int64) error { return d.appr.Approve(d.manager, instance, 1) },
+			Reject:  func(instance int64) error { return d.appr.Reject(d.manager, instance, 1, "không") },
+			// Taking every unit elsewhere leaves the delivery short.
+			BreakPosting: func(*testing.T, record.Ref) {
+				d.adjust(stock.AdjustmentLine{ItemID: d.goods, Quantity: "-" + d.onHand(d.goods)})
+			},
+			// An effective posting leaves the delivery's moves live.
+			Effects: func(_ *testing.T, r record.Ref) int { return min(d.liveMoves(r.ID), 1) },
+		}
+	})
+}
+
+// Posting takes the goods out, lots included; cancelling puts them back.
+func TestDeliveryPostsAndCancelRestores(t *testing.T) {
+	d := newDeliveries(t)
+	d.adjust(stock.AdjustmentLine{ItemID: d.goods, Quantity: "10"}, stock.AdjustmentLine{ItemID: d.lotted, Lot: &stock.LotRef{Code: "L1"}, Quantity: "5"})
+	id := must(t)(d.create(d.staff, d.order, d.fields(dl(1, "4"), sales.DeliveryLineInput{OrderPosition: 2, LotCode: str("L1"), Quantity: "2"})))
+	if d.onHand(d.goods) != "10.000" {
+		t.Fatalf("a draft moved stock: %s", d.onHand(d.goods))
+	}
+	d.check(d.move(d.staff, "sales.delivery", id, record.Posted))
+	if g, l := d.onHand(d.goods), d.onHand(d.lotted); g != "6.000" || l != "3.000" {
+		t.Fatalf("on hand after posting: %s, %s", g, l)
+	}
+	d.check(d.move(d.staff, "sales.delivery", id, record.Cancelled))
+	if g, l := d.onHand(d.goods), d.onHand(d.lotted); g != "10.000" || l != "5.000" {
+		t.Fatalf("on hand after cancelling: %s, %s", g, l)
+	}
+	// A cancelled delivery takes nothing from the order: all 10 can go again.
+	must(t)(d.create(d.staff, d.order, d.fields(dl(1, "10"))))
+}
+
+func TestDeliveryPostingRefuses(t *testing.T) {
+	d := newDeliveries(t)
+	id := must(t)(d.create(d.staff, d.order, d.fields(dl(1, "4"))))
+	// Short stock refuses posting and moves nothing.
+	d.adjust(stock.AdjustmentLine{ItemID: d.goods, Quantity: "3"})
+	wantCode(t, d.move(d.staff, "sales.delivery", id, record.Posted), "stock_insufficient")
+	if d.onHand(d.goods) != "3.000" || d.liveMoves(id) != 0 {
+		t.Fatalf("refused posting moved stock: %s", d.onHand(d.goods))
+	}
+	// An order cancelled since the draft was saved refuses it too.
+	d.adjust(stock.AdjustmentLine{ItemID: d.goods, Quantity: "10"})
+	d.check(d.move(d.staff, "sales.order", d.order, record.Cancelled))
+	if err := d.move(d.staff, "sales.delivery", id, record.Posted); !errors.Is(err, sales.ErrOrderNotPosted) {
+		t.Fatalf("posting against a cancelled order: %v", err)
+	}
 }

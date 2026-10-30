@@ -13,6 +13,7 @@ import (
 	"github.com/taoworklabs/mmerp/internal/core/record"
 	"github.com/taoworklabs/mmerp/internal/modules/sales/internal/store"
 	"github.com/taoworklabs/mmerp/internal/platform"
+	"github.com/taoworklabs/mmerp/internal/shared/stock"
 )
 
 const deliveryType = "sales.delivery"
@@ -27,8 +28,43 @@ func (s *Service) registerDelivery() {
 	})
 }
 
-// deliveryTransition is where posting and cancelling move the stock.
-func (s *Service) deliveryTransition(context.Context, record.Doc, record.Status) error {
+// deliveryTransition takes the goods out of stock on posting, after checking the lines
+// against the order again, and puts them back on cancelling.
+func (s *Service) deliveryTransition(ctx context.Context, d record.Doc, _ record.Status) error {
+	switch d.Status {
+	case record.Posted:
+		h, err := store.GetDelivery.Run(ctx, d.ID)
+		if err != nil {
+			return err
+		}
+		saved, err := store.GetDeliveryLines.Run(ctx, d.ID)
+		if err != nil {
+			return err
+		}
+		f := DeliveryFields{WarehouseID: h.WarehouseID, Lines: make([]DeliveryLineInput, len(saved))}
+		for i, l := range saved {
+			f.Lines[i] = DeliveryLineInput{OrderPosition: int(l.OrderPosition), LotCode: platform.TextPtr(l.LotCode),
+				SerialCode: platform.TextPtr(l.SerialCode), Quantity: l.Quantity}
+		}
+		lines, err := s.checkDelivery(ctx, d.ID, h.OrderID, f)
+		if err != nil {
+			return err
+		}
+		moves := make([]stock.Move, len(lines))
+		for i, l := range lines {
+			q, err := decimal.NewFromString(l.Quantity)
+			if err != nil {
+				return err
+			}
+			moves[i] = stock.Move{LineNo: i + 1, WarehouseID: h.WarehouseID, ItemID: l.ItemID, Serial: l.SerialCode, Quantity: q.Neg()}
+			if l.LotCode != nil {
+				moves[i].Lot = &stock.LotRef{Code: *l.LotCode}
+			}
+		}
+		return s.d.Stock.Record(ctx, d.Ref, moves)
+	case record.Cancelled:
+		return s.d.Stock.Void(ctx, d.Ref)
+	}
 	return nil
 }
 
