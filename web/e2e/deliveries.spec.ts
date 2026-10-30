@@ -2,13 +2,13 @@ import { expect, test } from '@playwright/test'
 import { created, createUser, ok, password, runId, signedInApi } from './api'
 import { as, status } from './helpers'
 
-// One run: a company with a sales department and its own warehouse, a lot-tracked item, and a
-// confirmed order for four of it. One account sells and keeps the stock.
+// One run: a company with a sales department and the main warehouse it comes with, a lot-tracked
+// item, and a confirmed order for four of it. One account sells and keeps the stock.
 const run = runId()
 const login = `dlv_${run}`
 const code = `GAO${run}`
 const lot = `L${run}`
-const warehouse = { code: `K${run}`, name: `Kho chính ${run}` }
+let warehouse: string
 let orderId: number
 
 // Today in the tenant time zone, as the API and as the date fields take it.
@@ -26,7 +26,12 @@ test.beforeAll(async ({ baseURL }) => {
     { role: 'partner.editor', unit },
     { role: 'stock.admin', unit: null },
   ])
-  await created(api.post('/api/stock/warehouses', { data: { ...warehouse, legal_entity_id: company, active: true } }))
+  // The company's default warehouse: the delivery form starts from it.
+  const { items } = (await (await api.get('/api/stock/warehouses?page_size=100')).json()) as {
+    items: { code: string; name: string; legal_entity_id: number; is_default: boolean }[]
+  }
+  const main = items.find((w) => w.legal_entity_id === company && w.is_default)!
+  warehouse = `${main.code} · ${main.name}`
   const item = await created(
     api.post('/api/items', { data: { code, name: `Gạo thơm ${run}`, unit: 'túi', price: 210_000, vat_rate: '5', active: true, tracking: 'lot' } }),
   )
@@ -68,7 +73,7 @@ test('opening stock in a new lot, delivered from the order, leaves the rest on h
   await page.getByRole('link', { name: 'Lập phiếu điều chỉnh' }).click()
   await page.getByRole('textbox', { name: 'Ngày điều chỉnh' }).fill(typed(iso))
   await page.getByRole('combobox', { name: 'Kho', exact: true }).click()
-  await page.getByRole('option', { name: `${warehouse.code} · ${warehouse.name}` }).click()
+  await page.getByRole('option', { name: warehouse }).click()
   await page.getByRole('textbox', { name: 'Lý do' }).fill('Tồn đầu kỳ')
   await page.getByRole('combobox', { name: 'Mặt hàng (1)' }).fill(code)
   await page.getByRole('option', { name: new RegExp(code) }).click()

@@ -42,6 +42,13 @@ const items: [string, string, string, number, string, boolean][] = [
 const tracked: Record<string, Tracking> = { 'GAO-5KG': 'lot', 'LAP-14': 'serial' }
 const tracking = (code: string): Tracking => tracked[code] ?? (/^(DV|PM)-/.test(code) ? 'none' : 'quantity')
 
+// A date months after today in the tenant time zone, so seeded lots stay unexpired.
+const monthsAhead = (months: number) => {
+  const d = new Date(new Date().toLocaleDateString('sv-SE', { timeZone: 'Asia/Ho_Chi_Minh' }))
+  d.setUTCMonth(d.getUTCMonth() + months)
+  return d.toISOString().slice(0, 10)
+}
+
 // Opening stock of every warehouse: [item code, quantity, lot]; LAP-14 comes in by serial.
 const opening: [string, string, { code: string; expiry: string }?][] = [
   ['VPP-A4', '500'],
@@ -52,8 +59,8 @@ const opening: [string, string, { code: string; expiry: string }?][] = [
   ['GHE-VP', '60'],
   ['BAN-LV', '25'],
   ['NUOC-20L', '200'],
-  ['GAO-5KG', '40', { code: 'G2611', expiry: '2026-11-30' }],
-  ['GAO-5KG', '80', { code: 'G2703', expiry: '2027-03-31' }],
+  ['GAO-5KG', '40', { code: 'G2611', expiry: monthsAhead(12) }],
+  ['GAO-5KG', '80', { code: 'G2703', expiry: monthsAhead(16) }],
 ]
 const serials = 10
 
@@ -343,8 +350,8 @@ test('seed Sales on the Demo demo company', async ({ baseURL }) => {
     itemOf[code] = it
   }
 
-  // Opening stock in each legal entity's warehouse: its default one, or a main warehouse made
-  // for it when it has none (nothing makes a default for legal entities added later).
+  // Opening stock in each legal entity's default warehouse, made with the company; a database
+  // from before that gets a main warehouse here.
   const postDoc = async (as: APIRequestContext, type: string, path: string, id: number) =>
     ok(as.post(`/api/documents/${type}/${id}/transitions`, { data: { to: 'posted', version: (await get<{ version: number }>(as, `${path}/${id}`)).version } }), `post ${type} ${id}`)
   const warehouses = (await get<{ items: { id: number; legal_entity_id: number; is_default: boolean }[] }>(admin, '/api/stock/warehouses?page_size=100')).items
