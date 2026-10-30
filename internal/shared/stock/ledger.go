@@ -4,6 +4,7 @@ import (
 	"cmp"
 	"context"
 	"errors"
+	"maps"
 	"slices"
 	"strings"
 
@@ -49,25 +50,36 @@ func (s *Service) Record(ctx context.Context, ref record.Ref, moves []Move) erro
 		return err
 	}
 
+	for _, m := range moves {
+		if err := check(m, whs, items, h.LegalEntityID); err != nil {
+			return err
+		}
+	}
+	// Lots and serials are created in (item, code) order, so two documents creating the
+	// same new ones queue on the unique index instead of deadlocking.
+	order := make([]int, len(moves))
+	for i := range order {
+		order[i] = i
+	}
+	slices.SortFunc(order, func(a, b int) int {
+		return cmp.Or(cmp.Compare(moves[a].ItemID, moves[b].ItemID), cmp.Compare(trackCode(moves[a]), trackCode(moves[b])))
+	})
+	keyOf := make([]key, len(moves))
+	for _, i := range order {
+		m := moves[i]
+		k := key{w: m.WarehouseID, i: m.ItemID}
+		if k.l, k.s, err = s.resolve(ctx, items[m.ItemID].Tracking, m); err != nil {
+			return err
+		}
+		keyOf[i] = k
+	}
+
 	ins := store.InsertMovesParams{DocType: ref.Type, DocID: ref.ID, Date: h.Date}
 	deltas := map[key]decimal.Decimal{}
 	firstLine := map[key]Move{}
 	var serials []int64
-	for _, m := range moves {
-		w, ok := whs[m.WarehouseID]
-		it, found := items[m.ItemID]
-		switch {
-		case !ok || !found:
-			return platform.ErrNotFound
-		case w.LegalEntityID != h.LegalEntityID:
-			return lineErr(ErrWarehouseEntity, m)
-		case !w.Active:
-			return lineErr(ErrWarehouseInactive, m)
-		}
-		k := key{w: m.WarehouseID, i: m.ItemID}
-		if k.l, k.s, err = s.resolve(ctx, it.Tracking, m); err != nil {
-			return err
-		}
+	for i, m := range moves {
+		k := keyOf[i]
 		if k.s != 0 {
 			serials = append(serials, k.s)
 		}
@@ -89,13 +101,7 @@ func (s *Service) Record(ctx context.Context, ref record.Ref, moves []Move) erro
 	if err := store.LockSerials.Run(ctx, serials); err != nil {
 		return err
 	}
-	keys := slices.SortedFunc(func(yield func(key) bool) {
-		for k := range deltas {
-			if !yield(k) {
-				return
-			}
-		}
-	}, key.compare)
+	keys := slices.SortedFunc(maps.Keys(deltas), key.compare)
 	var ws, is, ls, ss []int64
 	var ds []string
 	for _, k := range keys {
@@ -112,34 +118,42 @@ func (s *Service) Record(ctx context.Context, ref record.Ref, moves []Move) erro
 	if err != nil {
 		return err
 	}
+	result := map[key]decimal.Decimal{}
 	for _, r := range rows {
-		k := key{r.WarehouseID, r.ItemID, r.LotID, r.SerialID}
-		q, err := decimal.NewFromString(r.Quantity)
-		if err != nil {
+		if result[key{r.WarehouseID, r.ItemID, r.LotID, r.SerialID}], err = decimal.NewFromString(r.Quantity); err != nil {
 			return err
 		}
-		it := items[k.i]
+	}
+	for _, k := range keys {
+		q, it := result[k], items[k.i]
 		// Only taking stock out can fail; a balance already below zero may still be refilled.
 		if !deltas[k].IsNegative() || !q.IsNegative() || (it.Tracking == item.TrackQuantity && it.AllowNegative) {
 			continue
 		}
 		return &platform.Error{Status: ErrInsufficient.Status, Code: ErrInsufficient.Code, Params: map[string]any{
-			"line_no": firstLine[k].LineNo, "warehouse_id": k.w, "item_id": k.i, "missing": q.Neg().String()}}
+			"line_no": firstLine[k].LineNo, "warehouse_id": k.w, "item_id": k.i,
+			"lot_id": nullID(k.l), "serial_id": nullID(k.s), "missing": q.Neg().String()}}
 	}
 	if len(serials) > 0 {
 		over, err := store.SerialsOverOne.Run(ctx, serials)
 		if err != nil {
 			return err
 		}
-		if len(over) > 0 {
-			for k, m := range firstLine {
-				if k.s == over[0] {
-					return lineErr(ErrSerialQuantity, m)
-				}
+		for _, k := range keys {
+			if k.s != 0 && slices.Contains(over, k.s) {
+				return lineErr(ErrSerialQuantity, firstLine[k])
 			}
 		}
 	}
 	return store.InsertMoves.Run(ctx, ins)
+}
+
+// nullID is nil for no lot or serial, so the API sends null.
+func nullID(id int64) any {
+	if id == 0 {
+		return nil
+	}
+	return id
 }
 
 func (s *Service) moveMasters(ctx context.Context, moves []Move) (map[int64]store.MoveWarehousesRow, map[int64]store.MoveItemsRow, error) {
@@ -165,36 +179,76 @@ func (s *Service) moveMasters(ctx context.Context, moves []Move) (map[int64]stor
 	return whs, items, nil
 }
 
-// resolve checks a move against its item's tracking and returns its lot and serial ids,
-// creating the lot or serial when missing. An outgoing move naming a new one then fails
-// the balance check, rolling the creation back.
-func (s *Service) resolve(ctx context.Context, tracking string, m Move) (lot, serial int64, err error) {
-	var lotCode, serialCode string
-	if m.Lot != nil {
-		lotCode = strings.TrimSpace(m.Lot.Code)
+// maxQuantity keeps a balance inside numeric(15,3).
+var maxQuantity = decimal.New(1, 12)
+
+// check refuses a move before anything is written: its warehouse, quantity and the
+// lot or serial its item's tracking asks for.
+func check(m Move, whs map[int64]store.MoveWarehousesRow, items map[int64]store.MoveItemsRow, legalEntity int64) error {
+	w, ok := whs[m.WarehouseID]
+	it, found := items[m.ItemID]
+	switch {
+	case !ok || !found:
+		return platform.ErrNotFound
+	case w.LegalEntityID != legalEntity:
+		return lineErr(ErrWarehouseEntity, m)
+	case !w.Active:
+		return lineErr(ErrWarehouseInactive, m)
+	case m.Quantity.IsZero() || !m.Quantity.Equal(m.Quantity.Truncate(3)) || m.Quantity.Abs().GreaterThanOrEqual(maxQuantity):
+		return lineErr(ErrQuantityInvalid, m)
 	}
-	if m.Serial != nil {
-		serialCode = strings.TrimSpace(*m.Serial)
-	}
-	switch tracking {
+	hasLot := m.Lot != nil
+	hasSerial := m.Serial != nil
+	switch it.Tracking {
 	case item.TrackNone:
-		return 0, 0, lineErr(ErrUntracked, m)
+		return lineErr(ErrUntracked, m)
 	case item.TrackQuantity:
-		if m.Lot != nil || m.Serial != nil {
-			return 0, 0, lineErr(ErrLotNotTracked, m)
+		if hasLot || hasSerial {
+			return lineErr(ErrLotNotTracked, m)
 		}
-		return 0, 0, nil
 	case item.TrackLot:
-		if m.Serial != nil {
-			return 0, 0, lineErr(ErrLotNotTracked, m)
+		if hasSerial {
+			return lineErr(ErrLotNotTracked, m)
 		}
-		if lotCode == "" {
-			return 0, 0, lineErr(ErrLotRequired, m)
+		if trackCode(m) == "" {
+			return lineErr(ErrLotRequired, m)
 		}
-		if err := store.InsertLot.Run(ctx, store.InsertLotParams{ItemID: m.ItemID, Code: lotCode, Expiry: platform.NullDate(m.Lot.Expiry)}); err != nil {
+	default: // serial
+		if hasLot {
+			return lineErr(ErrLotNotTracked, m)
+		}
+		if trackCode(m) == "" {
+			return lineErr(ErrSerialRequired, m)
+		}
+		if !m.Quantity.Abs().Equal(decimal.NewFromInt(1)) {
+			return lineErr(ErrSerialQuantity, m)
+		}
+	}
+	return nil
+}
+
+// trackCode is the move's lot or serial code as the unique indexes compare it.
+func trackCode(m Move) string {
+	switch {
+	case m.Lot != nil:
+		return strings.ToLower(strings.TrimSpace(m.Lot.Code))
+	case m.Serial != nil:
+		return strings.ToLower(strings.TrimSpace(*m.Serial))
+	}
+	return ""
+}
+
+// resolve returns a checked move's lot and serial ids, creating the lot or serial when
+// missing. An outgoing move naming a new one then fails the balance check, rolling the
+// creation back.
+func (s *Service) resolve(ctx context.Context, tracking string, m Move) (lot, serial int64, err error) {
+	switch tracking {
+	case item.TrackLot:
+		code := strings.TrimSpace(m.Lot.Code)
+		if err := store.InsertLot.Run(ctx, store.InsertLotParams{ItemID: m.ItemID, Code: code, Expiry: platform.NullDate(m.Lot.Expiry)}); err != nil {
 			return 0, 0, err
 		}
-		l, err := store.LotByCode.Run(ctx, store.LotByCodeParams{ItemID: m.ItemID, Code: lotCode})
+		l, err := store.LotByCode.Run(ctx, store.LotByCodeParams{ItemID: m.ItemID, Code: code})
 		if err != nil {
 			return 0, 0, err
 		}
@@ -204,22 +258,15 @@ func (s *Service) resolve(ctx context.Context, tracking string, m Move) (lot, se
 			}
 		}
 		return l.ID, 0, nil
-	default: // serial
-		if m.Lot != nil {
-			return 0, 0, lineErr(ErrLotNotTracked, m)
-		}
-		if serialCode == "" {
-			return 0, 0, lineErr(ErrSerialRequired, m)
-		}
-		if !m.Quantity.Abs().Equal(decimal.NewFromInt(1)) {
-			return 0, 0, lineErr(ErrSerialQuantity, m)
-		}
-		if err := store.InsertSerial.Run(ctx, store.InsertSerialParams{ItemID: m.ItemID, Code: serialCode}); err != nil {
+	case item.TrackSerial:
+		code := strings.TrimSpace(*m.Serial)
+		if err := store.InsertSerial.Run(ctx, store.InsertSerialParams{ItemID: m.ItemID, Code: code}); err != nil {
 			return 0, 0, err
 		}
-		id, err := store.SerialByCode.Run(ctx, store.SerialByCodeParams{ItemID: m.ItemID, Code: serialCode})
+		id, err := store.SerialByCode.Run(ctx, store.SerialByCodeParams{ItemID: m.ItemID, Code: code})
 		return 0, id, err
 	}
+	return 0, 0, nil
 }
 
 // SuggestLots picks on-hand lots of an item for qty, first expiring first, skipping those

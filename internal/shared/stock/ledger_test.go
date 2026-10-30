@@ -125,6 +125,22 @@ func TestRecordRefusesShortage(t *testing.T) {
 	if got := l.onHand(t, l.wh, it); got != "6" {
 		t.Fatalf("on hand %s", got)
 	}
+	if v, ok := e.Params["lot_id"]; !ok || v != nil || e.Params["serial_id"] != nil {
+		t.Fatalf("absent lot and serial %+v", e.Params)
+	}
+	// A lot item names its lot.
+	lt := l.item(t, item.TrackLot, false)
+	if err := l.move(t, stock.Move{LineNo: 1, WarehouseID: l.wh, ItemID: lt, Lot: lot("L1", nil), Quantity: qty(2)}); err != nil {
+		t.Fatal(err)
+	}
+	var lotID int64
+	if err := l.core.Pool.QueryRow(l.core.Ctx, `SELECT id FROM stock.lots WHERE item_id = $1`, lt).Scan(&lotID); err != nil {
+		t.Fatal(err)
+	}
+	e = wantCode(t, l.move(t, stock.Move{LineNo: 1, WarehouseID: l.wh, ItemID: lt, Lot: lot("L1", nil), Quantity: qty(-3)}), stock.ErrInsufficient)
+	if e.Params["lot_id"] != lotID || e.Params["missing"] != "1" || e.Params["warehouse_id"] != l.wh {
+		t.Fatalf("lot params %+v", e.Params)
+	}
 	// Moves of one key net out within a document: +5 and -3 from nothing is +2.
 	other := l.item(t, item.TrackQuantity, false)
 	if err := l.move(t, stock.Move{LineNo: 1, WarehouseID: l.wh, ItemID: other, Quantity: qty(-3)},
@@ -185,6 +201,8 @@ func TestTrackingChecks(t *testing.T) {
 		{stock.Move{ItemID: q, Serial: &s, Quantity: qty(1)}, stock.ErrLotNotTracked},
 		{stock.Move{ItemID: lt, Quantity: qty(1)}, stock.ErrLotRequired},
 		{stock.Move{ItemID: sr, Quantity: qty(1)}, stock.ErrSerialRequired},
+		{stock.Move{ItemID: q, Quantity: qty(0)}, stock.ErrQuantityInvalid},
+		{stock.Move{ItemID: q, Quantity: decimal.RequireFromString("1.0005")}, stock.ErrQuantityInvalid},
 	} {
 		c.m.LineNo, c.m.WarehouseID = 3, l.wh
 		if e := wantCode(t, l.move(t, c.m), c.want); e.Params["line_no"] != 3 {
