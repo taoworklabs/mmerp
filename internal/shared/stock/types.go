@@ -71,6 +71,14 @@ type OnHandList struct {
 	Total int64       `json:"total"`
 }
 
+var (
+	ErrStockCardRange    = &platform.Error{Status: http.StatusUnprocessableEntity, Code: "stock_card_range_invalid"}
+	ErrStockCardRangeLen = &platform.Error{Status: http.StatusUnprocessableEntity, Code: "stock_card_range_too_long"}
+)
+
+// maxStockCardDays bounds a stock card, counting both ends.
+const maxStockCardDays = 366
+
 type StockCardFilter struct {
 	WarehouseID int64  `query:"warehouse_id" required:"true"`
 	ItemID      int64  `query:"item_id" required:"true"`

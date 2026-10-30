@@ -1,6 +1,7 @@
 package stock_test
 
 import (
+	"errors"
 	"testing"
 
 	"github.com/taoworklabs/mmerp/internal/core/record"
@@ -63,5 +64,27 @@ func TestStockCardRunningBalance(t *testing.T) {
 		c.Rows[0].Quantity != "-4.000" || c.Rows[0].Balance != "6.000" || c.Rows[1].Quantity != "4.000" || c.Rows[1].Balance != "10.000" ||
 		c.Rows[0].Number == "" || c.Rows[0].DocID != out.ID {
 		t.Fatalf("%+v %v", c, err)
+	}
+}
+
+func TestStockCardBounds(t *testing.T) {
+	l := newLedger(t)
+	it := l.item(t, item.TrackQuantity, false)
+	c, err := l.stock.StockCard(l.admin, l.wh, it, "2026-01-01", "2026-12-31")
+	if err != nil || c.Opening != "0.000" || c.Closing != "0.000" || len(c.Rows) != 0 {
+		t.Fatalf("%+v %v", c, err)
+	}
+	if _, err := l.stock.StockCard(l.admin, l.wh, it, "2026-11-02", "2026-11-01"); !errors.Is(err, stock.ErrStockCardRange) {
+		t.Fatalf("from after to: %v", err)
+	}
+	// 366 days counting both ends is the longest card.
+	if _, err := l.stock.StockCard(l.admin, l.wh, it, "2027-01-01", "2028-01-01"); err != nil {
+		t.Fatalf("366 days: %v", err)
+	}
+	if _, err := l.stock.StockCard(l.admin, l.wh, it, "2026-01-01", "2027-01-02"); !errors.Is(err, stock.ErrStockCardRangeLen) {
+		t.Fatalf("too long: %v", err)
+	}
+	if _, err := l.stock.StockCard(l.user(t, "nobody"), l.wh, it, "2026-11-01", "2026-11-30"); !errors.Is(err, platform.ErrForbidden) {
+		t.Fatalf("no role: %v", err)
 	}
 }

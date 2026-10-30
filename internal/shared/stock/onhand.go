@@ -2,6 +2,7 @@ package stock
 
 import (
 	"context"
+	"time"
 
 	"github.com/shopspring/decimal"
 
@@ -40,11 +41,19 @@ func (s *Service) requireView(ctx context.Context) error {
 }
 
 // StockCard lists the moves of an item in a warehouse from..to (YYYY-MM-DD) with a running balance.
-// It is not paged: the date range bounds it.
+// It is not paged: the date range, at most maxStockCardDays long, bounds it.
 func (s *Service) StockCard(ctx context.Context, warehouse, item int64, from, to string) (StockCard, error) {
 	out := StockCard{Rows: []StockCardRow{}}
 	if err := s.requireView(ctx); err != nil {
 		return out, err
+	}
+	f, errF := time.Parse(time.DateOnly, from)
+	t, errT := time.Parse(time.DateOnly, to)
+	switch {
+	case errF != nil || errT != nil || f.After(t):
+		return out, ErrStockCardRange
+	case t.Sub(f) >= maxStockCardDays*24*time.Hour:
+		return out, ErrStockCardRangeLen
 	}
 	open, err := store.StockCardOpening.Run(ctx, store.StockCardOpeningParams{WarehouseID: warehouse, ItemID: item, FromDate: platform.NullDate(&from)})
 	if err != nil {
@@ -59,7 +68,7 @@ func (s *Service) StockCard(ctx context.Context, warehouse, item int64, from, to
 	if err != nil {
 		return out, err
 	}
-	out.Opening = open
+	out.Opening = bal.StringFixed(3)
 	for _, r := range rows {
 		q, err := decimal.NewFromString(r.Quantity)
 		if err != nil {
