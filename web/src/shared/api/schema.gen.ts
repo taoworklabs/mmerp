@@ -1824,6 +1824,55 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/stock/adjustments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["list-stock-adjustments"];
+        put?: never;
+        /** @description Sending the same request_id again returns the document created the first time. */
+        post: operations["create-stock-adjustment"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/stock/adjustments/actions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["get-stock-adjustment-actions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/stock/adjustments/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["get-stock-adjustment"];
+        put: operations["update-stock-adjustment"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/stock/warehouses": {
         parameters: {
             query?: never;
@@ -2030,6 +2079,105 @@ export interface components {
              */
             readonly $schema?: string;
             body: string;
+        };
+        Adjustment: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example /api/schemas/Adjustment.json
+             */
+            readonly $schema?: string;
+            allowed_actions: string[];
+            /** Format: date */
+            date: string;
+            /** Format: int64 */
+            id: number;
+            /** Format: int64 */
+            legal_entity_id: number;
+            lines: components["schemas"]["AdjustmentLineOut"][];
+            number: string;
+            reason: string;
+            /** @enum {string} */
+            status: "draft" | "pending_approval" | "posted" | "cancelled";
+            /** Format: int32 */
+            version: number;
+            warehouse_code: string;
+            /** Format: int64 */
+            warehouse_id: number;
+            warehouse_name: string;
+        };
+        AdjustmentActions: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example /api/schemas/AdjustmentActions.json
+             */
+            readonly $schema?: string;
+            allowed_actions: string[];
+        };
+        AdjustmentLine: {
+            /** Format: int64 */
+            item_id: number;
+            /** @description Lot-tracked items: created at posting when missing */
+            lot: components["schemas"]["LotRef"];
+            /** @description Signed, not 0, up to 3 decimals */
+            quantity: string;
+            /** @description Serial-tracked items */
+            serial: string | null;
+        };
+        AdjustmentLineOut: {
+            item_code: string;
+            /** Format: int64 */
+            item_id: number;
+            item_name: string;
+            /** @description Lot-tracked items: created at posting when missing */
+            lot: components["schemas"]["LotRef"];
+            /** @description Signed, not 0, up to 3 decimals */
+            quantity: string;
+            /** @description Serial-tracked items */
+            serial: string | null;
+            unit: string;
+        };
+        AdjustmentList: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example /api/schemas/AdjustmentList.json
+             */
+            readonly $schema?: string;
+            items: components["schemas"]["AdjustmentListItem"][];
+            /** Format: int64 */
+            total: number;
+        };
+        AdjustmentListItem: {
+            /** Format: date */
+            date: string;
+            /** Format: int64 */
+            id: number;
+            number: string;
+            reason: string;
+            /** @enum {string} */
+            status: "draft" | "pending_approval" | "posted" | "cancelled";
+            warehouse_code: string;
+            /** Format: int64 */
+            warehouse_id: number;
+            warehouse_name: string;
+        };
+        AdjustmentUpdate: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example /api/schemas/AdjustmentUpdate.json
+             */
+            readonly $schema?: string;
+            /** Format: date */
+            date: string;
+            lines: components["schemas"]["AdjustmentLine"][];
+            reason: string;
+            /** Format: int32 */
+            version: number;
+            /** Format: int64 */
+            warehouse_id: number;
         };
         ApproveInputBody: {
             /**
@@ -3204,6 +3352,11 @@ export interface components {
             symbol: boolean;
             upper: boolean;
         };
+        LotRef: {
+            code: string;
+            /** Format: date */
+            expiry: string | null;
+        };
         MailServer: {
             /**
              * Format: uri
@@ -3365,6 +3518,25 @@ export interface components {
             phone: string | null;
             /** Format: date */
             termination_date: string | null;
+        };
+        NewAdjustment: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example /api/schemas/NewAdjustment.json
+             */
+            readonly $schema?: string;
+            /** Format: date */
+            date: string;
+            lines: components["schemas"]["AdjustmentLine"][];
+            reason: string;
+            /**
+             * Format: uuid
+             * @description Generated once per form: sending it again returns the first document
+             */
+            request_id: string;
+            /** Format: int64 */
+            warehouse_id: number;
         };
         NewContract: {
             /**
@@ -9793,6 +9965,169 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["OrderFromQuoteOutputBody"];
                 };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "list-stock-adjustments": {
+        parameters: {
+            query?: {
+                /** @description Number or reason */
+                q?: string;
+                status?: "draft" | "pending_approval" | "posted" | "cancelled";
+                warehouse_id?: number;
+                sort?: "date" | "-date" | "number" | "-number";
+                page?: number;
+                page_size?: 20 | 50 | 100;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdjustmentList"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "create-stock-adjustment": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NewAdjustment"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CreatedOutputBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "get-stock-adjustment-actions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdjustmentActions"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "get-stock-adjustment": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Adjustment"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "update-stock-adjustment": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AdjustmentUpdate"];
+            };
+        };
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Error */
             default: {

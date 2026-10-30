@@ -1,3 +1,20 @@
 {
-  "stock.warehouse.default_name": "Main warehouse"
+  "stock.warehouse.default_name": "Main warehouse",
+  "stock.print.adjustment.name": "Stock adjustment",
+  "stock.print.adjustment.title": "STOCK ADJUSTMENT",
+  "stock.print.number": "No. {number} · Date: {date}",
+  "stock.print.company": "Company",
+  "stock.print.name": "Name",
+  "stock.print.warehouse": "Warehouse",
+  "stock.print.reason": "Reason",
+  "stock.print.lines": "Items",
+  "stock.print.item_code": "Code",
+  "stock.print.item_name": "Item",
+  "stock.print.unit": "Unit",
+  "stock.print.lot": "Lot",
+  "stock.print.expiry": "Expiry",
+  "stock.print.serial": "Serial",
+  "stock.print.quantity": "Quantity",
+  "stock.print.block.footer": "Footer",
+  "stock.print.block.footer.default": "Prepared by\n\n\n\nStorekeeper"
 }

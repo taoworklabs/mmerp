@@ -56,7 +56,7 @@ CREATE UNIQUE INDEX balances_key ON stock.balances (warehouse_id, item_id, coale
 CREATE TABLE stock.adjustments (
     id           bigint PRIMARY KEY REFERENCES record.documents DEFERRABLE INITIALLY DEFERRED,
     warehouse_id bigint NOT NULL REFERENCES stock.warehouses,
-    reason       text
+    reason       text NOT NULL
 );
 
 CREATE TABLE stock.adjustment_lines (

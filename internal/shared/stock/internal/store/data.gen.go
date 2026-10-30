@@ -9,6 +9,16 @@ import (
 
 func newQ(c platform.Conn) *Queries { return New(c) }
 
+var AdjustmentWarehouse = data.OneArg("stock.AdjustmentWarehouse", newQ, (*Queries).AdjustmentWarehouse)
+var CountItems = data.OneArg("stock.CountItems", newQ, (*Queries).CountItems)
+var InsertAdjustment = data.ExecArg("stock.InsertAdjustment", newQ, (*Queries).InsertAdjustment)
+var UpdateAdjustment = data.ExecArg("stock.UpdateAdjustment", newQ, (*Queries).UpdateAdjustment)
+var DeleteAdjustment = data.ExecArg("stock.DeleteAdjustment", newQ, (*Queries).DeleteAdjustment)
+var DeleteAdjustmentLines = data.ExecArg("stock.DeleteAdjustmentLines", newQ, (*Queries).DeleteAdjustmentLines)
+var InsertAdjustmentLines = data.ExecArg("stock.InsertAdjustmentLines", newQ, (*Queries).InsertAdjustmentLines)
+var GetAdjustment = data.OneArg("stock.GetAdjustment", newQ, (*Queries).GetAdjustment)
+var GetAdjustmentLines = data.ManyArg("stock.GetAdjustmentLines", newQ, (*Queries).GetAdjustmentLines)
+var AdjustmentListBase = data.NewBase("stock.AdjustmentListBase", adjustmentListBase, []string{"id", "number", "status", "date", "org_unit_id", "warehouse_id", "warehouse_code", "warehouse_name", "reason"}, (*Queries).AdjustmentListBase)
 var DocumentHeader = data.OneArg("stock.DocumentHeader", newQ, (*Queries).DocumentHeader)
 var HasLiveMoves = data.OneArg("stock.HasLiveMoves", newQ, (*Queries).HasLiveMoves)
 var OpenMoves = data.ManyArg("stock.OpenMoves", newQ, (*Queries).OpenMoves)

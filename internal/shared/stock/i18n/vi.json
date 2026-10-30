@@ -1,3 +1,20 @@
 {
-  "stock.warehouse.default_name": "Kho chính"
+  "stock.warehouse.default_name": "Kho chính",
+  "stock.print.adjustment.name": "Phiếu điều chỉnh kho",
+  "stock.print.adjustment.title": "PHIẾU ĐIỀU CHỈNH KHO",
+  "stock.print.number": "Số {number} · Ngày: {date}",
+  "stock.print.company": "Đơn vị",
+  "stock.print.name": "Tên",
+  "stock.print.warehouse": "Kho",
+  "stock.print.reason": "Lý do",
+  "stock.print.lines": "Hàng hóa",
+  "stock.print.item_code": "Mã",
+  "stock.print.item_name": "Mặt hàng",
+  "stock.print.unit": "ĐVT",
+  "stock.print.lot": "Lô",
+  "stock.print.expiry": "Hạn dùng",
+  "stock.print.serial": "Số sê-ri",
+  "stock.print.quantity": "Số lượng",
+  "stock.print.block.footer": "Chân trang",
+  "stock.print.block.footer.default": "Người lập phiếu\n\n\n\nThủ kho"
 }

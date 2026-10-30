@@ -31,7 +31,8 @@ const warehouseSeries = "stock.warehouse"
 
 type Service struct{ d Deps }
 
-// NewService registers the stock roles and the warehouse code series; no product gates them.
+// NewService registers the stock roles, the warehouse code series and the adjustment
+// document type; no product gates them.
 func NewService(d Deps) *Service {
 	if err := loadTranslations(); err != nil {
 		panic(err) // embedded files: broken only by a bad build
@@ -42,7 +43,9 @@ func NewService(d Deps) *Service {
 		"admin":  {PermView, PermManage},
 	}, "admin")
 	d.Numbering.RegisterSeries(warehouseSeries, "", "KHO")
-	return &Service{d: d}
+	s := &Service{d: d}
+	s.registerAdjustment()
+	return s
 }
 
 // Warehouses lists them to anyone who may view stock at some org unit.
