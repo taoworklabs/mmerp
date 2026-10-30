@@ -121,3 +121,43 @@ func TestStockCardHidesUnreadableDocuments(t *testing.T) {
 		t.Fatalf("seller card: %+v", rows)
 	}
 }
+
+// A company gets its default warehouse with it, whether created as one or changed into one;
+// other units get none.
+func TestCompanyGetsDefaultWarehouse(t *testing.T) {
+	pool := pgtest.New(t)
+	if err := app.CreateAdmin(t.Context(), pool, "admin", "Admin", "correct horse"); err != nil {
+		t.Fatal(err)
+	}
+	f := &jobsFixture{t: t, env: env(t, pool, nil)}
+	f.system = f.env.SystemPool
+	f.admin = f.login("admin")
+	defaults := func(unit int64) (names []string) {
+		rows, err := f.system.Query(t.Context(), `SELECT name FROM stock.warehouses WHERE legal_entity_id = $1 AND is_default`, unit)
+		if err != nil {
+			t.Fatal(err)
+		}
+		for rows.Next() {
+			var n string
+			if err := rows.Scan(&n); err != nil {
+				t.Fatal(err)
+			}
+			names = append(names, n)
+		}
+		return names
+	}
+	company := f.id(f.admin, "/api/org-units", `{"parent_id":null,"kind":"company","name":"C"}`)
+	f.id(f.admin, "/api/org-units", fmt.Sprintf(`{"parent_id":%d,"kind":"department","name":"D"}`, company))
+	group := f.id(f.admin, "/api/org-units", `{"parent_id":null,"kind":"group","name":"G"}`)
+	if got := defaults(company); len(got) != 1 || got[0] != "Kho chính" {
+		t.Fatalf("company: %v", got)
+	}
+	var all int
+	if err := f.system.QueryRow(t.Context(), `SELECT count(*) FROM stock.warehouses`).Scan(&all); err != nil || all != 1 {
+		t.Fatalf("department or group got a warehouse: %d %v", all, err)
+	}
+	f.ok(f.admin, "PUT", fmt.Sprintf("/api/org-units/%d", group), `{"parent_id":null,"kind":"company","name":"G"}`, 204)
+	if got := defaults(group); len(got) != 1 {
+		t.Fatalf("group turned company: %v", got)
+	}
+}

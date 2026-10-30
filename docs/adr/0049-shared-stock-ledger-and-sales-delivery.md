@@ -18,7 +18,7 @@ Other ERPs agree on two numbers: **on hand**, changed only when goods physically
 
 ### Ledger
 
-- **Warehouse** (`stock.warehouses`): code, name, legal entity, active, a default flag (one per legal entity). The migration gives each existing legal entity a default warehouse; for a legal entity created later, `stock` creates it inside the first write transaction that asks for it, so `core` needs no hook.
+- **Warehouse** (`stock.warehouses`): code, name, legal entity, active, a default flag (one per legal entity). The migration gives each existing legal entity a default warehouse; a company created later (or a unit changed into one) gets it in the same transaction, through a synchronous `iam` hook wired in `internal/app` to `stock`, so a company never lacks a place to move stock. A legal entity still without one makes its next new warehouse the default.
 - **Stock move** (`stock.moves`): one row per (document, line, warehouse, item, lot or serial) with a signed quantity, `numeric(15,3)`, the document's date. Written once by `stock.Record(ctx, ref, moves)` when the document posts; `stock.Void(ctx, ref)` writes the reversal when it is cancelled. Moves are never edited, as for posting lines.
 - **Balance** (`stock.balances`): on-hand per (warehouse, item, lot or serial), updated in the same transaction as the moves. It is the row locked to check availability; the ledger stays the source of truth and the balance can be rebuilt from it.
 - A move's warehouse must belong to the document's legal entity.

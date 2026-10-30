@@ -96,8 +96,16 @@ func TestWarehousePermissions(t *testing.T) {
 		t.Fatal(err)
 	}
 	l, err := f.stock.Warehouses(viewer, stock.WarehouseFilter{Paging: page})
-	if err != nil || l.Total != 1 || l.Items[0].ID != id || l.Items[0].Code != "KHO00001" || l.Items[0].Name != "Kho A" || l.Items[0].IsDefault {
+	if err != nil || l.Total != 1 || l.Items[0].ID != id || l.Items[0].Code != "KHO00001" || l.Items[0].Name != "Kho A" || !l.Items[0].IsDefault {
 		t.Fatalf("list %+v %v", l, err)
+	}
+	// The first warehouse of an entity without a default became it; later ones do not.
+	in.Name = "Kho C"
+	if _, err := f.stock.CreateWarehouse(admin, in); err != nil {
+		t.Fatal(err)
+	}
+	if l, err := f.stock.Warehouses(viewer, stock.WarehouseFilter{Paging: page}); err != nil || l.Total != 2 || l.Items[0].IsDefault == l.Items[1].IsDefault {
+		t.Fatalf("second: %+v %v", l, err)
 	}
 	if err := f.stock.UpdateWarehouse(admin, id, stock.WarehouseUpdate{Name: "Kho B"}); err != nil {
 		t.Fatal(err)

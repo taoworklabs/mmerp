@@ -1,11 +1,12 @@
-import { Stack, Text } from '@mmerp/ui'
+import { Anchor, Stack, Text } from '@mmerp/ui'
 import { IconListDetails, IconTruckDelivery } from '@tabler/icons-react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useRef, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { useTranslation } from 'react-i18next'
+import { Link } from 'react-router'
 import { api, ApiError, unwrap, type Delivery, type DeliveryLineInput, type DeliveryOptions } from '@/shared/api/sales'
-import { useMe } from '@/shared/auth/me'
+import { useCan, useMe } from '@/shared/auth/me'
 import { useDocumentMutation } from '@/shared/document'
 import { errorText, formatDate, formatDecimal, today } from '@/shared/i18n'
 import { useConfirm } from '@/shared/ui/confirm'
@@ -96,6 +97,7 @@ function Fields({ order, doc, onCreated, ro, initial }: Props & { ro: boolean; i
   const { t } = useTranslation()
   const me = useMe()
   const client = useQueryClient()
+  const canManageStock = useCan('stock.manage')
   const [ask, dialog] = useConfirm()
   const mutation = useDocumentMutation(deliveryDocType, doc?.id ?? 0, doc?.version ?? 0)
   // One id per opened form: sending it twice returns the delivery made the first time.
@@ -264,6 +266,14 @@ function Fields({ order, doc, onCreated, ro, initial }: Props & { ro: boolean; i
 
   return (
     <Form form={form} onSubmit={save} errorFields={errorFields}>
+      {!ro && !options?.warehouses.length && (
+        <Notice tone="warning" title={t('sales.delivery.no_warehouse')}>
+          {t('sales.delivery.no_warehouse_hint')}{' '}
+          {canManageStock && (
+            <Anchor render={<Link to="/sales/stock/warehouses" />}>{t('sales.delivery.no_warehouse_link')}</Anchor>
+          )}
+        </Notice>
+      )}
       <FormSection title={t('sales.delivery.section.general')} description={t('sales.delivery.section.general_hint')} icon={IconTruckDelivery}>
         <DateField name="date" label={t('sales.delivery.date')} required readOnly={ro} />
         <SelectField name="warehouse_id" label={t('sales.delivery.warehouse')} required readOnly={ro} data={warehouses} onChange={(v) => void changeWarehouse(v)} />
