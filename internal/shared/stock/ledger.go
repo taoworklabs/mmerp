@@ -64,7 +64,9 @@ func (s *Service) Record(ctx context.Context, ref record.Ref, moves []Move) erro
 		order[i] = i
 	}
 	slices.SortFunc(order, func(a, b int) int {
-		return cmp.Or(cmp.Compare(moves[a].ItemID, moves[b].ItemID), cmp.Compare(trackCode(moves[a]), trackCode(moves[b])))
+		// Incoming first for the same code, so an outgoing line sees what the document itself creates.
+		return cmp.Or(cmp.Compare(moves[a].ItemID, moves[b].ItemID), cmp.Compare(trackCode(moves[a]), trackCode(moves[b])),
+			-cmp.Compare(moves[a].Quantity.Sign(), moves[b].Quantity.Sign()), cmp.Compare(moves[a].LineNo, moves[b].LineNo), cmp.Compare(a, b))
 	})
 	keyOf := make([]key, len(moves))
 	for _, i := range order {
@@ -254,30 +256,39 @@ func check(m Move, whs map[int64]store.MoveWarehousesRow, items map[int64]store.
 	case m.Quantity.IsZero() || !m.Quantity.Equal(m.Quantity.Truncate(3)) || m.Quantity.Abs().GreaterThanOrEqual(maxQuantity):
 		return lineErr(ErrQuantityInvalid, m)
 	}
-	hasLot := m.Lot != nil
-	hasSerial := m.Serial != nil
-	switch it.Tracking {
+	var lot *string
+	if m.Lot != nil {
+		lot = &m.Lot.Code
+	}
+	return CheckShape(it.Tracking, lot, m.Serial, m.Quantity, m.LineNo)
+}
+
+// CheckShape refuses a line whose lot, serial and quantity do not fit its item's tracking;
+// documents call it on saving, before posting checks the lots and serials themselves.
+func CheckShape(tracking string, lot, serial *string, qty decimal.Decimal, lineNo int) error {
+	m := Move{LineNo: lineNo}
+	switch tracking {
 	case item.TrackNone:
 		return lineErr(ErrUntracked, m)
 	case item.TrackQuantity:
-		if hasLot || hasSerial {
+		if lot != nil || serial != nil {
 			return lineErr(ErrLotNotTracked, m)
 		}
 	case item.TrackLot:
-		if hasSerial {
+		if serial != nil {
 			return lineErr(ErrLotNotTracked, m)
 		}
-		if trackCode(m) == "" {
+		if lot == nil || strings.TrimSpace(*lot) == "" {
 			return lineErr(ErrLotRequired, m)
 		}
 	default: // serial
-		if hasLot {
+		if lot != nil {
 			return lineErr(ErrLotNotTracked, m)
 		}
-		if trackCode(m) == "" {
+		if serial == nil || strings.TrimSpace(*serial) == "" {
 			return lineErr(ErrSerialRequired, m)
 		}
-		if !m.Quantity.Abs().Equal(decimal.NewFromInt(1)) {
+		if !qty.Abs().Equal(decimal.NewFromInt(1)) {
 			return lineErr(ErrSerialQuantity, m)
 		}
 	}
@@ -296,12 +307,21 @@ func trackCode(m Move) string {
 }
 
 // resolve returns a checked move's lot and serial ids, creating the lot or serial when
-// missing. An outgoing move naming a new one then fails the balance check, rolling the
-// creation back.
+// missing for an incoming move; an outgoing move naming an unknown one is refused.
 func (s *Service) resolve(ctx context.Context, tracking string, m Move) (lot, serial int64, err error) {
 	switch tracking {
 	case item.TrackLot:
 		code := strings.TrimSpace(m.Lot.Code)
+		if m.Quantity.IsNegative() {
+			l, err := store.LotByCode.Run(ctx, store.LotByCodeParams{ItemID: m.ItemID, Code: code})
+			if errors.Is(err, pgx.ErrNoRows) {
+				return 0, 0, lineErr(ErrLotNotFound, m)
+			}
+			if err != nil {
+				return 0, 0, err
+			}
+			return l.ID, 0, expiryMatches(m, l.Expiry)
+		}
 		if err := store.InsertLot.Run(ctx, store.InsertLotParams{ItemID: m.ItemID, Code: code, Expiry: platform.NullDate(m.Lot.Expiry)}); err != nil {
 			return 0, 0, err
 		}
@@ -309,14 +329,16 @@ func (s *Service) resolve(ctx context.Context, tracking string, m Move) (lot, se
 		if err != nil {
 			return 0, 0, err
 		}
-		if m.Lot.Expiry != nil {
-			if have := platform.DatePtr(l.Expiry); have == nil || *have != *m.Lot.Expiry {
-				return 0, 0, lineErr(ErrLotExpiryMismatch, m)
-			}
-		}
-		return l.ID, 0, nil
+		return l.ID, 0, expiryMatches(m, l.Expiry)
 	case item.TrackSerial:
 		code := strings.TrimSpace(*m.Serial)
+		if m.Quantity.IsNegative() {
+			id, err := store.SerialByCode.Run(ctx, store.SerialByCodeParams{ItemID: m.ItemID, Code: code})
+			if errors.Is(err, pgx.ErrNoRows) {
+				return 0, 0, lineErr(ErrSerialNotFound, m)
+			}
+			return 0, id, err
+		}
 		if err := store.InsertSerial.Run(ctx, store.InsertSerialParams{ItemID: m.ItemID, Code: code}); err != nil {
 			return 0, 0, err
 		}
@@ -347,4 +369,20 @@ func (s *Service) SuggestLots(ctx context.Context, warehouse, itemID int64, qty 
 		qty = qty.Sub(take)
 	}
 	return out, nil
+}
+
+// SerialsOnHand lists the codes of an item's serials on hand in a warehouse, sorted. It checks no permission.
+func (s *Service) SerialsOnHand(ctx context.Context, warehouse, itemID int64) ([]string, error) {
+	return store.SerialsOnHand.Run(ctx, store.SerialsOnHandParams{WarehouseID: warehouse, ItemID: itemID})
+}
+
+// expiryMatches refuses a move naming an expiry other than the lot's.
+func expiryMatches(m Move, have pgtype.Date) error {
+	if m.Lot.Expiry == nil {
+		return nil
+	}
+	if h := platform.DatePtr(have); h == nil || *h != *m.Lot.Expiry {
+		return lineErr(ErrLotExpiryMismatch, m)
+	}
+	return nil
 }

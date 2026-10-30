@@ -540,6 +540,30 @@
         ],
         "type": "object"
       },
+      "AvailabilityOutputBody": {
+        "additionalProperties": false,
+        "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "/api/schemas/AvailabilityOutputBody.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/ItemAvailability"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "items"
+        ],
+        "type": "object"
+      },
       "BalanceAdjustment": {
         "additionalProperties": false,
         "properties": {
@@ -1582,6 +1606,436 @@
         ],
         "type": "object"
       },
+      "Delivery": {
+        "additionalProperties": false,
+        "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "/api/schemas/Delivery.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
+          "allowed_actions": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "date": {
+            "format": "date",
+            "type": "string"
+          },
+          "id": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "lines": {
+            "items": {
+              "$ref": "#/components/schemas/DeliveryLine"
+            },
+            "type": "array"
+          },
+          "note": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "number": {
+            "type": "string"
+          },
+          "order_id": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "order_number": {
+            "type": "string"
+          },
+          "org_unit_id": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "status": {
+            "enum": [
+              "draft",
+              "pending_approval",
+              "posted",
+              "cancelled"
+            ],
+            "type": "string"
+          },
+          "version": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "warehouse_code": {
+            "type": "string"
+          },
+          "warehouse_id": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "warehouse_name": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "order_id",
+          "order_number",
+          "number",
+          "status",
+          "version",
+          "date",
+          "org_unit_id",
+          "warehouse_id",
+          "warehouse_code",
+          "warehouse_name",
+          "note",
+          "lines",
+          "allowed_actions"
+        ],
+        "type": "object"
+      },
+      "DeliveryLine": {
+        "additionalProperties": false,
+        "properties": {
+          "description": {
+            "type": "string"
+          },
+          "item_code": {
+            "type": "string"
+          },
+          "item_id": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "lot_code": {
+            "maxLength": 100,
+            "type": "string"
+          },
+          "order_position": {
+            "format": "int64",
+            "minimum": 1,
+            "type": "integer"
+          },
+          "quantity": {
+            "description": "More than 0, up to 3 decimals",
+            "pattern": "^[0-9]{1,12}(\\.[0-9]{1,3})?$",
+            "type": "string"
+          },
+          "serial_code": {
+            "maxLength": 100,
+            "type": "string"
+          },
+          "unit": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "item_id",
+          "item_code",
+          "description",
+          "unit",
+          "order_position",
+          "quantity"
+        ],
+        "type": "object"
+      },
+      "DeliveryLineInput": {
+        "additionalProperties": false,
+        "properties": {
+          "lot_code": {
+            "maxLength": 100,
+            "type": "string"
+          },
+          "order_position": {
+            "format": "int64",
+            "minimum": 1,
+            "type": "integer"
+          },
+          "quantity": {
+            "description": "More than 0, up to 3 decimals",
+            "pattern": "^[0-9]{1,12}(\\.[0-9]{1,3})?$",
+            "type": "string"
+          },
+          "serial_code": {
+            "maxLength": 100,
+            "type": "string"
+          }
+        },
+        "required": [
+          "order_position",
+          "quantity"
+        ],
+        "type": "object"
+      },
+      "DeliveryList": {
+        "additionalProperties": false,
+        "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "/api/schemas/DeliveryList.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/DeliveryListItem"
+            },
+            "type": "array"
+          },
+          "total": {
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "items",
+          "total"
+        ],
+        "type": "object"
+      },
+      "DeliveryListItem": {
+        "additionalProperties": false,
+        "properties": {
+          "customer_id": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "customer_name": {
+            "type": "string"
+          },
+          "date": {
+            "format": "date",
+            "type": "string"
+          },
+          "id": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "number": {
+            "type": "string"
+          },
+          "order_id": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "order_number": {
+            "type": "string"
+          },
+          "org_unit_name": {
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "draft",
+              "pending_approval",
+              "posted",
+              "cancelled"
+            ],
+            "type": "string"
+          },
+          "warehouse_id": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "warehouse_name": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "number",
+          "status",
+          "date",
+          "order_id",
+          "order_number",
+          "customer_id",
+          "customer_name",
+          "warehouse_id",
+          "warehouse_name",
+          "org_unit_name"
+        ],
+        "type": "object"
+      },
+      "DeliveryLot": {
+        "additionalProperties": false,
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "expiry": {
+            "format": "date",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "quantity": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "code",
+          "expiry",
+          "quantity"
+        ],
+        "type": "object"
+      },
+      "DeliveryOptionLine": {
+        "additionalProperties": false,
+        "properties": {
+          "description": {
+            "type": "string"
+          },
+          "item_code": {
+            "type": "string"
+          },
+          "item_id": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "lots": {
+            "items": {
+              "$ref": "#/components/schemas/DeliveryLot"
+            },
+            "type": "array"
+          },
+          "order_position": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "ordered": {
+            "type": "string"
+          },
+          "remaining": {
+            "type": "string"
+          },
+          "serials": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "tracking": {
+            "enum": [
+              "quantity",
+              "lot",
+              "serial"
+            ],
+            "type": "string"
+          },
+          "unit": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "order_position",
+          "item_id",
+          "item_code",
+          "description",
+          "unit",
+          "tracking",
+          "ordered",
+          "remaining",
+          "lots",
+          "serials"
+        ],
+        "type": "object"
+      },
+      "DeliveryOptions": {
+        "additionalProperties": false,
+        "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "/api/schemas/DeliveryOptions.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
+          "lines": {
+            "items": {
+              "$ref": "#/components/schemas/DeliveryOptionLine"
+            },
+            "type": "array"
+          },
+          "warehouse_id": {
+            "description": "The warehouse the suggestions are for; 0 when the legal entity has none",
+            "format": "int64",
+            "type": "integer"
+          },
+          "warehouses": {
+            "items": {
+              "$ref": "#/components/schemas/WarehouseOption"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "warehouses",
+          "warehouse_id",
+          "lines"
+        ],
+        "type": "object"
+      },
+      "DeliveryUpdate": {
+        "additionalProperties": false,
+        "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "/api/schemas/DeliveryUpdate.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
+          "date": {
+            "format": "date",
+            "type": "string"
+          },
+          "lines": {
+            "items": {
+              "$ref": "#/components/schemas/DeliveryLineInput"
+            },
+            "maxItems": 500,
+            "minItems": 1,
+            "type": "array"
+          },
+          "note": {
+            "maxLength": 2000,
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "version": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "warehouse_id": {
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "version",
+          "date",
+          "warehouse_id",
+          "note",
+          "lines"
+        ],
+        "type": "object"
+      },
       "Dependent": {
         "additionalProperties": false,
         "properties": {
@@ -1774,12 +2228,30 @@
             "format": "date",
             "type": "string"
           },
+          "deliveries": {
+            "items": {
+              "$ref": "#/components/schemas/DocRef"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          },
           "delivery_date": {
             "format": "date",
             "type": [
               "string",
               "null"
             ]
+          },
+          "delivery_state": {
+            "enum": [
+              "none",
+              "partial",
+              "full",
+              "not_applicable"
+            ],
+            "type": "string"
           },
           "delivery_terms": {
             "type": [
@@ -1951,6 +2423,15 @@
           },
           "date": {
             "format": "date",
+            "type": "string"
+          },
+          "delivery_state": {
+            "enum": [
+              "none",
+              "partial",
+              "full",
+              "not_applicable"
+            ],
             "type": "string"
           },
           "expired": {
@@ -3041,6 +3522,32 @@
         ],
         "type": "object"
       },
+      "ItemAvailability": {
+        "additionalProperties": false,
+        "properties": {
+          "available": {
+            "type": "string"
+          },
+          "committed": {
+            "description": "Still to deliver on posted orders",
+            "type": "string"
+          },
+          "item_id": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "on_hand": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "item_id",
+          "on_hand",
+          "committed",
+          "available"
+        ],
+        "type": "object"
+      },
       "ItemFields": {
         "additionalProperties": false,
         "properties": {
@@ -3772,6 +4279,12 @@
             "description": "Quantity × unit price",
             "format": "int64",
             "type": "integer"
+          },
+          "available": {
+            "type": "string"
+          },
+          "delivered": {
+            "type": "string"
           },
           "description": {
             "maxLength": 500,
@@ -4825,6 +5338,61 @@
           "payment_terms",
           "org_unit_id",
           "active"
+        ],
+        "type": "object"
+      },
+      "NewDelivery": {
+        "additionalProperties": false,
+        "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "/api/schemas/NewDelivery.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
+          "date": {
+            "format": "date",
+            "type": "string"
+          },
+          "lines": {
+            "items": {
+              "$ref": "#/components/schemas/DeliveryLineInput"
+            },
+            "maxItems": 500,
+            "minItems": 1,
+            "type": "array"
+          },
+          "note": {
+            "maxLength": 2000,
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "order_id": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "request_id": {
+            "description": "Generated once per form: sending it again returns the first delivery",
+            "format": "uuid",
+            "type": "string"
+          },
+          "warehouse_id": {
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "request_id",
+          "order_id",
+          "date",
+          "warehouse_id",
+          "note",
+          "lines"
         ],
         "type": "object"
       },
@@ -8971,6 +9539,31 @@
         "required": [
           "items",
           "total"
+        ],
+        "type": "object"
+      },
+      "WarehouseOption": {
+        "additionalProperties": false,
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "id": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "is_default": {
+            "type": "boolean"
+          },
+          "name": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "code",
+          "name",
+          "is_default"
         ],
         "type": "object"
       },
@@ -15747,6 +16340,68 @@
         ]
       }
     },
+    "/sales/availability": {
+      "get": {
+        "description": "Per stock item, in the legal entity of the org unit; items without stock are left out.",
+        "operationId": "get-availability",
+        "parameters": [
+          {
+            "explode": false,
+            "in": "query",
+            "name": "org_unit_id",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          },
+          {
+            "explode": true,
+            "in": "query",
+            "name": "item_id",
+            "required": true,
+            "schema": {
+              "items": {
+                "format": "int64",
+                "type": "integer"
+              },
+              "maxItems": 200,
+              "minItems": 1,
+              "type": [
+                "array",
+                "null"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AvailabilityOutputBody"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "tags": [
+          "sales",
+          "sales"
+        ]
+      }
+    },
     "/sales/customers": {
       "get": {
         "operationId": "list-customers",
@@ -16007,6 +16662,249 @@
         ]
       }
     },
+    "/sales/deliveries": {
+      "get": {
+        "operationId": "list-deliveries",
+        "parameters": [
+          {
+            "description": "Number, order number or customer name",
+            "explode": false,
+            "in": "query",
+            "name": "q",
+            "schema": {
+              "description": "Number, order number or customer name",
+              "maxLength": 100,
+              "type": "string"
+            }
+          },
+          {
+            "explode": false,
+            "in": "query",
+            "name": "status",
+            "schema": {
+              "enum": [
+                "draft",
+                "pending_approval",
+                "posted",
+                "cancelled"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "explode": false,
+            "in": "query",
+            "name": "order_id",
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          },
+          {
+            "explode": false,
+            "in": "query",
+            "name": "warehouse_id",
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          },
+          {
+            "explode": false,
+            "in": "query",
+            "name": "sort",
+            "schema": {
+              "default": "-date",
+              "enum": [
+                "date",
+                "-date",
+                "number",
+                "-number"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "explode": false,
+            "in": "query",
+            "name": "page",
+            "schema": {
+              "default": 1,
+              "format": "int64",
+              "maximum": 100000,
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "explode": false,
+            "in": "query",
+            "name": "page_size",
+            "schema": {
+              "default": 50,
+              "enum": [
+                20,
+                50,
+                100
+              ],
+              "format": "int64",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeliveryList"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "tags": [
+          "sales",
+          "sales"
+        ]
+      },
+      "post": {
+        "description": "Sending the same request_id again returns the delivery created the first time.",
+        "operationId": "create-delivery",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NewDelivery"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreatedOutputBody"
+                }
+              }
+            },
+            "description": "Created"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "tags": [
+          "sales",
+          "sales"
+        ]
+      }
+    },
+    "/sales/deliveries/{id}": {
+      "get": {
+        "operationId": "get-delivery",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Delivery"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "tags": [
+          "sales",
+          "sales"
+        ]
+      },
+      "put": {
+        "operationId": "update-delivery",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DeliveryUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "tags": [
+          "sales",
+          "sales"
+        ]
+      }
+    },
     "/sales/line-items": {
       "get": {
         "operationId": "list-line-items",
@@ -16085,6 +16983,20 @@
             "schema": {
               "format": "int64",
               "type": "integer"
+            }
+          },
+          {
+            "explode": false,
+            "in": "query",
+            "name": "delivery_state",
+            "schema": {
+              "enum": [
+                "none",
+                "partial",
+                "full",
+                "not_applicable"
+              ],
+              "type": "string"
             }
           },
           {
@@ -16316,6 +17228,59 @@
         ]
       }
     },
+    "/sales/orders/{id}/delivery-options": {
+      "get": {
+        "operationId": "get-delivery-options",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Default warehouse of the order's legal entity when absent",
+            "explode": false,
+            "in": "query",
+            "name": "warehouse_id",
+            "schema": {
+              "description": "Default warehouse of the order's legal entity when absent",
+              "format": "int64",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeliveryOptions"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "tags": [
+          "sales",
+          "sales"
+        ]
+      }
+    },
     "/sales/quotes": {
       "get": {
         "operationId": "list-quotes",
@@ -16352,6 +17317,20 @@
             "schema": {
               "format": "int64",
               "type": "integer"
+            }
+          },
+          {
+            "explode": false,
+            "in": "query",
+            "name": "delivery_state",
+            "schema": {
+              "enum": [
+                "none",
+                "partial",
+                "full",
+                "not_applicable"
+              ],
+              "type": "string"
             }
           },
           {

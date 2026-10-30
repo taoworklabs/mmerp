@@ -35,6 +35,7 @@ var ApplyDeltas = data.ManyArg("stock.ApplyDeltas", newQ, (*Queries).ApplyDeltas
 var SerialsOverOne = data.ManyArg("stock.SerialsOverOne", newQ, (*Queries).SerialsOverOne)
 var InsertMoves = data.ExecArg("stock.InsertMoves", newQ, (*Queries).InsertMoves)
 var LotsOnHand = data.ManyArg("stock.LotsOnHand", newQ, (*Queries).LotsOnHand)
+var SerialsOnHand = data.ManyArg("stock.SerialsOnHand", newQ, (*Queries).SerialsOnHand)
 var OnHandListBase = data.NewBase("stock.OnHandListBase", onHandListBase, []string{"key", "warehouse_id", "warehouse_code", "item_id", "item_code", "item_name", "unit", "lot_code", "lot_expiry", "serial_code", "quantity"}, (*Queries).OnHandListBase)
 var StockCardOpening = data.OneArg("stock.StockCardOpening", newQ, (*Queries).StockCardOpening)
 var StockCardMoves = data.ManyArg("stock.StockCardMoves", newQ, (*Queries).StockCardMoves)

@@ -7,6 +7,7 @@ import (
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
+	"github.com/shopspring/decimal"
 
 	"github.com/taoworklabs/mmerp/internal/core/audit"
 	"github.com/taoworklabs/mmerp/internal/core/record"
@@ -74,7 +75,7 @@ func (s *Service) docs(ctx context.Context, k kind, f DocFilter) (DocList, error
 			ID: r.ID, Number: r.Number, Status: r.Status, Date: *platform.DatePtr(r.Date), CustomerID: r.CustomerID,
 			CustomerCode: r.CustomerCode, CustomerName: r.CustomerName, OrgUnitName: r.OrgUnitName, Total: r.Total,
 			ValidUntil: platform.DatePtr(r.ValidUntil), Expired: shownExpired(r.Status, r.Ordered, r.ValidUntil, today),
-			Ordered: r.Ordered, FromQuote: r.FromQuote,
+			Ordered: r.Ordered, FromQuote: r.FromQuote, DeliveryState: r.DeliveryState,
 		})
 	}
 	return out, nil
@@ -120,6 +121,11 @@ func (s *Service) doc(ctx context.Context, k kind, id int64) (Doc, error) {
 			ItemCode: l.ItemCode, Unit: l.Unit, Amount: l.Amount, Discount: l.Discount, Vat: l.Vat,
 		}
 	}
+	if k == orderKind {
+		if err := s.orderProgress(ctx, &out, lines, h.LegalEntityID); err != nil {
+			return Doc{}, err
+		}
+	}
 	// The other document shows only to who may view it.
 	if h.QuoteID.Valid {
 		if ok, err := s.d.Record.Can(ctx, quoteType, h.QuoteID.Int64, record.View); err != nil {
@@ -159,8 +165,44 @@ func (s *Service) doc(ctx context.Context, k kind, id int64) (Doc, error) {
 			}
 		}
 	}
+	if k == orderKind && d.Status == record.Posted {
+		if ok, err := s.canDeliver(ctx, id, h.OrgUnitID); err != nil {
+			return Doc{}, err
+		} else if ok {
+			extra = append(extra, "create_delivery")
+		}
+	}
 	out.AllowedActions, err = s.d.Record.Actions(ctx, d, extra...)
 	return out, err
+}
+
+// canDeliver: the actor may make orders at the unit and a stock line still has something
+// no delivery, draft or posted, has taken.
+func (s *Service) canDeliver(ctx context.Context, order, unit int64) (bool, error) {
+	if ok, err := s.canMakeOrder(ctx, unit); err != nil || !ok {
+		return false, err
+	}
+	rows, err := store.DeliverableLines.Run(ctx, store.DeliverableLinesParams{OrderID: order})
+	if err != nil {
+		return false, err
+	}
+	for _, r := range rows {
+		if r.Tracking == "none" {
+			continue
+		}
+		ordered, err := decimal.NewFromString(r.Quantity)
+		if err != nil {
+			return false, err
+		}
+		taken, err := decimal.NewFromString(r.Taken)
+		if err != nil {
+			return false, err
+		}
+		if ordered.GreaterThan(taken) {
+			return true, nil
+		}
+	}
+	return false, nil
 }
 
 func (s *Service) canMakeOrder(ctx context.Context, unit int64) (bool, error) {
@@ -440,4 +482,65 @@ func customerCopy(h store.GetHeaderRow) CustomerCopy {
 	return CustomerCopy{ID: h.CustomerID, Code: h.CustomerCode, Name: h.CustomerName, TaxCode: platform.TextPtr(h.CustomerTaxCode),
 		Address: platform.TextPtr(h.CustomerAddress), Phone: platform.TextPtr(h.CustomerPhone), Email: platform.TextPtr(h.CustomerEmail),
 		ContactName: platform.TextPtr(h.ContactName)}
+}
+
+// orderProgress adds what was delivered of each stock line, the delivery state, the
+// deliveries and, before posting, what is available. Deliveries are viewable by whoever
+// views the order: same org unit, same permission.
+func (s *Service) orderProgress(ctx context.Context, out *Doc, lines []store.GetLinesRow, legalEntity int64) error {
+	open := out.Status == string(record.Draft) || out.Status == string(record.PendingApproval)
+	var ids []int64
+	stock, full, none := 0, true, true
+	for i, l := range lines {
+		if !l.Stock {
+			continue
+		}
+		stock++
+		delivered, err := decimal.NewFromString(l.Delivered)
+		if err != nil {
+			return err
+		}
+		ordered, err := decimal.NewFromString(l.Quantity)
+		if err != nil {
+			return err
+		}
+		full = full && delivered.GreaterThanOrEqual(ordered)
+		none = none && delivered.IsZero()
+		v := delivered.String()
+		out.Lines[i].Delivered = &v
+		ids = append(ids, l.ItemID)
+	}
+	switch {
+	case stock == 0:
+		out.DeliveryState = "not_applicable"
+	case full:
+		out.DeliveryState = "full"
+	case none:
+		out.DeliveryState = "none"
+	default:
+		out.DeliveryState = "partial"
+	}
+	if open && len(ids) > 0 {
+		av, err := s.availability(ctx, legalEntity, ids)
+		if err != nil {
+			return err
+		}
+		by := map[int64]string{}
+		for _, a := range av {
+			by[a.ItemID] = a.Available
+		}
+		for i, l := range lines {
+			if v, ok := by[l.ItemID]; ok && l.Stock {
+				out.Lines[i].Available = &v
+			}
+		}
+	}
+	ds, err := store.OrderDeliveries.Run(ctx, out.ID)
+	if err != nil {
+		return err
+	}
+	for _, d := range ds {
+		out.Deliveries = append(out.Deliveries, DocRef{ID: d.ID, Number: d.Number, Status: d.Status})
+	}
+	return nil
 }

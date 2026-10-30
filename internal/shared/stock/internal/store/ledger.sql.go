@@ -432,6 +432,38 @@ func (q *Queries) SerialByCode(ctx context.Context, arg SerialByCodeParams) (int
 	return id, err
 }
 
+const serialsOnHand = `-- name: SerialsOnHand :many
+SELECT s.code
+FROM stock.balances b JOIN stock.serials s ON s.id = b.serial_id
+WHERE b.warehouse_id = $1 AND b.item_id = $2 AND b.quantity > 0
+ORDER BY s.code, s.id
+`
+
+type SerialsOnHandParams struct {
+	WarehouseID int64
+	ItemID      int64
+}
+
+func (q *Queries) SerialsOnHand(ctx context.Context, arg SerialsOnHandParams) ([]string, error) {
+	rows, err := q.db.Query(ctx, serialsOnHand, arg.WarehouseID, arg.ItemID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []string
+	for rows.Next() {
+		var code string
+		if err := rows.Scan(&code); err != nil {
+			return nil, err
+		}
+		items = append(items, code)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const serialsOverOne = `-- name: SerialsOverOne :many
 SELECT serial_id::bigint FROM stock.balances WHERE serial_id = ANY($1::bigint[]) GROUP BY serial_id HAVING sum(quantity) > 1
 `

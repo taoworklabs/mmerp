@@ -45,9 +45,26 @@ SELECT @doc_id::bigint, unnest(@positions::int[]), unnest(@item_ids::bigint[]), 
     unnest(@amounts::bigint[]), unnest(@discounts::bigint[]), unnest(@vats::bigint[]);
 
 -- name: GetLines :many
-SELECT item_id, item_code, description, unit, quantity::text AS quantity, unit_price,
-       discount_percent::text AS discount_percent, vat_rate, amount, discount, vat
-FROM sales.lines WHERE doc_id = $1 ORDER BY position;
+-- Delivered counts posted deliveries only; stock tells goods kept in stock from services.
+SELECT l.item_id, l.item_code, l.description, l.unit, l.quantity::text AS quantity, l.unit_price,
+       l.discount_percent::text AS discount_percent, l.vat_rate, l.amount, l.discount, l.vat,
+       (i.tracking <> 'none')::bool AS stock,
+       coalesce((
+           SELECT sum(dl.quantity)
+           FROM sales.delivery_lines dl
+           JOIN sales.deliveries v ON v.id = dl.delivery_id
+           JOIN record.documents d ON d.id = v.id
+           WHERE v.order_id = l.doc_id AND dl.order_position = l.position AND d.status = 'posted'
+       ), 0)::text AS delivered
+FROM sales.lines l JOIN item.items i ON i.id = l.item_id
+WHERE l.doc_id = $1 ORDER BY l.position;
+
+-- name: OrderDeliveries :many
+-- The order's deliveries not cancelled.
+SELECT d.id, d.number, d.status
+FROM sales.deliveries v JOIN record.documents d ON d.id = v.id
+WHERE v.order_id = $1 AND d.status <> 'cancelled'
+ORDER BY d.id;
 
 -- name: DocListBase :many
 -- data:base
@@ -56,7 +73,25 @@ SELECT h.id, h.kind, d.number, d.status, d.date, d.org_unit_id, h.customer_id, h
        EXISTS (
            SELECT 1 FROM sales.headers oh JOIN record.documents od ON od.id = oh.id
            WHERE oh.quote_id = h.id AND od.status <> 'cancelled'
-       ) AS ordered
+       ) AS ordered,
+       -- Orders only, over stock lines and posted deliveries: none, partial, full, not_applicable.
+       coalesce(CASE WHEN h.kind = 'order' THEN (
+           SELECT CASE WHEN count(*) = 0 THEN 'not_applicable'
+                       WHEN bool_and(x.delivered >= x.quantity) THEN 'full'
+                       WHEN bool_and(x.delivered = 0) THEN 'none'
+                       ELSE 'partial' END
+           FROM (
+               SELECT l.quantity, coalesce((
+                   SELECT sum(dl.quantity)
+                   FROM sales.delivery_lines dl
+                   JOIN sales.deliveries v ON v.id = dl.delivery_id
+                   JOIN record.documents vd ON vd.id = v.id
+                   WHERE v.order_id = l.doc_id AND dl.order_position = l.position AND vd.status = 'posted'
+               ), 0) AS delivered
+               FROM sales.lines l JOIN item.items i ON i.id = l.item_id
+               WHERE l.doc_id = h.id AND i.tracking <> 'none'
+           ) x
+       ) END, '')::text AS delivery_state
 FROM sales.headers h
 JOIN record.documents d ON d.id = h.id
 JOIN iam.org_units u ON u.id = d.org_unit_id;

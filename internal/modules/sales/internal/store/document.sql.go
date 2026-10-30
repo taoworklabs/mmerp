@@ -53,27 +53,46 @@ SELECT h.id, h.kind, d.number, d.status, d.date, d.org_unit_id, h.customer_id, h
        EXISTS (
            SELECT 1 FROM sales.headers oh JOIN record.documents od ON od.id = oh.id
            WHERE oh.quote_id = h.id AND od.status <> 'cancelled'
-       ) AS ordered
+       ) AS ordered,
+       -- Orders only, over stock lines and posted deliveries: none, partial, full, not_applicable.
+       coalesce(CASE WHEN h.kind = 'order' THEN (
+           SELECT CASE WHEN count(*) = 0 THEN 'not_applicable'
+                       WHEN bool_and(x.delivered >= x.quantity) THEN 'full'
+                       WHEN bool_and(x.delivered = 0) THEN 'none'
+                       ELSE 'partial' END
+           FROM (
+               SELECT l.quantity, coalesce((
+                   SELECT sum(dl.quantity)
+                   FROM sales.delivery_lines dl
+                   JOIN sales.deliveries v ON v.id = dl.delivery_id
+                   JOIN record.documents vd ON vd.id = v.id
+                   WHERE v.order_id = l.doc_id AND dl.order_position = l.position AND vd.status = 'posted'
+               ), 0) AS delivered
+               FROM sales.lines l JOIN item.items i ON i.id = l.item_id
+               WHERE l.doc_id = h.id AND i.tracking <> 'none'
+           ) x
+       ) END, '')::text AS delivery_state
 FROM sales.headers h
 JOIN record.documents d ON d.id = h.id
 JOIN iam.org_units u ON u.id = d.org_unit_id
 `
 
 type DocListBaseRow struct {
-	ID           int64
-	Kind         string
-	Number       string
-	Status       string
-	Date         pgtype.Date
-	OrgUnitID    int64
-	CustomerID   int64
-	CustomerCode string
-	CustomerName string
-	ValidUntil   pgtype.Date
-	Total        int64
-	OrgUnitName  string
-	FromQuote    bool
-	Ordered      bool
+	ID            int64
+	Kind          string
+	Number        string
+	Status        string
+	Date          pgtype.Date
+	OrgUnitID     int64
+	CustomerID    int64
+	CustomerCode  string
+	CustomerName  string
+	ValidUntil    pgtype.Date
+	Total         int64
+	OrgUnitName   string
+	FromQuote     bool
+	Ordered       bool
+	DeliveryState string
 }
 
 // data:base
@@ -101,6 +120,7 @@ func (q *Queries) DocListBase(ctx context.Context) ([]DocListBaseRow, error) {
 			&i.OrgUnitName,
 			&i.FromQuote,
 			&i.Ordered,
+			&i.DeliveryState,
 		); err != nil {
 			return nil, err
 		}
@@ -190,9 +210,18 @@ func (q *Queries) GetHeader(ctx context.Context, id int64) (GetHeaderRow, error)
 }
 
 const getLines = `-- name: GetLines :many
-SELECT item_id, item_code, description, unit, quantity::text AS quantity, unit_price,
-       discount_percent::text AS discount_percent, vat_rate, amount, discount, vat
-FROM sales.lines WHERE doc_id = $1 ORDER BY position
+SELECT l.item_id, l.item_code, l.description, l.unit, l.quantity::text AS quantity, l.unit_price,
+       l.discount_percent::text AS discount_percent, l.vat_rate, l.amount, l.discount, l.vat,
+       (i.tracking <> 'none')::bool AS stock,
+       coalesce((
+           SELECT sum(dl.quantity)
+           FROM sales.delivery_lines dl
+           JOIN sales.deliveries v ON v.id = dl.delivery_id
+           JOIN record.documents d ON d.id = v.id
+           WHERE v.order_id = l.doc_id AND dl.order_position = l.position AND d.status = 'posted'
+       ), 0)::text AS delivered
+FROM sales.lines l JOIN item.items i ON i.id = l.item_id
+WHERE l.doc_id = $1 ORDER BY l.position
 `
 
 type GetLinesRow struct {
@@ -207,8 +236,11 @@ type GetLinesRow struct {
 	Amount          int64
 	Discount        int64
 	Vat             int64
+	Stock           bool
+	Delivered       string
 }
 
+// Delivered counts posted deliveries only; stock tells goods kept in stock from services.
 func (q *Queries) GetLines(ctx context.Context, docID int64) ([]GetLinesRow, error) {
 	rows, err := q.db.Query(ctx, getLines, docID)
 	if err != nil {
@@ -230,6 +262,8 @@ func (q *Queries) GetLines(ctx context.Context, docID int64) ([]GetLinesRow, err
 			&i.Amount,
 			&i.Discount,
 			&i.Vat,
+			&i.Stock,
+			&i.Delivered,
 		); err != nil {
 			return nil, err
 		}
@@ -362,6 +396,40 @@ func (q *Queries) LiveOrder(ctx context.Context, quoteID pgtype.Int8) (LiveOrder
 	var i LiveOrderRow
 	err := row.Scan(&i.ID, &i.Number, &i.Status)
 	return i, err
+}
+
+const orderDeliveries = `-- name: OrderDeliveries :many
+SELECT d.id, d.number, d.status
+FROM sales.deliveries v JOIN record.documents d ON d.id = v.id
+WHERE v.order_id = $1 AND d.status <> 'cancelled'
+ORDER BY d.id
+`
+
+type OrderDeliveriesRow struct {
+	ID     int64
+	Number string
+	Status string
+}
+
+// The order's deliveries not cancelled.
+func (q *Queries) OrderDeliveries(ctx context.Context, orderID int64) ([]OrderDeliveriesRow, error) {
+	rows, err := q.db.Query(ctx, orderDeliveries, orderID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []OrderDeliveriesRow
+	for rows.Next() {
+		var i OrderDeliveriesRow
+		if err := rows.Scan(&i.ID, &i.Number, &i.Status); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const updateHeader = `-- name: UpdateHeader :exec

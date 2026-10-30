@@ -21,6 +21,9 @@ var (
 	ErrSerialRequired    = &platform.Error{Status: http.StatusUnprocessableEntity, Code: "stock_serial_required"}
 	// ErrSerialQuantity: a serial moves by one, and is on hand at most once.
 	ErrSerialQuantity = &platform.Error{Status: http.StatusUnprocessableEntity, Code: "stock_serial_quantity"}
+	// ErrLotNotFound, ErrSerialNotFound: an outgoing move names a lot or serial the item does not have.
+	ErrLotNotFound    = &platform.Error{Status: http.StatusUnprocessableEntity, Code: "stock_lot_not_found"}
+	ErrSerialNotFound = &platform.Error{Status: http.StatusUnprocessableEntity, Code: "stock_serial_not_found"}
 	// ErrQuantityInvalid: zero, more than three decimals, or too large for a balance.
 	ErrQuantityInvalid = &platform.Error{Status: http.StatusUnprocessableEntity, Code: "stock_quantity_invalid"}
 )

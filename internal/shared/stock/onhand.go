@@ -2,10 +2,12 @@ package stock
 
 import (
 	"context"
+	"errors"
 	"time"
 
 	"github.com/shopspring/decimal"
 
+	"github.com/taoworklabs/mmerp/internal/core/record"
 	"github.com/taoworklabs/mmerp/internal/platform"
 	"github.com/taoworklabs/mmerp/internal/shared/stock/internal/store"
 )
@@ -69,13 +71,30 @@ func (s *Service) StockCard(ctx context.Context, warehouse, item int64, from, to
 		return out, err
 	}
 	out.Opening = bal.StringFixed(3)
+	// A move shows its document only to readers who may view it; one check per document.
+	readable := map[record.Ref]bool{}
 	for _, r := range rows {
 		q, err := decimal.NewFromString(r.Quantity)
 		if err != nil {
 			return out, err
 		}
 		bal = bal.Add(q)
-		out.Rows = append(out.Rows, StockCardRow{Date: *platform.DatePtr(r.Date), DocType: r.DocType, DocID: r.DocID, Number: r.Number,
+		ref := record.Ref{Type: r.DocType, ID: r.DocID}
+		ok, seen := readable[ref]
+		if !seen {
+			switch err := s.d.Record.Visible(ctx, ref, record.View); {
+			case err == nil:
+				ok = true
+			case !errors.Is(err, platform.ErrNotFound) && !errors.Is(err, platform.ErrForbidden):
+				return out, err
+			}
+			readable[ref] = ok
+		}
+		docID, number := r.DocID, r.Number
+		if !ok {
+			docID, number = 0, ""
+		}
+		out.Rows = append(out.Rows, StockCardRow{Date: *platform.DatePtr(r.Date), DocType: r.DocType, DocID: docID, Number: number,
 			LotCode: platform.TextPtr(r.LotCode), SerialCode: platform.TextPtr(r.SerialCode), Quantity: r.Quantity, Balance: bal.StringFixed(3)})
 	}
 	out.Closing = bal.StringFixed(3)

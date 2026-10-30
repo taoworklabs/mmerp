@@ -7,16 +7,17 @@ Selling goods and services, for any trade: customers, a catalogue of items, quot
 | In the first release | Not yet |
 | --- | --- |
 | Customers (Sales' partner role over a shared partner), with an owning org unit | CRM pipeline, leads, activities |
-| Item catalogue (goods and services alike) with default price and VAT rate | Stock, warehouses, units of measure conversion, price lists |
-| Quotations: approval, PDF print, turning into an order | Delivery, payment, invoices and e-invoices |
+| Item catalogue (goods and services alike) with default price and VAT rate, stock tracking per item (lot, serial, negative stock), warehouses with on hand and stock card | Units of measure conversion, price lists |
+| Quotations: approval, PDF print, turning into an order | Payment, invoices and e-invoices |
 | Sales orders, from a quotation or entered directly | Accounting, business lines |
+| Deliveries from a posted order, taking goods out of a warehouse | Delivery note print, transfers between warehouses, stocktakes, receipts from suppliers, stock valuation, hard reservations |
 | Per-line discount, VAT per line, rounding per legal-entity setting | Foreign currencies, document-level discount, cash rounding |
 
 Nothing is specific to a trade: an item is anything sold with a unit and a price.
 
 ## Module
 
-A single module `internal/modules/sales`, schema `sales`, product `sales`. Depends on no other product. Uses `iam`, `record`, `audit`, `setting`, `printing` and `numbering` (customer codes) and the shared `partner`, `item` and `tax` modules directly (identity, catalogue, VAT); `approval`, document numbers, `attachment`, `discussion` and `notification` work through `record` with nothing to add. Emits no hooks.
+A single module `internal/modules/sales`, schema `sales`, product `sales`. Depends on no other product. Uses `iam`, `record`, `audit`, `setting`, `printing` and `numbering` (customer codes) and the shared `partner`, `item` and `tax` modules directly (identity, catalogue, VAT) and `stock` (warehouses and the stock ledger, for deliveries); `approval`, document numbers, `attachment`, `discussion` and `notification` work through `record` with nothing to add. Emits no hooks.
 
 ## Entities
 
@@ -25,6 +26,8 @@ A single module `internal/modules/sales`, schema `sales`, product `sales`. Depen
 | `sales.customers` | Customers, Sales' partner role: `partner_id`, `org_unit_id` (the owning org unit that decides who sees them), payment terms, active flag; one per partner per org unit at most. Identity is in `partner.partners` |
 | `partner.partners`, `item.items` | Shared, read by Sales: partner identity and the item catalogue (tenant-wide). Not Sales tables |
 | `sales.headers` | Quotations and orders (`kind`), one row per document, keyed by the `record.documents` id: customer details as copied, terms, totals |
+| `sales.deliveries` | Deliveries, one row per document keyed by the `record.documents` id: the order, the warehouse, org unit as copied from the order |
+| `sales.delivery_lines` | Lines of a delivery: the order line position, copied item code, description and unit, lot or serial, quantity |
 | `sales.lines` | Lines of a quotation or order, in order: item, copied code and unit, description, quantity, unit price, discount, VAT rate, and the computed amounts |
 
 ## Record types
@@ -34,6 +37,7 @@ A single module `internal/modules/sales`, schema `sales`, product `sales`. Depen
 | `sales.customer` | catalogue | — | — | — | — |
 | `sales.quote` | document `BG` | Approved: may be sent and turned into an order | Quotation date | Into `posted`: customer still active. Into `cancelled`: no non-cancelled order from it | `max_discount`, `items` |
 | `sales.order` | document `DH` | Confirmed | Order date | Into `posted`: customer still active | `max_discount`, `items` |
+| `sales.delivery` | document `GH` | Goods have left the warehouse | Delivery date | Into `posted`: takes the goods out through `stock` (refused while the order's cancel awaits approval). Into `cancelled`: puts them back | — |
 
 Approval fields: `amount` (the header, the total including VAT), `max_discount` (the largest line discount, in percent, measured against the item's catalogue price: a unit price cut below it counts as discount, so lowering the price never slips past a discount rule) and `items` (the set of item ids on the lines). With no approval rule, sending posts at once. Sales approval rules are configured inside the Sales area (`/sales/approval-rules`), needing `sales.approval.manage` or `core.approval.manage`.
 
@@ -43,19 +47,23 @@ Attachments and discussion are on customers, quotations and orders. Printing is 
 
 `record` status (`draft`, `pending_approval`, `posted`, `cancelled`) says whether the document is in effect and editable. Sales labels: a `posted` quotation is "Đã duyệt" (Approved), a `posted` order is "Đã xác nhận" (Confirmed).
 
-| Status | Quotation actions | Order actions |
-| --- | --- | --- |
-| `draft` | Edit, delete, send, print (watermarked) | Edit, delete, send, print (watermarked) |
-| `pending_approval` | Withdraw (submitter), approve or reject (approver), print (watermarked) | Same |
-| `posted` | Cancel (refused while an order from it is not cancelled), print, **create order** (when not expired and not ordered) | Cancel, print |
-| `cancelled` | Print (watermarked), read | Print (watermarked), read |
+| Status | Quotation actions | Order actions | Delivery actions |
+| --- | --- | --- | --- |
+| `draft` | Edit, delete, send, print (watermarked) | Edit, delete, send, print (watermarked) | Edit, delete, send |
+| `pending_approval` | Withdraw (submitter), approve or reject (approver), print (watermarked) | Same | Withdraw, approve or reject |
+| `posted` | Cancel (refused while an order from it is not cancelled), print, **create order** (when not expired and not ordered) | Cancel (refused while a non-cancelled delivery exists: `sales_order_has_delivery`), print, **create delivery** (with order edit, while a stock line has quantity no non-cancelled delivery takes) | Cancel |
+| `cancelled` | Print (watermarked), read | Print (watermarked), read | Read |
 
-Each action needs the permission in the table of [Permissions](#permissions), and `allowed_actions` lists exactly those available, including `print` and the quotation's `create_order`. A locked period removes every write action, as for every document.
+Each action needs the permission in the table of [Permissions](#permissions), and `allowed_actions` lists exactly those available, including `print`, the quotation's `create_order` and the order's `create_delivery`. A locked period removes every write action, as for every document.
 
 **Progress** is derived, never stored ([ADR-0027](../docs/adr/0027-sales-product.md#progress-is-derived-not-stored)):
 
 - a quotation is **ordered** while a non-cancelled order comes from it; it then shows that order;
 - a quotation is **expired** once its validity date is before today (tenant time zone). An expired quotation cannot become an order; it stays readable and printable.
+- an order's **delivered** quantity per line is the sum of its posted deliveries; its **delivery state** is `none`, `partial` or `full`, or `not_applicable` when it has no stock lines;
+- **committed** is what confirmed orders still owe, and **available** is on hand less committed, per legal entity and item (`GET /sales/availability`); a draft or pending order shows available per stock line as a warning only.
+
+**Deliveries.** A delivery (`GH`) is made from a posted order for one warehouse of the order's legal entity; an order may have several. Only stock lines (tracking other than none) go on it, and a line never exceeds ordered less the other non-cancelled deliveries. A delivery reuses the order's permissions and org unit and has no approval fields of its own. `GET /sales/orders/{id}/delivery-options` gives warehouses, remaining quantities, suggested lots (first expiry first) and serials.
 
 **Changing a document.** A draft is edited in place (with `version`). A posted quotation or order is never edited: cancel it and make a new one. Cancelling a posted order frees its quotation, which can then be turned into an order again.
 
