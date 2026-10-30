@@ -21,7 +21,7 @@ A module registers its record types with `record` at initialisation (see [backen
 
 Every shared feature attaches to a record through the pair `(doc_type, doc_id)`, with no foreign key to the module's tables. Core modules do not know the business tables, and always ask `record.Can`, answered from the type's declaration, before showing attachments, discussion or history, or allowing printing and export.
 
-Each record type belongs to the product of the module that registers it. Every core shared route that touches a record (attachments, discussion, history, export, approval actions) goes through the same product gate (except for `Shared` types, which no product gate ever refuses, in approval and printing too) as the module's own routes, by action class ([platform.md](./platform.md#enabled-products)). When the product is disabled: viewing history, downloading attachments and exporting still work; commenting, uploading attachments and approving do not.
+Each record type belongs to the product of the module that registers it. Every core shared route that touches a record (attachments, discussion, history, export, approval actions) goes through the same product gate as the module's own routes, by action class, except that `Shared` types are never product-gated (approval and printing included) ([platform.md](./platform.md#enabled-products)). When the product is disabled: viewing history, downloading attachments and exporting still work; commenting, uploading attachments and approving do not.
 
 ### Attachments and discussion
 
@@ -89,7 +89,7 @@ Modules call the following functions **inside the service's transaction, before 
 
 1. The legal entity's row in `record.period_locks (legal_entity_id, locked_until)`: every document write takes `FOR SHARE`; only the operation that moves the lock date takes `FOR UPDATE`.
 2. The document's row in `record.documents`: `FOR UPDATE`. `Create` has no document row yet: it locks the `numbering` counter row (`FOR UPDATE`), then inserts the document row.
-3. `stock.serials` rows (`FOR UPDATE`, sorted by item and code), then `stock.balances` rows (`FOR UPDATE`, sorted by warehouse, item, lot, serial), when the transition moves stock.
+3. When the transition moves stock: the `item.items` rows of the moved items (`FOR SHARE`, sorted by id, so tracking cannot change under the moves), then `stock.serials` rows (`FOR UPDATE`, sorted by id), then `stock.balances` rows (`FOR UPDATE`, sorted by warehouse, item, lot, serial). New lots and serials are created in (item, code) order before the `stock.serials` locks.
 4. Only then the other rows the module locks in `OnTransition` (for example, the leave balance).
 
 The lock date is always read from the row just locked in step 1, never earlier. Document writes for the same legal entity do not block each other (both are `FOR SHARE`). Thanks to the lock in step 2, operations on the same document run one after another.
