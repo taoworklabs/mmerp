@@ -7,10 +7,10 @@ Selling goods and services, for any trade: customers, a catalogue of items, quot
 | In the first release | Not yet |
 | --- | --- |
 | Customers (Sales' partner role over a shared partner), with an owning org unit | CRM pipeline, leads, activities |
-| Item catalogue (goods and services alike) with default price and VAT rate | Stock, warehouses, units of measure conversion, price lists |
+| Item catalogue (goods and services alike) with default price and VAT rate, stock tracking per item (lot, serial, negative stock), warehouses with on hand and stock card | Units of measure conversion, price lists |
 | Quotations: approval, PDF print, turning into an order | Payment, invoices and e-invoices |
 | Sales orders, from a quotation or entered directly | Accounting, business lines |
-| Deliveries from a posted order, taking goods out of a warehouse | |
+| Deliveries from a posted order, taking goods out of a warehouse | Delivery note print, transfers between warehouses, stocktakes, receipts from suppliers, stock valuation, hard reservations |
 | Per-line discount, VAT per line, rounding per legal-entity setting | Foreign currencies, document-level discount, cash rounding |
 
 Nothing is specific to a trade: an item is anything sold with a unit and a price.
