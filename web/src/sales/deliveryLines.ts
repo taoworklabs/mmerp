@@ -24,3 +24,11 @@ export function linesFromOptions(options: DeliveryOptions): DeliveryLineInput[] 
     return picked < remaining ? [...lines, { order_position: l.order_position, quantity: fromMilli(remaining - picked) }] : lines
   })
 }
+
+// withOwnLines gives the options as a draft sees them: they count the draft's own lines as taken,
+// though saving it again may take them anew.
+export function withOwnLines(options: DeliveryOptions, own: Pick<DeliveryLineInput, 'order_position' | 'quantity'>[]): DeliveryOptions {
+  const taken = new Map<number, string>()
+  for (const l of own) taken.set(l.order_position, addQuantities(taken.get(l.order_position) ?? '0', l.quantity))
+  return { ...options, lines: options.lines.map((l) => ({ ...l, remaining: addQuantities(l.remaining, taken.get(l.order_position) ?? '0') })) }
+}

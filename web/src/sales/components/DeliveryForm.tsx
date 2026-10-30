@@ -1,7 +1,7 @@
-import { Text } from '@mmerp/ui'
+import { Stack, Text } from '@mmerp/ui'
 import { IconListDetails, IconTruckDelivery } from '@tabler/icons-react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { useTranslation } from 'react-i18next'
 import { api, ApiError, unwrap, type Delivery, type DeliveryLineInput, type DeliveryOptions } from '@/shared/api/sales'
@@ -10,8 +10,9 @@ import { useDocumentMutation } from '@/shared/document'
 import { errorText, formatDate, formatDecimal, today } from '@/shared/i18n'
 import { useConfirm } from '@/shared/ui/confirm'
 import { DateField, DecimalField, Form, FormActions, FormRow, FormSection, LinesTable, SelectField, TextField, type ErrorFields, type LineColumn, type Option } from '@/shared/ui/form'
+import { Notice } from '@/shared/ui/Notice'
 import { ContentSkeleton, ErrorState, ForbiddenPage } from '@/shared/ui/states'
-import { addQuantities, linesFromOptions } from '../deliveryLines'
+import { linesFromOptions, withOwnLines } from '../deliveryLines'
 import { deliveryOptions } from '../hooks/useSales'
 import { deliveryDocType } from '../keys'
 
@@ -75,10 +76,20 @@ export function DeliveryForm(props: Props) {
   const options = useQuery({ ...deliveryOptions(props.order, props.doc?.warehouse_id ?? 0), enabled: !ro })
   if (!ro) {
     if (options.isPending) return <ContentSkeleton />
+    // A draft that cannot be edited now (warehouse retired, order no longer open) still shows its lines.
+    if (options.isError && props.doc)
+      return (
+        <Stack gap="md">
+          <Notice tone="danger">{errorText(t, options.error)}</Notice>
+          <Fields {...props} ro />
+        </Stack>
+      )
     if (options.error instanceof ApiError && options.error.status === 403) return <ForbiddenPage />
     if (options.isError) return <ErrorState message={errorText(t, options.error)} onRetry={() => void options.refetch()} />
   }
-  return <Fields {...props} ro={ro} initial={options.data} />
+  // The options count a draft's own lines as taken; editing it may take them again.
+  const data = options.data && props.doc ? withOwnLines(options.data, props.doc.lines) : options.data
+  return <Fields {...props} ro={ro} initial={data} />
 }
 
 function Fields({ order, doc, onCreated, ro, initial }: Props & { ro: boolean; initial?: DeliveryOptions }) {
@@ -105,19 +116,15 @@ function Fields({ order, doc, onCreated, ro, initial }: Props & { ro: boolean; i
     warehouses.unshift({ value: String(doc.warehouse_id), label: `${doc.warehouse_code} · ${doc.warehouse_name}` })
   const orderLines = new Map((options?.lines ?? []).map((l) => [String(l.order_position), l]))
   const lineOf = (i: number) => orderLines.get(lines[i]?.order_position ?? '')
-  // The options count this draft's own lines as taken; it may take them again.
-  const own = new Map<string, string>()
-  for (const l of doc?.lines ?? []) own.set(String(l.order_position), addQuantities(own.get(String(l.order_position)) ?? '0', l.quantity))
-  const remainingOf = (i: number) => {
-    const l = lineOf(i)
-    return l && addQuantities(l.remaining, own.get(String(l.order_position)) ?? '0')
-  }
+  // Set while the options of a newly picked warehouse load: lot codes of the old one must not be sent.
+  const switching = useRef(false)
   // A saved lot or serial no longer suggested stays selectable.
   const withCurrent = (data: Option[], current: string | null | undefined) => (current && !data.some((o) => o.value === current) ? [{ value: current, label: current }, ...data] : data)
 
   async function changeWarehouse(v: string | null) {
     if (!v || v === warehouse) return
-    if (JSON.stringify(form.getValues('lines')) !== JSON.stringify(start)) {
+    // A draft's lines are saved work: always ask before replacing them.
+    if (doc || JSON.stringify(form.getValues('lines')) !== JSON.stringify(start)) {
       const ok = await ask({
         title: t('sales.delivery.change_warehouse'),
         message: t('sales.delivery.change_warehouse_confirm'),
@@ -126,8 +133,10 @@ function Fields({ order, doc, onCreated, ro, initial }: Props & { ro: boolean; i
       })
       if (!ok) return form.setValue('warehouse_id', warehouse)
     }
+    switching.current = true
     try {
-      const next = await client.fetchQuery(deliveryOptions(order, Number(v)))
+      const fetched = await client.fetchQuery(deliveryOptions(order, Number(v)))
+      const next = doc ? withOwnLines(fetched, doc.lines) : fetched
       const rebuilt = suggested(next)
       setOptions(next)
       setStart(rebuilt)
@@ -136,10 +145,13 @@ function Fields({ order, doc, onCreated, ro, initial }: Props & { ro: boolean; i
     } catch (err) {
       form.setValue('warehouse_id', warehouse)
       form.setError('warehouse_id', { message: errorText(t, err) })
+    } finally {
+      switching.current = false
     }
   }
 
   async function save(v: Values) {
+    if (switching.current) return false
     const body = {
       date: v.date ?? '',
       warehouse_id: Number(v.warehouse_id),
@@ -192,9 +204,8 @@ function Fields({ order, doc, onCreated, ro, initial }: Props & { ro: boolean; i
       width: 128,
       cell: (i, bare) => {
         const l = lineOf(i)
-        const left = remainingOf(i)
-        if (!l || !left) return null
-        const quantity = `${formatDecimal(left, 3)} ${l.unit}`
+        if (!l) return null
+        const quantity = `${formatDecimal(l.remaining, 3)} ${l.unit}`
         return (
           <Text size="sm" tone="dimmed">
             {bare ? quantity : t('sales.delivery.line.remaining_hint', { quantity })}

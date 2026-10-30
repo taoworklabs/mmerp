@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { DeliveryOptions } from '@/shared/api/sales'
-import { addQuantities, linesFromOptions } from './deliveryLines'
+import { addQuantities, linesFromOptions, withOwnLines } from './deliveryLines'
 
 type Line = DeliveryOptions['lines'][number]
 const line = (l: Partial<Line>): Line => ({
@@ -36,8 +36,8 @@ describe('linesFromOptions', () => {
   it('suggests nothing for a serial line nor for a line already delivered', () => {
     expect(linesFromOptions(options([line({ tracking: 'serial', serials: ['S1'] }), line({ order_position: 2, remaining: '0.000' })]))).toEqual([])
   })
-  it('never offers a service line, which the options leave out', () => {
-    expect(linesFromOptions(options([line({ order_position: 3, remaining: '1' })])).map((l) => l.order_position)).toEqual([3])
+  it('leaves a lot line with no suggested lots without a lot', () => {
+    expect(linesFromOptions(options([line({ tracking: 'lot', remaining: '2.000' })]))).toEqual([{ order_position: 1, quantity: '2.000' }])
   })
 })
 
@@ -45,5 +45,20 @@ describe('addQuantities', () => {
   it('adds decimal strings without floating point', () => {
     expect(addQuantities('0.1', '0.2')).toBe('0.300')
     expect(addQuantities('12', '0.005')).toBe('12.005')
+  })
+})
+
+describe('withOwnLines', () => {
+  it("gives a draft back what its own lines take, so its lines rebuild", () => {
+    const opts = options([line({ remaining: '0.000' }), line({ order_position: 2, remaining: '1.000' })])
+    const own = [
+      { order_position: 1, quantity: '2' },
+      { order_position: 1, quantity: '0.5' },
+    ]
+    expect(withOwnLines(opts, own).lines.map((l) => l.remaining)).toEqual(['2.500', '1.000'])
+    expect(linesFromOptions(withOwnLines(opts, own))).toEqual([
+      { order_position: 1, quantity: '2.500' },
+      { order_position: 2, quantity: '1.000' },
+    ])
   })
 })
