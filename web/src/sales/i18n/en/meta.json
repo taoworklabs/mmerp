@@ -49,5 +49,6 @@
   "sales.error.sales_lot_expired": "Line {{line_no}}: lot {{lot_code}} expires on {{expiry}}. Pick another lot.",
   "sales.action.create_order": "Create sales order",
   "sales.nav.group_stock": "Stock",
-  "sales.nav.warehouses": "Warehouses"
+  "sales.nav.warehouses": "Warehouses",
+  "sales.nav.on_hand": "On hand"
 }

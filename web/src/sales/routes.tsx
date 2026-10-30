@@ -9,6 +9,7 @@ import { DocsPage } from './pages/DocsPage'
 import { ItemsPage } from './pages/ItemsPage'
 import { NewCustomerPage } from './pages/NewCustomerPage'
 import { NewDocPage } from './pages/NewDocPage'
+import { OnHandPage } from './pages/OnHandPage'
 import { PartnerPage } from './pages/PartnerPage'
 import { WarehousesPage } from './pages/WarehousesPage'
 
@@ -35,6 +36,7 @@ export default function SalesRoutes() {
       <Route path="orders/new" element={canOrders ? <NewDocPage key="order" kind="order" /> : <ForbiddenPage />} />
       <Route path="orders/:id" element={canOrders ? <DocPage key="order" kind="order" /> : <ForbiddenPage />} />
       <Route path="items" element={canItems ? <ItemsPage /> : <ForbiddenPage />} />
+      <Route path="stock/on-hand" element={canStock ? <OnHandPage /> : <ForbiddenPage />} />
       <Route path="stock/warehouses" element={canStock ? <WarehousesPage /> : <ForbiddenPage />} />
       <Route path="approval-rules/*" element={canRules ? <ApprovalRules product="sales" basePath="/sales/approval-rules" /> : <ForbiddenPage />} />
       <Route path="*" element={<NotFoundPage />} />

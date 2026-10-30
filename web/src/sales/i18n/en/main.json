@@ -176,5 +176,21 @@
   "sales.item.tracking_lot": "By lot",
   "sales.item.tracking_serial": "By serial",
   "sales.item.allow_negative": "Allow negative stock",
-  "sales.item.allow_negative_hint": "Can be issued even when stock is short"
+  "sales.item.allow_negative_hint": "Can be issued even when stock is short",
+  "sales.on_hand.title": "On hand",
+  "sales.on_hand.description": "What each warehouse holds now, by lot and serial",
+  "sales.on_hand.search": "Search stock",
+  "sales.on_hand.search_hint": "Item code or name, lot or serial",
+  "sales.on_hand.expiring_before": "Expiring before",
+  "sales.on_hand.empty": "No stock on hand",
+  "sales.on_hand.empty_description": "Stock shows here once a stock adjustment is posted.",
+  "sales.on_hand.item_code": "Item code",
+  "sales.on_hand.item_name": "Item name",
+  "sales.on_hand.warehouse": "Warehouse",
+  "sales.on_hand.unit": "Unit",
+  "sales.on_hand.lot": "Lot",
+  "sales.on_hand.expiry": "Expiry",
+  "sales.on_hand.expired": "Expired",
+  "sales.on_hand.serial": "Serial",
+  "sales.on_hand.quantity": "Quantity on hand"
 }

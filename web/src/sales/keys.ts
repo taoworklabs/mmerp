@@ -16,6 +16,7 @@ export const pathOf = (k: Kind) => (k === 'quote' ? 'quotes' : 'orders')
 export type CustomerQuery = { q: string; active: string; sort: string; page: number; pageSize: number }
 export type ItemQuery = { q: string; active: string; page: number; pageSize: number }
 export type WarehouseQuery = { q: string; active: string; sort: string; page: number; pageSize: number }
+export type OnHandQuery = { warehouse: string; item: string; q: string; expiring: string; page: number; pageSize: number }
 export type DocQuery = { q: string; status: string; sort: string; page: number; pageSize: number }
 
 export const salesKeys = {
@@ -39,6 +40,10 @@ export const salesKeys = {
     warehouses: {
       all: () => ['sales', 'stock', 'warehouses'] as const,
       list: (q: WarehouseQuery) => ['sales', 'stock', 'warehouses', 'list', q] as const,
+    },
+    onHand: {
+      all: () => ['sales', 'stock', 'on-hand'] as const,
+      list: (q: OnHandQuery) => ['sales', 'stock', 'on-hand', 'list', q] as const,
     },
   },
   docs: {

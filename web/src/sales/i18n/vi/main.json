@@ -176,5 +176,21 @@
   "sales.item.tracking_lot": "Theo lô",
   "sales.item.tracking_serial": "Theo serial",
   "sales.item.allow_negative": "Cho phép xuất âm",
-  "sales.item.allow_negative_hint": "Xuất được cả khi tồn kho không đủ"
+  "sales.item.allow_negative_hint": "Xuất được cả khi tồn kho không đủ",
+  "sales.on_hand.title": "Tồn kho",
+  "sales.on_hand.description": "Số lượng đang có ở từng kho, theo lô và serial",
+  "sales.on_hand.search": "Tìm hàng tồn",
+  "sales.on_hand.search_hint": "Mã, tên hàng, lô hoặc serial",
+  "sales.on_hand.expiring_before": "Hết hạn trước ngày",
+  "sales.on_hand.empty": "Chưa có hàng tồn kho",
+  "sales.on_hand.empty_description": "Hàng tồn xuất hiện ở đây khi có phiếu điều chỉnh kho được ghi sổ.",
+  "sales.on_hand.item_code": "Mã hàng",
+  "sales.on_hand.item_name": "Tên hàng",
+  "sales.on_hand.warehouse": "Kho",
+  "sales.on_hand.unit": "Đơn vị tính",
+  "sales.on_hand.lot": "Lô",
+  "sales.on_hand.expiry": "Hạn dùng",
+  "sales.on_hand.expired": "Hết hạn",
+  "sales.on_hand.serial": "Serial",
+  "sales.on_hand.quantity": "Số lượng tồn"
 }

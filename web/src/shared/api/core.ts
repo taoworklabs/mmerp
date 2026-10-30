@@ -41,6 +41,7 @@ export type ItemSort = NonNullable<NonNullable<operations['list-items']['paramet
 export type Warehouse = components['schemas']['Warehouse']
 export type WarehouseList = components['schemas']['WarehouseList']
 export type WarehouseSort = NonNullable<NonNullable<operations['list-warehouses']['parameters']['query']>['sort']>
+export type OnHandRow = components['schemas']['OnHandRow']
 export type Partner = components['schemas']['Partner']
 export type PartnerIdentity = components['schemas']['PartnerFields']
 export type PartnerListItem = components['schemas']['PartnerListItem']
