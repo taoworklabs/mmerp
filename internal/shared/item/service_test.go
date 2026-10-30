@@ -137,3 +137,41 @@ func TestItemCodeTaken(t *testing.T) {
 		t.Fatalf("got %v, want item_code_taken", err)
 	}
 }
+
+func TestTrackingAndNegative(t *testing.T) {
+	f := newFixture(t)
+	admin := f.user(t, "cat", "admin")
+	list := func() map[string]item.Item {
+		l, err := f.items.Items(admin, item.ItemFilter{Paging: page})
+		if err != nil {
+			t.Fatal(err)
+		}
+		out := map[string]item.Item{}
+		for _, it := range l.Items {
+			out[it.Code] = it
+		}
+		return out
+	}
+	with := func(tr string, neg bool) item.ItemFields {
+		in := fields("X", true)
+		in.Tracking, in.AllowNegative = &tr, &neg
+		return in
+	}
+	lotID := must(t)(f.items.CreateItem(admin, item.NewItem{Code: "LOT", ItemFields: with("lot", false)}))
+	must(t)(f.items.CreateItem(admin, item.NewItem{Code: "QTY", ItemFields: with("quantity", true)}))
+	must(t)(f.items.CreateItem(admin, item.NewItem{Code: "NONE", ItemFields: fields("N", true)}))
+	got := list()
+	if got["LOT"].Tracking != "lot" || got["LOT"].AllowNegative || got["QTY"].Tracking != "quantity" || !got["QTY"].AllowNegative || got["NONE"].Tracking != "none" {
+		t.Fatalf("read back %+v", got)
+	}
+	if _, err := f.items.CreateItem(admin, item.NewItem{Code: "BAD", ItemFields: with("lot", true)}); !errors.Is(err, item.ErrNegativeNotQuantity) {
+		t.Fatalf("lot with negative: %v", err)
+	}
+	// An update without the fields keeps the current tracking.
+	if err := f.items.UpdateItem(admin, lotID, fields("Renamed", true)); err != nil {
+		t.Fatal(err)
+	}
+	if it := list()["LOT"]; it.Name != "Renamed" || it.Tracking != "lot" {
+		t.Fatalf("after update %+v", it)
+	}
+}

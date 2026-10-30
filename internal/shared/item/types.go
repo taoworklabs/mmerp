@@ -14,6 +14,17 @@ const (
 
 var ErrCodeTaken = &platform.Error{Status: http.StatusConflict, Code: "item_code_taken"}
 
+// ErrNegativeNotQuantity: only quantity-tracked items may go below zero.
+var ErrNegativeNotQuantity = &platform.Error{Status: http.StatusUnprocessableEntity, Code: "item_negative_not_quantity"}
+
+// How an item is followed in stock.
+const (
+	TrackNone     = "none"
+	TrackQuantity = "quantity"
+	TrackLot      = "lot"
+	TrackSerial   = "serial"
+)
+
 // ItemFields are what an edit may change; the code is set once, at creation.
 type ItemFields struct {
 	Name    string `json:"name" minLength:"1" maxLength:"300"`
@@ -21,6 +32,9 @@ type ItemFields struct {
 	Price   int64  `json:"price" minimum:"0" doc:"Default unit price in đồng"`
 	VatRate string `json:"vat_rate" enum:"none,0,5,8,10"`
 	Active  bool   `json:"active"`
+	// Absent on create: none and false; absent on update: unchanged.
+	Tracking      *string `json:"tracking,omitempty" enum:"none,quantity,lot,serial"`
+	AllowNegative *bool   `json:"allow_negative,omitempty"`
 }
 
 type NewItem struct {
@@ -29,9 +43,15 @@ type NewItem struct {
 }
 
 type Item struct {
-	ID   int64  `json:"id"`
-	Code string `json:"code"`
-	ItemFields
+	ID            int64  `json:"id"`
+	Code          string `json:"code"`
+	Name          string `json:"name"`
+	Unit          string `json:"unit"`
+	Price         int64  `json:"price"`
+	VatRate       string `json:"vat_rate"`
+	Active        bool   `json:"active"`
+	Tracking      string `json:"tracking" enum:"none,quantity,lot,serial"`
+	AllowNegative bool   `json:"allow_negative"`
 }
 
 type ItemFilter struct {

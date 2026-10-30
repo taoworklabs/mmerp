@@ -7,19 +7,23 @@ package store
 
 import (
 	"context"
+
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 const createItem = `-- name: CreateItem :one
-INSERT INTO item.items (code, name, unit, price, vat_rate, active) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id
+INSERT INTO item.items (code, name, unit, price, vat_rate, active, tracking, allow_negative) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id
 `
 
 type CreateItemParams struct {
-	Code    string
-	Name    string
-	Unit    string
-	Price   int64
-	VatRate string
-	Active  bool
+	Code          string
+	Name          string
+	Unit          string
+	Price         int64
+	VatRate       string
+	Active        bool
+	Tracking      string
+	AllowNegative bool
 }
 
 func (q *Queries) CreateItem(ctx context.Context, arg CreateItemParams) (int64, error) {
@@ -30,6 +34,8 @@ func (q *Queries) CreateItem(ctx context.Context, arg CreateItemParams) (int64, 
 		arg.Price,
 		arg.VatRate,
 		arg.Active,
+		arg.Tracking,
+		arg.AllowNegative,
 	)
 	var id int64
 	err := row.Scan(&id)
@@ -48,7 +54,7 @@ func (q *Queries) ItemCodeTaken(ctx context.Context, lower string) (bool, error)
 }
 
 const itemListBase = `-- name: ItemListBase :many
-SELECT id, code, name, unit, price, vat_rate, active FROM item.items
+SELECT id, code, name, unit, price, vat_rate, active, tracking, allow_negative FROM item.items
 `
 
 // data:base
@@ -69,6 +75,8 @@ func (q *Queries) ItemListBase(ctx context.Context) ([]ItemItem, error) {
 			&i.Price,
 			&i.VatRate,
 			&i.Active,
+			&i.Tracking,
+			&i.AllowNegative,
 		); err != nil {
 			return nil, err
 		}
@@ -81,16 +89,20 @@ func (q *Queries) ItemListBase(ctx context.Context) ([]ItemItem, error) {
 }
 
 const updateItem = `-- name: UpdateItem :one
-UPDATE item.items SET name = $2, unit = $3, price = $4, vat_rate = $5, active = $6 WHERE id = $1 RETURNING code
+UPDATE item.items SET name = $2, unit = $3, price = $4, vat_rate = $5, active = $6,
+    tracking = coalesce($7, tracking), allow_negative = coalesce($8, allow_negative)
+WHERE id = $1 RETURNING code
 `
 
 type UpdateItemParams struct {
-	ID      int64
-	Name    string
-	Unit    string
-	Price   int64
-	VatRate string
-	Active  bool
+	ID            int64
+	Name          string
+	Unit          string
+	Price         int64
+	VatRate       string
+	Active        bool
+	Tracking      pgtype.Text
+	AllowNegative pgtype.Bool
 }
 
 func (q *Queries) UpdateItem(ctx context.Context, arg UpdateItemParams) (string, error) {
@@ -101,6 +113,8 @@ func (q *Queries) UpdateItem(ctx context.Context, arg UpdateItemParams) (string,
 		arg.Price,
 		arg.VatRate,
 		arg.Active,
+		arg.Tracking,
+		arg.AllowNegative,
 	)
 	var code string
 	err := row.Scan(&code)

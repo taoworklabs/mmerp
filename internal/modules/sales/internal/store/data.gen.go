@@ -29,4 +29,4 @@ var DocListBase = data.NewBase("sales.DocListBase", docListBase, []string{"id", 
 var CopyCustomer = data.OneArg("sales.CopyCustomer", newQ, (*Queries).CopyCustomer)
 var ItemsByID = data.ManyArg("sales.ItemsByID", newQ, (*Queries).ItemsByID)
 var ItemOptionsBase = data.NewBase("sales.ItemOptionsBase", itemOptionsBase, []string{"id", "code", "name"}, (*Queries).ItemOptionsBase)
-var LineItemsBase = data.NewBase("sales.LineItemsBase", lineItemsBase, []string{"id", "code", "name", "unit", "price", "vat_rate", "active"}, (*Queries).LineItemsBase)
+var LineItemsBase = data.NewBase("sales.LineItemsBase", lineItemsBase, []string{"id", "code", "name", "unit", "price", "vat_rate", "active", "tracking", "allow_negative"}, (*Queries).LineItemsBase)

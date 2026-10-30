@@ -5,11 +5,13 @@
 package store
 
 type ItemItem struct {
-	ID      int64
-	Code    string
-	Name    string
-	Unit    string
-	Price   int64
-	VatRate string
-	Active  bool
+	ID            int64
+	Code          string
+	Name          string
+	Unit          string
+	Price         int64
+	VatRate       string
+	Active        bool
+	Tracking      string
+	AllowNegative bool
 }

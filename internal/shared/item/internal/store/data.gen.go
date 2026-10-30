@@ -12,4 +12,4 @@ func newQ(c platform.Conn) *Queries { return New(c) }
 var CreateItem = data.OneArg("item.CreateItem", newQ, (*Queries).CreateItem)
 var UpdateItem = data.OneArg("item.UpdateItem", newQ, (*Queries).UpdateItem)
 var ItemCodeTaken = data.OneArg("item.ItemCodeTaken", newQ, (*Queries).ItemCodeTaken)
-var ItemListBase = data.NewBase("item.ItemListBase", itemListBase, []string{"id", "code", "name", "unit", "price", "vat_rate", "active"}, (*Queries).ItemListBase)
+var ItemListBase = data.NewBase("item.ItemListBase", itemListBase, []string{"id", "code", "name", "unit", "price", "vat_rate", "active", "tracking", "allow_negative"}, (*Queries).ItemListBase)

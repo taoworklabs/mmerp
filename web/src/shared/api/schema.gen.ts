@@ -2803,18 +2803,17 @@ export interface components {
         };
         Item: {
             active: boolean;
+            allow_negative: boolean;
             code: string;
             /** Format: int64 */
             id: number;
             name: string;
-            /**
-             * Format: int64
-             * @description Default unit price in đồng
-             */
+            /** Format: int64 */
             price: number;
-            unit: string;
             /** @enum {string} */
-            vat_rate: "none" | "0" | "5" | "8" | "10";
+            tracking: "none" | "quantity" | "lot" | "serial";
+            unit: string;
+            vat_rate: string;
         };
         ItemFields: {
             /**
@@ -2824,12 +2823,15 @@ export interface components {
              */
             readonly $schema?: string;
             active: boolean;
+            allow_negative?: boolean;
             name: string;
             /**
              * Format: int64
              * @description Default unit price in đồng
              */
             price: number;
+            /** @enum {string} */
+            tracking?: "none" | "quantity" | "lot" | "serial";
             unit: string;
             /** @enum {string} */
             vat_rate: "none" | "0" | "5" | "8" | "10";
@@ -3447,6 +3449,7 @@ export interface components {
              */
             readonly $schema?: string;
             active: boolean;
+            allow_negative?: boolean;
             /** @description Empty or absent: issued from the item.item code series */
             code?: string;
             name: string;
@@ -3455,6 +3458,8 @@ export interface components {
              * @description Default unit price in đồng
              */
             price: number;
+            /** @enum {string} */
+            tracking?: "none" | "quantity" | "lot" | "serial";
             unit: string;
             /** @enum {string} */
             vat_rate: "none" | "0" | "5" | "8" | "10";

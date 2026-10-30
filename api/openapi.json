@@ -2681,6 +2681,9 @@
           "active": {
             "type": "boolean"
           },
+          "allow_negative": {
+            "type": "boolean"
+          },
           "code": {
             "type": "string"
           },
@@ -2689,29 +2692,25 @@
             "type": "integer"
           },
           "name": {
-            "maxLength": 300,
-            "minLength": 1,
             "type": "string"
           },
           "price": {
-            "description": "Default unit price in đồng",
             "format": "int64",
-            "minimum": 0,
             "type": "integer"
           },
+          "tracking": {
+            "enum": [
+              "none",
+              "quantity",
+              "lot",
+              "serial"
+            ],
+            "type": "string"
+          },
           "unit": {
-            "maxLength": 30,
-            "minLength": 1,
             "type": "string"
           },
           "vat_rate": {
-            "enum": [
-              "none",
-              "0",
-              "5",
-              "8",
-              "10"
-            ],
             "type": "string"
           }
         },
@@ -2722,7 +2721,9 @@
           "unit",
           "price",
           "vat_rate",
-          "active"
+          "active",
+          "tracking",
+          "allow_negative"
         ],
         "type": "object"
       },
@@ -2741,6 +2742,9 @@
           "active": {
             "type": "boolean"
           },
+          "allow_negative": {
+            "type": "boolean"
+          },
           "name": {
             "maxLength": 300,
             "minLength": 1,
@@ -2751,6 +2755,15 @@
             "format": "int64",
             "minimum": 0,
             "type": "integer"
+          },
+          "tracking": {
+            "enum": [
+              "none",
+              "quantity",
+              "lot",
+              "serial"
+            ],
+            "type": "string"
           },
           "unit": {
             "maxLength": 30,
@@ -4647,6 +4660,9 @@
           "active": {
             "type": "boolean"
           },
+          "allow_negative": {
+            "type": "boolean"
+          },
           "code": {
             "description": "Empty or absent: issued from the item.item code series",
             "maxLength": 50,
@@ -4662,6 +4678,15 @@
             "format": "int64",
             "minimum": 0,
             "type": "integer"
+          },
+          "tracking": {
+            "enum": [
+              "none",
+              "quantity",
+              "lot",
+              "serial"
+            ],
+            "type": "string"
           },
           "unit": {
             "maxLength": 30,
