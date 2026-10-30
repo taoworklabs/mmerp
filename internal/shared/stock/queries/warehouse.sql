@@ -1,0 +1,21 @@
+-- name: CreateWarehouse :one
+INSERT INTO stock.warehouses (code, name, legal_entity_id, active)
+SELECT sqlc.arg(code), sqlc.arg(name), o.id, sqlc.arg(active) FROM iam.org_units o WHERE o.id = sqlc.arg(legal_entity_id) AND o.kind = 'company'
+RETURNING id;
+
+-- name: UpdateWarehouse :one
+UPDATE stock.warehouses SET name = $2, active = $3 WHERE id = $1 RETURNING code;
+
+-- name: WarehouseCodeTaken :one
+SELECT EXISTS (SELECT 1 FROM stock.warehouses WHERE lower(code) = lower($1));
+
+-- name: InsertDefaultWarehouse :exec
+INSERT INTO stock.warehouses (code, name, legal_entity_id, is_default) VALUES ($1, $2, $3, true)
+ON CONFLICT (legal_entity_id) WHERE is_default DO NOTHING;
+
+-- name: DefaultWarehouse :one
+SELECT id FROM stock.warehouses WHERE legal_entity_id = $1 AND is_default;
+
+-- name: WarehouseListBase :many
+-- data:base
+SELECT id, code, name, legal_entity_id, is_default, active FROM stock.warehouses;

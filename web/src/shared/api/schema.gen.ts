@@ -1824,6 +1824,119 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/stock/adjustments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["list-stock-adjustments"];
+        put?: never;
+        /** @description Sending the same request_id again returns the document created the first time. */
+        post: operations["create-stock-adjustment"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/stock/adjustments/actions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["get-stock-adjustment-actions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/stock/adjustments/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["get-stock-adjustment"];
+        put: operations["update-stock-adjustment"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/stock/card": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["get-stock-card"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/stock/on-hand": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["list-stock-on-hand"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/stock/warehouses": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["list-warehouses"];
+        put?: never;
+        post: operations["create-warehouse"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/stock/warehouses/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put: operations["update-warehouse"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/users": {
         parameters: {
             query?: never;
@@ -1998,6 +2111,105 @@ export interface components {
              */
             readonly $schema?: string;
             body: string;
+        };
+        Adjustment: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example /api/schemas/Adjustment.json
+             */
+            readonly $schema?: string;
+            allowed_actions: string[];
+            /** Format: date */
+            date: string;
+            /** Format: int64 */
+            id: number;
+            /** Format: int64 */
+            legal_entity_id: number;
+            lines: components["schemas"]["AdjustmentLineOut"][];
+            number: string;
+            reason: string;
+            /** @enum {string} */
+            status: "draft" | "pending_approval" | "posted" | "cancelled";
+            /** Format: int32 */
+            version: number;
+            warehouse_code: string;
+            /** Format: int64 */
+            warehouse_id: number;
+            warehouse_name: string;
+        };
+        AdjustmentActions: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example /api/schemas/AdjustmentActions.json
+             */
+            readonly $schema?: string;
+            allowed_actions: string[];
+        };
+        AdjustmentLine: {
+            /** Format: int64 */
+            item_id: number;
+            /** @description Lot-tracked items: created at posting when missing */
+            lot?: components["schemas"]["LotRef"];
+            /** @description Signed, not 0, up to 3 decimals */
+            quantity: string;
+            /** @description Serial-tracked items */
+            serial?: string;
+        };
+        AdjustmentLineOut: {
+            item_code: string;
+            /** Format: int64 */
+            item_id: number;
+            item_name: string;
+            /** @description Lot-tracked items: created at posting when missing */
+            lot?: components["schemas"]["LotRef"];
+            /** @description Signed, not 0, up to 3 decimals */
+            quantity: string;
+            /** @description Serial-tracked items */
+            serial?: string;
+            unit: string;
+        };
+        AdjustmentList: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example /api/schemas/AdjustmentList.json
+             */
+            readonly $schema?: string;
+            items: components["schemas"]["AdjustmentListItem"][];
+            /** Format: int64 */
+            total: number;
+        };
+        AdjustmentListItem: {
+            /** Format: date */
+            date: string;
+            /** Format: int64 */
+            id: number;
+            number: string;
+            reason: string;
+            /** @enum {string} */
+            status: "draft" | "pending_approval" | "posted" | "cancelled";
+            warehouse_code: string;
+            /** Format: int64 */
+            warehouse_id: number;
+            warehouse_name: string;
+        };
+        AdjustmentUpdate: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example /api/schemas/AdjustmentUpdate.json
+             */
+            readonly $schema?: string;
+            /** Format: date */
+            date: string;
+            lines: components["schemas"]["AdjustmentLine"][];
+            reason: string;
+            /** Format: int32 */
+            version: number;
+            /** Format: int64 */
+            warehouse_id: number;
         };
         ApproveInputBody: {
             /**
@@ -2803,6 +3015,7 @@ export interface components {
         };
         Item: {
             active: boolean;
+            allow_negative: boolean;
             code: string;
             /** Format: int64 */
             id: number;
@@ -2812,6 +3025,8 @@ export interface components {
              * @description Default unit price in đồng
              */
             price: number;
+            /** @enum {string} */
+            tracking: "none" | "quantity" | "lot" | "serial";
             unit: string;
             /** @enum {string} */
             vat_rate: "none" | "0" | "5" | "8" | "10";
@@ -2824,12 +3039,15 @@ export interface components {
              */
             readonly $schema?: string;
             active: boolean;
+            allow_negative?: boolean;
             name: string;
             /**
              * Format: int64
              * @description Default unit price in đồng
              */
             price: number;
+            /** @enum {string} */
+            tracking?: "none" | "quantity" | "lot" | "serial";
             unit: string;
             /** @enum {string} */
             vat_rate: "none" | "0" | "5" | "8" | "10";
@@ -3166,6 +3384,11 @@ export interface components {
             symbol: boolean;
             upper: boolean;
         };
+        LotRef: {
+            code: string;
+            /** Format: date */
+            expiry?: string;
+        };
         MailServer: {
             /**
              * Format: uri
@@ -3328,6 +3551,25 @@ export interface components {
             /** Format: date */
             termination_date: string | null;
         };
+        NewAdjustment: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example /api/schemas/NewAdjustment.json
+             */
+            readonly $schema?: string;
+            /** Format: date */
+            date: string;
+            lines: components["schemas"]["AdjustmentLine"][];
+            reason: string;
+            /**
+             * Format: uuid
+             * @description Generated once per form: sending it again returns the first document
+             */
+            request_id: string;
+            /** Format: int64 */
+            warehouse_id: number;
+        };
         NewContract: {
             /**
              * Format: uri
@@ -3447,6 +3689,7 @@ export interface components {
              */
             readonly $schema?: string;
             active: boolean;
+            allow_negative?: boolean;
             /** @description Empty or absent: issued from the item.item code series */
             code?: string;
             name: string;
@@ -3455,6 +3698,8 @@ export interface components {
              * @description Default unit price in đồng
              */
             price: number;
+            /** @enum {string} */
+            tracking?: "none" | "quantity" | "lot" | "serial";
             unit: string;
             /** @enum {string} */
             vat_rate: "none" | "0" | "5" | "8" | "10";
@@ -3602,6 +3847,23 @@ export interface components {
              */
             request_id?: string;
         };
+        NewWarehouse: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example /api/schemas/NewWarehouse.json
+             */
+            readonly $schema?: string;
+            active: boolean;
+            /** @description Empty or absent: issued from the stock.warehouse code series */
+            code?: string;
+            /**
+             * Format: int64
+             * @description A company org unit; ignored on update
+             */
+            legal_entity_id: number;
+            name: string;
+        };
         Notification: {
             actor_name: string | null;
             /** Format: date-time */
@@ -3619,6 +3881,33 @@ export interface components {
             record_id: number | null;
             /** @description e.g. hrm.leave_request; null for a job */
             record_type: string | null;
+        };
+        OnHandList: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example /api/schemas/OnHandList.json
+             */
+            readonly $schema?: string;
+            items: components["schemas"]["OnHandRow"][];
+            /** Format: int64 */
+            total: number;
+        };
+        OnHandRow: {
+            /** Format: date */
+            expiry?: string;
+            item_code: string;
+            /** Format: int64 */
+            item_id: number;
+            item_name: string;
+            lot_code?: string;
+            /** @description Decimal */
+            quantity: string;
+            serial_code?: string;
+            unit: string;
+            warehouse_code: string;
+            /** Format: int64 */
+            warehouse_id: number;
         };
         Option: {
             label: string;
@@ -4410,6 +4699,33 @@ export interface components {
             name: string;
             reason: string | null;
         };
+        StockCard: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example /api/schemas/StockCard.json
+             */
+            readonly $schema?: string;
+            /** @description Decimal */
+            closing: string;
+            /** @description Decimal: balance before the first day */
+            opening: string;
+            rows: components["schemas"]["StockCardRow"][];
+        };
+        StockCardRow: {
+            /** @description Decimal */
+            balance: string;
+            /** Format: date */
+            date: string;
+            /** Format: int64 */
+            doc_id: number;
+            doc_type: string;
+            lot_code?: string;
+            number: string;
+            /** @description Decimal, signed */
+            quantity: string;
+            serial_code?: string;
+        };
         Termination: {
             /**
              * Format: uri
@@ -4704,6 +5020,45 @@ export interface components {
             login: string;
             name: string;
             root: boolean;
+        };
+        Warehouse: {
+            active: boolean;
+            code: string;
+            /** Format: int64 */
+            id: number;
+            is_default: boolean;
+            /**
+             * Format: int64
+             * @description A company org unit; ignored on update
+             */
+            legal_entity_id: number;
+            name: string;
+        };
+        WarehouseFields: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example /api/schemas/WarehouseFields.json
+             */
+            readonly $schema?: string;
+            active: boolean;
+            /**
+             * Format: int64
+             * @description A company org unit; ignored on update
+             */
+            legal_entity_id: number;
+            name: string;
+        };
+        WarehouseList: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example /api/schemas/WarehouseList.json
+             */
+            readonly $schema?: string;
+            items: components["schemas"]["Warehouse"][];
+            /** Format: int64 */
+            total: number;
         };
         WorkCalendar: {
             /**
@@ -9696,6 +10051,342 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["OrderFromQuoteOutputBody"];
                 };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "list-stock-adjustments": {
+        parameters: {
+            query?: {
+                /** @description Number or reason */
+                q?: string;
+                status?: "draft" | "pending_approval" | "posted" | "cancelled";
+                warehouse_id?: number;
+                sort?: "date" | "-date" | "number" | "-number";
+                page?: number;
+                page_size?: 20 | 50 | 100;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdjustmentList"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "create-stock-adjustment": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NewAdjustment"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CreatedOutputBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "get-stock-adjustment-actions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdjustmentActions"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "get-stock-adjustment": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Adjustment"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "update-stock-adjustment": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AdjustmentUpdate"];
+            };
+        };
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "get-stock-card": {
+        parameters: {
+            query: {
+                warehouse_id: number;
+                item_id: number;
+                from: string;
+                to: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StockCard"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "list-stock-on-hand": {
+        parameters: {
+            query?: {
+                warehouse_id?: number;
+                item_id?: number;
+                /** @description Item code or name, lot or serial code */
+                q?: string;
+                /** @description Only lots expiring before this date */
+                expiring_before?: string;
+                page?: number;
+                page_size?: 20 | 50 | 100;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OnHandList"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "list-warehouses": {
+        parameters: {
+            query?: {
+                q?: string;
+                active?: "true" | "false";
+                sort?: "code" | "-code" | "name" | "-name";
+                page?: number;
+                page_size?: 20 | 50 | 100;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WarehouseList"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "create-warehouse": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NewWarehouse"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CreatedOutputBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "update-warehouse": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["WarehouseFields"];
+            };
+        };
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Error */
             default: {

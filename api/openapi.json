@@ -70,6 +70,307 @@
         ],
         "type": "object"
       },
+      "Adjustment": {
+        "additionalProperties": false,
+        "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "/api/schemas/Adjustment.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
+          "allowed_actions": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "date": {
+            "format": "date",
+            "type": "string"
+          },
+          "id": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "legal_entity_id": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "lines": {
+            "items": {
+              "$ref": "#/components/schemas/AdjustmentLineOut"
+            },
+            "type": "array"
+          },
+          "number": {
+            "type": "string"
+          },
+          "reason": {
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "draft",
+              "pending_approval",
+              "posted",
+              "cancelled"
+            ],
+            "type": "string"
+          },
+          "version": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "warehouse_code": {
+            "type": "string"
+          },
+          "warehouse_id": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "warehouse_name": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "number",
+          "status",
+          "version",
+          "date",
+          "legal_entity_id",
+          "warehouse_id",
+          "warehouse_code",
+          "warehouse_name",
+          "reason",
+          "lines",
+          "allowed_actions"
+        ],
+        "type": "object"
+      },
+      "AdjustmentActions": {
+        "additionalProperties": false,
+        "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "/api/schemas/AdjustmentActions.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
+          "allowed_actions": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "allowed_actions"
+        ],
+        "type": "object"
+      },
+      "AdjustmentLine": {
+        "additionalProperties": false,
+        "properties": {
+          "item_id": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "lot": {
+            "$ref": "#/components/schemas/LotRef",
+            "description": "Lot-tracked items: created at posting when missing"
+          },
+          "quantity": {
+            "description": "Signed, not 0, up to 3 decimals",
+            "pattern": "^-?[0-9]{1,12}(\\.[0-9]{1,3})?$",
+            "type": "string"
+          },
+          "serial": {
+            "description": "Serial-tracked items",
+            "maxLength": 100,
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "item_id",
+          "quantity"
+        ],
+        "type": "object"
+      },
+      "AdjustmentLineOut": {
+        "additionalProperties": false,
+        "properties": {
+          "item_code": {
+            "type": "string"
+          },
+          "item_id": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "item_name": {
+            "type": "string"
+          },
+          "lot": {
+            "$ref": "#/components/schemas/LotRef",
+            "description": "Lot-tracked items: created at posting when missing"
+          },
+          "quantity": {
+            "description": "Signed, not 0, up to 3 decimals",
+            "pattern": "^-?[0-9]{1,12}(\\.[0-9]{1,3})?$",
+            "type": "string"
+          },
+          "serial": {
+            "description": "Serial-tracked items",
+            "maxLength": 100,
+            "minLength": 1,
+            "type": "string"
+          },
+          "unit": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "item_code",
+          "item_name",
+          "unit",
+          "item_id",
+          "quantity"
+        ],
+        "type": "object"
+      },
+      "AdjustmentList": {
+        "additionalProperties": false,
+        "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "/api/schemas/AdjustmentList.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/AdjustmentListItem"
+            },
+            "type": "array"
+          },
+          "total": {
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "items",
+          "total"
+        ],
+        "type": "object"
+      },
+      "AdjustmentListItem": {
+        "additionalProperties": false,
+        "properties": {
+          "date": {
+            "format": "date",
+            "type": "string"
+          },
+          "id": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "number": {
+            "type": "string"
+          },
+          "reason": {
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "draft",
+              "pending_approval",
+              "posted",
+              "cancelled"
+            ],
+            "type": "string"
+          },
+          "warehouse_code": {
+            "type": "string"
+          },
+          "warehouse_id": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "warehouse_name": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "number",
+          "status",
+          "date",
+          "warehouse_id",
+          "warehouse_code",
+          "warehouse_name",
+          "reason"
+        ],
+        "type": "object"
+      },
+      "AdjustmentUpdate": {
+        "additionalProperties": false,
+        "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "/api/schemas/AdjustmentUpdate.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
+          "date": {
+            "format": "date",
+            "type": "string"
+          },
+          "lines": {
+            "items": {
+              "$ref": "#/components/schemas/AdjustmentLine"
+            },
+            "maxItems": 500,
+            "minItems": 1,
+            "type": "array"
+          },
+          "reason": {
+            "maxLength": 500,
+            "minLength": 1,
+            "type": "string"
+          },
+          "version": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "warehouse_id": {
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "version",
+          "date",
+          "warehouse_id",
+          "reason",
+          "lines"
+        ],
+        "type": "object"
+      },
       "ApproveInputBody": {
         "additionalProperties": false,
         "properties": {
@@ -2681,6 +2982,9 @@
           "active": {
             "type": "boolean"
           },
+          "allow_negative": {
+            "type": "boolean"
+          },
           "code": {
             "type": "string"
           },
@@ -2698,6 +3002,15 @@
             "format": "int64",
             "minimum": 0,
             "type": "integer"
+          },
+          "tracking": {
+            "enum": [
+              "none",
+              "quantity",
+              "lot",
+              "serial"
+            ],
+            "type": "string"
           },
           "unit": {
             "maxLength": 30,
@@ -2722,7 +3035,9 @@
           "unit",
           "price",
           "vat_rate",
-          "active"
+          "active",
+          "tracking",
+          "allow_negative"
         ],
         "type": "object"
       },
@@ -2741,6 +3056,9 @@
           "active": {
             "type": "boolean"
           },
+          "allow_negative": {
+            "type": "boolean"
+          },
           "name": {
             "maxLength": 300,
             "minLength": 1,
@@ -2751,6 +3069,15 @@
             "format": "int64",
             "minimum": 0,
             "type": "integer"
+          },
+          "tracking": {
+            "enum": [
+              "none",
+              "quantity",
+              "lot",
+              "serial"
+            ],
+            "type": "string"
           },
           "unit": {
             "maxLength": 30,
@@ -3786,6 +4113,24 @@
         ],
         "type": "object"
       },
+      "LotRef": {
+        "additionalProperties": false,
+        "properties": {
+          "code": {
+            "maxLength": 100,
+            "minLength": 1,
+            "type": "string"
+          },
+          "expiry": {
+            "format": "date",
+            "type": "string"
+          }
+        },
+        "required": [
+          "code"
+        ],
+        "type": "object"
+      },
       "MailServer": {
         "additionalProperties": false,
         "properties": {
@@ -4330,6 +4675,54 @@
         ],
         "type": "object"
       },
+      "NewAdjustment": {
+        "additionalProperties": false,
+        "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "/api/schemas/NewAdjustment.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
+          "date": {
+            "format": "date",
+            "type": "string"
+          },
+          "lines": {
+            "items": {
+              "$ref": "#/components/schemas/AdjustmentLine"
+            },
+            "maxItems": 500,
+            "minItems": 1,
+            "type": "array"
+          },
+          "reason": {
+            "maxLength": 500,
+            "minLength": 1,
+            "type": "string"
+          },
+          "request_id": {
+            "description": "Generated once per form: sending it again returns the first document",
+            "format": "uuid",
+            "type": "string"
+          },
+          "warehouse_id": {
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "request_id",
+          "date",
+          "warehouse_id",
+          "reason",
+          "lines"
+        ],
+        "type": "object"
+      },
       "NewContract": {
         "additionalProperties": false,
         "properties": {
@@ -4647,6 +5040,9 @@
           "active": {
             "type": "boolean"
           },
+          "allow_negative": {
+            "type": "boolean"
+          },
           "code": {
             "description": "Empty or absent: issued from the item.item code series",
             "maxLength": 50,
@@ -4662,6 +5058,15 @@
             "format": "int64",
             "minimum": 0,
             "type": "integer"
+          },
+          "tracking": {
+            "enum": [
+              "none",
+              "quantity",
+              "lot",
+              "serial"
+            ],
+            "type": "string"
           },
           "unit": {
             "maxLength": 30,
@@ -5043,6 +5448,44 @@
         ],
         "type": "object"
       },
+      "NewWarehouse": {
+        "additionalProperties": false,
+        "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "/api/schemas/NewWarehouse.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
+          "active": {
+            "type": "boolean"
+          },
+          "code": {
+            "description": "Empty or absent: issued from the stock.warehouse code series",
+            "maxLength": 50,
+            "type": "string"
+          },
+          "legal_entity_id": {
+            "description": "A company org unit; ignored on update",
+            "format": "int64",
+            "type": "integer"
+          },
+          "name": {
+            "maxLength": 300,
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "legal_entity_id",
+          "active"
+        ],
+        "type": "object"
+      },
       "Notification": {
         "additionalProperties": false,
         "properties": {
@@ -5106,6 +5549,84 @@
           "job_id",
           "created_at",
           "read"
+        ],
+        "type": "object"
+      },
+      "OnHandList": {
+        "additionalProperties": false,
+        "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "/api/schemas/OnHandList.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/OnHandRow"
+            },
+            "type": "array"
+          },
+          "total": {
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "items",
+          "total"
+        ],
+        "type": "object"
+      },
+      "OnHandRow": {
+        "additionalProperties": false,
+        "properties": {
+          "expiry": {
+            "format": "date",
+            "type": "string"
+          },
+          "item_code": {
+            "type": "string"
+          },
+          "item_id": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "item_name": {
+            "type": "string"
+          },
+          "lot_code": {
+            "type": "string"
+          },
+          "quantity": {
+            "description": "Decimal",
+            "type": "string"
+          },
+          "serial_code": {
+            "type": "string"
+          },
+          "unit": {
+            "type": "string"
+          },
+          "warehouse_code": {
+            "type": "string"
+          },
+          "warehouse_id": {
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "warehouse_id",
+          "warehouse_code",
+          "item_id",
+          "item_code",
+          "item_name",
+          "unit",
+          "quantity"
         ],
         "type": "object"
       },
@@ -7399,6 +7920,82 @@
         ],
         "type": "object"
       },
+      "StockCard": {
+        "additionalProperties": false,
+        "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "/api/schemas/StockCard.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
+          "closing": {
+            "description": "Decimal",
+            "type": "string"
+          },
+          "opening": {
+            "description": "Decimal: balance before the first day",
+            "type": "string"
+          },
+          "rows": {
+            "items": {
+              "$ref": "#/components/schemas/StockCardRow"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "opening",
+          "rows",
+          "closing"
+        ],
+        "type": "object"
+      },
+      "StockCardRow": {
+        "additionalProperties": false,
+        "properties": {
+          "balance": {
+            "description": "Decimal",
+            "type": "string"
+          },
+          "date": {
+            "format": "date",
+            "type": "string"
+          },
+          "doc_id": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "doc_type": {
+            "type": "string"
+          },
+          "lot_code": {
+            "type": "string"
+          },
+          "number": {
+            "type": "string"
+          },
+          "quantity": {
+            "description": "Decimal, signed",
+            "type": "string"
+          },
+          "serial_code": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "date",
+          "doc_type",
+          "doc_id",
+          "number",
+          "quantity",
+          "balance"
+        ],
+        "type": "object"
+      },
       "Termination": {
         "additionalProperties": false,
         "properties": {
@@ -8275,6 +8872,105 @@
           "email",
           "locked",
           "root"
+        ],
+        "type": "object"
+      },
+      "Warehouse": {
+        "additionalProperties": false,
+        "properties": {
+          "active": {
+            "type": "boolean"
+          },
+          "code": {
+            "type": "string"
+          },
+          "id": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "is_default": {
+            "type": "boolean"
+          },
+          "legal_entity_id": {
+            "description": "A company org unit; ignored on update",
+            "format": "int64",
+            "type": "integer"
+          },
+          "name": {
+            "maxLength": 300,
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "code",
+          "is_default",
+          "name",
+          "legal_entity_id",
+          "active"
+        ],
+        "type": "object"
+      },
+      "WarehouseFields": {
+        "additionalProperties": false,
+        "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "/api/schemas/WarehouseFields.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
+          "active": {
+            "type": "boolean"
+          },
+          "legal_entity_id": {
+            "description": "A company org unit; ignored on update",
+            "format": "int64",
+            "type": "integer"
+          },
+          "name": {
+            "maxLength": 300,
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "legal_entity_id",
+          "active"
+        ],
+        "type": "object"
+      },
+      "WarehouseList": {
+        "additionalProperties": false,
+        "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "/api/schemas/WarehouseList.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/Warehouse"
+            },
+            "type": "array"
+          },
+          "total": {
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "items",
+          "total"
         ],
         "type": "object"
       },
@@ -15927,6 +16623,624 @@
         "tags": [
           "sales",
           "sales"
+        ]
+      }
+    },
+    "/stock/adjustments": {
+      "get": {
+        "operationId": "list-stock-adjustments",
+        "parameters": [
+          {
+            "description": "Number or reason",
+            "explode": false,
+            "in": "query",
+            "name": "q",
+            "schema": {
+              "description": "Number or reason",
+              "maxLength": 100,
+              "type": "string"
+            }
+          },
+          {
+            "explode": false,
+            "in": "query",
+            "name": "status",
+            "schema": {
+              "enum": [
+                "draft",
+                "pending_approval",
+                "posted",
+                "cancelled"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "explode": false,
+            "in": "query",
+            "name": "warehouse_id",
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          },
+          {
+            "explode": false,
+            "in": "query",
+            "name": "sort",
+            "schema": {
+              "default": "-date",
+              "enum": [
+                "date",
+                "-date",
+                "number",
+                "-number"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "explode": false,
+            "in": "query",
+            "name": "page",
+            "schema": {
+              "default": 1,
+              "format": "int64",
+              "maximum": 100000,
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "explode": false,
+            "in": "query",
+            "name": "page_size",
+            "schema": {
+              "default": 50,
+              "enum": [
+                20,
+                50,
+                100
+              ],
+              "format": "int64",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdjustmentList"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "tags": [
+          "core",
+          "core"
+        ]
+      },
+      "post": {
+        "description": "Sending the same request_id again returns the document created the first time.",
+        "operationId": "create-stock-adjustment",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NewAdjustment"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreatedOutputBody"
+                }
+              }
+            },
+            "description": "Created"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "tags": [
+          "core",
+          "core"
+        ]
+      }
+    },
+    "/stock/adjustments/actions": {
+      "get": {
+        "operationId": "get-stock-adjustment-actions",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdjustmentActions"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "tags": [
+          "core",
+          "core"
+        ]
+      }
+    },
+    "/stock/adjustments/{id}": {
+      "get": {
+        "operationId": "get-stock-adjustment",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Adjustment"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "tags": [
+          "core",
+          "core"
+        ]
+      },
+      "put": {
+        "operationId": "update-stock-adjustment",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AdjustmentUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "tags": [
+          "core",
+          "core"
+        ]
+      }
+    },
+    "/stock/card": {
+      "get": {
+        "operationId": "get-stock-card",
+        "parameters": [
+          {
+            "explode": false,
+            "in": "query",
+            "name": "warehouse_id",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          },
+          {
+            "explode": false,
+            "in": "query",
+            "name": "item_id",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          },
+          {
+            "explode": false,
+            "in": "query",
+            "name": "from",
+            "required": true,
+            "schema": {
+              "format": "date",
+              "type": "string"
+            }
+          },
+          {
+            "explode": false,
+            "in": "query",
+            "name": "to",
+            "required": true,
+            "schema": {
+              "format": "date",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StockCard"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "tags": [
+          "core",
+          "core"
+        ]
+      }
+    },
+    "/stock/on-hand": {
+      "get": {
+        "operationId": "list-stock-on-hand",
+        "parameters": [
+          {
+            "explode": false,
+            "in": "query",
+            "name": "warehouse_id",
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          },
+          {
+            "explode": false,
+            "in": "query",
+            "name": "item_id",
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Item code or name, lot or serial code",
+            "explode": false,
+            "in": "query",
+            "name": "q",
+            "schema": {
+              "description": "Item code or name, lot or serial code",
+              "maxLength": 100,
+              "type": "string"
+            }
+          },
+          {
+            "description": "Only lots expiring before this date",
+            "explode": false,
+            "in": "query",
+            "name": "expiring_before",
+            "schema": {
+              "description": "Only lots expiring before this date",
+              "format": "date",
+              "type": "string"
+            }
+          },
+          {
+            "explode": false,
+            "in": "query",
+            "name": "page",
+            "schema": {
+              "default": 1,
+              "format": "int64",
+              "maximum": 100000,
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "explode": false,
+            "in": "query",
+            "name": "page_size",
+            "schema": {
+              "default": 50,
+              "enum": [
+                20,
+                50,
+                100
+              ],
+              "format": "int64",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OnHandList"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "tags": [
+          "core",
+          "core"
+        ]
+      }
+    },
+    "/stock/warehouses": {
+      "get": {
+        "operationId": "list-warehouses",
+        "parameters": [
+          {
+            "explode": false,
+            "in": "query",
+            "name": "q",
+            "schema": {
+              "maxLength": 100,
+              "type": "string"
+            }
+          },
+          {
+            "explode": false,
+            "in": "query",
+            "name": "active",
+            "schema": {
+              "enum": [
+                "true",
+                "false"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "explode": false,
+            "in": "query",
+            "name": "sort",
+            "schema": {
+              "default": "code",
+              "enum": [
+                "code",
+                "-code",
+                "name",
+                "-name"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "explode": false,
+            "in": "query",
+            "name": "page",
+            "schema": {
+              "default": 1,
+              "format": "int64",
+              "maximum": 100000,
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "explode": false,
+            "in": "query",
+            "name": "page_size",
+            "schema": {
+              "default": 50,
+              "enum": [
+                20,
+                50,
+                100
+              ],
+              "format": "int64",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WarehouseList"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "tags": [
+          "core",
+          "core"
+        ]
+      },
+      "post": {
+        "operationId": "create-warehouse",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NewWarehouse"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreatedOutputBody"
+                }
+              }
+            },
+            "description": "Created"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "tags": [
+          "core",
+          "core"
+        ]
+      }
+    },
+    "/stock/warehouses/{id}": {
+      "put": {
+        "operationId": "update-warehouse",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WarehouseFields"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "tags": [
+          "core",
+          "core"
         ]
       }
     },

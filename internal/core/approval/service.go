@@ -347,8 +347,8 @@ func (s *Service) act(ctx context.Context, id int64, step int32, fn func(ctx con
 				return err
 			}
 		}
-		if t, _ := s.d.Record.TypeOf(ref.Type); platform.ProductGate(ctx, t.Product, platform.ClassWrite) != nil {
-			return platform.ProductGate(ctx, t.Product, platform.ClassWrite)
+		if err := s.d.Record.Gate(ctx, ref.Type, platform.ClassWrite); err != nil {
+			return err
 		}
 		if !current(inst, d) {
 			stale = true
@@ -699,8 +699,7 @@ func (s *Service) DocumentInstance(ctx context.Context, ref record.Ref) (*Instan
 		return nil, err
 	}
 	actor, _ := platform.ActorFrom(ctx)
-	t, _ := s.d.Record.TypeOf(ref.Type)
-	writable := inst.Status == "open" && platform.ProductGate(ctx, t.Product, platform.ClassWrite) == nil
+	writable := inst.Status == "open" && s.d.Record.Gate(ctx, ref.Type, platform.ClassWrite) == nil
 	if writable && actor == inst.SubmittedBy && inst.Action != string(record.Post) {
 		out.AllowedActions = append(out.AllowedActions, "withdraw")
 	}
@@ -801,7 +800,7 @@ func (s *Service) requireType(ctx context.Context, docType string) (record.Type,
 	} else if !ok {
 		return t, platform.ErrForbidden
 	}
-	return t, platform.ProductGate(ctx, t.Product, platform.ClassWrite)
+	return t, s.d.Record.Gate(ctx, docType, platform.ClassWrite)
 }
 
 // actionsOf lists the actions a type offers a rule for: post and cancel, then its
@@ -851,7 +850,7 @@ func (s *Service) Rules(ctx context.Context, product string) ([]TypeRule, error)
 			fields = append(fields, field)
 		}
 		allowed := []string{}
-		if platform.ProductGate(ctx, t.Product, platform.ClassWrite) == nil {
+		if s.d.Record.Gate(ctx, t.Code, platform.ClassWrite) == nil {
 			allowed = []string{"save", "delete"}
 		}
 		for _, a := range actionsOf(t) {

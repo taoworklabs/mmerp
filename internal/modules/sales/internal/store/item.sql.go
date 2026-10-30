@@ -41,7 +41,7 @@ func (q *Queries) ItemOptionsBase(ctx context.Context) ([]ItemOptionsBaseRow, er
 }
 
 const itemsByID = `-- name: ItemsByID :many
-SELECT id, code, name, unit, price, vat_rate, active FROM item.items WHERE id = ANY($1::bigint[])
+SELECT id, code, name, unit, price, vat_rate, active, tracking, allow_negative FROM item.items WHERE id = ANY($1::bigint[])
 `
 
 func (q *Queries) ItemsByID(ctx context.Context, ids []int64) ([]ItemItem, error) {
@@ -61,6 +61,8 @@ func (q *Queries) ItemsByID(ctx context.Context, ids []int64) ([]ItemItem, error
 			&i.Price,
 			&i.VatRate,
 			&i.Active,
+			&i.Tracking,
+			&i.AllowNegative,
 		); err != nil {
 			return nil, err
 		}
@@ -73,7 +75,7 @@ func (q *Queries) ItemsByID(ctx context.Context, ids []int64) ([]ItemItem, error
 }
 
 const lineItemsBase = `-- name: LineItemsBase :many
-SELECT id, code, name, unit, price, vat_rate, active FROM item.items
+SELECT id, code, name, unit, price, vat_rate, active, tracking, allow_negative FROM item.items
 `
 
 // data:base
@@ -94,6 +96,8 @@ func (q *Queries) LineItemsBase(ctx context.Context) ([]ItemItem, error) {
 			&i.Price,
 			&i.VatRate,
 			&i.Active,
+			&i.Tracking,
+			&i.AllowNegative,
 		); err != nil {
 			return nil, err
 		}

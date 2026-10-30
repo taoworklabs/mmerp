@@ -137,3 +137,72 @@ func TestItemCodeTaken(t *testing.T) {
 		t.Fatalf("got %v, want item_code_taken", err)
 	}
 }
+
+func TestTrackingAndNegative(t *testing.T) {
+	f := newFixture(t)
+	admin := f.user(t, "cat", "admin")
+	list := func() map[string]item.Item {
+		l, err := f.items.Items(admin, item.ItemFilter{Paging: page})
+		if err != nil {
+			t.Fatal(err)
+		}
+		out := map[string]item.Item{}
+		for _, it := range l.Items {
+			out[it.Code] = it
+		}
+		return out
+	}
+	with := func(tr string, neg bool) item.ItemFields {
+		in := fields("X", true)
+		in.Tracking, in.AllowNegative = &tr, &neg
+		return in
+	}
+	lotID := must(t)(f.items.CreateItem(admin, item.NewItem{Code: "LOT", ItemFields: with("lot", false)}))
+	must(t)(f.items.CreateItem(admin, item.NewItem{Code: "QTY", ItemFields: with("quantity", true)}))
+	must(t)(f.items.CreateItem(admin, item.NewItem{Code: "NONE", ItemFields: fields("N", true)}))
+	got := list()
+	if got["LOT"].Tracking != "lot" || got["LOT"].AllowNegative || got["QTY"].Tracking != "quantity" || !got["QTY"].AllowNegative || got["NONE"].Tracking != "none" {
+		t.Fatalf("read back %+v", got)
+	}
+	if _, err := f.items.CreateItem(admin, item.NewItem{Code: "BAD", ItemFields: with("lot", true)}); !errors.Is(err, item.ErrNegativeNotQuantity) {
+		t.Fatalf("lot with negative: %v", err)
+	}
+	// An update without the fields keeps the current tracking.
+	if err := f.items.UpdateItem(admin, lotID, fields("Renamed", true)); err != nil {
+		t.Fatal(err)
+	}
+	if it := list()["LOT"]; it.Name != "Renamed" || it.Tracking != "lot" {
+		t.Fatalf("after update %+v", it)
+	}
+}
+
+func TestTrackingLockedOnceMoved(t *testing.T) {
+	f := newFixture(t)
+	admin := f.user(t, "mv", "admin")
+	tr := "lot"
+	in := fields("X", true)
+	in.Tracking = &tr
+	id := must(t)(f.items.CreateItem(admin, item.NewItem{Code: "MV", ItemFields: in}))
+	sys := f.core.System
+	if _, err := sys.Exec(f.core.Ctx, `WITH w AS (INSERT INTO stock.warehouses (code, name, legal_entity_id) VALUES ('W', 'W', $2) RETURNING id)
+		INSERT INTO stock.moves (doc_type, doc_id, line_no, warehouse_id, item_id, quantity, date) SELECT 'x', 1, 1, w.id, $1, 1, current_date FROM w`, id, f.unit); err != nil {
+		t.Fatal(err)
+	}
+	other := "none"
+	chg := fields("X", true)
+	chg.Tracking = &other
+	if err := f.items.UpdateItem(admin, id, chg); !errors.Is(err, item.ErrTrackingLocked) {
+		t.Fatalf("change: got %v, want ErrTrackingLocked", err)
+	}
+	same := fields("Renamed", true)
+	same.Tracking = &tr
+	if err := f.items.UpdateItem(admin, id, same); err != nil {
+		t.Fatalf("same tracking: %v", err)
+	}
+	if err := f.items.UpdateItem(admin, id, fields("Again", true)); err != nil {
+		t.Fatalf("absent tracking: %v", err)
+	}
+	if err := f.items.UpdateItem(admin, id+999, fields("Z", true)); !errors.Is(err, platform.ErrNotFound) {
+		t.Fatalf("missing: %v", err)
+	}
+}

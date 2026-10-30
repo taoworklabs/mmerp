@@ -406,7 +406,10 @@ var cases = []testCase{
 				}
 			}
 		}
-		readOnly("product off", platform.WithProducts(h.Actor, nil))
+		// A shared type has no product to switch off.
+		if typ, _ := h.Core.Record.TypeOf(draft.Type); !typ.Shared {
+			readOnly("product off", platform.WithProducts(h.Actor, nil))
+		}
 		lock(t, h, h.Admin, "2026-03-31")
 		readOnly("period locked", h.Actor)
 	}},

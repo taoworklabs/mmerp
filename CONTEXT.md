@@ -137,6 +137,15 @@ Product description: [products/hrm.md](./products/hrm.md).
 - **Partner role** (vi: "Vai trò đối tác"): a product's relation to a partner, holding that product's fields and ownership (customer today, supplier later).
 - **Partner code** (`code`, vi: "Mã đối tác"): issued from the code series `partner.partner`, prefix `DT` (`DT00001`).
 - **Partner roles and item roles** (vi: "Vai trò dữ liệu dùng chung"): `partner.viewer`, `partner.editor`, `item.viewer`, `item.admin` (`item.manage`; tenant-wide only).
+- **Warehouse** (`stock.warehouses`, vi: "Kho"): a place goods are kept, belonging to one legal entity. Each legal entity has a default warehouse. See [ADR-0049](./docs/adr/0049-shared-stock-ledger-and-sales-delivery.md).
+- **Stock tracking** (`tracking`, vi: "Cách theo dõi tồn kho"): how an item is counted: `none` (no stock, e.g. a service), `quantity`, `lot` or `serial`.
+- **Lot** (vi: "Lô hàng"): a batch of one item received together, with an optional expiry date (vi: "Hạn sử dụng").
+- **Serial** (vi: "Số serial"): one unit of an item, identified individually; at most one on hand in the tenant.
+- **Stock move** (vi: "Biến động kho"): a signed quantity of an item, lot or serial into or out of a warehouse, written once when a document posts and reversed when it is cancelled.
+- **On hand** (vi: "Tồn kho thực tế"): the sum of stock moves for a warehouse, item and lot or serial.
+- **Negative stock** (`allow_negative`, vi: "Cho phép xuất âm"): an item counted by `quantity` whose on hand may go below zero. Off by default; never for lots and serials.
+- **Stock adjustment** (`stock.adjustment`, vi: "Phiếu điều chỉnh kho"): a document changing on hand by hand, with a reason; how opening stock is entered.
+- **Lot suggestion** (vi: "Gợi ý lô"): pre-filling the lots of an outgoing line, earliest expiry first, then earliest received, skipping expired lots. Serials are never suggested.
 
 ## Sales
 
@@ -153,6 +162,8 @@ Product description: [products/sales.md](./products/sales.md).
 - **Subtotal, discount total, VAT total, total** (vi: "Cộng tiền hàng, Tổng chiết khấu, Tiền thuế GTGT, Tổng thanh toán"): sums of a document's lines; total is subtotal less discount total plus VAT total.
 - **Ordered** (vi: "Đã lên đơn"): a quotation that a non-cancelled sales order comes from. Derived, not stored.
 - **Expired** (vi: "Hết hiệu lực"): a quotation whose validity date is before today in the tenant time zone. Derived, not stored. An expired quotation cannot become an order.
+- **Delivery** (`sales.delivery`, vi: "Phiếu giao hàng"): a document taking goods of a confirmed sales order out of one warehouse. `posted` means the goods left. An order may have several (partial delivery).
+- **Delivered, committed, available** (vi: "Đã giao, Đã đặt, Khả dụng"): delivered sums an order line's posted deliveries; committed is what confirmed orders still owe; available is on hand less committed. Derived, not stored.
 - **Create sales order** (vi: "Tạo đơn bán hàng"): turning a posted, unexpired quotation into a draft order with the same customer, terms and lines. Repeating it returns the same order while that order is not cancelled.
 - **Request id** (`request_id`, vi: "Mã yêu cầu"): a UUID a create form generates once; sending the same create twice returns the first document.
 - **Sales roles** (vi: "Vai trò bán hàng"): `staff` and `manager` (customers, quotations and orders, view and edit; same permissions, two names for approval routing), `viewer` (view), `approval_admin` (`sales.approval.manage`; tenant-wide only). They no longer grant partner or item access: Sales users also hold `partner.viewer`/`partner.editor`, and `item.viewer`/`item.admin` to read or manage the catalogue screen (shared roles, ADR-0039); picking items on a quotation or order needs no item role. See [ADR-0027](./docs/adr/0027-sales-product.md).

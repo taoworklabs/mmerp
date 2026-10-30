@@ -65,6 +65,7 @@ flowchart TB
     item["item"]
     tax["tax"]
     posting["posting"]
+    stock["stock"]
   end
   subgraph cor ["core: always on, business-agnostic"]
     iam["iam"]
@@ -177,8 +178,9 @@ stateDiagram-v2
 flowchart LR
   l1["1. record.period_locks<br/>the legal entity's row<br/>FOR SHARE (moving the lock date: FOR UPDATE)"]
   l2["2. record.documents<br/>the document row<br/>FOR UPDATE<br/>(Create: numbering counter, then insert)"]
-  l3["3. Rows locked by the module<br/>e.g. hrm.payroll_locks, then leave balances"]
-  l1 --> l2 --> l3
+  l3["3. item.items FOR SHARE, sorted by id;<br/>stock.serials FOR UPDATE, sorted by id;<br/>stock.balances FOR UPDATE, sorted by<br/>warehouse, item, lot, serial<br/>(new lots, serials first, by item, code)"]
+  l4["4. Other rows locked by the module<br/>e.g. hrm.payroll_locks, then leave balances"]
+  l1 --> l2 --> l3 --> l4
 ```
 
 Every document write, period lock and payroll finalization takes locks in exactly this order, so there is no deadlock between them and no new document slips into a period that was just locked. Each transaction writes only one document; bulk operations are jobs that process each document in its own transaction.

@@ -46,7 +46,7 @@ The design docs are written in English; keep them in English when you edit them.
 ### Transactions and locking
 
 - Services query only through the data engine (`store.<Query>.Run(ctx, …)`, `data.List` for lists; never `store.New` or `platform.DBFrom`) and open transactions with `platform.InTx(ctx, fn)`. Never pass `pgx.Tx`, or a store bound to one, as a parameter: helpers take the tx `ctx`, so audit rows land in the same transaction.
-- Document writes follow one lock order: in `Create` with a `request_id`, the advisory lock on that key, taken first and only when nothing is locked yet → legal-entity row in `record.period_locks` (`FOR SHARE`; `FOR UPDATE` only to move the lock date) → document row in `record.documents` (`FOR UPDATE`; in `Create`, the `numbering` counter row, then the insert) → module-owned rows (e.g. `hrm.payroll_locks`, then leave balances).
+- Document writes follow one lock order: in `Create` with a `request_id`, the advisory lock on that key, taken first and only when nothing is locked yet → legal-entity row in `record.period_locks` (`FOR SHARE`; `FOR UPDATE` only to move the lock date) → document row in `record.documents` (`FOR UPDATE`; in `Create`, the `numbering` counter row, then the insert) → `item.items` rows (`FOR SHARE`, sorted by id) → `stock.serials` rows (`FOR UPDATE`, sorted by id) → `stock.balances` rows (`FOR UPDATE`, sorted by warehouse, item, lot, serial) → other module-owned rows (e.g. `hrm.payroll_locks`, then leave balances). New lots and serials are created in (item, code) order before the `stock.serials` locks.
 - One transaction writes exactly one document. Bulk operations are jobs that process each document in its own transaction.
 - App pool sessions are read-only, so any write outside `platform.InTx` fails (SQLSTATE `25006`); `platform.Enqueue` requires a transaction in ctx. River and migrations use the system pool.
 
@@ -55,7 +55,7 @@ The design docs are written in English; keep them in English when you edit them.
 - `record.documents` is the single source of document status (`draft`, `pending_approval`, `posted`, `cancelled`), `version`, date and legal entity. Modules call `record.Create/Edit/Delete/Transition` **before** writing their own tables, in the same transaction; module side effects run in the record type's `OnTransition`. Module-specific progress (delivery, payment) lives in the module's own status columns.
 - `approval` plugs into `record` through a gate interface; each submission is an approval instance with its own id and submitted `version`.
 - Every document type must pass the `recordtest` contract suite.
-- Posting lines are data written once via `posting.Record`/`posting.Void`; they never carry per-person sensitive amounts.
+- Posting lines are data written once via `posting.Record`/`posting.Void`; they never carry per-person sensitive amounts. Stock moves are the same: written once via `stock.Record`/`stock.Void`.
 - APIs return `allowed_actions` for every document; the frontend renders actions from it and never derives permissions itself.
 
 ### Products, permissions, jobs

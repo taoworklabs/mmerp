@@ -7,4 +7,4 @@ SELECT id, code, name FROM item.items;
 
 -- name: LineItemsBase :many
 -- data:base
-SELECT id, code, name, unit, price, vat_rate, active FROM item.items;
+SELECT id, code, name, unit, price, vat_rate, active, tracking, allow_negative FROM item.items;
