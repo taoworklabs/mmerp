@@ -1,5 +1,5 @@
 import { Anchor } from '@mmerp/ui'
-import { IconListDetails } from '@tabler/icons-react'
+import { IconBuildingWarehouse, IconListDetails } from '@tabler/icons-react'
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { useEffect } from 'react'
 import { FormProvider, useForm } from 'react-hook-form'
@@ -10,7 +10,7 @@ import { useRecordLinks } from '@/shared/area'
 import { useCan, useMe } from '@/shared/auth/me'
 import { errorText, formatDate, formatDecimal, today as todayIn } from '@/shared/i18n'
 import { type Column } from '@/shared/ui/DataTable'
-import { DateField, RemoteSelectField, SelectField } from '@/shared/ui/form'
+import { DateField, FilterChip, RemoteSelectField } from '@/shared/ui/form'
 import { ListPage } from '@/shared/ui/page'
 import { EmptyState } from '@/shared/ui/states'
 import { salesKeys, type StockCardQuery } from '../keys'
@@ -111,7 +111,14 @@ export function StockCardPage() {
       description={t('sales.stock_card.description')}
       filters={
         <FormProvider {...form}>
-          <SelectField name="warehouse_id" label={t('sales.stock_card.warehouse')} data={warehouses} required />
+          <FilterChip
+            label={t('sales.stock_card.warehouse')}
+            icon={IconBuildingWarehouse}
+            data={warehouses}
+            searchable
+            value={p.warehouse_id || null}
+            onChange={(v) => form.setValue('warehouse_id', v, { shouldDirty: true })}
+          />
           <RemoteSelectField
             name="item_id"
             label={t('sales.stock_card.item')}
