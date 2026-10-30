@@ -2808,12 +2808,16 @@ export interface components {
             /** Format: int64 */
             id: number;
             name: string;
-            /** Format: int64 */
+            /**
+             * Format: int64
+             * @description Default unit price in đồng
+             */
             price: number;
             /** @enum {string} */
             tracking: "none" | "quantity" | "lot" | "serial";
             unit: string;
-            vat_rate: string;
+            /** @enum {string} */
+            vat_rate: "none" | "0" | "5" | "8" | "10";
         };
         ItemFields: {
             /**

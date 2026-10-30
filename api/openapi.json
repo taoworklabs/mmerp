@@ -2692,10 +2692,14 @@
             "type": "integer"
           },
           "name": {
+            "maxLength": 300,
+            "minLength": 1,
             "type": "string"
           },
           "price": {
+            "description": "Default unit price in đồng",
             "format": "int64",
+            "minimum": 0,
             "type": "integer"
           },
           "tracking": {
@@ -2708,9 +2712,18 @@
             "type": "string"
           },
           "unit": {
+            "maxLength": 30,
+            "minLength": 1,
             "type": "string"
           },
           "vat_rate": {
+            "enum": [
+              "none",
+              "0",
+              "5",
+              "8",
+              "10"
+            ],
             "type": "string"
           }
         },

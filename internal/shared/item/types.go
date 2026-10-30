@@ -45,10 +45,10 @@ type NewItem struct {
 type Item struct {
 	ID            int64  `json:"id"`
 	Code          string `json:"code"`
-	Name          string `json:"name"`
-	Unit          string `json:"unit"`
-	Price         int64  `json:"price"`
-	VatRate       string `json:"vat_rate"`
+	Name          string `json:"name" minLength:"1" maxLength:"300"`
+	Unit          string `json:"unit" minLength:"1" maxLength:"30"`
+	Price         int64  `json:"price" minimum:"0" doc:"Default unit price in đồng"`
+	VatRate       string `json:"vat_rate" enum:"none,0,5,8,10"`
 	Active        bool   `json:"active"`
 	Tracking      string `json:"tracking" enum:"none,quantity,lot,serial"`
 	AllowNegative bool   `json:"allow_negative"`
