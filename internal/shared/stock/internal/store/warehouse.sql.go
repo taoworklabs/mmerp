@@ -46,7 +46,8 @@ func (q *Queries) DefaultWarehouse(ctx context.Context, legalEntityID int64) (in
 }
 
 const insertDefaultWarehouse = `-- name: InsertDefaultWarehouse :exec
-INSERT INTO stock.warehouses (code, name, legal_entity_id, is_default) VALUES ($1, $2, $3, true) ON CONFLICT DO NOTHING
+INSERT INTO stock.warehouses (code, name, legal_entity_id, is_default) VALUES ($1, $2, $3, true)
+ON CONFLICT (legal_entity_id) WHERE is_default DO NOTHING
 `
 
 type InsertDefaultWarehouseParams struct {

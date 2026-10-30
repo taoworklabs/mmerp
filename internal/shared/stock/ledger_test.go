@@ -393,6 +393,11 @@ func TestVoidRestores(t *testing.T) {
 		WHERE r.doc_id = $1 AND r.quantity = 4 AND o.quantity = -4 AND r.date = '2026-11-01' AND r.line_no = o.line_no`, out.ID).Scan(&rev); err != nil || rev != 1 || l.moveRows(t) != 3 {
 		t.Fatalf("reversals %d moves %d %v", rev, l.moveRows(t), err)
 	}
+	// A second reversal of the same move is refused by the schema, never stored.
+	if _, err := l.core.System.Exec(l.core.Ctx, `INSERT INTO stock.moves (doc_type, doc_id, line_no, warehouse_id, item_id, lot_id, quantity, date, reverses)
+		SELECT doc_type, doc_id, line_no, warehouse_id, item_id, lot_id, -quantity, date, reverses FROM stock.moves WHERE doc_id = $1 AND reverses IS NOT NULL`, out.ID); err == nil {
+		t.Fatal("double reversal stored")
+	}
 	// Once reversed, the document may record again.
 	if err := l.recordFor(out, stock.Move{LineNo: 1, WarehouseID: l.wh, ItemID: it, Lot: lot("L1", nil), Quantity: qty(-1)}); err != nil {
 		t.Fatal(err)

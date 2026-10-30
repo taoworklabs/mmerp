@@ -10,7 +10,8 @@ UPDATE stock.warehouses SET name = $2, active = $3 WHERE id = $1 RETURNING code;
 SELECT EXISTS (SELECT 1 FROM stock.warehouses WHERE lower(code) = lower($1));
 
 -- name: InsertDefaultWarehouse :exec
-INSERT INTO stock.warehouses (code, name, legal_entity_id, is_default) VALUES ($1, $2, $3, true) ON CONFLICT DO NOTHING;
+INSERT INTO stock.warehouses (code, name, legal_entity_id, is_default) VALUES ($1, $2, $3, true)
+ON CONFLICT (legal_entity_id) WHERE is_default DO NOTHING;
 
 -- name: DefaultWarehouse :one
 SELECT id FROM stock.warehouses WHERE legal_entity_id = $1 AND is_default;

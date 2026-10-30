@@ -43,6 +43,9 @@ CREATE TABLE stock.moves (
 );
 CREATE INDEX moves_doc_idx ON stock.moves (doc_type, doc_id);
 CREATE INDEX moves_item_idx ON stock.moves (item_id);
+CREATE INDEX moves_card_idx ON stock.moves (warehouse_id, item_id, date);
+-- A move is reversed at most once.
+CREATE UNIQUE INDEX moves_reverses_key ON stock.moves (reverses) WHERE reverses IS NOT NULL;
 
 CREATE TABLE stock.balances (
     warehouse_id bigint NOT NULL REFERENCES stock.warehouses,
@@ -52,6 +55,7 @@ CREATE TABLE stock.balances (
     quantity     numeric(15,3) NOT NULL
 );
 CREATE UNIQUE INDEX balances_key ON stock.balances (warehouse_id, item_id, coalesce(lot_id, 0), coalesce(serial_id, 0));
+CREATE INDEX balances_serial_idx ON stock.balances (serial_id) WHERE serial_id IS NOT NULL;
 
 CREATE TABLE stock.adjustments (
     id           bigint PRIMARY KEY REFERENCES record.documents DEFERRABLE INITIALLY DEFERRED,
