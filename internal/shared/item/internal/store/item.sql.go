@@ -53,17 +53,6 @@ func (q *Queries) ItemCodeTaken(ctx context.Context, lower string) (bool, error)
 	return exists, err
 }
 
-const itemExists = `-- name: ItemExists :one
-SELECT EXISTS (SELECT 1 FROM item.items WHERE id = $1)
-`
-
-func (q *Queries) ItemExists(ctx context.Context, id int64) (bool, error) {
-	row := q.db.QueryRow(ctx, itemExists, id)
-	var exists bool
-	err := row.Scan(&exists)
-	return exists, err
-}
-
 const itemListBase = `-- name: ItemListBase :many
 SELECT id, code, name, unit, price, vat_rate, active, tracking, allow_negative FROM item.items
 `
@@ -97,6 +86,17 @@ func (q *Queries) ItemListBase(ctx context.Context) ([]ItemItem, error) {
 		return nil, err
 	}
 	return items, nil
+}
+
+const lockItem = `-- name: LockItem :one
+SELECT id FROM item.items WHERE id = $1 FOR UPDATE
+`
+
+// Waits for stock moves holding the row, so the update below sees them committed.
+func (q *Queries) LockItem(ctx context.Context, id int64) (int64, error) {
+	row := q.db.QueryRow(ctx, lockItem, id)
+	err := row.Scan(&id)
+	return id, err
 }
 
 const updateItem = `-- name: UpdateItem :one

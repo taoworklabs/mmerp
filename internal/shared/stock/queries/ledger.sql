@@ -21,7 +21,8 @@ ORDER BY m.id;
 SELECT id, legal_entity_id, active FROM stock.warehouses WHERE id = ANY(@ids::bigint[]);
 
 -- name: MoveItems :many
-SELECT id, tracking, allow_negative FROM item.items WHERE id = ANY(@ids::bigint[]);
+-- Shared locks hold the tracking steady until the moves commit; ordered by id so they queue.
+SELECT id, tracking, allow_negative FROM item.items WHERE id = ANY(@ids::bigint[]) ORDER BY id FOR SHARE;
 
 -- name: InsertLot :exec
 INSERT INTO stock.lots (item_id, code, expiry) VALUES ($1, $2, $3) ON CONFLICT DO NOTHING;

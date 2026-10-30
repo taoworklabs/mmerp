@@ -304,7 +304,7 @@ func (q *Queries) LotsOnHand(ctx context.Context, arg LotsOnHandParams) ([]LotsO
 }
 
 const moveItems = `-- name: MoveItems :many
-SELECT id, tracking, allow_negative FROM item.items WHERE id = ANY($1::bigint[])
+SELECT id, tracking, allow_negative FROM item.items WHERE id = ANY($1::bigint[]) ORDER BY id FOR SHARE
 `
 
 type MoveItemsRow struct {
@@ -313,6 +313,7 @@ type MoveItemsRow struct {
 	AllowNegative bool
 }
 
+// Shared locks hold the tracking steady until the moves commit; ordered by id so they queue.
 func (q *Queries) MoveItems(ctx context.Context, ids []int64) ([]MoveItemsRow, error) {
 	rows, err := q.db.Query(ctx, moveItems, ids)
 	if err != nil {

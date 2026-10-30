@@ -77,18 +77,16 @@ func (s *Service) CreateItem(ctx context.Context, in NewItem) (int64, error) {
 func (s *Service) UpdateItem(ctx context.Context, id int64, in ItemFields) error {
 	return s.write(ctx, func(ctx context.Context) error {
 		in = trim(in)
+		if _, err := store.LockItem.Run(ctx, id); errors.Is(err, pgx.ErrNoRows) {
+			return platform.ErrNotFound
+		} else if err != nil {
+			return err
+		}
 		code, err := store.UpdateItem.Run(ctx, store.UpdateItemParams{ID: id, Name: in.Name, Unit: in.Unit, Price: in.Price, VatRate: in.VatRate, Active: in.Active,
 			Tracking:      pgtype.Text{String: deref(in.Tracking), Valid: in.Tracking != nil},
 			AllowNegative: pgtype.Bool{Bool: deref(in.AllowNegative), Valid: in.AllowNegative != nil}})
 		if errors.Is(err, pgx.ErrNoRows) {
-			// The statement refused: either no such item or a tracking change after moves.
-			found, err := store.ItemExists.Run(ctx, id)
-			if err != nil {
-				return err
-			}
-			if !found {
-				return platform.ErrNotFound
-			}
+			// The row is locked and exists, so only a tracking change after moves refuses.
 			return ErrTrackingLocked
 		}
 		if err != nil {

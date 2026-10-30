@@ -31,7 +31,8 @@ func lineErr(e *platform.Error, m Move) error {
 
 // Record writes the moves of a document, in the caller's transaction, under the document's
 // legal entity and date. It checks no permission: documents call it from their transitions.
-// It refuses while earlier moves of the document are not reversed.
+// It refuses while earlier moves of the document are not reversed. Callers hold the
+// document's row lock (they run inside record.Transition), so one document never records twice.
 func (s *Service) Record(ctx context.Context, ref record.Ref, moves []Move) error {
 	h, err := store.DocumentHeader.Run(ctx, store.DocumentHeaderParams{DocType: ref.Type, ID: ref.ID})
 	if errors.Is(err, pgx.ErrNoRows) {
@@ -114,7 +115,7 @@ func apply(ctx context.Context, ref record.Ref, date pgtype.Date, items map[int6
 		ins.Quantities = append(ins.Quantities, l.qty.String())
 		ins.ReversesIds = append(ins.ReversesIds, l.reverses)
 	}
-	// Lock order: serials, then balances by key, so documents touching the same rows queue.
+	// Lock order: items (read with their tracking), serials, then balances by key, so documents touching the same rows queue.
 	slices.Sort(serials)
 	serials = slices.Compact(serials)
 	if err := store.LockSerials.Run(ctx, serials); err != nil {
@@ -169,7 +170,8 @@ func apply(ctx context.Context, ref record.Ref, date pgtype.Date, items map[int6
 
 // Void cancels the moves of a document by inserting a reversal for each one not yet
 // reversed, in the caller's transaction. It goes through the same balance checks as Record,
-// so goods already issued elsewhere refuse it. A document without moves is a no-op.
+// so goods already issued elsewhere refuse it. A document without moves is a no-op. Callers
+// hold the document's row lock (they run inside record.Transition), so it never voids twice.
 func (s *Service) Void(ctx context.Context, ref record.Ref) error {
 	h, err := store.DocumentHeader.Run(ctx, store.DocumentHeaderParams{DocType: ref.Type, ID: ref.ID})
 	if errors.Is(err, pgx.ErrNoRows) {

@@ -324,6 +324,68 @@ func TestConcurrentIssueOfLastUnit(t *testing.T) {
 	}
 }
 
+// A tracking change racing an item's first move waits for it, then refuses. The move is
+// held after it read the tracking and before it inserts, by a lock on its balance row.
+func TestConcurrentTrackingChange(t *testing.T) {
+	l := newLedger(t)
+	it := l.item(t, item.TrackQuantity, false)
+	ref := l.doc(t, l.unit)
+	ctx := l.core.Ctx
+	if _, err := l.core.System.Exec(ctx, `INSERT INTO stock.balances (warehouse_id, item_id, quantity) VALUES ($1, $2, 0)`, l.wh, it); err != nil {
+		t.Fatal(err)
+	}
+	hold, err := l.core.System.Begin(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = hold.Rollback(ctx) }()
+	if _, err := hold.Exec(ctx, `SELECT 1 FROM stock.balances WHERE item_id = $1 FOR UPDATE`, it); err != nil {
+		t.Fatal(err)
+	}
+	recorded := make(chan error, 1)
+	go func() {
+		recorded <- l.recordFor(ref, stock.Move{LineNo: 1, WarehouseID: l.wh, ItemID: it, Quantity: qty(1)})
+	}()
+	waitLocked(t, l, "%stock.balances%FOR UPDATE%", nil)
+	updated := make(chan error, 1)
+	go func() {
+		tr := item.TrackNone
+		updated <- l.items.UpdateItem(l.admin, it, item.ItemFields{Name: "I", Unit: "cái", VatRate: "8", Active: true, Tracking: &tr})
+	}()
+	waitLocked(t, l, "%item.items%FOR UPDATE%", updated)
+	if err := hold.Rollback(ctx); err != nil {
+		t.Fatal(err)
+	}
+	if err := <-recorded; err != nil {
+		t.Fatal(err)
+	}
+	if err := <-updated; !errors.Is(err, item.ErrTrackingLocked) {
+		t.Fatalf("got %v, want ErrTrackingLocked", err)
+	}
+}
+
+// waitLocked waits until a statement like pattern waits on a lock; done failing early means
+// it never had to wait.
+func waitLocked(t *testing.T, l *ledger, pattern string, done <-chan error) {
+	t.Helper()
+	for deadline := time.Now().Add(5 * time.Second); time.Now().Before(deadline); time.Sleep(10 * time.Millisecond) {
+		select {
+		case err := <-done:
+			t.Fatalf("finished without waiting: %v", err)
+		default:
+		}
+		var waiting bool
+		if err := l.core.System.QueryRow(l.core.Ctx, `SELECT EXISTS (SELECT 1 FROM pg_stat_activity
+			WHERE datname = current_database() AND wait_event_type = 'Lock' AND query LIKE $1)`, pattern).Scan(&waiting); err != nil {
+			t.Fatal(err)
+		}
+		if waiting {
+			return
+		}
+	}
+	t.Fatalf("nothing waits like %s", pattern)
+}
+
 func TestOppositeOrderNoDeadlock(t *testing.T) {
 	l := newLedger(t)
 	x, y := l.item(t, item.TrackQuantity, false), l.item(t, item.TrackQuantity, false)
