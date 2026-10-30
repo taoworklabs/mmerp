@@ -1645,6 +1645,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/sales/availability": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Per stock item, in the legal entity of the org unit; items without stock are left out. */
+        get: operations["get-availability"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/sales/customers": {
         parameters: {
             query?: never;
@@ -1700,7 +1717,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get?: never;
+        get: operations["list-deliveries"];
         put?: never;
         /** @description Sending the same request_id again returns the delivery created the first time. */
         post: operations["create-delivery"];
@@ -2297,6 +2314,15 @@ export interface components {
             /** Format: int64 */
             max_mb: number;
         };
+        AvailabilityOutputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example /api/schemas/AvailabilityOutputBody.json
+             */
+            readonly $schema?: string;
+            items: components["schemas"]["ItemAvailability"][];
+        };
         BalanceAdjustment: {
             /**
              * Format: uri
@@ -2691,6 +2717,36 @@ export interface components {
             quantity: string;
             serial_code?: string;
         };
+        DeliveryList: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example /api/schemas/DeliveryList.json
+             */
+            readonly $schema?: string;
+            items: components["schemas"]["DeliveryListItem"][];
+            /** Format: int64 */
+            total: number;
+        };
+        DeliveryListItem: {
+            /** Format: int64 */
+            customer_id: number;
+            customer_name: string;
+            /** Format: date */
+            date: string;
+            /** Format: int64 */
+            id: number;
+            number: string;
+            /** Format: int64 */
+            order_id: number;
+            order_number: string;
+            org_unit_name: string;
+            /** @enum {string} */
+            status: "draft" | "pending_approval" | "posted" | "cancelled";
+            /** Format: int64 */
+            warehouse_id: number;
+            warehouse_name: string;
+        };
         DeliveryUpdate: {
             /**
              * Format: uri
@@ -2765,8 +2821,11 @@ export interface components {
             customer: components["schemas"]["CustomerCopy"];
             /** Format: date */
             date: string;
+            deliveries?: components["schemas"]["DocRef"][] | null;
             /** Format: date */
             delivery_date: string | null;
+            /** @enum {string} */
+            delivery_state?: "none" | "partial" | "full" | "not_applicable";
             delivery_terms: string | null;
             /** Format: int64 */
             discount_total: number;
@@ -2817,6 +2876,8 @@ export interface components {
             customer_name: string;
             /** Format: date */
             date: string;
+            /** @enum {string} */
+            delivery_state?: "none" | "partial" | "full" | "not_applicable";
             expired: boolean;
             from_quote: boolean;
             /** Format: int64 */
@@ -3130,6 +3191,14 @@ export interface components {
             /** @enum {string} */
             vat_rate: "none" | "0" | "5" | "8" | "10";
         };
+        ItemAvailability: {
+            available: string;
+            /** @description Still to deliver on posted orders */
+            committed: string;
+            /** Format: int64 */
+            item_id: number;
+            on_hand: string;
+        };
         ItemFields: {
             /**
              * Format: uri
@@ -3384,6 +3453,8 @@ export interface components {
              * @description Quantity × unit price
              */
             amount: number;
+            available?: string;
+            delivered?: string;
             description: string;
             /** Format: int64 */
             discount: number;
@@ -9633,6 +9704,38 @@ export interface operations {
             };
         };
     };
+    "get-availability": {
+        parameters: {
+            query: {
+                org_unit_id: number;
+                item_id: number[] | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AvailabilityOutputBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
     "list-customers": {
         parameters: {
             query?: {
@@ -9795,6 +9898,44 @@ export interface operations {
             };
         };
     };
+    "list-deliveries": {
+        parameters: {
+            query?: {
+                /** @description Number, order number or customer name */
+                q?: string;
+                status?: "draft" | "pending_approval" | "posted" | "cancelled";
+                order_id?: number;
+                warehouse_id?: number;
+                sort?: "date" | "-date" | "number" | "-number";
+                page?: number;
+                page_size?: 20 | 50 | 100;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DeliveryList"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
     "create-delivery": {
         parameters: {
             query?: never;
@@ -9930,6 +10071,7 @@ export interface operations {
                 q?: string;
                 status?: "draft" | "pending_approval" | "posted" | "cancelled";
                 customer_id?: number;
+                delivery_state?: "none" | "partial" | "full" | "not_applicable";
                 sort?: "date" | "-date" | "number" | "-number" | "total" | "-total";
                 page?: number;
                 page_size?: 20 | 50 | 100;
@@ -10093,6 +10235,7 @@ export interface operations {
                 q?: string;
                 status?: "draft" | "pending_approval" | "posted" | "cancelled";
                 customer_id?: number;
+                delivery_state?: "none" | "partial" | "full" | "not_applicable";
                 sort?: "date" | "-date" | "number" | "-number" | "total" | "-total";
                 page?: number;
                 page_size?: 20 | 50 | 100;

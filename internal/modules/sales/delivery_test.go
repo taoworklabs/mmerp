@@ -346,3 +346,142 @@ func TestCancelOrderVsCreateDelivery(t *testing.T) {
 		t.Fatalf("cancel: %v, create: %v", cancelErr, createErr)
 	}
 }
+
+// goodsOrder is a draft order of team A for qty of the goods only.
+func (d *deliveries) goodsOrder(qty string) int64 {
+	d.t.Helper()
+	fl := sales.DocFields{Date: "2026-03-10", OrgUnitID: d.a, CustomerID: d.customer, Lines: []sales.LineInput{
+		{ItemID: d.goods, Description: "Hàng", Quantity: qty, UnitPrice: 1_000, DiscountPercent: "0", VatRate: "8"}}}
+	return must(d.t)(d.sales.CreateOrder(d.staff, sales.NewDoc{RequestID: newRequest(), DocFields: fl}))
+}
+
+func (d *deliveries) posted(order int64, lines ...sales.DeliveryLineInput) int64 {
+	d.t.Helper()
+	id := must(d.t)(d.create(d.staff, order, d.fields(lines...)))
+	d.check(d.move(d.staff, "sales.delivery", id, record.Posted))
+	return id
+}
+
+func (d *deliveries) orderState(want string, delivered ...string) sales.Doc {
+	d.t.Helper()
+	o, err := d.sales.Order(d.staff, d.order)
+	d.check(err)
+	got := []string{}
+	for _, l := range o.Lines {
+		if l.Delivered == nil {
+			got = append(got, "-")
+		} else {
+			got = append(got, *l.Delivered)
+		}
+	}
+	if o.DeliveryState != want || !slices.Equal(got, delivered) {
+		d.t.Fatalf("state %s delivered %v, want %s %v", o.DeliveryState, got, want, delivered)
+	}
+	l, err := d.sales.Orders(d.staff, sales.DocFilter{DeliveryState: want, Sort: "-date", Paging: platform.Paging{Page: 1, PageSize: 100}})
+	d.check(err)
+	if i := slices.IndexFunc(l.Items, func(x sales.DocListItem) bool { return x.ID == d.order }); i < 0 || l.Items[i].DeliveryState != want {
+		d.t.Fatalf("list filtered by %s: %+v", want, l.Items)
+	}
+	return o
+}
+
+func TestDeliveryStateDerived(t *testing.T) {
+	d := newDeliveries(t)
+	d.adjust(stock.AdjustmentLine{ItemID: d.goods, Quantity: "10"}, stock.AdjustmentLine{ItemID: d.lotted, Lot: &stock.LotRef{Code: "L1"}, Quantity: "5"})
+	d.orderState("none", "0", "0", "-")
+	// A draft delivery delivers nothing yet.
+	draft := must(t)(d.create(d.staff, d.order, d.fields(dl(1, "1"))))
+	d.orderState("none", "0", "0", "-")
+	d.check(d.rec.Delete(d.staff, record.Ref{Type: "sales.delivery", ID: draft}, 1))
+	first := d.posted(d.order, dl(1, "4"))
+	d.orderState("partial", "4", "0", "-")
+	second := d.posted(d.order, dl(1, "6"), sales.DeliveryLineInput{OrderPosition: 2, LotCode: str("L1"), Quantity: "5"})
+	o := d.orderState("full", "10", "5", "-")
+	if len(o.Deliveries) != 2 || o.Deliveries[0].ID != first || o.Deliveries[1].ID != second || o.Deliveries[0].Status != "posted" {
+		t.Fatalf("deliveries %+v", o.Deliveries)
+	}
+	d.check(d.move(d.staff, "sales.delivery", first, record.Cancelled))
+	o = d.orderState("partial", "6", "5", "-")
+	if len(o.Deliveries) != 1 || o.Deliveries[0].ID != second {
+		t.Fatalf("cancelled one still listed: %+v", o.Deliveries)
+	}
+	// An order of services only has nothing to deliver; quotations show no state.
+	services := must(t)(d.sales.CreateOrder(d.staff, sales.NewDoc{RequestID: newRequest(), DocFields: sales.DocFields{Date: "2026-03-10",
+		OrgUnitID: d.a, CustomerID: d.customer, Lines: []sales.LineInput{
+			{ItemID: d.fix, Description: "Sửa chữa", Quantity: "2", UnitPrice: 250_000, DiscountPercent: "0", VatRate: "10"}}}}))
+	if s, err := d.sales.Order(d.staff, services); err != nil || s.DeliveryState != "not_applicable" || s.Lines[0].Delivered != nil {
+		t.Fatalf("services only: %+v %v", s, err)
+	}
+	q := must(t)(d.sales.CreateQuote(d.staff, sales.NewDoc{RequestID: newRequest(), DocFields: d.fixture.fields("2026-03-10")}))
+	if s, err := d.sales.Quote(d.staff, q); err != nil || s.DeliveryState != "" || s.Lines[0].Delivered != nil || s.Lines[0].Available != nil {
+		t.Fatalf("quotation: %+v %v", s, err)
+	}
+}
+
+// On hand 10 and a posted order committing 6 leave 4 for a draft order; a posted
+// order shows no availability.
+func TestAvailableOnDraftOrder(t *testing.T) {
+	d := newDeliveries(t)
+	d.check(d.move(d.staff, "sales.order", d.order, record.Cancelled))
+	d.adjust(stock.AdjustmentLine{ItemID: d.goods, Quantity: "10"})
+	a := d.goodsOrder("6")
+	d.check(d.move(d.staff, "sales.order", a, record.Posted))
+	b := d.goodsOrder("5")
+	if o, err := d.sales.Order(d.staff, b); err != nil || o.Lines[0].Available == nil || *o.Lines[0].Available != "4.000" {
+		t.Fatalf("draft order: %+v %v", o.Lines, err)
+	}
+	c := d.goodsOrder("1")
+	d.check(d.move(d.staff, "sales.order", c, record.Posted))
+	if o, err := d.sales.Order(d.staff, c); err != nil || o.Lines[0].Available != nil {
+		t.Fatalf("posted order: %+v %v", o.Lines, err)
+	}
+	// The draft's services line shows none either.
+	o, err := d.sales.Order(d.staff, d.newOrder("0"))
+	d.check(err)
+	if o.Lines[0].Available == nil || *o.Lines[0].Available != "3.000" || o.Lines[2].Available != nil {
+		t.Fatalf("mixed draft: %+v", o.Lines)
+	}
+}
+
+func TestAvailabilityEndpoint(t *testing.T) {
+	d := newDeliveries(t)
+	d.adjust(stock.AdjustmentLine{ItemID: d.goods, Quantity: "15"}, stock.AdjustmentLine{ItemID: d.lotted, Lot: &stock.LotRef{Code: "L1"}, Quantity: "3"})
+	// Delivering 4 takes them from both on hand and committed.
+	d.posted(d.order, dl(1, "4"))
+	got, err := d.sales.Availability(d.staff, d.a, []int64{d.goods, d.lotted})
+	d.check(err)
+	want := []sales.ItemAvailability{
+		{ItemID: d.goods, OnHand: "11.000", Committed: "6.000", Available: "5.000"},
+		{ItemID: d.lotted, OnHand: "3.000", Committed: "5.000", Available: "-2.000"},
+	}
+	if !slices.Equal(got, want) {
+		t.Fatalf("availability %+v, want %+v", got, want)
+	}
+	if _, err := d.sales.Availability(d.ctxFor("nobody"), d.a, []int64{d.goods}); !errors.Is(err, platform.ErrForbidden) {
+		t.Fatalf("without order view: %v", err)
+	}
+}
+
+func TestDeliveriesList(t *testing.T) {
+	d := newDeliveries(t)
+	other := d.newOrder("0")
+	d.check(d.move(d.staff, "sales.order", other, record.Posted))
+	id := must(t)(d.create(d.staff, d.order, d.fields(dl(1, "1"))))
+	must(t)(d.create(d.staff, other, d.fields(dl(1, "1"))))
+	f := sales.DeliveryFilter{OrderID: d.order, Sort: "-date", Paging: platform.Paging{Page: 1, PageSize: 20}}
+	l, err := d.sales.Deliveries(d.staff, f)
+	d.check(err)
+	o, err := d.sales.Order(d.staff, d.order)
+	d.check(err)
+	if l.Total != 1 || len(l.Items) != 1 || l.Items[0].ID != id || l.Items[0].OrderNumber != o.Number || l.Items[0].Status != "draft" ||
+		l.Items[0].WarehouseID != d.wh || l.Items[0].CustomerName == "" {
+		t.Fatalf("deliveries of the order: %+v", l)
+	}
+	f.OrderID = 0
+	if l, err := d.sales.Deliveries(d.staff, f); err != nil || l.Total != 2 {
+		t.Fatalf("all: %+v %v", l, err)
+	}
+	if l, err := d.sales.Deliveries(d.ctxFor("staff_b", "staff@B"), f); err != nil || l.Total != 0 {
+		t.Fatalf("staff of B: %+v %v", l, err)
+	}
+}

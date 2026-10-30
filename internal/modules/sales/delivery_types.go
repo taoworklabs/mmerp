@@ -67,3 +67,39 @@ var (
 	// The warehouse is inactive or of another legal entity than the order.
 	ErrDeliveryWarehouse = &platform.Error{Status: http.StatusUnprocessableEntity, Code: "sales_delivery_warehouse"}
 )
+
+type DeliveryFilter struct {
+	Q           string `query:"q" maxLength:"100" doc:"Number, order number or customer name"`
+	Status      string `query:"status" enum:"draft,pending_approval,posted,cancelled"`
+	OrderID     int64  `query:"order_id"`
+	WarehouseID int64  `query:"warehouse_id"`
+	Sort        string `query:"sort" enum:"date,-date,number,-number" default:"-date"`
+	platform.Paging
+}
+
+type DeliveryListItem struct {
+	ID            int64  `json:"id"`
+	Number        string `json:"number"`
+	Status        string `json:"status" enum:"draft,pending_approval,posted,cancelled"`
+	Date          string `json:"date" format:"date"`
+	OrderID       int64  `json:"order_id"`
+	OrderNumber   string `json:"order_number"`
+	CustomerID    int64  `json:"customer_id"`
+	CustomerName  string `json:"customer_name"`
+	WarehouseID   int64  `json:"warehouse_id"`
+	WarehouseName string `json:"warehouse_name"`
+	OrgUnitName   string `json:"org_unit_name"`
+}
+
+type DeliveryList struct {
+	Items []DeliveryListItem `json:"items" nullable:"false"`
+	Total int64              `json:"total"`
+}
+
+// ItemAvailability: available is on hand less committed, and may be negative.
+type ItemAvailability struct {
+	ItemID    int64  `json:"item_id"`
+	OnHand    string `json:"on_hand"`
+	Committed string `json:"committed" doc:"Still to deliver on posted orders"`
+	Available string `json:"available"`
+}

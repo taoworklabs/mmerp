@@ -91,6 +91,66 @@ func (q *Queries) DeliverableLines(ctx context.Context, arg DeliverableLinesPara
 	return items, nil
 }
 
+const deliveryListBase = `-- name: DeliveryListBase :many
+SELECT v.id, d.number, d.status, d.date, d.org_unit_id, v.order_id, o.number AS order_number,
+       h.customer_id, h.customer_name, v.warehouse_id, w.name AS warehouse_name, u.name AS org_unit_name
+FROM sales.deliveries v
+JOIN record.documents d ON d.id = v.id
+JOIN record.documents o ON o.id = v.order_id
+JOIN sales.headers h ON h.id = v.order_id
+JOIN stock.warehouses w ON w.id = v.warehouse_id
+JOIN iam.org_units u ON u.id = d.org_unit_id
+`
+
+type DeliveryListBaseRow struct {
+	ID            int64
+	Number        string
+	Status        string
+	Date          pgtype.Date
+	OrgUnitID     int64
+	OrderID       int64
+	OrderNumber   string
+	CustomerID    int64
+	CustomerName  string
+	WarehouseID   int64
+	WarehouseName string
+	OrgUnitName   string
+}
+
+// data:base
+func (q *Queries) DeliveryListBase(ctx context.Context) ([]DeliveryListBaseRow, error) {
+	rows, err := q.db.Query(ctx, deliveryListBase)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []DeliveryListBaseRow
+	for rows.Next() {
+		var i DeliveryListBaseRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Number,
+			&i.Status,
+			&i.Date,
+			&i.OrgUnitID,
+			&i.OrderID,
+			&i.OrderNumber,
+			&i.CustomerID,
+			&i.CustomerName,
+			&i.WarehouseID,
+			&i.WarehouseName,
+			&i.OrgUnitName,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const deliveryOrder = `-- name: DeliveryOrder :one
 SELECT order_id FROM sales.deliveries WHERE id = $1
 `

@@ -13,12 +13,38 @@ type deliveryOutput struct{ Body Delivery }
 
 type newDeliveryInput struct{ Body NewDelivery }
 
+type deliveriesOutput struct{ Body DeliveryList }
+
+type availabilityInput struct {
+	OrgUnitID int64   `query:"org_unit_id" required:"true"`
+	ItemIDs   []int64 `query:"item_id,explode" required:"true" minItems:"1" maxItems:"200"`
+}
+
+type availabilityOutput struct {
+	Body struct {
+		Items []ItemAvailability `json:"items" nullable:"false"`
+	}
+}
+
 type updateDeliveryInput struct {
 	ID   int64 `path:"id"`
 	Body DeliveryUpdate
 }
 
 func registerDeliveryHandlers(api huma.API, s *Service) {
+	huma.Register(api, huma.Operation{OperationID: "list-deliveries", Method: http.MethodGet, Path: "/sales/deliveries"},
+		func(ctx context.Context, in *DeliveryFilter) (*deliveriesOutput, error) {
+			l, err := s.Deliveries(ctx, *in)
+			return &deliveriesOutput{Body: l}, err
+		})
+	huma.Register(api, huma.Operation{OperationID: "get-availability", Method: http.MethodGet, Path: "/sales/availability",
+		Description: "Per stock item, in the legal entity of the org unit; items without stock are left out."},
+		func(ctx context.Context, in *availabilityInput) (*availabilityOutput, error) {
+			items, err := s.Availability(ctx, in.OrgUnitID, in.ItemIDs)
+			out := &availabilityOutput{}
+			out.Body.Items = items
+			return out, err
+		})
 	huma.Register(api, huma.Operation{OperationID: "create-delivery", Method: http.MethodPost, Path: "/sales/deliveries", DefaultStatus: http.StatusCreated,
 		Description: "Sending the same request_id again returns the delivery created the first time."},
 		func(ctx context.Context, in *newDeliveryInput) (*platform.CreatedOutput, error) {

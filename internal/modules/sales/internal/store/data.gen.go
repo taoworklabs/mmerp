@@ -9,6 +9,7 @@ import (
 
 func newQ(c platform.Conn) *Queries { return New(c) }
 
+var Availability = data.ManyArg("sales.Availability", newQ, (*Queries).Availability)
 var CreateCustomer = data.OneArg("sales.CreateCustomer", newQ, (*Queries).CreateCustomer)
 var UpdateCustomer = data.ExecArg("sales.UpdateCustomer", newQ, (*Queries).UpdateCustomer)
 var GetCustomer = data.OneArg("sales.GetCustomer", newQ, (*Queries).GetCustomer)
@@ -28,6 +29,7 @@ var DeliverableLines = data.ManyArg("sales.DeliverableLines", newQ, (*Queries).D
 var DeleteDeliveryLines = data.ExecArg("sales.DeleteDeliveryLines", newQ, (*Queries).DeleteDeliveryLines)
 var InsertDeliveryLines = data.ExecArg("sales.InsertDeliveryLines", newQ, (*Queries).InsertDeliveryLines)
 var LiveDeliveryOfOrder = data.OneArg("sales.LiveDeliveryOfOrder", newQ, (*Queries).LiveDeliveryOfOrder)
+var DeliveryListBase = data.NewBase("sales.DeliveryListBase", deliveryListBase, []string{"id", "number", "status", "date", "org_unit_id", "order_id", "order_number", "customer_id", "customer_name", "warehouse_id", "warehouse_name", "org_unit_name"}, (*Queries).DeliveryListBase)
 var InsertHeader = data.ExecArg("sales.InsertHeader", newQ, (*Queries).InsertHeader)
 var UpdateHeader = data.ExecArg("sales.UpdateHeader", newQ, (*Queries).UpdateHeader)
 var DeleteHeader = data.ExecArg("sales.DeleteHeader", newQ, (*Queries).DeleteHeader)
@@ -36,7 +38,8 @@ var LiveOrder = data.OneArg("sales.LiveOrder", newQ, (*Queries).LiveOrder)
 var DeleteLines = data.ExecArg("sales.DeleteLines", newQ, (*Queries).DeleteLines)
 var InsertLines = data.ExecArg("sales.InsertLines", newQ, (*Queries).InsertLines)
 var GetLines = data.ManyArg("sales.GetLines", newQ, (*Queries).GetLines)
-var DocListBase = data.NewBase("sales.DocListBase", docListBase, []string{"id", "kind", "number", "status", "date", "org_unit_id", "customer_id", "customer_code", "customer_name", "valid_until", "total", "org_unit_name", "from_quote", "ordered"}, (*Queries).DocListBase)
+var OrderDeliveries = data.ManyArg("sales.OrderDeliveries", newQ, (*Queries).OrderDeliveries)
+var DocListBase = data.NewBase("sales.DocListBase", docListBase, []string{"id", "kind", "number", "status", "date", "org_unit_id", "customer_id", "customer_code", "customer_name", "valid_until", "total", "org_unit_name", "from_quote", "ordered", "delivery_state"}, (*Queries).DocListBase)
 var CopyCustomer = data.OneArg("sales.CopyCustomer", newQ, (*Queries).CopyCustomer)
 var ItemsByID = data.ManyArg("sales.ItemsByID", newQ, (*Queries).ItemsByID)
 var ItemOptionsBase = data.NewBase("sales.ItemOptionsBase", itemOptionsBase, []string{"id", "code", "name"}, (*Queries).ItemOptionsBase)

@@ -56,3 +56,14 @@ SELECT @delivery_id::bigint, unnest(@positions::int[]), unnest(@order_positions:
 -- Any delivery of the order that is not cancelled.
 SELECT v.id FROM sales.deliveries v JOIN record.documents d ON d.id = v.id
 WHERE v.order_id = $1 AND d.status <> 'cancelled' LIMIT 1;
+
+-- name: DeliveryListBase :many
+-- data:base
+SELECT v.id, d.number, d.status, d.date, d.org_unit_id, v.order_id, o.number AS order_number,
+       h.customer_id, h.customer_name, v.warehouse_id, w.name AS warehouse_name, u.name AS org_unit_name
+FROM sales.deliveries v
+JOIN record.documents d ON d.id = v.id
+JOIN record.documents o ON o.id = v.order_id
+JOIN sales.headers h ON h.id = v.order_id
+JOIN stock.warehouses w ON w.id = v.warehouse_id
+JOIN iam.org_units u ON u.id = d.org_unit_id;

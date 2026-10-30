@@ -47,6 +47,10 @@ type Line struct {
 	Amount   int64  `json:"amount" doc:"Quantity × unit price"`
 	Discount int64  `json:"discount"`
 	Vat      int64  `json:"vat"`
+	// Orders' stock lines: what posted deliveries took; while the order is not yet posted,
+	// what its legal entity has available (on hand less what posted orders still owe).
+	Delivered *string `json:"delivered,omitempty"`
+	Available *string `json:"available,omitempty"`
 }
 
 // DocRef names another document: the quotation of an order, the order of a quotation.
@@ -90,6 +94,9 @@ type Doc struct {
 	Order   *DocRef `json:"order"`
 	// Orders: the quotation they came from, when the actor may view it.
 	Quote *DocRef `json:"quote"`
+	// Orders: how far posted deliveries went over the stock lines, and the deliveries not cancelled.
+	DeliveryState string   `json:"delivery_state,omitempty" enum:"none,partial,full,not_applicable"`
+	Deliveries    []DocRef `json:"deliveries,omitempty"`
 	// edit, delete, submit, withdraw, cancel, print; quotations also create_order.
 	AllowedActions []string `json:"allowed_actions" nullable:"false"`
 }
@@ -98,7 +105,9 @@ type DocFilter struct {
 	Q          string `query:"q" maxLength:"100" doc:"Number, customer code or name"`
 	Status     string `query:"status" enum:"draft,pending_approval,posted,cancelled"`
 	CustomerID int64  `query:"customer_id"`
-	Sort       string `query:"sort" enum:"date,-date,number,-number,total,-total" default:"-date"`
+	// Orders only.
+	DeliveryState string `query:"delivery_state" enum:"none,partial,full,not_applicable"`
+	Sort          string `query:"sort" enum:"date,-date,number,-number,total,-total" default:"-date"`
 	platform.Paging
 }
 
@@ -117,6 +126,8 @@ type DocListItem struct {
 	// Quotations: an order not cancelled comes from it. Orders: made from a quotation.
 	Ordered   bool `json:"ordered"`
 	FromQuote bool `json:"from_quote"`
+	// Orders only.
+	DeliveryState string `json:"delivery_state,omitempty" enum:"none,partial,full,not_applicable"`
 }
 
 type DocList struct {
