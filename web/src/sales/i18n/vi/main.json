@@ -169,12 +169,12 @@
   "sales.warehouse.retired": "Ngừng dùng",
   "sales.warehouse.active": "Đang dùng",
   "sales.warehouse.active_hint": "Bỏ chọn để không nhập, xuất kho này trên chứng từ mới",
-  "sales.item.tracking": "Theo dõi tồn kho",
+  "sales.item.tracking": "Cách theo dõi tồn kho",
   "sales.item.tracking_hint": "Không đổi được sau khi mặt hàng đã có phát sinh kho",
   "sales.item.tracking_none": "Không theo dõi tồn",
   "sales.item.tracking_quantity": "Theo số lượng",
   "sales.item.tracking_lot": "Theo lô",
   "sales.item.tracking_serial": "Theo serial",
-  "sales.item.allow_negative": "Cho phép xuất âm kho",
+  "sales.item.allow_negative": "Cho phép xuất âm",
   "sales.item.allow_negative_hint": "Xuất được cả khi tồn kho không đủ"
 }

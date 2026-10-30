@@ -48,6 +48,6 @@
   "sales.error.sales_delivery_date": "Ngày giao hàng không được trước ngày đơn bán hàng.",
   "sales.error.sales_lot_expired": "Dòng {{line_no}}: lô {{lot_code}} hết hạn ngày {{expiry}}. Chọn lô khác.",
   "sales.action.create_order": "Tạo đơn bán hàng",
-  "sales.nav.group_stock": "Kho",
+  "sales.nav.group_stock": "Quản lý kho",
   "sales.nav.warehouses": "Kho"
 }
