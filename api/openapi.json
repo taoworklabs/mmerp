@@ -6037,7 +6037,7 @@
             "type": "string"
           },
           "legal_entity_id": {
-            "description": "A company org unit; ignored on update",
+            "description": "A company org unit",
             "format": "int64",
             "type": "integer"
           },
@@ -9460,7 +9460,7 @@
             "type": "boolean"
           },
           "legal_entity_id": {
-            "description": "A company org unit; ignored on update",
+            "description": "A company org unit",
             "format": "int64",
             "type": "integer"
           },
@@ -9474,39 +9474,6 @@
           "id",
           "code",
           "is_default",
-          "name",
-          "legal_entity_id",
-          "active"
-        ],
-        "type": "object"
-      },
-      "WarehouseFields": {
-        "additionalProperties": false,
-        "properties": {
-          "$schema": {
-            "description": "A URL to the JSON Schema for this object.",
-            "examples": [
-              "/api/schemas/WarehouseFields.json"
-            ],
-            "format": "uri",
-            "readOnly": true,
-            "type": "string"
-          },
-          "active": {
-            "type": "boolean"
-          },
-          "legal_entity_id": {
-            "description": "A company org unit; ignored on update",
-            "format": "int64",
-            "type": "integer"
-          },
-          "name": {
-            "maxLength": 300,
-            "minLength": 1,
-            "type": "string"
-          }
-        },
-        "required": [
           "name",
           "legal_entity_id",
           "active"
@@ -9564,6 +9531,33 @@
           "code",
           "name",
           "is_default"
+        ],
+        "type": "object"
+      },
+      "WarehouseUpdate": {
+        "additionalProperties": false,
+        "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "/api/schemas/WarehouseUpdate.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
+          "active": {
+            "type": "boolean"
+          },
+          "name": {
+            "maxLength": 300,
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "active"
         ],
         "type": "object"
       },
@@ -18196,7 +18190,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/WarehouseFields"
+                "$ref": "#/components/schemas/WarehouseUpdate"
               }
             }
           },

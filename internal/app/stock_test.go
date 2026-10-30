@@ -27,6 +27,8 @@ func TestStockAdjustmentAPI(t *testing.T) {
 	c := f.login("keeper")
 	item := f.id(c, "/api/items", `{"code":"BUT","name":"Bút bi","unit":"hộp","price":1,"vat_rate":"8","active":true,"tracking":"quantity"}`)
 	wh := f.id(c, "/api/stock/warehouses", fmt.Sprintf(`{"name":"Kho 1","legal_entity_id":%d,"active":true}`, company))
+	// An edit takes no legal entity: it is set at creation.
+	f.ok(c, "PUT", fmt.Sprintf("/api/stock/warehouses/%d", wh), `{"name":"Kho một","active":true}`, 204)
 	n := 0
 	body := func(line, reason string) string {
 		n++

@@ -4102,7 +4102,7 @@ export interface components {
             code?: string;
             /**
              * Format: int64
-             * @description A company org unit; ignored on update
+             * @description A company org unit
              */
             legal_entity_id: number;
             name: string;
@@ -5272,22 +5272,7 @@ export interface components {
             is_default: boolean;
             /**
              * Format: int64
-             * @description A company org unit; ignored on update
-             */
-            legal_entity_id: number;
-            name: string;
-        };
-        WarehouseFields: {
-            /**
-             * Format: uri
-             * @description A URL to the JSON Schema for this object.
-             * @example /api/schemas/WarehouseFields.json
-             */
-            readonly $schema?: string;
-            active: boolean;
-            /**
-             * Format: int64
-             * @description A company org unit; ignored on update
+             * @description A company org unit
              */
             legal_entity_id: number;
             name: string;
@@ -5308,6 +5293,16 @@ export interface components {
             /** Format: int64 */
             id: number;
             is_default: boolean;
+            name: string;
+        };
+        WarehouseUpdate: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example /api/schemas/WarehouseUpdate.json
+             */
+            readonly $schema?: string;
+            active: boolean;
             name: string;
         };
         WorkCalendar: {
@@ -10830,7 +10825,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["WarehouseFields"];
+                "application/json": components["schemas"]["WarehouseUpdate"];
             };
         };
         responses: {

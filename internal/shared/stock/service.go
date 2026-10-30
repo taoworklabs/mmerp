@@ -86,13 +86,13 @@ func (s *Service) CreateWarehouse(ctx context.Context, in NewWarehouse) (int64, 
 		if err != nil {
 			return err
 		}
-		return s.audit(ctx, id, in.Code, in.WarehouseFields)
+		return s.audit(ctx, id, in.Code, in.Name, in.Active)
 	})
 	return id, err
 }
 
 // UpdateWarehouse renames or retires a warehouse; its code and legal entity never change.
-func (s *Service) UpdateWarehouse(ctx context.Context, id int64, in WarehouseFields) error {
+func (s *Service) UpdateWarehouse(ctx context.Context, id int64, in WarehouseUpdate) error {
 	return s.write(ctx, func(ctx context.Context) error {
 		in.Name = strings.TrimSpace(in.Name)
 		code, err := store.UpdateWarehouse.Run(ctx, store.UpdateWarehouseParams{ID: id, Name: in.Name, Active: in.Active})
@@ -102,7 +102,7 @@ func (s *Service) UpdateWarehouse(ctx context.Context, id int64, in WarehouseFie
 		if err != nil {
 			return err
 		}
-		return s.audit(ctx, id, code, in)
+		return s.audit(ctx, id, code, in.Name, in.Active)
 	})
 }
 
@@ -133,6 +133,6 @@ func (s *Service) write(ctx context.Context, fn func(context.Context) error) err
 	return platform.InTx(ctx, fn)
 }
 
-func (s *Service) audit(ctx context.Context, id int64, code string, in WarehouseFields) error {
-	return s.d.Audit.Record(ctx, "stock.warehouse_saved", map[string]any{"id": id, "code": code, "name": in.Name, "active": in.Active})
+func (s *Service) audit(ctx context.Context, id int64, code, name string, active bool) error {
+	return s.d.Audit.Record(ctx, "stock.warehouse_saved", map[string]any{"id": id, "code": code, "name": name, "active": active})
 }
