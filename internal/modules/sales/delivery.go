@@ -189,7 +189,7 @@ func (s *Service) checkDelivery(ctx context.Context, id, orderID int64, f Delive
 	for i, l := range f.Lines {
 		r, ok := byPos[l.OrderPosition]
 		if !ok {
-			return nil, platform.ErrNotFound
+			return nil, deliveryErr(ErrDeliveryPosition, i+1, nil)
 		}
 		if r.Tracking == "none" {
 			return nil, deliveryErr(ErrDeliveryLineNotStock, i+1, nil)

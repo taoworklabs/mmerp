@@ -64,6 +64,8 @@ var (
 	ErrOrderNotPosted       = &platform.Error{Status: http.StatusConflict, Code: "sales_order_not_posted"}
 	ErrDeliveryOverOrdered  = &platform.Error{Status: http.StatusConflict, Code: "sales_delivery_over_ordered"}
 	ErrDeliveryLineNotStock = &platform.Error{Status: http.StatusUnprocessableEntity, Code: "sales_delivery_line_not_stock"}
+	// The order has no line at the given order_position.
+	ErrDeliveryPosition = &platform.Error{Status: http.StatusUnprocessableEntity, Code: "sales_delivery_position"}
 	// The warehouse is inactive or of another legal entity than the order.
 	ErrDeliveryWarehouse = &platform.Error{Status: http.StatusUnprocessableEntity, Code: "sales_delivery_warehouse"}
 )

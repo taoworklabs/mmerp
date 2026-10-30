@@ -102,7 +102,8 @@ func TestDeliveryRefusesServiceLine(t *testing.T) {
 	}
 	wantCode(t, must2(d.create(d.staff, d.order, d.fields(dl(1, "0")))), "invalid_quantity")
 	wantCode(t, must2(d.create(d.staff, d.order, d.fields(dl(1, "1.0001")))), "invalid_quantity")
-	if _, err := d.create(d.staff, d.order, d.fields(dl(9, "1"))); !errors.Is(err, platform.ErrNotFound) {
+	_, err = d.create(d.staff, d.order, d.fields(dl(1, "1"), dl(9, "1")))
+	if e, ok := errors.AsType[*platform.Error](err); !ok || !errors.Is(err, sales.ErrDeliveryPosition) || e.Status != 422 || e.Params["line_no"] != 2 {
 		t.Fatalf("line not on the order: %v", err)
 	}
 }
