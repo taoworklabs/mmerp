@@ -154,6 +154,8 @@ export function DocForm({ kind, doc, onCreated }: Props) {
             form.setValue(`lines.${i}.description`, it.name, { shouldDirty: true })
             form.setValue(`lines.${i}.unit_price`, it.price, { shouldDirty: true })
             form.setValue(`lines.${i}.vat_rate`, it.vat_rate, { shouldDirty: true })
+            // The availability read was the previous item's.
+            form.setValue(`lines.${i}.available`, undefined)
           }}
         />
       ),
