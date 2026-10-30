@@ -67,3 +67,8 @@ JOIN record.documents o ON o.id = v.order_id
 JOIN sales.headers h ON h.id = v.order_id
 JOIN stock.warehouses w ON w.id = v.warehouse_id
 JOIN iam.org_units u ON u.id = d.org_unit_id;
+
+-- name: DeliveryWarehouses :many
+-- Active warehouses of a legal entity, the default first.
+SELECT id, code, name, is_default FROM stock.warehouses
+WHERE legal_entity_id = $1 AND active ORDER BY is_default DESC, lower(code), id;

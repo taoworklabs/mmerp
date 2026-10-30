@@ -103,3 +103,37 @@ type ItemAvailability struct {
 	Committed string `json:"committed" doc:"Still to deliver on posted orders"`
 	Available string `json:"available"`
 }
+
+type WarehouseOption struct {
+	ID        int64  `json:"id"`
+	Code      string `json:"code"`
+	Name      string `json:"name"`
+	IsDefault bool   `json:"is_default"`
+}
+
+// DeliveryOptionLine is a stock line of the order with what is left to deliver and where it
+// could come from: suggested lots (first expiring first) or serials on hand.
+type DeliveryOptionLine struct {
+	OrderPosition int           `json:"order_position"`
+	ItemID        int64         `json:"item_id"`
+	ItemCode      string        `json:"item_code"`
+	Description   string        `json:"description"`
+	Unit          string        `json:"unit"`
+	Tracking      string        `json:"tracking" enum:"quantity,lot,serial"`
+	Ordered       string        `json:"ordered"`
+	Remaining     string        `json:"remaining"`
+	Lots          []DeliveryLot `json:"lots" nullable:"false"`
+	Serials       []string      `json:"serials" nullable:"false"`
+}
+
+type DeliveryLot struct {
+	Code     string  `json:"code"`
+	Expiry   *string `json:"expiry" format:"date"`
+	Quantity string  `json:"quantity"`
+}
+
+type DeliveryOptions struct {
+	Warehouses  []WarehouseOption    `json:"warehouses" nullable:"false"`
+	WarehouseID int64                `json:"warehouse_id" doc:"The warehouse the suggestions are for; 0 when the legal entity has none"`
+	Lines       []DeliveryOptionLine `json:"lines" nullable:"false"`
+}

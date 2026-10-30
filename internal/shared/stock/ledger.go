@@ -296,12 +296,26 @@ func trackCode(m Move) string {
 }
 
 // resolve returns a checked move's lot and serial ids, creating the lot or serial when
-// missing. An outgoing move naming a new one then fails the balance check, rolling the
-// creation back.
+// missing for an incoming move; an outgoing move naming an unknown one is refused.
 func (s *Service) resolve(ctx context.Context, tracking string, m Move) (lot, serial int64, err error) {
 	switch tracking {
 	case item.TrackLot:
 		code := strings.TrimSpace(m.Lot.Code)
+		if m.Quantity.IsNegative() {
+			l, err := store.LotByCode.Run(ctx, store.LotByCodeParams{ItemID: m.ItemID, Code: code})
+			if errors.Is(err, pgx.ErrNoRows) {
+				return 0, 0, lineErr(ErrLotNotFound, m)
+			}
+			if err != nil {
+				return 0, 0, err
+			}
+			if m.Lot.Expiry != nil {
+				if have := platform.DatePtr(l.Expiry); have == nil || *have != *m.Lot.Expiry {
+					return 0, 0, lineErr(ErrLotExpiryMismatch, m)
+				}
+			}
+			return l.ID, 0, nil
+		}
 		if err := store.InsertLot.Run(ctx, store.InsertLotParams{ItemID: m.ItemID, Code: code, Expiry: platform.NullDate(m.Lot.Expiry)}); err != nil {
 			return 0, 0, err
 		}
@@ -317,6 +331,13 @@ func (s *Service) resolve(ctx context.Context, tracking string, m Move) (lot, se
 		return l.ID, 0, nil
 	case item.TrackSerial:
 		code := strings.TrimSpace(*m.Serial)
+		if m.Quantity.IsNegative() {
+			id, err := store.SerialByCode.Run(ctx, store.SerialByCodeParams{ItemID: m.ItemID, Code: code})
+			if errors.Is(err, pgx.ErrNoRows) {
+				return 0, 0, lineErr(ErrSerialNotFound, m)
+			}
+			return 0, id, err
+		}
 		if err := store.InsertSerial.Run(ctx, store.InsertSerialParams{ItemID: m.ItemID, Code: code}); err != nil {
 			return 0, 0, err
 		}
@@ -347,4 +368,9 @@ func (s *Service) SuggestLots(ctx context.Context, warehouse, itemID int64, qty 
 		qty = qty.Sub(take)
 	}
 	return out, nil
+}
+
+// SerialsOnHand lists the codes of an item's serials on hand in a warehouse, sorted. It checks no permission.
+func (s *Service) SerialsOnHand(ctx context.Context, warehouse, itemID int64) ([]string, error) {
+	return store.SerialsOnHand.Run(ctx, store.SerialsOnHandParams{WarehouseID: warehouse, ItemID: itemID})
 }

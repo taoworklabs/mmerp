@@ -1808,6 +1808,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/sales/orders/{id}/delivery-options": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["get-delivery-options"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/sales/quotes": {
         parameters: {
             query?: never;
@@ -2746,6 +2762,42 @@ export interface components {
             /** Format: int64 */
             warehouse_id: number;
             warehouse_name: string;
+        };
+        DeliveryLot: {
+            code: string;
+            /** Format: date */
+            expiry: string | null;
+            quantity: string;
+        };
+        DeliveryOptionLine: {
+            description: string;
+            item_code: string;
+            /** Format: int64 */
+            item_id: number;
+            lots: components["schemas"]["DeliveryLot"][];
+            /** Format: int64 */
+            order_position: number;
+            ordered: string;
+            remaining: string;
+            serials: string[];
+            /** @enum {string} */
+            tracking: "quantity" | "lot" | "serial";
+            unit: string;
+        };
+        DeliveryOptions: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example /api/schemas/DeliveryOptions.json
+             */
+            readonly $schema?: string;
+            lines: components["schemas"]["DeliveryOptionLine"][];
+            /**
+             * Format: int64
+             * @description The warehouse the suggestions are for; 0 when the legal entity has none
+             */
+            warehouse_id: number;
+            warehouses: components["schemas"]["WarehouseOption"][];
         };
         DeliveryUpdate: {
             /**
@@ -5250,6 +5302,13 @@ export interface components {
             items: components["schemas"]["Warehouse"][];
             /** Format: int64 */
             total: number;
+        };
+        WarehouseOption: {
+            code: string;
+            /** Format: int64 */
+            id: number;
+            is_default: boolean;
+            name: string;
         };
         WorkCalendar: {
             /**
@@ -10216,6 +10275,40 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "get-delivery-options": {
+        parameters: {
+            query?: {
+                /** @description Default warehouse of the order's legal entity when absent */
+                warehouse_id?: number;
+            };
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DeliveryOptions"];
+                };
             };
             /** @description Error */
             default: {

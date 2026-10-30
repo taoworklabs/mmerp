@@ -485,3 +485,52 @@ func TestDeliveriesList(t *testing.T) {
 		t.Fatalf("staff of B: %+v %v", l, err)
 	}
 }
+
+func TestDeliveryOptions(t *testing.T) {
+	d := newDeliveries(t)
+	exp1, exp2 := "2026-12-01", "2026-11-15"
+	d.adjust(stock.AdjustmentLine{ItemID: d.goods, Quantity: "15"},
+		stock.AdjustmentLine{ItemID: d.lotted, Lot: &stock.LotRef{Code: "L1", Expiry: &exp1}, Quantity: "3"},
+		stock.AdjustmentLine{ItemID: d.lotted, Lot: &stock.LotRef{Code: "L2", Expiry: &exp2}, Quantity: "2"})
+	// A draft delivery of 2 lot items leaves 3 to suggest.
+	must(t)(d.create(d.staff, d.order, d.fields(dl(1, "4"), dl(2, "2"))))
+	o, err := d.sales.DeliveryOptions(d.staff, d.order, 0)
+	d.check(err)
+	if len(o.Warehouses) != 1 || o.Warehouses[0].ID != d.wh || !o.Warehouses[0].IsDefault {
+		t.Fatalf("warehouses %+v", o.Warehouses)
+	}
+	if len(o.Lines) != 2 {
+		t.Fatalf("service line must be absent: %+v", o.Lines)
+	}
+	g, l := o.Lines[0], o.Lines[1]
+	if g.OrderPosition != 1 || g.Ordered != "10.000" || g.Remaining != "6.000" || len(g.Lots) != 0 {
+		t.Fatalf("goods %+v", g)
+	}
+	if l.Remaining != "3.000" || len(l.Lots) != 2 || l.Lots[0].Code != "L2" || l.Lots[0].Quantity != "2.000" || l.Lots[1].Code != "L1" || l.Lots[1].Quantity != "1.000" {
+		t.Fatalf("lots %+v", l)
+	}
+	if _, err := d.sales.DeliveryOptions(d.staff, d.order, d.wh); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := d.sales.DeliveryOptions(d.ctxFor("viewer", "viewer@A"), d.order, d.wh); !errors.Is(err, platform.ErrForbidden) {
+		t.Fatalf("viewer: %v", err)
+	}
+	if _, err := d.sales.DeliveryOptions(d.staff, d.newOrder("0"), 0); !errors.Is(err, sales.ErrOrderNotPosted) {
+		t.Fatalf("draft order: %v", err)
+	}
+}
+
+func TestDeliveryOptionsSerials(t *testing.T) {
+	d := newDeliveries(t)
+	ser := d.trackedItem("MAY", "serial")
+	fl := sales.DocFields{Date: "2026-03-10", OrgUnitID: d.a, CustomerID: d.customer, Lines: []sales.LineInput{
+		{ItemID: ser, Description: "Máy", Quantity: "2", UnitPrice: 1_000, DiscountPercent: "0", VatRate: "8"}}}
+	o := must(t)(d.sales.CreateOrder(d.staff, sales.NewDoc{RequestID: newRequest(), DocFields: fl}))
+	d.check(d.move(d.staff, "sales.order", o, record.Posted))
+	d.adjust(stock.AdjustmentLine{ItemID: ser, Serial: new("S2"), Quantity: "1"}, stock.AdjustmentLine{ItemID: ser, Serial: new("S1"), Quantity: "1"})
+	got, err := d.sales.DeliveryOptions(d.staff, o, d.wh)
+	d.check(err)
+	if len(got.Lines) != 1 || !slices.Equal(got.Lines[0].Serials, []string{"S1", "S2"}) {
+		t.Fatalf("serials %+v", got.Lines)
+	}
+}

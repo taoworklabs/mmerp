@@ -517,3 +517,45 @@ func TestVoidTwiceNoop(t *testing.T) {
 		t.Fatalf("void without moves: %v", err)
 	}
 }
+
+func TestOutMoveUnknownLot(t *testing.T) {
+	l := newLedger(t)
+	it := l.item(t, item.TrackLot, false)
+	e := wantCode(t, l.move(t, stock.Move{LineNo: 3, WarehouseID: l.wh, ItemID: it, Lot: lot("NOPE", nil), Quantity: qty(-1)}), stock.ErrLotNotFound)
+	if e.Params["line_no"] != 3 {
+		t.Fatalf("params %v", e.Params)
+	}
+	var n int
+	if err := l.core.Pool.QueryRow(l.core.Ctx, `SELECT count(*) FROM stock.lots WHERE item_id = $1`, it).Scan(&n); err != nil || n != 0 {
+		t.Fatalf("lots created: %d %v", n, err)
+	}
+}
+
+func TestOutMoveUnknownSerial(t *testing.T) {
+	l := newLedger(t)
+	it := l.item(t, item.TrackSerial, false)
+	s := "NOPE"
+	_ = wantCode(t, l.move(t, stock.Move{LineNo: 1, WarehouseID: l.wh, ItemID: it, Serial: &s, Quantity: qty(-1)}), stock.ErrSerialNotFound)
+	var n int
+	if err := l.core.Pool.QueryRow(l.core.Ctx, `SELECT count(*) FROM stock.serials WHERE item_id = $1`, it).Scan(&n); err != nil || n != 0 {
+		t.Fatalf("serials created: %d %v", n, err)
+	}
+}
+
+func TestSerialsOnHand(t *testing.T) {
+	l := newLedger(t)
+	it := l.item(t, item.TrackSerial, false)
+	b, a := "B2", "A1"
+	if err := l.move(t,
+		stock.Move{LineNo: 1, WarehouseID: l.wh, ItemID: it, Serial: &b, Quantity: qty(1)},
+		stock.Move{LineNo: 2, WarehouseID: l.wh, ItemID: it, Serial: &a, Quantity: qty(1)}); err != nil {
+		t.Fatal(err)
+	}
+	if err := l.move(t, stock.Move{LineNo: 1, WarehouseID: l.wh, ItemID: it, Serial: &b, Quantity: qty(-1)}); err != nil {
+		t.Fatal(err)
+	}
+	got, err := l.stock.SerialsOnHand(l.core.Ctx, l.wh, it)
+	if err != nil || len(got) != 1 || got[0] != "A1" {
+		t.Fatalf("serials %v %v", got, err)
+	}
+}

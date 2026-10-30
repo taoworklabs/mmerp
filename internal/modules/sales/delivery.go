@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"maps"
+	"slices"
 	"strings"
 
 	"github.com/jackc/pgx/v5"
@@ -215,6 +216,83 @@ func (s *Service) checkDelivery(ctx context.Context, id, orderID int64, f Delive
 				Quantity: q.String()},
 			ItemID: r.ItemID, ItemCode: r.ItemCode, Description: r.Description, Unit: r.Unit,
 		}
+	}
+	return out, nil
+}
+
+// DeliveryOptions lists, for the delivery form of a posted order, the warehouses of its legal
+// entity and per stock line what is left to deliver with lots or serials to pick from in the
+// warehouse (the legal entity's default when warehouseID is 0). It needs order edit there.
+// Without any warehouse it lists the lines with no suggestions, instead of creating the default.
+func (s *Service) DeliveryOptions(ctx context.Context, orderID, warehouseID int64) (DeliveryOptions, error) {
+	out := DeliveryOptions{Warehouses: []WarehouseOption{}, Lines: []DeliveryOptionLine{}}
+	o, err := s.d.Record.Read(ctx, record.Ref{Type: orderType, ID: orderID})
+	if err != nil {
+		return out, err
+	}
+	if err := s.require(ctx, PermOrderEdit, o.OrgUnitID); err != nil {
+		return out, err
+	}
+	if o.Status != record.Posted {
+		return out, ErrOrderNotPosted
+	}
+	whs, err := store.DeliveryWarehouses.Run(ctx, o.LegalEntityID)
+	if err != nil {
+		return out, err
+	}
+	for _, w := range whs {
+		out.Warehouses = append(out.Warehouses, WarehouseOption{ID: w.ID, Code: w.Code, Name: w.Name, IsDefault: w.IsDefault})
+	}
+	switch {
+	case warehouseID == 0 && len(whs) > 0:
+		out.WarehouseID = whs[0].ID
+	case warehouseID != 0 && slices.ContainsFunc(whs, func(w store.DeliveryWarehousesRow) bool { return w.ID == warehouseID }):
+		out.WarehouseID = warehouseID
+	case warehouseID != 0:
+		return out, ErrDeliveryWarehouse
+	}
+	today, err := s.d.Setting.Today(ctx)
+	if err != nil {
+		return out, err
+	}
+	todayStr := *platform.DatePtr(today)
+	rows, err := store.DeliverableLines.Run(ctx, store.DeliverableLinesParams{OrderID: orderID})
+	if err != nil {
+		return out, err
+	}
+	for _, r := range rows {
+		if r.Tracking == "none" {
+			continue
+		}
+		ordered, err := decimal.NewFromString(r.Quantity)
+		if err != nil {
+			return out, err
+		}
+		taken, err := decimal.NewFromString(r.Taken)
+		if err != nil {
+			return out, err
+		}
+		remaining := decimal.Max(ordered.Sub(taken), decimal.Zero)
+		l := DeliveryOptionLine{OrderPosition: int(r.Position), ItemID: r.ItemID, ItemCode: r.ItemCode, Description: r.Description,
+			Unit: r.Unit, Tracking: r.Tracking, Ordered: ordered.StringFixed(3), Remaining: remaining.StringFixed(3),
+			Lots: []DeliveryLot{}, Serials: []string{}}
+		if out.WarehouseID != 0 {
+			switch r.Tracking {
+			case "lot":
+				picks, err := s.d.Stock.SuggestLots(ctx, out.WarehouseID, r.ItemID, remaining, todayStr)
+				if err != nil {
+					return out, err
+				}
+				for _, p := range picks {
+					l.Lots = append(l.Lots, DeliveryLot{Code: p.Code, Expiry: p.Expiry, Quantity: p.Quantity.StringFixed(3)})
+				}
+			case "serial":
+				if l.Serials, err = s.d.Stock.SerialsOnHand(ctx, out.WarehouseID, r.ItemID); err != nil {
+					return out, err
+				}
+			}
+		}
+		out.Lines = append(out.Lines, l)
 	}
 	return out, nil
 }

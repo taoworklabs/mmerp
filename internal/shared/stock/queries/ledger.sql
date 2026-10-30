@@ -78,3 +78,9 @@ FROM stock.balances b JOIN stock.lots l ON l.id = b.lot_id
 WHERE b.warehouse_id = $1 AND b.item_id = $2 AND b.serial_id IS NULL AND b.quantity > 0
   AND (l.expiry IS NULL OR l.expiry >= @today::date)
 ORDER BY l.expiry NULLS LAST, l.received_at, l.id;
+
+-- name: SerialsOnHand :many
+SELECT s.code
+FROM stock.balances b JOIN stock.serials s ON s.id = b.serial_id
+WHERE b.warehouse_id = $1 AND b.item_id = $2 AND b.quantity > 0
+ORDER BY s.code, s.id;

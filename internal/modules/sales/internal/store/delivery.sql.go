@@ -178,6 +178,44 @@ func (q *Queries) DeliveryWarehouse(ctx context.Context, id int64) (DeliveryWare
 	return i, err
 }
 
+const deliveryWarehouses = `-- name: DeliveryWarehouses :many
+SELECT id, code, name, is_default FROM stock.warehouses
+WHERE legal_entity_id = $1 AND active ORDER BY is_default DESC, lower(code), id
+`
+
+type DeliveryWarehousesRow struct {
+	ID        int64
+	Code      string
+	Name      string
+	IsDefault bool
+}
+
+// Active warehouses of a legal entity, the default first.
+func (q *Queries) DeliveryWarehouses(ctx context.Context, legalEntityID int64) ([]DeliveryWarehousesRow, error) {
+	rows, err := q.db.Query(ctx, deliveryWarehouses, legalEntityID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []DeliveryWarehousesRow
+	for rows.Next() {
+		var i DeliveryWarehousesRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Code,
+			&i.Name,
+			&i.IsDefault,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const getDelivery = `-- name: GetDelivery :one
 SELECT v.order_id, v.warehouse_id, v.note, d.number, d.status, d.version, d.date, d.org_unit_id,
        o.number AS order_number, w.code AS warehouse_code, w.name AS warehouse_name

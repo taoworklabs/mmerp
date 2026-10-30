@@ -31,7 +31,19 @@ type updateDeliveryInput struct {
 	Body DeliveryUpdate
 }
 
+type deliveryOptionsInput struct {
+	ID          int64 `path:"id"`
+	WarehouseID int64 `query:"warehouse_id" doc:"Default warehouse of the order's legal entity when absent"`
+}
+
+type deliveryOptionsOutput struct{ Body DeliveryOptions }
+
 func registerDeliveryHandlers(api huma.API, s *Service) {
+	huma.Register(api, huma.Operation{OperationID: "get-delivery-options", Method: http.MethodGet, Path: "/sales/orders/{id}/delivery-options"},
+		func(ctx context.Context, in *deliveryOptionsInput) (*deliveryOptionsOutput, error) {
+			o, err := s.DeliveryOptions(ctx, in.ID, in.WarehouseID)
+			return &deliveryOptionsOutput{Body: o}, err
+		})
 	huma.Register(api, huma.Operation{OperationID: "list-deliveries", Method: http.MethodGet, Path: "/sales/deliveries"},
 		func(ctx context.Context, in *DeliveryFilter) (*deliveriesOutput, error) {
 			l, err := s.Deliveries(ctx, *in)

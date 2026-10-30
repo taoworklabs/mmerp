@@ -1865,6 +1865,128 @@
         ],
         "type": "object"
       },
+      "DeliveryLot": {
+        "additionalProperties": false,
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "expiry": {
+            "format": "date",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "quantity": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "code",
+          "expiry",
+          "quantity"
+        ],
+        "type": "object"
+      },
+      "DeliveryOptionLine": {
+        "additionalProperties": false,
+        "properties": {
+          "description": {
+            "type": "string"
+          },
+          "item_code": {
+            "type": "string"
+          },
+          "item_id": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "lots": {
+            "items": {
+              "$ref": "#/components/schemas/DeliveryLot"
+            },
+            "type": "array"
+          },
+          "order_position": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "ordered": {
+            "type": "string"
+          },
+          "remaining": {
+            "type": "string"
+          },
+          "serials": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "tracking": {
+            "enum": [
+              "quantity",
+              "lot",
+              "serial"
+            ],
+            "type": "string"
+          },
+          "unit": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "order_position",
+          "item_id",
+          "item_code",
+          "description",
+          "unit",
+          "tracking",
+          "ordered",
+          "remaining",
+          "lots",
+          "serials"
+        ],
+        "type": "object"
+      },
+      "DeliveryOptions": {
+        "additionalProperties": false,
+        "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "/api/schemas/DeliveryOptions.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
+          "lines": {
+            "items": {
+              "$ref": "#/components/schemas/DeliveryOptionLine"
+            },
+            "type": "array"
+          },
+          "warehouse_id": {
+            "description": "The warehouse the suggestions are for; 0 when the legal entity has none",
+            "format": "int64",
+            "type": "integer"
+          },
+          "warehouses": {
+            "items": {
+              "$ref": "#/components/schemas/WarehouseOption"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "warehouses",
+          "warehouse_id",
+          "lines"
+        ],
+        "type": "object"
+      },
       "DeliveryUpdate": {
         "additionalProperties": false,
         "properties": {
@@ -9417,6 +9539,31 @@
         "required": [
           "items",
           "total"
+        ],
+        "type": "object"
+      },
+      "WarehouseOption": {
+        "additionalProperties": false,
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "id": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "is_default": {
+            "type": "boolean"
+          },
+          "name": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "code",
+          "name",
+          "is_default"
         ],
         "type": "object"
       },
@@ -17063,6 +17210,59 @@
         "responses": {
           "204": {
             "description": "No Content"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "tags": [
+          "sales",
+          "sales"
+        ]
+      }
+    },
+    "/sales/orders/{id}/delivery-options": {
+      "get": {
+        "operationId": "get-delivery-options",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Default warehouse of the order's legal entity when absent",
+            "explode": false,
+            "in": "query",
+            "name": "warehouse_id",
+            "schema": {
+              "description": "Default warehouse of the order's legal entity when absent",
+              "format": "int64",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeliveryOptions"
+                }
+              }
+            },
+            "description": "OK"
           },
           "default": {
             "content": {
