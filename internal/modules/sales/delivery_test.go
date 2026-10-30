@@ -54,7 +54,12 @@ func (d *deliveries) trackedItem(code, tracking string) int64 {
 // newOrder is a draft order of team A with the fixture's three lines, the first at discount.
 func (d *deliveries) newOrder(discount string) int64 {
 	d.t.Helper()
-	fl := sales.DocFields{Date: "2026-03-10", OrgUnitID: d.a, CustomerID: d.customer, Lines: []sales.LineInput{
+	return d.orderOn("2026-03-10", discount)
+}
+
+func (d *deliveries) orderOn(date, discount string) int64 {
+	d.t.Helper()
+	fl := sales.DocFields{Date: date, OrgUnitID: d.a, CustomerID: d.customer, Lines: []sales.LineInput{
 		{ItemID: d.goods, Description: "Hàng", Quantity: "10", UnitPrice: 1_000, DiscountPercent: discount, VatRate: "8"},
 		{ItemID: d.lotted, Description: "Thuốc", Quantity: "5", UnitPrice: 1_000, DiscountPercent: "0", VatRate: "8"},
 		{ItemID: d.fix, Description: "Sửa chữa", Quantity: "2", UnitPrice: 250_000, DiscountPercent: "0", VatRate: "10"},
@@ -284,6 +289,9 @@ func TestDeliveryRecordContract(t *testing.T) {
 	recordtest.Run(t, func(t *testing.T) recordtest.Harness {
 		d := newDeliveries(t)
 		d.adjust(stock.AdjustmentLine{ItemID: d.goods, Quantity: "100"})
+		// The suite dates deliveries freely, so the order is older than any of them.
+		order := d.orderOn("2026-01-01", "0")
+		d.check(d.move(d.staff, "sales.order", order, record.Posted))
 		fields := func(date string) sales.DeliveryFields {
 			f := d.fields(dl(1, "1"))
 			f.Date = date
@@ -293,7 +301,7 @@ func TestDeliveryRecordContract(t *testing.T) {
 			Core: d.core, Actor: d.staff, Admin: d.admin, LegalEntity: d.c, Table: "sales.deliveries",
 			Get: func(ctx context.Context, r record.Ref) (any, error) { return d.sales.Delivery(ctx, r.ID) },
 			Create: func(ctx context.Context, date, requestID string) (record.Ref, error) {
-				id, err := d.sales.CreateDelivery(ctx, sales.NewDelivery{RequestID: requestID, OrderID: d.order, DeliveryFields: fields(date)})
+				id, err := d.sales.CreateDelivery(ctx, sales.NewDelivery{RequestID: requestID, OrderID: order, DeliveryFields: fields(date)})
 				return record.Ref{Type: "sales.delivery", ID: id}, err
 			},
 			Edit: func(ctx context.Context, r record.Ref, version int32, date string) error {
@@ -601,5 +609,37 @@ func TestDeliveryOptionsSerials(t *testing.T) {
 	d.check(err)
 	if len(got.Lines) != 1 || !slices.Equal(got.Lines[0].Serials, []string{"S1", "S2"}) {
 		t.Fatalf("serials %+v", got.Lines)
+	}
+}
+
+func TestDeliveryRefusesExpiredLot(t *testing.T) {
+	d := newDeliveries(t)
+	exp := "2026-11-01"
+	d.adjust(stock.AdjustmentLine{ItemID: d.lotted, Lot: &stock.LotRef{Code: "L1", Expiry: &exp}, Quantity: "3"})
+	f := d.fields(lotted(2, "l1", "1"))
+	f.Date = "2026-11-02"
+	_, err := d.create(d.staff, d.order, f)
+	if e, ok := errors.AsType[*platform.Error](err); !ok || !errors.Is(err, sales.ErrLotExpired) || e.Params["line_no"] != 1 ||
+		e.Params["lot_code"] != "l1" || e.Params["expiry"] != exp {
+		t.Fatalf("expired lot: %v", err)
+	}
+	f.Date = exp
+	id := must(t)(d.create(d.staff, d.order, f))
+	// Moving the date past expiry at save is refused too.
+	f.Date = "2026-11-02"
+	_, err = d.sales.Delivery(d.staff, id)
+	d.check(err)
+	err = d.sales.UpdateDelivery(d.staff, id, sales.DeliveryUpdate{Version: 1, DeliveryFields: f})
+	if !errors.Is(err, sales.ErrLotExpired) {
+		t.Fatalf("update past expiry: %v", err)
+	}
+}
+
+func TestDeliveryDateBeforeOrder(t *testing.T) {
+	d := newDeliveries(t)
+	f := d.fields(dl(1, "1"))
+	f.Date = "2026-03-09"
+	if _, err := d.create(d.staff, d.order, f); !errors.Is(err, sales.ErrDeliveryBeforeOrder) {
+		t.Fatalf("early delivery: %v", err)
 	}
 }

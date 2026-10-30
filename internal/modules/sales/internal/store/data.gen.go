@@ -31,6 +31,7 @@ var InsertDeliveryLines = data.ExecArg("sales.InsertDeliveryLines", newQ, (*Quer
 var LiveDeliveryOfOrder = data.OneArg("sales.LiveDeliveryOfOrder", newQ, (*Queries).LiveDeliveryOfOrder)
 var DeliveryListBase = data.NewBase("sales.DeliveryListBase", deliveryListBase, []string{"id", "number", "status", "date", "org_unit_id", "order_id", "order_number", "customer_id", "customer_name", "warehouse_id", "warehouse_name", "org_unit_name"}, (*Queries).DeliveryListBase)
 var DeliveryWarehouses = data.ManyArg("sales.DeliveryWarehouses", newQ, (*Queries).DeliveryWarehouses)
+var LotExpiries = data.ManyArg("sales.LotExpiries", newQ, (*Queries).LotExpiries)
 var InsertHeader = data.ExecArg("sales.InsertHeader", newQ, (*Queries).InsertHeader)
 var UpdateHeader = data.ExecArg("sales.UpdateHeader", newQ, (*Queries).UpdateHeader)
 var DeleteHeader = data.ExecArg("sales.DeleteHeader", newQ, (*Queries).DeleteHeader)

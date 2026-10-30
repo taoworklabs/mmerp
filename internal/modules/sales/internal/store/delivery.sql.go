@@ -375,6 +375,45 @@ func (q *Queries) LiveDeliveryOfOrder(ctx context.Context, orderID int64) (int64
 	return id, err
 }
 
+const lotExpiries = `-- name: LotExpiries :many
+SELECT item_id, lower(code) AS code, expiry
+FROM stock.lots
+WHERE item_id = ANY($1::bigint[]) AND lower(code) = ANY($2::text[]) AND expiry IS NOT NULL
+`
+
+type LotExpiriesParams struct {
+	ItemIds []int64
+	Codes   []string
+}
+
+type LotExpiriesRow struct {
+	ItemID int64
+	Code   string
+	Expiry pgtype.Date
+}
+
+// Expiry of lots among the given items and codes (a superset of the pairs; callers match
+// the pairs), codes without regard to case.
+func (q *Queries) LotExpiries(ctx context.Context, arg LotExpiriesParams) ([]LotExpiriesRow, error) {
+	rows, err := q.db.Query(ctx, lotExpiries, arg.ItemIds, arg.Codes)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []LotExpiriesRow
+	for rows.Next() {
+		var i LotExpiriesRow
+		if err := rows.Scan(&i.ItemID, &i.Code, &i.Expiry); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const updateDelivery = `-- name: UpdateDelivery :exec
 UPDATE sales.deliveries SET warehouse_id = $2, note = $3 WHERE id = $1
 `
