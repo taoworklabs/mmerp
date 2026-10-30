@@ -51,10 +51,10 @@ Attachments and discussion are on customers, quotations and orders. Printing is 
 | --- | --- | --- | --- |
 | `draft` | Edit, delete, send, print (watermarked) | Edit, delete, send, print (watermarked) | Edit, delete, send |
 | `pending_approval` | Withdraw (submitter), approve or reject (approver), print (watermarked) | Same | Withdraw, approve or reject |
-| `posted` | Cancel (refused while an order from it is not cancelled), print, **create order** (when not expired and not ordered) | Cancel (refused while a non-cancelled delivery exists: `sales_order_has_delivery`), print | Cancel |
+| `posted` | Cancel (refused while an order from it is not cancelled), print, **create order** (when not expired and not ordered) | Cancel (refused while a non-cancelled delivery exists: `sales_order_has_delivery`), print, **create delivery** (with order edit, while a stock line has quantity no non-cancelled delivery takes) | Cancel |
 | `cancelled` | Print (watermarked), read | Print (watermarked), read | Read |
 
-Each action needs the permission in the table of [Permissions](#permissions), and `allowed_actions` lists exactly those available, including `print` and the quotation's `create_order`. A locked period removes every write action, as for every document.
+Each action needs the permission in the table of [Permissions](#permissions), and `allowed_actions` lists exactly those available, including `print`, the quotation's `create_order` and the order's `create_delivery`. A locked period removes every write action, as for every document.
 
 **Progress** is derived, never stored ([ADR-0027](../docs/adr/0027-sales-product.md#progress-is-derived-not-stored)):
 

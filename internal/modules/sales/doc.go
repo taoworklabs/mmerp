@@ -165,8 +165,44 @@ func (s *Service) doc(ctx context.Context, k kind, id int64) (Doc, error) {
 			}
 		}
 	}
+	if k == orderKind && d.Status == record.Posted {
+		if ok, err := s.canDeliver(ctx, id, h.OrgUnitID); err != nil {
+			return Doc{}, err
+		} else if ok {
+			extra = append(extra, "create_delivery")
+		}
+	}
 	out.AllowedActions, err = s.d.Record.Actions(ctx, d, extra...)
 	return out, err
+}
+
+// canDeliver: the actor may make orders at the unit and a stock line still has something
+// no delivery, draft or posted, has taken.
+func (s *Service) canDeliver(ctx context.Context, order, unit int64) (bool, error) {
+	if ok, err := s.canMakeOrder(ctx, unit); err != nil || !ok {
+		return false, err
+	}
+	rows, err := store.DeliverableLines.Run(ctx, store.DeliverableLinesParams{OrderID: order})
+	if err != nil {
+		return false, err
+	}
+	for _, r := range rows {
+		if r.Tracking == "none" {
+			continue
+		}
+		ordered, err := decimal.NewFromString(r.Quantity)
+		if err != nil {
+			return false, err
+		}
+		taken, err := decimal.NewFromString(r.Taken)
+		if err != nil {
+			return false, err
+		}
+		if ordered.GreaterThan(taken) {
+			return true, nil
+		}
+	}
+	return false, nil
 }
 
 func (s *Service) canMakeOrder(ctx context.Context, unit int64) (bool, error) {

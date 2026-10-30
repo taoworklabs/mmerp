@@ -220,6 +220,39 @@ func TestDeliveryRefusedWhileCancelHeld(t *testing.T) {
 		t.Fatalf("cancel not held: %s", o.Status)
 	}
 	wantCode(t, must2(d.create(d.staff, order, d.fields(dl(1, "1")))), "awaiting_approval")
+	if d.offersDelivery(d.staff, order) {
+		t.Fatal("held order offers create_delivery")
+	}
+}
+
+func (d *deliveries) offersDelivery(ctx context.Context, order int64) bool {
+	d.t.Helper()
+	o, err := d.sales.Order(ctx, order)
+	d.check(err)
+	return slices.Contains(o.AllowedActions, "create_delivery")
+}
+
+// A confirmed order offers create_delivery to who may edit it while a stock line has
+// something left that no delivery, draft or posted, takes.
+func TestOrderOffersCreateDelivery(t *testing.T) {
+	d := newDeliveries(t)
+	if !d.offersDelivery(d.staff, d.order) {
+		t.Fatal("posted order does not offer create_delivery")
+	}
+	if d.offersDelivery(d.staff, d.newOrder("0")) {
+		t.Fatal("draft order offers create_delivery")
+	}
+	if d.offersDelivery(d.ctxFor("viewer", "viewer@A"), d.order) {
+		t.Fatal("viewer is offered create_delivery")
+	}
+	id := must(t)(d.create(d.staff, d.order, d.fields(dl(1, "10"), lotted(2, "L1", "4"))))
+	if !d.offersDelivery(d.staff, d.order) {
+		t.Fatal("one lot item left, yet no create_delivery")
+	}
+	d.check(d.sales.UpdateDelivery(d.staff, id, sales.DeliveryUpdate{Version: 1, DeliveryFields: d.fields(dl(1, "10"), lotted(2, "L1", "5"))}))
+	if d.offersDelivery(d.staff, d.order) {
+		t.Fatal("fully reserved order offers create_delivery")
+	}
 }
 
 // adjust posts a stock adjustment of the warehouse with lines.

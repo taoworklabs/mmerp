@@ -97,7 +97,7 @@ type Doc struct {
 	// Orders: how far posted deliveries went over the stock lines, and the deliveries not cancelled.
 	DeliveryState string   `json:"delivery_state,omitempty" enum:"none,partial,full,not_applicable"`
 	Deliveries    []DocRef `json:"deliveries,omitempty"`
-	// edit, delete, submit, withdraw, cancel, print; quotations also create_order.
+	// edit, delete, submit, withdraw, cancel, print; quotations also create_order, orders create_delivery.
 	AllowedActions []string `json:"allowed_actions" nullable:"false"`
 }
 
