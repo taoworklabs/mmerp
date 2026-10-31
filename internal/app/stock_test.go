@@ -27,6 +27,8 @@ func TestStockAdjustmentAPI(t *testing.T) {
 	c := f.login("keeper")
 	item := f.id(c, "/api/items", `{"code":"BUT","name":"Bút bi","unit":"hộp","price":1,"vat_rate":"8","active":true,"tracking":"quantity"}`)
 	wh := f.id(c, "/api/stock/warehouses", fmt.Sprintf(`{"name":"Kho 1","legal_entity_id":%d,"active":true}`, company))
+	// An edit takes no legal entity: it is set at creation.
+	f.ok(c, "PUT", fmt.Sprintf("/api/stock/warehouses/%d", wh), `{"name":"Kho một","active":true}`, 204)
 	n := 0
 	body := func(line, reason string) string {
 		n++
@@ -60,17 +62,25 @@ func TestStockCardHidesUnreadableDocuments(t *testing.T) {
 		}
 		f.ok(c, "POST", fmt.Sprintf("/api/documents/%s/%d/transitions", typ, id), fmt.Sprintf(`{"to":%q,"version":%d}`, to, d.Version), 200)
 	}
-	adj := f.id(f.admin, "/api/stock/adjustments", fmt.Sprintf(`{"request_id":"00000000-0000-4000-8000-000000000001","date":"2026-03-01","warehouse_id":%d,
-		"reason":"Kiểm kê","lines":[{"item_id":%d,"quantity":"10"}]}`, wh, item))
-	move(f.admin, "stock.adjustment", adj, "posted")
 	f.moveQuote("posted")
-	var o struct{ ID int64 }
+	var o struct {
+		ID   int64
+		Date string
+	}
 	if err := json.Unmarshal(f.ok(f.staffA, "POST", fmt.Sprintf("/api/sales/quotes/%d/order", f.quote), "", 200), &o); err != nil {
 		t.Fatal(err)
 	}
 	move(f.staffA, "sales.order", o.ID, "posted")
-	del := f.id(f.staffA, "/api/sales/deliveries", fmt.Sprintf(`{"request_id":"00000000-0000-4000-8000-000000000002","order_id":%d,"date":"2026-03-11",
-		"warehouse_id":%d,"note":null,"lines":[{"order_position":1,"quantity":"4"}]}`, o.ID, wh))
+	// The order is dated the day it was made: the stock and the delivery use that day.
+	if err := json.Unmarshal(f.ok(f.staffA, "GET", fmt.Sprintf("/api/sales/orders/%d", o.ID), "", 200), &o); err != nil {
+		t.Fatal(err)
+	}
+	day := o.Date
+	adj := f.id(f.admin, "/api/stock/adjustments", fmt.Sprintf(`{"request_id":"00000000-0000-4000-8000-000000000001","date":%q,"warehouse_id":%d,
+		"reason":"Kiểm kê","lines":[{"item_id":%d,"quantity":"10"}]}`, day, wh, item))
+	move(f.admin, "stock.adjustment", adj, "posted")
+	del := f.id(f.staffA, "/api/sales/deliveries", fmt.Sprintf(`{"request_id":"00000000-0000-4000-8000-000000000002","order_id":%d,"date":%q,
+		"warehouse_id":%d,"note":null,"lines":[{"order_position":1,"quantity":"4"}]}`, o.ID, day, wh))
 	move(f.staffA, "sales.delivery", del, "posted")
 
 	user := func(login string, roles ...string) *client {
@@ -97,7 +107,7 @@ func TestStockCardHidesUnreadableDocuments(t *testing.T) {
 				Number  string `json:"number"`
 			}
 		}
-		if err := json.Unmarshal(f.ok(c, "GET", fmt.Sprintf("/api/stock/card?warehouse_id=%d&item_id=%d&from=2026-03-01&to=2026-03-31", wh, item), "", 200), &out); err != nil {
+		if err := json.Unmarshal(f.ok(c, "GET", fmt.Sprintf("/api/stock/card?warehouse_id=%d&item_id=%d&from=%s&to=%s", wh, item, day, day), "", 200), &out); err != nil {
 			t.Fatal(err)
 		}
 		return out.Rows
@@ -109,5 +119,45 @@ func TestStockCardHidesUnreadableDocuments(t *testing.T) {
 	rows = card(seller)
 	if len(rows) != 2 || rows[1].DocID != del || rows[1].Number == "" {
 		t.Fatalf("seller card: %+v", rows)
+	}
+}
+
+// A company gets its default warehouse with it, whether created as one or changed into one;
+// other units get none.
+func TestCompanyGetsDefaultWarehouse(t *testing.T) {
+	pool := pgtest.New(t)
+	if err := app.CreateAdmin(t.Context(), pool, "admin", "Admin", "correct horse"); err != nil {
+		t.Fatal(err)
+	}
+	f := &jobsFixture{t: t, env: env(t, pool, nil)}
+	f.system = f.env.SystemPool
+	f.admin = f.login("admin")
+	defaults := func(unit int64) (names []string) {
+		rows, err := f.system.Query(t.Context(), `SELECT name FROM stock.warehouses WHERE legal_entity_id = $1 AND is_default`, unit)
+		if err != nil {
+			t.Fatal(err)
+		}
+		for rows.Next() {
+			var n string
+			if err := rows.Scan(&n); err != nil {
+				t.Fatal(err)
+			}
+			names = append(names, n)
+		}
+		return names
+	}
+	company := f.id(f.admin, "/api/org-units", `{"parent_id":null,"kind":"company","name":"C"}`)
+	f.id(f.admin, "/api/org-units", fmt.Sprintf(`{"parent_id":%d,"kind":"department","name":"D"}`, company))
+	group := f.id(f.admin, "/api/org-units", `{"parent_id":null,"kind":"group","name":"G"}`)
+	if got := defaults(company); len(got) != 1 || got[0] != "Kho chính" {
+		t.Fatalf("company: %v", got)
+	}
+	var all int
+	if err := f.system.QueryRow(t.Context(), `SELECT count(*) FROM stock.warehouses`).Scan(&all); err != nil || all != 1 {
+		t.Fatalf("department or group got a warehouse: %d %v", all, err)
+	}
+	f.ok(f.admin, "PUT", fmt.Sprintf("/api/org-units/%d", group), `{"parent_id":null,"kind":"company","name":"G"}`, 204)
+	if got := defaults(group); len(got) != 1 {
+		t.Fatalf("group turned company: %v", got)
 	}
 }

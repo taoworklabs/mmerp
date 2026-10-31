@@ -2,7 +2,7 @@ import { Button } from '@mmerp/ui'
 import { IconArchive, IconArchiveOff, IconCircleDot, IconPencil, IconPlus } from '@tabler/icons-react'
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
-import { useForm } from 'react-hook-form'
+import { useForm, useWatch } from 'react-hook-form'
 import { useTranslation } from 'react-i18next'
 import { api, unwrap, type Item, type ItemList, type ItemSort } from '@/shared/api/core'
 import { useCan } from '@/shared/auth/me'
@@ -21,6 +21,7 @@ import { useVatOptions } from '../components/vat'
 import { salesKeys } from '../keys'
 
 const sorts = ['code', '-code', 'name', '-name'] as const satisfies readonly ItemSort[]
+const trackings = ['none', 'quantity', 'lot', 'serial'] as const satisfies readonly Item['tracking'][]
 const defaults = { filters: { q: '', active: '' }, sort: 'code', sorts: [...sorts], pageSize: 50 }
 
 // ItemsPage: the tenant's catalogue of goods and services; catalogue admins edit it in a modal
@@ -84,6 +85,7 @@ export function ItemsPage() {
     { key: 'code', header: t('sales.item.code'), role: 'meta', kind: 'code', sortable: true, render: (x) => x.code },
     { key: 'unit', header: t('sales.item.unit'), role: 'hidden', kind: 'code', render: (x) => x.unit },
     { key: 'price', header: t('sales.item.price'), role: 'meta', kind: 'number', render: (x) => formatNumber(x.price) },
+    { key: 'tracking', header: t('sales.item.tracking'), role: 'meta', render: (x) => t(`sales.item.tracking_${x.tracking}`) },
     { key: 'vat_rate', header: t('sales.item.vat_rate'), role: 'hidden', kind: 'number', render: (x) => vat.label(x.vat_rate) },
     {
       key: 'active',
@@ -155,22 +157,29 @@ export function ItemsPage() {
   )
 }
 
-// fieldsOf is what the API takes for an item: its editable fields.
+// fieldsOf is what the API takes for an item: its editable fields; tracking left out stays as it is.
 const fieldsOf = (x: Item) => ({ name: x.name, unit: x.unit, price: x.price, vat_rate: x.vat_rate, active: x.active })
 
-type Values = { code: string; name: string; unit: string; price: number | null; vat_rate: string; active: boolean }
+type Values = { code: string; name: string; unit: string; price: number | null; vat_rate: string; tracking: Item['tracking']; allow_negative: boolean; active: boolean }
 
 function ItemModal({ item, onClose }: { item: Item | null; onClose: () => void }) {
   const { t } = useTranslation()
   const qc = useQueryClient()
   const vat = useVatOptions()
-  const form = useForm<Values>({ mode: 'onBlur', defaultValues: item ?? { code: '', name: '', unit: '', price: null, vat_rate: '10', active: true } })
+  const form = useForm<Values>({
+    mode: 'onBlur',
+    defaultValues: item ?? { code: '', name: '', unit: '', price: null, vat_rate: '10', tracking: 'none', allow_negative: false, active: true },
+  })
+  const tracking = useWatch({ control: form.control, name: 'tracking' })
   async function save(v: Values) {
     const body = {
       name: v.name.trim(),
       unit: v.unit.trim(),
       price: v.price ?? 0,
       vat_rate: v.vat_rate as Item['vat_rate'],
+      tracking: v.tracking,
+      // Only a quantity-tracked item may go below zero.
+      allow_negative: v.tracking === 'quantity' && v.allow_negative,
       active: v.active,
     }
     if (item) await unwrap(api.PUT('/items/{id}', { params: { path: { id: item.id } }, body }))
@@ -182,12 +191,20 @@ function ItemModal({ item, onClose }: { item: Item | null; onClose: () => void }
   }
   return (
     <FormModal opened title={t(item ? 'sales.items.edit' : 'sales.items.create')} onClose={onClose}>
-      <Form form={form} onSubmit={save} errorFields={{ item_code_taken: 'code' }}>
+      <Form form={form} onSubmit={save} errorFields={{ item_code_taken: 'code', item_tracking_locked: 'tracking', item_negative_not_quantity: 'allow_negative' }}>
         <CodeField name="code" label={t('sales.item.code')} existing={!!item} />
         <TextField name="name" label={t('sales.item.name')} required maxLength={300} />
         <TextField name="unit" label={t('sales.item.unit')} description={t('sales.item.unit_hint')} required maxLength={30} />
         <MoneyField name="price" label={t('sales.item.price')} description={t('sales.item.price_hint')} required />
         <SelectField name="vat_rate" label={t('sales.item.vat_rate')} required data={vat.options} />
+        <SelectField
+          name="tracking"
+          label={t('sales.item.tracking')}
+          description={t('sales.item.tracking_hint')}
+          required
+          data={trackings.map((x) => ({ value: x, label: t(`sales.item.tracking_${x}`) }))}
+        />
+        {tracking === 'quantity' && <CheckboxField name="allow_negative" label={t('sales.item.allow_negative')} description={t('sales.item.allow_negative_hint')} />}
         <CheckboxField name="active" label={t('sales.item.active')} description={t('sales.item.active_hint')} />
         <FormActions submitLabel={t('sales.common.save')} onCancel={onClose} cancelLabel={t('sales.common.cancel')} />
       </Form>

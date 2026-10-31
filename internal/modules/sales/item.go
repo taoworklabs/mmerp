@@ -7,6 +7,7 @@ import (
 	"github.com/taoworklabs/mmerp/internal/modules/sales/internal/store"
 	"github.com/taoworklabs/mmerp/internal/platform"
 	"github.com/taoworklabs/mmerp/internal/platform/data"
+	"github.com/taoworklabs/mmerp/internal/shared/stock"
 )
 
 // itemOptionList feeds the approval item picker over the shared catalogue.
@@ -57,11 +58,12 @@ var lineItemList = data.Register(data.List[store.ItemItem]{
 })
 
 // LineItems finds active items for a document line. Picking an item is part of writing a
-// quotation or order, so edit on either is enough; the catalogue screen still needs item view.
+// quotation, order or stock adjustment, so writing any of them is enough; the catalogue
+// screen still needs item view.
 func (s *Service) LineItems(ctx context.Context, q string) (LineItemList, error) {
 	out := LineItemList{Items: []LineItem{}}
-	for _, perm := range []string{PermQuoteEdit, PermOrderEdit} {
-		sc, err := s.d.IAM.Scope(ctx, "sales", perm)
+	for _, p := range [][2]string{{"sales", PermQuoteEdit}, {"sales", PermOrderEdit}, {"stock", stock.PermManage}} {
+		sc, err := s.d.IAM.Scope(ctx, p[0], p[1])
 		if err != nil {
 			return out, err
 		}
@@ -71,7 +73,7 @@ func (s *Service) LineItems(ctx context.Context, q string) (LineItemList, error)
 				return out, err
 			}
 			for _, r := range page.Items {
-				out.Items = append(out.Items, LineItem{ID: r.ID, Code: r.Code, Name: r.Name, Unit: r.Unit, Price: r.Price, VatRate: r.VatRate})
+				out.Items = append(out.Items, LineItem{ID: r.ID, Code: r.Code, Name: r.Name, Unit: r.Unit, Price: r.Price, VatRate: r.VatRate, Tracking: r.Tracking})
 			}
 			return out, nil
 		}
@@ -80,14 +82,15 @@ func (s *Service) LineItems(ctx context.Context, q string) (LineItemList, error)
 }
 
 // LineItem is what a line takes from the catalogue: the name for its description, the
-// default price and VAT rate.
+// default price and VAT rate; stock lines take the tracking.
 type LineItem struct {
-	ID      int64  `json:"id"`
-	Code    string `json:"code"`
-	Name    string `json:"name"`
-	Unit    string `json:"unit"`
-	Price   int64  `json:"price"`
-	VatRate string `json:"vat_rate" enum:"none,0,5,8,10"`
+	ID       int64  `json:"id"`
+	Code     string `json:"code"`
+	Name     string `json:"name"`
+	Unit     string `json:"unit"`
+	Price    int64  `json:"price"`
+	VatRate  string `json:"vat_rate" enum:"none,0,5,8,10"`
+	Tracking string `json:"tracking" enum:"none,quantity,lot,serial"`
 }
 
 type LineItemList struct {

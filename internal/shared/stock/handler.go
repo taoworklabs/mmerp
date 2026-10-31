@@ -19,7 +19,7 @@ type warehouseInput struct{ Body NewWarehouse }
 
 type updateWarehouseInput struct {
 	ID   int64 `path:"id"`
-	Body WarehouseFields
+	Body WarehouseUpdate
 }
 
 func registerHandlers(api huma.API, s *Service) {

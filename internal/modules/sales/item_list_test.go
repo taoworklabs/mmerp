@@ -81,8 +81,8 @@ func TestItemsApprovalFieldAfterMove(t *testing.T) {
 	}
 }
 
-// TestLineItems: whoever writes quotations or orders picks active items without any item
-// role, at most 20 by code; a viewer of quotations gets forbidden.
+// TestLineItems: whoever writes quotations, orders or stock adjustments picks active items
+// without any item role, at most 20 by code; a viewer gets forbidden.
 func TestLineItems(t *testing.T) {
 	f := newFixture(t)
 	itemsFixture(t, f)
@@ -102,6 +102,12 @@ func TestLineItems(t *testing.T) {
 	if len(l.Items) != 1 || l.Items[0].Price != 10_005 || l.Items[0].VatRate != "8" || l.Items[0].Unit != "hộp" || l.Items[0].Name != "Bút bi" {
 		t.Fatalf("pen %+v", l.Items)
 	}
-	_, err = f.sales.LineItems(f.ctxFor("line_viewer", "viewer@A"), "")
+	// A stock admin writes adjustments, so picks too, and sees how each item is tracked.
+	l, err = f.sales.LineItems(f.ctxFor("line_stock", "stock.admin@*"), "BUT")
+	f.check(err)
+	if len(l.Items) != 1 || l.Items[0].Tracking != "none" {
+		t.Fatalf("stock admin %+v", l.Items)
+	}
+	_, err = f.sales.LineItems(f.ctxFor("line_viewer", "viewer@A", "stock.viewer@*"), "")
 	wantCode(t, err, "forbidden")
 }

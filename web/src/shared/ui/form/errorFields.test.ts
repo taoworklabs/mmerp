@@ -10,6 +10,7 @@ describe('fieldOfError', () => {
   })
   it('puts a line error on the field of that line, counted from 1', () => {
     expect(fieldOfError(map, new ApiError(422, 'invalid_quantity', { line: 3 }))).toBe('lines.2.quantity')
+    expect(fieldOfError(map, new ApiError(422, 'invalid_quantity', { line_no: 1 }))).toBe('lines.0.quantity')
   })
   it('leaves a line error without a usable line to the banner', () => {
     expect(fieldOfError(map, new ApiError(422, 'invalid_quantity'))).toBeUndefined()

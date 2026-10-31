@@ -25,8 +25,9 @@ export function useCustomer(id: number) {
   })
 }
 
-export function useDoc(kind: Kind, id: number) {
+export function useDoc(kind: Kind, id: number, enabled = true) {
   return useQuery({
+    enabled,
     queryKey: salesKeys.docs.detail(kind, id),
     queryFn: () =>
       unwrap(kind === 'quote' ? api.GET('/sales/quotes/{id}', { params: { path: { id } } }) : api.GET('/sales/orders/{id}', { params: { path: { id } } })),
@@ -44,3 +45,18 @@ export function useCustomerDocs(kind: Kind, customer: number) {
     },
   })
 }
+
+export function useDelivery(id: number) {
+  return useQuery({
+    queryKey: salesKeys.deliveries.detail(id),
+    queryFn: () => unwrap(api.GET('/sales/deliveries/{id}', { params: { path: { id } } })),
+  })
+}
+
+// deliveryOptions is the query of what a delivery from the order may take from the warehouse
+// (0: the legal entity's default).
+export const deliveryOptions = (order: number, warehouse: number) => ({
+  queryKey: salesKeys.deliveries.options(order, warehouse),
+  queryFn: () =>
+    unwrap(api.GET('/sales/orders/{id}/delivery-options', { params: { path: { id: order }, query: { warehouse_id: warehouse || undefined } } })),
+})

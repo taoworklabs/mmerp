@@ -18,6 +18,16 @@ export function useDocColumns(kind: Kind, { customer = true } = {}): Column<DocL
     ...(kind === 'quote'
       ? [{ key: 'valid_until', header: t('sales.quote.valid_until'), role: 'hidden' as const, kind: 'date' as const, render: (d: DocListItem) => formatDate(d.valid_until) }]
       : []),
+    ...(kind === 'order'
+      ? [
+          {
+            key: 'delivery_state',
+            header: t('sales.order.delivery_state.title'),
+            role: 'hidden' as const,
+            render: (d: DocListItem) => d.delivery_state && t(`sales.order.delivery_state.${d.delivery_state}`),
+          },
+        ]
+      : []),
     { key: 'org_unit', header: t('sales.doc.org_unit'), role: 'hidden', render: (d) => d.org_unit_name },
     { key: 'total', header: t('sales.doc.total_vnd'), role: 'meta', kind: 'number', sortable: true, render: (d) => formatNumber(d.total) },
     {

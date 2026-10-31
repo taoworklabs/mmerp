@@ -14,11 +14,17 @@ const (
 
 var ErrWarehouseCodeTaken = &platform.Error{Status: http.StatusConflict, Code: "warehouse_code_taken"}
 
-// WarehouseFields are what an edit may change; code and legal entity are set at creation.
+// WarehouseFields are a warehouse's own fields; code and legal entity are set at creation.
 type WarehouseFields struct {
 	Name          string `json:"name" minLength:"1" maxLength:"300"`
-	LegalEntityID int64  `json:"legal_entity_id" doc:"A company org unit; ignored on update"`
+	LegalEntityID int64  `json:"legal_entity_id" doc:"A company org unit"`
 	Active        bool   `json:"active"`
+}
+
+// WarehouseUpdate is what an edit may change.
+type WarehouseUpdate struct {
+	Name   string `json:"name" minLength:"1" maxLength:"300"`
+	Active bool   `json:"active"`
 }
 
 type NewWarehouse struct {

@@ -143,6 +143,7 @@ Product description: [products/hrm.md](./products/hrm.md).
 - **Serial** (vi: "Số serial"): one unit of an item, identified individually; at most one on hand in the tenant.
 - **Stock move** (vi: "Biến động kho"): a signed quantity of an item, lot or serial into or out of a warehouse, written once when a document posts and reversed when it is cancelled.
 - **On hand** (vi: "Tồn kho thực tế"): the sum of stock moves for a warehouse, item and lot or serial.
+- **Stock card** (vi: "Thẻ kho"): the moves of one item in one warehouse over a period, with the opening balance, a running balance per move and the closing balance.
 - **Negative stock** (`allow_negative`, vi: "Cho phép xuất âm"): an item counted by `quantity` whose on hand may go below zero. Off by default; never for lots and serials.
 - **Stock adjustment** (`stock.adjustment`, vi: "Phiếu điều chỉnh kho"): a document changing on hand by hand, with a reason; how opening stock is entered.
 - **Lot suggestion** (vi: "Gợi ý lô"): pre-filling the lots of an outgoing line, earliest expiry first, then earliest received, skipping expired lots. Serials are never suggested.

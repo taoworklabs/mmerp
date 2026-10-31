@@ -68,6 +68,10 @@ var (
 	ErrDeliveryPosition = &platform.Error{Status: http.StatusUnprocessableEntity, Code: "sales_delivery_position"}
 	// The warehouse is inactive or of another legal entity than the order.
 	ErrDeliveryWarehouse = &platform.Error{Status: http.StatusUnprocessableEntity, Code: "sales_delivery_warehouse"}
+	// The delivery is dated before its order.
+	ErrDeliveryBeforeOrder = &platform.Error{Status: http.StatusUnprocessableEntity, Code: "sales_delivery_date"}
+	// A line's lot expires before the delivery date (params line_no, lot_code, expiry).
+	ErrLotExpired = &platform.Error{Status: http.StatusUnprocessableEntity, Code: "sales_lot_expired"}
 )
 
 type DeliveryFilter struct {

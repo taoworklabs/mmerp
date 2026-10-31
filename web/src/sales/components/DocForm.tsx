@@ -1,11 +1,14 @@
+import { Group } from '@mmerp/ui'
 import { IconFileDollar, IconListDetails, IconNotes } from '@tabler/icons-react'
 import { useState } from 'react'
-import { useForm } from 'react-hook-form'
+import { useForm, useWatch } from 'react-hook-form'
 import { useTranslation } from 'react-i18next'
 import { api, unwrap, type Doc, type DocFields, type LineInput } from '@/shared/api/sales'
 import { useDocumentMutation } from '@/shared/document'
 import { formatDecimal, formatNumber } from '@/shared/i18n'
+import { StatusBadge } from '@/shared/ui/StatusBadge'
 import { DateField, DecimalField, Form, FormActions, FormRow, FormSection, LinesTable, LinesTotals, MoneyField, OrgUnitField, SelectField, TextField, type ErrorFields, type LineColumn } from '@/shared/ui/form'
+import { isShort } from '../deliveryLines'
 import { docTypeOf, pathOf, type Kind } from '../keys'
 import { CustomerField, ItemField } from './pickers'
 import { useVatOptions } from './vat'
@@ -18,6 +21,8 @@ type LineValues = {
   unit_price: number | null
   discount_percent: string
   vat_rate: string | null
+  // Stock still free, from the server; never sent.
+  available?: string
 }
 
 type Values = {
@@ -53,6 +58,7 @@ function defaults(doc?: Doc): Values {
           unit_price: l.unit_price,
           discount_percent: l.discount_percent,
           vat_rate: l.vat_rate,
+          available: l.available,
         }))
       : [{ ...emptyLine }],
   }
@@ -148,6 +154,8 @@ export function DocForm({ kind, doc, onCreated }: Props) {
             form.setValue(`lines.${i}.description`, it.name, { shouldDirty: true })
             form.setValue(`lines.${i}.unit_price`, it.price, { shouldDirty: true })
             form.setValue(`lines.${i}.vat_rate`, it.vat_rate, { shouldDirty: true })
+            // The availability read was the previous item's.
+            form.setValue(`lines.${i}.available`, undefined)
           }}
         />
       ),
@@ -165,8 +173,27 @@ export function DocForm({ kind, doc, onCreated }: Props) {
       numeric: true,
       required: true,
       width: 96,
-      value: (l) => `${formatDecimal(l.quantity, 3)} ${l.unit}`,
-      cell: (i, bare) => <DecimalField name={`lines.${i}.quantity`} label={t('sales.line.quantity', { n: i + 1 })} bare={bare} required scale={3} min={0} />,
+      // The stock still free while the order waits: a warning only, sending is never blocked.
+      value: (l) => {
+        const qty = `${formatDecimal(l.quantity, 3)} ${l.unit}`
+        if (!isShort(l.available, l.quantity)) return qty
+        return (
+          <Group gap="xs" justify="end" wrap={false}>
+            {qty}
+            <AvailableBadge available={l.available} />
+          </Group>
+        )
+      },
+      cell: (i, bare, line) => {
+        const field = <DecimalField name={`lines.${i}.quantity`} label={t('sales.line.quantity', { n: i + 1 })} bare={bare} required scale={3} min={0} />
+        if (typeof line.available !== 'string') return field
+        return (
+          <Group gap="xs" wrap={false}>
+            {field}
+            <Shortage index={i} available={line.available} />
+          </Group>
+        )
+      },
     },
     {
       key: 'unit_price',
@@ -194,6 +221,8 @@ export function DocForm({ kind, doc, onCreated }: Props) {
       cell: (i, bare) => <SelectField name={`lines.${i}.vat_rate`} label={t('sales.line.vat_rate', { n: i + 1 })} bare={bare} required data={vat.options} />,
     },
     { key: 'net', header: t('sales.line.net_col'), numeric: true, value: (l) => formatNumber(l.amount - l.discount) },
+    // Only stock lines carry what was delivered.
+    ...(ro && doc?.status === 'posted' && !quote ? [{ key: 'delivered', header: t('sales.line.delivered_col'), numeric: true, value: (l: Line) => l.delivered && formatDecimal(l.delivered, 3) }] : []),
   ]
 
   return (
@@ -263,6 +292,17 @@ export function DocForm({ kind, doc, onCreated }: Props) {
       {mutation.dialog}
     </Form>
   )
+}
+
+function AvailableBadge({ available }: { available?: string }) {
+  const { t } = useTranslation()
+  return <StatusBadge tone="warning">{t('sales.line.available', { available: formatDecimal(available, 3) })}</StatusBadge>
+}
+
+// Shortage warns while the quantity is typed; lines added in the form carry no availability.
+function Shortage({ index, available }: { index: number; available?: string }) {
+  const quantity = useWatch<Values, `lines.${number}.quantity`>({ name: `lines.${index}.quantity` })
+  return isShort(available, quantity ?? '') && <AvailableBadge available={available} />
 }
 
 // Totals are the stored amounts; on a draft being edited they are those of the last save.

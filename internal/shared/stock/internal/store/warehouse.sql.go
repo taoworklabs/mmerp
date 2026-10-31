@@ -10,8 +10,10 @@ import (
 )
 
 const createWarehouse = `-- name: CreateWarehouse :one
-INSERT INTO stock.warehouses (code, name, legal_entity_id, active)
-SELECT $1, $2, o.id, $3 FROM iam.org_units o WHERE o.id = $4 AND o.kind = 'company'
+INSERT INTO stock.warehouses (code, name, legal_entity_id, active, is_default)
+SELECT $1, $2, o.id, $3,
+  NOT EXISTS (SELECT 1 FROM stock.warehouses w WHERE w.legal_entity_id = o.id AND w.is_default)
+FROM iam.org_units o WHERE o.id = $4 AND o.kind = 'company'
 RETURNING id
 `
 
@@ -22,6 +24,7 @@ type CreateWarehouseParams struct {
 	LegalEntityID int64
 }
 
+// The first warehouse of a legal entity without a default becomes its default.
 func (q *Queries) CreateWarehouse(ctx context.Context, arg CreateWarehouseParams) (int64, error) {
 	row := q.db.QueryRow(ctx, createWarehouse,
 		arg.Code,

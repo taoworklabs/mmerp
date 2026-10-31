@@ -34,6 +34,7 @@ type Service struct {
 	sensitive  map[[2]string]bool             // product, permission core.admin does not imply
 	tree       TreeHook
 	data       DataProducts
+	newEntity  LegalEntityCreated
 }
 
 func NewService(d Deps) *Service {
@@ -47,6 +48,16 @@ func (s *Service) SetTreeHook(h TreeHook) { s.tree = h }
 
 // SetDataProducts wires the DataProducts hook while composing the app.
 func (s *Service) SetDataProducts(d DataProducts) { s.data = d }
+
+// SetLegalEntityCreated wires the LegalEntityCreated hook while composing the app.
+func (s *Service) SetLegalEntityCreated(h LegalEntityCreated) { s.newEntity = h }
+
+func (s *Service) legalEntityCreated(ctx context.Context, id int64) error {
+	if s.newEntity == nil {
+		return nil
+	}
+	return s.newEntity(ctx, id)
+}
 
 // Compared against when the login does not exist, so both failures cost the same time.
 var dummyHash = hashPassword("dummy password")
@@ -866,6 +877,11 @@ func (s *Service) CreateOrgUnit(ctx context.Context, in OrgUnitInput) (int64, er
 		if err != nil {
 			return err
 		}
+		if in.Kind == "company" {
+			if err := s.legalEntityCreated(ctx, id); err != nil {
+				return err
+			}
+		}
 		return s.d.Audit.Record(ctx, "iam.org_unit_created", map[string]any{"id": id, "parent_id": in.ParentID, "kind": in.Kind, "name": in.Name})
 	})
 	return id, err
@@ -889,6 +905,11 @@ func (s *Service) UpdateOrgUnit(ctx context.Context, id int64, in OrgUnitInput) 
 			TaxCode: platform.NullText(in.TaxCode), LegalName: platform.NullText(in.LegalName), Address: platform.NullText(in.Address),
 		}); err != nil {
 			return err
+		}
+		if old.Kind != "company" && in.Kind == "company" {
+			if err := s.legalEntityCreated(ctx, id); err != nil {
+				return err
+			}
 		}
 		if old.ParentID != platform.NullInt8(in.ParentID) {
 			if err := store.BumpTenantAuthz.Run(ctx); err != nil {

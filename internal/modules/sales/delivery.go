@@ -42,7 +42,7 @@ func (s *Service) deliveryTransition(ctx context.Context, d record.Doc, _ record
 		if err != nil {
 			return err
 		}
-		f := DeliveryFields{WarehouseID: h.WarehouseID, Lines: make([]DeliveryLineInput, len(saved))}
+		f := DeliveryFields{Date: d.Date, WarehouseID: h.WarehouseID, Lines: make([]DeliveryLineInput, len(saved))}
 		for i, l := range saved {
 			f.Lines[i] = DeliveryLineInput{OrderPosition: int(l.OrderPosition), LotCode: platform.TextPtr(l.LotCode),
 				SerialCode: platform.TextPtr(l.SerialCode), Quantity: l.Quantity}
@@ -166,6 +166,9 @@ func (s *Service) checkDelivery(ctx context.Context, id, orderID int64, f Delive
 	if o.Status != record.Posted {
 		return nil, ErrOrderNotPosted
 	}
+	if f.Date < o.Date {
+		return nil, ErrDeliveryBeforeOrder
+	}
 	w, err := store.DeliveryWarehouse.Run(ctx, f.WarehouseID)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return nil, platform.ErrNotFound
@@ -221,7 +224,35 @@ func (s *Service) checkDelivery(ctx context.Context, id, orderID int64, f Delive
 			ItemID: r.ItemID, ItemCode: r.ItemCode, Description: r.Description, Unit: r.Unit,
 		}
 	}
-	return out, nil
+	return out, checkLotExpiry(ctx, out, f.Date)
+}
+
+// checkLotExpiry refuses a line whose lot expires before the delivery date; a lot that does
+// not exist is left to posting.
+func checkLotExpiry(ctx context.Context, lines []DeliveryLine, date string) error {
+	var p store.LotExpiriesParams
+	var at []int // line index of each pair
+	for i, l := range lines {
+		if l.LotCode != nil {
+			p.ItemIds = append(p.ItemIds, l.ItemID)
+			p.Codes = append(p.Codes, *l.LotCode)
+			at = append(at, i)
+		}
+	}
+	if len(at) == 0 {
+		return nil
+	}
+	rows, err := store.LotExpiries.Run(ctx, p)
+	if err != nil {
+		return err
+	}
+	for _, r := range rows {
+		if e := *platform.DatePtr(r.Expiry); e < date {
+			i := at[r.Pos-1]
+			return deliveryErr(ErrLotExpired, i+1, map[string]any{"lot_code": *lines[i].LotCode, "expiry": e})
+		}
+	}
+	return nil
 }
 
 // DeliveryOptions lists, for the delivery form of a posted order, the warehouses of its legal

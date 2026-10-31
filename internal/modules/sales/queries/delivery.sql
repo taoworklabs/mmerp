@@ -72,3 +72,12 @@ JOIN iam.org_units u ON u.id = d.org_unit_id;
 -- Active warehouses of a legal entity, the default first.
 SELECT id, code, name, is_default FROM stock.warehouses
 WHERE legal_entity_id = $1 AND active ORDER BY is_default DESC, lower(code), id;
+
+-- name: LotExpiries :many
+-- Expiry of the lot named by each (item, code) input pair, by 1-based position in the
+-- inputs; case is folded here only, as the lot index does.
+SELECT n::int AS pos, l.expiry
+FROM generate_series(1, cardinality(@codes::text[])) AS n
+JOIN stock.lots l ON l.item_id = (@item_ids::bigint[])[n] AND lower(l.code) = lower((@codes::text[])[n])
+WHERE l.expiry IS NOT NULL
+ORDER BY n;

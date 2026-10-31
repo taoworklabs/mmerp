@@ -375,6 +375,46 @@ func (q *Queries) LiveDeliveryOfOrder(ctx context.Context, orderID int64) (int64
 	return id, err
 }
 
+const lotExpiries = `-- name: LotExpiries :many
+SELECT n::int AS pos, l.expiry
+FROM generate_series(1, cardinality($1::text[])) AS n
+JOIN stock.lots l ON l.item_id = ($2::bigint[])[n] AND lower(l.code) = lower(($1::text[])[n])
+WHERE l.expiry IS NOT NULL
+ORDER BY n
+`
+
+type LotExpiriesParams struct {
+	Codes   []string
+	ItemIds []int64
+}
+
+type LotExpiriesRow struct {
+	Pos    int32
+	Expiry pgtype.Date
+}
+
+// Expiry of the lot named by each (item, code) input pair, by 1-based position in the
+// inputs; case is folded here only, as the lot index does.
+func (q *Queries) LotExpiries(ctx context.Context, arg LotExpiriesParams) ([]LotExpiriesRow, error) {
+	rows, err := q.db.Query(ctx, lotExpiries, arg.Codes, arg.ItemIds)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []LotExpiriesRow
+	for rows.Next() {
+		var i LotExpiriesRow
+		if err := rows.Scan(&i.Pos, &i.Expiry); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const updateDelivery = `-- name: UpdateDelivery :exec
 UPDATE sales.deliveries SET warehouse_id = $2, note = $3 WHERE id = $1
 `

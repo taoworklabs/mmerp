@@ -13,3 +13,7 @@ type TreeHook interface {
 type DataProducts interface {
 	ProductsWithData(ctx context.Context) ([]string, error)
 }
+
+// LegalEntityCreated runs when a unit becomes a company (created as one or changed into one),
+// in the same transaction; an error rolls the write back. stock gives the company its default warehouse.
+type LegalEntityCreated func(ctx context.Context, legalEntity int64) error

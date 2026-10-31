@@ -230,7 +230,7 @@ func TestWarehouseOfOtherEntity(t *testing.T) {
 		t.Fatal(err)
 	}
 	_ = wantCode(t, l.recordFor(l.doc(t, other), stock.Move{LineNo: 1, WarehouseID: l.wh, ItemID: it, Quantity: qty(1)}), stock.ErrWarehouseEntity)
-	if err := l.stock.UpdateWarehouse(l.admin, l.wh, stock.WarehouseFields{Name: "Kho", Active: false}); err != nil {
+	if err := l.stock.UpdateWarehouse(l.admin, l.wh, stock.WarehouseUpdate{Name: "Kho", Active: false}); err != nil {
 		t.Fatal(err)
 	}
 	_ = wantCode(t, l.move(t, stock.Move{LineNo: 1, WarehouseID: l.wh, ItemID: it, Quantity: qty(1)}), stock.ErrWarehouseInactive)
