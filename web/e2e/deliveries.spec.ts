@@ -95,7 +95,7 @@ test('opening stock in a new lot, delivered from the order, leaves the rest on h
   // The order offers a delivery; its line comes with the lot already picked.
   await page.goto(`/sales/orders/${orderId}`)
   await page.getByRole('link', { name: 'Tạo phiếu giao hàng' }).click()
-  await expect(page.getByRole('combobox', { name: 'Lô hàng (1)' })).toHaveValue(new RegExp(`^${lot}`))
+  await expect(page.getByRole('combobox', { name: 'Lô hàng (1)' })).toHaveText(new RegExp(`^${lot}`))
   await expect(page.getByRole('textbox', { name: 'Số lượng (1)' })).toHaveValue('4')
   await page.getByRole('button', { name: 'Tạo bản nháp' }).click()
   await expect(page.getByRole('heading', { name: /^GH-\d{4}-/ })).toBeVisible()
