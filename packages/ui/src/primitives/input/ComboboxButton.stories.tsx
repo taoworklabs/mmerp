@@ -73,7 +73,8 @@ export const KeyboardOpen: Story = {
     await userEvent.keyboard('{ArrowDown}')
     await waitFor(() => expect(body.getByRole('listbox')).toBeInTheDocument())
 
-    expect(document.activeElement).not.toBe(trigger)
+    // Focus moves into the popup a frame after it opens.
+    await waitFor(() => expect(document.activeElement).not.toBe(trigger))
     expect(document.activeElement).toHaveAccessibleName('Chọn nhân viên')
   },
 }
