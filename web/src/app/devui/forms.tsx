@@ -9,6 +9,7 @@ import {
   EditablePanel,
   CodeField,
   DateField,
+  DateFilter,
   DecimalField,
   FileField,
   FilterChip,
@@ -154,6 +155,7 @@ export function FiltersDoc() {
   const [year, setYear] = useState(2026)
   const [choice, setChoice] = useState<string | null>('positive')
   const [month, setMonth] = useState<string | null>('2026-08')
+  const [day, setDay] = useState<string | null>(null)
   const [q, setQ] = useState('')
   const [unit, setUnit] = useState<string | null>(null)
   const [status, setStatus] = useState<string | null>(null)
@@ -198,6 +200,7 @@ export function FiltersDoc() {
             <Group gap="xs">
               <YearFilter label={t('shared.devui.year')} value={year} years={[2025, 2026, 2027]} onChange={setYear} />
               <MonthFilter label={t('shared.devui.month')} value={month} onChange={setMonth} />
+              <DateFilter label={t('shared.devui.date')} value={day} onChange={setDay} />
             </Group>
           </Case>
         </>
