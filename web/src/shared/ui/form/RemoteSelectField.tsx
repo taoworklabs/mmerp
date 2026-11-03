@@ -1,6 +1,8 @@
 import { useDebouncedValue } from '@mmerp/ui'
+import type { Icon as TablerIcon } from '@tabler/icons-react'
 import { keepPreviousData, useQuery, type QueryKey } from '@tanstack/react-query'
 import { useState } from 'react'
+import { FilterChip } from './FilterChip'
 import { SelectField, type Option } from './fields'
 
 export type RemoteRow = { id: number; code: string; name: string }
@@ -74,6 +76,49 @@ export function RemoteSelectField<T extends RemoteRow>({
         setPicked(row)
         onPicked?.(row)
       }}
+    />
+  )
+}
+
+// RemoteFilter is RemoteSelectField as a filter chip: the chip's search box queries the server.
+// readOnly keeps the chip to `current` alone, for a user who may not search the records.
+export function RemoteFilter<T extends RemoteRow>({
+  label,
+  icon,
+  queryKey,
+  search,
+  current,
+  value,
+  onChange,
+  readOnly,
+}: {
+  label: string
+  icon: TablerIcon
+  queryKey: (q: string) => QueryKey
+  search: (q: string) => Promise<T[]>
+  current?: RemoteRow
+  value: string | null
+  onChange: (value: string | null) => void
+  readOnly?: boolean
+}) {
+  const [text, setText] = useState('')
+  const [q] = useDebouncedValue(text, 300)
+  const [picked, setPicked] = useState<T>()
+  const found = useQuery({ queryKey: queryKey(q), queryFn: () => search(q), enabled: !readOnly, placeholderData: keepPreviousData })
+  const rows = readOnly ? [] : (found.data ?? [])
+  return (
+    <FilterChip
+      label={label}
+      icon={icon}
+      data={remoteOptions(rows, [picked, current])}
+      value={value}
+      onChange={(v) => {
+        setPicked(rows.find((r) => String(r.id) === v))
+        onChange(v)
+      }}
+      clearable={!readOnly}
+      searchable={!readOnly}
+      onSearch={setText}
     />
   )
 }

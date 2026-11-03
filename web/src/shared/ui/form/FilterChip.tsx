@@ -16,6 +16,7 @@ type Props = {
   clearable?: boolean
   // A search box above the options, for long lists.
   searchable?: boolean
+  onSearch?: (query: string) => void
   renderOption?: (option: Option) => ReactNode
 }
 

@@ -19,6 +19,8 @@ export type ComboboxButtonProps = {
   searchLabel?: string
   renderOption?: (item: SelectItem) => React.ReactNode
   filter?: (item: SelectItem, query: string) => boolean
+  // Called with each search text when the server does the matching; the list is then shown as given.
+  onSearch?(query: string): void
   popupWidth?: number
 }
 
@@ -54,6 +56,7 @@ export function ComboboxButton({
   searchLabel,
   renderOption,
   filter = defaultFilter,
+  onSearch,
   popupWidth = tokens.filterWidth.menu,
 }: ComboboxButtonProps) {
   const [query, setQuery] = useState('')
@@ -66,11 +69,17 @@ export function ComboboxButton({
         if (next !== null) onChange(next)
       }}
       inputValue={query}
-      onInputValueChange={setQuery}
-      filter={filter}
+      onInputValueChange={(next) => {
+        setQuery(next)
+        onSearch?.(next)
+      }}
+      filter={onSearch ? () => true : filter}
       itemToStringLabel={(itemValue) => data.find((item) => item.value === itemValue)?.label ?? ''}
       onOpenChange={(open) => {
-        if (!open) setQuery('')
+        if (!open) {
+          setQuery('')
+          onSearch?.('')
+        }
       }}
     >
       <BaseCombobox.Trigger id={triggerId} render={trigger} />

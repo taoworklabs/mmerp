@@ -21,6 +21,8 @@ export interface FilterChipProps extends Omit<React.ComponentPropsWithRef<'div'>
   clearable?: boolean
   searchable?: boolean
   searchLabel?: string
+  // Server-side search: called with the search text, `data` is then the matching options.
+  onSearch?(query: string): void
   renderOption?: (item: SelectItem) => React.ReactNode
 }
 
@@ -38,6 +40,7 @@ export function FilterChip({
   clearable = true,
   searchable,
   searchLabel,
+  onSearch,
   renderOption,
   className,
   ...props
@@ -68,6 +71,7 @@ export function FilterChip({
         nothingFound={nothingFound}
         searchable={searchable}
         searchLabel={searchLabel}
+        onSearch={onSearch}
         renderOption={renderOption}
       />
       {active && (

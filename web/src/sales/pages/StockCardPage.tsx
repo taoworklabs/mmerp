@@ -1,8 +1,6 @@
 import { Anchor } from '@mmerp/ui'
-import { IconBuildingWarehouse, IconListDetails } from '@tabler/icons-react'
+import { IconBuildingWarehouse, IconCalendarX, IconListDetails, IconPackage } from '@tabler/icons-react'
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
-import { useEffect } from 'react'
-import { FormProvider, useForm } from 'react-hook-form'
 import { useTranslation } from 'react-i18next'
 import { Link, useSearchParams } from 'react-router'
 import { api, ApiError, unwrap, type StockCardRow } from '@/shared/api/core'
@@ -10,14 +8,13 @@ import { useRecordLinks } from '@/shared/area'
 import { useCan, useMe } from '@/shared/auth/me'
 import { errorText, formatDate, formatDecimal, today as todayIn } from '@/shared/i18n'
 import { type Column } from '@/shared/ui/DataTable'
-import { DateField, FilterChip, RemoteSelectField } from '@/shared/ui/form'
+import { DateFilter, FilterChip, RemoteFilter } from '@/shared/ui/form'
 import { ListPage } from '@/shared/ui/page'
 import { EmptyState } from '@/shared/ui/states'
 import { useWarehouseOptions } from '../hooks/useStock'
 import { salesKeys, type StockCardQuery } from '../keys'
 import { docTypeLabelKey, monthToDate } from '../stock'
 
-type Values = { [K in keyof StockCardQuery]: string | null }
 // The opening balance heads the moves; the closing one is the table's footer.
 type Row = StockCardRow & { key: string; edge?: 'opening' | 'closing' }
 
@@ -60,16 +57,11 @@ export function StockCardPage() {
   const first = named.data?.items[0]
   const current = first && { id: first.item_id, code: first.item_code, name: first.item_name }
 
-  // The fields edit the URL, which stays the source, so Back reaches them.
-  const form = useForm<Values>({ values: p })
-  useEffect(() => {
-    const sub = form.watch((v, { name }) => {
-      if (!name) return
-      const next = Object.entries(v).filter((e): e is [string, string] => !!e[1])
-      setSearch(new URLSearchParams(next))
-    })
-    return () => sub.unsubscribe()
-  }, [form, setSearch])
+  // The chips edit the URL, which stays the source, so Back reaches them.
+  const put = (key: keyof StockCardQuery) => (v: string | null) => {
+    const next = Object.entries({ ...p, [key]: v ?? '' }).filter((e) => !!e[1])
+    setSearch(new URLSearchParams(next))
+  }
 
   const columns: Column<Row>[] = [
     {
@@ -110,28 +102,29 @@ export function StockCardPage() {
       title={t('sales.stock_card.title')}
       description={t('sales.stock_card.description')}
       filters={
-        <FormProvider {...form}>
+        <>
           <FilterChip
             label={t('sales.stock_card.warehouse')}
             icon={IconBuildingWarehouse}
             data={warehouses}
             searchable
             value={p.warehouse_id || null}
-            onChange={(v) => form.setValue('warehouse_id', v, { shouldDirty: true })}
+            onChange={put('warehouse_id')}
           />
-          <RemoteSelectField
-            name="item_id"
+          <RemoteFilter
             label={t('sales.stock_card.item')}
+            icon={IconPackage}
             current={current}
             // Without the item role the card shows only the item it was opened for.
             readOnly={!canItems}
-            required
+            value={p.item_id || null}
+            onChange={put('item_id')}
             queryKey={salesKeys.stock.items}
             search={async (q) => (await unwrap(api.GET('/items', { params: { query: { q: q || undefined, active: 'true', page_size: 20 } } }))).items}
           />
-          <DateField name="from" label={t('sales.stock_card.from')} required />
-          <DateField name="to" label={t('sales.stock_card.to')} required error={rangeError} />
-        </FormProvider>
+          <DateFilter label={t('sales.stock_card.from')} value={p.from} onChange={put('from')} clearable={false} />
+          <DateFilter label={t('sales.stock_card.to')} value={p.to} onChange={put('to')} clearable={false} />
+        </>
       }
       list={
         ready && !rangeError
@@ -150,6 +143,7 @@ export function StockCardPage() {
       }
     >
       {!ready && <EmptyState icon={IconListDetails} title={t('sales.stock_card.pick')} description={t('sales.stock_card.pick_description')} />}
+      {ready && rangeError && <EmptyState icon={IconCalendarX} title={rangeError} />}
     </ListPage>
   )
 }

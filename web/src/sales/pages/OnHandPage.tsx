@@ -1,14 +1,12 @@
 import { Group, Text } from '@mmerp/ui'
 import { IconBuildingWarehouse } from '@tabler/icons-react'
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
-import { useEffect } from 'react'
-import { FormProvider, useForm } from 'react-hook-form'
 import { useTranslation } from 'react-i18next'
 import { api, unwrap, type OnHandRow } from '@/shared/api/core'
 import { useMe } from '@/shared/auth/me'
 import { formatDate, formatDecimal, today as todayIn } from '@/shared/i18n'
 import { type Column } from '@/shared/ui/DataTable'
-import { DateField, FilterChip, SearchInput } from '@/shared/ui/form'
+import { DateFilter, FilterChip, SearchInput } from '@/shared/ui/form'
 import { useListView } from '@/shared/ui/ListView'
 import { ListPage } from '@/shared/ui/page'
 import { useListParams } from '@/shared/url/listParams'
@@ -44,13 +42,6 @@ export function OnHandPage() {
       ),
     placeholderData: keepPreviousData,
   })
-
-  // The date filter is a form field; the URL stays its source, so Back and Clear filters reach it.
-  const form = useForm<{ expiring: string | null }>({ values: { expiring: expiring || null } })
-  useEffect(() => {
-    const sub = form.watch((v, { name }) => name && set({ filters: { expiring: v.expiring ?? '' } }))
-    return () => sub.unsubscribe()
-  }, [form, set])
 
   const columns: Column<OnHandRow>[] = [
     { key: 'item_code', header: t('sales.on_hand.item_code'), role: 'title', kind: 'code', render: (r) => r.item_code },
@@ -88,9 +79,7 @@ export function OnHandPage() {
         <>
           <SearchInput label={t('sales.on_hand.search')} placeholder={t('sales.on_hand.search_hint')} value={q} onSearch={(v) => set({ filters: { q: v } })} />
           <FilterChip label={t('sales.on_hand.warehouse')} icon={IconBuildingWarehouse} data={warehouses} searchable {...filterBar.bind('warehouse')} />
-          <FormProvider {...form}>
-            <DateField name="expiring" label={t('sales.on_hand.expiring_before')} clearable />
-          </FormProvider>
+          <DateFilter label={t('sales.on_hand.expiring_before')} {...filterBar.bind('expiring')} />
         </>
       }
       tools={view.tools}

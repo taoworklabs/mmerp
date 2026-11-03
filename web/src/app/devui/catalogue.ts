@@ -46,7 +46,7 @@ export const entries = [
   { layer: 'mmerp', path: 'mmerp/document-preview', name: 'DocumentPreview', source: '@/shared/document', related: ['templates/inbox', 'mmerp/side-panel'] },
   { layer: 'mmerp', path: 'mmerp/document-status', name: 'DocumentStatus', source: '@/shared/document', related: ['mmerp/status-badge', 'patterns/document-approval'] },
   { layer: 'mmerp', path: 'mmerp/editable-panel', name: 'EditablePanel', source: '@/shared/ui/form', related: ['mmerp/inline-edit-field', 'patterns/create-edit', 'templates/record'] },
-  { layer: 'mmerp', path: 'mmerp/filters', name: 'Filters', source: '@/shared/ui/form', exports: ['SearchInput', 'FilterChip', 'OrgUnitFilter', 'LegalEntityFilter', 'MonthFilter', 'YearFilter'], related: ['patterns/filter-search', 'templates/list'] },
+  { layer: 'mmerp', path: 'mmerp/filters', name: 'Filters', source: '@/shared/ui/form', exports: ['SearchInput', 'FilterChip', 'OrgUnitFilter', 'LegalEntityFilter', 'MonthFilter', 'DateFilter', 'YearFilter', 'RemoteFilter'], related: ['patterns/filter-search', 'templates/list'] },
   { layer: 'mmerp', path: 'mmerp/form', name: 'Form · fields', source: '@/shared/ui/form', exports: ['Form', 'FormSection', 'FormFields', 'FormActions', 'TextField'], related: ['mmerp/form-modal', 'mmerp/editable-panel', 'patterns/create-edit'] },
   { layer: 'mmerp', path: 'mmerp/form-modal', name: 'FormModal', source: '@/shared/ui/page', related: ['mmerp/form', 'patterns/create-edit', 'mmerp/use-confirm'] },
   { layer: 'mmerp', path: 'mmerp/inline-edit-field', name: 'InlineEditField', source: '@/shared/ui/InlineEditField', related: ['mmerp/editable-panel'] },
