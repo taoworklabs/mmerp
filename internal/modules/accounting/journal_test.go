@@ -204,7 +204,8 @@ func isCode(err error, code string) bool {
 func TestJournalEntryBounds(t *testing.T) {
 	l := newLedger(t)
 	f := l.journal("2026-03-31")
-	f.Lines[0].Debit, f.Lines[1].Credit = accounting.MaxLineAmount+1, accounting.MaxLineAmount+1
+	// Just above 1e15: the bound keeps 500 lines' sums inside int64.
+	f.Lines[0].Debit, f.Lines[1].Credit = 1_000_000_000_000_001, 1_000_000_000_000_001
 	_, err := l.s.CreateJournalEntry(l.core.Admin, accounting.NewJournalEntry{JournalEntryFields: f})
 	if e, ok := asErr(err); !ok || e.Code != "line_amount_invalid" || e.Params["line_no"] != 1 {
 		t.Fatalf("amount: %v", err)
