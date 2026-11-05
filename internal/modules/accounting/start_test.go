@@ -8,6 +8,7 @@ import (
 	"github.com/taoworklabs/mmerp/internal/core/iam"
 	"github.com/taoworklabs/mmerp/internal/modules/accounting"
 	"github.com/taoworklabs/mmerp/internal/platform"
+	"github.com/taoworklabs/mmerp/internal/shared/posting"
 )
 
 func TestSetStartPerLegalEntity(t *testing.T) {
@@ -180,4 +181,27 @@ func TestSetStartRacingFirstEntry(t *testing.T) {
 		}
 		before(t, l)
 	})
+}
+
+// A document voided while the tracking row still holds its recording is pending too, so it
+// counts like a live one in the locked part.
+func TestSetStartRefusedOverVoidedPending(t *testing.T) {
+	l := newLedger(t)
+	l.core.Record.SetBeforeLock(l.s.BeforeLock)
+	ref := l.doc(t, "2026-03-31")
+	// Nothing to book: the recording is tracked as posted with no entry.
+	l.record(t, ref, posting.Line{Kind: posting.SalaryExpense, OrgUnitID: l.unit, Amount: 0})
+	l.reconcile(t, ref)
+	l.void(t, ref)
+	later := "2026-07-01"
+	if err := l.s.SetStart(l.core.Admin, l.le, &later); err != nil {
+		t.Fatal(err)
+	}
+	if c := lockCode(t, l, "2026-06-30"); c != "" {
+		t.Fatalf("lock %q", c)
+	}
+	early := "2026-01-01"
+	if c, _ := startErr(t, l.s.SetStart(l.core.Admin, l.le, &early)); c != "start_date_in_locked_period" {
+		t.Fatalf("start: %q", c)
+	}
 }
