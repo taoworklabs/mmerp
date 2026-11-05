@@ -32,6 +32,7 @@ var InsertEntry = data.OneArg("accounting.InsertEntry", newQ, (*Queries).InsertE
 var InsertEntryLines = data.ExecArg("accounting.InsertEntryLines", newQ, (*Queries).InsertEntryLines)
 var ReverseEntry = data.OneArg("accounting.ReverseEntry", newQ, (*Queries).ReverseEntry)
 var ReverseEntryLines = data.ExecArg("accounting.ReverseEntryLines", newQ, (*Queries).ReverseEntryLines)
+var PendingDocs = data.ManyArg("accounting.PendingDocs", newQ, (*Queries).PendingDocs)
 var ListRules = data.Many("accounting.ListRules", newQ, (*Queries).ListRules)
 var SaveRule = data.ExecArg("accounting.SaveRule", newQ, (*Queries).SaveRule)
 var DeleteRule = data.ExecArg("accounting.DeleteRule", newQ, (*Queries).DeleteRule)

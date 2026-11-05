@@ -36,6 +36,38 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/accounting/pending": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["list-accounting-pending"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/accounting/pending/post": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["post-accounting-pending"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/accounting/rules": {
         parameters: {
             query?: never;
@@ -4817,6 +4849,28 @@ export interface components {
              */
             unused_leave: number;
         };
+        PendingDoc: {
+            /** Format: date */
+            date: string;
+            /** Format: int64 */
+            doc_id: number;
+            doc_type: string;
+            /** Format: int64 */
+            legal_entity_id: number;
+            missing_kinds: string[] | null;
+            number: string;
+            /** @enum {string} */
+            reason: "queued" | "unmapped" | "unbalanced";
+        };
+        PendingList: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example /api/schemas/PendingList.json
+             */
+            readonly $schema?: string;
+            items: components["schemas"]["PendingDoc"][] | null;
+        };
         PeriodLock: {
             /** Format: int64 */
             legal_entity_id: number;
@@ -4829,6 +4883,26 @@ export interface components {
             seq?: components["schemas"]["Plan"][] | null;
             /** Format: int32 */
             step?: number;
+        };
+        PostPendingInputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example /api/schemas/PostPendingInputBody.json
+             */
+            readonly $schema?: string;
+            /** Format: int64 */
+            legal_entity_id: number;
+        };
+        PostPendingOutputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example /api/schemas/PostPendingOutputBody.json
+             */
+            readonly $schema?: string;
+            /** Format: int64 */
+            queued: number;
         };
         PrintBlock: {
             en: string;
@@ -5639,6 +5713,70 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "list-accounting-pending": {
+        parameters: {
+            query: {
+                legal_entity_id: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PendingList"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "post-accounting-pending": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PostPendingInputBody"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PostPendingOutputBody"];
+                };
             };
             /** @description Error */
             default: {

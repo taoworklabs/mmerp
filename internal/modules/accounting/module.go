@@ -11,7 +11,11 @@ func Module(s *Service) platform.Module {
 	return platform.Module{
 		Name:    "accounting",
 		Product: "accounting",
-		Routes:  func(api huma.API) { registerAccountHandlers(api, s); registerRuleHandlers(api, s) },
+		Routes: func(api huma.API) {
+			registerAccountHandlers(api, s)
+			registerRuleHandlers(api, s)
+			registerPendingHandlers(api, s)
+		},
 		Workers: func(w *river.Workers) { platform.AddWorker(w, &reconcileWorker{s: s}) },
 	}
 }
