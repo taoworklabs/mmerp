@@ -81,6 +81,8 @@ function ButtonRoot({
     <ButtonBase
       render={render}
       disabled={disabled || loading}
+      // Loading must not blur a focused button (native disabled does); clicks are still blocked.
+      focusableWhenDisabled={!disabled}
       aria-busy={loading ? true : undefined}
       data-mmerp-control=""
       data-size={size}

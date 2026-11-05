@@ -35,7 +35,7 @@
   color: var(--mmerp-color-body);
 }
 
-.control:disabled {
+.control:is(:disabled, [aria-disabled='true']) {
   color: var(--mmerp-color-dimmed);
   cursor: not-allowed;
   opacity: 0.6;

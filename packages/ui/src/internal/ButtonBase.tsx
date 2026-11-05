@@ -7,12 +7,18 @@ import type { RenderProp } from './render.ts'
 // element (no role, no type), so only real buttons go through it.
 const isNative = (render: RenderProp | undefined) => render === undefined || (React.isValidElement(render) && render.type === 'button')
 
-function Plain({ render, ...props }: React.ComponentPropsWithRef<'button'> & { render: RenderProp }) {
-  const { disabled, ...rest } = props
-  return useRender({ defaultTagName: 'button', render, props: { ...rest, 'aria-disabled': disabled || undefined, tabIndex: disabled ? -1 : undefined } })
+export type ButtonBaseProps = React.ComponentPropsWithRef<'button'> & {
+  render?: RenderProp
+  // Disabled but still focusable (aria-disabled): a focused control that becomes disabled keeps focus.
+  focusableWhenDisabled?: boolean
 }
 
-export function ButtonBase({ render, ...props }: React.ComponentPropsWithRef<'button'> & { render?: RenderProp }) {
+function Plain({ render, focusableWhenDisabled, ...props }: ButtonBaseProps & { render: RenderProp }) {
+  const { disabled, ...rest } = props
+  return useRender({ defaultTagName: 'button', render, props: { ...rest, 'aria-disabled': disabled || undefined, tabIndex: disabled && !focusableWhenDisabled ? -1 : undefined } })
+}
+
+export function ButtonBase({ render, ...props }: ButtonBaseProps) {
   if (render !== undefined && !isNative(render)) return <Plain render={render} {...props} />
   return <BaseButton render={render as React.ComponentProps<typeof BaseButton>['render']} {...props} />
 }
