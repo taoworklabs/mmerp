@@ -26,7 +26,7 @@
   transition: background-color var(--mmerp-motion-duration) ease;
 }
 
-.control:hover {
+.control:hover:not(:disabled, [aria-disabled='true']) {
   background: var(--mmerp-color-gray-light);
 }
 
