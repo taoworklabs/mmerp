@@ -35,7 +35,7 @@ CREATE TABLE accounting.sources (
     legal_entity_id     bigint NOT NULL,
     date                date NOT NULL,
     posted_recording_id bigint NULL,
-    problem             text NULL CHECK (problem IN ('unmapped', 'unbalanced')),
+    problem             text NULL CHECK (problem IN ('unmapped', 'unbalanced', 'too_large')),
     missing_kinds       text[] NOT NULL DEFAULT '{}',
     PRIMARY KEY (doc_type, doc_id)
 );

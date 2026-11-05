@@ -77,6 +77,7 @@
   "accounting.pending.reason_queued": "Not yet posted",
   "accounting.pending.reason_unmapped": "Awaiting mapping",
   "accounting.pending.reason_unbalanced": "Unbalanced",
+  "accounting.pending.reason_too_large": "Too many lines",
   "accounting.pending.empty": "Nothing awaiting posting",
   "accounting.pending.empty_description": "Every document of the legal entity has reached the ledger.",
   "accounting.entries.title": "Journal entries",

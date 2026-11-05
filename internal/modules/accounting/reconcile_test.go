@@ -495,3 +495,22 @@ func TestPostingChangedQueuesOneJob(t *testing.T) {
 		t.Fatalf("jobs %d %v", n, err)
 	}
 }
+
+// A document whose mapped lines exceed MaxLines is shown as a problem, not retried forever.
+func TestReconcileTooLarge(t *testing.T) {
+	l := newLedger(t)
+	ref := l.doc(t, "2026-03-31")
+	var lines []posting.Line
+	for i := 0; i <= accounting.MaxLines/2; i++ {
+		lines = append(lines, posting.Line{Kind: posting.SalaryExpense, OrgUnitID: l.unit, Amount: 1},
+			posting.Line{Kind: posting.SalaryPayable, OrgUnitID: l.unit, Amount: 1})
+	}
+	l.record(t, ref, lines...)
+	l.reconcile(t, ref)
+	if es := l.entries(t, ref); len(es) != 0 {
+		t.Fatalf("entries %d", len(es))
+	}
+	if s := l.source(t, ref); s.posted != nil || s.problem == nil || *s.problem != "too_large" {
+		t.Fatalf("source %+v", s)
+	}
+}

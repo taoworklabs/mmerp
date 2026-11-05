@@ -248,3 +248,23 @@ func TestJournalEntryCreateChecksPermissionFirst(t *testing.T) {
 		t.Fatalf("want forbidden, got %v", err)
 	}
 }
+
+// With an approval rule, sending an entry that posting would refuse is refused at once.
+func TestJournalEntrySendChecksBeforeApproval(t *testing.T) {
+	l := newLedger(t)
+	if err := l.core.Approval.SaveRule(l.core.Admin, journalType, record.Post, approval.RuleInput{
+		Flow:      approval.Flow{{Step: &approval.StepDef{Approver: approval.Approver{Kind: "role", Product: "accounting", Role: "admin"}}}},
+		MaxLevels: 3, FallbackProduct: "accounting", FallbackRole: "admin",
+	}); err != nil {
+		t.Fatal(err)
+	}
+	f := l.journal("2026-03-31")
+	f.Lines[1].Credit = 90
+	ref := l.newJournal(t, f)
+	if err := l.post(ref); !isCode(err, "journal_entry_unbalanced") {
+		t.Fatalf("unbalanced send: %v", err)
+	}
+	if e, err := l.s.JournalEntry(l.core.Admin, ref.ID); err != nil || e.Status != "draft" {
+		t.Fatalf("status %q, %v", e.Status, err)
+	}
+}

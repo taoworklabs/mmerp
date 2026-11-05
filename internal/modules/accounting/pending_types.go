@@ -7,7 +7,7 @@ type PendingDoc struct {
 	Number        string   `json:"number"`
 	Date          string   `json:"date" format:"date"`
 	LegalEntityID int64    `json:"legal_entity_id"`
-	Reason        string   `json:"reason" enum:"queued,unmapped,unbalanced"`
+	Reason        string   `json:"reason" enum:"queued,unmapped,unbalanced,too_large"`
 	MissingKinds  []string `json:"missing_kinds"`
 }
 

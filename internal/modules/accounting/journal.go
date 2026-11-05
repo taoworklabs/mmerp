@@ -21,6 +21,7 @@ func (s *Service) registerJournalEntry() {
 	s.d.Record.Register(record.Type{Code: journalEntryType, Product: "accounting", Kind: record.Document, NumberPrefix: "PK",
 		Perms:        record.Perms{View: PermView, Edit: PermEntryEdit, ViewFiles: PermView, Attach: PermEntryEdit},
 		OnTransition: journalEntryTransition,
+		BeforeSubmit: func(ctx context.Context, d record.Doc) error { _, err := checkJournalEntry(ctx, d); return err },
 		OnDelete:     deleteJournalEntry,
 	})
 }
@@ -236,17 +237,28 @@ func journalEntryTransition(ctx context.Context, d record.Doc, _ record.Status) 
 }
 
 func postJournalEntry(ctx context.Context, d record.Doc) error {
-	e, err := readJournalEntry(ctx, d.ID)
+	lines, err := checkJournalEntry(ctx, d)
 	if err != nil {
 		return err
+	}
+	_, err = writeEntry(ctx, d.LegalEntityID, platform.NullDate(&d.Date), d.Ref, nil, lines)
+	return err
+}
+
+// checkJournalEntry runs what posting needs, so sending an entry refuses what posting would:
+// accounting started, at least two balanced lines, postable accounts. It returns the lines.
+func checkJournalEntry(ctx context.Context, d record.Doc) ([]JournalLine, error) {
+	e, err := readJournalEntry(ctx, d.ID)
+	if err != nil {
+		return nil, err
 	}
 	// Read through the starts row so a start date change waits for this posting.
 	start, err := store.ShareStart.Run(ctx, d.LegalEntityID)
 	if errors.Is(err, pgx.ErrNoRows) || err == nil && d.Date < start.Time.Format(time.DateOnly) {
-		return ErrAccountingNotStarted
+		return nil, ErrAccountingNotStarted
 	}
 	if err != nil {
-		return err
+		return nil, err
 	}
 	var debit, credit int64
 	lines := make([]JournalLine, len(e.Lines))
@@ -260,19 +272,17 @@ func postJournalEntry(ctx context.Context, d record.Doc) error {
 		}
 	}
 	if len(lines) < 2 || debit != credit {
-		return ErrJournalEntryUnbalanced
+		return nil, ErrJournalEntryUnbalanced
 	}
 	// Names the first bad line; writeEntry checks again under the account locks.
 	ok, err := postableActive(ctx, uniq(ids))
 	if err != nil {
-		return err
+		return nil, err
 	}
 	for i, id := range ids {
 		if !ok[id] {
-			return lineErr(ErrAccountNotPostable, i+1)
+			return nil, lineErr(ErrAccountNotPostable, i+1)
 		}
 	}
-	date := platform.NullDate(&d.Date)
-	_, err = writeEntry(ctx, d.LegalEntityID, date, d.Ref, nil, lines)
-	return err
+	return lines, nil
 }

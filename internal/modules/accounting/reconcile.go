@@ -89,6 +89,10 @@ func (s *Service) reconcile(ctx context.Context, ref record.Ref) error {
 		src.Problem = pgtype.Text{String: "unbalanced", Valid: true}
 		return save()
 	}
+	if len(lines) > MaxLines {
+		src.Problem = pgtype.Text{String: "too_large", Valid: true}
+		return save()
+	}
 	if len(lines) > 0 {
 		if _, err := writeEntry(ctx, d.LegalEntityID, date, ref, &liveID.Int64, lines); err != nil {
 			return err

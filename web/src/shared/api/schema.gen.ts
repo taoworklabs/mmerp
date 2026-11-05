@@ -5105,7 +5105,7 @@ export interface components {
             missing_kinds: string[] | null;
             number: string;
             /** @enum {string} */
-            reason: "queued" | "unmapped" | "unbalanced";
+            reason: "queued" | "unmapped" | "unbalanced" | "too_large";
         };
         PendingList: {
             /**

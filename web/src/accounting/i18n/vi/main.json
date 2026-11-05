@@ -77,6 +77,7 @@
   "accounting.pending.reason_queued": "Chưa ghi sổ",
   "accounting.pending.reason_unmapped": "Chờ quy tắc định khoản",
   "accounting.pending.reason_unbalanced": "Không cân",
+  "accounting.pending.reason_too_large": "Quá nhiều dòng",
   "accounting.pending.empty": "Không có chứng từ chờ ghi sổ",
   "accounting.pending.empty_description": "Mọi chứng từ của pháp nhân đã vào sổ cái.",
   "accounting.entries.title": "Phiếu kế toán",

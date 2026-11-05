@@ -8279,7 +8279,8 @@
             "enum": [
               "queued",
               "unmapped",
-              "unbalanced"
+              "unbalanced",
+              "too_large"
             ],
             "type": "string"
           }
