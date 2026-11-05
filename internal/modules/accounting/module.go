@@ -10,6 +10,6 @@ func Module(s *Service) platform.Module {
 	return platform.Module{
 		Name:    "accounting",
 		Product: "accounting",
-		Routes:  func(api huma.API) { registerAccountHandlers(api, s) },
+		Routes:  func(api huma.API) { registerAccountHandlers(api, s); registerRuleHandlers(api, s) },
 	}
 }

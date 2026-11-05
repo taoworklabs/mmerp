@@ -1,4 +1,4 @@
--- TODO(task5): has_lines and the rule reference are false until entry_lines and rules exist.
+-- TODO(task5): has_lines is false until entry_lines exists.
 
 -- name: ListAccounts :many
 SELECT a.id, a.code, a.name, a.type, a.parent_id, a.active,
@@ -7,7 +7,7 @@ SELECT a.id, a.code, a.name, a.type, a.parent_id, a.active,
 FROM accounting.accounts a ORDER BY a.code;
 
 -- name: LockAccount :one
-SELECT code, type, false AS has_lines, false AS has_rule,
+SELECT code, type, false AS has_lines, EXISTS (SELECT 1 FROM accounting.rules r WHERE r.account_id = a.id) AS has_rule,
   EXISTS (SELECT 1 FROM accounting.accounts c WHERE c.parent_id = a.id) AS has_children
 FROM accounting.accounts a WHERE a.id = $1 FOR UPDATE;
 

@@ -94,7 +94,7 @@ type ListAccountsRow struct {
 	HasLines bool
 }
 
-// TODO(task5): has_lines and the rule reference are false until entry_lines and rules exist.
+// TODO(task5): has_lines is false until entry_lines exists.
 func (q *Queries) ListAccounts(ctx context.Context) ([]ListAccountsRow, error) {
 	rows, err := q.db.Query(ctx, listAccounts)
 	if err != nil {
@@ -125,7 +125,7 @@ func (q *Queries) ListAccounts(ctx context.Context) ([]ListAccountsRow, error) {
 }
 
 const lockAccount = `-- name: LockAccount :one
-SELECT code, type, false AS has_lines, false AS has_rule,
+SELECT code, type, false AS has_lines, EXISTS (SELECT 1 FROM accounting.rules r WHERE r.account_id = a.id) AS has_rule,
   EXISTS (SELECT 1 FROM accounting.accounts c WHERE c.parent_id = a.id) AS has_children
 FROM accounting.accounts a WHERE a.id = $1 FOR UPDATE
 `

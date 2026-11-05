@@ -20,5 +20,7 @@ var (
 	ErrAccountCodeTaken     = &platform.Error{Status: http.StatusConflict, Code: "account_code_taken"}
 	ErrAccountParentInvalid = &platform.Error{Status: http.StatusUnprocessableEntity, Code: "account_parent_invalid"}
 	ErrAccountNameRequired  = &platform.Error{Status: http.StatusUnprocessableEntity, Code: "account_name_required"}
+	ErrAccountNotPostable   = &platform.Error{Status: http.StatusUnprocessableEntity, Code: "account_not_postable"}
+	ErrStartDateFixed       = &platform.Error{Status: http.StatusConflict, Code: "start_date_fixed"}
 	ErrAccountInUse         = &platform.Error{Status: http.StatusConflict, Code: "account_in_use"}
 )

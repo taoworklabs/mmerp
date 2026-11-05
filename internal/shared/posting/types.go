@@ -27,3 +27,8 @@ type Line struct {
 	OrgUnitID int64
 	Amount    int64
 }
+
+// Kinds lists the kinds this package declares, in declaration order.
+func Kinds() []Kind {
+	return []Kind{SalaryExpense, EmployerInsuranceExpense, SalaryPayable, InsurancePayable, PitPayable}
+}
