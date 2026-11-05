@@ -105,11 +105,14 @@ export function Form<T extends FieldValues>({ form, onSubmit, errorFields, id, c
   }, [submit])
 
   const dirty = Object.keys(dirtyFields).length > 0 && !isSubmitting
+  // A save in flight still counts as unsaved for the page: if it fails, the edits and the error
+  // must still be there (a modal must not have closed on an outside click meanwhile).
+  const unsaved = dirty || isSubmitting
   const report = useContext(UnsavedContext)?.set
   useEffect(() => {
-    report?.(dirty)
+    report?.(unsaved)
     return () => report?.(false)
-  }, [report, dirty])
+  }, [report, unsaved])
   const blocker = useBlocker(({ currentLocation, nextLocation }) => dirty && currentLocation.pathname + currentLocation.search !== nextLocation.pathname + nextLocation.search)
   const [ask, dialog] = useConfirm()
   useEffect(() => {
