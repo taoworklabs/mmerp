@@ -1,4 +1,4 @@
-import { ActionIcon, AppShell, Box, Button, Burger, Group, Indicator, Menu, NavLink, Stack, Text, ThemeIcon, Tooltip, UnstyledButton, cx, useDisclosure, useLocalStorage, useMediaQuery } from '@mmerp/ui'
+import { ActionIcon, AppShell, Box, Button, Burger, Group, Indicator, Menu, NavLink, Stack, Text, ThemeIcon, Tooltip, UnstyledButton, breakpoint, cx, useDisclosure, useLocalStorage, useMediaQuery } from '@mmerp/ui'
 import { IconBell, IconBuildingSkyscraper, IconCheck, IconHourglass, IconInbox, IconChevronDown, IconChevronRight, IconLayoutSidebarLeftCollapse, IconLayoutSidebarLeftExpand, IconKey, IconDevices, IconLogout } from '@tabler/icons-react'
 import { useQuery } from '@tanstack/react-query'
 import { Suspense, useEffect, useState, type ReactNode } from 'react'
@@ -67,7 +67,7 @@ function Shell({ areas }: { areas: AreaManifest[] }) {
     document.addEventListener('keydown', onKey, true)
     return () => document.removeEventListener('keydown', onKey, true)
   }, [drawer, closeDrawer])
-  const wide = useMediaQuery('(min-width: 80em)', true)
+  const wide = useMediaQuery(`(min-width: ${breakpoint.lg})`, true)
   // Remembered per user; until the user chooses, it collapses below 1280px.
   const [pref, setPref] = useLocalStorage<boolean | null>(`mmerp.nav.collapsed.${me.id}`, null)
   const collapsed = pref ?? !wide

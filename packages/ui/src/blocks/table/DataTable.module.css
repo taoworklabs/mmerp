@@ -33,7 +33,7 @@
 }
 
 .strong {
-  font-weight: 600;
+  font-weight: var(--mmerp-font-weight-semibold);
 }
 
 /* An empty or zero cell steps back, so the eye stops on cells that hold something. */
@@ -52,13 +52,13 @@
 
 /* The identifier reads as the row's name, linked or not. */
 .root tbody tr:not(.totalRow) td[data-sticky] {
-  font-weight: 500;
+  font-weight: var(--mmerp-font-weight-medium);
 }
 
 /* The identifier reads as the row's name; it underlines on hover like any link. */
 .idLink {
   color: var(--mmerp-color-text);
-  font-weight: 500;
+  font-weight: var(--mmerp-font-weight-medium);
   text-decoration: none;
 }
 
@@ -69,7 +69,7 @@
 /* A group's name row and the total rows read as headings of the figures around them. */
 .groupRow td {
   background: var(--mmerp-color-elevation-surface-sunken);
-  font-weight: 600;
+  font-weight: var(--mmerp-font-weight-semibold);
 }
 
 /* The name stays in view when the row scrolls sideways. */
@@ -79,7 +79,7 @@
 }
 
 .totalRow td {
-  font-weight: 600;
+  font-weight: var(--mmerp-font-weight-semibold);
 }
 
 .totalRow td[data-sticky] {
@@ -145,7 +145,7 @@
 .cardLink {
   display: block;
   color: inherit;
-  font-weight: 600;
+  font-weight: var(--mmerp-font-weight-semibold);
   text-decoration: none;
 }
 

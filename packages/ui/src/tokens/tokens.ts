@@ -56,26 +56,28 @@ export const tokens = {
     h3: { size: 14, lineHeight: 1.43 },
   },
   space: { xxxs: 2, xxs: 4, xs: 8, sm: 12, md: 16, lg: 24, xl: 32, xxl: 48 },
-  // Radius follows role: tags 4; controls, frames and modals 6; menus 8.
-  radius: { xs: 2, sm: 4, md: 6, lg: 8, xl: 12 },
+  // Radius follows role: tags 4; controls, frames and modals 6; menus 8; full for anything round
+  // (avatars, dots, pills), a pill when the box is wider than tall.
+  radius: { xs: 2, sm: 4, md: 6, lg: 8, full: '9999px' },
   // Only overlays cast a shadow, and a footer while content scrolls under it.
   shadow: {
     xs: '0 1px 1px #1E1F2140, 0 0 1px #1E1F214F',
     sm: '0 1px 1px #1E1F2140, 0 0 1px #1E1F214F',
     md: '0 8px 12px #1E1F2126, 0 0 1px #1E1F214F',
-    lg: '0 8px 12px #1E1F2126, 0 0 1px #1E1F214F',
-    xl: '0 8px 12px #1E1F2126, 0 0 1px #1E1F214F',
     footer: '0 -6px 8px -6px #1E1F2126',
   },
-  controlHeight: { sm: 30, lg: 40 },
+  controlHeight: { xs: 24, sm: 30, lg: 40 },
+  // Table rows per density; the header row is a step shorter than a body row.
+  tableRowHeight: { compact: 32, standard: 40, comfortable: 48 },
+  tableHeaderHeight: { compact: 28, standard: 36, comfortable: 40 },
   layoutWidth: { content: 1200, side: 360, aside: 480, detail: 1440 },
   filterWidth: { search: 280, searchMin: 160, chip: 320, menu: 240 },
   motionDuration: 150,
   touchTarget: 44,
-  // Dialogs and drawers sit above the app shell and a page's sticky bars; floating lists, menus and
-  // tooltips sit above any dialog or drawer they open from.
-  zIndexModal: 200,
-  zIndexPopup: 300,
+  // Stacking of what floats over the page: a narrow screen's action bar, the navigation drawer over
+  // it, dialogs and drawers over both, then floating lists, menus, tooltips and toasts over any
+  // dialog they open from.
+  zIndex: { actionBar: 100, navigation: 101, modal: 200, popup: 300 },
 } as const
 
 // md is where navigation becomes a drawer (1024px), lg where it stops auto-collapsing (1280px).

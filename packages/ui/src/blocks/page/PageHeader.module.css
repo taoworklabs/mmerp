@@ -83,5 +83,5 @@
 }
 
 .backButton {
-  border-radius: 1000px;
+  border-radius: var(--mmerp-radius-full);
 }

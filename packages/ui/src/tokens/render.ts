@@ -7,7 +7,7 @@ function rem(px: number): string {
   return `${px / 16}rem`
 }
 
-// filterWidth keys like searchMin need a CSS-friendly name.
+// Keys like searchMin or actionBar need a CSS-friendly name.
 function kebab(key: string): string {
   return key.replace(/[A-Z]/g, (letter) => `-${letter.toLowerCase()}`)
 }
@@ -53,15 +53,23 @@ function sizeLines(): string[] {
   for (const [key, px] of Object.entries(tokens.space)) {
     lines.push(`--mmerp-space-${key}: ${rem(px)};`)
   }
-  for (const [key, px] of Object.entries(tokens.radius)) {
-    lines.push(`--mmerp-radius-${key}: ${rem(px)};`)
+  for (const [key, value] of Object.entries(tokens.radius)) {
+    lines.push(`--mmerp-radius-${key}: ${typeof value === 'number' ? rem(value) : value};`)
   }
   for (const [key, value] of Object.entries(tokens.shadow)) {
     lines.push(`--mmerp-shadow-${key}: ${value};`)
   }
   lines.push(`--mmerp-control-height: ${rem(tokens.controlHeight.sm)};`)
-  lines.push(`--mmerp-control-height-sm: ${rem(tokens.controlHeight.sm)};`)
-  lines.push(`--mmerp-control-height-lg: ${rem(tokens.controlHeight.lg)};`)
+  for (const [key, px] of Object.entries(tokens.controlHeight)) {
+    lines.push(`--mmerp-control-height-${key}: ${rem(px)};`)
+  }
+  // The standard density takes the bare name.
+  for (const [key, px] of Object.entries(tokens.tableRowHeight)) {
+    lines.push(`--mmerp-table-row-height${key === 'standard' ? '' : `-${key}`}: ${rem(px)};`)
+  }
+  for (const [key, px] of Object.entries(tokens.tableHeaderHeight)) {
+    lines.push(`--mmerp-table-header-height${key === 'standard' ? '' : `-${key}`}: ${rem(px)};`)
+  }
   lines.push(`--mmerp-content-width: ${rem(tokens.layoutWidth.content)};`)
   lines.push(`--mmerp-side-width: ${rem(tokens.layoutWidth.side)};`)
   lines.push(`--mmerp-aside-width: ${rem(tokens.layoutWidth.aside)};`)
@@ -71,8 +79,9 @@ function sizeLines(): string[] {
   }
   lines.push(`--mmerp-motion-duration: ${tokens.motionDuration}ms;`)
   lines.push(`--mmerp-touch-target: ${tokens.touchTarget}px;`)
-  lines.push(`--mmerp-z-index-modal: ${tokens.zIndexModal};`)
-  lines.push(`--mmerp-z-index-popup: ${tokens.zIndexPopup};`)
+  for (const [key, value] of Object.entries(tokens.zIndex)) {
+    lines.push(`--mmerp-z-index-${kebab(key)}: ${value};`)
+  }
   return lines
 }
 

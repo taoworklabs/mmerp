@@ -66,6 +66,7 @@ import {
   Tooltip,
   VisuallyHidden,
   addDays,
+  breakpoint,
   icon,
   useDisclosure,
   useMediaQuery,
@@ -161,7 +162,7 @@ const nav: { group?: string; label: string; icon: typeof IconUsers; page?: Route
 function Shell({ children }: { children: ReactNode }) {
   const [drawer, { toggle: toggleDrawer }] = useDisclosure()
   const [collapsed, setCollapsed] = useState(false)
-  const mobile = useMediaQuery('(max-width: 63.99em)')
+  const mobile = useMediaQuery(`not all and (min-width: ${breakpoint.md})`)
   const narrow = collapsed && !mobile
   const groups = [...new Set(nav.map((n) => n.group))]
   return (

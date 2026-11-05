@@ -26,6 +26,14 @@ describe('renderTokensCss', () => {
     expect(css).toContain('--mmerp-radius-lg: 0.5rem;')
     expect(css).toContain('--mmerp-font-size-xl: 1.25rem;')
     expect(css).toContain('--mmerp-content-width: 75rem;')
+    expect(css).toContain('--mmerp-control-height-xs: 1.5rem;')
+    expect(css).toContain('--mmerp-table-row-height: 2.5rem;')
+    expect(css).toContain('--mmerp-table-header-height-compact: 1.75rem;')
+  })
+  it('keeps the full radius in px and names the stacking order in kebab case', () => {
+    expect(css).toContain('--mmerp-radius-full: 9999px;')
+    expect(css).toContain('--mmerp-z-index-action-bar: 100;')
+    expect(css).toContain('--mmerp-z-index-popup: 300;')
   })
   it('keeps breakpoints and icon sizes out of CSS', () => {
     expect(css).not.toContain('breakpoint')

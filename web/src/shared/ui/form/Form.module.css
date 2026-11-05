@@ -10,7 +10,7 @@
   height: 1.125rem;
   padding: 0;
   justify-content: center;
-  border-radius: 999px;
+  border-radius: var(--mmerp-radius-full);
 }
 
 .alert {

@@ -24,12 +24,12 @@
 }
 
 .tr {
-  height: 40px;
+  height: var(--mmerp-table-row-height);
 }
 
 /* Header row is shorter than a body row. */
 .thead .tr {
-  height: 36px;
+  height: var(--mmerp-table-header-height);
 }
 
 .tr[aria-selected='true'] {
@@ -74,7 +74,7 @@
 
 .th[data-look='strong'],
 .td[data-look='strong'] {
-  font-weight: 600;
+  font-weight: var(--mmerp-font-weight-semibold);
 }
 
 /* The identifier column stays in view when a wide table scrolls sideways, on one line: the other
@@ -143,10 +143,10 @@
   color: var(--mmerp-color-text);
 }
 
-.root[data-density='compact'] .tr { height: 32px; }
-.root[data-density='compact'] .thead .tr { height: 28px; }
-.root[data-density='comfortable'] .tr { height: 48px; }
-.root[data-density='comfortable'] .thead .tr { height: 40px; }
+.root[data-density='compact'] .tr { height: var(--mmerp-table-row-height-compact); }
+.root[data-density='compact'] .thead .tr { height: var(--mmerp-table-header-height-compact); }
+.root[data-density='comfortable'] .tr { height: var(--mmerp-table-row-height-comfortable); }
+.root[data-density='comfortable'] .thead .tr { height: var(--mmerp-table-header-height-comfortable); }
 
 .root[data-striped] .tbody .tr:nth-child(even):not([aria-selected='true']),
 .root[data-striped] .tbody .tr:nth-child(even):not([aria-selected='true']) .td[data-sticky] {

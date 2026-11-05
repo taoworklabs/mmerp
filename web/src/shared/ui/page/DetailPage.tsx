@@ -1,4 +1,4 @@
-import { ActionBar, Group, RecordColumns, useMediaQuery } from '@mmerp/ui'
+import { breakpoint, ActionBar, Group, RecordColumns, useMediaQuery } from '@mmerp/ui'
 import type { ReactNode } from 'react'
 import { MoreActions } from '../MoreActions'
 import { Page, type PageHeaderProps } from './Page'
@@ -20,7 +20,7 @@ type Props = Omit<PageHeaderProps, 'tabs' | 'withBack' | 'plain'> & {
 // about 60/40 of plain Panels parted by rules, one column below 1024px with the side column under
 // the main one. Header and columns share one width and left edge.
 export function DetailPage({ more, banner, side, narrowActions, actions, children, ...header }: Props) {
-  const wide = useMediaQuery('(min-width: 64em)', true)
+  const wide = useMediaQuery(`(min-width: ${breakpoint.md})`, true)
   // Rendered in one place only, so each action exists once on the page.
   const bar = !wide && narrowActions
   const all = !bar && (actions || more) && (

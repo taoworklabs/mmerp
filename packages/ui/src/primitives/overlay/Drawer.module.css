@@ -82,7 +82,7 @@
 .title {
   margin: 0;
   font-size: var(--mmerp-font-size-lg);
-  font-weight: 650;
+  font-weight: var(--mmerp-font-weight-heading);
   overflow-wrap: anywhere;
 }
 
