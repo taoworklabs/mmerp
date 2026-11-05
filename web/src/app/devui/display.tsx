@@ -43,7 +43,7 @@ import { MissingValue } from '@/shared/ui/MissingValue'   // an empty value user
 <KeyFacts facts={[[label, value], …]} />   // in the page header's summary`,
   treeList: `<TreeList label nodes render meta? toggleLabel />
 import { OrgUnitName } from '@/shared/ui/OrgUnitName'   // render an org unit`,
-  statusBadge: `<StatusBadge tone="positive" | "neutral" | "info" | "warning" | "negative">{label}</StatusBadge>`,
+  statusBadge: `<StatusBadge tone="success" | "neutral" | "info" | "warning" | "negative">{label}</StatusBadge>`,
   personAvatar: `<PersonAvatar name size="sm" | "md" | "lg" />
 import { PersonName } from '@/shared/ui/avatar'   // avatar and name together`,
   tiles: `<TileGrid><StatTile label value to error? onRetry? /><LinkTile icon title to /></TileGrid>`,
@@ -203,7 +203,7 @@ export function FieldListDoc() {
                 </Anchor>,
               ],
               ['Thời gian nghỉ', '12/10/2026 – 16/10/2026'],
-              ['Trạng thái', <StatusBadge key="s" tone="positive">{t('shared.devui.status_positive')}</StatusBadge>],
+              ['Trạng thái', <StatusBadge key="s" tone="success">{t('shared.devui.status_positive')}</StatusBadge>],
               ['Nơi làm việc', t('shared.devui.long_value')],
               ['Ghi chú', '—'],
             ]}
@@ -272,18 +272,18 @@ export function StatusBadgeDoc() {
       example={
         <Case>
           <Group>
-            <StatusBadge tone="positive">{t('shared.devui.status_positive')}</StatusBadge>
+            <StatusBadge tone="success">{t('shared.devui.status_positive')}</StatusBadge>
           </Group>
         </Case>
       }
       variants={
         <Case label={t('shared.devui.case_record_status')}>
           <Group>
-            <StatusBadge tone="positive">{t('shared.devui.status_positive')}</StatusBadge>
+            <StatusBadge tone="success">{t('shared.devui.status_positive')}</StatusBadge>
             <StatusBadge tone="neutral">{t('shared.devui.status_neutral')}</StatusBadge>
             <StatusBadge tone="info">{t('shared.devui.status_info')}</StatusBadge>
             <StatusBadge tone="warning">{t('shared.devui.status_warning')}</StatusBadge>
-            <StatusBadge tone="negative">{t('shared.devui.status_negative')}</StatusBadge>
+            <StatusBadge tone="danger">{t('shared.devui.status_negative')}</StatusBadge>
           </Group>
         </Case>
       }
@@ -297,7 +297,7 @@ export function StatusBadgeDoc() {
           bad={
             <>
               <Group>
-                <StatusBadge tone="positive">{t('shared.devui.status_neutral')}</StatusBadge>
+                <StatusBadge tone="success">{t('shared.devui.status_neutral')}</StatusBadge>
               </Group>
               <Text size="sm" tone="dimmed">
                 {t('shared.devui.dont_badge_tone')}

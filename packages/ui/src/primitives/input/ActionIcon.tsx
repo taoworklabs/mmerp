@@ -4,12 +4,12 @@ import { cx } from '../../internal/cx.ts'
 import type { RenderProp } from '../../internal/render.ts'
 import type { StyleVars } from '../../internal/style.ts'
 import { Loader } from '../feedback/Loader.tsx'
-import { buttonColorVars, type ButtonColor, type ButtonVariant } from './Button.tsx'
+import { buttonToneVars, type ButtonTone, type ButtonVariant } from './Button.tsx'
 import styles from './ActionIcon.module.css'
 
 export interface ActionIconProps extends Omit<React.ComponentPropsWithRef<'button'>, 'color'> {
   variant?: ButtonVariant
-  color?: ButtonColor
+  tone?: ButtonTone
   size?: 'xs' | 'sm'
   loading?: boolean
   render?: RenderProp
@@ -18,7 +18,7 @@ export interface ActionIconProps extends Omit<React.ComponentPropsWithRef<'butto
 
 export function ActionIcon({
   variant = 'filled',
-  color = 'primary',
+  tone = 'primary',
   size = 'sm',
   loading,
   disabled,
@@ -28,7 +28,7 @@ export function ActionIcon({
   children,
   ...props
 }: ActionIconProps) {
-  const vars: StyleVars = { ...style, ...buttonColorVars(variant, color) }
+  const vars: StyleVars = { ...style, ...buttonToneVars(variant, tone) }
   return (
     <ButtonBase
       render={render}

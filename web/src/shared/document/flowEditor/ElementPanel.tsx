@@ -124,7 +124,7 @@ function StepPanel({ path }: { path: string }) {
                 {t('shared.rule.move_down')}
               </Button>
             )}
-            <Button variant="subtle" color="danger" onClick={() => remove(path)}>
+            <Button variant="subtle" tone="danger" onClick={() => remove(path)}>
               {t('shared.rule.remove_step')}
             </Button>
           </Group>
@@ -181,7 +181,7 @@ function SplitPanel({ path }: { path: string }) {
             <Button variant="light" leftSection={<IconPlus {...icon.button} />} onClick={addBranch}>
               {t(one ? 'shared.rule.add_case' : 'shared.rule.add_branch')}
             </Button>
-            <Button variant="subtle" color="danger" onClick={() => remove(path)}>
+            <Button variant="subtle" tone="danger" onClick={() => remove(path)}>
               {t('shared.rule.remove')}
             </Button>
           </Group>
@@ -222,7 +222,7 @@ function BranchPanel({ path }: { path: string }) {
             )}
             {/* A split keeps at least one branch. */}
             {count > 1 && (
-              <Button variant="subtle" color="danger" onClick={() => remove(path)}>
+              <Button variant="subtle" tone="danger" onClick={() => remove(path)}>
                 {t(one ? 'shared.rule.remove_case' : 'shared.rule.remove_branch')}
               </Button>
             )}

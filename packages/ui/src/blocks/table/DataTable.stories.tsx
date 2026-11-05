@@ -18,7 +18,7 @@ const columns: Column<Employee>[] = [
     header: 'Trạng thái',
     role: 'status',
     kind: 'status',
-    render: (e) => <Badge color={e.status === 'active' ? 'success' : 'gray'}>{e.status === 'active' ? 'Đang làm' : 'Đã nghỉ'}</Badge>,
+    render: (e) => <Badge tone={e.status === 'active' ? 'success' : 'neutral'}>{e.status === 'active' ? 'Đang làm' : 'Đã nghỉ'}</Badge>,
   },
 ]
 
@@ -352,7 +352,7 @@ export const RowMenu: StoryObj<{ onArchive(employee: Employee): void }> = {
       menu={(row: Employee) => (
         <>
           <Menu.Item onClick={() => args.onArchive(row)}>Lưu trữ</Menu.Item>
-          <Menu.Item color="danger">Xóa</Menu.Item>
+          <Menu.Item tone="danger">Xóa</Menu.Item>
         </>
       )}
     />

@@ -57,7 +57,7 @@ export function PeriodNav<M extends string>(props: {
       <SegmentedControl aria-label={modeLabel} data={modes} value={mode} onChange={(v) => onMode(v as M)} />
       <Group gap="xs">
         <Tooltip label={prevLabel}>
-          <ActionIcon variant="subtle" color="gray" aria-label={prevLabel} onClick={onPrev}>
+          <ActionIcon variant="subtle" tone="neutral" aria-label={prevLabel} onClick={onPrev}>
             <IconChevronLeft {...icon.button} />
           </ActionIcon>
         </Tooltip>
@@ -65,7 +65,7 @@ export function PeriodNav<M extends string>(props: {
           {title}
         </Text>
         <Tooltip label={nextLabel}>
-          <ActionIcon variant="subtle" color="gray" aria-label={nextLabel} onClick={onNext}>
+          <ActionIcon variant="subtle" tone="neutral" aria-label={nextLabel} onClick={onNext}>
             <IconChevronRight {...icon.button} />
           </ActionIcon>
         </Tooltip>

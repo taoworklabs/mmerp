@@ -1,19 +1,19 @@
 import type * as React from 'react'
 import { cx } from '../../internal/cx.ts'
 import type { StyleVars } from '../../internal/style.ts'
-import type { ColorName } from '../../tokens/tokens.ts'
+import { ramp, type Tone } from '../../internal/tone.ts'
 import styles from './Indicator.module.css'
 
-export interface IndicatorProps extends React.ComponentPropsWithRef<'div'> {
+export interface IndicatorProps extends Omit<React.ComponentPropsWithRef<'div'>, 'color'> {
   label?: React.ReactNode
-  color?: ColorName
+  tone?: Tone
   disabled?: boolean
   // Pulls the badge in from the corner, in px; a round child (an icon button) needs it.
   offset?: number
 }
 
-export function Indicator({ label, color = 'primary', disabled, offset = 0, className, style, children, ...props }: IndicatorProps) {
-  const vars: StyleVars = { ...style, '--mmerp-indicator-bg': `var(--mmerp-color-${color}-6)`, '--mmerp-indicator-offset': `${offset}px` }
+export function Indicator({ label, tone = 'primary', disabled, offset = 0, className, style, children, ...props }: IndicatorProps) {
+  const vars: StyleVars = { ...style, '--mmerp-indicator-bg': `var(--mmerp-color-${ramp(tone)}-6)`, '--mmerp-indicator-offset': `${offset}px` }
   return (
     <div className={cx(styles.root, className)} style={vars} {...props}>
       {children}

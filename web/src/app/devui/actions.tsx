@@ -282,7 +282,7 @@ export function UseActionDoc() {
               </Button>
               <Button
                 variant="subtle"
-                color="danger"
+                tone="danger"
                 onClick={() =>
                   void run(
                     async () => {
@@ -331,19 +331,19 @@ export function UseConfirmDoc() {
         <DoDont
           good={
             <Group justify="end">
-              <Button variant="subtle" color="gray">
+              <Button variant="subtle" tone="neutral">
                 {t('shared.form.cancel')}
               </Button>
-              <Button color="danger">{t('shared.devui.danger')}</Button>
+              <Button tone="danger">{t('shared.devui.danger')}</Button>
             </Group>
           }
           bad={
             <>
               <Group justify="end">
-                <Button variant="subtle" color="gray">
+                <Button variant="subtle" tone="neutral">
                   {t('shared.form.cancel')}
                 </Button>
-                <Button color="danger">{t('shared.devui.yes')}</Button>
+                <Button tone="danger">{t('shared.devui.yes')}</Button>
               </Group>
               <Text size="sm" tone="dimmed">
                 {t('shared.devui.dont_confirm_yes')}

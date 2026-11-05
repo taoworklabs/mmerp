@@ -160,7 +160,7 @@ function DecisionButtons({ d, step, namedAria }: { d: Decide; step: ApprovalStep
       {can('reject') && (
         <Button
           variant="outline"
-          color="danger"
+          tone="danger"
           leftSection={<IconX {...icon.button} />}
           disabled={d.busy}
           aria-label={namedAria ? t('shared.approval.reject_step', { n: step.position }) : undefined}
@@ -261,7 +261,7 @@ function Instance({ docType, id, inst, onDone, sticky, subject, decideElsewhere 
               role="listitem"
               active
               aria-current={status === 'open' ? 'step' : undefined}
-              color={look.color}
+              tone={look.tone}
               bullet={look.icon && <look.icon size={12} stroke={2.5} aria-hidden />}
               lineVariant={status === 'approved' || status === 'rejected' ? 'solid' : 'dashed'}
             >
@@ -302,12 +302,12 @@ function requestTitle(t: TFunction, docType: string, action: string) {
 }
 
 // stepLook: approved is a green check, rejected a red cross, an open step amber, the rest grey.
-const stepLook: Record<ApprovalStep['status'], { color: BadgeProps['color']; icon?: TablerIcon }> = {
-  approved: { color: 'success', icon: IconCheck },
-  rejected: { color: 'danger', icon: IconX },
-  open: { color: 'warning' },
-  waiting: { color: 'gray' },
-  cancelled: { color: 'gray' },
+const stepLook: Record<ApprovalStep['status'], { tone: BadgeProps['tone']; icon?: TablerIcon }> = {
+  approved: { tone: 'success', icon: IconCheck },
+  rejected: { tone: 'danger', icon: IconX },
+  open: { tone: 'warning' },
+  waiting: { tone: 'neutral' },
+  cancelled: { tone: 'neutral' },
 }
 
 // leaves lists the step positions a plan node names, in order.
@@ -339,8 +339,8 @@ function StepBody({ step, onReassign, busy, decision }: { step: ApprovalStep; on
         <Text size="sm" weight={600}>
           {t('shared.approval.step', { n: step.position })}
         </Text>
-        <Badge color={stepLook[step.status].color}>{t(`shared.approval.step_status.${step.status}`)}</Badge>
-        {step.overdue && <Badge color="danger">{t('shared.approval.overdue')}</Badge>}
+        <Badge tone={stepLook[step.status].tone}>{t(`shared.approval.step_status.${step.status}`)}</Badge>
+        {step.overdue && <Badge tone="danger">{t('shared.approval.overdue')}</Badge>}
       </Group>
       {step.due_at && step.status === 'open' && (
         <Text size="xs" tone="dimmed">

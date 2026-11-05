@@ -73,9 +73,9 @@ export function InboxGroup({ label }: { label: string }) {
 }
 
 // InboxIcon is the kind of an InboxRow's item: its icon tinted in the kind's colour, in a circle.
-export function InboxIcon({ icon: Icon, color }: { icon: TablerIcon; color: ThemeIconProps['color'] }) {
+export function InboxIcon({ icon: Icon, tone }: { icon: TablerIcon; tone: ThemeIconProps['tone'] }) {
   return (
-    <ThemeIcon variant="light" color={color} size={36} circle aria-hidden>
+    <ThemeIcon variant="light" tone={tone} size={36} circle aria-hidden>
       <Icon {...icon.button} />
     </ThemeIcon>
   )

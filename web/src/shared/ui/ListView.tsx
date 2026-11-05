@@ -74,7 +74,7 @@ function ViewsMenu({ settings, onChange }: { settings: ListSettings; onChange: (
             {t('shared.views.save')}
           </Menu.Item>
           {active && (
-            <Menu.Item color="danger" leftSection={<IconTrash {...icon.text} />} onClick={() => void onChange({ ...settings, views: settings.views.filter((v) => v !== active) })}>
+            <Menu.Item tone="danger" leftSection={<IconTrash {...icon.text} />} onClick={() => void onChange({ ...settings, views: settings.views.filter((v) => v !== active) })}>
               {t('shared.views.delete', { name: active.name })}
             </Menu.Item>
           )}

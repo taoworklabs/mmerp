@@ -159,7 +159,7 @@ function Fold({ items }: { items: Item[] }) {
       </>
     )
   return (
-    <FeedRow at={items[0]!.at} bullet={<Bullet look={{ color: 'gray', icon: IconEye }} />}>
+    <FeedRow at={items[0]!.at} bullet={<Bullet look={{ tone: 'neutral', icon: IconEye }} />}>
       <Did>{t('shared.activity.folded', { count: items.length })}</Did>{' '}
       <Anchor render={<button />} type="button" size="sm" onClick={() => setOpen(true)}>
         {t('shared.activity.show')}

@@ -60,7 +60,7 @@ export function Drawer({
           >
             <div className={styles.header}>
               <BaseDrawer.Title className={styles.title}>{title}</BaseDrawer.Title>
-              <ActionIcon variant="subtle" color="gray" aria-label={closeLabel} onClick={onClose}>
+              <ActionIcon variant="subtle" tone="neutral" aria-label={closeLabel} onClick={onClose}>
                 <CloseIcon size={12} />
               </ActionIcon>
             </div>

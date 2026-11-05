@@ -62,7 +62,7 @@ function EditLines<L extends object>({ name, label, columns: all, newLine, addLa
   const removable = lines.fields.length > minLines
   const remove = (i: number) => (
     <Tooltip label={removeLabel(i + 1)}>
-      <ActionIcon variant="subtle" color="gray" aria-label={removeLabel(i + 1)} onClick={() => lines.remove(i)}>
+      <ActionIcon variant="subtle" tone="neutral" aria-label={removeLabel(i + 1)} onClick={() => lines.remove(i)}>
         <IconTrash {...icon.button} />
       </ActionIcon>
     </Tooltip>

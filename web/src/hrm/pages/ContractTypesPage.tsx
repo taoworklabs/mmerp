@@ -32,7 +32,7 @@ export function ContractTypesPage() {
       header: t('hrm.contract_type.active'),
       role: 'status',
       kind: 'status',
-      render: (x) => <StatusBadge tone={x.active ? 'positive' : 'neutral'}>{t(x.active ? 'hrm.contract_type.in_use' : 'hrm.contract_type.retired')}</StatusBadge>,
+      render: (x) => <StatusBadge tone={x.active ? 'success' : 'neutral'}>{t(x.active ? 'hrm.contract_type.in_use' : 'hrm.contract_type.retired')}</StatusBadge>,
     },
   ]
   const body = (

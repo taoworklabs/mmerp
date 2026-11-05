@@ -114,7 +114,7 @@ export const WithBadge: Story = {
     title: 'Thông tin chính',
     icon: <IconUser size={16} stroke={1.5} aria-hidden />,
     badge: (
-      <Badge color="danger" aria-label="2 trường còn lỗi">
+      <Badge tone="danger" aria-label="2 trường còn lỗi">
         2
       </Badge>
     ),

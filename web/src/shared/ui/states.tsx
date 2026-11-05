@@ -15,7 +15,7 @@ export function EmptyState({ title, description, action, icon: Icon = IconInbox 
   return (
     <Paper withBorder padding="xl" className={classes.empty}>
       <Stack align="center" gap="xs">
-        <ThemeIcon variant="light" color="gray" size={48} circle aria-hidden>
+        <ThemeIcon variant="light" tone="neutral" size={48} circle aria-hidden>
           <Icon {...icon.empty} />
         </ThemeIcon>
         <Text weight={600}>{title}</Text>

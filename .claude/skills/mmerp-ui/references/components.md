@@ -10,10 +10,10 @@ Areas take from `@mmerp/ui` only the layout and text primitives `Anchor`, `Butto
 | --- | --- | --- |
 | Primary | `<Button>` (filled, primary) | The single main action of a view: Save, Create, Approve |
 | Default | `variant="default"` (white, thin border) | Every other action: Discard changes, Export, Retry, Clear filters |
-| Danger | `color="danger"` (filled) | Only the confirm button of a destructive confirmation dialog |
-| Danger text | `variant="subtle" color="danger"` | Every destructive action that asks first: Delete draft, Cancel document, Revoke |
-| Danger outline | `variant="outline" color="danger"` | Only Reject (`ApprovalDecision`, the inbox's `ApprovalPanel`), paired with Approve |
-| Subtle | `variant="subtle"` | Low-emphasis action in content: Add row, Change approver; `color="gray"` for the way out beside a primary button (Cancel, "Quay lại") |
+| Danger | `tone="danger"` (filled) | Only the confirm button of a destructive confirmation dialog |
+| Danger text | `variant="subtle" tone="danger"` | Every destructive action that asks first: Delete draft, Cancel document, Revoke |
+| Danger outline | `variant="outline" tone="danger"` | Only Reject (`ApprovalDecision`, the inbox's `ApprovalPanel`), paired with Approve |
+| Subtle | `variant="subtle"` | Low-emphasis action in content: Add row, Change approver; `tone="neutral"` for the way out beside a primary button (Cancel, "Quay lại") |
 | Light | `variant="light"` | Adding to a form from inside it, with `IconPlus`: "Add line" under lines (`LinesTable`), "Add case" / "Add branch" in an approval rule's split panel (steps are inserted with the diagram's ⊕), "Add sensitive details"; the selected state of a toggle-like button (header icons on their own page) |
 
 Every button has the one size, the default `sm` (30px), with `icon.button` (18px), wherever it sits: page header, tabs, section headers, the side column, footers, among content. Never set `size` on a button; a less important action is quieter in style, not smaller.
@@ -32,23 +32,23 @@ Do:
 Don't:
 
 ```tsx
-<Button variant="outline" color="teal">…</Button>   // invented variant and colour
+<Button variant="outline" tone="teal">…</Button>   // invented variant and colour
 <Button size="md">…</Button>                          // off the two control heights
 <Button>{t('a')}</Button><Button>{t('b')}</Button>    // two primary buttons in one view
-<Button color="danger">{t('shared.export')}</Button>  // red for an action that loses nothing
+<Button tone="danger">{t('shared.export')}</Button>  // red for an action that loses nothing
 ```
 
 Where each one goes, and how many per place: `actions.md`.
 
 ## Icon button
 
-`ActionIcon variant="subtle" color="gray"` with the icon at `icon.button`, wrapped in a `Tooltip`, with an `aria-label` that repeats the tooltip. Keep the default `size="sm"`: it is the control height, so it lines up with buttons and inputs beside it (`xs`, 24px, only inside a dense control); a remove-row button is grey, never red.
+`ActionIcon variant="subtle" tone="neutral"` with the icon at `icon.button`, wrapped in a `Tooltip`, with an `aria-label` that repeats the tooltip. Keep the default `size="sm"`: it is the control height, so it lines up with buttons and inputs beside it (`xs`, 24px, only inside a dense control); a remove-row button is grey, never red.
 
 `ActionIcon` is not on the areas' allowlist: it is used inside `shared/ui`, `shared/document` and `app` (remove-row in `LinesTable`, attachments, `DayGrid`'s previous/next). An area takes an icon button from the `shared/ui` component that owns it; if none fits, add one there.
 
 ```tsx
 <Tooltip label={t('shared.attachments.remove')}>
-  <ActionIcon variant="subtle" color="gray" aria-label={t('shared.attachments.remove')} onClick={remove}>
+  <ActionIcon variant="subtle" tone="neutral" aria-label={t('shared.attachments.remove')} onClick={remove}>
     <IconTrash {...icon.button} />
   </ActionIcon>
 </Tooltip>
@@ -79,14 +79,14 @@ Where each one goes, and how many per place: `actions.md`.
 | Component | Use |
 | --- | --- |
 | `DocumentStatus` (`shared/document`) | A document's `draft` / `pending_approval` / `posted` / `cancelled`. Colours are fixed: neutral, warning, success, danger. A document type may rename the label (`<doc_type>.status.<status>`), never recolour it |
-| `StatusBadge tone=…` (`shared/ui/StatusBadge`) | A catalog record's state or a module's own progress: `positive`, `neutral`, `info`, `warning`, `negative` |
+| `StatusBadge tone=…` (`shared/ui/StatusBadge`) | A catalog record's state or a module's own progress: `success`, `neutral`, `info`, `warning`, `danger` |
 
 Both render a tinted badge: 20px tall, 12px text, weight 500, radius 4, sentence case, no dot, no icon. The label always names the state. The badge is a `span`, so it may sit inside a sentence (the activity feed's "moved to Pending"). Module progress (delivery, payment, ordered) uses `neutral` or `info`, so the four document colours keep their meaning; the area wraps it in its own small component (e.g. `sales/components/DocProgress.tsx`).
 
 A document list filters by status with `DocumentStatusFilter` (`shared/document`). Any other status label outside the badge comes from `useStatusLabel()` (`shared/document`): `label(docType, status)`, with the same `docType` the area passes to `DocumentStatus` (its record type, e.g. `docTypeOf(kind)` in sales).
 
 ```tsx
-<StatusBadge tone={active ? 'positive' : 'neutral'}>{t(active ? 'sales.customer.status.active' : 'sales.customer.status.inactive')}</StatusBadge>
+<StatusBadge tone={active ? 'success' : 'neutral'}>{t(active ? 'sales.customer.status.active' : 'sales.customer.status.inactive')}</StatusBadge>
 ```
 
 ## Notice (banner)

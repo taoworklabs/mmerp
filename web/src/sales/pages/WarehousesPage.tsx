@@ -69,7 +69,7 @@ export function WarehousesPage() {
       header: t('sales.warehouse.status'),
       role: 'status',
       kind: 'status',
-      render: (x) => <StatusBadge tone={x.active ? 'positive' : 'neutral'}>{t(x.active ? 'sales.warehouse.in_use' : 'sales.warehouse.retired')}</StatusBadge>,
+      render: (x) => <StatusBadge tone={x.active ? 'success' : 'neutral'}>{t(x.active ? 'sales.warehouse.in_use' : 'sales.warehouse.retired')}</StatusBadge>,
     },
   ]
   const view = useListView('sales.warehouses', columns)

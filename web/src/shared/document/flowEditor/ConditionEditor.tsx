@@ -61,7 +61,7 @@ export function ConditionEditor({ path, ctx, depth, onEmpty }: { path: string; c
         }
         const remove = !readOnly && (
           <Tooltip label={t(r.group ? 'shared.rule.remove_group' : 'shared.rule.remove_cond')}>
-            <ActionIcon variant="subtle" color="gray" aria-label={t(r.group ? 'shared.rule.remove_group' : 'shared.rule.remove_cond')} onClick={removeRow}>
+            <ActionIcon variant="subtle" tone="neutral" aria-label={t(r.group ? 'shared.rule.remove_group' : 'shared.rule.remove_cond')} onClick={removeRow}>
               <IconX {...icon.button} />
             </ActionIcon>
           </Tooltip>

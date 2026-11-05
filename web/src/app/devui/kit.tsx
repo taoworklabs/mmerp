@@ -14,8 +14,8 @@ const sample = { person: 'NV0019 · Lâm Đức Thịnh', phone: '0912 345 678',
 const code = {
   button: `<Button>                              // primary: one per place
 <Button variant="default">            // secondary
-<Button variant="subtle" color="gray"> // the way out beside a primary
-<Button color="danger">               // destructive, after a confirmation`,
+<Button variant="subtle" tone="neutral"> // the way out beside a primary
+<Button tone="danger">               // destructive, after a confirmation`,
   anchor: `<Anchor render={<Link to={path} />}>  // a record or page
 <Anchor href="tel:…">                 // a phone number or email
 <Anchor render={<button />}>           // only for "show more" inside text`,
@@ -24,7 +24,7 @@ const code = {
   loader: `<Loader size="sm" label={t('shared.state.loading')} />   // beside the text of what is loading`,
   skeleton: `<Skeleton height="1em" width="4ch" />   // the shape of one small value`,
   tooltip: `<Tooltip label={t('…')}>
-  <Button variant="subtle" color="gray" aria-label={t('…')}>{icon}</Button>
+  <Button variant="subtle" tone="neutral" aria-label={t('…')}>{icon}</Button>
 </Tooltip>`,
 }
 
@@ -83,7 +83,7 @@ export function ButtonDoc() {
       example={
         <Case>
           <Group justify="end">
-            <Button variant="subtle" color="gray">
+            <Button variant="subtle" tone="neutral">
               {t('shared.form.cancel')}
             </Button>
             <Button leftSection={<IconPlus {...icon.button} />}>{t('shared.devui.primary')}</Button>
@@ -101,7 +101,7 @@ export function ButtonDoc() {
             <Group>
               <Button variant="default">{t('shared.devui.secondary')}</Button>
               <Button variant="subtle">{t('shared.devui.add')}</Button>
-              <Button variant="subtle" color="gray">
+              <Button variant="subtle" tone="neutral">
                 {t('shared.form.cancel')}
               </Button>
               <Button variant="light" leftSection={<IconPlus {...icon.button} />}>
@@ -111,13 +111,13 @@ export function ButtonDoc() {
           </Case>
           <Case label={t('shared.devui.case_destructive')}>
             <Group>
-              <Button variant="subtle" color="danger">
+              <Button variant="subtle" tone="danger">
                 {t('shared.devui.danger')}
               </Button>
-              <Button variant="outline" color="danger">
+              <Button variant="outline" tone="danger">
                 {t('shared.devui.reject')}
               </Button>
-              <Button color="danger">{t('shared.devui.danger')}</Button>
+              <Button tone="danger">{t('shared.devui.danger')}</Button>
             </Group>
           </Case>
           <Case label={t('shared.devui.case_states')}>
@@ -287,7 +287,7 @@ export function TooltipDoc() {
         <Case>
           <Group>
             <Tooltip label={t('shared.devui.export')}>
-              <Button variant="subtle" color="gray" aria-label={t('shared.devui.export')}>
+              <Button variant="subtle" tone="neutral" aria-label={t('shared.devui.export')}>
                 <IconDownload {...icon.button} />
               </Button>
             </Tooltip>
@@ -299,7 +299,7 @@ export function TooltipDoc() {
           good={
             <Group>
               <Tooltip label={t('shared.devui.export')}>
-                <Button variant="subtle" color="gray" aria-label={t('shared.devui.export')}>
+                <Button variant="subtle" tone="neutral" aria-label={t('shared.devui.export')}>
                   <IconDownload {...icon.button} />
                 </Button>
               </Tooltip>

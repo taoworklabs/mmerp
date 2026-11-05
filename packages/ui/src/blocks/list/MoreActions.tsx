@@ -20,7 +20,7 @@ export function MoreActions({ label, place = 'row', children }: MoreActionsProps
       <Tooltip label={label}>
         <Menu.Trigger
           render={
-            <ActionIcon variant={place === 'page' ? 'default' : 'subtle'} color="gray" aria-label={label}>
+            <ActionIcon variant={place === 'page' ? 'default' : 'subtle'} tone="neutral" aria-label={label}>
               <DotsIcon />
             </ActionIcon>
           }

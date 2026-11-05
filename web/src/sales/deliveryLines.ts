@@ -22,7 +22,7 @@ export const isShort = (available: string | undefined, quantity: string) =>
 // deliver shows none.
 export function deliveryStateBadge(state: Doc['delivery_state']): { tone: StatusTone; label: string } | null {
   if (state === 'partial') return { tone: 'info', label: 'sales.order.delivery_state.partial' }
-  if (state === 'full') return { tone: 'positive', label: 'sales.order.delivery_state.full' }
+  if (state === 'full') return { tone: 'success', label: 'sales.order.delivery_state.full' }
   return null
 }
 

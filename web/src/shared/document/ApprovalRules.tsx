@@ -185,7 +185,7 @@ function RuleForm({ rule, basePath, roles, userOptions }: { rule: TypeRule; base
             {t('shared.rule.settings')}
           </Button>
           {rule.rule && allowed.includes('delete') && (
-            <Button variant="subtle" color="danger" leftSection={<IconTrash {...icon.button} />} onClick={() => void remove()}>
+            <Button variant="subtle" tone="danger" leftSection={<IconTrash {...icon.button} />} onClick={() => void remove()}>
               {t('shared.rule.delete')}
             </Button>
           )}

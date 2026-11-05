@@ -4,7 +4,7 @@ import { StatusBadge, type StatusTone } from '@/shared/ui/StatusBadge'
 export type DocStatus = 'draft' | 'pending_approval' | 'posted' | 'cancelled'
 
 // Colours are fixed for every document type; only the label may be overridden.
-const tone: Record<DocStatus, StatusTone> = { draft: 'neutral', pending_approval: 'warning', posted: 'positive', cancelled: 'negative' }
+const tone: Record<DocStatus, StatusTone> = { draft: 'neutral', pending_approval: 'warning', posted: 'success', cancelled: 'danger' }
 
 // statusLabel is <doc_type>.status.<status> when the area defines it, else the default label.
 export function useStatusLabel() {

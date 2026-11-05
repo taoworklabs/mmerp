@@ -84,7 +84,7 @@ export function SensitiveField({ name, label, present, canView, canEdit, reveal 
         shown !== null && field.value === undefined ? (
           <Tooltip label={t('shared.sensitive.hide')}>
             {/* Inside the input, so smaller than the input itself. */}
-            <ActionIcon variant="subtle" color="gray" onClick={() => setShown(null)} aria-label={t('shared.sensitive.hide_field', { field: label })}>
+            <ActionIcon variant="subtle" tone="neutral" onClick={() => setShown(null)} aria-label={t('shared.sensitive.hide_field', { field: label })}>
               <IconEyeOff {...icon.button} />
             </ActionIcon>
           </Tooltip>

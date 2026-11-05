@@ -8,9 +8,9 @@ What the user can do, where it sits, how it confirms and how it answers. Which a
 | --- | --- | --- |
 | Primary | `<Button>` (filled) | The one main action of a page, modal or region: Create, Save, Submit for approval, Approve. Rightmost |
 | Secondary | `variant="default"` (outlined) | Other actions of the same place: Print, Export, Discard changes (asks first; the confirm is red), Retry |
-| Quiet | `variant="subtle"` | Low-emphasis action among content: Add row, Change approver, Clear selection. The way out beside a primary button (Cancel in a form footer, "Quay lại" in a confirmation) is quiet grey: `variant="subtle" color="gray"` (`FormActions` and `useConfirm` do it) |
-| Destructive | `variant="subtle" color="danger"` (red text) | Delete a draft, Cancel a document; always asks first |
-| Destructive confirm | `color="danger"` (filled red) | Only the confirm button of a confirmation dialog for a destructive step |
+| Quiet | `variant="subtle"` | Low-emphasis action among content: Add row, Change approver, Clear selection. The way out beside a primary button (Cancel in a form footer, "Quay lại" in a confirmation) is quiet grey: `variant="subtle" tone="neutral"` (`FormActions` and `useConfirm` do it) |
+| Destructive | `variant="subtle" tone="danger"` (red text) | Delete a draft, Cancel a document; always asks first |
+| Destructive confirm | `tone="danger"` (filled red) | Only the confirm button of a confirmation dialog for a destructive step |
 | More | `MoreActions` ("…") | What does not earn a button |
 
 - **One primary per place.** A page header has at most one; a modal's footer one; a section none or one.
@@ -130,12 +130,12 @@ No other single-key or global shortcuts; approving or rejecting never has a key.
 
 ```tsx
 // Do
-<Button variant="subtle" color="danger" onClick={() => void remove()}>{t('hrm.calendar.delete')}</Button>  // asks inside remove()
+<Button variant="subtle" tone="danger" onClick={() => void remove()}>{t('hrm.calendar.delete')}</Button>  // asks inside remove()
 <Button>{t('shared.document.action.submit')}</Button>                                                          // the one primary
 
 // Don't
-<Button color="teal" variant="outline">…</Button>                // invented variant
-<Button color="danger" onClick={deleteNow}>…</Button>             // filled red outside a confirm dialog, no confirmation
+<Button tone="teal" variant="outline">…</Button>                // invented variant
+<Button tone="danger" onClick={deleteNow}>…</Button>             // filled red outside a confirm dialog, no confirmation
 <Select data={['draft', 'posted']} onChange={setStatus} />        // status changed by a dropdown
 notifyUndo(t('…cancelled'), t('shared.undo'), uncancel)           // undo on a lifecycle action
 ```
