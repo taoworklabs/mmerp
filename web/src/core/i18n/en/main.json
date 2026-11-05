@@ -41,7 +41,7 @@
   "core.period.change": "Change lock date",
   "core.period.change_title": "Period lock: {{name}}",
   "core.period.locked_until_hint": "Leave empty to unlock everything.",
-  "core.period.pending": "Documents awaiting approval in the period:",
+  "core.period.pending": "Documents not settled yet in the period:",
   "core.period.saved": "Lock date saved.",
   "core.code_series.title": "Code series",
   "core.code_series.description": "Codes issued to entries created with an empty code. Changing the prefix keeps the count.",

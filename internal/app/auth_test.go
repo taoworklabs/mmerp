@@ -189,3 +189,9 @@ func TestForcedChangeBlocksAPI(t *testing.T) {
 		t.Fatalf("users = %d %s", rec.Code, rec.Body)
 	}
 }
+
+func TestCheckProductsAcceptsAccounting(t *testing.T) {
+	if err := app.CheckProducts([]string{"hrm", "sales", "accounting"}); err != nil {
+		t.Fatal(err)
+	}
+}

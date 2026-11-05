@@ -48,6 +48,9 @@ export function PeriodLocksPage() {
 
 type Pending = { doc_type: string; id: number; number: string; date: string }
 
+// One document may be listed by two sources.
+const uniqueDocs = (docs: Pending[]) => [...new Map(docs.map((d) => [`${d.doc_type}:${d.id}`, d])).values()]
+
 function LockModal({ lock, onClose }: { lock: PeriodLock; onClose: () => void }) {
   const { t } = useTranslation()
   const qc = useQueryClient()
@@ -59,7 +62,7 @@ function LockModal({ lock, onClose }: { lock: PeriodLock; onClose: () => void })
     try {
       await unwrap(api.PUT('/period-locks/{legal_entity}', { params: { path: { legal_entity: lock.legal_entity_id } }, body: { locked_until: v.locked_until } }))
     } catch (err) {
-      if (err instanceof ApiError && err.code === 'period_has_pending_documents') setPending((err.params.documents as Pending[]) ?? [])
+      if (err instanceof ApiError && err.code === 'period_has_pending_documents') setPending(uniqueDocs((err.params.documents as Pending[]) ?? []))
       throw err
     }
     await qc.invalidateQueries({ queryKey: coreKeys.periodLocks() })
@@ -78,7 +81,7 @@ function LockModal({ lock, onClose }: { lock: PeriodLock; onClose: () => void })
             </Text>
             <List>
               {pending.map((d) => (
-                <PendingItem key={d.id} doc={d} />
+                <PendingItem key={`${d.doc_type}:${d.id}`} doc={d} />
               ))}
             </List>
           </Stack>

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"slices"
 	"testing"
+	"time"
 
 	"github.com/xuri/excelize/v2"
 
@@ -208,5 +209,119 @@ func TestPayrollJobsWithProductOff(t *testing.T) {
 	told := notifications(pay).Items
 	if !slices.ContainsFunc(told, func(n notification) bool { return n.Kind == "job_failed" && n.JobID != nil && *n.JobID == comp.JobID }) {
 		t.Fatalf("pay told %+v", told)
+	}
+}
+
+// A posted payroll reaches the ledger through the reconcile job, and its cancellation
+// reverses it; with accounting off, payrolls still post and cancel and queue nothing.
+func TestPayrollReachesLedger(t *testing.T) {
+	f := newJobsFixture(t)
+	f.env.Products = []string{"hrm", "accounting"}
+	f.admin, f.hr, f.head = f.login("admin"), f.login("hr"), f.login("head")
+	f.work(f.env.Products)
+	f.wait(f.hr, f.upload(f.hr, "hrm.timesheet", f.params(), march()...))
+	f.ok(f.hr, "POST", fmt.Sprintf("/api/documents/hrm.timesheet/%d/transitions", f.timesheet), `{"to":"posted","version":2}`, 200)
+	f.approveAll(204)
+	pay := f.payrollSetup()
+
+	accounts := map[string]int64{}
+	for code, typ := range map[string]string{"642": "expense", "334": "liability", "338": "liability", "3335": "liability"} {
+		accounts[code] = f.id(f.admin, "/api/accounting/accounts", fmt.Sprintf(`{"code":%q,"name":"Tài khoản %s","type":%q,"parent_id":null,"active":true}`, code, code, typ))
+	}
+	for kind, rule := range map[string][2]string{"salary_expense": {"642", "debit"}, "employer_insurance_expense": {"642", "debit"},
+		"salary_payable": {"334", "credit"}, "insurance_payable": {"338", "credit"}, "pit_payable": {"3335", "credit"}} {
+		f.ok(f.admin, "PUT", "/api/accounting/rules/"+kind, fmt.Sprintf(`{"account_id":%d,"side":%q}`, accounts[rule[0]], rule[1]), 204)
+	}
+	f.ok(f.admin, "PUT", fmt.Sprintf("/api/accounting/starts/%d", f.legalEntity()), `{"start_date":"2026-01-01"}`, 204)
+
+	// entries waits for the payroll to have n entries, then returns each entry's debit and credit totals.
+	type entry struct{ debit, credit int64 }
+	entries := func(id int64, n int) []entry {
+		t.Helper()
+		for deadline := time.Now().Add(10 * time.Second); time.Now().Before(deadline); time.Sleep(50 * time.Millisecond) {
+			rows, err := f.system.Query(t.Context(), `SELECT sum(l.debit), sum(l.credit) FROM accounting.entries e JOIN accounting.entry_lines l ON l.entry_id = e.id
+				WHERE e.doc_type = 'hrm.payroll' AND e.doc_id = $1 GROUP BY e.id ORDER BY e.id`, id)
+			if err != nil {
+				t.Fatal(err)
+			}
+			var out []entry
+			for rows.Next() {
+				var e entry
+				if err := rows.Scan(&e.debit, &e.credit); err != nil {
+					t.Fatal(err)
+				}
+				out = append(out, e)
+			}
+			rows.Close()
+			if len(out) >= n {
+				return out
+			}
+		}
+		t.Fatalf("payroll %d did not reach %d entries", id, n)
+		return nil
+	}
+	post := func(c *client) (int64, int64) {
+		t.Helper()
+		id := f.createPayroll(c)
+		var p struct {
+			Version int32
+			Lines   []struct{ Cost int64 }
+		}
+		_ = json.Unmarshal(f.ok(c, "GET", fmt.Sprintf("/api/hrm/payrolls/%d", id), "", 200), &p)
+		f.ok(c, "POST", fmt.Sprintf("/api/documents/hrm.payroll/%d/transitions", id), fmt.Sprintf(`{"to":"posted","version":%d}`, p.Version), 200)
+		var cost int64
+		for _, l := range p.Lines {
+			cost += l.Cost
+		}
+		return id, cost
+	}
+	cancel := func(c *client, id int64) {
+		t.Helper()
+		f.ok(c, "POST", fmt.Sprintf("/api/documents/hrm.payroll/%d/transitions", id), fmt.Sprintf(`{"to":"cancelled","version":%d}`, f.payroll(c, id).Version), 200)
+	}
+
+	id, cost := post(pay)
+	if es := entries(id, 1); len(es) != 1 || es[0].debit != cost || es[0].credit != cost || cost == 0 {
+		t.Fatalf("entries %+v, cost %d", es, cost)
+	}
+	var led struct {
+		Closing int64
+		Lines   []struct {
+			DocType string `json:"doc_type"`
+		}
+	}
+	q := fmt.Sprintf("legal_entity_id=%d&from=2026-01-01&to=2026-12-31", f.legalEntity())
+	_ = json.Unmarshal(f.ok(f.admin, "GET", fmt.Sprintf("/api/accounting/ledger?%s&account_id=%d", q, accounts["642"]), "", 200), &led)
+	if led.Closing != cost || len(led.Lines) == 0 || led.Lines[0].DocType != "hrm.payroll" {
+		t.Fatalf("ledger %+v, cost %d", led, cost)
+	}
+	var tb struct {
+		TotalDebit  int64 `json:"total_debit"`
+		TotalCredit int64 `json:"total_credit"`
+	}
+	_ = json.Unmarshal(f.ok(f.admin, "GET", "/api/accounting/trial-balance?"+q, "", 200), &tb)
+	if tb.TotalDebit != cost || tb.TotalCredit != cost {
+		t.Fatalf("trial balance %+v, cost %d", tb, cost)
+	}
+	cancel(pay, id)
+	if es := entries(id, 2); len(es) != 2 || es[1].debit != cost || es[1].credit != cost {
+		t.Fatalf("after cancel %+v", es)
+	}
+	var reverses int64
+	if err := f.system.QueryRow(t.Context(), `SELECT count(*) FROM accounting.entries WHERE doc_id = $1 AND reverses IS NOT NULL`, id).Scan(&reverses); err != nil || reverses != 1 {
+		t.Fatalf("reversals %d %v", reverses, err)
+	}
+
+	// Accounting off: HR posts and cancels as before, and nothing is queued for the ledger.
+	f.env.Products = []string{"hrm"}
+	pay = f.login("pay")
+	var before, after int
+	if err := f.system.QueryRow(t.Context(), `SELECT count(*) FROM river_job WHERE kind = 'accounting.reconcile'`).Scan(&before); err != nil {
+		t.Fatal(err)
+	}
+	id, _ = post(pay)
+	cancel(pay, id)
+	if err := f.system.QueryRow(t.Context(), `SELECT count(*) FROM river_job WHERE kind = 'accounting.reconcile'`).Scan(&after); err != nil || after != before {
+		t.Fatalf("reconcile jobs %d then %d %v", before, after, err)
 	}
 }
