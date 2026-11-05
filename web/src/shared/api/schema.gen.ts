@@ -85,6 +85,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/accounting/ledger": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["get-accounting-ledger"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/accounting/pending": {
         parameters: {
             query?: never;
@@ -174,6 +190,22 @@ export interface paths {
         };
         get?: never;
         put: operations["set-accounting-start"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/accounting/trial-balance": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["get-accounting-trial-balance"];
+        put?: never;
         post?: never;
         delete?: never;
         options?: never;
@@ -3793,6 +3825,40 @@ export interface components {
             /** Format: int64 */
             working_days: number;
         };
+        Ledger: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example /api/schemas/Ledger.json
+             */
+            readonly $schema?: string;
+            /** Format: int64 */
+            closing: number;
+            lines: components["schemas"]["LedgerLine"][] | null;
+            /** Format: int64 */
+            opening: number;
+        };
+        LedgerLine: {
+            account_code: string;
+            /** Format: int64 */
+            balance: number;
+            /** Format: int64 */
+            credit: number;
+            /** Format: date */
+            date: string;
+            /** Format: int64 */
+            debit: number;
+            description: string | null;
+            /** Format: int64 */
+            doc_id: number;
+            doc_number: string;
+            doc_type: string;
+            /** Format: int64 */
+            entry_id: number;
+            kind: string | null;
+            /** Format: int64 */
+            org_unit_id: number | null;
+        };
         LegalEntitySetting: {
             /** @description Translated as <key> and <key>.<value> */
             key: string;
@@ -5660,6 +5726,35 @@ export interface components {
             /** @description The cancel awaits approval; the document is unchanged until then */
             held: boolean;
         };
+        TrialBalance: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example /api/schemas/TrialBalance.json
+             */
+            readonly $schema?: string;
+            rows: components["schemas"]["TrialRow"][] | null;
+            /** Format: int64 */
+            total_credit: number;
+            /** Format: int64 */
+            total_debit: number;
+        };
+        TrialRow: {
+            /** Format: int64 */
+            account_id: number;
+            /** Format: int64 */
+            closing: number;
+            code: string;
+            /** Format: int64 */
+            credit: number;
+            /** Format: int64 */
+            debit: number;
+            name: string;
+            /** Format: int64 */
+            opening: number;
+            /** Format: int64 */
+            parent_id: number | null;
+        };
         TypeRule: {
             action: string;
             allowed_actions: string[];
@@ -6069,6 +6164,37 @@ export interface operations {
             };
         };
     };
+    "get-accounting-ledger": {
+        parameters: {
+            query: {
+                account_id: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Ledger"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
     "list-accounting-pending": {
         parameters: {
             query: {
@@ -6274,6 +6400,39 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "get-accounting-trial-balance": {
+        parameters: {
+            query: {
+                legal_entity_id: number;
+                from: string;
+                to: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TrialBalance"];
+                };
             };
             /** @description Error */
             default: {
