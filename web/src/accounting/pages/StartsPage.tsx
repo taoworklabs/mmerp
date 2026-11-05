@@ -1,12 +1,14 @@
+import { IconPencil } from '@tabler/icons-react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { useTranslation } from 'react-i18next'
 import { api, unwrap, type Start } from '@/shared/api/accounting'
-import { useCan } from '@/shared/auth/me'
+import { useCan, useProductOn } from '@/shared/auth/me'
 import { formatDate } from '@/shared/i18n'
 import { type Column } from '@/shared/ui/DataTable'
 import { DateField, Form, FormActions, useLegalEntities } from '@/shared/ui/form'
+import { MenuAction } from '@/shared/ui/MenuAction'
 import { notifySuccess } from '@/shared/ui/notify'
 import { FormModal, ListPage } from '@/shared/ui/page'
 import { StatusBadge } from '@/shared/ui/StatusBadge'
@@ -16,7 +18,8 @@ import { accountingKeys } from '../keys'
 // StartsPage: the day each legal entity starts booking; fixed once it has entries.
 export function StartsPage() {
   const { t } = useTranslation()
-  const writable = useCan('accounting.manage')
+  const on = useProductOn('accounting')
+  const writable = useCan('accounting.manage') && on
   const entities = useLegalEntities({}).options
   const entityName = (id: number) => entities.find((o) => o.value === String(id))?.label ?? ''
   const [editing, setEditing] = useState<Start | null>(null)
@@ -54,8 +57,15 @@ export function StartsPage() {
           label: t('accounting.starts.title'),
           columns,
           rowKey: (s) => s.legal_entity_id,
-          // A start date is fixed once the legal entity has entries.
-          onRowClick: writable ? (s) => !s.fixed && setEditing(s) : undefined,
+          // A start date is fixed once the legal entity has entries, so only open ones offer the edit.
+          menu: writable
+            ? (s) =>
+                !s.fixed && (
+                  <MenuAction icon={IconPencil} onClick={() => setEditing(s)}>
+                    {t('accounting.starts.edit')}
+                  </MenuAction>
+                )
+            : undefined,
         },
         empty: { title: t('accounting.starts.empty'), description: t('accounting.starts.empty_description') },
         noResults: t('accounting.common.no_results'),

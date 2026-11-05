@@ -24,6 +24,7 @@ import {
 } from '@/shared/ui/form'
 import { accountLabel, accountOptions, useAccounts } from '../hooks/useAccounting'
 import { journalEntryDocType } from '../keys'
+import { subtree } from '../tree'
 
 type LineValues = { account_id: string | null; org_unit_id: string | null; description: string; debit: number | null; credit: number | null }
 
@@ -79,7 +80,9 @@ export function JournalEntryForm({ doc, onCreated }: Props) {
   // Only postable accounts take lines; a saved line's account still shows.
   const saved = new Set(doc?.lines.map((l) => l.account_id))
   const accountChoices = accountOptions(accounts, (a) => (a.active && a.postable) || saved.has(a.id))
-  const unitChoices = orgUnitOptions(units).map(({ value, label }) => ({ value, label }))
+  // A line's org unit must belong to the entry's legal entity.
+  const inEntity = subtree(units, Number(form.watch('legal_entity_id')))
+  const unitChoices = orgUnitOptions(units.filter((u) => inEntity.has(u.id))).map(({ value, label }) => ({ value, label }))
 
   async function save(v: Values) {
     const body = {
@@ -173,7 +176,7 @@ export function JournalEntryForm({ doc, onCreated }: Props) {
               addLabel={t('accounting.line.add')}
               lineLabel={(n) => t('accounting.line.title', { n })}
               removeLabel={(n) => t('accounting.line.remove', { n })}
-              minLines={1}
+              minLines={2}
             />
           )}
         </FormRow>

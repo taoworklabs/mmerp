@@ -5,7 +5,7 @@ import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { useTranslation } from 'react-i18next'
 import { api, unwrap, type Account, type AccountFields } from '@/shared/api/accounting'
-import { useCan } from '@/shared/auth/me'
+import { useCan, useProductOn } from '@/shared/auth/me'
 import { errorText } from '@/shared/i18n'
 import { CheckboxField, Form, FormActions, SelectField, TextField } from '@/shared/ui/form'
 import { MenuAction } from '@/shared/ui/MenuAction'
@@ -16,6 +16,7 @@ import { StatusBadge } from '@/shared/ui/StatusBadge'
 import { icon } from '@/shared/ui/theme'
 import { TreeList, type TreeNode } from '@/shared/ui/TreeList'
 import { accountOptions, useAccounts } from '../hooks/useAccounting'
+import { parentCandidates } from '../tree'
 import { accountingKeys } from '../keys'
 
 const types = ['asset', 'liability', 'equity', 'revenue', 'expense'] as const satisfies readonly Account['type'][]
@@ -37,7 +38,9 @@ const fieldsOf = (a: Account): AccountFields => ({ code: a.code, name: a.name, t
 export function AccountsPage() {
   const { t } = useTranslation()
   const qc = useQueryClient()
-  const writable = useCan('accounting.manage')
+  // The chart has no allowed_actions; a disabled product is read-only.
+  const on = useProductOn('accounting')
+  const writable = useCan('accounting.manage') && on
   const accounts = useAccounts()
   const [editing, setEditing] = useState<Account | 'new' | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -126,6 +129,7 @@ function AccountModal({ account: a, accounts, onClose }: { account: Account | nu
     mode: 'onBlur',
     defaultValues: a ? { ...a, parent_id: a.parent_id ? String(a.parent_id) : null } : { code: '', name: '', type: '', parent_id: null, active: true },
   })
+  const type = form.watch('type')
   async function save(v: Values) {
     const body: AccountFields = {
       code: v.code.trim(),
@@ -151,7 +155,7 @@ function AccountModal({ account: a, accounts, onClose }: { account: Account | nu
           label={t('accounting.account.parent')}
           description={t('accounting.account.parent_hint')}
           clearable
-          data={accountOptions(accounts, (x) => x.id !== a?.id)}
+          data={accountOptions(parentCandidates(accounts, type, a?.id))}
         />
         <CheckboxField name="active" label={t('accounting.account.active')} description={t('accounting.account.active_hint')} />
         <FormActions submitLabel={t('accounting.common.save')} onCancel={onClose} cancelLabel={t('accounting.common.cancel')} />

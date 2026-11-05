@@ -5,7 +5,7 @@ import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router'
 import { api, unwrap, type LedgerLine } from '@/shared/api/accounting'
 import { useRecordLinks } from '@/shared/area'
-import { formatDate, formatNumber } from '@/shared/i18n'
+import { formatDate, formatMoney, formatNumber } from '@/shared/i18n'
 import { type Column } from '@/shared/ui/DataTable'
 import { DateFilter, FilterChip, LegalEntityFilter, useOrgUnits } from '@/shared/ui/form'
 import { ListPage } from '@/shared/ui/page'
@@ -71,7 +71,10 @@ export function LedgerPage() {
     { key: 'balance_debit', header: t('accounting.side.debit_money'), band: t('accounting.ledger.balance'), role: 'meta', kind: 'number', strong: true, render: balance('debit') },
     { key: 'balance_credit', header: t('accounting.side.credit_money'), band: t('accounting.ledger.balance'), role: 'meta', kind: 'number', strong: true, render: balance('credit') },
   ]
-  const rows = ledger.data && [edgeRow('opening', p.from, ledger.data.opening), ...(ledger.data.lines ?? []).map((l, i) => ({ ...l, key: String(i) }))]
+  const lines = ledger.data?.lines ?? []
+  // Without lines the opening and closing balance are one figure, said in the empty state.
+  const rows = ledger.data && (lines.length ? [edgeRow('opening', p.from, ledger.data.opening), ...lines.map((l, i) => ({ ...l, key: String(i) }))] : [])
+  const still = ledger.data ? splitBalance(ledger.data.closing) : { debit: 0, credit: 0 }
 
   return (
     <ListPage
@@ -103,7 +106,10 @@ export function LedgerPage() {
                 rowKey: (r) => r.key,
                 footer: ledger.data && edgeRow('closing', p.to, ledger.data.closing),
               },
-              empty: { title: t('accounting.ledger.no_lines') },
+              empty: {
+                title: t('accounting.ledger.no_lines'),
+                description: t(still.credit ? 'accounting.ledger.no_lines_credit' : 'accounting.ledger.no_lines_debit', { amount: formatMoney(still.debit || still.credit) }),
+              },
               noResults: t('accounting.common.no_results'),
             }
           : undefined

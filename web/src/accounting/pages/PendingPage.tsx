@@ -5,7 +5,7 @@ import { useTranslation } from 'react-i18next'
 import { Link, useSearchParams } from 'react-router'
 import { api, unwrap, type PendingDoc } from '@/shared/api/accounting'
 import { useRecordLinks } from '@/shared/area'
-import { useCan } from '@/shared/auth/me'
+import { useCan, useProductOn } from '@/shared/auth/me'
 import { formatDate } from '@/shared/i18n'
 import { type Column } from '@/shared/ui/DataTable'
 import { LegalEntityFilter, useLegalEntities } from '@/shared/ui/form'
@@ -25,7 +25,9 @@ const reasonTone: Record<PendingDoc['reason'], StatusTone> = { queued: 'info', u
 export function PendingPage() {
   const { t } = useTranslation()
   const links = useRecordLinks()
-  const canPost = useCan('accounting.post')
+  // Posting has no allowed_actions; a disabled product is read-only.
+  const on = useProductOn('accounting')
+  const canPost = useCan('accounting.post') && on
   const action = useAction()
   const [search, setSearch] = useSearchParams()
   const entities = useLegalEntities({ product: 'accounting', permission: 'accounting.view' }, search.get('legal_entity_id') ?? undefined)

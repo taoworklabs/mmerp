@@ -3,7 +3,7 @@ import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { useTranslation } from 'react-i18next'
 import { api, unwrap, type Rule } from '@/shared/api/accounting'
-import { useCan } from '@/shared/auth/me'
+import { useCan, useProductOn } from '@/shared/auth/me'
 import { type Column } from '@/shared/ui/DataTable'
 import { Form, FormActions, SelectField } from '@/shared/ui/form'
 import { notifySuccess } from '@/shared/ui/notify'
@@ -16,7 +16,8 @@ import { accountingKeys } from '../keys'
 // RulesPage: one row per kind of business line, booked to an account on a side; administrators set each in a modal.
 export function RulesPage() {
   const { t } = useTranslation()
-  const writable = useCan('accounting.manage')
+  const on = useProductOn('accounting')
+  const writable = useCan('accounting.manage') && on
   const accounts = useAccounts()
   const [editing, setEditing] = useState<Rule | null>(null)
   const rules = useQuery({

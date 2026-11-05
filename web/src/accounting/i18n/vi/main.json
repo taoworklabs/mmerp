@@ -133,5 +133,8 @@
   "accounting.trial.closing": "Số dư cuối kỳ",
   "accounting.trial.total": "Tổng cộng",
   "accounting.trial.empty": "Chưa có số liệu",
-  "accounting.trial.empty_description": "Pháp nhân chưa có bút toán nào trong hệ thống tài khoản."
+  "accounting.trial.empty_description": "Pháp nhân chưa có bút toán nào trong hệ thống tài khoản.",
+  "accounting.ledger.no_lines_debit": "Số dư Nợ: {{amount}}.",
+  "accounting.ledger.no_lines_credit": "Số dư Có: {{amount}}.",
+  "accounting.starts.edit": "Sửa ngày bắt đầu"
 }

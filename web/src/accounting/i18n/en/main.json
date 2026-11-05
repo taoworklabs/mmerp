@@ -133,5 +133,8 @@
   "accounting.trial.closing": "Closing balance",
   "accounting.trial.total": "Total",
   "accounting.trial.empty": "No figures yet",
-  "accounting.trial.empty_description": "The legal entity has no entries yet."
+  "accounting.trial.empty_description": "The legal entity has no entries yet.",
+  "accounting.ledger.no_lines_debit": "Debit balance: {{amount}}.",
+  "accounting.ledger.no_lines_credit": "Credit balance: {{amount}}.",
+  "accounting.starts.edit": "Edit start date"
 }
