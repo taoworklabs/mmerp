@@ -56,6 +56,13 @@ linters:
           deny:
             - pkg: github.com/taoworklabs/mmerp/internal/modules
               desc: products never import each other; go through deps.go or hooks.go
+        accounting:
+          files: ["**/internal/modules/accounting/**"]
+          list-mode: lax
+          allow: [github.com/taoworklabs/mmerp/internal/modules/accounting]
+          deny:
+            - pkg: github.com/taoworklabs/mmerp/internal/modules
+              desc: products never import each other; go through deps.go or hooks.go
         excelize:
           files: ["**/internal/**", "!**/internal/core/dataio/**", "!$test"]
           deny:

@@ -79,3 +79,7 @@ sql:
     queries: internal/modules/sales/queries
     gen: { go: { <<: *go, out: internal/modules/sales/internal/store } }
     codegen: [{ plugin: data, out: internal/modules/sales/internal/store }]
+  - <<: *module
+    queries: internal/modules/accounting/queries
+    gen: { go: { <<: *go, out: internal/modules/accounting/internal/store } }
+    codegen: [{ plugin: data, out: internal/modules/accounting/internal/store }]

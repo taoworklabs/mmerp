@@ -34,6 +34,7 @@ import (
 	"github.com/taoworklabs/mmerp/internal/core/printing"
 	"github.com/taoworklabs/mmerp/internal/core/record"
 	"github.com/taoworklabs/mmerp/internal/core/setting"
+	"github.com/taoworklabs/mmerp/internal/modules/accounting"
 	"github.com/taoworklabs/mmerp/internal/modules/hrm"
 	"github.com/taoworklabs/mmerp/internal/modules/sales"
 	"github.com/taoworklabs/mmerp/internal/platform"
@@ -48,8 +49,9 @@ var Version = "dev"
 
 // products maps every product to the products it depends on.
 var products = map[string][]string{
-	"hrm":   nil,
-	"sales": nil,
+	"hrm":        nil,
+	"sales":      nil,
+	"accounting": nil,
 }
 
 // CheckProducts refuses unknown products and enabled products missing a dependency.
@@ -97,7 +99,8 @@ func Modules() []platform.Module {
 	ids.SetLegalEntityCreated(func(ctx context.Context, le int64) error { _, err := stk.DefaultWarehouse(ctx, le); return err })
 	prt := partner.NewService(partner.Deps{IAM: ids, Record: rec, Audit: audit.NewService(), Numbering: num})
 	sal := sales.NewService(sales.Deps{IAM: ids, Record: rec, Audit: audit.NewService(), Setting: set, Printing: prn, Numbering: num, Partner: prt, Stock: stk})
-	return []platform.Module{iam.Module(ids), setting.Module(set), numbering.Module(num), record.Module(rec), approval.Module(appr), dataio.Module(dio), attachment.Module(att), printing.Module(prn), discussion.Module(dis), notification.Module(ntf), item.Module(itm), stock.Module(stk), partner.Module(prt), hrm.Module(h), sales.Module(sal)}
+	acc := accounting.NewService(accounting.Deps{IAM: ids, Audit: audit.NewService(), Record: rec})
+	return []platform.Module{iam.Module(ids), setting.Module(set), numbering.Module(num), record.Module(rec), approval.Module(appr), dataio.Module(dio), attachment.Module(att), printing.Module(prn), discussion.Module(dis), notification.Module(ntf), item.Module(itm), stock.Module(stk), partner.Module(prt), hrm.Module(h), sales.Module(sal), accounting.Module(acc)}
 }
 
 // EnsureRoot creates the root account with password unless it exists.
