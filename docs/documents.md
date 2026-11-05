@@ -212,7 +212,7 @@ Decision: [ADR-0003](./adr/0003-business-lines-are-data.md). Accounting is an **
 
 A job carries no change content, only `(doc_type, doc_id)`. The worker always brings the general ledger in line with the **current state** of `posting.lines`:
 
-1. Take `FOR SHARE` on the legal entity's period-lock row (the same lock order as `record`), then lock the document's row in `accounting`'s tracking table (`FOR UPDATE`). Never write journal entries into a locked period, except a document's first posting to the ledger. A reversal never writes into a locked period.
+1. Take `FOR SHARE` on the legal entity's period-lock row (the same lock order as `record`), then lock the document's row in `accounting`'s tracking table (`FOR UPDATE`). Never write journal entries into a locked period, except entries the ledger lacks for a document: its first posting, or the reversal of a document cancelled while accounting was off.
 2. Read the current `posting.lines`. If they are in effect, ensure exactly the matching journal entries exist; if voided, ensure a reversing entry exists (dated with the original document, linked to the entry it reverses; the original is never removed). If already in line, do nothing.
 
 So job order does not matter. If the cancellation's job runs before the posting's job, the cancellation job has already brought the ledger to the "cancelled" state (nothing is written for a document that never reached the ledger), and the posting job that runs later finds the ledger already in line and does nothing. A failed job retries; running it any number of times gives the same result.
@@ -221,7 +221,7 @@ So job order does not matter. If the cancellation's job runs before the posting'
 
 - **No period lock while documents are not yet posted to the ledger.** `accounting` implements `BeforeLock` (added to `record` at the same time), and refuses to move the lock date if the period still has documents whose `posting.lines` do not match the general ledger (a job waiting or failing). An admin screen lists those documents.
 - **A locked period is never re-posted.** Changing account mapping rules does not affect existing journal entries. Re-posting a date range is not built; the accountant corrects the ledger with manual journal entries.
-- **Tenants that enable accounting later:** each legal entity has an accounting start date, which can be set or changed only while it has no ledger entry. Documents dated on or after it with no ledger record count as pending and enter through "post pending", without calling the business modules again. A document's first posting is the only write allowed into a locked period, because the ledger had nothing for it.
+- **Tenants that enable accounting later:** each legal entity has an accounting start date, which can be set or changed only while it has no ledger entry. Documents dated on or after it with no ledger record count as pending and enter through "post pending", without calling the business modules again. Entries the ledger lacks for a document (its first posting, or the reversal of a document cancelled while accounting was off) are the only writes allowed into a locked period.
 - The general ledger is kept separately per legal entity (see [backend.md](./backend.md#org-units)).
 
 ## Sample flow: leave and payroll

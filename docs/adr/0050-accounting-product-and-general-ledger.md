@@ -41,8 +41,8 @@ Posted documents already record what they mean economically: a payroll writes bu
 
 - Each legal entity has an **accounting start date**, held in an `accounting` table, not as a `setting` legal-entity key. Documents dated before it never reach the ledger; opening balances are a manual entry.
 - No start date means accounting is not in use for that legal entity: nothing is pending, the job writes nothing, `BeforeLock` lets every lock through, manual entries are refused (`accounting_not_started`).
-- The start date can be set or changed **only while the legal entity has no ledger entry**. After the first entry it is fixed, which confines the locked-period exception below to the first run and stops moving the date earlier from opening closed periods.
-- A document's **first** posting to the ledger may land in a locked period (the exception [documents.md](../documents.md#period-lock-and-re-posting) already allows for enabling accounting later). A reversal, or any change to an already-posted entry, never writes into a locked period.
+- The start date can be set or changed **only while the legal entity has no ledger entry**. After the first entry it is fixed, which stops moving the date earlier from opening closed periods.
+- Entries the ledger lacks for a document (its **first** posting, or the reversal of a document cancelled while accounting was off) may land in a locked period (the exception [documents.md](../documents.md#period-lock-and-re-posting) allows for enabling accounting later). With accounting on, `BeforeLock` keeps such documents out of locked periods, so this only arises from a period locked while accounting was off.
 
 ### Manual entries
 

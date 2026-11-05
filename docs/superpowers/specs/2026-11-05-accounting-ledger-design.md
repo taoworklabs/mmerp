@@ -65,7 +65,7 @@ This follows `docs/documents.md` "Posting jobs: reconcile, do not replay" and AD
 - **No start date: accounting is not in use for that legal entity.** Nothing is pending, the job writes nothing, `BeforeLock` lets every lock through, manual entries are refused (`accounting_not_started`) *(my call)*.
 - **The start date can be set or changed only while the legal entity has no ledger entry.** After the first entry it is fixed. This keeps the locked-period exception below to the first run and stops moving the date earlier from opening a way into closed periods *(my call)*.
 - A document with business lines dated on or after the start date and no tracking row counts as **pending**. So documents posted while accounting was disabled, or before the hook existed, show up in "awaiting posting" and go in through "post pending". No separate backfill job.
-- A document's **first** posting to the ledger may land in a locked period: the ledger had nothing for it, which is the exception `docs/documents.md` already allows for enabling accounting later. A reversal, or any change to an already-posted entry, never writes into a locked period.
+- Entries the ledger lacks for a document (its **first** posting, or the reversal of a document cancelled while accounting was off) may land in a locked period: they make the ledger match the document's true state, the exception `docs/documents.md` allows for enabling accounting later. With accounting on, `BeforeLock` prevents this state, so it only arises from a period locked while accounting was off.
 
 ### Period lock
 
@@ -139,7 +139,7 @@ Everything in `AGENTS.md` applies. The ones that bite here:
 - Worker: idempotent (running twice changes nothing), order-independent (void job before post job ends in the same state), awaiting mapping does not retry, negative amounts flip side, org unit carried.
 - A Go test from payroll to ledger: post a payroll and get a balanced entry; cancel it and get a reversal; the trial balance nets to zero.
 - `BeforeLock` refuses a lock while documents are pending and allows it once they are posted.
-- First posting into a locked period is allowed; a reversal into a locked period is not possible (the source document cannot be cancelled there anyway).
+- First posting into a locked period is allowed; so is a reversal, which only arises when the document was cancelled and the period locked while accounting was off.
 - `recordtest` for `accounting.journal_entry`; unbalanced entry refused.
 - Frontend: Vitest for the screens' logic; one Playwright spec covering the "done" scenario, run only when the product owner says so.
 

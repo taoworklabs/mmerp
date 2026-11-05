@@ -21,7 +21,6 @@ var LockAccounts = data.ExecArg("accounting.LockAccounts", newQ, (*Queries).Lock
 var ShareStart = data.OneArg("accounting.ShareStart", newQ, (*Queries).ShareStart)
 var LockStart = data.ExecArg("accounting.LockStart", newQ, (*Queries).LockStart)
 var HasEntries = data.OneArg("accounting.HasEntries", newQ, (*Queries).HasEntries)
-var LockedUntil = data.OneArg("accounting.LockedUntil", newQ, (*Queries).LockedUntil)
 var LiveRecording = data.OneArg("accounting.LiveRecording", newQ, (*Queries).LiveRecording)
 var LiveLines = data.ManyArg("accounting.LiveLines", newQ, (*Queries).LiveLines)
 var LockSource = data.OneArg("accounting.LockSource", newQ, (*Queries).LockSource)

@@ -154,6 +154,7 @@ SELECT 1 FROM accounting.accounts WHERE id = ANY($1::bigint[]) ORDER BY id FOR U
 `
 
 // An edited account and its new parent, in id order: entry writes share-lock the accounts they use.
+// Reversals do not: they touch only accounts with lines, which has_lines already guards.
 func (q *Queries) LockAccounts(ctx context.Context, ids []int64) error {
 	_, err := q.db.Exec(ctx, lockAccounts, ids)
 	return err

@@ -42,4 +42,5 @@ SELECT pg_advisory_xact_lock(hashtext('accounting.chart'), 0);
 
 -- name: LockAccounts :exec
 -- An edited account and its new parent, in id order: entry writes share-lock the accounts they use.
+-- Reversals do not: they touch only accounts with lines, which has_lines already guards.
 SELECT 1 FROM accounting.accounts WHERE id = ANY(@ids::bigint[]) ORDER BY id FOR UPDATE;

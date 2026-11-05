@@ -7,6 +7,8 @@ import (
 	"testing"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/riverqueue/river"
+	"github.com/riverqueue/river/riverdriver/riverpgxv5"
 
 	"github.com/taoworklabs/mmerp/internal/core/coretest"
 	"github.com/taoworklabs/mmerp/internal/core/iam"
@@ -417,5 +419,79 @@ func TestStartDateFixedAfterEntry(t *testing.T) {
 	st, err := l.s.Starts(l.core.Admin)
 	if err != nil || len(st) != 1 || !st[0].Fixed {
 		t.Fatalf("starts %+v %v", st, err)
+	}
+}
+
+// A period locked while accounting was off can hold a cancellation the ledger has not seen:
+// the reversal catches up into it.
+func TestReconcileReversalIntoLockedPeriodAfterProductOff(t *testing.T) {
+	l := newLedger(t)
+	ref := l.doc(t, "2026-03-31")
+	l.record(t, ref, l.payroll()...)
+	l.reconcile(t, ref)
+	l.void(t, ref)
+	until := "2026-03-31"
+	if err := l.core.Record.SetPeriodLock(l.core.Admin, l.le, &until); err != nil {
+		t.Fatal(err)
+	}
+	l.reconcile(t, ref)
+	if es := l.entries(t, ref); len(es) != 2 || es[1].reverses == nil || *es[1].reverses != es[0].id {
+		t.Fatalf("entries %+v", es)
+	}
+	if s := l.source(t, ref); s.posted != nil || s.problem != nil {
+		t.Fatalf("source %+v", s)
+	}
+}
+
+func TestReconcileWithoutStartDate(t *testing.T) {
+	l := newLedger(t)
+	if err := l.s.SetStart(l.core.Admin, l.le, nil); err != nil {
+		t.Fatal(err)
+	}
+	ref := l.doc(t, "2026-03-31")
+	l.record(t, ref, l.payroll()...)
+	l.reconcile(t, ref)
+	if s := l.source(t, ref); s.exists {
+		t.Fatalf("source %+v", s)
+	}
+	if es := l.entries(t, ref); len(es) != 0 {
+		t.Fatalf("entries %+v", es)
+	}
+}
+
+func TestReconcileRuleAccountWithChildIsUnmapped(t *testing.T) {
+	l := newLedger(t)
+	ref := l.doc(t, "2026-03-31")
+	l.record(t, ref, l.payroll()...)
+	parent := l.acc["3335"]
+	mustCreate(t, l.s, l.core.Admin, acct("33351", "liability", &parent))
+	l.reconcile(t, ref)
+	if s := l.source(t, ref); s.problem == nil || *s.problem != "unmapped" || !slices.Equal(s.missing, []string{"pit_payable"}) {
+		t.Fatalf("source %+v", s)
+	}
+	if es := l.entries(t, ref); len(es) != 0 {
+		t.Fatalf("entries %+v", es)
+	}
+}
+
+func TestPostingChangedQueuesOneJob(t *testing.T) {
+	l := newLedger(t)
+	ref := l.doc(t, "2026-03-31")
+	jobs, err := river.NewClient(riverpgxv5.New(l.core.Pool), &river.Config{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = platform.InTx(platform.WithJobs(l.core.Ctx, jobs), func(ctx context.Context) error {
+		if err := l.s.PostingChanged(ctx, ref); err != nil {
+			return err
+		}
+		return l.s.PostingChanged(ctx, ref)
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	var n int
+	if err := l.core.Pool.QueryRow(l.core.Ctx, `SELECT count(*) FROM river_job WHERE kind = 'accounting.reconcile'`).Scan(&n); err != nil || n != 1 {
+		t.Fatalf("jobs %d %v", n, err)
 	}
 }

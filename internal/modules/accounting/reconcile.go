@@ -3,7 +3,6 @@ package accounting
 import (
 	"context"
 	"errors"
-	"net/http"
 	"slices"
 	"time"
 
@@ -43,10 +42,6 @@ func (s *Service) reconcile(ctx context.Context, ref record.Ref) error {
 	if err != nil {
 		return err
 	}
-	lockedUntil, err := store.LockedUntil.Run(ctx, d.LegalEntityID)
-	if err != nil {
-		return err
-	}
 	live, err := store.LiveRecording.Run(ctx, store.LiveRecordingParams{DocType: ref.Type, DocID: ref.ID})
 	if err != nil && !errors.Is(err, pgx.ErrNoRows) {
 		return err
@@ -62,11 +57,9 @@ func (s *Service) reconcile(ctx context.Context, ref record.Ref) error {
 	if posted == liveID {
 		return save()
 	}
+	// What the ledger lacks for a document (its first posting, or the reversal of one cancelled
+	// while accounting was off) may land in a locked period.
 	if posted.Valid {
-		// Cannot happen: record refuses cancelling into a locked period.
-		if until := lockedUntil.Time.Format(time.DateOnly); lockedUntil.Valid && d.Date <= until {
-			return &platform.Error{Status: http.StatusConflict, Code: "period_locked", Params: map[string]any{"locked_until": until}}
-		}
 		entry, err := store.EntryOfRecording.Run(ctx, posted)
 		if err == nil {
 			_, err = reverseEntry(ctx, entry)
@@ -96,7 +89,6 @@ func (s *Service) reconcile(ctx context.Context, ref record.Ref) error {
 		src.Problem = pgtype.Text{String: "unbalanced", Valid: true}
 		return save()
 	}
-	// A first posting may land in a locked period: the ledger had nothing for it.
 	if len(lines) > 0 {
 		if _, err := writeEntry(ctx, d.LegalEntityID, date, ref, &liveID.Int64, lines); err != nil {
 			return err
@@ -126,6 +118,11 @@ func journal(ctx context.Context, ref record.Ref) ([]JournalLine, []string, erro
 	for _, r := range rules {
 		byKind[r.Kind] = r
 		ids = append(ids, r.AccountID)
+	}
+	// Locked as writeEntry will, so a concurrent deactivation shows here as unmapped.
+	slices.Sort(ids)
+	if err := store.ShareAccounts.Run(ctx, ids); err != nil {
+		return nil, nil, err
 	}
 	ok, err := postableActive(ctx, ids)
 	if err != nil {

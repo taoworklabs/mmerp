@@ -8,10 +8,6 @@ SELECT 1 FROM accounting.starts WHERE legal_entity_id = $1 FOR UPDATE;
 -- name: HasEntries :one
 SELECT EXISTS (SELECT 1 FROM accounting.entries WHERE legal_entity_id = $1);
 
--- name: LockedUntil :one
--- Read after record has share-locked the row.
-SELECT locked_until FROM record.period_locks WHERE legal_entity_id = $1;
-
 -- name: LiveRecording :one
 SELECT id FROM posting.recordings WHERE doc_type = $1 AND doc_id = $2 AND voided_at IS NULL;
 

@@ -177,18 +177,6 @@ func (q *Queries) LockStart(ctx context.Context, legalEntityID int64) error {
 	return err
 }
 
-const lockedUntil = `-- name: LockedUntil :one
-SELECT locked_until FROM record.period_locks WHERE legal_entity_id = $1
-`
-
-// Read after record has share-locked the row.
-func (q *Queries) LockedUntil(ctx context.Context, legalEntityID int64) (pgtype.Date, error) {
-	row := q.db.QueryRow(ctx, lockedUntil, legalEntityID)
-	var locked_until pgtype.Date
-	err := row.Scan(&locked_until)
-	return locked_until, err
-}
-
 const reverseEntry = `-- name: ReverseEntry :one
 INSERT INTO accounting.entries (legal_entity_id, date, doc_type, doc_id, recording_id, reverses)
 SELECT e.legal_entity_id, e.date, e.doc_type, e.doc_id, e.recording_id, e.id FROM accounting.entries e WHERE e.id = $1
