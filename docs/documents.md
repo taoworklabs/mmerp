@@ -181,6 +181,7 @@ No tool can statically check whether a module calls `record` before writing its 
 - an approval action on a withdrawn submission is rejected;
 - a completed approval that fails because of an error in `OnTransition` leaves the document `pending_approval` and the approval instance open;
 - the lock date cannot be moved while the period still has `pending_approval` documents;
+- the lock date cannot be moved later while a product's `BeforeLock` hook (accounting: documents not yet in the ledger) lists documents in the period;
 - document writes running concurrently with a period lock never leave a new document in the locked period.
 
 ## Shared features

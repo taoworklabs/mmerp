@@ -92,6 +92,7 @@ func Modules() []platform.Module {
 	att := attachment.NewService(attachment.Deps{Record: rec, Audit: audit.NewService()})
 	dis := discussion.NewService(discussion.Deps{Record: rec, Audit: audit.NewService(), IAM: ids, Notification: ntf})
 	acc := accounting.NewService(accounting.Deps{IAM: ids, Audit: audit.NewService(), Record: rec})
+	rec.SetBeforeLock(acc.BeforeLock)
 	pst := posting.NewService(posting.Hooks{OnChanged: acc.PostingChanged})
 	h := hrm.NewService(hrm.Deps{IAM: ids, Record: rec, Audit: audit.NewService(), Setting: set, DataIO: dio, Printing: prn, Posting: pst, Numbering: num})
 	itm := item.NewService(item.Deps{IAM: ids, Audit: audit.NewService(), Numbering: num})

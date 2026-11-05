@@ -5,10 +5,13 @@ import (
 	"errors"
 	"slices"
 	"testing"
+	"time"
 
+	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/riverqueue/river"
 	"github.com/riverqueue/river/riverdriver/riverpgxv5"
 
+	"github.com/taoworklabs/mmerp/internal/modules/accounting"
 	"github.com/taoworklabs/mmerp/internal/platform"
 )
 
@@ -105,5 +108,19 @@ func TestPostPendingNeedsPost(t *testing.T) {
 	}
 	if _, err := l.s.PostPending(ctx, l.le); !errors.Is(err, platform.ErrForbidden) {
 		t.Fatalf("got %v", err)
+	}
+}
+
+func TestPendingUntilBound(t *testing.T) {
+	l := newLedger(t)
+	l.record(t, l.doc(t, "2026-03-31"), l.payroll()...)
+	l.record(t, l.doc(t, "2026-04-01"), l.payroll()...)
+	until := pgtype.Date{Time: time.Date(2026, 3, 31, 0, 0, 0, 0, time.UTC), Valid: true}
+	got, err := accounting.PendingInForTest(l.core.Admin, l.le, &until)
+	if err != nil || len(got) != 1 || got[0].Date != "2026-03-31" {
+		t.Fatalf("until %+v %v", got, err)
+	}
+	if got, err = accounting.PendingInForTest(l.core.Admin, l.le, nil); err != nil || len(got) != 2 {
+		t.Fatalf("all %+v %v", got, err)
 	}
 }
