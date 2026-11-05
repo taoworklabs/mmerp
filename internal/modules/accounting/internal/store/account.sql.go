@@ -123,20 +123,28 @@ func (q *Queries) ListAccounts(ctx context.Context) ([]ListAccountsRow, error) {
 }
 
 const lockAccount = `-- name: LockAccount :one
+WITH RECURSIVE sub AS (
+  SELECT $1::bigint AS id
+  UNION
+  SELECT c.id FROM accounting.accounts c JOIN sub ON c.parent_id = sub.id
+)
 SELECT code, type, parent_id, EXISTS (SELECT 1 FROM accounting.entry_lines l WHERE l.account_id = a.id) AS has_lines, EXISTS (SELECT 1 FROM accounting.rules r WHERE r.account_id = a.id) AS has_rule,
-  EXISTS (SELECT 1 FROM accounting.accounts c WHERE c.parent_id = a.id) AS has_children
-FROM accounting.accounts a WHERE a.id = $1 FOR UPDATE
+  EXISTS (SELECT 1 FROM accounting.accounts c WHERE c.parent_id = a.id) AS has_children,
+  EXISTS (SELECT 1 FROM accounting.entry_lines l JOIN sub ON l.account_id = sub.id) AS tree_has_lines
+FROM accounting.accounts a WHERE a.id = $1 FOR UPDATE OF a
 `
 
 type LockAccountRow struct {
-	Code        string
-	Type        string
-	ParentID    pgtype.Int8
-	HasLines    bool
-	HasRule     bool
-	HasChildren bool
+	Code         string
+	Type         string
+	ParentID     pgtype.Int8
+	HasLines     bool
+	HasRule      bool
+	HasChildren  bool
+	TreeHasLines bool
 }
 
+// tree_has_lines: lines on the account or any account below it.
 func (q *Queries) LockAccount(ctx context.Context, id int64) (LockAccountRow, error) {
 	row := q.db.QueryRow(ctx, lockAccount, id)
 	var i LockAccountRow
@@ -147,6 +155,7 @@ func (q *Queries) LockAccount(ctx context.Context, id int64) (LockAccountRow, er
 		&i.HasLines,
 		&i.HasRule,
 		&i.HasChildren,
+		&i.TreeHasLines,
 	)
 	return i, err
 }

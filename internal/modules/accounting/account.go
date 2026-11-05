@@ -67,9 +67,9 @@ func (s *Service) UpdateAccount(ctx context.Context, id int64, f AccountFields) 
 		if err != nil {
 			return err
 		}
-		// Moving an account with lines would change the parent rollups of balances already reported.
+		// Moving an account with lines on it or below it would change the rollups of balances already reported.
 		moved := cur.ParentID.Valid != (f.ParentID != nil) || f.ParentID != nil && cur.ParentID.Int64 != *f.ParentID
-		if cur.HasLines && (cur.Code != f.Code || cur.Type != f.Type || moved) || cur.HasChildren && cur.Type != f.Type {
+		if cur.HasLines && (cur.Code != f.Code || cur.Type != f.Type) || cur.TreeHasLines && moved || cur.HasChildren && cur.Type != f.Type {
 			return ErrAccountInUse
 		}
 		if err := checkParent(ctx, id, f); err != nil {

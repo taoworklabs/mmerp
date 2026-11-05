@@ -559,8 +559,8 @@ func TestReconcileLineAmountTooLarge(t *testing.T) {
 		posting.Line{Kind: posting.SalaryPayable, OrgUnitID: l.unit, Amount: m})
 	// One line over the bound on its own, too.
 	one := l.doc(t, "2026-03-31")
-	l.record(t, one, posting.Line{Kind: posting.SalaryExpense, OrgUnitID: l.unit, Amount: m + 1},
-		posting.Line{Kind: posting.SalaryPayable, OrgUnitID: l.unit, Amount: m + 1})
+	l.record(t, one, posting.Line{Kind: posting.SalaryExpense, OrgUnitID: l.unit, Amount: 1_000_000_000_000_001},
+		posting.Line{Kind: posting.SalaryPayable, OrgUnitID: l.unit, Amount: 1_000_000_000_000_001})
 	for _, r := range []record.Ref{ref, one} {
 		if err := l.s.Reconcile(l.core.Ctx, r); err != nil {
 			t.Fatal(err)
@@ -568,5 +568,28 @@ func TestReconcileLineAmountTooLarge(t *testing.T) {
 		if s := l.source(t, r); s.posted != nil || s.problem == nil || *s.problem != "too_large" {
 			t.Fatalf("source %+v", s)
 		}
+	}
+}
+
+// Moving a parent whose leaf has lines would change rollups of balances already reported too.
+func TestMoveParentWithUsedLeafRefused(t *testing.T) {
+	l := newLedger(t)
+	p := mustCreate(t, l.s, l.core.Admin, acct("33", "liability", nil))
+	leaf := mustCreate(t, l.s, l.core.Admin, acct("3336", "liability", &p))
+	if err := l.s.SaveRule(l.core.Admin, string(posting.PitPayable), leaf, "credit"); err != nil {
+		t.Fatal(err)
+	}
+	ref := l.doc(t, "2026-03-31")
+	l.record(t, ref, l.payroll()...)
+	l.reconcile(t, ref)
+	q := mustCreate(t, l.s, l.core.Admin, acct("3", "liability", nil))
+	if err := l.s.UpdateAccount(l.core.Admin, p, acct("33", "liability", &q)); !errors.Is(err, accounting.ErrAccountInUse) {
+		t.Fatalf("move parent: %v", err)
+	}
+	// Renaming in place is still fine.
+	f := acct("33", "liability", nil)
+	f.Name = "Renamed"
+	if err := l.s.UpdateAccount(l.core.Admin, p, f); err != nil {
+		t.Fatal(err)
 	}
 }

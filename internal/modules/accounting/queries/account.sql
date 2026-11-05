@@ -5,9 +5,16 @@ SELECT a.id, a.code, a.name, a.type, a.parent_id, a.active,
 FROM accounting.accounts a ORDER BY a.code;
 
 -- name: LockAccount :one
+-- tree_has_lines: lines on the account or any account below it.
+WITH RECURSIVE sub AS (
+  SELECT $1::bigint AS id
+  UNION
+  SELECT c.id FROM accounting.accounts c JOIN sub ON c.parent_id = sub.id
+)
 SELECT code, type, parent_id, EXISTS (SELECT 1 FROM accounting.entry_lines l WHERE l.account_id = a.id) AS has_lines, EXISTS (SELECT 1 FROM accounting.rules r WHERE r.account_id = a.id) AS has_rule,
-  EXISTS (SELECT 1 FROM accounting.accounts c WHERE c.parent_id = a.id) AS has_children
-FROM accounting.accounts a WHERE a.id = $1 FOR UPDATE;
+  EXISTS (SELECT 1 FROM accounting.accounts c WHERE c.parent_id = a.id) AS has_children,
+  EXISTS (SELECT 1 FROM accounting.entry_lines l JOIN sub ON l.account_id = sub.id) AS tree_has_lines
+FROM accounting.accounts a WHERE a.id = $1 FOR UPDATE OF a;
 
 -- name: AccountParent :one
 -- The prospective parent of account @id (0 on create): its type, and whether it is @id or below it.

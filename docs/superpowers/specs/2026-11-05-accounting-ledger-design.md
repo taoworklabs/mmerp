@@ -36,7 +36,7 @@ Using `make seed` data with `PRODUCTS=hrm,sales,accounting`:
 - One chart per tenant, shared by every legal entity *(my call; most SMB tenants have one company, and the Vietnamese charts are national, not per company)*.
 - An account: code (text, unique, e.g. `334` or `6421`), name, type (`asset`, `liability`, `equity`, `revenue`, `expense`), optional parent, active flag.
 - Only accounts without children take journal lines (**postable** accounts). Parent accounts exist to roll up balances *(my call; standard practice)*.
-- An account with journal lines cannot be deleted, have its type changed, be moved to another parent, or gain children; it can be deactivated, which stops new lines on it but keeps its history *(my call)*.
+- An account with journal lines cannot be deleted, have its type changed, or gain children, and one with lines on it or below it cannot be moved to another parent; it can be deactivated, which stops new lines on it but keeps its history *(my call)*.
 - No chart is hardcoded in Go. The demo seed creates a small chart through the API. A future localisation pack loads a full chart the same way.
 
 ### Mapping rules

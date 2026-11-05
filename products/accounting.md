@@ -30,7 +30,7 @@ Automatic entries and reversals are ledger rows, not documents: they have no num
 
 ## Behaviour
 
-- **Chart.** Code (unique text), name, type (`asset`, `liability`, `equity`, `revenue`, `expense`), optional parent, active flag. Only accounts without children take lines. An account with lines cannot be deleted, retyped, moved to another parent or gain children; it can be deactivated.
+- **Chart.** Code (unique text), name, type (`asset`, `liability`, `equity`, `revenue`, `expense`), optional parent, active flag. Only accounts without children take lines. An account with lines cannot be deleted, retyped or gain children; one with lines on it or below it cannot move to another parent. It can be deactivated.
 - **Rules.** One per business line kind: account and side. A negative amount goes on the opposite side; the org unit is carried onto the journal line.
 - **Automatic entries.** A job per `(doc_type, doc_id)` reconciles the ledger with the document's current business lines; any order and any number of runs give the same result. HR is never blocked: a missing rule puts the document under awaiting mapping.
 - **Start date.** Per legal entity; no date means accounting is not in use there. It can be set or changed only while the legal entity has no ledger entry. A start date on or before the legal entity's lock date is refused (`start_date_in_locked_period`) while a document with business lines is dated between it and the lock date, since those documents would become pending inside the locked period; tenants enabling accounting on locked history set it after the lock date and enter opening balances as a manual journal entry. Documents dated before it never reach the ledger.
