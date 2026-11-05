@@ -32,7 +32,7 @@ Automatic entries and reversals are ledger rows, not documents: they have no num
 - **Rules.** One per business line kind: account and side. A negative amount goes on the opposite side; the org unit is carried onto the journal line.
 - **Automatic entries.** A job per `(doc_type, doc_id)` reconciles the ledger with the document's current business lines; any order and any number of runs give the same result. HR is never blocked: a missing rule puts the document under awaiting mapping.
 - **Start date.** Per legal entity; no date means accounting is not in use there. It can be set or changed only while the legal entity has no ledger entry. Documents dated before it never reach the ledger.
-- **Period lock.** Locking is refused while the period holds pending, awaiting-mapping or unbalanced documents dated on or after the start date. A document's first posting may land in a locked period; a reversal never does.
+- **Period lock.** Locking is refused while the period holds pending, awaiting-mapping or unbalanced documents dated on or after the start date. Entries the ledger lacks for a document (its first posting, or the reversal of a document cancelled while accounting was off) may land in a locked period.
 - **Manual entry.** Date, legal entity, description, at least two lines (postable active account, one positive debit or credit, optional org unit and description). Posting needs debits equal to credits.
 
 ## Permissions

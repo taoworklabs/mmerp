@@ -5,7 +5,7 @@ import { useTranslation } from 'react-i18next'
 import { Link, useSearchParams } from 'react-router'
 import { api, unwrap, type PendingDoc } from '@/shared/api/accounting'
 import { useRecordLinks } from '@/shared/area'
-import { useCan, useProductOn } from '@/shared/auth/me'
+import { useProductOn } from '@/shared/auth/me'
 import { formatDate } from '@/shared/i18n'
 import { type Column } from '@/shared/ui/DataTable'
 import { LegalEntityFilter, useLegalEntities } from '@/shared/ui/form'
@@ -18,7 +18,7 @@ import { kindLabel } from '../balance'
 import { asList } from '../hooks/useAccounting'
 import { accountingKeys } from '../keys'
 
-const reasonTone: Record<PendingDoc['reason'], StatusTone> = { queued: 'info', unmapped: 'warning', unbalanced: 'negative' }
+const reasonTone: Record<PendingDoc['reason'], StatusTone> = { queued: 'info', unmapped: 'warning', unbalanced: 'negative', too_large: 'negative' }
 
 // PendingPage: the documents of a legal entity whose lines have not reached the ledger, and why;
 // each opens in the area that owns it.
@@ -27,11 +27,13 @@ export function PendingPage() {
   const links = useRecordLinks()
   // Posting has no allowed_actions; a disabled product is read-only.
   const on = useProductOn('accounting')
-  const canPost = useCan('accounting.post') && on
+  const postable = useLegalEntities({ product: 'accounting', permission: 'accounting.post' })
   const action = useAction()
   const [search, setSearch] = useSearchParams()
   const entities = useLegalEntities({ product: 'accounting', permission: 'accounting.view' }, search.get('legal_entity_id') ?? undefined)
   const le = entities.chosen
+  // Post may be held at other legal entities only, so check the chosen one.
+  const canPost = on && postable.options.some((o) => Number(o.value) === le)
   const pending = useQuery({
     queryKey: accountingKeys.pending(le ?? 0),
     queryFn: async () => (await unwrap(api.GET('/accounting/pending', { params: { query: { legal_entity_id: le! } } }))).items ?? [],
