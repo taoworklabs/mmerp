@@ -12,7 +12,7 @@
   background: var(--mmerp-color-table-header);
   color: var(--mmerp-color-dimmed);
   font-size: var(--mmerp-font-size-xs);
-  font-weight: 600;
+  font-weight: var(--mmerp-font-weight-semibold);
   padding: var(--mmerp-space-xs);
   text-align: center;
 }
@@ -46,14 +46,14 @@
 }
 
 .day {
-  font-weight: 600;
+  font-weight: var(--mmerp-font-weight-semibold);
   font-variant-numeric: tabular-nums;
 }
 
 .weekday {
   display: none;
   color: var(--mmerp-color-dimmed);
-  font-weight: 500;
+  font-weight: var(--mmerp-font-weight-medium);
 }
 
 @media (max-width: 640px) {
