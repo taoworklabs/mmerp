@@ -53,7 +53,9 @@ function focusInvalid(errors: FieldErrors, after: HTMLElement | null): HTMLEleme
   const inputs = invalidInputs(errors)
   const next = (after && inputs.find((el) => after.compareDocumentPosition(el) & Node.DOCUMENT_POSITION_FOLLOWING)) || inputs[0]
   next?.focus({ preventScroll: true })
-  next?.scrollIntoView({ block: 'center' })
+  // Scroll what took the focus: a checkbox's id is on a hidden input that hands focus to its box.
+  const focused = document.activeElement instanceof HTMLElement ? document.activeElement : next
+  focused?.scrollIntoView({ block: 'center' })
   return next
 }
 
@@ -105,11 +107,14 @@ export function Form<T extends FieldValues>({ form, onSubmit, errorFields, id, c
   }, [submit])
 
   const dirty = Object.keys(dirtyFields).length > 0 && !isSubmitting
+  // A save in flight still counts as unsaved for the page: if it fails, the edits and the error
+  // must still be there (a modal must not have closed on an outside click meanwhile).
+  const unsaved = dirty || isSubmitting
   const report = useContext(UnsavedContext)?.set
   useEffect(() => {
-    report?.(dirty)
+    report?.(unsaved)
     return () => report?.(false)
-  }, [report, dirty])
+  }, [report, unsaved])
   const blocker = useBlocker(({ currentLocation, nextLocation }) => dirty && currentLocation.pathname + currentLocation.search !== nextLocation.pathname + nextLocation.search)
   const [ask, dialog] = useConfirm()
   useEffect(() => {
@@ -164,7 +169,7 @@ export function FormSection({ title, description, icon: Icon, wide, compact, chi
       icon={Icon && <Icon {...icon.text} aria-hidden />}
       badge={
         count > 0 && (
-          <Badge color="danger" className={classes.count} aria-label={t('shared.form.section_invalid', { count })}>
+          <Badge tone="danger" className={classes.count} aria-label={t('shared.form.section_invalid', { count })}>
             {count}
           </Badge>
         )
@@ -237,12 +242,12 @@ export function FormActions({ submitLabel, onCancel, cancelLabel, cancelTo }: { 
         </Button>
       )}
       {onCancel && (
-        <Button variant="subtle" color="gray" onClick={onCancel}>
+        <Button variant="subtle" tone="neutral" onClick={onCancel}>
           {cancelLabel}
         </Button>
       )}
       {page && cancelTo && (
-        <Button variant="subtle" color="gray" render={<Link to={cancelTo} />}>
+        <Button variant="subtle" tone="neutral" render={<Link to={cancelTo} />}>
           {t('shared.form.cancel')}
         </Button>
       )}

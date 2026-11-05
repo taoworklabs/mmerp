@@ -1,6 +1,7 @@
 import type * as React from 'react'
 import { useMediaQuery } from '../../hooks/useMediaQuery.ts'
 import { cx } from '../../internal/cx.ts'
+import { breakpoint } from '../../tokens/tokens.ts'
 import type { StyleVars } from '../../internal/style.ts'
 import styles from './AppShell.module.css'
 
@@ -21,7 +22,7 @@ export interface AppShellProps extends Omit<React.ComponentPropsWithRef<'div'>, 
 }
 
 // Below this width the navbar leaves the grid and becomes an off-canvas overlay.
-const mobileQuery = '(max-width: 63.99em)'
+const mobileQuery = `not all and (min-width: ${breakpoint.md})`
 
 export function AppShell({
   header,

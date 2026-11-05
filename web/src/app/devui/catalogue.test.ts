@@ -18,7 +18,7 @@ describe('devui catalogue', () => {
 
   it('kit layer covers exactly the area allowlist', () => {
     const match = /name: '@mmerp\/ui',\s*allowImportNames:\s*\[([^\]]*)\]/.exec(eslintConfig)
-    // The look-only blocks are catalogued with the shared/ui components they replace.
+    // These look-only blocks have no entry of their own: they show inside the page templates.
     const blocks = ['RecordColumns', 'ActionBar']
     const allowed = [...match![1]!.matchAll(/'([A-Za-z]+)'/g)].map((m) => m[1]!).filter((n) => !blocks.includes(n))
     const covered = all.filter((e) => e.layer === 'kit').flatMap((e) => e.covers ?? [e.name!])

@@ -6,7 +6,7 @@ import { useForm } from 'react-hook-form'
 import { useTranslation } from 'react-i18next'
 import { api, unwrap, type Holiday, type WorkWeek } from '@/shared/api/hrm'
 import { useMe } from '@/shared/auth/me'
-import { currentYear, errorText, formatDate } from '@/shared/i18n'
+import { currentYear, formatDate } from '@/shared/i18n'
 import { DataTable, type Column } from '@/shared/ui/DataTable'
 import { CheckboxField, DateField, Form, FormActions, LegalEntityFilter, TextField, useLegalEntities, YearFilter } from '@/shared/ui/form'
 import { MenuAction } from '@/shared/ui/MenuAction'
@@ -104,7 +104,7 @@ export function WorkCalendarPage() {
 
   let body
   if (units.isPending || (entity !== undefined && cal.isPending)) body = <ContentSkeleton />
-  else if (units.isError || cal.isError) body = <ErrorState message={errorText(t, units.error ?? cal.error)} onRetry={() => void cal.refetch()} />
+  else if (units.isError || cal.isError) body = <ErrorState queries={[units, cal]} />
   else if (entity === undefined || !cal.data) body = <EmptyState title={t('hrm.calendar.no_entities')} />
   else
     body = (

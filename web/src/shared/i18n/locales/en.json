@@ -495,7 +495,7 @@
   "shared.devui.example_field_error_do": "Not entered.",
   "shared.devui.example_field_error_dont": "Please enter the customer code",
   "shared.devui.colour": "Colour",
-  "shared.devui.colour_hint": "Screens name a colour by meaning (color=\"success\"), never by step.",
+  "shared.devui.colour_hint": "Screens name a colour by meaning (tone=\"success\"), never by step.",
   "shared.devui.colour_ramps": "Scales",
   "shared.devui.colour_steps": "0 tint · 1 badge tint · 6 filled · 7 text on tint · 8 badge text.",
   "shared.devui.ramp_primary": "The one primary action, links, focus, selected item; also info.",

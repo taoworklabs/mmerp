@@ -9,7 +9,8 @@ import styles from './Anchor.module.css'
 
 export interface AnchorProps extends React.ComponentPropsWithRef<'a'> {
   size?: FontSize
-  tone?: Tone
+  // None is the link colour.
+  tone?: Tone | 'dimmed'
   weight?: 400 | 500 | 600 | 650
   underline?: 'hover' | 'always' | 'never'
   render?: RenderProp

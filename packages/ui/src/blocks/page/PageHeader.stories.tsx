@@ -59,7 +59,7 @@ export const Record: Story = {
             />
           }
           leading={<Avatar alt="Nguyễn Văn A">NA</Avatar>}
-          status={<Badge color="success">Đang giao dịch</Badge>}
+          status={<Badge tone="success">Đang giao dịch</Badge>}
           description="customer@example.com"
           summary={
             <Text size="sm" tone="dimmed">

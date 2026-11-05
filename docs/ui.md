@@ -4,7 +4,7 @@ Mandatory rules for every screen. **Agents and people must read this document be
 
 Sources of truth in code:
 
-- `packages/ui` (`@mmerp/ui`): the tokens (`src/tokens/tokens.ts`: every colour, font size, spacing and radius, as `--mmerp-*` CSS variables) and the primitives built on them, each shown in Storybook (`make storybook`, `:6006`). Sizes specific to one component (table row height) live in its CSS module in `shared/ui`; areas set no size apart from the column widths of a lines table.
+- `packages/ui` (`@mmerp/ui`): the tokens (`src/tokens/tokens.ts`: every colour, font size, spacing and radius, as `--mmerp-*` CSS variables) and the primitives built on them, each shown in Storybook (`make storybook`, `:6006`). Sizes shared by several components (control heights, table row heights per density, the stacking order) are tokens too; a size specific to one component (a calendar cell, the timeline bullet) lives in that component's CSS module, in the kit or in `shared/ui`; areas set no size apart from the column widths of a lines table.
 - `web/src/shared/ui/`: page templates and components. New screens are **assembled from what already exists here**.
 - The `/dev/ui` page, dev build only, in six layers: foundations, the `@mmerp/ui` primitives and blocks areas may import directly (linking to Storybook), the ready-made mmerp components (`shared/ui`, `shared/document`), patterns, and page templates. Each component page shows a live example, when to use it, its variants and states, do and don't, its import, and related entries. When unsure what to use, open this page first; the written rules stay here and in the `mmerp-ui` skill.
 
@@ -58,7 +58,7 @@ All of them live in the `@mmerp/ui` tokens. Area code uses only token names or `
 | `background` | `#FFFFFF` | App background and content area |
 | `surface` | `#FFFFFF` | Background of tables, forms, cards |
 | `surface-sunken` | `#F8F8F8` | Background of group and total rows, tile hover, cells that take no value |
-| table header | `#F4F5F6` | Background of a table's column header row: a step deeper than the sunken rows |
+| table header | `#F4F5F6` | Background of a table's column header row: a step deeper than the sunken rows; a list page's table sets it to the body colour |
 | `success` | Green, `#5B7F24` | Posted status, success notifications |
 | `warning` | Orange, `#BD5B00` | Pending approval status, warnings |
 | `danger` | Red `#C9372C` (text `#AE2E24`) | Errors, destructive actions, cancelled status |
@@ -93,8 +93,9 @@ A document type may change the **label**, never the colour, through the translat
 ### Spacing, radius, shadow
 
 - 4px-based spacing scale: 4, 8, 12, 16, 24, 32 (`xxs`…`xl`), plus 2 (`xxxs`) between a line and its caption and 48 (`xxl`) for the page's side padding from 1280px and a record page's tabs. No other values.
-- Radius by role: 4px for badges, tooltips and small icon tiles (`sm`; a file-type tile is 6px, the kind icons of notifications and empty panels are round); 6px for buttons, inputs, navigation items, cards, tiles, frames and modals (`md`, the default); 8px for menus and popovers (`lg`); avatars and page numbers are round.
+- Radius by role: 4px for badges, tooltips and small icon tiles (`sm`; a file-type tile is 6px, the kind icons of notifications and empty panels are round); 6px for buttons, inputs, navigation items, cards, tiles, frames and modals (`md`, the default); 8px for menus and popovers (`lg`); avatars, page numbers, dots and pills are round (`full`, `--mmerp-radius-full`).
 - **Controls in the same strip have the same height.** A strip is a row of controls placed side by side: filter bar, pagination bar, form footer, page header buttons. The `shared/ui` component that builds the strip picks the size of every control inside it; every control reads `--mmerp-control-height`, so a button next to an input is exactly as tall as the input (e.g. pagination next to the rows-per-page select). Buttons are always `sm`; other controls elsewhere keep the size that fits their place, as long as they meet the minimum touch target. Buttons inside an input (clear value, show password, hide sensitive field) are smaller than the input that holds them.
+- Overlays stack in one order (`--mmerp-z-index-*`): a narrow screen's action bar, the navigation drawer, dialogs and drawers, then menus, option lists, tooltips and toasts. The kit applies it.
 - No shadows, except on modals, dropdown menus, popovers and toasts (one overlay shadow), and the upward shadow of a page form's footer while the form runs on under it (`--mmerp-shadow-footer`).
 - **A selected item only gets a light blue background and primary text**, everywhere (navigation, lists, menus, approval inbox): no accent bar on the left edge and no coloured border.
 
@@ -156,7 +157,7 @@ General rules:
 
 Use `<DataTable>` from `shared/ui`, not the kit's `Table` directly.
 
-- Rows are 40px tall. A table that is part of a page (a record's tab, a section, a document, a modal) sits in a frame: a 1px `border` edge with 6px corners, like a document's lines. The table that is a list page's whole content fills the page and has no frame of its own. The column header row sits on the table header tone (`#F4F5F6`, a step deeper than the sunken group and total rows): 12px text, weight 600, in `text-secondary` over a rule. From 1024px a list page is exactly as tall as the window: its header, filter bar and paging bar stay in place and only the content below the filters scrolls; a table that is the whole content scrolls inside itself, under its column headers, which stick. Scrollbars are thin (8px); a table's vertical scrollbar runs between its sticky header and footer, never behind them.
+- Rows are 40px tall. A table that is part of a page (a record's tab, a section, a document, a modal) sits in a frame: a 1px `border` edge with 6px corners, like a document's lines. The table that is a list page's whole content fills the page and has no frame of its own. The column header row sits on the table header tone (`#F4F5F6`, a step deeper than the sunken group and total rows), except in a list page's table, whose header sits on the page's body colour as part of the header block (`ListPage` sets `--mmerp-color-table-header` to `--mmerp-color-body`): 12px text, weight 600, in `text-secondary` over a rule. From 1024px a list page is exactly as tall as the window: its header, filter bar and paging bar stay in place and only the content below the filters scrolls; a table that is the whole content scrolls inside itself, under its column headers, which stick. Scrollbars are thin (8px); a table's vertical scrollbar runs between its sticky header and footer, never behind them.
 - The first column is the identifier (document number, full name with avatar), weight 500 in the main text colour, underlined on hover. The whole row is clickable; the link is a real `<a>` tag, so middle-click or Ctrl+click opens a new tab.
 - Numbers and money are right-aligned and use `tabular-nums`. Text is left-aligned. Dates are left-aligned.
 - The status column uses `<DocumentStatus>` for documents and `<StatusBadge>` (tinted badge, 4px radius, sentence case) for master data, e.g. employees who are active or have left.
@@ -188,7 +189,7 @@ Use `<DataTable>` from `shared/ui`, not the kit's `Table` directly.
 | `headerColor` | `neutral` (default), `plain`, or a semantic colour name |
 | `striped`, `stripeColor` | Alternate row backgrounds; neutral stripes by default |
 | `hoverColor` | A semantic colour name; omitted uses the standard sunken surface |
-| `density` | `compact` (32px rows), `standard` (40px), `comfortable` (48px) |
+| `density` | `compact` (32px rows, 28px header), `standard` (40px, 36px), `comfortable` (48px, 40px); `--mmerp-table-row-height-*`, `--mmerp-table-header-height-*` |
 
 Colours use the kit's `ColorName` tokens. Semantic colours retain their meaning; the primary tint remains the selection colour regardless of stripes or hover. Sticky cells use opaque matching backgrounds, and the overlay scrollbars remain above the table. These options style the desktop table; the responsive card list keeps its existing card presentation.
 
@@ -213,6 +214,8 @@ Use the fields of `shared/ui/form`, already wired to React Hook Form.
 | Data | Component | Notes |
 | --- | --- | --- |
 | Date | `DateField` | Formatted per language (below); weeks start on Monday |
+| A master-data record's code | `CodeField` | Typed, or left empty to be issued at creation; read-only once the record exists |
+| Whole number | `IntegerField` | No digit grouping (port, year, levels) |
 | Money | `MoneyField` | Integer, with thousands separators, no decimals for VND |
 | Fractional quantity | `DecimalField` | Number of decimals declared by the field (e.g. workdays: 1) |
 | Pick one from a list | `SelectField` | Has a search box when there are more than 7 options. Lists only valid options: what cannot be chosen is not shown. The selected option only gets a background, no check mark. The dropdown opens below the field's error message, never covering it |
@@ -229,7 +232,7 @@ A field that picks a business object (e.g. picking an employee) belongs to the a
 
 | Kind | Lives in | Examples |
 | --- | --- | --- |
-| Carries no business concept | `shared/ui` | Page templates, `DataTable`, basic input fields (`DateField`, `MoneyField`, `SelectField`…), loading, empty and error states, `FieldList` (read-only label–value pairs, label on the left), `EditablePanel` (a group of a record's values in a card, edited in place), `SensitiveValue` (a masked value shown on request, as text) |
+| Carries no business concept | `shared/ui` | Page templates, `DataTable`, basic input fields (`DateField`, `MoneyField`, `SelectField`…), loading, empty and error states, `EditablePanel` (a group of a record's values in a card, edited in place), `SensitiveValue` (a masked value shown on request, as text) |
 | Shared document features | `shared/document` | `DocumentScreen` (a document's page), `DocumentPreview`, `CreatePage`, `DocumentStatus`, `DocumentActions`, `ApprovalPanel`, `ActivityFeed` (every record's and document's comments and history in one timeline), `AttachmentPanel` |
 | Carries a product's concept | That product's area | Employee picker, contract detail section, payroll breakdown table, leave request preview |
 
@@ -238,8 +241,9 @@ What `shared/ui` already has (see also `/dev/ui`), to use before building your o
 - Actions and feedback: `useConfirm` (confirmation dialog), `useAction` (a region's action: confirm, error kept for the region, success toast), `notifySuccess`/`notifyError`/`notifyUndo` (`notify.tsx`).
 - States (`states.tsx`): `EmptyState`, `ErrorState`, `PageSkeleton`, `ContentSkeleton`, `ForbiddenPage`, `NotFoundPage`, `ReadOnlyBanner`; `QueryView` picks among them for a region fed by one query; `Notice` is a banner whose tone sets colour and icon.
 - Menus: `MoreActions` holds `MenuAction`s (icon at text size, `danger` for an action that loses something).
-- Display: `DataTable`, `FieldList`, `StatusBadge`, `CellGrid` (grid of inputs along two axes, like a timesheet), `DayGrid`/`PeriodNav` (calendar by day with a Month / Week switch), `TileGrid`/`StatTile`/`LinkTile`, `OrgUnitName`, `PersonName`/`PersonAvatar`.
-- Forms (`shared/ui/form`): `Form`, `FormSection`, `InputRow`, `FormActions`, `FormFields`, `EditablePanel`; fields `TextField`, `PasswordField`, `CheckboxField`, `DateField`, `MonthField`, `FileField`, `SelectField`, `MultiSelectField`, `DecimalField`, `MoneyField`, `SensitiveField`, `SensitiveValue`, `OrgUnitField`, `LegalEntityField`, `RemoteSelectField`; filters `SearchInput`, `FilterChip`, `OrgUnitFilter`, `LegalEntityFilter`, `MonthFilter`, `DateFilter`, `YearFilter`, `RemoteFilter`.
+- Display: `DataTable`, `StatusBadge`, `CellGrid` (grid of inputs along two axes, like a timesheet), `DayGrid`/`PeriodNav` (calendar by day with a Month / Week switch), `TileGrid`/`StatTile`/`LinkTile`, `OrgUnitName`, `PersonName`/`PersonAvatar`.
+- Forms (`shared/ui/form`): `Form`, `FormSection`, `InputRow`, `FormActions`, `FormFields`, `EditablePanel`; fields `TextField`, `CodeField`, `PasswordField`, `CheckboxField`, `DateField`, `MonthField`, `FileField`, `SelectField`, `MultiSelectField`, `DecimalField`, `MoneyField`, `IntegerField`, `SensitiveField`, `SensitiveValue`, `OrgUnitField`, `LegalEntityField`, `RemoteSelectField`; filters `SearchInput`, `FilterChip`, `OrgUnitFilter`, `LegalEntityFilter`, `MonthFilter`, `DateFilter`, `YearFilter`, `RemoteFilter`.
+- From the kit (`@mmerp/ui`, on the areas' allowlist): the look-only blocks `Panel`, `FieldList` (read-only label–value pairs, label on the left), `KeyFacts`, `RecordColumns`, `ActionBar`.
 - Outside `shared/ui`: `useListParams` (`shared/url`: filters, sort, page in the URL, and the `filterBar` a filter bar binds its chips to), `ExportButton`/`ImportDialog` (`shared/jobs`), `OrgTree` (`shared/org`).
 
 - Area components are **assembled from `shared/ui` primitives** and follow exactly the rules of this document: no custom colours, no inline `style`, no page-level layout of their own.
@@ -248,7 +252,7 @@ What `shared/ui` already has (see also `/dev/ui`), to use before building your o
 
 ## Actions and feedback
 
-- **Button hierarchy:** each view has one primary button (filled, `primary` colour). Other buttons are secondary (outlined), except the way out of a form or dialog beside its primary button ("Hủy", "Quay lại"), which is quiet (grey text, `variant="subtle" color="gray"`) so the primary stands alone. Red (`danger`) buttons are only for destructive or data-losing actions: delete, cancel a document, revoke a role, leave a page with unsaved changes.
+- **Button hierarchy:** each view has one primary button (filled, `primary` colour). Other buttons are secondary (outlined), except the way out of a form or dialog beside its primary button ("Hủy", "Quay lại"), which is quiet (grey text, `variant="subtle" tone="neutral"`) so the primary stands alone. Red (`danger`) buttons are only for destructive or data-losing actions: delete, cancel a document, revoke a role, leave a page with unsaved changes.
 - **One button size everywhere:** `sm` (30px, the default, so no `size` prop) with an 18px icon, in the page header, tabs, sections, the side column, footers and among content alike. A button never sets a smaller size; what matters less is quieter in style (`default`, `light`, `subtle`), never smaller. Within a strip all controls have the same height, so a button beside an input is exactly as tall as the input. Among a form section's fields and in a modal's body every control is 40px (a lines table and the modal footer keep 30px); the theme sets this, a screen sets nothing.
 - **Button placement:** action buttons are always right-aligned: in the page header (the page template's `actions`), at the top of a `RecordPage` tab (`TabContent`'s `actions`) and in a form or modal footer (`FormActions`). Areas do not align buttons themselves.
 - **Button names are specific verbs:** "Lưu" (Save), "Gửi duyệt" (Submit for approval), "Rút lại" (Withdraw), "Duyệt" (Approve), "Từ chối" (Reject), "Hủy chứng từ" (Cancel document). Never "OK" or "Đồng ý" (Agree).
@@ -309,7 +313,7 @@ The rules above are enforced by tools wherever tools can do it:
 | Rule | Enforced by |
 | --- | --- |
 | Areas take from `@mmerp/ui` only plain layout and text primitives (`Anchor`, `Button`, `Divider`, `Group`, `List`, `Loader`, `Skeleton`, `Stack`, `Text`, `Tooltip`) and the look-only blocks (`Panel`, `FieldList`, `KeyFacts`, `RecordColumns`, `ActionBar`); everything else comes from `shared/ui`. Only `@mmerp/ui` imports `@base-ui/react` | ESLint `no-restricted-imports` (`allowImportNames` option), with a message pointing to `shared/ui` |
-| No inline `style` and no CSS files in areas | ESLint `no-restricted-syntax` blocks the `style` attribute in JSX (outside `shared/ui`); dependency-cruiser blocks `*.css` imports from areas. CSS modules exist only in `shared/ui` |
+| No inline `style` and no CSS files in areas | ESLint `no-restricted-syntax` blocks the `style` attribute in JSX (outside `shared/ui`); dependency-cruiser blocks `*.css` imports from areas. CSS modules exist only in `shared` (`shared/ui`, `shared/document`, `shared/jobs`) and `app`, never in areas |
 | No colour codes in the app | `make lint` scans for hex codes (3, 6 and 8 digits), `rgb(` and `hsl(` in every file of `web/src`, `.css` files included; colours live only in the `@mmerp/ui` tokens |
 | No hard-coded text in JSX | ESLint `i18next/no-literal-string` |
 | Translation keys have both `vi` and `en` | Check in `make lint` ([techstack.md](./techstack.md#i18n)) |

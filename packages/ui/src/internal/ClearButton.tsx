@@ -16,7 +16,7 @@ export function ClearButton({ label, onClear, focusTarget, disabled, readOnly }:
   return (
     <ActionIcon
       variant="subtle"
-      color="gray"
+      tone="neutral"
       size="xs"
       aria-label={label}
       onClick={() => {

@@ -71,7 +71,7 @@ function RuleList({ product, basePath }: Props) {
   ]
   let body
   if (rules.isPending) body = <ContentSkeleton />
-  else if (rules.isError) body = <ErrorState message={errorText(t, rules.error)} onRetry={() => void rules.refetch()} />
+  else if (rules.isError) body = <ErrorState queries={[rules]} />
   else if (rules.data.length === 0) body = <EmptyState title={t('shared.rule.empty')} />
   else
     body = (
@@ -102,9 +102,7 @@ function RuleEditor({ product, basePath }: Props) {
   const roles = useQuery({ queryKey: documentKeys.roles(), queryFn: async () => (await unwrap(api.GET('/roles'))) ?? [] })
   const users = useQuery({ queryKey: documentKeys.approvalRuleUsers(), queryFn: async () => (await unwrap(api.GET('/approval-rules/users'))) ?? [] })
   if (rules.isPending || roles.isPending || users.isPending) return <PageSkeleton />
-  if (rules.isError) return <ErrorState message={errorText(t, rules.error)} onRetry={() => void rules.refetch()} />
-  if (roles.isError) return <ErrorState message={errorText(t, roles.error)} onRetry={() => void roles.refetch()} />
-  if (users.isError) return <ErrorState message={errorText(t, users.error)} onRetry={() => void users.refetch()} />
+  if (rules.isError || roles.isError || users.isError) return <ErrorState queries={[rules, roles, users]} />
   const rule = rules.data.find((r) => r.doc_type === docType && r.action === action)
   if (!rule) return <NotFoundPage back={{ to: basePath, label: t('shared.rule.back') }} />
   const userOptions = users.data.map((u) => ({ value: String(u.id), label: `${u.name} (${u.login})` }))
@@ -187,7 +185,7 @@ function RuleForm({ rule, basePath, roles, userOptions }: { rule: TypeRule; base
             {t('shared.rule.settings')}
           </Button>
           {rule.rule && allowed.includes('delete') && (
-            <Button variant="subtle" color="danger" leftSection={<IconTrash {...icon.button} />} onClick={() => void remove()}>
+            <Button variant="subtle" tone="danger" leftSection={<IconTrash {...icon.button} />} onClick={() => void remove()}>
               {t('shared.rule.delete')}
             </Button>
           )}

@@ -22,7 +22,7 @@ export function BulkBar({ countText, label, clearLabel, onClear, children, class
         {countText}
       </Text>
       {children}
-      <Button variant="subtle" color="gray" leftSection={<CloseIcon size={12} />} onClick={onClear}>
+      <Button variant="subtle" tone="neutral" leftSection={<CloseIcon size={12} />} onClick={onClear}>
         {clearLabel}
       </Button>
     </div>

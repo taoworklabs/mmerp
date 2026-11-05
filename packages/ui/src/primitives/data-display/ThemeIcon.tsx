@@ -1,17 +1,18 @@
 import type * as React from 'react'
 import { cx } from '../../internal/cx.ts'
 import type { StyleVars } from '../../internal/style.ts'
-import type { ColorName } from '../../tokens/tokens.ts'
+import { ramp, type Tone } from '../../internal/tone.ts'
 import styles from './ThemeIcon.module.css'
 
-export interface ThemeIconProps extends React.ComponentPropsWithRef<'div'> {
-  color?: ColorName
+export interface ThemeIconProps extends Omit<React.ComponentPropsWithRef<'div'>, 'color'> {
+  tone?: Tone
   variant?: 'light' | 'filled'
   size?: number
   circle?: boolean
 }
 
-export function ThemeIcon({ color = 'primary', variant = 'light', size = 30, circle, className, style, children, ...props }: ThemeIconProps) {
+export function ThemeIcon({ tone = 'primary', variant = 'light', size = 30, circle, className, style, children, ...props }: ThemeIconProps) {
+  const color = ramp(tone)
   const vars: StyleVars = {
     ...style,
     '--mmerp-theme-icon-size': `${size}px`,

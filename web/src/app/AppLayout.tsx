@@ -1,4 +1,4 @@
-import { ActionIcon, AppShell, Box, Button, Burger, Group, Indicator, Menu, NavLink, Stack, Text, ThemeIcon, Tooltip, UnstyledButton, cx, useDisclosure, useLocalStorage, useMediaQuery } from '@mmerp/ui'
+import { ActionIcon, AppShell, Box, Button, Burger, Group, Indicator, Menu, NavLink, Stack, Text, ThemeIcon, Tooltip, UnstyledButton, breakpoint, cx, useDisclosure, useLocalStorage, useMediaQuery } from '@mmerp/ui'
 import { IconBell, IconBuildingSkyscraper, IconCheck, IconHourglass, IconInbox, IconChevronDown, IconChevronRight, IconLayoutSidebarLeftCollapse, IconLayoutSidebarLeftExpand, IconKey, IconDevices, IconLogout } from '@tabler/icons-react'
 import { useQuery } from '@tanstack/react-query'
 import { Suspense, useEffect, useState, type ReactNode } from 'react'
@@ -31,7 +31,7 @@ function ForcedChange() {
       header={
         <Group className={classes.bar} justify="space-between" wrap={false}>
           <Text weight={600}>{t('shared.app.title')}</Text>
-          <Button variant="subtle" color="gray" leftSection={<IconLogout {...icon.button} />} onClick={() => void unwrap(api.POST('/auth/logout')).then(endSession)}>
+          <Button variant="subtle" tone="neutral" leftSection={<IconLogout {...icon.button} />} onClick={() => void unwrap(api.POST('/auth/logout')).then(endSession)}>
             {t('core.shell.logout')}
           </Button>
         </Group>
@@ -67,7 +67,7 @@ function Shell({ areas }: { areas: AreaManifest[] }) {
     document.addEventListener('keydown', onKey, true)
     return () => document.removeEventListener('keydown', onKey, true)
   }, [drawer, closeDrawer])
-  const wide = useMediaQuery('(min-width: 80em)', true)
+  const wide = useMediaQuery(`(min-width: ${breakpoint.lg})`, true)
   // Remembered per user; until the user chooses, it collapses below 1280px.
   const [pref, setPref] = useLocalStorage<boolean | null>(`mmerp.nav.collapsed.${me.id}`, null)
   const collapsed = pref ?? !wide
@@ -135,7 +135,7 @@ function Shell({ areas }: { areas: AreaManifest[] }) {
                 <ActionIcon
                   render={<Link to={own('notifications')} />}
                   variant={pathname === own('notifications') ? 'light' : 'subtle'}
-                  color={pathname === own('notifications') ? undefined : 'gray'}
+                  tone={pathname === own('notifications') ? undefined : 'neutral'}
                   aria-label={unread > 0 ? t('core.nav.notifications_count', { count: unread }) : t('core.nav.notifications')}
                 >
                   <IconBell {...icon.button} />
@@ -147,7 +147,7 @@ function Shell({ areas }: { areas: AreaManifest[] }) {
                 <ActionIcon
                   render={<Link to={own('inbox')} />}
                   variant={pathname === own('inbox') ? 'light' : 'subtle'}
-                  color={pathname === own('inbox') ? undefined : 'gray'}
+                  tone={pathname === own('inbox') ? undefined : 'neutral'}
                   aria-label={waiting > 0 ? t('core.nav.inbox_count', { count: waiting }) : t('core.nav.inbox')}
                 >
                   <IconInbox {...icon.button} />
@@ -158,7 +158,7 @@ function Shell({ areas }: { areas: AreaManifest[] }) {
               <ActionIcon
                 render={<Link to={own('jobs')} />}
                 variant={pathname === own('jobs') ? 'light' : 'subtle'}
-                color={pathname === own('jobs') ? undefined : 'gray'}
+                tone={pathname === own('jobs') ? undefined : 'neutral'}
                 aria-label={t('core.nav.jobs')}
               >
                 <IconHourglass {...icon.button} />
@@ -234,7 +234,7 @@ function Shell({ areas }: { areas: AreaManifest[] }) {
           <Tooltip label={t(collapsed ? 'core.shell.expand' : 'core.shell.collapse')} side="right">
             <ActionIcon
               variant="subtle"
-              color="gray"
+              tone="neutral"
               aria-label={t(collapsed ? 'core.shell.expand' : 'core.shell.collapse')}
               onClick={() => setPref(!collapsed)}
             >

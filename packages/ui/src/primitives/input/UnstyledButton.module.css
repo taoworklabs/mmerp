@@ -9,6 +9,6 @@
   cursor: pointer;
 }
 
-.root:disabled {
+.root:is(:disabled, [aria-disabled='true']) {
   cursor: not-allowed;
 }

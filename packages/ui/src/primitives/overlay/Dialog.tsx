@@ -18,6 +18,9 @@ export interface DialogProps extends Omit<React.ComponentPropsWithRef<'div'>, 'c
   size?: DialogSize | number
   closeLabel: string
   withCloseButton?: boolean
+  // false keeps the dialog open on a click outside, e.g. while its form holds unsaved edits;
+  // Escape and the close button still close it, being deliberate.
+  closeOnClickOutside?: boolean
   // Where focus lands on open, e.g. the confirm button of a confirmation; default the first tabbable.
   initialFocus?: DialogFocusProp
   children: React.ReactNode
@@ -30,6 +33,7 @@ function DialogRoot({
   size = 'md',
   closeLabel,
   withCloseButton = true,
+  closeOnClickOutside = true,
   initialFocus,
   className,
   style,
@@ -41,6 +45,7 @@ function DialogRoot({
   return (
     <BaseDialog.Root
       open={opened}
+      disablePointerDismissal={!closeOnClickOutside}
       onOpenChange={(next) => {
         if (!next) onClose()
       }}
@@ -51,7 +56,7 @@ function DialogRoot({
           <div className={styles.header}>
             <BaseDialog.Title className={styles.title}>{title}</BaseDialog.Title>
             {withCloseButton && (
-              <ActionIcon variant="subtle" color="gray" aria-label={closeLabel} onClick={onClose}>
+              <ActionIcon variant="subtle" tone="neutral" aria-label={closeLabel} onClick={onClose}>
                 <CloseIcon size={12} />
               </ActionIcon>
             )}

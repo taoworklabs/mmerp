@@ -29,7 +29,7 @@ export const Decorative: Story = {
   render: () => (
     <Group>
       {decorativeColors.map((color) => (
-        <Avatar key={color} alt={color} color={color}>
+        <Avatar key={color} alt={color} accent={color}>
           {color.slice(0, 2).toUpperCase()}
         </Avatar>
       ))}

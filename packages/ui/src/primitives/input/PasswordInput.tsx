@@ -15,7 +15,7 @@ export function PasswordInput({ visibilityLabels, ...props }: PasswordInputProps
       rightSection={
         <ActionIcon
           variant="subtle"
-          color="gray"
+          tone="neutral"
           size="xs"
           disabled={props.disabled}
           aria-label={visible ? visibilityLabels.hide : visibilityLabels.show}

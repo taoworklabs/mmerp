@@ -20,13 +20,13 @@ function Components() {
           <Stack>
             <Group>
               <Button>Lưu thay đổi</Button><Button variant="default">Xuất dữ liệu</Button>
-              <Button variant="subtle" color="gray">Hủy</Button><Button loading>Đang lưu</Button><Button disabled>Không khả dụng</Button>
+              <Button variant="subtle" tone="neutral">Hủy</Button><Button loading>Đang lưu</Button><Button disabled>Không khả dụng</Button>
             </Group>
             <Group>
-              <Badge color="gray">Nháp</Badge><Badge color="warning">Chờ duyệt</Badge>
-              <Badge color="success">Đã duyệt</Badge><Badge color="danger">Đã hủy</Badge><Badge color="info">Thông tin</Badge>
+              <Badge tone="neutral">Nháp</Badge><Badge tone="warning">Chờ duyệt</Badge>
+              <Badge tone="success">Đã duyệt</Badge><Badge tone="danger">Đã hủy</Badge><Badge tone="info">Thông tin</Badge>
             </Group>
-            <Alert color="info" title="Thông tin">Các thay đổi sẽ được lưu sau khi bạn xác nhận.</Alert>
+            <Alert tone="info" title="Thông tin">Các thay đổi sẽ được lưu sau khi bạn xác nhận.</Alert>
           </Stack>
         </Panel>
         <Panel title="Trường nhập liệu">

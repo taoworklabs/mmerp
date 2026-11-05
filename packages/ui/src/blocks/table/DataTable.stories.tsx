@@ -18,7 +18,7 @@ const columns: Column<Employee>[] = [
     header: 'Trạng thái',
     role: 'status',
     kind: 'status',
-    render: (e) => <Badge color={e.status === 'active' ? 'success' : 'gray'}>{e.status === 'active' ? 'Đang làm' : 'Đã nghỉ'}</Badge>,
+    render: (e) => <Badge tone={e.status === 'active' ? 'success' : 'neutral'}>{e.status === 'active' ? 'Đang làm' : 'Đã nghỉ'}</Badge>,
   },
 ]
 
@@ -352,7 +352,7 @@ export const RowMenu: StoryObj<{ onArchive(employee: Employee): void }> = {
       menu={(row: Employee) => (
         <>
           <Menu.Item onClick={() => args.onArchive(row)}>Lưu trữ</Menu.Item>
-          <Menu.Item color="danger">Xóa</Menu.Item>
+          <Menu.Item tone="danger">Xóa</Menu.Item>
         </>
       )}
     />
@@ -373,6 +373,75 @@ export const Cards: Story = {
     const canvas = within(canvasElement)
     expect(canvas.getByRole('list')).not.toBeNull()
   },
+}
+
+// Clicks whatever the browser hit-tests at el's centre, as a real pointer would: userEvent alone
+// dispatches on el itself and would never notice a stretched link covering it.
+async function clickAt(el: Element) {
+  const r = el.getBoundingClientRect()
+  await userEvent.click(el.ownerDocument.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2)!)
+}
+
+function CardsHitAreaDemo({ link, onOpen }: { link: boolean; onOpen(): void }) {
+  const [selected, setSelected] = useState<ReadonlySet<string | number>>(new Set())
+  return (
+    <DataTable
+      cards
+      columns={columns}
+      rows={rows}
+      rowKey={(e) => e.id}
+      label="Danh sách nhân viên"
+      labels={labels}
+      selection={{ selected, onChange: setSelected }}
+      menu={() => <Menu.Item>Lưu trữ</Menu.Item>}
+      onRowClick={link ? undefined : onOpen}
+      renderLink={
+        link
+          ? (row, children) => (
+              <a
+                href={`#/employees/${row.id}`}
+                onClick={(e) => {
+                  e.preventDefault()
+                  onOpen()
+                }}
+              >
+                {children}
+              </a>
+            )
+          : undefined
+      }
+    />
+  )
+}
+
+const cardsHitAreaPlay: StoryObj<{ onOpen(): void }>['play'] = async ({ canvasElement, args }) => {
+  const canvas = within(canvasElement)
+  // The card's body, away from the title, opens the row.
+  await clickAt(canvas.getAllByText('Kinh doanh')[0]!)
+  expect(args.onOpen).toHaveBeenCalledTimes(1)
+
+  // The checkbox and the menu sit above the hit area and never open the row.
+  const box = canvas.getAllByRole('checkbox', { name: labels.selectRow })[0]!
+  await clickAt(box)
+  expect(box).toHaveAttribute('aria-checked', 'true')
+  await clickAt(canvas.getAllByRole('button', { name: labels.actions })[0]!)
+  await within(canvasElement.ownerDocument.body).findByRole('menuitem', { name: 'Lưu trữ' })
+  await userEvent.keyboard('{Escape}')
+  expect(args.onOpen).toHaveBeenCalledTimes(1)
+}
+
+export const CardsHitArea: StoryObj<{ onOpen(): void }> = {
+  tags: ['!dev', '!autodocs'],
+  args: { onOpen: fn() },
+  render: (args) => <CardsHitAreaDemo link={false} onOpen={args.onOpen} />,
+  play: cardsHitAreaPlay,
+}
+
+export const CardsLinkHitArea: StoryObj<{ onOpen(): void }> = {
+  tags: ['!dev', '!autodocs'],
+  args: { onOpen: fn() },
+  render: (args) => <CardsHitAreaDemo link onOpen={args.onOpen} />,
+  play: cardsHitAreaPlay,
 }
 
 export const LongFirstCell: Story = {

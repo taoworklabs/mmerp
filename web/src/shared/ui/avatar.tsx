@@ -18,7 +18,7 @@ export function PersonAvatar({ name, size = 'sm' }: { name: string; size?: keyof
   let h = 0
   for (const ch of name) h = (h * 31 + ch.codePointAt(0)!) >>> 0
   return (
-    <Avatar size={typeof size === 'number' ? size : sizes[size]} color={colors[h % colors.length]} alt={name} aria-hidden>
+    <Avatar size={typeof size === 'number' ? size : sizes[size]} accent={colors[h % colors.length]} alt={name} aria-hidden>
       {initials(name)}
     </Avatar>
   )

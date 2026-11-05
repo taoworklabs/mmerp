@@ -10,7 +10,8 @@ import styles from './Text.module.css'
 export interface TextProps extends React.ComponentPropsWithRef<'p'> {
   // `inherit` takes the font size and line height of the surrounding text, for a span inside a sentence.
   size?: FontSize | 'inherit'
-  tone?: Tone
+  // None is the main text colour.
+  tone?: Tone | 'dimmed'
   weight?: 400 | 500 | 600 | 650
   align?: 'start' | 'center' | 'end'
   truncate?: boolean
@@ -27,7 +28,7 @@ const fontWeight: Record<400 | 500 | 600 | 650, string> = {
 
 export function Text({
   size = 'sm',
-  tone = 'default',
+  tone,
   weight,
   align,
   truncate,

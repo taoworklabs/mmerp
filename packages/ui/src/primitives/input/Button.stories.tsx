@@ -4,7 +4,7 @@ import { Fragment } from 'react'
 import { expect, fn, userEvent, within } from 'storybook/test'
 import { icon } from '../../tokens/tokens.ts'
 import { Text } from '../typography/Text.tsx'
-import { Button, type ButtonColor, type ButtonVariant } from './Button.tsx'
+import { Button, type ButtonTone, type ButtonVariant } from './Button.tsx'
 
 const meta: Meta<typeof Button> = {
   title: 'Input/Button',
@@ -19,16 +19,16 @@ export default meta
 type Story = StoryObj<typeof Button>
 
 const variants: ButtonVariant[] = ['filled', 'light', 'subtle', 'default', 'outline']
-const colors: ButtonColor[] = ['primary', 'gray', 'danger', 'success', 'warning']
+const tones: ButtonTone[] = ['primary', 'neutral', 'danger', 'success', 'warning']
 
-// Every variant x colour on one canvas, so the palette is compared side by side.
+// Every variant x tone on one canvas, so the palette is compared side by side.
 export const Variants: Story = {
   render: (args) => (
-    <div style={{ display: 'grid', gridTemplateColumns: `auto repeat(${colors.length}, max-content)`, gap: 12, alignItems: 'center', justifyContent: 'start' }}>
+    <div style={{ display: 'grid', gridTemplateColumns: `auto repeat(${tones.length}, max-content)`, gap: 12, alignItems: 'center', justifyContent: 'start' }}>
       <span />
-      {colors.map((color) => (
-        <Text key={color} size="xs" tone="dimmed">
-          {color}
+      {tones.map((tone) => (
+        <Text key={tone} size="xs" tone="dimmed">
+          {tone}
         </Text>
       ))}
       {variants.map((variant) => (
@@ -36,8 +36,8 @@ export const Variants: Story = {
           <Text size="xs" tone="dimmed">
             {variant}
           </Text>
-          {colors.map((color) => (
-            <Button key={color} {...args} variant={variant} color={color}>
+          {tones.map((tone) => (
+            <Button key={tone} {...args} variant={variant} tone={tone}>
               Lưu nháp
             </Button>
           ))}
@@ -56,7 +56,7 @@ export const Loading: Story = {
   play: async ({ canvasElement }) => {
     const button = within(canvasElement).getByRole('button', { name: 'Đang lưu' })
     expect(button).toHaveAttribute('aria-busy', 'true')
-    expect(button).toBeDisabled()
+    expect(button).toHaveAttribute('aria-disabled', 'true')
   },
 }
 

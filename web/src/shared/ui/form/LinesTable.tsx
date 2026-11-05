@@ -1,4 +1,4 @@
-import { ActionIcon, Button, FieldList, Group, Paper, ScrollArea, SimpleGrid, Stack, Table, Text, Tooltip, useMediaQuery } from '@mmerp/ui'
+import { breakpoint, ActionIcon, Button, FieldList, Group, Paper, ScrollArea, SimpleGrid, Stack, Table, Text, Tooltip, useMediaQuery } from '@mmerp/ui'
 import { IconPlus, IconTrash } from '@tabler/icons-react'
 import type { KeyboardEvent, ReactNode } from 'react'
 import { useFieldArray, useFormContext } from 'react-hook-form'
@@ -55,14 +55,14 @@ export function LinesTable<L extends object = Record<string, unknown>>(props: Ed
 }
 
 function EditLines<L extends object>({ name, label, columns: all, newLine, addLabel, lineLabel, removeLabel, minLines = 0, footer }: EditProps<L>) {
-  const wide = useMediaQuery('(min-width: 64em)', true)
+  const wide = useMediaQuery(`(min-width: ${breakpoint.md})`, true)
   const { control } = useFormContext()
   const lines = useFieldArray({ control, name })
   const columns = all.filter((c) => c.cell)
   const removable = lines.fields.length > minLines
   const remove = (i: number) => (
     <Tooltip label={removeLabel(i + 1)}>
-      <ActionIcon variant="subtle" color="gray" aria-label={removeLabel(i + 1)} onClick={() => lines.remove(i)}>
+      <ActionIcon variant="subtle" tone="neutral" aria-label={removeLabel(i + 1)} onClick={() => lines.remove(i)}>
         <IconTrash {...icon.button} />
       </ActionIcon>
     </Tooltip>
@@ -127,7 +127,7 @@ function EditLines<L extends object>({ name, label, columns: all, newLine, addLa
 }
 
 function ReadOnlyLines<L extends object>({ label, columns: all, lines, lineLabel, footer }: ReadOnlyProps<L>) {
-  const wide = useMediaQuery('(min-width: 64em)', true)
+  const wide = useMediaQuery(`(min-width: ${breakpoint.md})`, true)
   const columns = all.filter((c) => c.value)
   return (
     <Stack gap="sm">

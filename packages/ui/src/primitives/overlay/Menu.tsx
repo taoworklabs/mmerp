@@ -1,6 +1,7 @@
 import { Menu as BaseMenu } from '@base-ui/react/menu'
 import type * as React from 'react'
 import { cx } from '../../internal/cx.ts'
+import type { Tone } from '../../internal/tone.ts'
 import styles from './Menu.module.css'
 
 export type MenuSide = 'top' | 'bottom' | 'left' | 'right'
@@ -31,17 +32,17 @@ export interface MenuItemProps extends Omit<React.ComponentPropsWithRef<'div'>, 
   leftSection?: React.ReactNode
   // At the far end, e.g. the check beside the language in use.
   rightSection?: React.ReactNode
-  color?: 'danger'
+  tone?: Extract<Tone, 'danger'>
   disabled?: boolean
   onClick?(): void
   children: React.ReactNode
 }
 
-function MenuItem({ leftSection, rightSection, color, disabled, onClick, className, children, ...props }: MenuItemProps) {
+function MenuItem({ leftSection, rightSection, tone, disabled, onClick, className, children, ...props }: MenuItemProps) {
   return (
     <BaseMenu.Item
       disabled={disabled}
-      data-color={color}
+      data-tone={tone}
       className={cx(styles.item, className)}
       onClick={onClick ? () => onClick() : undefined}
       {...props}

@@ -56,8 +56,8 @@ export const AtLastPage: Story = {
   render: (args) => <Controlled {...args} />,
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
-    expect(canvas.getByRole('button', { name: 'Trang sau' })).toBeDisabled()
-    expect(canvas.getByRole('button', { name: 'Trang trước' })).not.toBeDisabled()
+    expect(canvas.getByRole('button', { name: 'Trang sau' })).toHaveAttribute('aria-disabled', 'true')
+    expect(canvas.getByRole('button', { name: 'Trang trước' })).not.toHaveAttribute('aria-disabled', 'true')
   },
 }
 
@@ -66,7 +66,23 @@ export const AtFirstPage: Story = {
   render: (args) => <Controlled {...args} />,
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
-    expect(canvas.getByRole('button', { name: 'Trang trước' })).toBeDisabled()
+    expect(canvas.getByRole('button', { name: 'Trang trước' })).toHaveAttribute('aria-disabled', 'true')
+  },
+}
+
+// Reaching the last page must not drop keyboard focus to <body>, and the edge button stays inert.
+export const KeepsFocusAtEdge: Story = {
+  args: { value: 19 },
+  render: (args) => <Controlled {...args} />,
+  play: async ({ canvasElement, args }) => {
+    const canvas = within(canvasElement)
+    const next = canvas.getByRole('button', { name: 'Trang sau' })
+    await userEvent.click(next)
+    expect(args.onChange).toHaveBeenLastCalledWith(20)
+    expect(next).toHaveFocus()
+    expect(next).toHaveAttribute('aria-disabled', 'true')
+    await userEvent.keyboard('{Enter}')
+    expect(args.onChange).toHaveBeenCalledTimes(1)
   },
 }
 

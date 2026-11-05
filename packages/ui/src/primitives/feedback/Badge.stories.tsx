@@ -12,31 +12,31 @@ export default meta
 type Story = StoryObj<typeof Badge>
 
 export const Primary: Story = {
-  args: { color: 'primary', children: 'Mới' },
+  args: { tone: 'primary', children: 'Mới' },
 }
 
 export const Success: Story = {
-  args: { color: 'success', children: 'Đã duyệt' },
+  args: { tone: 'success', children: 'Đã duyệt' },
 }
 
 export const Warning: Story = {
-  args: { color: 'warning', children: 'Chờ duyệt' },
+  args: { tone: 'warning', children: 'Chờ duyệt' },
 }
 
 export const Danger: Story = {
-  args: { color: 'danger', children: 'Từ chối' },
+  args: { tone: 'danger', children: 'Từ chối' },
 }
 
 export const Info: Story = {
-  args: { color: 'info', children: 'Đang xử lý' },
+  args: { tone: 'info', children: 'Đang xử lý' },
 }
 
 export const Discovery: Story = {
-  args: { color: 'discovery', children: 'Đề xuất' },
+  args: { tone: 'discovery', children: 'Đề xuất' },
 }
 
 export const Gray: Story = {
-  args: { color: 'gray', children: 'Đã hủy' },
+  args: { tone: 'neutral', children: 'Đã hủy' },
 }
 
 export const Filled: Story = {

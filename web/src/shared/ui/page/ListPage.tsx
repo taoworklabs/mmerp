@@ -1,7 +1,7 @@
-import { Button, FilterBar, Page as KitPage, PagingBar as KitPagingBar, useMediaQuery } from '@mmerp/ui'
+import { breakpoint, Button, FilterBar, Page as KitPage, PagingBar as KitPagingBar, useMediaQuery } from '@mmerp/ui'
 import type { ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
-import { errorText, formatNumber } from '@/shared/i18n'
+import { formatNumber } from '@/shared/i18n'
 import { pageSizes } from '@/shared/url/listParams'
 import { DataTable, type DataTableProps } from '../DataTable'
 import { ContentSkeleton, EmptyState, ErrorState } from '../states'
@@ -48,7 +48,7 @@ export function ListPage<T>({
   children?: ReactNode
 }) {
   const { t } = useTranslation()
-  const wide = useMediaQuery('(min-width: 64em)', true)
+  const wide = useMediaQuery(`(min-width: ${breakpoint.md})`, true)
   return (
     <KitPage
       variant="list"
@@ -89,7 +89,7 @@ function ListContent<T>({ list, onClearFilters }: { list: ListBody<T>; onClearFi
     case 'loading':
       return <ContentSkeleton />
     case 'error':
-      return <ErrorState message={errorText(t, query.error)} onRetry={() => void query.refetch()} />
+      return <ErrorState queries={[query]} />
     case 'empty':
       return <EmptyState {...list.empty} />
     case 'no_results':

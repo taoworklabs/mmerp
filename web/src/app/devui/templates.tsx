@@ -71,7 +71,7 @@ export function PageTemplate() {
             breadcrumbs={crumbs}
             current
             leading={<PersonAvatar name="Nguyễn Văn An" size="lg" />}
-            status={<StatusBadge tone="positive">{t('shared.devui.status_positive')}</StatusBadge>}
+            status={<StatusBadge tone="success">{t('shared.devui.status_positive')}</StatusBadge>}
             description="NV0019 · Kế toán"
             summary={<KeyFacts facts={facts} />}
             actions={<Button variant="default">{t('shared.devui.secondary')}</Button>}
@@ -161,7 +161,7 @@ export function RecordTemplate() {
           title={h.title}
           breadcrumbs={h.breadcrumbs}
           leading={<PersonAvatar name="Nguyễn Văn An" size="lg" />}
-          status={<StatusBadge tone="positive">{t('shared.devui.status_positive')}</StatusBadge>}
+          status={<StatusBadge tone="success">{t('shared.devui.status_positive')}</StatusBadge>}
           description="NV0019 · Kế toán"
           summary={
             <KeyFacts
@@ -243,10 +243,10 @@ export function DocumentTemplate() {
 
 // The kinds a feed mixes, each with its tinted icon, as the notifications page shows them.
 const inboxLooks = [
-  { Icon: IconHourglassHigh, color: 'warning' },
-  { Icon: IconCircleCheck, color: 'success' },
-  { Icon: IconAt, color: 'info' },
-  { Icon: IconAlertTriangle, color: 'danger' },
+  { Icon: IconHourglassHigh, tone: 'warning' },
+  { Icon: IconCircleCheck, tone: 'success' },
+  { Icon: IconAt, tone: 'info' },
+  { Icon: IconAlertTriangle, tone: 'danger' },
 ] as const
 
 export function InboxTemplate() {
@@ -268,7 +268,7 @@ export function InboxTemplate() {
                   active={item === String(r.id)}
                   unread={i === 0}
                   onClick={() => setSearch({ item: String(r.id) })}
-                  icon={<InboxIcon icon={look.Icon} color={look.color} />}
+                  icon={<InboxIcon icon={look.Icon} tone={look.tone} />}
                   label={
                     <Group justify="space-between" wrap={false}>
                       <Text size="sm">

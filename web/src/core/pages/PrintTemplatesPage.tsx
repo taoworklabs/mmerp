@@ -5,7 +5,7 @@ import { useForm } from 'react-hook-form'
 import { useTranslation } from 'react-i18next'
 import { api, unwrap, type PrintTemplate, type PrintTemplateBlocks } from '@/shared/api/core'
 import { useMe } from '@/shared/auth/me'
-import { errorText, formatDateTime } from '@/shared/i18n'
+import { formatDateTime } from '@/shared/i18n'
 import { DataTable } from '@/shared/ui/DataTable'
 import { Form, FormActions, TextField } from '@/shared/ui/form'
 import { notifySuccess } from '@/shared/ui/notify'
@@ -69,7 +69,7 @@ function BlocksModal({ code, onClose }: { code: string; onClose: () => void }) {
       {template.isPending ? (
         <ContentSkeleton />
       ) : template.isError ? (
-        <ErrorState message={errorText(t, template.error)} onRetry={() => void template.refetch()} />
+        <ErrorState queries={[template]} />
       ) : (
         <BlocksForm template={template.data} onClose={onClose} />
       )}

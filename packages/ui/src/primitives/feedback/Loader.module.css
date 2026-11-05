@@ -1,7 +1,7 @@
 .root {
   display: inline-block;
   flex-shrink: 0;
-  border-radius: 50%;
+  border-radius: var(--mmerp-radius-full);
   border: 2px solid var(--mmerp-color-gray-2);
   border-top-color: var(--mmerp-color-primary-6);
   /* A loop, not a transition: the 200ms motion cap doesn't apply; a calm one-turn-per-800ms spin. */

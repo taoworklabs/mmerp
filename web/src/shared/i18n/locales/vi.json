@@ -495,7 +495,7 @@
   "shared.devui.example_field_error_do": "Chưa nhập.",
   "shared.devui.example_field_error_dont": "Bạn vui lòng nhập mã khách hàng",
   "shared.devui.colour": "Màu sắc",
-  "shared.devui.colour_hint": "Màn hình gọi màu theo ý nghĩa (color=\"success\"), không theo bậc.",
+  "shared.devui.colour_hint": "Màn hình gọi màu theo ý nghĩa (tone=\"success\"), không theo bậc.",
   "shared.devui.colour_ramps": "Thang màu",
   "shared.devui.colour_steps": "0 nền nhạt · 1 nền nhãn · 6 tô đặc · 7 chữ trên nền nhạt · 8 chữ của nhãn.",
   "shared.devui.ramp_primary": "Hành động chính, liên kết, viền focus, mục đang chọn; cũng là info.",

@@ -6,13 +6,13 @@ How to reach a token:
 
 | From | Use |
 | --- | --- |
-| A `@mmerp/ui` prop in any component | The token key: `gap="xs"`, `padding="md"`, `tone="dimmed"`, `color="danger"`, `size="xs"`, `weight={600}` |
+| A `@mmerp/ui` prop in any component | The token key: `gap="xs"`, `padding="md"`, `tone="dimmed"`, `tone="danger"`, `size="xs"`, `weight={600}` |
 | A CSS module in `shared/ui` | The CSS variable: `var(--mmerp-space-xs)`, `var(--mmerp-color-border)`, `var(--mmerp-color-elevation-surface-sunken)` |
 | An icon | The `icon` constant: `<IconPlus {...icon.button} />` |
 
 ## Colour
 
-Each colour is a ten-step scale, palest (0) to darkest (9). Components read it by role, so a screen names the colour (`color="success"`), never the step.
+Each colour is a ten-step scale, palest (0) to darkest (9). Components read it by role, so a screen names the colour (`tone="success"`), never the step.
 
 | Step | Role | Why |
 | --- | --- | --- |
@@ -35,13 +35,13 @@ Each colour is a ten-step scale, palest (0) to darkest (9). Components read it b
 | control border | automatic (`gray-4`) | `#B4B7BD` | Edges of checkboxes and radios: small, so they keep the stronger edge |
 | surface | `var(--mmerp-color-elevation-surface)`, default `Paper` background | `#FFFFFF` | Tables, forms, cards, the page |
 | surface sunken | `var(--mmerp-color-elevation-surface-sunken)` | `#F8F8F8` | Group and total rows, tile hover, grid cells that take no value |
-| table header | `var(--mmerp-color-table-header)` | `#F4F5F6` | A table's column header row (`DataTable`, `LinesTable`, `CellGrid`): a step deeper than the sunken rows |
+| table header | `var(--mmerp-color-table-header)` | `#F4F5F6` | A table's column header row (`DataTable`, `LinesTable`, `CellGrid`): a step deeper than the sunken rows. A list page's table (`ListPage`) sets it to the body colour, so its header reads as part of the page header |
 | disabled | automatic | `#F0F1F2` | Disabled input background |
-| neutral | `color="gray"` | tint `#F0F1F2`, text `#505258` (badges: `#DDDEE1`, `#3B3D42`) | Neutral badges, quiet icon buttons, empty-state icon |
+| neutral | `tone="neutral"` | tint `#F0F1F2`, text `#505258` (badges: `#DDDEE1`, `#3B3D42`) | Neutral badges, quiet icon buttons, empty-state icon |
 
 ### Primary and semantic scales
 
-| Colour | `color=` | Filled (6) | Tint (0) | Text on tint (7) | Means |
+| Colour | `tone=` | Filled (6) | Tint (0) | Text on tint (7) | Means |
 | --- | --- | --- | --- | --- | --- |
 | primary | default | `#1868DB` | `#E9F2FE` | `#1558BC` | The one primary action, links, focus, selected item |
 | success | `"success"` | `#5B7F24` | `#EFFFD6` | `#4C6B1F` | Posted, active, done |
@@ -54,7 +54,7 @@ Field errors and the required `*` use `var(--mmerp-color-error)` = `#AE2E24`.
 
 Selected state, everywhere (navigation, menus, dropdown options, inbox rows): tint `var(--mmerp-color-primary-light)` and text `var(--mmerp-color-primary-light-color)`. Nothing else marks selection.
 
-Avatars take their colour from `PersonAvatar` (derived from the name); set no colour on a person yourself.
+Colour that means something is `tone`, on every kit component (`Button`, `ActionIcon`, `Badge`, `ThemeIcon`, `Indicator`, `Timeline.Item`, `Alert`, toasts, `Menu.Item`, `Text`, `Anchor`); `Text` and `Anchor` also take `dimmed`, and without a tone show their own colour. An avatar's colour means nothing, so `Avatar` takes `accent` (a decorative hue) instead. Avatars take their colour from `PersonAvatar` (derived from the name); set no colour on a person yourself.
 
 Do:
 
@@ -68,7 +68,7 @@ Don't:
 ```tsx
 <Text style={{ color: '#666' }}>…</Text> // colour code and inline style: lint fails
 <Text className={grey6}>…</Text>   // a step instead of a role: use tone="dimmed"
-<Button color="orange">…</Button>  // a hue instead of a meaning: use a role (color="danger", tone="dimmed")
+<Button tone="orange">…</Button>  // a hue instead of a meaning: use a role (tone="danger", tone="dimmed")
 // Accent hues (grape, blue, teal, orange, red, green) only name a kind: PersonAvatar, OrgUnitIcon, the file-type icons of AttachmentPanel.
 <Notice tone="discovery">…</Notice> // discovery for something that is not new
 ```
@@ -88,7 +88,7 @@ Font: Inter Variable, self-hosted. Lines sit on a 4px grid.
 | `h2` (`<Title order={2}>`) | 16 / 20, weight 650 | Section title |
 | `h3` (`<Title order={3}>`) | 14 / 20, weight 650 | Sub-section title |
 
-Weights: 400 body, 500 buttons, tabs, navigation and identifiers; 600 field labels, column headers, totals, emphasis; 650 headings. At most three heading levels on a page.
+Weights: 400 body, 500 buttons, tabs, navigation and identifiers; 600 field labels, column headers, totals, emphasis; 650 headings and modal titles. In CSS: `var(--mmerp-font-weight-regular|medium|semibold|heading)`, never the number. At most three heading levels on a page.
 
 Field labels are 12px, weight 600, `dimmed`: lighter than the value they name. The theme sets this on every input; a screen sets nothing.
 
@@ -124,8 +124,7 @@ The scale is closed: if a gap seems to need 6, 10 or 20, the layout needs anothe
 | `sm` | 4 | Badges, tooltips, small icon tiles (`ThemeIcon` up to 28px) |
 | `md` | 6 | Default: buttons, inputs, navigation items, alerts, `Paper` (cards, tiles), table and feed frames, the activity feed's detail well, modals |
 | `lg` | 8 | Menus, popovers, dropdowns |
-| `xl` | 12 | Not assigned to any component's frame (round icon tiles use it) |
-| round | `100%` | Avatars, page numbers in the paging bar, dots |
+| `full` | `9999px` | Anything round: avatars, page numbers in the paging bar, dots, count badges, pills (a box wider than tall becomes a pill) |
 
 Components already carry their radius through theme defaults; set `radius` only on a new component, by this table.
 
@@ -136,7 +135,7 @@ Components already carry their radius through theme defaults; set `radius` only 
 | Sunken | `--mmerp-color-elevation-surface-sunken` | none | A well inside the page: group and total rows, unavailable cells; a table's header row sits a step deeper (`--mmerp-color-table-header`) |
 | Default | `--mmerp-color-elevation-surface` | none | The page and everything flat on it; framed with `withBorder` |
 | Raised | surface | `shadow="xs"` | Reserved for a card that can be dragged; no screen has one yet |
-| Overlay | surface | `md`, `lg`, `xl` (all `0 8px 12px #1E1F2126, 0 0 1px #1E1F214F`) | Menus, popovers, modals, toasts: the kit applies it |
+| Overlay | surface | `md` (`0 8px 12px #1E1F2126, 0 0 1px #1E1F214F`) | Menus, popovers, modals, toasts: the kit applies it |
 | Pinned footer | body | `--mmerp-shadow-footer` (`0 -6px 8px -6px #1E1F2126`, upwards only) | A page form's footer while the form runs on under it (`FormActions`) |
 
 A card on the page is `Paper withBorder`, never a shadow.
@@ -146,10 +145,11 @@ A card on the page is `Paper withBorder`, never a shadow.
 | What | Value | Where |
 | --- | --- | --- |
 | Control (button, input, select, pagination, `ActionIcon`), wherever it sits | 30px, `size="sm"` (default); 40px among a form section's fields and in a modal's body (a lines table and `ModalFooter` keep 30px) | `--mmerp-control-height`, raised to `--mmerp-control-height-lg` by the kit's form layout and dialog body |
+| Small control (`Button`, `ActionIcon` with `size="xs"`) | 24px | `--mmerp-control-height-xs` |
 | Touch target below 1024px | 44px | `--mmerp-touch-target`, the kit's `styles/global.css` |
 | Header | 48px | `app/AppLayout.tsx` |
 | Navigation | 240px, 56px collapsed; items 32px | `app/AppLayout.tsx`, `AppLayout.module.css` |
-| Table row / header row | 40px / 36px | `DataTable.module.css` |
+| Table row / header row | 40px / 36px; `density="compact"` 32 / 28, `"comfortable"` 48 / 40 | `--mmerp-table-row-height[-compact\|-comfortable]`, `--mmerp-table-header-height[-compact\|-comfortable]`; the kit's `Table`, `LinesTable` |
 | Grid cell (timesheet) | 30px | `CellGrid.module.css` |
 | Scrollbar (`ScrollArea`) | 8px; in a table it runs between the sticky header and footer | the kit's `ScrollArea`, `DataTable.module.css` |
 | Inbox list | 360px | `--mmerp-side-width` |
@@ -157,6 +157,8 @@ A card on the page is `Paper withBorder`, never a shadow.
 | Record or document page (`RecordPage`, `DocumentPage`) | 1440px, header included; a document's main and side column about 62/38, a record overview's about 1.6/1, one column below 1024px | `--mmerp-detail-width`, `DetailPage.module.css`, `RecordPage.module.css` |
 | Side panel, side-column tab | 480px | `--mmerp-aside-width`, `readingWidth` (`page/Page.tsx`) |
 | Breakpoints | `sm` 768, `md` 1024 (navigation becomes a drawer, tables become cards), `lg` 1280 (design size) | `breakpoint` (`@mmerp/ui`) |
+
+Stacking order (`--mmerp-z-index-*`, `zIndex` in the kit tokens; the kit applies it, screens set none): `action-bar` 100 (a record's actions at the bottom of a narrow screen), `navigation` 101 (the navigation drawer, over that bar), `modal` 200 (dialogs and drawers), `popup` 300 (menus, option lists, tooltips, toasts, over any dialog they open from). A `z-index` of 1 or 2 inside one component (sticky table cells) stays a literal.
 
 Filter bar sizes live in `--mmerp-filter-width-*` (`filterWidth` in the kit tokens) and only the filter components read them: `search` 280 and `searchMin` 160 (the search box, narrowing when the bar is full), `chip` 320 (the widest a filter chip grows before its value truncates), `menu` 240 (a chip's dropdown). Areas set no size apart from the column widths of a lines table (`forms.md`).
 

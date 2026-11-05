@@ -18,16 +18,16 @@
     border-color var(--mmerp-motion-duration) ease;
 }
 
-.root:hover:not(:disabled) {
+.root:hover:not(:disabled, [aria-disabled='true']) {
   background: var(--mmerp-btn-bg-hover);
 }
 
-.root:disabled {
+.root:is(:disabled, [aria-disabled='true']) {
   cursor: not-allowed;
   opacity: 0.6;
 }
 
 .root[data-size='xs'] {
-  width: 24px;
-  height: 24px;
+  width: var(--mmerp-control-height-xs);
+  height: var(--mmerp-control-height-xs);
 }

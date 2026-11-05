@@ -3,14 +3,16 @@ import type * as React from 'react'
 import { cx } from '../../internal/cx.ts'
 import type { RenderProp } from '../../internal/render.ts'
 import type { StyleVars } from '../../internal/style.ts'
+import { ramp, type Tone } from '../../internal/tone.ts'
 import { Loader } from '../feedback/Loader.tsx'
 import styles from './Button.module.css'
 
 export type ButtonVariant = 'filled' | 'light' | 'subtle' | 'default' | 'outline'
-export type ButtonColor = 'primary' | 'gray' | 'danger' | 'success' | 'warning'
+export type ButtonTone = Extract<Tone, 'primary' | 'neutral' | 'danger' | 'success' | 'warning'>
 
-// Shared with ActionIcon: both pick their palette from the same variant x colour grid.
-export function buttonColorVars(variant: ButtonVariant, color: ButtonColor): StyleVars {
+// Shared with ActionIcon: both pick their palette from the same variant x tone grid.
+export function buttonToneVars(variant: ButtonVariant, tone: ButtonTone): StyleVars {
+  const color = ramp(tone)
   switch (variant) {
     case 'filled':
       return {
@@ -52,7 +54,7 @@ export function buttonColorVars(variant: ButtonVariant, color: ButtonColor): Sty
 
 export interface ButtonProps extends Omit<React.ComponentPropsWithRef<'button'>, 'color'> {
   variant?: ButtonVariant
-  color?: ButtonColor
+  tone?: ButtonTone
   size?: 'xs' | 'sm'
   leftSection?: React.ReactNode
   rightSection?: React.ReactNode
@@ -63,7 +65,7 @@ export interface ButtonProps extends Omit<React.ComponentPropsWithRef<'button'>,
 
 function ButtonRoot({
   variant = 'filled',
-  color = 'primary',
+  tone = 'primary',
   size = 'sm',
   leftSection,
   rightSection,
@@ -76,11 +78,13 @@ function ButtonRoot({
   children,
   ...props
 }: ButtonProps) {
-  const vars: StyleVars = { ...style, ...buttonColorVars(variant, color) }
+  const vars: StyleVars = { ...style, ...buttonToneVars(variant, tone) }
   return (
     <ButtonBase
       render={render}
       disabled={disabled || loading}
+      // Loading must not blur a focused button (native disabled does); clicks are still blocked.
+      focusableWhenDisabled={!disabled}
       aria-busy={loading ? true : undefined}
       data-mmerp-control=""
       data-size={size}

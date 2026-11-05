@@ -1,12 +1,8 @@
-import { ButtonBase } from '../../internal/ButtonBase.tsx'
-import type * as React from 'react'
+import { ButtonBase, type ButtonBaseProps } from '../../internal/ButtonBase.tsx'
 import { cx } from '../../internal/cx.ts'
-import type { RenderProp } from '../../internal/render.ts'
 import styles from './UnstyledButton.module.css'
 
-export interface UnstyledButtonProps extends React.ComponentPropsWithRef<'button'> {
-  render?: RenderProp
-}
+export type UnstyledButtonProps = ButtonBaseProps
 
 // A bare button for compound components (NavLink, menu items, ...) that bring their own look.
 export function UnstyledButton({ className, render, ...props }: UnstyledButtonProps) {

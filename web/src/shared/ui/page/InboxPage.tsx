@@ -1,4 +1,4 @@
-import { Box, Button, Group, NavLink, Stack, Text, ThemeIcon, type ThemeIconProps, useMediaQuery, VisuallyHidden } from '@mmerp/ui'
+import { breakpoint, Box, Button, Group, NavLink, Stack, Text, ThemeIcon, type ThemeIconProps, useMediaQuery, VisuallyHidden } from '@mmerp/ui'
 import { IconArrowLeft, type Icon as TablerIcon } from '@tabler/icons-react'
 import type { ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -19,7 +19,7 @@ type Props = Omit<PageHeaderProps, 'leading'> & {
 // so the browser's Back returns to the list too.
 export function InboxPage({ list, detail, onBack, ...header }: Props) {
   const { t } = useTranslation()
-  const wide = useMediaQuery('(min-width: 64em)', true)
+  const wide = useMediaQuery(`(min-width: ${breakpoint.md})`, true)
   if (!wide)
     return (
       <Page {...header}>
@@ -73,9 +73,9 @@ export function InboxGroup({ label }: { label: string }) {
 }
 
 // InboxIcon is the kind of an InboxRow's item: its icon tinted in the kind's colour, in a circle.
-export function InboxIcon({ icon: Icon, color }: { icon: TablerIcon; color: ThemeIconProps['color'] }) {
+export function InboxIcon({ icon: Icon, tone }: { icon: TablerIcon; tone: ThemeIconProps['tone'] }) {
   return (
-    <ThemeIcon variant="light" color={color} size={36} circle aria-hidden>
+    <ThemeIcon variant="light" tone={tone} size={36} circle aria-hidden>
       <Icon {...icon.button} />
     </ThemeIcon>
   )

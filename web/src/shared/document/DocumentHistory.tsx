@@ -84,34 +84,34 @@ function createdTwin(e: HistoryEntry, other: HistoryEntry | undefined) {
   )
 }
 
-export type Look = { color: ThemeIconProps['color']; icon: TablerIcon; filled?: boolean }
+export type Look = { tone: ThemeIconProps['tone']; icon: TablerIcon; filled?: boolean }
 
 // A status reached has its status colour; the rest by what was done, grey when it changed nothing.
 // Creation is the milestone the rest follows, so it alone is filled.
 const statusLook: Record<DocStatus, Look> = {
-  draft: { color: 'gray', icon: IconArrowBackUp },
-  pending_approval: { color: 'warning', icon: IconSend },
-  posted: { color: 'success', icon: IconCircleCheck },
-  cancelled: { color: 'danger', icon: IconBan },
+  draft: { tone: 'neutral', icon: IconArrowBackUp },
+  pending_approval: { tone: 'warning', icon: IconSend },
+  posted: { tone: 'success', icon: IconCircleCheck },
+  cancelled: { tone: 'danger', icon: IconBan },
 }
 const actionLook: Record<string, Look> = {
-  'record.deleted': { color: 'danger', icon: IconTrash },
-  'approval.approved': { color: 'success', icon: IconCheck },
-  'approval.rejected': { color: 'danger', icon: IconX },
-  'approval.reassigned': { color: 'info', icon: IconUserShare },
-  'attachment.added': { color: 'gray', icon: IconPaperclip },
-  'attachment.removed': { color: 'gray', icon: IconPaperclip },
-  'discussion.commented': { color: 'info', icon: IconMessage },
+  'record.deleted': { tone: 'danger', icon: IconTrash },
+  'approval.approved': { tone: 'success', icon: IconCheck },
+  'approval.rejected': { tone: 'danger', icon: IconX },
+  'approval.reassigned': { tone: 'info', icon: IconUserShare },
+  'attachment.added': { tone: 'neutral', icon: IconPaperclip },
+  'attachment.removed': { tone: 'neutral', icon: IconPaperclip },
+  'discussion.commented': { tone: 'info', icon: IconMessage },
 }
 
 function look(e: HistoryEntry): Look {
   if (e.action === 'record.transitioned') return statusLook[e.data?.to as DocStatus] ?? statusLook.draft
-  if (isCreated(e)) return { color: 'primary', icon: IconPlus, filled: true }
+  if (isCreated(e)) return { tone: 'primary', icon: IconPlus, filled: true }
   // Reading sensitive data is what an audit looks for: it stands out in the warning colour.
-  if (e.action.endsWith('sensitive_viewed')) return { color: 'warning', icon: IconShieldLock }
-  if (isView(e)) return { color: 'gray', icon: IconEye }
-  if (e.action.endsWith('exported')) return { color: 'gray', icon: IconDownload }
-  return actionLook[e.action] ?? { color: 'gray', icon: IconPencil }
+  if (e.action.endsWith('sensitive_viewed')) return { tone: 'warning', icon: IconShieldLock }
+  if (isView(e)) return { tone: 'neutral', icon: IconEye }
+  if (e.action.endsWith('exported')) return { tone: 'neutral', icon: IconDownload }
+  return actionLook[e.action] ?? { tone: 'neutral', icon: IconPencil }
 }
 
 // useHistory is a record's audit log, oldest first as the API sends it.
@@ -234,7 +234,7 @@ export function Did({ children }: { children: ReactNode }) {
 
 export function Bullet({ look }: { look: Look }) {
   return (
-    <ThemeIcon variant={look.filled ? 'filled' : 'light'} color={look.color} size={20} circle aria-hidden>
+    <ThemeIcon variant={look.filled ? 'filled' : 'light'} tone={look.tone} size={20} circle aria-hidden>
       <look.icon size={12} stroke={1.5} />
     </ThemeIcon>
   )
@@ -256,7 +256,7 @@ export function HistoryRow({ docType, run }: { docType: string; run: Run }) {
   return (
     <FeedRow
       at={run.entry.at}
-      bullet={name && p.look.color === 'gray' ? <PersonAvatar name={name} size={20} /> : <Bullet look={p.look} />}
+      bullet={name && p.look.tone === 'neutral' ? <PersonAvatar name={name} size={20} /> : <Bullet look={p.look} />}
       detail={p.changes.length > 1 && <ChangeList docType={docType} changes={p.changes} />}
     >
       {/* A system job acts without a person. */}

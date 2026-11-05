@@ -232,11 +232,12 @@ export function Spacing() {
   )
 }
 
-const radii: { key: string; value: string }[] = [
-  { key: 'sm', value: 'sm' },
-  { key: 'md', value: 'md' },
-  { key: 'lg', value: 'lg' },
-  { key: 'round', value: '100%' },
+// The label key, then the radius token it shows.
+const radii: { key: string; token: keyof typeof tokens.radius }[] = [
+  { key: 'sm', token: 'sm' },
+  { key: 'md', token: 'md' },
+  { key: 'lg', token: 'lg' },
+  { key: 'round', token: 'full' },
 ]
 
 export function Surfaces() {
@@ -244,13 +245,13 @@ export function Surfaces() {
   return (
     <Demo title={t('shared.devui.surfaces')} description={t('shared.devui.surfaces_hint')}>
       <Section title={t('shared.devui.radius')}>
-        {radii.map(({ key, value }) => (
+        {radii.map(({ key, token }) => (
           <Spec
             key={key}
             name={key}
-            value={key === 'round' ? value : `${tokens.radius[key as keyof typeof tokens.radius]}px`}
+            value={typeof tokens.radius[token] === 'number' ? `${tokens.radius[token]}px` : tokens.radius[token]}
             use={t(`shared.devui.radius_${key}`)}
-            sample={<Patch width="var(--mmerp-space-xxl)" height="var(--mmerp-space-xxl)" radius={value} background="var(--mmerp-color-elevation-surface-sunken)" border="1px solid var(--mmerp-color-border)" />}
+            sample={<Patch width="var(--mmerp-space-xxl)" height="var(--mmerp-space-xxl)" radius={`var(--mmerp-radius-${token})`} background="var(--mmerp-color-elevation-surface-sunken)" border="1px solid var(--mmerp-color-border)" />}
           />
         ))}
       </Section>

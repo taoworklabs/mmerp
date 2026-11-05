@@ -19,3 +19,12 @@ export function queryState<T, U>(
   if (offers.empty && isEmpty(data)) return { state: offers.noResults && !isEmpty(query.data) ? 'no_results' : 'empty' }
   return { state: 'data', data }
 }
+
+export type Retryable = { isError: boolean; error: unknown; refetch: () => unknown }
+
+// failure picks the error to show for a region fed by several queries, and a retry that
+// refetches each query that failed (a query that was fine is left alone).
+export function failure(queries: Retryable[]): { error: unknown; retry: () => void } {
+  const failed = queries.filter((q) => q.isError)
+  return { error: failed[0]?.error, retry: () => failed.forEach((q) => void q.refetch()) }
+}

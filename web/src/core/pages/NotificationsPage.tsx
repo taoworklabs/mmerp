@@ -17,16 +17,16 @@ import { notificationKeys } from '../notificationKeys'
 
 // Each core kind has its icon, in the colour of what it says: waiting, done, refused, overdue, a mention.
 // A product's own kind (<product>.<name>) gets the plain bell and its label from the product's area.
-const kindLooks: Record<string, { Icon: TablerIcon; color: ComponentProps<typeof InboxIcon>['color'] } | undefined> = {
-  approval_requested: { Icon: IconHourglassHigh, color: 'warning' },
-  approval_approved: { Icon: IconCircleCheck, color: 'success' },
-  approval_rejected: { Icon: IconCircleX, color: 'danger' },
-  approval_overdue: { Icon: IconClockExclamation, color: 'danger' },
-  mentioned: { Icon: IconAt, color: 'info' },
-  job_completed: { Icon: IconChecks, color: 'success' },
-  job_failed: { Icon: IconAlertTriangle, color: 'danger' },
+const kindLooks: Record<string, { Icon: TablerIcon; tone: ComponentProps<typeof InboxIcon>['tone'] } | undefined> = {
+  approval_requested: { Icon: IconHourglassHigh, tone: 'warning' },
+  approval_approved: { Icon: IconCircleCheck, tone: 'success' },
+  approval_rejected: { Icon: IconCircleX, tone: 'danger' },
+  approval_overdue: { Icon: IconClockExclamation, tone: 'danger' },
+  mentioned: { Icon: IconAt, tone: 'info' },
+  job_completed: { Icon: IconChecks, tone: 'success' },
+  job_failed: { Icon: IconAlertTriangle, tone: 'danger' },
 }
-const productLook: NonNullable<(typeof kindLooks)[string]> = { Icon: IconBell, color: 'gray' }
+const productLook: NonNullable<(typeof kindLooks)[string]> = { Icon: IconBell, tone: 'neutral' }
 const kindLabelKey = (kind: string) => (kind.includes('.') ? `${kind}.notification` : `core.notifications.kind.${kind}`)
 
 // The user's notifications, newest first, under the day they came. Opening one marks it read
@@ -94,7 +94,7 @@ export default function NotificationsPage() {
         <>
           <InboxList label={t('core.notifications.title')} framed>
             {items.map((n, i) => {
-              const { Icon, color } = kindLooks[n.kind] ?? productLook
+              const { Icon, tone } = kindLooks[n.kind] ?? productLook
               const day = dayOf(n.created_at)
               return (
                 <Fragment key={n.id}>
@@ -103,7 +103,7 @@ export default function NotificationsPage() {
                     active={false}
                     unread={!n.read}
                     onClick={() => void open(n)}
-                    icon={<InboxIcon icon={Icon} color={color} />}
+                    icon={<InboxIcon icon={Icon} tone={tone} />}
                     label={
                       <Text size="sm">
                         {t(kindLabelKey(n.kind))}

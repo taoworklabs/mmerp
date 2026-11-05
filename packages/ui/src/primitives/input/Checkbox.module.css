@@ -58,15 +58,3 @@
   font-size: var(--mmerp-font-size-sm);
   color: var(--mmerp-color-text);
 }
-
-.description {
-  margin: var(--mmerp-space-xxs) 0 0;
-  font-size: var(--mmerp-font-size-xs);
-  color: var(--mmerp-color-dimmed);
-}
-
-.error {
-  margin: var(--mmerp-space-xxs) 0 0;
-  font-size: var(--mmerp-font-size-xs);
-  color: var(--mmerp-color-error);
-}

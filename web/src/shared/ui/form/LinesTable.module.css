@@ -6,17 +6,17 @@
 }
 
 .table thead th {
-  height: 36px;
+  height: var(--mmerp-table-header-height);
   background: var(--mmerp-color-table-header);
   color: var(--mmerp-color-dimmed);
   font-size: var(--mmerp-font-size-xs);
-  font-weight: 600;
+  font-weight: var(--mmerp-font-weight-semibold);
   white-space: nowrap;
 }
 
-/* Read-only lines are text at a table's 40px row height, not compact inputs. */
+/* Read-only lines are text at a table's row height, not compact inputs. */
 .table[data-readonly] td {
-  height: 40px;
+  height: var(--mmerp-table-row-height);
 }
 
 /* "Add line" sits under the table, outside its frame, yet keeps the table's compact height. */
@@ -60,7 +60,7 @@
 .grand dt,
 .grand dd {
   color: var(--mmerp-color-text);
-  font-weight: 600;
+  font-weight: var(--mmerp-font-weight-semibold);
 }
 
 /* A cell's input takes the column's width instead of widening it to the input's natural size. */

@@ -92,7 +92,7 @@ export function ItemsPage() {
       header: t('sales.item.status'),
       role: 'status',
       kind: 'status',
-      render: (x) => <StatusBadge tone={x.active ? 'positive' : 'neutral'}>{t(x.active ? 'sales.item.in_use' : 'sales.item.retired')}</StatusBadge>,
+      render: (x) => <StatusBadge tone={x.active ? 'success' : 'neutral'}>{t(x.active ? 'sales.item.in_use' : 'sales.item.retired')}</StatusBadge>,
     },
   ]
   const view = useListView('sales.items', columns)

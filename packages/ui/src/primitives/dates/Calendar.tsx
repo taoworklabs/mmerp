@@ -38,13 +38,13 @@ interface CalendarHeaderProps {
 export function CalendarHeader(props: CalendarHeaderProps) {
   return (
     <div className={styles.header}>
-      <ActionIcon variant="subtle" color="gray" size="xs" aria-label={props.previousLabel} disabled={props.previousDisabled} onClick={props.onPrevious}>
+      <ActionIcon variant="subtle" tone="neutral" size="xs" aria-label={props.previousLabel} disabled={props.previousDisabled} onClick={props.onPrevious}>
         <Chevron />
       </ActionIcon>
       <span id={props.titleId} className={styles.title} aria-live="polite">
         {props.title}
       </span>
-      <ActionIcon variant="subtle" color="gray" size="xs" aria-label={props.nextLabel} disabled={props.nextDisabled} onClick={props.onNext}>
+      <ActionIcon variant="subtle" tone="neutral" size="xs" aria-label={props.nextLabel} disabled={props.nextDisabled} onClick={props.onNext}>
         <Chevron flip />
       </ActionIcon>
     </div>

@@ -17,7 +17,7 @@ type Story = StoryObj<typeof Alert>
 
 export const Info: Story = {
   args: {
-    color: 'info',
+    tone: 'info',
     title: 'Lưu ý',
     icon: <IconInfoCircle size={icon.text.size} stroke={icon.text.stroke} />,
     children: 'Bảng lương tháng 10 sẽ được chốt vào ngày 25.',
@@ -26,7 +26,7 @@ export const Info: Story = {
 
 export const Success: Story = {
   args: {
-    color: 'success',
+    tone: 'success',
     title: 'Đã lưu',
     icon: <IconCircleCheck size={icon.text.size} stroke={icon.text.stroke} />,
     children: 'Thay đổi của bạn đã được lưu.',
@@ -35,7 +35,7 @@ export const Success: Story = {
 
 export const Warning: Story = {
   args: {
-    color: 'warning',
+    tone: 'warning',
     title: 'Cần kiểm tra',
     icon: <IconAlertTriangle size={icon.text.size} stroke={icon.text.stroke} />,
     children: 'Có 3 nhân viên chưa ký hợp đồng lao động.',
@@ -44,7 +44,7 @@ export const Warning: Story = {
 
 export const Danger: Story = {
   args: {
-    color: 'danger',
+    tone: 'danger',
     title: 'Không thành công',
     icon: <IconAlertTriangle size={icon.text.size} stroke={icon.text.stroke} />,
     children: 'Không gửi được yêu cầu. Vui lòng thử lại.',
@@ -57,7 +57,7 @@ export const Danger: Story = {
 
 export const Discovery: Story = {
   args: {
-    color: 'discovery',
+    tone: 'discovery',
     title: 'Mới',
     icon: <IconSparkles size={icon.text.size} stroke={icon.text.stroke} />,
     children: 'Bạn có thể in phiếu lương thành PDF.',

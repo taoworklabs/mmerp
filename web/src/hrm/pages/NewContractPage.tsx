@@ -3,7 +3,6 @@ import { useTranslation } from 'react-i18next'
 import { useSearchParams } from 'react-router'
 import { api, unwrap } from '@/shared/api/hrm'
 import { CreatePage } from '@/shared/document'
-import { errorText } from '@/shared/i18n'
 import { ErrorState, NotFoundPage, PageSkeleton } from '@/shared/ui/states'
 import { ContractForm } from '../components/ContractForm'
 import { useContract } from '../hooks/useContract'
@@ -25,8 +24,7 @@ export function NewContractPage() {
   const back = { to: '/hrm/employees', label: t('hrm.employees.back') }
   if (!employeeId) return <NotFoundPage back={back} />
   if (employee.isPending || (parentId > 0 && parent.isPending)) return <PageSkeleton />
-  if (employee.isError) return <ErrorState message={errorText(t, employee.error)} onRetry={() => void employee.refetch()} />
-  if (parent.isError) return <ErrorState message={errorText(t, parent.error)} onRetry={() => void parent.refetch()} />
+  if (employee.isError || parent.isError) return <ErrorState queries={[employee, parent]} />
   const e = employee.data
   const p = parentId > 0 ? parent.data : undefined
   if (p && p.employee_id !== e.id) return <NotFoundPage back={back} />
