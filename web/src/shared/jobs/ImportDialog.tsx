@@ -56,7 +56,7 @@ export function ImportDialog({ kind, params = {}, title, description, writes, on
   }
 
   return (
-    <FormModal opened wide title={title} onClose={close}>
+    <FormModal open wide title={title} onOpenChange={close}>
       {job === null ? (
         <Form form={form} onSubmit={start}>
           <Stack gap="sm">

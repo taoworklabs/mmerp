@@ -150,7 +150,7 @@ function DependentModal({ employeeId, dependent, onClose }: { employeeId: number
   }
 
   return (
-    <FormModal opened title={t(dependent ? 'hrm.dependent.edit' : 'hrm.dependent.create')} onClose={onClose}>
+    <FormModal open title={t(dependent ? 'hrm.dependent.edit' : 'hrm.dependent.create')} onOpenChange={onClose}>
       <Form form={form} onSubmit={save}>
         <TextField name="full_name" label={t('hrm.dependent.full_name')} required maxLength={200} />
         <SelectField

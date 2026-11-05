@@ -343,7 +343,7 @@ export function EditablePanelDoc() {
   )
 }
 
-const modalCode = `<FormModal title opened onClose wide?>{form}</FormModal>
+const modalCode = `<FormModal title open onOpenChange wide?>{form}</FormModal>
 import { ModalFooter } from '@/shared/ui/ModalFooter'   // a footer for a modal without a Form`
 
 export function FormModalDoc() {
@@ -359,7 +359,7 @@ export function FormModalDoc() {
               {t('shared.devui.open_modal')}
             </Button>
           </Group>
-          <FormModal opened={modal === 'form'} onClose={() => setModal(null)} title={t('shared.devui.open_modal')}>
+          <FormModal open={modal === 'form'} onOpenChange={(open) => !open && setModal(null)} title={t('shared.devui.open_modal')}>
             <EmptyState title={t('shared.devui.empty')} />
           </FormModal>
         </Case>
@@ -371,7 +371,7 @@ export function FormModalDoc() {
               {t('shared.devui.open_modal')}
             </Button>
           </Group>
-          <FormModal opened={modal === 'footer'} onClose={() => setModal(null)} title={t('shared.devui.export')}>
+          <FormModal open={modal === 'footer'} onOpenChange={(open) => !open && setModal(null)} title={t('shared.devui.export')}>
             <Stack gap="md">
               <Text>{`${rows[0]!.code} · ${rows[0]!.name}`}</Text>
               <ModalFooter>

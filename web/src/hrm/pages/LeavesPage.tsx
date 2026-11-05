@@ -107,7 +107,7 @@ export function LeavesPage({ team = false }: { team?: boolean }) {
         paging: { page: params.page, pageSize: params.pageSize, onPage: (page) => set({ page }), onPageSize: (pageSize) => set({ pageSize }) },
       }}
     >
-      <SidePanel title={open?.number ?? ''} href={open ? href(open.id) : ''} opened={!!open} onClose={peek.close}>
+      <SidePanel title={open?.number ?? ''} href={open ? href(open.id) : ''} open={!!open} onOpenChange={(o) => !o && peek.close()}>
         {open && <LeavePreview id={open.id} />}
       </SidePanel>
     </ListPage>

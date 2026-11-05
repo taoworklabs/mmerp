@@ -222,7 +222,7 @@ function GrantModal({ userId, onClose }: { userId: number; onClose: () => void }
   }
 
   return (
-    <FormModal opened title={t('core.user.grant')} onClose={onClose}>
+    <FormModal open title={t('core.user.grant')} onOpenChange={onClose}>
       <Form form={form} onSubmit={save} errorFields={{ role_already_granted: 'role' }}>
         <SelectField
           name="role"
@@ -303,7 +303,7 @@ function ResetPasswordModal({ userId, onClose }: { userId: number; onClose: () =
   }
 
   return (
-    <FormModal opened title={t('core.user.reset_password')} onClose={onClose}>
+    <FormModal open title={t('core.user.reset_password')} onOpenChange={onClose}>
       <Form form={form} onSubmit={save}>
         <PasswordField name="password" label={t('core.user.temporary_password')} required description={t('core.user.temporary_password_hint')} />
         <PasswordRules rules={rules} />

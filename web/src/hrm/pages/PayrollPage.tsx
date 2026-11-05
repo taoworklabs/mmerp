@@ -60,7 +60,7 @@ export function PayrollPage() {
         <AdjustmentsSection payroll={p} editable={can('adjust') && !computing} onQueued={follow} />
       </Stack>
       {payslipOf && (
-        <FormModal opened title={t('hrm.payroll.print_payslip')} onClose={() => setPayslipOf(null)}>
+        <FormModal open title={t('hrm.payroll.print_payslip')} onOpenChange={() => setPayslipOf(null)}>
           <Stack gap="md">
             <Text>{`${payslipOf.employee_code} · ${payslipOf.employee_name}`}</Text>
             <ModalFooter>

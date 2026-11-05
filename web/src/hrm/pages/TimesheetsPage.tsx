@@ -120,7 +120,7 @@ function NewTimesheet({ onClose }: { onClose: () => void }) {
   }
 
   return (
-    <FormModal opened title={t('hrm.timesheets.create')} onClose={onClose}>
+    <FormModal open title={t('hrm.timesheets.create')} onOpenChange={onClose}>
       <Form form={form} onSubmit={create} errorFields={{ timesheet_exists: 'month' }}>
         <OrgUnitField name="org_unit_id" label={t('hrm.timesheet.org_unit')} product="hrm" permission="hrm.timesheet.edit" required />
         <MonthField name="month" label={t('hrm.timesheet.month')} description={t('hrm.timesheet.month_hint')} required />

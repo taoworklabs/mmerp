@@ -128,7 +128,7 @@ export default function JobsPage() {
     >
       {body}
       {failed && (
-        <FormModal opened wide title={t('core.jobs.failed_title')} onClose={() => setFailed(null)}>
+        <FormModal open wide title={t('core.jobs.failed_title')} onOpenChange={() => setFailed(null)}>
           <JobOutcome job={failed} />
         </FormModal>
       )}

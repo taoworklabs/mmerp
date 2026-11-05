@@ -129,7 +129,7 @@ function ParamModal({ param, onClose }: { param: LegalParam | null; onClose: () 
     onClose()
   }
   return (
-    <FormModal opened title={t(param ? 'hrm.legal_param.edit' : 'hrm.legal_param.create')} onClose={onClose}>
+    <FormModal open title={t(param ? 'hrm.legal_param.edit' : 'hrm.legal_param.create')} onOpenChange={onClose}>
       <Form form={form} onSubmit={save} errorFields={{ invalid_legal_param: 'value' }}>
         <SelectField name="key" label={t('hrm.legal_param.key')} data={keys.map((k) => ({ value: k, label: t(`hrm.legal_param.${k}`) }))} readOnly={!!param} required />
         <DateField name="effective_from" label={t('hrm.legal_param.effective_from')} readOnly={!!param} required />

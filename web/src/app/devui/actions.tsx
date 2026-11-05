@@ -44,7 +44,7 @@ if (await ask({ title, message, confirmLabel, danger? })) { … }
 {dialog}`,
   bulkBar: `<BulkBar count={selected.size} onClear={clear}>{bulk actions}</BulkBar>`,
   sidePanel: `const peek = usePeek()   // the open row lives on the URL
-<SidePanel title href opened onClose>{preview}</SidePanel>`,
+<SidePanel title href open onOpenChange>{preview}</SidePanel>`,
 }
 
 export const queryStates = ['loading', 'error', 'empty', 'no_results', 'not_found', 'data'] as const
@@ -385,7 +385,7 @@ export function BulkBarDoc() {
 
 export function SidePanelDoc() {
   const { t } = useTranslation()
-  const [opened, setOpened] = useState(false)
+  const [open, setOpen] = useState(false)
   const row = rows[0]!
   return (
     <DocPage
@@ -393,11 +393,11 @@ export function SidePanelDoc() {
       example={
         <Case>
           <Group>
-            <Button variant="default" onClick={() => setOpened(true)}>
+            <Button variant="default" onClick={() => setOpen(true)}>
               {t('shared.devui.open_panel')}
             </Button>
           </Group>
-          <SidePanel title={row.name} href="/dev/ui/mmerp/side-panel" opened={opened} onClose={() => setOpened(false)}>
+          <SidePanel title={row.name} href="/dev/ui/mmerp/side-panel" open={open} onOpenChange={setOpen}>
             <FieldList rows={[[t('shared.devui.code'), row.code]]} />
           </SidePanel>
         </Case>

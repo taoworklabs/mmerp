@@ -76,7 +76,7 @@ function AdjustModal({ employeeId, onClose }: { employeeId: number; onClose: () 
     onClose()
   }
   return (
-    <FormModal opened title={t('hrm.balance.adjust')} onClose={onClose}>
+    <FormModal open title={t('hrm.balance.adjust')} onOpenChange={onClose}>
       <Form form={form} onSubmit={save} errorFields={{ leave_balance_negative: 'delta' }}>
         <IntegerField name="year" label={t('hrm.balance.year')} required min={2000} max={2100} />
         <DecimalField name="delta" label={t('hrm.balance.delta')} description={t('hrm.balance.delta_hint')} required scale={1} step={0.5} allowNegative />

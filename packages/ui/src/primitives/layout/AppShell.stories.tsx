@@ -14,12 +14,12 @@ export default meta
 type Story = StoryObj<typeof AppShell>
 
 function Demo() {
-  const [opened, setOpened] = useState(false)
+  const [open, setOpen] = useState(false)
   return (
     <AppShell
-      header={<Burger opened={opened} onClick={() => setOpened((o) => !o)} aria-label="Mở/đóng menu" />}
+      header={<Burger open={open} onOpenChange={setOpen} aria-label="Mở/đóng menu" />}
       navbar={<div>Nội dung thanh điều hướng</div>}
-      navbarOpened={opened}
+      navbarOpen={open}
     >
       <div>Nội dung trang</div>
     </AppShell>
@@ -86,7 +86,7 @@ export const HeaderPadding: Story = {
 
 function FooterDemo() {
   return (
-    <AppShell header={<div>Thanh đầu trang</div>} navbar={<div>Nội dung thanh điều hướng</div>} navbarFooter={<button>Thu gọn</button>} navbarOpened>
+    <AppShell header={<div>Thanh đầu trang</div>} navbar={<div>Nội dung thanh điều hướng</div>} navbarFooter={<button>Thu gọn</button>} navbarOpen>
       <div>Nội dung trang</div>
     </AppShell>
   )

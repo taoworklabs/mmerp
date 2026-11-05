@@ -34,16 +34,16 @@
   top: 10px;
 }
 
-.box[data-opened] .line:nth-child(1) {
+.box[data-open] .line:nth-child(1) {
   top: 5px;
   transform: rotate(45deg);
 }
 
-.box[data-opened] .line:nth-child(2) {
+.box[data-open] .line:nth-child(2) {
   opacity: 0;
 }
 
-.box[data-opened] .line:nth-child(3) {
+.box[data-open] .line:nth-child(3) {
   top: 5px;
   transform: rotate(-45deg);
 }

@@ -9,8 +9,9 @@ export type DrawerPosition = 'left' | 'right' | 'bottom'
 type DrawerFocusProp = React.ComponentProps<typeof BaseDrawer.Popup>['finalFocus']
 
 export interface DrawerProps extends Omit<React.ComponentPropsWithRef<'div'>, 'children' | 'title'> {
-  opened: boolean
-  onClose(): void
+  open?: boolean
+  defaultOpen?: boolean
+  onOpenChange?(open: boolean): void
   title: React.ReactNode
   position?: DrawerPosition
   // Width at the left or right, height at the bottom.
@@ -24,8 +25,9 @@ export interface DrawerProps extends Omit<React.ComponentPropsWithRef<'div'>, 'c
 }
 
 export function Drawer({
-  opened,
-  onClose,
+  open,
+  defaultOpen,
+  onOpenChange,
   title,
   position = 'right',
   size,
@@ -40,10 +42,9 @@ export function Drawer({
   const length = typeof size === 'number' ? `${size}px` : size
   return (
     <BaseDrawer.Root
-      open={opened}
-      onOpenChange={(next) => {
-        if (!next) onClose()
-      }}
+      open={open}
+      defaultOpen={defaultOpen}
+      onOpenChange={onOpenChange}
       swipeDirection={position === 'bottom' ? 'down' : position}
       modal={modal}
       disablePointerDismissal={!modal}
@@ -60,9 +61,9 @@ export function Drawer({
           >
             <div className={styles.header}>
               <BaseDrawer.Title className={styles.title}>{title}</BaseDrawer.Title>
-              <ActionIcon variant="subtle" tone="neutral" aria-label={closeLabel} onClick={onClose}>
+              <BaseDrawer.Close render={<ActionIcon variant="subtle" tone="neutral" aria-label={closeLabel} />}>
                 <CloseIcon size={12} />
-              </ActionIcon>
+              </BaseDrawer.Close>
             </div>
             <div className={styles.body}>{children}</div>
           </BaseDrawer.Popup>

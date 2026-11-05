@@ -71,7 +71,7 @@ function SettingModal({ entity, setting, onClose }: { entity: number; setting: L
   }
 
   return (
-    <FormModal opened title={t(setting.key)} onClose={onClose}>
+    <FormModal open title={t(setting.key)} onOpenChange={onClose}>
       <Form form={form} onSubmit={save}>
         <SelectField
           name="value"

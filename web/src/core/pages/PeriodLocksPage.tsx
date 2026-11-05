@@ -71,7 +71,7 @@ function LockModal({ lock, onClose }: { lock: PeriodLock; onClose: () => void })
   }
 
   return (
-    <FormModal opened title={t('core.period.change_title', { name: lock.legal_entity_name })} onClose={onClose}>
+    <FormModal open title={t('core.period.change_title', { name: lock.legal_entity_name })} onOpenChange={onClose}>
       <Form form={form} onSubmit={save}>
         <DateField name="locked_until" label={t('core.period.locked_until')} description={t('core.period.locked_until_hint')} clearable />
         {pending.length > 0 && (

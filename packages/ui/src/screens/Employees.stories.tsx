@@ -170,13 +170,13 @@ function Shell({ children }: { children: ReactNode }) {
       navbarWidth={240}
       navbarCollapsed={collapsed}
       navbarCollapsedWidth={56}
-      navbarOpened={drawer}
+      navbarOpen={drawer}
       header={
         <Group fill justify="space-between" wrap={false}>
           <Group gap="xs" wrap={false}>
             {/* On a phone the burger takes the product icon's place, so the header fits 375px. */}
             {mobile ? (
-              <Burger opened={drawer} onClick={toggleDrawer} aria-label="Trình đơn" />
+              <Burger open={drawer} onOpenChange={toggleDrawer} aria-label="Trình đơn" />
             ) : (
               <ThemeIcon size={28} aria-hidden>
                 <IconBuildingSkyscraper {...icon.text} />

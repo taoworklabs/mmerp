@@ -21,7 +21,7 @@ export function useConfirm(): [(o: ConfirmOptions) => Promise<boolean>, ReactNod
     resolve.current(ok)
   }
   const dialog = opts && (
-    <Dialog opened onClose={() => close(false)} title={opts.title} closeLabel={t('shared.modal.close')} initialFocus={confirmRef}>
+    <Dialog open onOpenChange={() => close(false)} title={opts.title} closeLabel={t('shared.modal.close')} initialFocus={confirmRef}>
       <Stack gap="md">
         <Text>{opts.message}</Text>
         <ModalFooter>

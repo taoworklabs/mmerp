@@ -9,7 +9,7 @@ import { Dialog, type DialogProps } from './Dialog.tsx'
 const meta: Meta<typeof Dialog> = {
   title: 'Overlay/Dialog',
   component: Dialog,
-  args: { closeLabel: 'Đóng', onClose: fn() },
+  args: { closeLabel: 'Đóng', onOpenChange: fn() },
   // React elements, not values to edit.
   argTypes: { children: { control: false } },
 }
@@ -18,17 +18,17 @@ export default meta
 
 type Story = StoryObj<typeof Dialog>
 
-function Demo(props: Omit<DialogProps, 'opened'>) {
-  const [opened, setOpened] = useState(false)
+function Demo(props: Omit<DialogProps, 'open'>) {
+  const [open, setOpen] = useState(false)
   return (
     <>
-      <Button onClick={() => setOpened(true)}>Mở hộp thoại</Button>
+      <Button onClick={() => setOpen(true)}>Mở hộp thoại</Button>
       <Dialog
         {...props}
-        opened={opened}
-        onClose={() => {
-          setOpened(false)
-          props.onClose()
+        open={open}
+        onOpenChange={(next) => {
+          setOpen(next)
+          props.onOpenChange?.(next)
         }}
       />
     </>
@@ -114,7 +114,7 @@ export const WithForm: Story = {
     await waitFor(() => expect(dialog.contains(document.activeElement)).toBe(true))
 
     await userEvent.keyboard('{Escape}')
-    expect(args.onClose).toHaveBeenCalledTimes(1)
+    expect(args.onOpenChange).toHaveBeenCalledTimes(1)
     // Focus return runs after the popup's own closing transition settles.
     await waitFor(() => expect(document.activeElement).toBe(trigger))
   },
@@ -148,7 +148,7 @@ export const DialogWithMenu: Story = {
     // The menu popup unmounts only once its own closing transition finishes.
     await waitFor(() => expect(body.queryByRole('menu')).not.toBeInTheDocument())
     expect(body.getByRole('dialog', { name: 'Tệp đính kèm' })).toBeInTheDocument()
-    expect(args.onClose).not.toHaveBeenCalled()
+    expect(args.onOpenChange).not.toHaveBeenCalled()
   },
 }
 
@@ -193,7 +193,7 @@ export const OutsideClickCloses: Story = {
     await waitFor(() => expect(dialog.contains(document.activeElement)).toBe(true))
 
     await userEvent.click(canvasElement.ownerDocument.body)
-    await waitFor(() => expect(args.onClose).toHaveBeenCalledTimes(1))
+    await waitFor(() => expect(args.onOpenChange).toHaveBeenCalledTimes(1))
   },
 }
 
@@ -211,9 +211,22 @@ export const KeepOpenOnOutsideClick: Story = {
     await userEvent.click(canvasElement.ownerDocument.body)
     // Give a dismissal the chance to happen before asserting it did not.
     await new Promise((r) => setTimeout(r, 100))
-    expect(args.onClose).not.toHaveBeenCalled()
+    expect(args.onOpenChange).not.toHaveBeenCalled()
 
     await userEvent.keyboard('{Escape}')
-    expect(args.onClose).toHaveBeenCalledTimes(1)
+    expect(args.onOpenChange).toHaveBeenCalledTimes(1)
+  },
+}
+
+// Uncontrolled: opens from defaultOpen and its close button closes it, reporting the change.
+export const Uncontrolled: Story = {
+  tags: ['!dev', '!autodocs'],
+  args: { title: 'Ghi chú', defaultOpen: true, children: 'Nội dung.' },
+  play: async ({ canvasElement, args }) => {
+    const body = within(canvasElement.ownerDocument.body)
+    await body.findByRole('dialog', { name: 'Ghi chú' })
+    await userEvent.click(body.getByRole('button', { name: 'Đóng' }))
+    await waitFor(() => expect(body.queryByRole('dialog')).not.toBeInTheDocument())
+    expect(args.onOpenChange).toHaveBeenCalledWith(false, expect.anything())
   },
 }

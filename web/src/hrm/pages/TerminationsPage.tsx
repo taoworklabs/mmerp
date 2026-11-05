@@ -85,7 +85,7 @@ export function TerminationsPage() {
         paging: { page: params.page, pageSize: params.pageSize, onPage: (page) => set({ page }), onPageSize: (pageSize) => set({ pageSize }) },
       }}
     >
-      <SidePanel title={open?.number ?? ''} href={`/hrm/terminations/${open?.id ?? ''}`} opened={!!open} onClose={peek.close}>
+      <SidePanel title={open?.number ?? ''} href={`/hrm/terminations/${open?.id ?? ''}`} open={!!open} onOpenChange={(o) => !o && peek.close()}>
         {open && <TerminationPreview id={open.id} />}
       </SidePanel>
     </ListPage>

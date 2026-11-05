@@ -7,24 +7,24 @@ import { Drawer, type DrawerProps } from './Drawer.tsx'
 const meta: Meta<typeof Drawer> = {
   title: 'Overlay/Drawer',
   component: Drawer,
-  args: { closeLabel: 'Đóng', onClose: fn() },
+  args: { closeLabel: 'Đóng', onOpenChange: fn() },
 }
 
 export default meta
 
 type Story = StoryObj<typeof Drawer>
 
-function Demo(props: Omit<DrawerProps, 'opened'>) {
-  const [opened, setOpened] = useState(false)
+function Demo(props: Omit<DrawerProps, 'open'>) {
+  const [open, setOpen] = useState(false)
   return (
     <>
-      <Button onClick={() => setOpened(true)}>Mở bảng bên</Button>
+      <Button onClick={() => setOpen(true)}>Mở bảng bên</Button>
       <Drawer
         {...props}
-        opened={opened}
-        onClose={() => {
-          setOpened(false)
-          props.onClose()
+        open={open}
+        onOpenChange={(next) => {
+          setOpen(next)
+          props.onOpenChange?.(next)
         }}
       />
     </>
@@ -41,7 +41,7 @@ export const PositionLeft: Story = {
     const dialog = body.getByRole('dialog', { name: 'Bộ lọc nâng cao' })
     expect(dialog).toBeInTheDocument()
     await userEvent.keyboard('{Escape}')
-    expect(args.onClose).toHaveBeenCalledTimes(1)
+    expect(args.onOpenChange).toHaveBeenCalledTimes(1)
   },
 }
 
@@ -75,7 +75,7 @@ export const NonModal: Story = {
     await userEvent.click(canvas.getByRole('button', { name: 'Dòng khác (0)' }))
     expect(canvas.getByRole('button', { name: 'Dòng khác (1)' })).toBeInTheDocument()
     expect(body.getByRole('dialog', { name: 'Xem nhanh' })).toBeInTheDocument()
-    expect(args.onClose).not.toHaveBeenCalled()
+    expect(args.onOpenChange).not.toHaveBeenCalled()
   },
 }
 

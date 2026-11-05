@@ -148,7 +148,7 @@ function AccountModal({ account: a, accounts, onClose }: { account: Account | nu
     onClose()
   }
   return (
-    <FormModal opened title={t(a ? 'accounting.accounts.edit' : 'accounting.accounts.create')} onClose={onClose}>
+    <FormModal open title={t(a ? 'accounting.accounts.edit' : 'accounting.accounts.create')} onOpenChange={onClose}>
       <Form form={form} onSubmit={save} errorFields={{ account_code_taken: 'code', account_parent_invalid: 'parent_id', account_in_use: 'parent_id', account_name_required: 'name' }}>
         <TextField name="code" label={t('accounting.account.code')} required maxLength={20} readOnly={codeLocked} rules={{ pattern: { value: /^[0-9A-Za-z.]+$/, message: t('accounting.account.code_hint') } }} />
         <TextField name="name" label={t('accounting.account.name')} required maxLength={200} />

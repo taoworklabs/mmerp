@@ -82,7 +82,7 @@ function OrgUnitModal({ unit, onClose }: { unit: OrgUnit | null; onClose: () => 
   }
 
   return (
-    <FormModal opened title={t(unit ? 'core.org.edit' : 'core.org.create')} onClose={onClose}>
+    <FormModal open title={t(unit ? 'core.org.edit' : 'core.org.create')} onOpenChange={onClose}>
       <Form form={form} onSubmit={save}>
         <SelectField name="kind" label={t('shared.org.kind')} required data={kinds.map((k) => ({ value: k, label: t(`shared.org.kind.${k}`) }))} />
         <TextField name="name" label={t('shared.org.name')} required maxLength={200} />

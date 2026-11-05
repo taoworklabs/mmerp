@@ -163,7 +163,7 @@ export function MoveModal({ employee: e, move, onClose, onSaved }: { employee: E
     onClose()
   })
   return (
-    <FormModal opened title={t(`hrm.employee.${move}_title`, { name: e.full_name })} onClose={onClose}>
+    <FormModal open title={t(`hrm.employee.${move}_title`, { name: e.full_name })} onOpenChange={onClose}>
       <Form form={form} onSubmit={save} errorFields={errorFields}>
         <OrgUnitField name="org_unit_id" label={t('hrm.employee.org_unit')} required product="hrm" permission="hrm.employee.edit" />
         <EmployeeField

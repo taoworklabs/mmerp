@@ -7,7 +7,7 @@ import '../../styles/index.css'
 describe('AppShell', () => {
   it('collapses the navbar to a rail at desktop widths, ignoring it below the drawer breakpoint', async () => {
     const { container } = await render(
-      <AppShell header={<div>Header</div>} navbar={<div>Navbar</div>} navbarCollapsed navbarOpened>
+      <AppShell header={<div>Header</div>} navbar={<div>Navbar</div>} navbarCollapsed navbarOpen>
         <div>Content</div>
       </AppShell>,
     )
@@ -24,7 +24,7 @@ describe('AppShell', () => {
 
   it('pins navbarFooter at the bottom of the navbar, hidden below the drawer breakpoint', async () => {
     const { container } = await render(
-      <AppShell header={<div>Header</div>} navbar={<div>Navbar content</div>} navbarFooter={<button>Collapse</button>} navbarOpened>
+      <AppShell header={<div>Header</div>} navbar={<div>Navbar content</div>} navbarFooter={<button>Collapse</button>} navbarOpen>
         <div>Content</div>
       </AppShell>,
     )

@@ -83,7 +83,7 @@ describe('production interactions', () => {
 
   it('fills the phone viewport with a dialog while keeping its close button available', async () => {
     await page.viewport(375, 740)
-    await render(<Dialog opened onClose={vi.fn()} title="Edit record" closeLabel="Close">{Array.from({ length: 30 }, (_, i) => <p key={i}>Field {i}</p>)}</Dialog>)
+    await render(<Dialog open onOpenChange={vi.fn()} title="Edit record" closeLabel="Close">{Array.from({ length: 30 }, (_, i) => <p key={i}>Field {i}</p>)}</Dialog>)
     const dialog = page.getByRole('dialog').element()
     const bounds = dialog.getBoundingClientRect()
     expect(bounds.width).toBe(375)

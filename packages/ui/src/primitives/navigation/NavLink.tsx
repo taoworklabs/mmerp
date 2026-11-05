@@ -14,7 +14,9 @@ export interface NavLinkProps extends Omit<React.ComponentPropsWithRef<'a'>, 'ch
   compact?: boolean
   render?: RenderProp
   children?: React.ReactNode
-  defaultOpened?: boolean
+  open?: boolean
+  defaultOpen?: boolean
+  onOpenChange?(open: boolean): void
 }
 
 function ChevronIcon() {
@@ -34,7 +36,9 @@ function NavLinkRoot({
   compact,
   render,
   children,
-  defaultOpened,
+  open,
+  defaultOpen,
+  onOpenChange,
   className,
   ...props
 }: NavLinkProps) {
@@ -51,7 +55,7 @@ function NavLinkRoot({
 
   if (children) {
     return (
-      <Collapsible.Root defaultOpen={defaultOpened} className={styles.group}>
+      <Collapsible.Root open={open} defaultOpen={defaultOpen} onOpenChange={onOpenChange} className={styles.group}>
         <Collapsible.Trigger
           className={cx(styles.root, className)}
           data-active={active ? '' : undefined}

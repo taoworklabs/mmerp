@@ -83,7 +83,7 @@ function StartModal({ start, writable, title, onClose }: { start: Start; writabl
   }
   if (start.fixed || !writable)
     return (
-      <FormModal opened title={title} onClose={onClose}>
+      <FormModal open title={title} onOpenChange={onClose}>
         <Form form={form} onSubmit={async () => {}}>
           <DateField name="start_date" label={t('accounting.start.date')} readOnly />
           {start.fixed && <Notice tone="info">{t('accounting.start.fixed_hint')}</Notice>}
@@ -96,7 +96,7 @@ function StartModal({ start, writable, title, onClose }: { start: Start; writabl
       </FormModal>
     )
   return (
-    <FormModal opened title={title} onClose={onClose}>
+    <FormModal open title={title} onOpenChange={onClose}>
       <Form form={form} onSubmit={save} errorFields={{ start_date_fixed: 'start_date', start_date_in_locked_period: 'start_date' }}>
         <DateField
           name="start_date"

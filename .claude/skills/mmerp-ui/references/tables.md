@@ -114,7 +114,7 @@ const peek = usePeek() // ?peek=<id> on the URL; Back closes it
 const open = rows.find((r) => String(r.id) === peek.id)
 …
 <DataTable … href={(r) => `/hrm/leaves/${r.id}`} onRowClick={(r) => peek.open(r.id)} />
-<SidePanel title={open?.number ?? ''} href={`/hrm/leaves/${open?.id}`} opened={!!open} onClose={peek.close}>
+<SidePanel title={open?.number ?? ''} href={`/hrm/leaves/${open?.id}`} open={!!open} onOpenChange={(o) => !o && peek.close()}>
   {open && <LeavePreview id={open.id} />} {/* the preview the area declares in its manifest for the inbox */}
 </SidePanel>
 ```

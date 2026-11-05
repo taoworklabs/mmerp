@@ -398,7 +398,7 @@ function ReassignModal({ step, onClose, onSubmit }: { step: ApprovalStep; onClos
     defaultValues: { from: pending.length === 1 ? String(pending[0]?.id) : null, login: '' },
   })
   return (
-    <FormModal opened title={t('shared.approval.reassign_title')} onClose={onClose}>
+    <FormModal open title={t('shared.approval.reassign_title')} onOpenChange={onClose}>
       <Form
         form={form}
         onSubmit={async (v) => {
@@ -419,7 +419,7 @@ function TextModal(props: { title: string; field: string; submitLabel: string; m
   const { t } = useTranslation()
   const form = useForm<{ value: string }>({ mode: 'onBlur', defaultValues: { value: '' } })
   return (
-    <FormModal opened title={props.title} onClose={props.onClose}>
+    <FormModal open title={props.title} onOpenChange={props.onClose}>
       <Form
         form={form}
         onSubmit={async (v) => {

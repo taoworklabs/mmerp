@@ -12,8 +12,9 @@ type DialogFocusProp = React.ComponentProps<typeof BaseDialog.Popup>['initialFoc
 const sizeWidths: Record<DialogSize, number> = { sm: 380, md: 440, lg: 620, xl: 780 }
 
 export interface DialogProps extends Omit<React.ComponentPropsWithRef<'div'>, 'children' | 'title'> {
-  opened: boolean
-  onClose(): void
+  open?: boolean
+  defaultOpen?: boolean
+  onOpenChange?(open: boolean): void
   title: React.ReactNode
   size?: DialogSize | number
   closeLabel: string
@@ -27,8 +28,9 @@ export interface DialogProps extends Omit<React.ComponentPropsWithRef<'div'>, 'c
 }
 
 function DialogRoot({
-  opened,
-  onClose,
+  open,
+  defaultOpen,
+  onOpenChange,
   title,
   size = 'md',
   closeLabel,
@@ -44,11 +46,10 @@ function DialogRoot({
   const vars: StyleVars = { '--mmerp-dialog-width': `${width}px`, ...style }
   return (
     <BaseDialog.Root
-      open={opened}
+      open={open}
+      defaultOpen={defaultOpen}
+      onOpenChange={onOpenChange}
       disablePointerDismissal={!closeOnClickOutside}
-      onOpenChange={(next) => {
-        if (!next) onClose()
-      }}
     >
       <BaseDialog.Portal>
         <BaseDialog.Backdrop className={styles.backdrop} />
@@ -56,9 +57,9 @@ function DialogRoot({
           <div className={styles.header}>
             <BaseDialog.Title className={styles.title}>{title}</BaseDialog.Title>
             {withCloseButton && (
-              <ActionIcon variant="subtle" tone="neutral" aria-label={closeLabel} onClick={onClose}>
+              <BaseDialog.Close render={<ActionIcon variant="subtle" tone="neutral" aria-label={closeLabel} />}>
                 <CloseIcon size={12} />
-              </ActionIcon>
+              </BaseDialog.Close>
             )}
           </div>
           <div className={styles.body}>{children}</div>
