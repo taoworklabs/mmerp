@@ -6167,7 +6167,10 @@ export interface operations {
     "get-accounting-ledger": {
         parameters: {
             query: {
+                legal_entity_id: number;
                 account_id: number;
+                from: string;
+                to: string;
             };
             header?: never;
             path?: never;

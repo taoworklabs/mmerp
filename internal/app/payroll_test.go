@@ -284,6 +284,25 @@ func TestPayrollReachesLedger(t *testing.T) {
 	if es := entries(id, 1); len(es) != 1 || es[0].debit != cost || es[0].credit != cost || cost == 0 {
 		t.Fatalf("entries %+v, cost %d", es, cost)
 	}
+	var led struct {
+		Closing int64
+		Lines   []struct {
+			DocType string `json:"doc_type"`
+		}
+	}
+	q := fmt.Sprintf("legal_entity_id=%d&from=2026-01-01&to=2026-12-31", f.legalEntity())
+	_ = json.Unmarshal(f.ok(f.admin, "GET", fmt.Sprintf("/api/accounting/ledger?%s&account_id=%d", q, accounts["642"]), "", 200), &led)
+	if led.Closing != cost || len(led.Lines) == 0 || led.Lines[0].DocType != "hrm.payroll" {
+		t.Fatalf("ledger %+v, cost %d", led, cost)
+	}
+	var tb struct {
+		TotalDebit  int64 `json:"total_debit"`
+		TotalCredit int64 `json:"total_credit"`
+	}
+	_ = json.Unmarshal(f.ok(f.admin, "GET", "/api/accounting/trial-balance?"+q, "", 200), &tb)
+	if tb.TotalDebit != cost || tb.TotalCredit != cost {
+		t.Fatalf("trial balance %+v, cost %d", tb, cost)
+	}
 	cancel(pay, id)
 	if es := entries(id, 2); len(es) != 2 || es[1].debit != cost || es[1].credit != cost {
 		t.Fatalf("after cancel %+v", es)

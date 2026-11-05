@@ -14,8 +14,10 @@ type reportRangeInput struct {
 }
 
 type ledgerInput struct {
-	reportRangeInput
-	AccountID int64 `query:"account_id" required:"true"`
+	LegalEntityID int64  `query:"legal_entity_id" required:"true"`
+	AccountID     int64  `query:"account_id" required:"true"`
+	From          string `query:"from" required:"true" format:"date"`
+	To            string `query:"to" required:"true" format:"date"`
 }
 
 type ledgerOutput struct{ Body Ledger }
