@@ -52,6 +52,7 @@ type Service struct {
 	d        Deps
 	types    map[string]Type
 	gate     ApprovalGate
+	before   BeforeLock
 	keepers  []Keeper
 	freezers []Freezer
 	// history says what another module's audit action needs to show on a timeline.
@@ -66,6 +67,9 @@ func NewService(d Deps) *Service {
 
 // SetApprovalGate wires approval while composing the app. Without a gate nothing needs approval.
 func (s *Service) SetApprovalGate(g ApprovalGate) { s.gate = g }
+
+// SetBeforeLock wires a product's check on moving a lock date later, while composing the app.
+func (s *Service) SetBeforeLock(f BeforeLock) { s.before = f }
 
 // OnDeleted registers a module that keeps data about records, while wiring modules.
 func (s *Service) OnDeleted(k Keeper) { s.keepers = append(s.keepers, k) }
@@ -909,6 +913,12 @@ func (s *Service) lock(ctx context.Context, ref Ref) (Doc, pgtype.Date, error) {
 	return d, locked, err
 }
 
+// SharePeriod share-locks a legal entity's period lock row, the first lock of the shared
+// order, for a module that checks its own rows against the lock date.
+func (s *Service) SharePeriod(ctx context.Context, legalEntity int64) (pgtype.Date, error) {
+	return s.sharePeriod(ctx, legalEntity)
+}
+
 func (s *Service) sharePeriod(ctx context.Context, legalEntity int64) (pgtype.Date, error) {
 	if err := store.EnsurePeriodLock.Run(ctx, legalEntity); err != nil {
 		return pgtype.Date{}, err
@@ -1015,6 +1025,15 @@ func (s *Service) SetPeriodLock(ctx context.Context, legalEntity int64, until *s
 			}
 			if s.gate != nil {
 				held, err := s.gate.HeldInPeriod(ctx, legalEntity, date)
+				if err != nil {
+					return err
+				}
+				for _, h := range held {
+					docs = append(docs, map[string]any{"doc_type": h.DocType, "id": h.ID, "number": h.Number, "date": platform.DatePtr(h.Date)})
+				}
+			}
+			if s.before != nil {
+				held, err := s.before(ctx, legalEntity, date)
 				if err != nil {
 					return err
 				}

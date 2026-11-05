@@ -41,7 +41,7 @@
   "core.period.change": "Đổi ngày khóa",
   "core.period.change_title": "Khóa kỳ: {{name}}",
   "core.period.locked_until_hint": "Để trống để mở khóa toàn bộ.",
-  "core.period.pending": "Chứng từ đang chờ duyệt trong kỳ:",
+  "core.period.pending": "Chứng từ chưa hoàn tất trong kỳ:",
   "core.period.saved": "Đã lưu ngày khóa.",
   "core.code_series.title": "Dãy mã",
   "core.code_series.description": "Mã hệ thống tự cấp khi người dùng để trống ô mã lúc tạo. Đổi tiền tố thì số thứ tự vẫn đếm tiếp.",

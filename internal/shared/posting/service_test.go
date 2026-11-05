@@ -3,6 +3,7 @@ package posting_test
 import (
 	"context"
 	"errors"
+	"slices"
 	"testing"
 
 	"github.com/taoworklabs/mmerp/internal/core/record"
@@ -69,5 +70,12 @@ func TestRecordAndVoid(t *testing.T) {
 	bare := posting.NewService(posting.Hooks{})
 	if err := tx(func(ctx context.Context) error { return bare.Record(ctx, document(), nil) }); err != nil {
 		t.Fatal(err)
+	}
+}
+
+func TestKindsListsEveryKind(t *testing.T) {
+	want := []posting.Kind{posting.SalaryExpense, posting.EmployerInsuranceExpense, posting.SalaryPayable, posting.InsurancePayable, posting.PitPayable}
+	if got := posting.Kinds(); !slices.Equal(got, want) {
+		t.Fatalf("got %v", got)
 	}
 }

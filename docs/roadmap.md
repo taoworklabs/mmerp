@@ -1,6 +1,6 @@
 # Roadmap Phase 1: a complete core
 
-Scope: build the core capabilities still missing before production use, each proven by HRM ([ADR-0023](./adr/0023-build-core-first.md)), then open Sales as the second product ([ADR-0027](./adr/0027-sales-product.md)). M10 and the production-readiness gate are on hold. Excludes accounting, custom fields, cloud model B, and products other than HRM and Sales.
+Scope: build the core capabilities still missing before production use, each proven by HRM ([ADR-0023](./adr/0023-build-core-first.md)), then open Sales as the second product ([ADR-0027](./adr/0027-sales-product.md)). M10 and the production-readiness gate are on hold. Accounting opens as the third product from 2026-11-05 (M15); custom fields, cloud model B and other products stay excluded.
 
 Phase 0 (M0 to M9: foundation, sign-in, organisation and permissions, document lifecycle, contracts, overtime, timekeeping, payroll calculation, administrative permissions, navigation shell) is finished and archived in [docs/archive/roadmap-phase-0.md](./archive/roadmap-phase-0.md). You do not need to read that file when working on Phase 1.
 
@@ -26,7 +26,7 @@ A milestone only passes when what it adds keeps the contract intact from table t
 
 ```
 M11 Attachments and discussion ─► M12 Notifications ─► M13 PDF printing ─► M14 Sales   (all done)
-   ─► HRM review ─► Core work after M14   (done) ─► next: not chosen
+   ─► HRM review ─► Core work after M14   (done) ─► M15 in progress
    ┄► M10 On-premise operations ┄► [Gate: production readiness]   (on hold)
 ```
 
@@ -118,6 +118,20 @@ Vertical slices, each from migration to screen:
 6. **End to end.** Playwright for the main flow and the team boundary; HRM suites unchanged and green.
    Done when: Playwright drives customer → item → quotation → manager approval from the inbox → PDF → order → confirmed order, and team B's user sees none of it.
 
+## M15. Accounting general ledger
+
+**Goal:** accounting as the third product, generic first: a chart of accounts held as data, mapping rules from business line kinds, automatic journal entries from `posting.lines`, manual journal entries, a general ledger and a trial balance ([ADR-0050](./adr/0050-accounting-product-and-general-ledger.md), [products/accounting.md](../products/accounting.md)).
+
+**Done when**, with `make seed` data and `PRODUCTS=hrm,sales,accounting`:
+
+1. The accountant opens the chart of accounts and sees a small sample chart created by the seed through the API.
+2. They set a mapping rule for each of the five payroll line kinds.
+3. HR posts a payroll; shortly after (a job) the general ledger shows a balanced journal entry for it, on the right accounts, dated with the payroll's date and split by org unit.
+4. HR cancels that payroll; the ledger shows a reversing entry and the original stays.
+5. A payroll posted while a kind has no rule shows under "awaiting posting" and HR was never blocked; once the rule exists, "post pending" makes the entry appear.
+6. The accountant enters, posts and cancels a manual journal entry.
+7. The trial balance for a period shows equal debit and credit totals.
+
 ## HRM review
 
 After M14, HRM went through a business review ([docs/hrm-review-plan.md](./hrm-review-plan.md), rounds [one](./hrm-review-round1.md) and [two](./hrm-review-round2.md)). The decisions are settled and built:
@@ -140,7 +154,7 @@ Core and frontend foundations built once Sales opened:
 - [ADR-0038](./adr/0038-data-engine-over-sqlc.md): Data engine over sqlc: dynamic parts compiled from code-declared fragments, no ORM
 - [ADR-0039](./adr/0039-shared-master-data.md): Shared master data: partners, items and tax in `shared/`, with their own namespace
 
-**Next:** not chosen. M10 and the production-readiness gate stay on hold.
+**Next:** M15 (accounting general ledger) is in progress. M10 and the production-readiness gate stay on hold.
 
 ## M10. On-premise operations
 
@@ -197,7 +211,7 @@ Not numbered; the checks before real data goes in. Real data enters the system o
 | --- | --- |
 | Custom fields | When a tenant needs something specific |
 | Pay periods other than the calendar month, time clocks, salary payment through banks, electronic social insurance (BHXH điện tử) | Per [products/hrm.md](../products/hrm.md#scope) |
-| Accounting, a third product | When there is a real need for it ([README.md](../README.md#principles)) |
+| Accounting: the Vietnamese layer (Circular 133/200 charts and rules, Ministry of Finance reports, VAT and CIT), financial statements, receivables and payables per party, multiple currencies | When the generic ledger (M15) is in use and a tenant needs them ([products/accounting.md](../products/accounting.md#scope)) |
 | Sales: CRM pipeline, stock, delivery, payment, invoices and e-invoices, foreign currencies, price lists | Per [products/sales.md](../products/sales.md#scope) |
 | Cloud model B | When operating cloud model A becomes overloaded ([tenancy.md](./tenancy.md#cloud-path-from-a-to-b)) |
 | Product switcher in the header | When moving between HRM and Sales through the home page proves slow |

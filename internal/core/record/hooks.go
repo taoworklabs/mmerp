@@ -36,3 +36,8 @@ type Freezer interface {
 	// an error keeps the document from being posted.
 	Posted(ctx context.Context, d Doc) error
 }
+
+// BeforeLock lists documents a product still has to settle before a legal entity's lock
+// date may move later to until; any it returns refuse the move. It runs under the
+// legal entity's period-lock row lock.
+type BeforeLock func(ctx context.Context, legalEntity int64, until pgtype.Date) ([]HeldDoc, error)

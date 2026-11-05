@@ -4,6 +4,215 @@
  */
 
 export interface paths {
+    "/accounting/accounts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["list-accounts"];
+        put?: never;
+        post: operations["create-account"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/accounting/accounts/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put: operations["update-account"];
+        post?: never;
+        delete: operations["delete-account"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/accounting/journal-entries": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["list-journal-entries"];
+        put?: never;
+        /** @description Sending the same request_id again returns the document created the first time. */
+        post: operations["create-journal-entry"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/accounting/journal-entries/actions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["get-journal-entry-actions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/accounting/journal-entries/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["get-journal-entry"];
+        put: operations["update-journal-entry"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/accounting/ledger": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["get-accounting-ledger"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/accounting/pending": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["list-accounting-pending"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/accounting/pending/post": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["post-accounting-pending"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/accounting/rules": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["list-accounting-rules"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/accounting/rules/{kind}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put: operations["save-accounting-rule"];
+        post?: never;
+        delete: operations["delete-accounting-rule"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/accounting/starts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["list-accounting-starts"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/accounting/starts/{legal_entity_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put: operations["set-accounting-start"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/accounting/trial-balance": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["get-accounting-trial-balance"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/approval-delegations": {
         parameters: {
             query?: never;
@@ -2151,6 +2360,43 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        Account: {
+            active: boolean;
+            code: string;
+            has_lines: boolean;
+            /** Format: int64 */
+            id: number;
+            name: string;
+            /** Format: int64 */
+            parent_id?: number | null;
+            postable: boolean;
+            /** @enum {string} */
+            type: "asset" | "liability" | "equity" | "revenue" | "expense";
+        };
+        AccountFields: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example /api/schemas/AccountFields.json
+             */
+            readonly $schema?: string;
+            active: boolean;
+            code: string;
+            name: string;
+            /** Format: int64 */
+            parent_id?: number | null;
+            /** @enum {string} */
+            type: "asset" | "liability" | "equity" | "revenue" | "expense";
+        };
+        AccountList: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example /api/schemas/AccountList.json
+             */
+            readonly $schema?: string;
+            items: components["schemas"]["Account"][];
+        };
         Actions: {
             /**
              * Format: uri
@@ -3332,6 +3578,127 @@ export interface components {
             /** Format: int64 */
             job_id: number;
         };
+        JournalEntry: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example /api/schemas/JournalEntry.json
+             */
+            readonly $schema?: string;
+            allowed_actions: string[];
+            /** Format: date */
+            date: string;
+            description: string;
+            /** Format: int64 */
+            id: number;
+            /** Format: int64 */
+            legal_entity_id: number;
+            lines: components["schemas"]["JournalEntryLineOut"][];
+            number: string;
+            /** @enum {string} */
+            status: "draft" | "pending_approval" | "posted" | "cancelled";
+            /**
+             * Format: int64
+             * @description Sum of the saved lines' credits, minor unit
+             */
+            total_credit: number;
+            /**
+             * Format: int64
+             * @description Sum of the saved lines' debits, minor unit
+             */
+            total_debit: number;
+            /** Format: int32 */
+            version: number;
+        };
+        JournalEntryActions: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example /api/schemas/JournalEntryActions.json
+             */
+            readonly $schema?: string;
+            allowed_actions: string[];
+        };
+        JournalEntryLine: {
+            /** Format: int64 */
+            account_id: number;
+            /**
+             * Format: int64
+             * @description Minor unit
+             */
+            credit: number;
+            /**
+             * Format: int64
+             * @description Minor unit
+             */
+            debit: number;
+            description?: string;
+            /** Format: int64 */
+            org_unit_id?: number;
+        };
+        JournalEntryLineOut: {
+            account_code: string;
+            /** Format: int64 */
+            account_id: number;
+            account_name: string;
+            /**
+             * Format: int64
+             * @description Minor unit
+             */
+            credit: number;
+            /**
+             * Format: int64
+             * @description Minor unit
+             */
+            debit: number;
+            description?: string;
+            /** Format: int64 */
+            org_unit_id?: number;
+        };
+        JournalEntryList: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example /api/schemas/JournalEntryList.json
+             */
+            readonly $schema?: string;
+            items: components["schemas"]["JournalEntryListItem"][];
+            /** Format: int64 */
+            total: number;
+        };
+        JournalEntryListItem: {
+            /** Format: date */
+            date: string;
+            description: string;
+            /** Format: int64 */
+            id: number;
+            /** Format: int64 */
+            legal_entity_id: number;
+            number: string;
+            /** @enum {string} */
+            status: "draft" | "pending_approval" | "posted" | "cancelled";
+            /**
+             * Format: int64
+             * @description Sum of debits, minor unit
+             */
+            total: number;
+        };
+        JournalEntryUpdate: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example /api/schemas/JournalEntryUpdate.json
+             */
+            readonly $schema?: string;
+            /** Format: date */
+            date: string;
+            description: string;
+            /** Format: int64 */
+            legal_entity_id: number;
+            lines: components["schemas"]["JournalEntryLine"][];
+            /** Format: int32 */
+            version: number;
+        };
         Leave: {
             /**
              * Format: uri
@@ -3467,6 +3834,40 @@ export interface components {
             readonly $schema?: string;
             /** Format: int64 */
             working_days: number;
+        };
+        Ledger: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example /api/schemas/Ledger.json
+             */
+            readonly $schema?: string;
+            /** Format: int64 */
+            closing: number;
+            lines: components["schemas"]["LedgerLine"][] | null;
+            /** Format: int64 */
+            opening: number;
+        };
+        LedgerLine: {
+            account_code: string;
+            /** Format: int64 */
+            balance: number;
+            /** Format: int64 */
+            credit: number;
+            /** Format: date */
+            date: string;
+            /** Format: int64 */
+            debit: number;
+            description: string | null;
+            /** Format: int64 */
+            doc_id: number;
+            doc_number: string;
+            doc_type: string;
+            /** Format: int64 */
+            entry_id: number;
+            kind: string | null;
+            /** Format: int64 */
+            org_unit_id: number | null;
         };
         LegalEntitySetting: {
             /** @description Translated as <key> and <key>.<value> */
@@ -3948,6 +4349,25 @@ export interface components {
             unit: string;
             /** @enum {string} */
             vat_rate: "none" | "0" | "5" | "8" | "10";
+        };
+        NewJournalEntry: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example /api/schemas/NewJournalEntry.json
+             */
+            readonly $schema?: string;
+            /** Format: date */
+            date: string;
+            description: string;
+            /** Format: int64 */
+            legal_entity_id: number;
+            lines: components["schemas"]["JournalEntryLine"][];
+            /**
+             * Format: uuid
+             * @description Generated once per form: sending it again returns the first document
+             */
+            request_id: string;
         };
         NewLeave: {
             /**
@@ -4684,6 +5104,28 @@ export interface components {
              */
             unused_leave: number;
         };
+        PendingDoc: {
+            /** Format: date */
+            date: string;
+            /** Format: int64 */
+            doc_id: number;
+            doc_type: string;
+            /** Format: int64 */
+            legal_entity_id: number;
+            missing_kinds: string[] | null;
+            number: string;
+            /** @enum {string} */
+            reason: "queued" | "unmapped" | "unbalanced" | "too_large";
+        };
+        PendingList: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example /api/schemas/PendingList.json
+             */
+            readonly $schema?: string;
+            items: components["schemas"]["PendingDoc"][] | null;
+        };
         PeriodLock: {
             /** Format: int64 */
             legal_entity_id: number;
@@ -4696,6 +5138,26 @@ export interface components {
             seq?: components["schemas"]["Plan"][] | null;
             /** Format: int32 */
             step?: number;
+        };
+        PostPendingInputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example /api/schemas/PostPendingInputBody.json
+             */
+            readonly $schema?: string;
+            /** Format: int64 */
+            legal_entity_id: number;
+        };
+        PostPendingOutputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example /api/schemas/PostPendingOutputBody.json
+             */
+            readonly $schema?: string;
+            /** Format: int64 */
+            queued: number;
         };
         PrintBlock: {
             en: string;
@@ -4789,6 +5251,25 @@ export interface components {
             /** Format: int64 */
             row: number;
         };
+        Rule: {
+            /** Format: int64 */
+            account_id: number | null;
+            kind: string;
+            /** @enum {string|null} */
+            side: "debit" | "credit" | null;
+        };
+        RuleFields: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example /api/schemas/RuleFields.json
+             */
+            readonly $schema?: string;
+            /** Format: int64 */
+            account_id: number;
+            /** @enum {string} */
+            side: "debit" | "credit";
+        };
         RuleInput: {
             /**
              * Format: uri
@@ -4804,6 +5285,15 @@ export interface components {
              * @default 3
              */
             max_levels: number;
+        };
+        RuleList: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example /api/schemas/RuleList.json
+             */
+            readonly $schema?: string;
+            items: components["schemas"]["Rule"][];
         };
         SavePITAuthorisationsInputBody: {
             /**
@@ -4898,6 +5388,31 @@ export interface components {
             /** @enum {string} */
             mode: "one" | "all";
             otherwise?: components["schemas"]["Element"][] | null;
+        };
+        Start: {
+            fixed: boolean;
+            /** Format: int64 */
+            legal_entity_id: number;
+            start_date: string | null;
+        };
+        StartInputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example /api/schemas/StartInputBody.json
+             */
+            readonly $schema?: string;
+            /** Format: date */
+            start_date: string | null;
+        };
+        StartList: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example /api/schemas/StartList.json
+             */
+            readonly $schema?: string;
+            items: components["schemas"]["Start"][];
         };
         StepDef: {
             /**
@@ -5221,6 +5736,35 @@ export interface components {
             /** @description The cancel awaits approval; the document is unchanged until then */
             held: boolean;
         };
+        TrialBalance: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example /api/schemas/TrialBalance.json
+             */
+            readonly $schema?: string;
+            rows: components["schemas"]["TrialRow"][] | null;
+            /** Format: int64 */
+            total_credit: number;
+            /** Format: int64 */
+            total_debit: number;
+        };
+        TrialRow: {
+            /** Format: int64 */
+            account_id: number;
+            /** Format: int64 */
+            closing: number;
+            code: string;
+            /** Format: int64 */
+            credit: number;
+            /** Format: int64 */
+            debit: number;
+            name: string;
+            /** Format: int64 */
+            opening: number;
+            /** Format: int64 */
+            parent_id: number | null;
+        };
         TypeRule: {
             action: string;
             allowed_actions: string[];
@@ -5341,6 +5885,579 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+    "list-accounts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AccountList"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "create-account": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AccountFields"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CreatedOutputBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "update-account": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AccountFields"];
+            };
+        };
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "delete-account": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "list-journal-entries": {
+        parameters: {
+            query?: {
+                /** @description Number or description */
+                q?: string;
+                status?: "draft" | "pending_approval" | "posted" | "cancelled";
+                legal_entity_id?: number;
+                from?: string;
+                to?: string;
+                sort?: "date" | "-date" | "number" | "-number";
+                page?: number;
+                page_size?: 20 | 50 | 100;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["JournalEntryList"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "create-journal-entry": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NewJournalEntry"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CreatedOutputBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "get-journal-entry-actions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["JournalEntryActions"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "get-journal-entry": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["JournalEntry"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "update-journal-entry": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["JournalEntryUpdate"];
+            };
+        };
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "get-accounting-ledger": {
+        parameters: {
+            query: {
+                legal_entity_id: number;
+                account_id: number;
+                from: string;
+                to: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Ledger"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "list-accounting-pending": {
+        parameters: {
+            query: {
+                legal_entity_id: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PendingList"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "post-accounting-pending": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PostPendingInputBody"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PostPendingOutputBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "list-accounting-rules": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RuleList"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "save-accounting-rule": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                kind: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RuleFields"];
+            };
+        };
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "delete-accounting-rule": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                kind: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "list-accounting-starts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StartList"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "set-accounting-start": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                legal_entity_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StartInputBody"];
+            };
+        };
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "get-accounting-trial-balance": {
+        parameters: {
+            query: {
+                legal_entity_id: number;
+                from: string;
+                to: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TrialBalance"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
     "list-approval-delegations": {
         parameters: {
             query?: never;
