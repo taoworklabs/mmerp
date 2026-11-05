@@ -3960,6 +3960,16 @@
             ],
             "type": "string"
           },
+          "total_credit": {
+            "description": "Sum of the saved lines' credits, minor unit",
+            "format": "int64",
+            "type": "integer"
+          },
+          "total_debit": {
+            "description": "Sum of the saved lines' debits, minor unit",
+            "format": "int64",
+            "type": "integer"
+          },
           "version": {
             "format": "int32",
             "type": "integer"
@@ -3974,6 +3984,8 @@
           "legal_entity_id",
           "description",
           "lines",
+          "total_debit",
+          "total_credit",
           "allowed_actions"
         ],
         "type": "object"

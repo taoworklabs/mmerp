@@ -58,6 +58,8 @@ type JournalEntry struct {
 	LegalEntityID int64                 `json:"legal_entity_id"`
 	Description   string                `json:"description"`
 	Lines         []JournalEntryLineOut `json:"lines" nullable:"false"`
+	TotalDebit    int64                 `json:"total_debit" doc:"Sum of the saved lines' debits, minor unit"`
+	TotalCredit   int64                 `json:"total_credit" doc:"Sum of the saved lines' credits, minor unit"`
 	// edit, delete, submit, withdraw, cancel.
 	AllowedActions []string `json:"allowed_actions" nullable:"false"`
 }

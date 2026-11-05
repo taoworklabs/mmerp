@@ -3597,6 +3597,16 @@ export interface components {
             number: string;
             /** @enum {string} */
             status: "draft" | "pending_approval" | "posted" | "cancelled";
+            /**
+             * Format: int64
+             * @description Sum of the saved lines' credits, minor unit
+             */
+            total_credit: number;
+            /**
+             * Format: int64
+             * @description Sum of the saved lines' debits, minor unit
+             */
+            total_debit: number;
             /** Format: int32 */
             version: number;
         };

@@ -78,6 +78,7 @@ func readJournalEntry(ctx context.Context, id int64) (JournalEntry, error) {
 	for i, l := range lines {
 		out.Lines[i] = JournalEntryLineOut{AccountCode: l.AccountCode, AccountName: l.AccountName, JournalEntryLine: JournalEntryLine{
 			AccountID: l.AccountID, OrgUnitID: platform.Int8Ptr(l.OrgUnitID), Description: platform.TextPtr(l.Description), Debit: l.Debit, Credit: l.Credit}}
+		out.TotalDebit, out.TotalCredit = out.TotalDebit+l.Debit, out.TotalCredit+l.Credit
 	}
 	return out, nil
 }

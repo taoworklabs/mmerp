@@ -268,3 +268,16 @@ func TestJournalEntrySendChecksBeforeApproval(t *testing.T) {
 		t.Fatalf("status %q, %v", e.Status, err)
 	}
 }
+
+// Totals are summed by the server, so a draft that does not balance shows it.
+func TestJournalEntryTotals(t *testing.T) {
+	l := newLedger(t)
+	f := l.journal("2026-03-31")
+	f.Lines[1].Credit = 70
+	f.Lines = append(f.Lines, accounting.JournalEntryLine{AccountID: l.acc["338"], Debit: 5})
+	ref := l.newJournal(t, f)
+	e, err := l.s.JournalEntry(l.core.Admin, ref.ID)
+	if err != nil || e.TotalDebit != 105 || e.TotalCredit != 70 {
+		t.Fatalf("totals %d %d %v", e.TotalDebit, e.TotalCredit, err)
+	}
+}
