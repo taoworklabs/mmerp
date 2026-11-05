@@ -1,6 +1,7 @@
 package accounting_test
 
 import (
+	"context"
 	"errors"
 	"testing"
 
@@ -116,4 +117,67 @@ func TestSetStartRefusedIntoLockedPeriod(t *testing.T) {
 	if err := l.s.SetStart(l.core.Admin, l.le, &inside); err != nil {
 		t.Fatalf("no lines in locked part: %v", err)
 	}
+}
+
+// A start date change racing the first entry of its legal entity: either the entry is in
+// first and the change is refused, or the change is in first and the entry follows the new
+// date. Never an entry dated before the stored start.
+func TestSetStartRacingFirstEntry(t *testing.T) {
+	later := "2026-04-01"
+	setStart := func(l *ledger) func(context.Context) error {
+		return func(ctx context.Context) error { return l.s.SetStart(ctx, l.le, &later) }
+	}
+	before := func(t *testing.T, l *ledger) {
+		t.Helper()
+		var n int
+		if err := l.core.Pool.QueryRow(l.core.Ctx, `SELECT count(*) FROM accounting.entries e
+			LEFT JOIN accounting.starts s ON s.legal_entity_id = e.legal_entity_id
+			WHERE s.start_date IS NULL OR e.date < s.start_date`).Scan(&n); err != nil || n != 0 {
+			t.Fatalf("entries before the start %d %v", n, err)
+		}
+	}
+
+	t.Run("entry first", func(t *testing.T) {
+		l := newLedger(t)
+		ref := l.doc(t, "2026-03-31")
+		l.record(t, ref, l.payroll()...)
+		release, err := hold(l.core.Ctx, func(ctx context.Context) error { return l.s.Reconcile(ctx, ref) })
+		if err != nil {
+			t.Fatal(err)
+		}
+		set := async(func() error { return setStart(l)(l.core.Admin) })
+		waits(t, set)
+		if err := release(); err != nil {
+			t.Fatal(err)
+		}
+		if err := <-set; !errors.Is(err, accounting.ErrStartDateFixed) {
+			t.Fatalf("set: %v", err)
+		}
+		if es := l.entries(t, ref); len(es) != 1 {
+			t.Fatalf("entries %+v", es)
+		}
+		before(t, l)
+	})
+
+	t.Run("start first", func(t *testing.T) {
+		l := newLedger(t)
+		ref := l.doc(t, "2026-03-31")
+		l.record(t, ref, l.payroll()...)
+		release, err := hold(l.core.Admin, setStart(l))
+		if err != nil {
+			t.Fatal(err)
+		}
+		rec := async(func() error { return l.s.Reconcile(l.core.Ctx, ref) })
+		waits(t, rec)
+		if err := release(); err != nil {
+			t.Fatal(err)
+		}
+		if err := <-rec; err != nil {
+			t.Fatal(err)
+		}
+		if es := l.entries(t, ref); len(es) != 0 {
+			t.Fatalf("entries %+v", es)
+		}
+		before(t, l)
+	})
 }
