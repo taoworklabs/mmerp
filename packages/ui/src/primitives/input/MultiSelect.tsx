@@ -2,6 +2,7 @@ import { Combobox as BaseCombobox } from '@base-ui/react/combobox'
 import type * as React from 'react'
 import { useId } from 'react'
 import { cx } from '../../internal/cx.ts'
+import { useControllable } from '../../internal/useControllable.ts'
 import { CloseIcon } from '../../internal/icons.tsx'
 import { Field, type FieldProps } from './Field.tsx'
 import { matchesQuery } from './matchesQuery.ts'
@@ -10,10 +11,11 @@ import type { SelectItem } from './Select.tsx'
 import textInputStyles from './TextInput.module.css'
 import styles from './MultiSelect.module.css'
 
-export interface MultiSelectProps extends FieldProps, Omit<React.ComponentPropsWithRef<'input'>, 'value' | 'onChange' | 'size'> {
+export interface MultiSelectProps extends FieldProps, Omit<React.ComponentPropsWithRef<'input'>, 'value' | 'defaultValue' | 'onChange' | 'size'> {
   data: SelectItem[]
-  value: string[]
-  onChange(value: string[]): void
+  value?: string[]
+  defaultValue?: string[]
+  onChange?(value: string[]): void
   nothingFound: React.ReactNode
   placeholder?: string
   removeLabel: (itemLabel: string) => string
@@ -31,8 +33,9 @@ export function MultiSelect({
   disabled,
   readOnly,
   data,
-  value,
-  onChange,
+  value: valueProp,
+  defaultValue = [],
+  onChange: onChangeProp,
   nothingFound,
   placeholder,
   removeLabel,
@@ -40,6 +43,7 @@ export function MultiSelect({
   style,
   ...props
 }: MultiSelectProps) {
+  const [value, onChange] = useControllable(valueProp, defaultValue, onChangeProp)
   const descriptionId = useId()
   const errorId = useId()
   const describedBy = cx(description !== undefined && descriptionId, error !== undefined && errorId) || undefined

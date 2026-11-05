@@ -553,7 +553,7 @@ function DetailScreen({ id, go }: { id: number; go: (route: Route) => void }) {
   ]
 
   return (
-    <Tabs value={tab} onValueChange={setTab}>
+    <Tabs value={tab} onChange={setTab}>
       <Page
         variant="detail"
         header={

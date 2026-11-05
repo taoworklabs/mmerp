@@ -30,7 +30,7 @@ function Controlled(props: DateFilterChipProps) {
       value={value}
       onChange={(next) => {
         setValue(next)
-        props.onChange(next)
+        props.onChange?.(next)
       }}
     />
   )

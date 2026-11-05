@@ -3,13 +3,15 @@ import { useId, useRef } from 'react'
 import { ClearButton } from '../../internal/ClearButton.tsx'
 import { cx } from '../../internal/cx.ts'
 import { mergeRefs } from '../../internal/mergeRefs.ts'
+import { useControllable } from '../../internal/useControllable.ts'
 import { VisuallyHidden } from '../layout/VisuallyHidden.tsx'
 import { Field, type FieldProps } from './Field.tsx'
 import styles from './FileInput.module.css'
 
-export interface FileInputProps extends FieldProps, Omit<React.ComponentPropsWithRef<'button'>, 'children' | 'onChange' | 'value' | 'type'> {
-  value: File | null
-  onChange(file: File | null): void
+export interface FileInputProps extends FieldProps, Omit<React.ComponentPropsWithRef<'button'>, 'children' | 'onChange' | 'value' | 'defaultValue' | 'type'> {
+  value?: File | null
+  defaultValue?: File | null
+  onChange?(file: File | null): void
   accept?: string
   placeholder?: string
   clearLabel: string
@@ -22,8 +24,9 @@ export function FileInput({
   required,
   disabled,
   readOnly,
-  value,
-  onChange,
+  value: valueProp,
+  defaultValue = null,
+  onChange: onChangeProp,
   accept,
   placeholder,
   clearLabel,
@@ -32,6 +35,7 @@ export function FileInput({
   ref,
   ...props
 }: FileInputProps) {
+  const [value, onChange] = useControllable(valueProp, defaultValue, onChangeProp)
   const inputRef = useRef<HTMLInputElement>(null)
   const triggerRef = useRef<HTMLButtonElement>(null)
   const visibleText = value ? value.name : placeholder

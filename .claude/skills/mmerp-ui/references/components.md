@@ -102,6 +102,8 @@ A document list filters by status with `DocumentStatusFilter` (`shared/document`
 
 Every field is wired to React Hook Form and renders: label above (12px, 600, `dimmed`), `*` when required, description under the input, error under that. Inputs are 40px among a form section's fields and in a modal's body, 30px elsewhere (filter bar, lines table), radius 6, input border token (`--mmerp-input-border`, see `tokens.md`), focus ring primary. Every field takes `short` (a third of a section row instead of half); `DateField` and `MonthField` show a calendar icon and their format as placeholder (not when `bare` or read-only); `TextField` takes `placeholder` for a "VD:" sample.
 
+Under the fields, every `@mmerp/ui` input takes `value`, `defaultValue` and `onChange`, so it works controlled or uncontrolled (`Tabs` too). The native ones (`TextInput`, `Textarea`, `PasswordInput`) call `onChange(event)`, every other `onChange(value)`; `Checkbox` alone takes `checked`, `defaultChecked` and `onChange(checked)`, its `value` being what a form submits.
+
 | Field | Data |
 | --- | --- |
 | `TextField` (`multiline`, `wide`) | Text; long text spans the row |

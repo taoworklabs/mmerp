@@ -29,7 +29,7 @@ function Controlled(props: ComboboxButtonProps) {
       value={value}
       onChange={(next) => {
         setValue(next)
-        props.onChange(next)
+        props.onChange?.(next)
       }}
     />
   )

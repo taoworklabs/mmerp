@@ -5,6 +5,7 @@ import { ClearButton } from '../../internal/ClearButton.tsx'
 import { cx } from '../../internal/cx.ts'
 import { ChevronIcon } from '../../internal/icons.tsx'
 import { mergeRefs } from '../../internal/mergeRefs.ts'
+import { useControllable } from '../../internal/useControllable.ts'
 import { Loader } from '../feedback/Loader.tsx'
 import { Field, type FieldProps } from './Field.tsx'
 import { matchesQuery } from './matchesQuery.ts'
@@ -15,11 +16,12 @@ import textInputStyles from './TextInput.module.css'
 type ComboboxClearProps = { clearable?: false; clearLabel?: undefined } | { clearable: true; clearLabel: string }
 
 export type ComboboxProps = FieldProps &
-  Omit<React.ComponentPropsWithRef<'input'>, 'value' | 'onChange' | 'size'> &
+  Omit<React.ComponentPropsWithRef<'input'>, 'value' | 'defaultValue' | 'onChange' | 'size'> &
   ComboboxClearProps & {
     data: SelectItem[]
-    value: string | null
-    onChange(value: string | null): void
+    value?: string | null
+    defaultValue?: string | null
+    onChange?(value: string | null): void
     nothingFound: React.ReactNode
     placeholder?: string
     filter?: (item: SelectItem, query: string) => boolean
@@ -43,8 +45,9 @@ export function Combobox({
   disabled,
   readOnly,
   data,
-  value,
-  onChange,
+  value: valueProp,
+  defaultValue = null,
+  onChange: onChangeProp,
   nothingFound,
   placeholder,
   filter = defaultFilter,
@@ -62,6 +65,7 @@ export function Combobox({
   ref,
   ...props
 }: ComboboxProps) {
+  const [value, onChange] = useControllable(valueProp, defaultValue, onChangeProp)
   const inputRef = useRef<HTMLInputElement>(null)
   const selectedLabel = data.find((item) => item.value === value)?.label ?? ''
   const [query, setQuery] = useState(selectedLabel)

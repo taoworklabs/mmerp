@@ -1,6 +1,7 @@
 import type * as React from 'react'
 import { useRef, useState } from 'react'
 import { cx } from '../../internal/cx.ts'
+import { useControllable } from '../../internal/useControllable.ts'
 import { ChevronDownIcon, CloseIcon } from '../../internal/icons.tsx'
 import type { CalendarLocale } from '../../primitives/dates/calendarGrid.ts'
 import { Calendar } from '../../primitives/dates/Calendar.tsx'
@@ -9,12 +10,13 @@ import { Popover } from '../../primitives/overlay/Popover.tsx'
 import { Tooltip } from '../../primitives/overlay/Tooltip.tsx'
 import styles from './List.module.css'
 
-export interface DateFilterChipProps extends Omit<React.ComponentPropsWithRef<'div'>, 'children' | 'onChange'> {
+export interface DateFilterChipProps extends Omit<React.ComponentPropsWithRef<'div'>, 'children' | 'onChange' | 'defaultValue'> {
   label: string
   icon: React.ReactNode
   // YYYY-MM-DD.
-  value: string | null
-  onChange(date: string | null): void
+  value?: string | null
+  defaultValue?: string | null
+  onChange?(date: string | null): void
   // How the chosen day reads once set, e.g. "Expiring before: 15/11/2026".
   valueText(label: string, date: string): string
   clearLabel: string
@@ -26,7 +28,8 @@ export interface DateFilterChipProps extends Omit<React.ComponentPropsWithRef<'d
 
 // DateFilterChip is FilterChip for a day: "Label" and a chevron while unset, "Label: 15/11/2026"
 // tinted with its own clear button once set.
-export function DateFilterChip({ label, icon, value, onChange, valueText, clearLabel, locale, labels, clearable = true, className, ...props }: DateFilterChipProps) {
+export function DateFilterChip({ label, icon, value: valueProp, defaultValue = null, onChange: onChangeProp, valueText, clearLabel, locale, labels, clearable = true, className, ...props }: DateFilterChipProps) {
+  const [value, onChange] = useControllable(valueProp, defaultValue, onChangeProp)
   const [open, setOpen] = useState(false)
   const pickerRef = useRef<HTMLDivElement>(null)
   const active = value !== null && clearable

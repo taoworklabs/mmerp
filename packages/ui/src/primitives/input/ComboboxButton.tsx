@@ -1,6 +1,7 @@
 import { Combobox as BaseCombobox } from '@base-ui/react/combobox'
 import type * as React from 'react'
 import { useId, useState } from 'react'
+import { useControllable } from '../../internal/useControllable.ts'
 import { tokens } from '../../tokens/tokens.ts'
 import { matchesQuery } from './matchesQuery.ts'
 import optionStyles from './options.module.css'
@@ -11,8 +12,9 @@ export type ComboboxButtonProps = {
   // Rendered as the Base UI trigger: its own onClick/aria attributes are merged onto it.
   trigger: React.ReactElement
   data: SelectItem[]
-  value: string | null
-  onChange(value: string): void
+  value?: string | null
+  defaultValue?: string | null
+  onChange?(value: string): void
   nothingFound: React.ReactNode
   searchable?: boolean
   // aria-label and placeholder of the search box; required when searchable.
@@ -49,7 +51,8 @@ const searchWrapperStyle: React.CSSProperties = { marginBottom: 'var(--mmerp-spa
 export function ComboboxButton({
   trigger,
   data,
-  value,
+  value: valueProp,
+  defaultValue = null,
   onChange,
   nothingFound,
   searchable,
@@ -59,6 +62,7 @@ export function ComboboxButton({
   onSearch,
   popupWidth = tokens.filterWidth.menu,
 }: ComboboxButtonProps) {
+  const [value, setValue] = useControllable<string | null>(valueProp, defaultValue)
   const [query, setQuery] = useState('')
   const triggerId = useId()
   return (
@@ -66,7 +70,9 @@ export function ComboboxButton({
       items={data}
       value={value}
       onValueChange={(next) => {
-        if (next !== null) onChange(next)
+        if (next === null) return
+        setValue(next)
+        onChange?.(next)
       }}
       inputValue={query}
       onInputValueChange={(next) => {

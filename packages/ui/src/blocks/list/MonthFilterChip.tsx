@@ -1,6 +1,7 @@
 import type * as React from 'react'
 import { useRef, useState } from 'react'
 import { cx } from '../../internal/cx.ts'
+import { useControllable } from '../../internal/useControllable.ts'
 import { ChevronDownIcon, CloseIcon } from '../../internal/icons.tsx'
 import type { CalendarLocale } from '../../primitives/dates/calendarGrid.ts'
 import { MonthPicker } from '../../primitives/dates/MonthPicker.tsx'
@@ -9,12 +10,13 @@ import { Popover } from '../../primitives/overlay/Popover.tsx'
 import { Tooltip } from '../../primitives/overlay/Tooltip.tsx'
 import styles from './List.module.css'
 
-export interface MonthFilterChipProps extends Omit<React.ComponentPropsWithRef<'div'>, 'children' | 'onChange'> {
+export interface MonthFilterChipProps extends Omit<React.ComponentPropsWithRef<'div'>, 'children' | 'onChange' | 'defaultValue'> {
   label: string
   icon: React.ReactNode
   // YYYY-MM.
-  value: string | null
-  onChange(month: string | null): void
+  value?: string | null
+  defaultValue?: string | null
+  onChange?(month: string | null): void
   // How the chosen month reads once set, e.g. "Month: 03/2026".
   valueText(label: string, month: string): string
   clearLabel: string
@@ -24,7 +26,8 @@ export interface MonthFilterChipProps extends Omit<React.ComponentPropsWithRef<'
 
 // MonthFilterChip is FilterChip for a month: "Label" and a chevron while unset, "Label: 03/2026"
 // tinted with its own clear button once set.
-export function MonthFilterChip({ label, icon, value, onChange, valueText, clearLabel, locale, labels, className, ...props }: MonthFilterChipProps) {
+export function MonthFilterChip({ label, icon, value: valueProp, defaultValue = null, onChange: onChangeProp, valueText, clearLabel, locale, labels, className, ...props }: MonthFilterChipProps) {
+  const [value, onChange] = useControllable(valueProp, defaultValue, onChangeProp)
   const [open, setOpen] = useState(false)
   const pickerRef = useRef<HTMLDivElement>(null)
   const variant = value !== null ? 'light' : 'default'

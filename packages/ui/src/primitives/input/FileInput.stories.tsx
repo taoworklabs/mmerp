@@ -21,7 +21,7 @@ function Controlled(props: FileInputProps) {
       value={value}
       onChange={(file) => {
         setValue(file)
-        props.onChange(file)
+        props.onChange?.(file)
       }}
     />
   )

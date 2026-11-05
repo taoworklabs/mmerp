@@ -21,7 +21,7 @@ export function useOrgView() {
   const tabs = (
     <Tabs
       value={view}
-      onValueChange={(v) =>
+      onChange={(v) =>
         setSearch((s) => {
           if (v === 'table') s.set('view', v)
           else s.delete('view')

@@ -21,7 +21,7 @@ function Controlled(props: NumberInputProps) {
       value={value}
       onChange={(next) => {
         setValue(next)
-        props.onChange(next)
+        props.onChange?.(next)
       }}
     />
   )

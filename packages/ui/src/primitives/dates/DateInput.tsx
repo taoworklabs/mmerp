@@ -2,6 +2,7 @@ import type * as React from 'react'
 import { useRef, useState } from 'react'
 import { ClearButton } from '../../internal/ClearButton.tsx'
 import { mergeRefs } from '../../internal/mergeRefs.ts'
+import { useControllable } from '../../internal/useControllable.ts'
 import type { FieldProps } from '../input/Field.tsx'
 import { TextInput } from '../input/TextInput.tsx'
 import { Popover } from '../overlay/Popover.tsx'
@@ -13,8 +14,9 @@ type DateInputClearProps = { clearable?: false; clearLabel?: undefined } | { cle
 export type DateInputProps = FieldProps &
   Omit<React.ComponentPropsWithRef<'input'>, 'value' | 'defaultValue' | 'onChange' | 'size' | 'type' | 'min' | 'max'> &
   DateInputClearProps & {
-    value: string | null
-    onChange(iso: string | null): void
+    value?: string | null
+    defaultValue?: string | null
+    onChange?(iso: string | null): void
     parse(text: string): string | null
     format(iso: string): string
     locale: CalendarLocale
@@ -26,8 +28,9 @@ export type DateInputProps = FieldProps &
   }
 
 export function DateInput({
-  value,
-  onChange,
+  value: valueProp,
+  defaultValue = null,
+  onChange: onChangeProp,
   parse,
   format,
   locale,
@@ -44,6 +47,7 @@ export function DateInput({
   onBlur,
   ...props
 }: DateInputProps) {
+  const [value, onChange] = useControllable(valueProp, defaultValue, onChangeProp)
   const inputRef = useRef<HTMLInputElement | null>(null)
   const calendarRef = useRef<HTMLDivElement>(null)
   const [open, setOpen] = useState(false)

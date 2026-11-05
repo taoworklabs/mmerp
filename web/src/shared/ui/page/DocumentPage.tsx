@@ -85,7 +85,7 @@ function DocumentLayout({ actions, error, approval, activity, sections = [], ful
   return (
     <Tabs
       value={tab}
-      onValueChange={(v) => {
+      onChange={(v) => {
         const next = new URLSearchParams(search)
         if (!v || v === 'details') next.delete('tab')
         else next.set('tab', v)

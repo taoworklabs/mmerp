@@ -38,7 +38,7 @@ export function RecordPage({ more, actions, tabs, aliases, children, ...header }
   return (
     <Tabs
       value={tab}
-      onValueChange={(v) => {
+      onChange={(v) => {
         const next = new URLSearchParams(search)
         if (!v || v === first) next.delete('tab')
         else next.set('tab', v)

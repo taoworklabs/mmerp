@@ -1,13 +1,15 @@
 import type * as React from 'react'
 import { useId, useState } from 'react'
 import { cx } from '../../internal/cx.ts'
+import { useControllable } from '../../internal/useControllable.ts'
 import { CalendarHeader, useRovingCursor } from './Calendar.tsx'
 import { addMonths, clamp, localToday, type CalendarLocale } from './calendarGrid.ts'
 import styles from './Calendar.module.css'
 
 export interface MonthPickerProps extends Omit<React.ComponentPropsWithRef<'div'>, 'onChange' | 'defaultValue'> {
-  value: string | null
-  onChange(month: string): void
+  value?: string | null
+  defaultValue?: string | null
+  onChange?(month: string): void
   minDate?: string
   maxDate?: string
   locale: CalendarLocale
@@ -16,7 +18,8 @@ export interface MonthPickerProps extends Omit<React.ComponentPropsWithRef<'div'
 
 const shiftMonth = (month: string, n: number) => addMonths(`${month}-01`, n).slice(0, 7)
 
-export function MonthPicker({ value, onChange, minDate, maxDate, locale, labels, className, ...props }: MonthPickerProps) {
+export function MonthPicker({ value: valueProp, defaultValue = null, onChange, minDate, maxDate, locale, labels, className, ...props }: MonthPickerProps) {
+  const [value, setValue] = useControllable<string | null>(valueProp, defaultValue)
   // Bounds may be given as days or months; months compare on their first seven characters.
   const min = minDate?.slice(0, 7)
   const max = maxDate?.slice(0, 7)
@@ -78,7 +81,8 @@ export function MonthPicker({ value, onChange, minDate, maxDate, locale, labels,
                 disabled={clamp(month, min, max) !== month}
                 onClick={() => {
                   move(month, false)
-                  onChange(month)
+                  setValue(month)
+                  onChange?.(month)
                 }}
               >
                 {locale.months[row * 3 + i]}
