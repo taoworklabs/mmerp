@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { ApiError } from '@/shared/api/error'
-import { queryState } from './queryState'
+import { failure, queryState } from './queryState'
 
 const all = { empty: true, noResults: true, notFound: true }
 const done = <T>(data: T) => ({ isPending: false, isError: false, error: null, data })
@@ -29,5 +29,16 @@ describe('queryState', () => {
   })
   it('hands over the selected data', () => {
     expect(queryState(done({ items: [3, 1] }), (d) => [...d.items].sort(), all)).toEqual({ state: 'data', data: [1, 3] })
+  })
+})
+
+describe('failure', () => {
+  it('shows the first error and retries every query that failed, not just the last', () => {
+    const refetched: string[] = []
+    const q = (name: string, error: unknown) => ({ isError: error != null, error, refetch: () => refetched.push(name) })
+    const f = failure([q('units', 'units down'), q('calendar', null)])
+    expect(f.error).toBe('units down')
+    f.retry()
+    expect(refetched).toEqual(['units'])
   })
 })

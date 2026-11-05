@@ -93,3 +93,13 @@ describe('production interactions', () => {
     await expect.element(page.getByRole('button', { name: 'Close' })).toBeVisible()
   })
 })
+
+describe('reduced motion', () => {
+  // A near-zero duration alone replays infinite loops every frame, so a pulse flickers instead of stopping.
+  it('stops looping animations', () => {
+    const rules = [...document.styleSheets].flatMap((sheet) => [...sheet.cssRules])
+    const reduced = rules.filter((rule): rule is CSSMediaRule => rule instanceof CSSMediaRule && rule.conditionText.includes('prefers-reduced-motion: reduce'))
+    const styles = reduced.flatMap((media) => [...media.cssRules]).filter((rule): rule is CSSStyleRule => rule instanceof CSSStyleRule)
+    expect(styles.some((rule) => rule.style.getPropertyValue('animation-iteration-count') === '1')).toBe(true)
+  })
+})

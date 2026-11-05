@@ -3,7 +3,6 @@ import { useTranslation } from 'react-i18next'
 import { useSearchParams } from 'react-router'
 import { api, unwrap } from '@/shared/api/hrm'
 import { CreatePage } from '@/shared/document'
-import { errorText } from '@/shared/i18n'
 import { ErrorState, NotFoundPage, PageSkeleton } from '@/shared/ui/states'
 import { TerminationForm } from '../components/TerminationForm'
 import { hrmKeys, terminationDocType } from '../keys'
@@ -22,7 +21,7 @@ export function NewTerminationPage() {
   const back = { to: '/hrm/employees', label: t('hrm.employees.back') }
   if (!employeeId) return <NotFoundPage back={back} />
   if (employee.isPending) return <PageSkeleton />
-  if (employee.isError) return <ErrorState message={errorText(t, employee.error)} onRetry={() => void employee.refetch()} />
+  if (employee.isError) return <ErrorState queries={[employee]} />
   const e = employee.data
   return (
     <CreatePage

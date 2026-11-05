@@ -3,7 +3,6 @@ import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { useTranslation } from 'react-i18next'
 import { api, unwrap, type LegalEntitySetting } from '@/shared/api/core'
-import { errorText } from '@/shared/i18n'
 import { DataTable, type Column } from '@/shared/ui/DataTable'
 import { Form, FormActions, LegalEntityFilter, SelectField, useLegalEntities } from '@/shared/ui/form'
 import { notifySuccess } from '@/shared/ui/notify'
@@ -32,7 +31,7 @@ export function SettingsPage() {
   ]
   let body
   if (units.isPending || (chosen !== undefined && settings.isPending)) body = <ContentSkeleton />
-  else if (units.isError || settings.isError) body = <ErrorState message={errorText(t, units.error ?? settings.error)} onRetry={() => void settings.refetch()} />
+  else if (units.isError || settings.isError) body = <ErrorState queries={[units, settings]} />
   else if (chosen === undefined) body = <EmptyState title={t('core.period.empty')} />
   else
     body = (

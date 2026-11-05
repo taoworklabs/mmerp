@@ -52,7 +52,7 @@ export function ApprovalPanel({ docType, id, onDone, sticky, subject, decideElse
   const { t } = useTranslation()
   const q = useApproval(docType, id)
   if (q.isPending) return <ContentSkeleton />
-  if (q.isError) return <ErrorState message={errorText(t, q.error)} onRetry={() => void q.refetch()} />
+  if (q.isError) return <ErrorState queries={[q]} />
   const inst = q.data.instance
   if (!inst)
     return (

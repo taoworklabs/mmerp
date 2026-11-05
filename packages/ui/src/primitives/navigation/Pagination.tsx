@@ -77,6 +77,7 @@ export function Pagination({ total, value, onChange, labels, className, ...props
             data-mmerp-control=""
             className={styles.control}
             disabled={value <= 1}
+            focusableWhenDisabled
             aria-label={labels.previous}
             onClick={() => onChange(value - 1)}
           >
@@ -108,6 +109,7 @@ export function Pagination({ total, value, onChange, labels, className, ...props
             data-mmerp-control=""
             className={styles.control}
             disabled={value >= total}
+            focusableWhenDisabled
             aria-label={labels.next}
             onClick={() => onChange(value + 1)}
           >

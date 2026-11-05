@@ -1,6 +1,6 @@
 # Components
 
-What exists, how to use it, and how to build a new one. Imports are from `@/shared/ui/…` and `@/shared/document`. Every component here is on `/dev/ui` in each of its states.
+What exists, how to use it, and how to build a new one. Imports are from `@/shared/ui/…` and `@/shared/document`. Most components here have a `/dev/ui` entry (`app/devui/catalogue.ts`) showing their states; Storybook covers the kit primitives.
 
 Areas take from `@mmerp/ui` only the layout and text primitives `Anchor`, `Button`, `Divider`, `Group`, `List`, `Loader`, `Skeleton`, `Stack`, `Text`, `Tooltip` and the look-only blocks `Panel`, `FieldList`, `KeyFacts`, `RecordColumns`, `ActionBar` (ESLint allowlist); everything else comes from `shared/ui`. When a screen needs something more, add it to `shared/ui` (and to the allowlist only if it is a plain primitive). `shared/ui` itself builds on any `@mmerp/ui` component, with the variants below; Storybook (`make storybook`, `:6006`) shows every primitive's props and states. Only the kit imports Base UI.
 
@@ -42,11 +42,13 @@ Where each one goes, and how many per place: `actions.md`.
 
 ## Icon button
 
-`ActionIcon variant="subtle" color="gray" size="lg"` with the icon at `icon.button`, wrapped in a `Tooltip`, with an `aria-label` that repeats the tooltip. Beside 30px buttons or inputs use `size="input-sm"` so it is as tall as they are; a remove-row button is grey, never red.
+`ActionIcon variant="subtle" color="gray"` with the icon at `icon.button`, wrapped in a `Tooltip`, with an `aria-label` that repeats the tooltip. Keep the default `size="sm"`: it is the control height, so it lines up with buttons and inputs beside it (`xs`, 24px, only inside a dense control); a remove-row button is grey, never red.
+
+`ActionIcon` is not on the areas' allowlist: it is used inside `shared/ui`, `shared/document` and `app` (remove-row in `LinesTable`, attachments, `DayGrid`'s previous/next). An area takes an icon button from the `shared/ui` component that owns it; if none fits, add one there.
 
 ```tsx
 <Tooltip label={t('shared.attachments.remove')}>
-  <ActionIcon variant="subtle" color="gray" size="lg" aria-label={t('shared.attachments.remove')} onClick={remove}>
+  <ActionIcon variant="subtle" color="gray" aria-label={t('shared.attachments.remove')} onClick={remove}>
     <IconTrash {...icon.button} />
   </ActionIcon>
 </Tooltip>
@@ -103,6 +105,7 @@ Every field is wired to React Hook Form and renders: label above (12px, 600, `di
 | Field | Data |
 | --- | --- |
 | `TextField` (`multiline`, `wide`) | Text; long text spans the row |
+| `CodeField` | A master-data record's code: typed or left empty to be issued at creation, read-only once it exists (`existing`) |
 | `PasswordField` | Password, with show/hide |
 | `CheckboxField` | Yes/no, inside `InputRow` when next to inputs |
 | `DateField`, `MonthField` | A date (DD/MM/YYYY), a month |
@@ -135,7 +138,7 @@ Every field takes `bare` for a table cell: no visible label (kept as `aria-label
 
 A list's filter bar holds `SearchInput` and filter chips: `FilterChip` (options from `data`; `icon` is the icon component, the chip sizes it; `searchable`; `clearable={false}` for a filter that always holds a value), `OrgUnitFilter`, `LegalEntityFilter` (always holds one: `useLegalEntities(scope, picked)` gives the options and the chosen one, the first by default), `MonthFilter`, `DateFilter` (one day, e.g. expiring before; `clearable={false}` for a period's start or end), `YearFilter`, `RemoteFilter` (a record searched on the server, like `RemoteSelectField`). Never put a form field (`DateField`, `RemoteSelectField`, …) in a filter bar: its label above breaks the bar's line. A chip is named after its filter and reads "Name: value", tinted with its own ✕ (with a tooltip), once set; `{...filterBar.bind(key)}` from `useListParams` wires one to the URL; areas set no width (`tables.md`).
 
-To switch between views of one feed (an activity feed's All · Comments · Changes · Views), use the kit's `SegmentedControl`: it draws as a thin frame of plain labels with the chosen one tinted and edged in primary (`SegmentedControl.module.css`); set nothing on it but its value, data and `aria-label`.
+To switch between views of one feed (an activity feed's All · Comments · Changes · Views), use the kit's `SegmentedControl` (inside `shared/ui` or `shared/document`, e.g. `ActivityFeed`, `PeriodNav`; areas do not import it, so an area needing one gets a `shared/ui` component for it): it draws as a thin frame of plain labels with the chosen one tinted and edged in primary (`SegmentedControl.module.css`); set nothing on it but its value, data and `aria-label`.
 
 ## Data display
 
@@ -147,7 +150,7 @@ To switch between views of one feed (an activity feed's All · Comments · Chang
 | `useListView(listKey, columns)` | The user's saved views and column choices for a list, stored on the server; returns `columns`, `onResize`, `tools` |
 | `BulkBar` | "N selected", the bulk actions (children), Clear selection |
 | `SidePanel` + `usePeek` | Read-only preview of a list row on the right, 480px, not modal, with "Open full page"; the open id on the URL (`?peek=`) |
-| `Panel` (`shared/ui/page`) | A card: 1px border, radius 6, 16px padding, `title` (600), optional `icon` and `actions` on its line; `plain` drops the frame, for the side column of a `RecordPage` overview or a `DocumentPage`, where rules part the panels |
+| `Panel` (`@mmerp/ui`) | A card: 1px border, radius 6, 16px padding, `title` (600), optional `icon` and `actions` on its line; `plain` drops the frame, for the side column of a `RecordPage` overview or a `DocumentPage`, where rules part the panels |
 | `TabContent` | The body of a `RecordPage` tab holding a list: `actions` right-aligned at its top, `error` (the last action's failure) under them, then the list and the tab's dialogs |
 | `ActivityFeed` (`shared/document`) | A record's or document's comments and audit log in one timeline: comment box, filter (All · Comments · Changes · Views), days as uppercase headings with a rule, each a button (chevron, `aria-expanded`) that closes its day to "· N mục" and opens it again, the day's lines indented under its label; each line the time of day (3rem column), a 20px bullet (avatar for plain doings and comments; a coloured round icon for a status reached, a decision, a creation, a sensitive read) and a sentence (who 600, doing `dimmed`, what 600); a comment or two or more changed fields in a sunken well, tied to the bullet by a thread; consecutive reads fold; 30 lines, then "Show more". Passed as `activity` to `DocumentPage`; on a `RecordPage` it is the "Hoạt động" tab, and `recent={5}` gives the overview's digest (comments and changes, no filter); the comment box is one line until focused; never build a separate history or discussion panel |
 | `DocumentScreen` (`shared/document`) | A document's whole page on `DocumentPage`: `list` (breadcrumb, where a deleted draft leaves for), header `facts` joined by "·", `DocumentStatus`, `badges`, `ApprovalDecision`, the page's own buttons (`extraActions`, given the banner's `onError`), `DocumentActions` (print from `printLabel`/`printKind`), `ApprovalPanel decideElsewhere` (`subject`), attachments (`attachments`) and `ActivityFeed`. A detail page passes only its fields and form |
@@ -155,7 +158,7 @@ To switch between views of one feed (an activity feed's All · Comments · Chang
 | `CreatePage` (`shared/document`) | A new document's page: `<PageSkeleton>` while the actions load, `<ForbiddenPage>` without `action` (default `create`), then the form, given `onCreated` that refreshes the record, toasts `created` and opens it |
 | `KeyFacts` | A record's 4–5 key figures under its title (`RecordPage` `summary`), each a sunken tile (`--mmerp-elevation-surface-sunken`, radius `md`, `sm` apart; `md` space above and below the row): label `xs` `dimmed` over value 500, side by side, two to a row below 768px |
 | `MissingValue` | An empty value: "+ Bổ sung" for who may fill it (`onAdd` opens the form, `to` goes where it is entered), else "Chưa cập nhật" in `dimmed`. Never "—" for a value the user can add |
-| `RecordPage`, `RecordColumns` (`shared/ui/page`) | One record with much to read: summary header, then its parts as full-width tabs on the header's rule (`tabs`, `aliases` for old values), the overview in `RecordColumns` (about 1.6/1: cards on the left, `Panel plain` digests on the right, parted by rules) |
+| `RecordPage` (`shared/ui/page`), `RecordColumns` (`@mmerp/ui`) | One record with much to read: summary header, then its parts as full-width tabs on the header's rule (`tabs`, `aliases` for old values), the overview in `RecordColumns` (about 1.6/1: cards on the left, `Panel plain` digests on the right, parted by rules) |
 | `FieldList` | Read-only label/value pairs, label left in `dimmed` (`stacked`: label over value, two to a row from 768px, a row's third item `'wide'` spans both); a value may be a node (a badge, a `SensitiveValue`); a container may fix the label width with `--field-list-label`. Cards on a record's or document's page are `stacked`; label-left stays for narrow places (a preview, a table row as a card) |
 | `CellGrid` | A grid of number inputs on two axes (timesheet). Inside a form, pass `invalidId={fieldId('<field>')}` and `errorId` and render the field's error under the grid: the first invalid cell then takes the focus from the footer's "Go to next field" |
 | `DayGrid` / `PeriodNav` | A read-only calendar of day cells (seven to a row, one column on a phone) and its Month / Week switch with previous and next. A tint (`rest`, `holiday`) always comes with text in the cell |
@@ -172,7 +175,7 @@ To switch between views of one feed (an activity feed's All · Comments · Chang
 | `useConfirm` | Before deleting, cancelling a posted document, rejecting; the confirm button repeats the verb; `danger: true` for destructive steps |
 | `useAction` | A region's own action: `run(fn, { confirm, success })` asks first (`useConfirm`), keeps the failure as `error` for the region (`TabContent`'s `error`, or an `ErrorState` at the top), toasts `success`; render `dialog` once |
 | `notifySuccess` | After a save: bottom right, closes after 3 seconds |
-| `notifyUndo(message, undoLabel, onUndo)` | A reversible action that already took effect, with Undo, 5 seconds (`actions.md`); its body is `UndoMessage`, which `/dev/ui` also shows at rest |
+| `notifyUndo(message, undoLabel, onUndo)` | A reversible action that already took effect, with Undo, 5 seconds (`actions.md`): a success toast whose action button (`undoLabel`) calls `onUndo` |
 | `notifyError` | A background job failed: stays until closed. Errors of the current action go next to their cause, not here |
 | `QueryView` | A region fed by one query: `ContentSkeleton` while loading, `ErrorState` with Retry, `empty` when there is nothing, else `children(data)`. `select` shapes the data first (sort, flatten pages, filter); `noResults` shows when a filter empties a non-empty result; `notFound` answers a 404 |
 | `EmptyState`, `ErrorState`, `PageSkeleton`, `ContentSkeleton`, `ForbiddenPage`, `NotFoundPage`, `ReadOnlyBanner` | The states of a region (see `patterns.md`). `EmptyState`'s icon is a 24px glyph (`icon.empty`) in a 48px neutral circle; pass another Tabler icon with `icon` |

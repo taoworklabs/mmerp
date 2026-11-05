@@ -3,8 +3,10 @@ import { IconInbox, type Icon as TablerIcon } from '@tabler/icons-react'
 import type { ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router'
+import { errorText } from '@/shared/i18n'
 import { Page } from './page'
 import { Notice } from './Notice'
+import { failure, type Retryable } from './queryState'
 import classes from './states.module.css'
 import { icon } from './theme'
 
@@ -28,9 +30,16 @@ export function EmptyState({ title, description, action, icon: Icon = IconInbox 
   )
 }
 
-// ErrorState shows what failed, with text and an icon, and a way to retry.
-export function ErrorState({ message, onRetry }: { message: string; onRetry?: () => void }) {
+// ErrorState shows what failed, with text and an icon, and a way to retry. Given the queries a
+// region loads from, it shows the first failure and Retry refetches every query that failed.
+export function ErrorState(props: { message: string; onRetry?: () => void } | { queries: Retryable[] }) {
   const { t } = useTranslation()
+  let message, onRetry
+  if ('queries' in props) {
+    const f = failure(props.queries)
+    message = errorText(t, f.error)
+    onRetry = f.retry
+  } else ({ message, onRetry } = props)
   return (
     <Notice tone="danger">
       <Stack gap="xs" align="start">

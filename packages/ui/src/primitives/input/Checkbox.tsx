@@ -2,6 +2,7 @@ import { Checkbox as BaseCheckbox } from '@base-ui/react/checkbox'
 import { Field as BaseField } from '@base-ui/react/field'
 import type * as React from 'react'
 import { cx } from '../../internal/cx.ts'
+import { Field } from './Field.tsx'
 import styles from './Checkbox.module.css'
 
 export interface CheckboxProps extends Omit<React.ComponentPropsWithRef<'div'>, 'children' | 'onChange'> {
@@ -13,6 +14,12 @@ export interface CheckboxProps extends Omit<React.ComponentPropsWithRef<'div'>, 
   description?: React.ReactNode
   error?: React.ReactNode
   disabled?: boolean
+  // Form props go to the hidden input Base UI renders, so the box works in a native form.
+  name?: string
+  value?: string
+  required?: boolean
+  readOnly?: boolean
+  inputRef?: React.Ref<HTMLInputElement>
 }
 
 export function Checkbox({
@@ -24,6 +31,11 @@ export function Checkbox({
   description,
   error,
   disabled,
+  name,
+  value,
+  required,
+  readOnly,
+  inputRef,
   className,
   'aria-label': ariaLabel,
   'aria-labelledby': ariaLabelledBy,
@@ -31,7 +43,7 @@ export function Checkbox({
   ...props
 }: CheckboxProps) {
   return (
-    <BaseField.Root invalid={!!error} disabled={disabled} className={cx(styles.root, className)} {...props}>
+    <Field description={description} error={error} disabled={disabled} readOnly={readOnly} className={cx(styles.root, className)} {...props}>
       <BaseField.Label className={styles.label} data-disabled={disabled ? '' : undefined}>
         <BaseCheckbox.Root
           aria-label={ariaLabel}
@@ -41,6 +53,11 @@ export function Checkbox({
           defaultChecked={defaultChecked}
           indeterminate={indeterminate}
           disabled={disabled}
+          name={name}
+          value={value}
+          required={required}
+          readOnly={readOnly}
+          inputRef={inputRef}
           onCheckedChange={(next) => onChange?.(next)}
           className={styles.box}
         >
@@ -58,12 +75,6 @@ export function Checkbox({
         </BaseCheckbox.Root>
         {label !== undefined && <span className={styles.text}>{label}</span>}
       </BaseField.Label>
-      {description !== undefined && <BaseField.Description className={styles.description}>{description}</BaseField.Description>}
-      {error !== undefined && (
-        <BaseField.Error match className={styles.error}>
-          {error}
-        </BaseField.Error>
-      )}
-    </BaseField.Root>
+    </Field>
   )
 }

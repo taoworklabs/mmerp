@@ -1,7 +1,5 @@
 import type { UseQueryResult } from '@tanstack/react-query'
 import type { ReactNode } from 'react'
-import { useTranslation } from 'react-i18next'
-import { errorText } from '@/shared/i18n'
 import { queryState } from './queryState'
 import { ContentSkeleton, ErrorState } from './states'
 
@@ -24,7 +22,6 @@ export function QueryView<T, U = T>({
   notFound?: ReactNode
   children: (data: U) => ReactNode
 }) {
-  const { t } = useTranslation()
   const s = queryState(query, select, { empty: empty !== undefined, noResults: noResults !== undefined, notFound: notFound !== undefined })
   switch (s.state) {
     case 'loading':
@@ -32,7 +29,7 @@ export function QueryView<T, U = T>({
     case 'not_found':
       return notFound
     case 'error':
-      return <ErrorState message={errorText(t, query.error)} onRetry={() => void query.refetch()} />
+      return <ErrorState queries={[query]} />
     case 'empty':
       return empty
     case 'no_results':

@@ -13,7 +13,7 @@ export function useLegalEntities(scope: Scope, picked?: string) {
   const units = useOrgUnits(scope)
   const options: Option[] = (units.data ?? []).filter((u) => u.kind === 'company').map((u) => ({ value: String(u.id), label: u.name }))
   const chosen = Number(picked) || Number(options[0]?.value) || undefined
-  return { options, chosen, isPending: units.isPending, isError: units.isError, error: units.error }
+  return { options, chosen, isPending: units.isPending, isError: units.isError, error: units.error, refetch: units.refetch }
 }
 
 // LegalEntityFilter is the legal-entity chip of a page that always shows one legal entity.

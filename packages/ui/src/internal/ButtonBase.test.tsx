@@ -25,3 +25,29 @@ describe('a button rendered as a link', () => {
     })
   }
 })
+
+describe('a loading button', () => {
+  const cases = [
+    ['Button', (loading: boolean, onClick: () => void) => <Button loading={loading} onClick={onClick}>Save</Button>],
+    ['ActionIcon', (loading: boolean, onClick: () => void) => <ActionIcon loading={loading} onClick={onClick} aria-label="Save">s</ActionIcon>],
+  ] as const
+  for (const [name, el] of cases) {
+    it(`${name} keeps focus, reports aria-disabled and ignores clicks`, async () => {
+      const onClick = vi.fn()
+      const { rerender } = await render(el(false, onClick))
+      const button = page.getByRole('button', { name: 'Save' }).element() as HTMLButtonElement
+      button.focus()
+      await rerender(el(true, onClick))
+      expect(document.activeElement).toBe(button)
+      expect(button.disabled).toBe(false)
+      expect(button.getAttribute('aria-disabled')).toBe('true')
+      button.click()
+      expect(onClick).not.toHaveBeenCalled()
+    })
+  }
+
+  it('leaves a plain disabled Button natively disabled', async () => {
+    await render(<Button disabled>Save</Button>)
+    expect((page.getByRole('button', { name: 'Save' }).element() as HTMLButtonElement).disabled).toBe(true)
+  })
+})

@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next'
 import { useSearchParams } from 'react-router'
 import { api, unwrap } from '@/shared/api/hrm'
 import { useMe } from '@/shared/auth/me'
-import { errorText, formatDate, formatMonth, formatNumber, formatWeekday, today } from '@/shared/i18n'
+import { formatDate, formatMonth, formatNumber, formatWeekday, today } from '@/shared/i18n'
 import { DayGrid, PeriodNav, type DayCell } from '@/shared/ui/DayGrid'
 import { Page } from '@/shared/ui/page'
 import { ContentSkeleton, ErrorState } from '@/shared/ui/states'
@@ -82,7 +82,7 @@ export function DaysPage() {
           nextLabel={t(`hrm.me.days.next_${mode}`)}
         />
         {failed ? (
-          <ErrorState message={errorText(t, failed.error)} onRetry={() => results.forEach((r) => void r.refetch())} />
+          <ErrorState queries={results} />
         ) : loading ? (
           <ContentSkeleton />
         ) : (

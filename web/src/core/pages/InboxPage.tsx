@@ -8,7 +8,7 @@ import { api, unwrap, type InboxItem } from '@/shared/api/core'
 import { RecordPreview, useRecordLink } from '@/shared/area'
 import { useMe } from '@/shared/auth/me'
 import { actionLabel, ApprovalPanel, documentKeys } from '@/shared/document'
-import { errorText, formatAgo, formatDateTime } from '@/shared/i18n'
+import { formatAgo, formatDateTime } from '@/shared/i18n'
 import { InboxList, InboxRow, InboxPage as Template } from '@/shared/ui/page'
 import { ContentSkeleton, EmptyState, ErrorState } from '@/shared/ui/states'
 import { icon } from '@/shared/ui/theme'
@@ -43,7 +43,7 @@ export default function InboxPage() {
 
   let list
   if (inbox.isPending) list = <ContentSkeleton />
-  else if (inbox.isError) list = <ErrorState message={errorText(t, inbox.error)} onRetry={() => void inbox.refetch()} />
+  else if (inbox.isError) list = <ErrorState queries={[inbox]} />
   else if (inbox.data.items.length === 0) list = <EmptyState title={t('core.inbox.empty')} description={t('core.inbox.empty_description')} />
   else
     list = (

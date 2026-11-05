@@ -35,7 +35,7 @@ Each colour is a ten-step scale, palest (0) to darkest (9). Components read it b
 | control border | automatic (`gray-4`) | `#B4B7BD` | Edges of checkboxes and radios: small, so they keep the stronger edge |
 | surface | `var(--mmerp-color-elevation-surface)`, default `Paper` background | `#FFFFFF` | Tables, forms, cards, the page |
 | surface sunken | `var(--mmerp-color-elevation-surface-sunken)` | `#F8F8F8` | Group and total rows, tile hover, grid cells that take no value |
-| table header | `var(--mmerp-color-table-header)` | `#F4F5F6` | A table's column header row (`DataTable`, `LinesTable`, `CellGrid`): a step deeper than the sunken rows |
+| table header | `var(--mmerp-color-table-header)` | `#F4F5F6` | A table's column header row (`DataTable`, `LinesTable`, `CellGrid`): a step deeper than the sunken rows. A list page's table (`ListPage`) sets it to the body colour, so its header reads as part of the page header |
 | disabled | automatic | `#F0F1F2` | Disabled input background |
 | neutral | `color="gray"` | tint `#F0F1F2`, text `#505258` (badges: `#DDDEE1`, `#3B3D42`) | Neutral badges, quiet icon buttons, empty-state icon |
 

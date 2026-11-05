@@ -2,7 +2,6 @@ import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router'
 import { useInvalidateRecord } from '@/shared/area'
 import { notifySuccess } from '@/shared/ui/notify'
-import { errorText } from '@/shared/i18n'
 import { Page } from '@/shared/ui/page'
 import { ErrorState, ForbiddenPage, PageSkeleton } from '@/shared/ui/states'
 import { EmployeeForm } from '../components/EmployeeForm'
@@ -15,7 +14,7 @@ export function NewEmployeePage() {
   const navigate = useNavigate()
   const actions = useEmployeeActions()
   if (actions.isPending) return <PageSkeleton />
-  if (actions.isError) return <ErrorState message={errorText(t, actions.error)} onRetry={() => void actions.refetch()} />
+  if (actions.isError) return <ErrorState queries={[actions]} />
   if (!actions.data.includes('create')) return <ForbiddenPage />
   return (
     <Page centered title={t('hrm.employees.create')} breadcrumbs={[{ label: t('hrm.employees.title'), to: '/hrm/employees' }]}>

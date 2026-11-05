@@ -1,9 +1,7 @@
 import type { UseQueryResult } from '@tanstack/react-query'
 import type { ReactNode } from 'react'
-import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router'
 import { useInvalidateRecord, useRecordLinks } from '@/shared/area'
-import { errorText } from '@/shared/i18n'
 import { notifySuccess } from '@/shared/ui/notify'
 import { Page, type Crumb } from '@/shared/ui/page'
 import { ErrorState, ForbiddenPage, PageSkeleton } from '@/shared/ui/states'
@@ -40,13 +38,12 @@ type Props = {
 // CreatePage is the page of a new document: forbidden without the action, then the form; once
 // created it refreshes the record, says so and opens it.
 export function CreatePage({ docType, actions, action = 'create', title, breadcrumbs, description, created, openAt, children }: Props) {
-  const { t } = useTranslation()
   const navigate = useNavigate()
   const invalidate = useInvalidateRecord()
   const link = useRecordLinks()
   const gate = createGate(actions, action)
   if (gate === 'pending') return <PageSkeleton />
-  if (gate === 'error' && !Array.isArray(actions)) return <ErrorState message={errorText(t, actions.error)} onRetry={() => void actions.refetch()} />
+  if (gate === 'error' && !Array.isArray(actions)) return <ErrorState queries={[actions]} />
   if (gate !== 'ok') return <ForbiddenPage />
   const allowed = Array.isArray(actions) ? actions : actions.data!
   const onCreated = async (id: number) => {

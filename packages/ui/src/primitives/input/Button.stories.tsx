@@ -56,7 +56,7 @@ export const Loading: Story = {
   play: async ({ canvasElement }) => {
     const button = within(canvasElement).getByRole('button', { name: 'Đang lưu' })
     expect(button).toHaveAttribute('aria-busy', 'true')
-    expect(button).toBeDisabled()
+    expect(button).toHaveAttribute('aria-disabled', 'true')
   },
 }
 

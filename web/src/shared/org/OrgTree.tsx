@@ -4,7 +4,6 @@ import type { ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useSearchParams } from 'react-router'
 import type { OrgUnit } from '@/shared/api/core'
-import { errorText } from '@/shared/i18n'
 import { DataTable, type Column } from '@/shared/ui/DataTable'
 import { orgUnitOptions, useOrgUnits } from '@/shared/ui/form'
 import { OrgUnitName } from '@/shared/ui/OrgUnitName'
@@ -57,7 +56,7 @@ export function OrgTree({ label, view = 'tree', emptyDescription, menu }: { labe
   const units = useOrgUnits({})
 
   if (units.isPending) return <ContentSkeleton />
-  if (units.isError) return <ErrorState message={errorText(t, units.error)} onRetry={() => void units.refetch()} />
+  if (units.isError) return <ErrorState queries={[units]} />
   if (units.data.length === 0) return <EmptyState title={t('shared.org.empty')} description={emptyDescription} />
   const byId = new Map(units.data.map((u) => [u.id, u]))
   const kindOf = (u: OrgUnit) => t(`shared.org.kind.${u.kind}`)

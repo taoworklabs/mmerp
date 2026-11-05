@@ -527,7 +527,7 @@
   "hrm.me.payslips.title": "Payslips",
   "hrm.me.payslips.description": "Your payslips for closed months.",
   "hrm.me.payslips.month": "Month",
-  "hrm.me.payslips.net": "Net pay",
+  "hrm.me.payslips.net": "Net pay (VND)",
   "hrm.me.payslips.empty": "No payslips yet",
   "hrm.me.payslips.empty_description": "Payslips appear here once payroll is closed.",
   "hrm.me.payslips.back": "Back to payslips",

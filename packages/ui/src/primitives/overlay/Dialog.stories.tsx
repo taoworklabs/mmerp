@@ -181,3 +181,39 @@ export const InitialFocus: Story = {
     await waitFor(() => expect(button).toHaveFocus())
   },
 }
+
+// By default a click outside closes the dialog.
+export const OutsideClickCloses: Story = {
+  tags: ['!dev', '!autodocs'],
+  args: { title: 'Gửi duyệt', children: 'Nội dung.' },
+  render: (args) => <Demo {...args} />,
+  play: async ({ canvasElement, args }) => {
+    await userEvent.click(within(canvasElement).getByRole('button', { name: 'Mở hộp thoại' }))
+    const dialog = await within(canvasElement.ownerDocument.body).findByRole('dialog', { name: 'Gửi duyệt' })
+    await waitFor(() => expect(dialog.contains(document.activeElement)).toBe(true))
+
+    await userEvent.click(canvasElement.ownerDocument.body)
+    await waitFor(() => expect(args.onClose).toHaveBeenCalledTimes(1))
+  },
+}
+
+// A form with unsaved edits stays open on a click outside; Escape and the close button still close it.
+export const KeepOpenOnOutsideClick: Story = {
+  tags: ['!dev', '!autodocs'],
+  args: { title: 'Sửa hồ sơ nhân viên', closeOnClickOutside: false, children: 'Nội dung chưa lưu.' },
+  render: (args) => <Demo {...args} />,
+  play: async ({ canvasElement, args }) => {
+    await userEvent.click(within(canvasElement).getByRole('button', { name: 'Mở hộp thoại' }))
+    const body = within(canvasElement.ownerDocument.body)
+    const dialog = await body.findByRole('dialog', { name: 'Sửa hồ sơ nhân viên' })
+    await waitFor(() => expect(dialog.contains(document.activeElement)).toBe(true))
+
+    await userEvent.click(canvasElement.ownerDocument.body)
+    // Give a dismissal the chance to happen before asserting it did not.
+    await new Promise((r) => setTimeout(r, 100))
+    expect(args.onClose).not.toHaveBeenCalled()
+
+    await userEvent.keyboard('{Escape}')
+    expect(args.onClose).toHaveBeenCalledTimes(1)
+  },
+}
