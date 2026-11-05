@@ -13,5 +13,7 @@ func NewService(d Deps) *Service {
 		"accountant": {PermView, PermEntryEdit, PermPost},
 		"admin":      {PermView, PermEntryEdit, PermPost, PermManage, PermApprovalManage},
 	}, "admin")
-	return &Service{d: d}
+	s := &Service{d: d}
+	s.registerJournalEntry()
+	return s
 }

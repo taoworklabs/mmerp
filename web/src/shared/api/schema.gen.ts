@@ -36,6 +36,55 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/accounting/journal-entries": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["list-journal-entries"];
+        put?: never;
+        /** @description Sending the same request_id again returns the document created the first time. */
+        post: operations["create-journal-entry"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/accounting/journal-entries/actions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["get-journal-entry-actions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/accounting/journal-entries/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["get-journal-entry"];
+        put: operations["update-journal-entry"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/accounting/pending": {
         parameters: {
             query?: never;
@@ -3497,6 +3546,117 @@ export interface components {
             /** Format: int64 */
             job_id: number;
         };
+        JournalEntry: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example /api/schemas/JournalEntry.json
+             */
+            readonly $schema?: string;
+            allowed_actions: string[];
+            /** Format: date */
+            date: string;
+            description: string;
+            /** Format: int64 */
+            id: number;
+            /** Format: int64 */
+            legal_entity_id: number;
+            lines: components["schemas"]["JournalEntryLineOut"][];
+            number: string;
+            /** @enum {string} */
+            status: "draft" | "pending_approval" | "posted" | "cancelled";
+            /** Format: int32 */
+            version: number;
+        };
+        JournalEntryActions: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example /api/schemas/JournalEntryActions.json
+             */
+            readonly $schema?: string;
+            allowed_actions: string[];
+        };
+        JournalEntryLine: {
+            /** Format: int64 */
+            account_id: number;
+            /**
+             * Format: int64
+             * @description Minor unit
+             */
+            credit: number;
+            /**
+             * Format: int64
+             * @description Minor unit
+             */
+            debit: number;
+            description?: string;
+            /** Format: int64 */
+            org_unit_id?: number;
+        };
+        JournalEntryLineOut: {
+            account_code: string;
+            /** Format: int64 */
+            account_id: number;
+            account_name: string;
+            /**
+             * Format: int64
+             * @description Minor unit
+             */
+            credit: number;
+            /**
+             * Format: int64
+             * @description Minor unit
+             */
+            debit: number;
+            description?: string;
+            /** Format: int64 */
+            org_unit_id?: number;
+        };
+        JournalEntryList: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example /api/schemas/JournalEntryList.json
+             */
+            readonly $schema?: string;
+            items: components["schemas"]["JournalEntryListItem"][];
+            /** Format: int64 */
+            total: number;
+        };
+        JournalEntryListItem: {
+            /** Format: date */
+            date: string;
+            description: string;
+            /** Format: int64 */
+            id: number;
+            /** Format: int64 */
+            legal_entity_id: number;
+            number: string;
+            /** @enum {string} */
+            status: "draft" | "pending_approval" | "posted" | "cancelled";
+            /**
+             * Format: int64
+             * @description Sum of debits, minor unit
+             */
+            total: number;
+        };
+        JournalEntryUpdate: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example /api/schemas/JournalEntryUpdate.json
+             */
+            readonly $schema?: string;
+            /** Format: date */
+            date: string;
+            description: string;
+            /** Format: int64 */
+            legal_entity_id: number;
+            lines: components["schemas"]["JournalEntryLine"][];
+            /** Format: int32 */
+            version: number;
+        };
         Leave: {
             /**
              * Format: uri
@@ -4113,6 +4273,25 @@ export interface components {
             unit: string;
             /** @enum {string} */
             vat_rate: "none" | "0" | "5" | "8" | "10";
+        };
+        NewJournalEntry: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example /api/schemas/NewJournalEntry.json
+             */
+            readonly $schema?: string;
+            /** Format: date */
+            date: string;
+            description: string;
+            /** Format: int64 */
+            legal_entity_id: number;
+            lines: components["schemas"]["JournalEntryLine"][];
+            /**
+             * Format: uuid
+             * @description Generated once per form: sending it again returns the first document
+             */
+            request_id: string;
         };
         NewLeave: {
             /**
@@ -5706,6 +5885,171 @@ export interface operations {
             cookie?: never;
         };
         requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "list-journal-entries": {
+        parameters: {
+            query?: {
+                /** @description Number or description */
+                q?: string;
+                status?: "draft" | "pending_approval" | "posted" | "cancelled";
+                legal_entity_id?: number;
+                from?: string;
+                to?: string;
+                sort?: "date" | "-date" | "number" | "-number";
+                page?: number;
+                page_size?: 20 | 50 | 100;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["JournalEntryList"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "create-journal-entry": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NewJournalEntry"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CreatedOutputBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "get-journal-entry-actions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["JournalEntryActions"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "get-journal-entry": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["JournalEntry"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "update-journal-entry": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["JournalEntryUpdate"];
+            };
+        };
         responses: {
             /** @description No Content */
             204: {
