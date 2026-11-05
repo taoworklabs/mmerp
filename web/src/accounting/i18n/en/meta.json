@@ -31,5 +31,8 @@
   "accounting.error.journal_entry_too_many_lines": "The journal entry has too many lines. Split it into several entries.",
   "accounting.error.journal_entry_description_required": "Enter a description.",
   "accounting.error.accounting_not_started": "The legal entity does not use accounting on this date. Check its start date under Configuration.",
-  "accounting.error.invalid_range": "Invalid date range: the start must come before the end."
+  "accounting.error.invalid_range": "Invalid date range: the start must come before the end.",
+  "accounting.preview.total_debit": "Total debit",
+  "accounting.preview.total_credit": "Total credit",
+  "accounting.error.start_date_in_locked_period": "The legal entity has a period locked until {{locked_until}}, so the start date cannot move into it."
 }

@@ -1,5 +1,5 @@
 import { IconFileText, IconListDetails } from '@tabler/icons-react'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { useTranslation } from 'react-i18next'
 import { api, unwrap, type JournalEntry, type JournalEntryLine } from '@/shared/api/accounting'
@@ -13,6 +13,7 @@ import {
   FormSection,
   LegalEntityField,
   LinesTable,
+  LinesTotals,
   MoneyField,
   SelectField,
   TextField,
@@ -24,7 +25,7 @@ import {
 } from '@/shared/ui/form'
 import { accountLabel, accountOptions, useAccounts } from '../hooks/useAccounting'
 import { journalEntryDocType } from '../keys'
-import { subtree } from '../tree'
+import { keepUnitsIn, subtree } from '../tree'
 
 type LineValues = { account_id: string | null; org_unit_id: string | null; description: string; debit: number | null; credit: number | null }
 
@@ -52,6 +53,7 @@ function defaults(doc?: JournalEntry): Values {
 const errorFields: ErrorFields<Values> = {
   journal_entry_description_required: 'description',
   accounting_not_started: 'date',
+  account_not_postable: 'lines.*.account_id',
   line_side_invalid: 'lines.*.debit',
   line_amount_invalid: 'lines.*.debit',
   line_org_unit_invalid: 'lines.*.org_unit_id',
@@ -83,6 +85,26 @@ export function JournalEntryForm({ doc, onCreated }: Props) {
   // A line's org unit must belong to the entry's legal entity.
   const inEntity = subtree(units, Number(form.watch('legal_entity_id')))
   const unitChoices = orgUnitOptions(units.filter((u) => inEntity.has(u.id))).map(({ value, label }) => ({ value, label }))
+
+  // Changing the legal entity drops the org units of lines that are not under the new one.
+  useEffect(() => {
+    const sub = form.watch((v, { name }) => {
+      if (name !== 'legal_entity_id' || !v.legal_entity_id || units.length === 0) return
+      form.setValue('lines', keepUnitsIn(form.getValues('lines'), units, Number(v.legal_entity_id)))
+    })
+    return () => sub.unsubscribe()
+  }, [form, units])
+
+  // Totals are the server's, as of the last save; a new entry has none yet.
+  const totals = doc && (
+    <LinesTotals
+      note={ro ? undefined : t('accounting.entry.totals_saved')}
+      rows={[
+        [t('accounting.entry.total_debit'), formatNumber(doc.total_debit)],
+        [t('accounting.entry.total_credit'), formatNumber(doc.total_credit)],
+      ]}
+    />
+  )
 
   async function save(v: Values) {
     const body = {
@@ -166,7 +188,7 @@ export function JournalEntryForm({ doc, onCreated }: Props) {
       >
         <FormRow>
           {ro && doc ? (
-            <LinesTable readOnly label={t('accounting.entry.section.lines')} columns={lineColumns} lines={doc.lines} lineLabel={(n) => t('accounting.line.title', { n })} />
+            <LinesTable readOnly label={t('accounting.entry.section.lines')} columns={lineColumns} lines={doc.lines} lineLabel={(n) => t('accounting.line.title', { n })} footer={totals} />
           ) : (
             <LinesTable
               name="lines"
@@ -177,6 +199,7 @@ export function JournalEntryForm({ doc, onCreated }: Props) {
               lineLabel={(n) => t('accounting.line.title', { n })}
               removeLabel={(n) => t('accounting.line.remove', { n })}
               minLines={2}
+              footer={totals}
             />
           )}
         </FormRow>

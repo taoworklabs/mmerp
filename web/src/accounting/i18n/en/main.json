@@ -138,5 +138,8 @@
   "accounting.ledger.no_lines_debit": "Debit balance: {{amount}}.",
   "accounting.ledger.no_lines_credit": "Credit balance: {{amount}}.",
   "accounting.start.fixed_hint": "The legal entity has entries, so its start date can no longer change.",
-  "accounting.common.close": "Close"
+  "accounting.common.close": "Close",
+  "accounting.entry.total_debit": "Total debit (₫)",
+  "accounting.entry.total_credit": "Total credit (₫)",
+  "accounting.entry.totals_saved": "Amounts as of the last save; save to recompute."
 }

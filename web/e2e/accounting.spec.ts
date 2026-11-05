@@ -125,7 +125,7 @@ test('a payroll posted before its rules exist waits for mapping, then reaches th
   await expect(page.getByText('Chờ quy tắc định khoản')).toBeVisible()
   await page.getByRole('button', { name: 'Ghi sổ chứng từ chờ' }).click()
 
-  // The entry is balanced, dated with the payroll, on the salary expense account, split by department.
+  // The entry is balanced, dated with the payroll, on the salary expense account, booked to the company.
   await expect.poll(async () => (await ledger('642')).lines.length, { timeout: 60_000 }).toBeGreaterThan(0)
   const expense = await ledger('642')
   expect(sum(expense.lines, 'debit')).toBeGreaterThan(0)

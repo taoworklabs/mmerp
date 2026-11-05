@@ -16,7 +16,7 @@ import { StatusBadge } from '@/shared/ui/StatusBadge'
 import { icon } from '@/shared/ui/theme'
 import { TreeList, type TreeNode } from '@/shared/ui/TreeList'
 import { accountOptions, useAccounts } from '../hooks/useAccounting'
-import { parentCandidates } from '../tree'
+import { hasLinesBelow, parentCandidates } from '../tree'
 import { accountingKeys } from '../keys'
 
 const types = ['asset', 'liability', 'equity', 'revenue', 'expense'] as const satisfies readonly Account['type'][]
@@ -130,6 +130,9 @@ function AccountModal({ account: a, accounts, onClose }: { account: Account | nu
     defaultValues: a ? { ...a, parent_id: a.parent_id ? String(a.parent_id) : null } : { code: '', name: '', type: '', parent_id: null, active: true },
   })
   const type = form.watch('type')
+  // The server refuses code, type and parent changes once the account, or one under it, has lines.
+  const used = !!a && hasLinesBelow(accounts, a.id)
+  const codeLocked = !!a?.has_lines
   async function save(v: Values) {
     const body: AccountFields = {
       code: v.code.trim(),
@@ -146,15 +149,16 @@ function AccountModal({ account: a, accounts, onClose }: { account: Account | nu
   }
   return (
     <FormModal opened title={t(a ? 'accounting.accounts.edit' : 'accounting.accounts.create')} onClose={onClose}>
-      <Form form={form} onSubmit={save} errorFields={{ account_code_taken: 'code', account_parent_invalid: 'parent_id', account_name_required: 'name' }}>
-        <TextField name="code" label={t('accounting.account.code')} required maxLength={20} rules={{ pattern: { value: /^[0-9A-Za-z.]+$/, message: t('accounting.account.code_hint') } }} />
+      <Form form={form} onSubmit={save} errorFields={{ account_code_taken: 'code', account_parent_invalid: 'parent_id', account_in_use: 'parent_id', account_name_required: 'name' }}>
+        <TextField name="code" label={t('accounting.account.code')} required maxLength={20} readOnly={codeLocked} rules={{ pattern: { value: /^[0-9A-Za-z.]+$/, message: t('accounting.account.code_hint') } }} />
         <TextField name="name" label={t('accounting.account.name')} required maxLength={200} />
-        <SelectField name="type" label={t('accounting.account.type')} required data={types.map((k) => ({ value: k, label: t(`accounting.account.type_${k}`) }))} />
+        <SelectField name="type" label={t('accounting.account.type')} required readOnly={codeLocked} data={types.map((k) => ({ value: k, label: t(`accounting.account.type_${k}`) }))} />
         <SelectField
           name="parent_id"
           label={t('accounting.account.parent')}
           description={t('accounting.account.parent_hint')}
           clearable
+          readOnly={used}
           data={accountOptions(parentCandidates(accounts, type, a?.id))}
         />
         <CheckboxField name="active" label={t('accounting.account.active')} description={t('accounting.account.active_hint')} />

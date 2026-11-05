@@ -1,6 +1,6 @@
 import { useTranslation } from 'react-i18next'
 import { DocumentPreview } from '@/shared/document'
-import { formatDate } from '@/shared/i18n'
+import { formatDate, formatNumber } from '@/shared/i18n'
 import { useJournalEntry } from '../hooks/useAccounting'
 import { journalEntryDocType } from '../keys'
 
@@ -16,6 +16,8 @@ export default function JournalEntryPreview({ id }: { id: number }) {
         [t('accounting.preview.date'), formatDate(d.date)],
         [t('accounting.preview.description'), d.description],
         [t('accounting.preview.lines'), String(d.lines.length)],
+        [t('accounting.preview.total_debit'), formatNumber(d.total_debit)],
+        [t('accounting.preview.total_credit'), formatNumber(d.total_credit)],
       ]}
     />
   )

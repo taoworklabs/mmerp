@@ -97,7 +97,7 @@ function StartModal({ start, writable, title, onClose }: { start: Start; writabl
     )
   return (
     <FormModal opened title={title} onClose={onClose}>
-      <Form form={form} onSubmit={save} errorFields={{ start_date_fixed: 'start_date' }}>
+      <Form form={form} onSubmit={save} errorFields={{ start_date_fixed: 'start_date', start_date_in_locked_period: 'start_date' }}>
         <DateField
           name="start_date"
           label={t('accounting.start.date')}

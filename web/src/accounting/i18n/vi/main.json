@@ -138,5 +138,8 @@
   "accounting.ledger.no_lines_debit": "Số dư Nợ: {{amount}}.",
   "accounting.ledger.no_lines_credit": "Số dư Có: {{amount}}.",
   "accounting.start.fixed_hint": "Pháp nhân đã có bút toán nên ngày bắt đầu không đổi được nữa.",
-  "accounting.common.close": "Đóng"
+  "accounting.common.close": "Đóng",
+  "accounting.entry.total_debit": "Tổng Nợ (đ)",
+  "accounting.entry.total_credit": "Tổng Có (đ)",
+  "accounting.entry.totals_saved": "Số tiền tính theo lần lưu gần nhất; lưu để tính lại."
 }

@@ -31,5 +31,8 @@
   "accounting.error.journal_entry_too_many_lines": "Phiếu kế toán có quá nhiều dòng. Tách thành nhiều phiếu.",
   "accounting.error.journal_entry_description_required": "Chưa nhập diễn giải.",
   "accounting.error.accounting_not_started": "Pháp nhân chưa bắt đầu dùng kế toán vào ngày này. Kiểm tra ngày bắt đầu trong Cấu hình.",
-  "accounting.error.invalid_range": "Khoảng ngày không hợp lệ: ngày bắt đầu phải trước ngày kết thúc."
+  "accounting.error.invalid_range": "Khoảng ngày không hợp lệ: ngày bắt đầu phải trước ngày kết thúc.",
+  "accounting.preview.total_debit": "Tổng Nợ",
+  "accounting.preview.total_credit": "Tổng Có",
+  "accounting.error.start_date_in_locked_period": "Pháp nhân đã khóa kỳ đến {{locked_until}} nên không dời ngày bắt đầu vào kỳ đã khóa."
 }
