@@ -27,7 +27,7 @@ function Controlled(props: SegmentedControlProps) {
       value={value}
       onChange={(next) => {
         setValue(next)
-        props.onChange(next)
+        props.onChange?.(next)
       }}
     />
   )

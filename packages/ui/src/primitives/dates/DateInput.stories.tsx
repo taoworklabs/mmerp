@@ -31,7 +31,7 @@ function Controlled(props: DateInputProps) {
       value={value}
       onChange={(iso) => {
         setValue(iso)
-        props.onChange(iso)
+        props.onChange?.(iso)
       }}
     />
   )

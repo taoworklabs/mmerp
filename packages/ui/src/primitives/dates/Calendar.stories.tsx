@@ -22,7 +22,7 @@ function Controlled(props: CalendarProps) {
       value={value}
       onChange={(iso) => {
         setValue(iso)
-        props.onChange(iso)
+        props.onChange?.(iso)
       }}
     />
   )

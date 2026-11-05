@@ -1,5 +1,6 @@
 import type * as React from 'react'
 import { cx } from '../../internal/cx.ts'
+import { useControllable } from '../../internal/useControllable.ts'
 import { ChevronDownIcon, CloseIcon } from '../../internal/icons.tsx'
 import { Button } from '../../primitives/input/Button.tsx'
 import { ComboboxButton } from '../../primitives/input/ComboboxButton.tsx'
@@ -7,12 +8,13 @@ import type { SelectItem } from '../../primitives/input/Select.tsx'
 import { Tooltip } from '../../primitives/overlay/Tooltip.tsx'
 import styles from './List.module.css'
 
-export interface FilterChipProps extends Omit<React.ComponentPropsWithRef<'div'>, 'children' | 'onChange'> {
+export interface FilterChipProps extends Omit<React.ComponentPropsWithRef<'div'>, 'children' | 'onChange' | 'defaultValue'> {
   label: string
   icon: React.ReactNode
   data: SelectItem[]
-  value: string | null
-  onChange(value: string | null): void
+  value?: string | null
+  defaultValue?: string | null
+  onChange?(value: string | null): void
   // How the chosen value reads once set, e.g. "Legal entity: Acme Co".
   valueText(label: string, value: string): string
   clearLabel: string
@@ -32,8 +34,9 @@ export function FilterChip({
   label,
   icon,
   data,
-  value,
-  onChange,
+  value: valueProp,
+  defaultValue = null,
+  onChange: onChangeProp,
   valueText,
   clearLabel,
   nothingFound,
@@ -45,6 +48,7 @@ export function FilterChip({
   className,
   ...props
 }: FilterChipProps) {
+  const [value, onChange] = useControllable(valueProp, defaultValue, onChangeProp)
   const chosen = data.find((item) => item.value === value)?.label ?? null
   const active = chosen !== null && clearable
   const variant = active ? 'light' : 'default'

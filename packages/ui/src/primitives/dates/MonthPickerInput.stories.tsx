@@ -22,7 +22,7 @@ function Controlled(props: MonthPickerInputProps) {
       value={value}
       onChange={(month) => {
         setValue(month)
-        props.onChange(month)
+        props.onChange?.(month)
       }}
     />
   )

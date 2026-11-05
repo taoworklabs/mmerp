@@ -3,6 +3,7 @@ import { useId, useRef, useState } from 'react'
 import { ClearButton } from '../../internal/ClearButton.tsx'
 import { cx } from '../../internal/cx.ts'
 import { mergeRefs } from '../../internal/mergeRefs.ts'
+import { useControllable } from '../../internal/useControllable.ts'
 import { VisuallyHidden } from '../layout/VisuallyHidden.tsx'
 import { Field, type FieldProps } from '../input/Field.tsx'
 import textInputStyles from '../input/TextInput.module.css'
@@ -16,8 +17,9 @@ type MonthPickerInputClearProps = { clearable?: false; clearLabel?: undefined } 
 export type MonthPickerInputProps = FieldProps &
   Omit<React.ComponentPropsWithRef<'button'>, 'value' | 'defaultValue' | 'onChange' | 'children' | 'type'> &
   MonthPickerInputClearProps & {
-    value: string | null
-    onChange(month: string | null): void
+    value?: string | null
+    defaultValue?: string | null
+    onChange?(month: string | null): void
     format(month: string): string
     locale: CalendarLocale
     labels: { previousYear: string; nextYear: string }
@@ -34,8 +36,9 @@ export function MonthPickerInput({
   required,
   disabled,
   readOnly,
-  value,
-  onChange,
+  value: valueProp,
+  defaultValue = null,
+  onChange: onChangeProp,
   format,
   locale,
   labels,
@@ -49,6 +52,7 @@ export function MonthPickerInput({
   ref,
   ...props
 }: MonthPickerInputProps) {
+  const [value, onChange] = useControllable(valueProp, defaultValue, onChangeProp)
   const boxRef = useRef<HTMLDivElement>(null)
   const triggerRef = useRef<HTMLButtonElement>(null)
   const pickerRef = useRef<HTMLDivElement>(null)

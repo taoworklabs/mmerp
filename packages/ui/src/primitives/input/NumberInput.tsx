@@ -6,8 +6,9 @@ import { Field, type FieldProps } from './Field.tsx'
 import styles from './NumberInput.module.css'
 
 export interface NumberInputProps extends FieldProps, Omit<React.ComponentPropsWithRef<'input'>, 'onChange' | 'value' | 'defaultValue' | 'size' | 'min' | 'max' | 'step' | 'type'> {
-  value: number | null
-  onChange(value: number | null): void
+  value?: number | null
+  defaultValue?: number | null
+  onChange?(value: number | null): void
   min?: number
   max?: number
   step?: number
@@ -24,6 +25,7 @@ export function NumberInput({
   disabled,
   readOnly,
   value,
+  defaultValue,
   onChange,
   min,
   max,
@@ -53,7 +55,8 @@ export function NumberInput({
       {/* No Increment/Decrement parts rendered: arrow-key stepping on the input is Base UI's native behaviour. */}
       <NumberField.Root
         value={value}
-        onValueChange={(next) => onChange(next)}
+        defaultValue={defaultValue ?? undefined}
+        onValueChange={(next) => onChange?.(next)}
         min={min}
         max={max}
         step={step}

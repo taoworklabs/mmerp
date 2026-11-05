@@ -5,6 +5,7 @@ import { ClearButton } from '../../internal/ClearButton.tsx'
 import { cx } from '../../internal/cx.ts'
 import { ChevronIcon } from '../../internal/icons.tsx'
 import { mergeRefs } from '../../internal/mergeRefs.ts'
+import { useControllable } from '../../internal/useControllable.ts'
 import { Field, type FieldProps } from './Field.tsx'
 import optionStyles from './options.module.css'
 import textInputStyles from './TextInput.module.css'
@@ -18,11 +19,12 @@ export interface SelectItem {
 type SelectClearProps = { clearable?: false; clearLabel?: undefined } | { clearable: true; clearLabel: string }
 
 export type SelectProps = FieldProps &
-  Omit<React.ComponentPropsWithRef<'button'>, 'value' | 'onChange' | 'children'> &
+  Omit<React.ComponentPropsWithRef<'button'>, 'value' | 'defaultValue' | 'onChange' | 'children'> &
   SelectClearProps & {
     data: SelectItem[]
-    value: string | null
-    onChange(value: string | null): void
+    value?: string | null
+    defaultValue?: string | null
+    onChange?(value: string | null): void
     placeholder?: string
   }
 
@@ -56,8 +58,9 @@ export function Select({
   disabled,
   readOnly,
   data,
-  value,
-  onChange,
+  value: valueProp,
+  defaultValue = null,
+  onChange: onChangeProp,
   placeholder,
   clearable,
   clearLabel,
@@ -67,6 +70,7 @@ export function Select({
   onBlur,
   ...props
 }: SelectProps) {
+  const [value, onChange] = useControllable(valueProp, defaultValue, onChangeProp)
   const triggerRef = useRef<HTMLButtonElement>(null)
   // Opening moves focus into the list; that is not leaving the field, so it is no blur.
   const [open, setOpen] = useState(false)

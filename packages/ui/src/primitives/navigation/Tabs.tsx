@@ -6,15 +6,15 @@ import styles from './Tabs.module.css'
 export interface TabsProps extends Omit<React.ComponentPropsWithRef<'div'>, 'defaultValue' | 'onChange'> {
   value?: string
   defaultValue?: string
-  onValueChange?(value: string): void
+  onChange?(value: string): void
 }
 
-function TabsRoot({ value, defaultValue, onValueChange, className, ...props }: TabsProps) {
+function TabsRoot({ value, defaultValue, onChange, className, ...props }: TabsProps) {
   return (
     <BaseTabs.Root
       value={value}
       defaultValue={defaultValue}
-      onValueChange={onValueChange && ((next) => onValueChange(next as string))}
+      onValueChange={onChange && ((next) => onChange(next as string))}
       className={cx(styles.root, className)}
       {...props}
     />

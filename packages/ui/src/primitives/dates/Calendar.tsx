@@ -1,13 +1,15 @@
 import type * as React from 'react'
 import { useEffect, useId, useRef, useState } from 'react'
 import { cx } from '../../internal/cx.ts'
+import { useControllable } from '../../internal/useControllable.ts'
 import { ActionIcon } from '../input/ActionIcon.tsx'
 import { addDays, addMonths, clamp, localToday, monthGrid, weekdayIndex, type CalendarLocale } from './calendarGrid.ts'
 import styles from './Calendar.module.css'
 
 export interface CalendarProps extends Omit<React.ComponentPropsWithRef<'div'>, 'onChange' | 'defaultValue'> {
-  value: string | null
-  onChange(iso: string): void
+  value?: string | null
+  defaultValue?: string | null
+  onChange?(iso: string): void
   defaultMonth?: string
   minDate?: string
   maxDate?: string
@@ -70,7 +72,8 @@ export function useRovingCursor(initial: () => string, normalize: (cursor: strin
 }
 
 export function Calendar({
-  value,
+  value: valueProp,
+  defaultValue = null,
   onChange,
   defaultMonth,
   minDate,
@@ -81,6 +84,7 @@ export function Calendar({
   className,
   ...props
 }: CalendarProps) {
+  const [value, setValue] = useControllable<string | null>(valueProp, defaultValue)
   const todayIso = today ?? localToday()
   const firstDayOfWeek = locale.firstDayOfWeek ?? 1
   const titleId = useId()
@@ -156,7 +160,8 @@ export function Calendar({
                   disabled={clamp(iso, minDate, maxDate) !== iso}
                   onClick={() => {
                     move(iso, false)
-                    onChange(iso)
+                    setValue(iso)
+                    onChange?.(iso)
                   }}
                 >
                   {Number(iso.slice(8))}
