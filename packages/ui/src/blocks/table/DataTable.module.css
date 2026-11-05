@@ -33,7 +33,7 @@
 }
 
 .strong {
-  font-weight: 600;
+  font-weight: var(--mmerp-font-weight-semibold);
 }
 
 /* An empty or zero cell steps back, so the eye stops on cells that hold something. */
@@ -52,13 +52,13 @@
 
 /* The identifier reads as the row's name, linked or not. */
 .root tbody tr:not(.totalRow) td[data-sticky] {
-  font-weight: 500;
+  font-weight: var(--mmerp-font-weight-medium);
 }
 
 /* The identifier reads as the row's name; it underlines on hover like any link. */
 .idLink {
   color: var(--mmerp-color-text);
-  font-weight: 500;
+  font-weight: var(--mmerp-font-weight-medium);
   text-decoration: none;
 }
 
@@ -69,7 +69,7 @@
 /* A group's name row and the total rows read as headings of the figures around them. */
 .groupRow td {
   background: var(--mmerp-color-elevation-surface-sunken);
-  font-weight: 600;
+  font-weight: var(--mmerp-font-weight-semibold);
 }
 
 /* The name stays in view when the row scrolls sideways. */
@@ -79,7 +79,7 @@
 }
 
 .totalRow td {
-  font-weight: 600;
+  font-weight: var(--mmerp-font-weight-semibold);
 }
 
 .totalRow td[data-sticky] {
@@ -140,12 +140,12 @@
   color: var(--mmerp-color-text);
 }
 
-/* The whole card is the link's hit area. */
+/* The whole card is the link's hit area: the link stays static so its ::after stretches over
+   .card, and the focus ring follows the hit area. */
 .cardLink {
-  position: relative;
   display: block;
   color: inherit;
-  font-weight: 600;
+  font-weight: var(--mmerp-font-weight-semibold);
   text-decoration: none;
 }
 
@@ -153,14 +153,25 @@
   content: '';
   position: absolute;
   inset: 0;
+  border-radius: var(--mmerp-radius-md);
+}
+
+.cardLink:focus-visible {
+  outline: none;
+}
+
+.cardLink:focus-visible::after {
+  outline: 2px solid var(--mmerp-color-primary-6);
+  outline-offset: 2px;
 }
 
 .card {
   position: relative;
 }
 
-/* Above the card link's hit area. */
-.cardAction {
+/* Above the card link's hit area: the row's checkbox and menu, and any link or button a cell renders. */
+.cardAction,
+.card :is(a, button, input, label):not(.cardLink) {
   position: relative;
   z-index: 1;
 }

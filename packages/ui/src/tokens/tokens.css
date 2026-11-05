@@ -152,16 +152,21 @@
   --mmerp-radius-sm: 0.25rem;
   --mmerp-radius-md: 0.375rem;
   --mmerp-radius-lg: 0.5rem;
-  --mmerp-radius-xl: 0.75rem;
+  --mmerp-radius-full: 9999px;
   --mmerp-shadow-xs: 0 1px 1px #1E1F2140, 0 0 1px #1E1F214F;
   --mmerp-shadow-sm: 0 1px 1px #1E1F2140, 0 0 1px #1E1F214F;
   --mmerp-shadow-md: 0 8px 12px #1E1F2126, 0 0 1px #1E1F214F;
-  --mmerp-shadow-lg: 0 8px 12px #1E1F2126, 0 0 1px #1E1F214F;
-  --mmerp-shadow-xl: 0 8px 12px #1E1F2126, 0 0 1px #1E1F214F;
   --mmerp-shadow-footer: 0 -6px 8px -6px #1E1F2126;
   --mmerp-control-height: 1.875rem;
+  --mmerp-control-height-xs: 1.5rem;
   --mmerp-control-height-sm: 1.875rem;
   --mmerp-control-height-lg: 2.5rem;
+  --mmerp-table-row-height-compact: 2rem;
+  --mmerp-table-row-height: 2.5rem;
+  --mmerp-table-row-height-comfortable: 3rem;
+  --mmerp-table-header-height-compact: 1.75rem;
+  --mmerp-table-header-height: 2.25rem;
+  --mmerp-table-header-height-comfortable: 2.5rem;
   --mmerp-content-width: 75rem;
   --mmerp-side-width: 22.5rem;
   --mmerp-aside-width: 30rem;
@@ -172,6 +177,8 @@
   --mmerp-filter-width-menu: 15rem;
   --mmerp-motion-duration: 150ms;
   --mmerp-touch-target: 44px;
+  --mmerp-z-index-action-bar: 100;
+  --mmerp-z-index-navigation: 101;
   --mmerp-z-index-modal: 200;
   --mmerp-z-index-popup: 300;
 }

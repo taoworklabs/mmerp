@@ -28,6 +28,6 @@
 }
 
 .root[data-size='xs'] {
-  width: 24px;
-  height: 24px;
+  width: var(--mmerp-control-height-xs);
+  height: var(--mmerp-control-height-xs);
 }

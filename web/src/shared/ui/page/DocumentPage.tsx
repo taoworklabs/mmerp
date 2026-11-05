@@ -1,4 +1,4 @@
-import { ActionBar, Panel, Tabs, useMediaQuery } from '@mmerp/ui'
+import { breakpoint, ActionBar, Panel, Tabs, useMediaQuery } from '@mmerp/ui'
 import type { ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useSearchParams } from 'react-router'
@@ -46,7 +46,7 @@ export function DocumentPage(props: Props) {
 
 function DocumentLayout({ actions, error, approval, activity, sections = [], fullWidth, children, ...header }: Props) {
   const { t } = useTranslation()
-  const wide = useMediaQuery('(min-width: 64em)', true)
+  const wide = useMediaQuery(`(min-width: ${breakpoint.md})`, true)
   const [search, setSearch] = useSearchParams()
   const top: DocumentSection[] = [{ key: 'approval', title: t('shared.document.tab.approval'), content: approval }, ...sections]
   const log: DocumentSection = { key: 'activity', title: t('shared.document.tab.activity'), content: activity }

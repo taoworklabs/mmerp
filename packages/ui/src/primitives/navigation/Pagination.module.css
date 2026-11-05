@@ -17,7 +17,7 @@
   min-width: var(--mmerp-control-height);
   height: var(--mmerp-control-height);
   padding: 0 var(--mmerp-space-xxs);
-  border-radius: 50%;
+  border-radius: var(--mmerp-radius-full);
   background: transparent;
   color: var(--mmerp-color-text);
   font-family: var(--mmerp-font-family);
@@ -26,7 +26,7 @@
   transition: background-color var(--mmerp-motion-duration) ease;
 }
 
-.control:hover {
+.control:hover:not(:disabled, [aria-disabled='true']) {
   background: var(--mmerp-color-gray-light);
 }
 

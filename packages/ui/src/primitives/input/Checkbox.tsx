@@ -5,7 +5,9 @@ import { cx } from '../../internal/cx.ts'
 import { Field } from './Field.tsx'
 import styles from './Checkbox.module.css'
 
-export interface CheckboxProps extends Omit<React.ComponentPropsWithRef<'div'>, 'children' | 'onChange'> {
+// Like TextInput and Select, `className` styles the field root and every other prop (id, ref,
+// aria-*, handlers) goes to the focusable control, so a form can focus and label it.
+export interface CheckboxProps extends Omit<React.ComponentPropsWithRef<'span'>, 'children' | 'onChange' | 'defaultChecked'> {
   checked?: boolean
   defaultChecked?: boolean
   indeterminate?: boolean
@@ -37,18 +39,13 @@ export function Checkbox({
   readOnly,
   inputRef,
   className,
-  'aria-label': ariaLabel,
-  'aria-labelledby': ariaLabelledBy,
-  'aria-describedby': ariaDescribedBy,
   ...props
 }: CheckboxProps) {
   return (
-    <Field description={description} error={error} disabled={disabled} readOnly={readOnly} className={cx(styles.root, className)} {...props}>
+    <Field description={description} error={error} disabled={disabled} readOnly={readOnly} className={cx(styles.root, className)}>
       <BaseField.Label className={styles.label} data-disabled={disabled ? '' : undefined}>
         <BaseCheckbox.Root
-          aria-label={ariaLabel}
-          aria-labelledby={ariaLabelledBy}
-          aria-describedby={ariaDescribedBy}
+          {...props}
           checked={checked}
           defaultChecked={defaultChecked}
           indeterminate={indeterminate}

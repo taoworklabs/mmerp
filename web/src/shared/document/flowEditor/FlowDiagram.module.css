@@ -41,7 +41,7 @@
 .plus {
   width: 30px;
   height: 30px;
-  border-radius: 50%;
+  border-radius: var(--mmerp-radius-full);
   border: 1px solid var(--mmerp-color-primary-3);
   background: var(--mmerp-color-elevation-surface);
   color: var(--mmerp-color-primary-6);
@@ -108,8 +108,8 @@
 .pill {
   composes: node;
   min-width: 140px;
-  border-radius: 999px;
-  font-weight: 600;
+  border-radius: var(--mmerp-radius-full);
+  font-weight: var(--mmerp-font-weight-semibold);
   background: var(--mmerp-color-warning-0);
   border-color: var(--mmerp-color-warning-3);
 }

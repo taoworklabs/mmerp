@@ -53,7 +53,9 @@ function focusInvalid(errors: FieldErrors, after: HTMLElement | null): HTMLEleme
   const inputs = invalidInputs(errors)
   const next = (after && inputs.find((el) => after.compareDocumentPosition(el) & Node.DOCUMENT_POSITION_FOLLOWING)) || inputs[0]
   next?.focus({ preventScroll: true })
-  next?.scrollIntoView({ block: 'center' })
+  // Scroll what took the focus: a checkbox's id is on a hidden input that hands focus to its box.
+  const focused = document.activeElement instanceof HTMLElement ? document.activeElement : next
+  focused?.scrollIntoView({ block: 'center' })
   return next
 }
 

@@ -1,4 +1,4 @@
-import { Button, FilterBar, Page as KitPage, PagingBar as KitPagingBar, useMediaQuery } from '@mmerp/ui'
+import { breakpoint, Button, FilterBar, Page as KitPage, PagingBar as KitPagingBar, useMediaQuery } from '@mmerp/ui'
 import type { ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { formatNumber } from '@/shared/i18n'
@@ -48,7 +48,7 @@ export function ListPage<T>({
   children?: ReactNode
 }) {
   const { t } = useTranslation()
-  const wide = useMediaQuery('(min-width: 64em)', true)
+  const wide = useMediaQuery(`(min-width: ${breakpoint.md})`, true)
   return (
     <KitPage
       variant="list"

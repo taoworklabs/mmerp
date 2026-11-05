@@ -14,7 +14,7 @@
 
 /* An unread row stands out by weight alone, so the tint stays for the selected one. */
 .unread {
-  font-weight: 600;
+  font-weight: var(--mmerp-font-weight-semibold);
 }
 
 /* A framed feed: one frame, rows ruled apart, flat rows that tint on hover. In a list page's
@@ -57,7 +57,7 @@
   flex: none;
   width: 8px;
   height: 8px;
-  border-radius: 100%;
+  border-radius: var(--mmerp-radius-full);
 }
 
 .dot[data-unread] {

@@ -4,7 +4,7 @@ Mandatory rules for every screen. **Agents and people must read this document be
 
 Sources of truth in code:
 
-- `packages/ui` (`@mmerp/ui`): the tokens (`src/tokens/tokens.ts`: every colour, font size, spacing and radius, as `--mmerp-*` CSS variables) and the primitives built on them, each shown in Storybook (`make storybook`, `:6006`). Sizes specific to one component (table row height) live in that component's CSS module, in the kit (`DataTable`, `Table`) or in `shared/ui`; areas set no size apart from the column widths of a lines table.
+- `packages/ui` (`@mmerp/ui`): the tokens (`src/tokens/tokens.ts`: every colour, font size, spacing and radius, as `--mmerp-*` CSS variables) and the primitives built on them, each shown in Storybook (`make storybook`, `:6006`). Sizes shared by several components (control heights, table row heights per density, the stacking order) are tokens too; a size specific to one component (a calendar cell, the timeline bullet) lives in that component's CSS module, in the kit or in `shared/ui`; areas set no size apart from the column widths of a lines table.
 - `web/src/shared/ui/`: page templates and components. New screens are **assembled from what already exists here**.
 - The `/dev/ui` page, dev build only, in six layers: foundations, the `@mmerp/ui` primitives and blocks areas may import directly (linking to Storybook), the ready-made mmerp components (`shared/ui`, `shared/document`), patterns, and page templates. Each component page shows a live example, when to use it, its variants and states, do and don't, its import, and related entries. When unsure what to use, open this page first; the written rules stay here and in the `mmerp-ui` skill.
 
@@ -93,8 +93,9 @@ A document type may change the **label**, never the colour, through the translat
 ### Spacing, radius, shadow
 
 - 4px-based spacing scale: 4, 8, 12, 16, 24, 32 (`xxs`…`xl`), plus 2 (`xxxs`) between a line and its caption and 48 (`xxl`) for the page's side padding from 1280px and a record page's tabs. No other values.
-- Radius by role: 4px for badges, tooltips and small icon tiles (`sm`; a file-type tile is 6px, the kind icons of notifications and empty panels are round); 6px for buttons, inputs, navigation items, cards, tiles, frames and modals (`md`, the default); 8px for menus and popovers (`lg`); avatars and page numbers are round.
+- Radius by role: 4px for badges, tooltips and small icon tiles (`sm`; a file-type tile is 6px, the kind icons of notifications and empty panels are round); 6px for buttons, inputs, navigation items, cards, tiles, frames and modals (`md`, the default); 8px for menus and popovers (`lg`); avatars, page numbers, dots and pills are round (`full`, `--mmerp-radius-full`).
 - **Controls in the same strip have the same height.** A strip is a row of controls placed side by side: filter bar, pagination bar, form footer, page header buttons. The `shared/ui` component that builds the strip picks the size of every control inside it; every control reads `--mmerp-control-height`, so a button next to an input is exactly as tall as the input (e.g. pagination next to the rows-per-page select). Buttons are always `sm`; other controls elsewhere keep the size that fits their place, as long as they meet the minimum touch target. Buttons inside an input (clear value, show password, hide sensitive field) are smaller than the input that holds them.
+- Overlays stack in one order (`--mmerp-z-index-*`): a narrow screen's action bar, the navigation drawer, dialogs and drawers, then menus, option lists, tooltips and toasts. The kit applies it.
 - No shadows, except on modals, dropdown menus, popovers and toasts (one overlay shadow), and the upward shadow of a page form's footer while the form runs on under it (`--mmerp-shadow-footer`).
 - **A selected item only gets a light blue background and primary text**, everywhere (navigation, lists, menus, approval inbox): no accent bar on the left edge and no coloured border.
 
@@ -188,7 +189,7 @@ Use `<DataTable>` from `shared/ui`, not the kit's `Table` directly.
 | `headerColor` | `neutral` (default), `plain`, or a semantic colour name |
 | `striped`, `stripeColor` | Alternate row backgrounds; neutral stripes by default |
 | `hoverColor` | A semantic colour name; omitted uses the standard sunken surface |
-| `density` | `compact` (32px rows), `standard` (40px), `comfortable` (48px) |
+| `density` | `compact` (32px rows, 28px header), `standard` (40px, 36px), `comfortable` (48px, 40px); `--mmerp-table-row-height-*`, `--mmerp-table-header-height-*` |
 
 Colours use the kit's `ColorName` tokens. Semantic colours retain their meaning; the primary tint remains the selection colour regardless of stripes or hover. Sticky cells use opaque matching backgrounds, and the overlay scrollbars remain above the table. These options style the desktop table; the responsive card list keeps its existing card presentation.
 

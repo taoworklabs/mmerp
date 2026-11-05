@@ -130,6 +130,6 @@
 .dot {
   width: 8px;
   height: 8px;
-  border-radius: 100%;
+  border-radius: var(--mmerp-radius-full);
   background: var(--mmerp-color-primary-6);
 }

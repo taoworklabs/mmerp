@@ -1,5 +1,5 @@
 import { render } from 'vitest-browser-react'
-import { page } from 'vitest/browser'
+import { page, userEvent } from 'vitest/browser'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { ActionIcon } from '../primitives/input/ActionIcon.tsx'
 import { Button } from '../primitives/input/Button.tsx'
@@ -22,6 +22,27 @@ describe('a button rendered as a link', () => {
       expect(link.hasAttribute('type')).toBe(false)
       expect(link.hasAttribute('role')).toBe(false)
       expect(error).not.toHaveBeenCalled()
+    })
+  }
+
+  const blocked = [
+    ['disabled', { disabled: true }],
+    ['loading', { loading: true }],
+  ] as const
+  for (const [state, props] of blocked) {
+    it(`does not follow or fire onClick while ${state}`, async () => {
+      const onClick = vi.fn()
+      await render(<Button render={<a href="#blocked" />} onClick={onClick} {...props}>x</Button>)
+      const link = page.getByText('x').element().closest('a')!
+      const click = new MouseEvent('click', { bubbles: true, cancelable: true })
+      link.dispatchEvent(click)
+      expect(click.defaultPrevented).toBe(true)
+      if (state === 'loading') {
+        link.focus()
+        await userEvent.keyboard('{Enter}')
+      }
+      expect(onClick).not.toHaveBeenCalled()
+      expect(location.hash).not.toBe('#blocked')
     })
   }
 })
