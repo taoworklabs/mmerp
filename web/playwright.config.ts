@@ -1,7 +1,7 @@
 import { defineConfig, devices } from '@playwright/test'
 
 // These files change approval rules other files rely on, or check tenant-wide counts.
-const exclusive = /\/(payroll|hrm-overview|navigation|product-disabled|personal-space|approval-flows|approval-actions|approval-lines|approval-delegation|approval-overdue)\.spec\.ts$/
+const exclusive = /\/(payroll|hrm-overview|navigation|product-disabled|personal-space|approval-flows|approval-actions|approval-lines|approval-delegation|approval-overdue|accounting)\.spec\.ts$/
 
 export default defineConfig({
   testDir: 'e2e',
@@ -25,11 +25,12 @@ export default defineConfig({
     // Files that change or count tenant-wide state run alone, after the rest.
     { name: 'exclusive', testMatch: exclusive, dependencies: ['chromium'], workers: 1 },
     // Sample data for a dev database; only with E2E_SEED, so the e2e run never adds it.
-    // Sales needs the org units and accounts the HRM seed creates.
+    // Sales needs the org units and accounts the HRM seed creates; Accounting needs the payrolls.
     ...(process.env.E2E_SEED
       ? [
           { name: 'seed-hrm', testMatch: /demo\.seed\.ts$/, dependencies: ['setup'] },
-          { name: 'seed', testMatch: /sales\.seed\.ts$/, dependencies: ['seed-hrm'] },
+          { name: 'seed-sales', testMatch: /sales\.seed\.ts$/, dependencies: ['seed-hrm'] },
+          { name: 'seed', testMatch: /accounting\.seed\.ts$/, dependencies: ['seed-sales'] },
         ]
       : []),
   ],
