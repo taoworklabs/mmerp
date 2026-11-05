@@ -147,7 +147,7 @@ export const AboveOverlay: Story = {
   tags: ['!dev', '!autodocs'],
   args: { value: null, placeholder: 'Chọn nhân viên' },
   render: (args) => (
-    <div style={{ position: 'fixed', inset: 0, zIndex: 200, padding: 16, background: 'var(--mmerp-color-body)' }}>
+    <div style={{ position: 'fixed', inset: 0, zIndex: 'var(--mmerp-z-index-modal)', padding: 16, background: 'var(--mmerp-color-body)' }}>
       <Controlled {...args} />
     </div>
   ),

@@ -88,7 +88,7 @@ Font: Inter Variable, self-hosted. Lines sit on a 4px grid.
 | `h2` (`<Title order={2}>`) | 16 / 20, weight 650 | Section title |
 | `h3` (`<Title order={3}>`) | 14 / 20, weight 650 | Sub-section title |
 
-Weights: 400 body, 500 buttons, tabs, navigation and identifiers; 600 field labels, column headers, totals, emphasis; 650 headings. At most three heading levels on a page.
+Weights: 400 body, 500 buttons, tabs, navigation and identifiers; 600 field labels, column headers, totals, emphasis; 650 headings and modal titles. In CSS: `var(--mmerp-font-weight-regular|medium|semibold|heading)`, never the number. At most three heading levels on a page.
 
 Field labels are 12px, weight 600, `dimmed`: lighter than the value they name. The theme sets this on every input; a screen sets nothing.
 
@@ -124,8 +124,7 @@ The scale is closed: if a gap seems to need 6, 10 or 20, the layout needs anothe
 | `sm` | 4 | Badges, tooltips, small icon tiles (`ThemeIcon` up to 28px) |
 | `md` | 6 | Default: buttons, inputs, navigation items, alerts, `Paper` (cards, tiles), table and feed frames, the activity feed's detail well, modals |
 | `lg` | 8 | Menus, popovers, dropdowns |
-| `xl` | 12 | Not assigned to any component's frame (round icon tiles use it) |
-| round | `100%` | Avatars, page numbers in the paging bar, dots |
+| `full` | `9999px` | Anything round: avatars, page numbers in the paging bar, dots, count badges, pills (a box wider than tall becomes a pill) |
 
 Components already carry their radius through theme defaults; set `radius` only on a new component, by this table.
 
@@ -136,7 +135,7 @@ Components already carry their radius through theme defaults; set `radius` only 
 | Sunken | `--mmerp-color-elevation-surface-sunken` | none | A well inside the page: group and total rows, unavailable cells; a table's header row sits a step deeper (`--mmerp-color-table-header`) |
 | Default | `--mmerp-color-elevation-surface` | none | The page and everything flat on it; framed with `withBorder` |
 | Raised | surface | `shadow="xs"` | Reserved for a card that can be dragged; no screen has one yet |
-| Overlay | surface | `md`, `lg`, `xl` (all `0 8px 12px #1E1F2126, 0 0 1px #1E1F214F`) | Menus, popovers, modals, toasts: the kit applies it |
+| Overlay | surface | `md` (`0 8px 12px #1E1F2126, 0 0 1px #1E1F214F`) | Menus, popovers, modals, toasts: the kit applies it |
 | Pinned footer | body | `--mmerp-shadow-footer` (`0 -6px 8px -6px #1E1F2126`, upwards only) | A page form's footer while the form runs on under it (`FormActions`) |
 
 A card on the page is `Paper withBorder`, never a shadow.
@@ -146,10 +145,11 @@ A card on the page is `Paper withBorder`, never a shadow.
 | What | Value | Where |
 | --- | --- | --- |
 | Control (button, input, select, pagination, `ActionIcon`), wherever it sits | 30px, `size="sm"` (default); 40px among a form section's fields and in a modal's body (a lines table and `ModalFooter` keep 30px) | `--mmerp-control-height`, raised to `--mmerp-control-height-lg` by the kit's form layout and dialog body |
+| Small control (`Button`, `ActionIcon` with `size="xs"`) | 24px | `--mmerp-control-height-xs` |
 | Touch target below 1024px | 44px | `--mmerp-touch-target`, the kit's `styles/global.css` |
 | Header | 48px | `app/AppLayout.tsx` |
 | Navigation | 240px, 56px collapsed; items 32px | `app/AppLayout.tsx`, `AppLayout.module.css` |
-| Table row / header row | 40px / 36px | `DataTable.module.css` |
+| Table row / header row | 40px / 36px; `density="compact"` 32 / 28, `"comfortable"` 48 / 40 | `--mmerp-table-row-height[-compact\|-comfortable]`, `--mmerp-table-header-height[-compact\|-comfortable]`; the kit's `Table`, `LinesTable` |
 | Grid cell (timesheet) | 30px | `CellGrid.module.css` |
 | Scrollbar (`ScrollArea`) | 8px; in a table it runs between the sticky header and footer | the kit's `ScrollArea`, `DataTable.module.css` |
 | Inbox list | 360px | `--mmerp-side-width` |
@@ -157,6 +157,8 @@ A card on the page is `Paper withBorder`, never a shadow.
 | Record or document page (`RecordPage`, `DocumentPage`) | 1440px, header included; a document's main and side column about 62/38, a record overview's about 1.6/1, one column below 1024px | `--mmerp-detail-width`, `DetailPage.module.css`, `RecordPage.module.css` |
 | Side panel, side-column tab | 480px | `--mmerp-aside-width`, `readingWidth` (`page/Page.tsx`) |
 | Breakpoints | `sm` 768, `md` 1024 (navigation becomes a drawer, tables become cards), `lg` 1280 (design size) | `breakpoint` (`@mmerp/ui`) |
+
+Stacking order (`--mmerp-z-index-*`, `zIndex` in the kit tokens; the kit applies it, screens set none): `action-bar` 100 (a record's actions at the bottom of a narrow screen), `navigation` 101 (the navigation drawer, over that bar), `modal` 200 (dialogs and drawers), `popup` 300 (menus, option lists, tooltips, toasts, over any dialog they open from). A `z-index` of 1 or 2 inside one component (sticky table cells) stays a literal.
 
 Filter bar sizes live in `--mmerp-filter-width-*` (`filterWidth` in the kit tokens) and only the filter components read them: `search` 280 and `searchMin` 160 (the search box, narrowing when the bar is full), `chip` 320 (the widest a filter chip grows before its value truncates), `menu` 240 (a chip's dropdown). Areas set no size apart from the column widths of a lines table (`forms.md`).
 

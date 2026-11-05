@@ -5,7 +5,7 @@
   flex-shrink: 0;
   width: var(--mmerp-avatar-size);
   height: var(--mmerp-avatar-size);
-  border-radius: 50%;
+  border-radius: var(--mmerp-radius-full);
   overflow: hidden;
   background: var(--mmerp-avatar-bg);
   color: var(--mmerp-avatar-color);

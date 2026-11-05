@@ -50,7 +50,7 @@
   width: 24px;
   height: 24px;
   border: 2px solid var(--mmerp-color-gray-2);
-  border-radius: 50%;
+  border-radius: var(--mmerp-radius-full);
   background: var(--mmerp-color-body);
   color: var(--mmerp-color-dimmed);
   font-size: var(--mmerp-font-size-xs);

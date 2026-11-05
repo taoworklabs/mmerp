@@ -36,7 +36,7 @@
 }
 
 .root[data-size='xs'] {
-  height: 24px;
+  height: var(--mmerp-control-height-xs);
   padding: 0 var(--mmerp-space-xs);
   gap: var(--mmerp-space-xxs);
   font-size: var(--mmerp-font-size-xs);
