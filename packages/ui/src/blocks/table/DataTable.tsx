@@ -44,7 +44,7 @@ export type DataTableProps<T> = Omit<React.ComponentPropsWithRef<'div'>, 'childr
   // Clicking a row outside its link runs this instead: a list's side panel, or the edit modal of a
   // settings row that has no page (its first cell becomes the keyboard's button).
   onRowClick?: (row: T) => void
-  // A checkbox column for bulk actions; wide screens only.
+  // A checkbox column for bulk actions (a checkbox on each card on narrow screens).
   selection?: Selection
   // Lets the user drag a column's right edge (or use arrow keys on it) to set its width.
   onResize?: (key: string, width: number) => void
@@ -119,6 +119,8 @@ export function DataTable<T>({
         rows={rows}
         rowKey={rowKey}
         renderLink={renderLink}
+        onRowClick={onRowClick}
+        selection={selection}
         menu={menu}
         label={label}
         group={group}
@@ -403,10 +405,10 @@ function SortButton<T>({ column, sort, onToggle }: { column: Column<T>; sort?: s
   )
 }
 
-type CardsProps<T> = Pick<DataTableProps<T>, 'columns' | 'rows' | 'rowKey' | 'renderLink' | 'menu' | 'label' | 'group' | 'footer' | 'labels' | 'className' | 'style' | 'ref'> &
+type CardsProps<T> = Pick<DataTableProps<T>, 'columns' | 'rows' | 'rowKey' | 'renderLink' | 'onRowClick' | 'selection' | 'menu' | 'label' | 'group' | 'footer' | 'labels' | 'className' | 'style' | 'ref'> &
   Omit<React.ComponentPropsWithRef<'div'>, 'children' | 'className' | 'style' | 'ref'>
 
-function Cards<T>({ columns, rows, rowKey, renderLink, menu, label, group, footer, labels, className, style, ref, ...rest }: CardsProps<T>) {
+function Cards<T>({ columns, rows, rowKey, renderLink, onRowClick, selection, menu, label, group, footer, labels, className, style, ref, ...rest }: CardsProps<T>) {
   return (
     <Stack gap="xs" role="list" aria-label={label} ref={ref} className={className} style={style} {...rest}>
       {grouped(rows, group?.of).map((g) => (
@@ -417,7 +419,17 @@ function Cards<T>({ columns, rows, rowKey, renderLink, menu, label, group, foote
             </Text>
           )}
           {g.rows.map((row) => (
-            <Card key={rowKey(row)} columns={columns} row={row} renderLink={renderLink} menu={menu} labels={labels} />
+            <Card
+              key={rowKey(row)}
+              columns={columns}
+              row={row}
+              renderLink={renderLink}
+              onOpen={onRowClick && !renderLink ? () => onRowClick(row) : undefined}
+              selected={selection?.selected.has(rowKey(row))}
+              onSelect={selection && (() => toggle(selection, rowKey(row)))}
+              menu={menu}
+              labels={labels}
+            />
           ))}
           {group?.total && <Card columns={columns} row={group.total(g.rows, g.name)} labels={labels} total />}
         </Fragment>
@@ -427,12 +439,15 @@ function Cards<T>({ columns, rows, rowKey, renderLink, menu, label, group, foote
   )
 }
 
-// Card is one row as a card; a total card has no link and no menu. Its lines are divs, not
+// Card is one row as a card; a total card has no link, checkbox or menu. Its lines are divs, not
 // paragraphs: a column may render blocks (a badge, a group), which a <p> cannot hold.
 function Card<T>({
   columns,
   row,
   renderLink,
+  onOpen,
+  selected,
+  onSelect,
   menu,
   labels,
   total,
@@ -440,6 +455,9 @@ function Card<T>({
   columns: Column<T>[]
   row: T
   renderLink?: (row: T, children: ReactNode) => ReactElement
+  onOpen?: () => void
+  selected?: boolean
+  onSelect?: () => void
   menu?: (row: T) => ReactNode
   labels: DataTableLabels
   total?: boolean
@@ -451,13 +469,24 @@ function Card<T>({
   return (
     <Paper withBorder padding="sm" role="listitem" className={cx(styles.card, total && styles.totalCard)}>
       <Group justify="space-between" wrap={false} align="start">
-        {!total && renderLink ? (
-          <CardTitle link={renderLink(row, titleContent) as ReactElement<{ className?: string }>} />
-        ) : (
-          <Text weight={600} render={<div />}>
-            {titleContent}
-          </Text>
-        )}
+        <Group gap="xs" wrap={false} align="start">
+          {onSelect && (
+            <div className={styles.cardAction}>
+              <Checkbox label={<VisuallyHidden>{labels.selectRow}</VisuallyHidden>} checked={selected} onChange={onSelect} />
+            </div>
+          )}
+          {!total && renderLink ? (
+            <CardTitle link={renderLink(row, titleContent) as ReactElement<{ className?: string }>} />
+          ) : !total && onOpen ? (
+            <UnstyledButton onClick={onOpen} className={styles.cardLink}>
+              {titleContent}
+            </UnstyledButton>
+          ) : (
+            <Text weight={600} render={<div />}>
+              {titleContent}
+            </Text>
+          )}
+        </Group>
         {status.map((c) => (
           <Text key={c.key} size="sm" render={<div />}>
             {c.render(row)}

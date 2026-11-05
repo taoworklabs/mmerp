@@ -1,5 +1,5 @@
 import { render } from 'vitest-browser-react'
-import { page } from 'vitest/browser'
+import { page, userEvent } from 'vitest/browser'
 import { describe, expect, it } from 'vitest'
 import { DataTable, type Column, type DataTableLabels } from './DataTable.tsx'
 import '../../styles/index.css'
@@ -88,6 +88,37 @@ describe('DataTable', () => {
     await page.viewport(375, 800)
     await expect.poll(() => container.querySelector('[role="list"]')).not.toBeNull()
     expect(container.querySelectorAll('p div')).toHaveLength(0)
+  })
+
+  it('opens a card through onRowClick with a keyboard-operable title button', async () => {
+    const opened: Employee[] = []
+    await render(<DataTable columns={columns} rows={rows} rowKey={(e) => e.id} label="Nhân viên" labels={labels} cards onRowClick={(e) => opened.push(e)} />)
+    const button = page.getByRole('button', { name: 'Nguyễn Văn A' })
+    await button.click()
+    expect(opened).toEqual([rows[0]])
+    ;(button.element() as HTMLElement).focus()
+    await userEvent.keyboard('{Enter}')
+    expect(opened).toHaveLength(2)
+  })
+
+  it('selects a card for a bulk action without opening it', async () => {
+    const opened: Employee[] = []
+    let selected: Set<string | number> | undefined
+    await render(
+      <DataTable
+        columns={columns}
+        rows={rows}
+        rowKey={(e) => e.id}
+        label="Nhân viên"
+        labels={labels}
+        cards
+        onRowClick={(e) => opened.push(e)}
+        selection={{ selected: new Set(), onChange: (next) => (selected = next) }}
+      />,
+    )
+    await page.getByRole('checkbox', { name: 'Chọn dòng' }).click()
+    expect(selected).toEqual(new Set([1]))
+    expect(opened).toHaveLength(0)
   })
 
   // The parent applies a sort a render later; a second click before then must still toggle.
