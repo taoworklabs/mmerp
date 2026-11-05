@@ -169,8 +169,9 @@
   position: relative;
 }
 
-/* Above the card link's hit area. */
-.cardAction {
+/* Above the card link's hit area: the row's checkbox and menu, and any link or button a cell renders. */
+.cardAction,
+.card :is(a, button, input, label):not(.cardLink) {
   position: relative;
   z-index: 1;
 }
