@@ -14,6 +14,8 @@ A minimal general ledger, generic first: the parts that are the same in every co
 | General ledger and trial balance per legal entity and date range | Business lines from Sales, budgets, cost centres beyond org units, fixed assets, bank reconciliation |
 | Accounting start date per legal entity, refusal to lock a period with unposted documents | Printing manual entries |
 
+The Vietnamese layer is mostly data (charts, default rules, report forms), but it also needs HRM to split its insurance business line kinds per fund: HRM folds BHXH, BHYT, BHTN and the union fee into `employer_insurance_expense` and `insurance_payable`, while Circular 133/200 books them to 3382, 3383, 3384 and 3386 separately, which needs new posting kinds in HRM (a code change). Splitting them is cheapest before any tenant has a ledger.
+
 ## Module
 
 A single module `internal/modules/accounting`, schema `accounting`, product `accounting`. Depends on no other product. Reads `posting.lines` and `posting.recordings` with SQL; never imports `hrm` or `sales`. Implements `posting.Hooks.OnChanged` (enqueue only, and only while the product is enabled) and `record.BeforeLock`, both wired in `internal/app`.
