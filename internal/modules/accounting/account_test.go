@@ -122,3 +122,23 @@ func TestBlankAccountNameRefused(t *testing.T) {
 		t.Fatalf("update: %v", err)
 	}
 }
+
+func TestConcurrentReparentingNeverCycles(t *testing.T) {
+	core, s := newAccounting(t)
+	a := mustCreate(t, s, core.Admin, acct("111", "asset", nil))
+	b := mustCreate(t, s, core.Admin, acct("112", "asset", nil))
+	errs := make(chan error, 2)
+	go func() { errs <- s.UpdateAccount(core.Admin, a, acct("111", "asset", &b)) }()
+	go func() { errs <- s.UpdateAccount(core.Admin, b, acct("112", "asset", &a)) }()
+	failed := 0
+	for range 2 {
+		if err := <-errs; errors.Is(err, accounting.ErrAccountParentInvalid) {
+			failed++
+		} else if err != nil {
+			t.Fatal(err)
+		}
+	}
+	if failed != 1 {
+		t.Fatalf("want exactly one refusal, got %d", failed)
+	}
+}

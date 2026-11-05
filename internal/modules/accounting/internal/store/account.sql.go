@@ -14,7 +14,7 @@ import (
 const accountParent = `-- name: AccountParent :one
 WITH RECURSIVE sub AS (
   SELECT x.id FROM accounting.accounts x WHERE x.id = $2::bigint
-  UNION ALL
+  UNION
   SELECT a.id FROM accounting.accounts a JOIN sub ON a.parent_id = sub.id
 )
 SELECT p.type, false AS has_lines, EXISTS (SELECT 1 FROM sub WHERE sub.id = p.id) AS cyclic
@@ -149,6 +149,17 @@ func (q *Queries) LockAccount(ctx context.Context, id int64) (LockAccountRow, er
 		&i.HasChildren,
 	)
 	return i, err
+}
+
+const lockChart = `-- name: LockChart :exec
+SELECT pg_advisory_xact_lock(hashtext('accounting.chart'), 0)
+`
+
+// Serializes chart writes: parent checks and rule checks read rows other writes change. The two-int
+// form is a key space apart from the bigint keys of request ids.
+func (q *Queries) LockChart(ctx context.Context) error {
+	_, err := q.db.Exec(ctx, lockChart)
+	return err
 }
 
 const postableActive = `-- name: PostableActive :many

@@ -97,7 +97,12 @@ func (s *Service) writeAccount(ctx context.Context, fn func(context.Context) err
 	if err := s.d.IAM.RequireTenantWide(ctx, "accounting", PermManage); err != nil {
 		return err
 	}
-	return platform.InTx(ctx, fn)
+	return platform.InTx(ctx, func(ctx context.Context) error {
+		if err := store.LockChart.Run(ctx); err != nil {
+			return err
+		}
+		return fn(ctx)
+	})
 }
 
 // checkParent: id is 0 on create. A parent exists, is not the account or below it, has its

@@ -1,10 +1,12 @@
 package accounting_test
 
 import (
+	"errors"
 	"testing"
 
 	"github.com/taoworklabs/mmerp/internal/core/iam"
 	"github.com/taoworklabs/mmerp/internal/modules/accounting"
+	"github.com/taoworklabs/mmerp/internal/platform"
 )
 
 func TestSetStartPerLegalEntity(t *testing.T) {
@@ -50,8 +52,8 @@ func TestSetStartRefusesNonLegalEntity(t *testing.T) {
 	c, _ := core.IAM.CreateOrgUnit(core.Admin, iam.OrgUnitInput{Kind: "company", Name: "A"})
 	dept, _ := core.IAM.CreateOrgUnit(core.Admin, iam.OrgUnitInput{ParentID: &c, Kind: "department", Name: "D"})
 	d := "2026-01-01"
-	if err := s.SetStart(core.Admin, dept, &d); err == nil {
-		t.Fatal("department accepted")
+	if err := s.SetStart(core.Admin, dept, &d); !errors.Is(err, platform.ErrNotFound) {
+		t.Fatalf("department: %v", err)
 	}
 }
 

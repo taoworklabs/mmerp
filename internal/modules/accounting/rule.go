@@ -43,6 +43,9 @@ func (s *Service) Rules(ctx context.Context) ([]Rule, error) {
 }
 
 func (s *Service) SaveRule(ctx context.Context, kind string, accountID int64, side string) error {
+	if side != "debit" && side != "credit" {
+		return ErrRuleSideInvalid
+	}
 	return s.writeAccount(ctx, func(ctx context.Context) error {
 		ok, err := postableActive(ctx, []int64{accountID})
 		if err != nil {

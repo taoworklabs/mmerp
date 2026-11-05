@@ -75,3 +75,11 @@ func TestRuleForUnknownKindIsListed(t *testing.T) {
 		t.Fatalf("rules %+v", rs)
 	}
 }
+
+func TestSaveRuleRefusesBadSide(t *testing.T) {
+	core, s := newAccounting(t)
+	a := mustCreate(t, s, core.Admin, acct("642", "expense", nil))
+	if err := s.SaveRule(core.Admin, string(posting.SalaryExpense), a, "left"); !errors.Is(err, accounting.ErrRuleSideInvalid) {
+		t.Fatalf("got %v", err)
+	}
+}

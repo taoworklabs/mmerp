@@ -16,6 +16,7 @@ var CreateAccount = data.OneArg("accounting.CreateAccount", newQ, (*Queries).Cre
 var UpdateAccount = data.ExecArg("accounting.UpdateAccount", newQ, (*Queries).UpdateAccount)
 var DeleteAccount = data.ExecArg("accounting.DeleteAccount", newQ, (*Queries).DeleteAccount)
 var PostableActive = data.ManyArg("accounting.PostableActive", newQ, (*Queries).PostableActive)
+var LockChart = data.Exec("accounting.LockChart", newQ, (*Queries).LockChart)
 var ListRules = data.Many("accounting.ListRules", newQ, (*Queries).ListRules)
 var SaveRule = data.ExecArg("accounting.SaveRule", newQ, (*Queries).SaveRule)
 var DeleteRule = data.ExecArg("accounting.DeleteRule", newQ, (*Queries).DeleteRule)

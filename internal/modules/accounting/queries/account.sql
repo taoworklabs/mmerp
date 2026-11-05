@@ -15,7 +15,7 @@ FROM accounting.accounts a WHERE a.id = $1 FOR UPDATE;
 -- The prospective parent of account @id (0 on create): its type, and whether it is @id or below it.
 WITH RECURSIVE sub AS (
   SELECT x.id FROM accounting.accounts x WHERE x.id = @id::bigint
-  UNION ALL
+  UNION
   SELECT a.id FROM accounting.accounts a JOIN sub ON a.parent_id = sub.id
 )
 SELECT p.type, false AS has_lines, EXISTS (SELECT 1 FROM sub WHERE sub.id = p.id) AS cyclic
@@ -36,3 +36,8 @@ DELETE FROM accounting.accounts WHERE id = $1;
 SELECT a.id FROM accounting.accounts a
 WHERE a.id = ANY(@ids::bigint[]) AND a.active
   AND NOT EXISTS (SELECT 1 FROM accounting.accounts c WHERE c.parent_id = a.id);
+
+-- name: LockChart :exec
+-- Serializes chart writes: parent checks and rule checks read rows other writes change. The two-int
+-- form is a key space apart from the bigint keys of request ids.
+SELECT pg_advisory_xact_lock(hashtext('accounting.chart'), 0);
