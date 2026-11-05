@@ -79,7 +79,7 @@ export function FilterSearchPattern() {
 
 export function CreateEditPattern() {
   const { t } = useTranslation()
-  const [opened, setOpened] = useState(false)
+  const [open, setOpen] = useState(false)
   const create = useForm({ defaultValues: { name: '', salary: undefined } })
   return (
     <DocPage
@@ -88,15 +88,15 @@ export function CreateEditPattern() {
         <>
           <Case label={t('shared.devui.case_create_modal')}>
             <Group>
-              <Button onClick={() => setOpened(true)}>{t('shared.devui.add')}</Button>
+              <Button onClick={() => setOpen(true)}>{t('shared.devui.add')}</Button>
             </Group>
-            <FormModal opened={opened} onClose={() => setOpened(false)} title={t('shared.devui.add')}>
-              <Form form={create} onSubmit={async () => setOpened(false)}>
+            <FormModal open={open} onOpenChange={setOpen} title={t('shared.devui.add')}>
+              <Form form={create} onSubmit={async () => setOpen(false)}>
                 <FormSection title={t('shared.devui.form')}>
                   <TextField name="name" label={t('shared.devui.name')} required />
                   <MoneyField name="salary" label={t('shared.devui.money')} />
                 </FormSection>
-                <FormActions submitLabel={t('shared.devui.save')} onCancel={() => setOpened(false)} cancelLabel={t('shared.form.cancel')} />
+                <FormActions submitLabel={t('shared.devui.save')} onCancel={() => setOpen(false)} cancelLabel={t('shared.form.cancel')} />
               </Form>
             </FormModal>
           </Case>
@@ -213,7 +213,7 @@ export function BulkPattern() {
             selection={{ selected, onChange: setSelected }}
             onResize={view.onResize}
           />
-          <SidePanel title={open?.name ?? ''} href="/dev/ui/patterns/bulk" opened={!!open} onClose={peek.close}>
+          <SidePanel title={open?.name ?? ''} href="/dev/ui/patterns/bulk" open={!!open} onOpenChange={(o) => !o && peek.close()}>
             {open && (
               <FieldList
                 rows={[

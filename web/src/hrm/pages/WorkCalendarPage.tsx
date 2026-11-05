@@ -201,7 +201,7 @@ function WeekModal({ entity, week, onClose }: { entity: number; week: WorkWeek |
     onClose()
   }
   return (
-    <FormModal opened title={t(week ? 'hrm.calendar.edit_week' : 'hrm.calendar.add_week')} onClose={onClose}>
+    <FormModal open title={t(week ? 'hrm.calendar.edit_week' : 'hrm.calendar.add_week')} onOpenChange={onClose}>
       <Form form={form} onSubmit={save}>
         <DateField name="effective_from" label={t('hrm.calendar.effective_from')} description={t('hrm.calendar.effective_from_hint')} readOnly={!!week} required />
         <Text size="sm" weight={500} tone="dimmed">
@@ -229,7 +229,7 @@ function HolidayModal({ entity, holiday, onClose }: { entity: number; holiday: H
     onClose()
   }
   return (
-    <FormModal opened title={t(holiday ? 'hrm.calendar.edit_holiday' : 'hrm.calendar.add_holiday')} onClose={onClose}>
+    <FormModal open title={t(holiday ? 'hrm.calendar.edit_holiday' : 'hrm.calendar.add_holiday')} onOpenChange={onClose}>
       <Form form={form} onSubmit={save}>
         <DateField name="date" label={t('hrm.calendar.date')} description={t('hrm.calendar.date_hint')} readOnly={!!holiday} required />
         <TextField name="name" label={t('hrm.calendar.name')} required maxLength={200} />

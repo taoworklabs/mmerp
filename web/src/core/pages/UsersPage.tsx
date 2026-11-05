@@ -103,7 +103,7 @@ function CreateUserModal({ onClose }: { onClose: () => void }) {
   }
 
   return (
-    <FormModal opened title={t('core.user.create')} onClose={onClose}>
+    <FormModal open title={t('core.user.create')} onOpenChange={onClose}>
       <Form
         form={form}
         onSubmit={save}

@@ -80,7 +80,7 @@ function ViewsMenu({ settings, onChange }: { settings: ListSettings; onChange: (
           )}
         </Menu.Popup>
       </Menu.Root>
-      <FormModal title={t('shared.views.save')} opened={naming} onClose={() => setNaming(false)}>
+      <FormModal title={t('shared.views.save')} open={naming} onOpenChange={setNaming}>
         <SaveView
           onCancel={() => setNaming(false)}
           onSave={async (name) => {

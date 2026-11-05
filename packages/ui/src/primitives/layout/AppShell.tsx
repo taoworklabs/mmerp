@@ -10,7 +10,7 @@ export interface AppShellProps extends Omit<React.ComponentPropsWithRef<'div'>, 
   headerHeight?: number
   navbar?: React.ReactNode
   navbarWidth?: number
-  navbarOpened?: boolean
+  navbarOpen?: boolean
   navbarCollapsed?: boolean
   navbarCollapsedWidth?: number
   // Pinned to the navbar's bottom (a rail-collapse toggle); hidden below the drawer breakpoint,
@@ -29,7 +29,7 @@ export function AppShell({
   headerHeight = 48,
   navbar,
   navbarWidth = 240,
-  navbarOpened,
+  navbarOpen,
   navbarCollapsed,
   navbarCollapsedWidth = 56,
   navbarFooter,
@@ -52,7 +52,7 @@ export function AppShell({
     <div className={cx(styles.root, className)} style={vars} data-mobile={isMobile ? '' : undefined} {...props}>
       {header && <header className={styles.header}>{header}</header>}
       {navbar && (
-        <nav className={styles.navbar} aria-label={navbarLabel} data-opened={navbarOpened ? '' : undefined} inert={isMobile && !navbarOpened}>
+        <nav className={styles.navbar} aria-label={navbarLabel} data-open={navbarOpen ? '' : undefined} inert={isMobile && !navbarOpen}>
           <div className={styles.navbarContent}>{navbar}</div>
           {navbarFooter && <div className={styles.navbarFooter}>{navbarFooter}</div>}
         </nav>

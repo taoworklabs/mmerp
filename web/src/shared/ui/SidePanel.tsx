@@ -8,11 +8,11 @@ import { icon } from './theme'
 
 // SidePanel previews one record of a list without leaving it: read-only, with a link to the full
 // page where it is edited. The list keeps the open record in its URL (?peek=), so Back closes it.
-export function SidePanel({ title, href, opened, onClose, children }: { title: string; href: string; opened: boolean; onClose: () => void; children: ReactNode }) {
+export function SidePanel({ title, href, open, onOpenChange, children }: { title: string; href: string; open: boolean; onOpenChange: (open: boolean) => void; children: ReactNode }) {
   const { t } = useTranslation()
   return (
     // Not modal: the list stays usable beside it, so clicking another row switches the panel.
-    <Drawer opened={opened} onClose={onClose} position="right" size={readingWidth} title={title} modal={false} closeLabel={t('shared.modal.close')}>
+    <Drawer open={open} onOpenChange={onOpenChange} position="right" size={readingWidth} title={title} modal={false} closeLabel={t('shared.modal.close')}>
       <Stack gap="md">
         <Group>
           <Button render={<Link to={href} />} variant="default" rightSection={<IconArrowRight {...icon.button} />}>

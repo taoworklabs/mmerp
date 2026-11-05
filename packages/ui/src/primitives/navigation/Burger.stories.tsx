@@ -14,12 +14,12 @@ export default meta
 type Story = StoryObj<typeof Burger>
 
 function Controlled(props: BurgerProps) {
-  const [opened, setOpened] = useState(props.opened)
-  return <Burger {...props} opened={opened} onClick={() => setOpened((o) => !o)} />
+  const [open, setOpen] = useState(props.open)
+  return <Burger {...props} open={open} onOpenChange={setOpen} />
 }
 
 export const Default: Story = {
-  args: { opened: false },
+  args: { open: false },
   render: (args) => <Controlled {...args} />,
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
@@ -31,7 +31,7 @@ export const Default: Story = {
   },
 }
 
-export const Opened: Story = {
-  args: { opened: true },
+export const Open: Story = {
+  args: { open: true },
   render: (args) => <Controlled {...args} />,
 }

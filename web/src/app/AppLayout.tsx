@@ -115,7 +115,7 @@ function Shell({ areas }: { areas: AreaManifest[] }) {
           <Group gap="xs" wrap={false} shrink>
             {nav.length > 0 && (
               <Tooltip label={t('core.shell.menu')}>
-                <Burger opened={drawer} onClick={toggleDrawer} className={classes.burger} aria-label={t('core.shell.menu')} />
+                <Burger open={drawer} onOpenChange={toggleDrawer} className={classes.burger} aria-label={t('core.shell.menu')} />
               </Tooltip>
             )}
             {/* The logo goes home, where the products are. */}
@@ -227,7 +227,7 @@ function Shell({ areas }: { areas: AreaManifest[] }) {
           </Stack>
         )
       }
-      navbarOpened={drawer}
+      navbarOpen={drawer}
       navbarCollapsed={collapsed}
       navbarFooter={
         nav.length > 0 && (

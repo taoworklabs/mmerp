@@ -64,7 +64,7 @@
   transition: transform var(--mmerp-motion-duration) ease;
 }
 
-.root[data-mobile] .navbar[data-opened] {
+.root[data-mobile] .navbar[data-open] {
   transform: translateX(0);
 }
 

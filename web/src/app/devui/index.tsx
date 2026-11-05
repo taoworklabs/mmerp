@@ -136,10 +136,10 @@ function DevUiLayout() {
     <MeProvider me={me}>
       <AppShell
         navbarWidth={280}
-        navbarOpened={drawer}
+        navbarOpen={drawer}
         header={
           <Group gap="xs" wrap={false} className={devui.bar}>
-            <Burger opened={drawer} onClick={toggle} className={classes.burger} aria-label={t('core.shell.menu')} />
+            <Burger open={drawer} onOpenChange={toggle} className={classes.burger} aria-label={t('core.shell.menu')} />
             <ThemeIcon size={28} aria-hidden>
               <IconComponents {...icon.text} />
             </ThemeIcon>

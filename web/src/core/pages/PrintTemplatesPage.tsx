@@ -65,7 +65,7 @@ function BlocksModal({ code, onClose }: { code: string; onClose: () => void }) {
   const { t } = useTranslation()
   const template = useQuery({ queryKey: coreKeys.printTemplates.detail(code), queryFn: () => unwrap(api.GET('/print-templates/{code}', { params: { path: { code } } })) })
   return (
-    <FormModal opened wide title={template.data ? t('core.print.edit_title', { name: template.data.name }) : t('core.print.edit')} onClose={onClose}>
+    <FormModal open wide title={template.data ? t('core.print.edit_title', { name: template.data.name }) : t('core.print.edit')} onOpenChange={onClose}>
       {template.isPending ? (
         <ContentSkeleton />
       ) : template.isError ? (

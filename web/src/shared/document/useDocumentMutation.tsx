@@ -31,7 +31,7 @@ export function useDocumentMutation(docType: string, id: number, version: number
   }
 
   const dialog: ReactNode = conflict && (
-    <Dialog opened onClose={() => void reload()} title={t('shared.document.conflict.title')} closeLabel={t('shared.modal.close')} initialFocus={reloadRef}>
+    <Dialog open onOpenChange={() => void reload()} title={t('shared.document.conflict.title')} closeLabel={t('shared.modal.close')} initialFocus={reloadRef}>
       <Stack gap="md">
         <Text>{t('shared.document.conflict.message')}</Text>
         <ModalFooter>

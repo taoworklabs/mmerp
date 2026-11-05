@@ -59,13 +59,13 @@ function PrefixModal({ series, onClose }: { series: CodeSeries; onClose: () => v
   // A disabled product's series only reads.
   if (!series.allowed_actions.includes('edit'))
     return (
-      <FormModal opened title={title} onClose={onClose}>
+      <FormModal open title={title} onOpenChange={onClose}>
         <Text size="sm">{t('core.code_series.read_only')}</Text>
         <FieldList rows={[[t('core.code_series.prefix'), series.prefix || t('core.code_series.no_prefix')]]} />
       </FormModal>
     )
   return (
-    <FormModal opened title={title} onClose={onClose}>
+    <FormModal open title={title} onOpenChange={onClose}>
       <Form form={form} onSubmit={save} errorFields={{ invalid_code_prefix: 'prefix' }}>
         <TextField name="prefix" label={t('core.code_series.prefix')} description={t('core.code_series.prefix_hint')} maxLength={10} />
         <FormActions submitLabel={t('core.common.save')} onCancel={onClose} cancelLabel={t('core.common.cancel')} />

@@ -140,7 +140,7 @@ function WarehouseModal({ warehouse: w, entities, onClose }: { warehouse: Wareho
     onClose()
   }
   return (
-    <FormModal opened title={t(w ? 'sales.warehouses.edit' : 'sales.warehouses.create')} onClose={onClose}>
+    <FormModal open title={t(w ? 'sales.warehouses.edit' : 'sales.warehouses.create')} onOpenChange={onClose}>
       <Form form={form} onSubmit={save} errorFields={{ warehouse_code_taken: 'code' }}>
         <CodeField name="code" label={t('sales.warehouse.code')} existing={!!w} />
         <TextField name="name" label={t('sales.warehouse.name')} required maxLength={300} />

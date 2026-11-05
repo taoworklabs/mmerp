@@ -120,7 +120,7 @@ function NewPayroll({ onClose }: { onClose: () => void }) {
   }
 
   return (
-    <FormModal opened title={t('hrm.payrolls.create')} onClose={onClose}>
+    <FormModal open title={t('hrm.payrolls.create')} onOpenChange={onClose}>
       <Form form={form} onSubmit={create} errorFields={{ payroll_timesheets_missing: 'month' }}>
         <LegalEntityField name="legal_entity_id" label={t('hrm.payroll.legal_entity')} product="hrm" permission="hrm.payroll.edit" required />
         <MonthField name="month" label={t('hrm.payroll.month')} description={t('hrm.payroll.month_hint')} required />

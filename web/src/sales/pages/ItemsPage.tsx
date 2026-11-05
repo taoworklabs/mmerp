@@ -190,7 +190,7 @@ function ItemModal({ item, onClose }: { item: Item | null; onClose: () => void }
     onClose()
   }
   return (
-    <FormModal opened title={t(item ? 'sales.items.edit' : 'sales.items.create')} onClose={onClose}>
+    <FormModal open title={t(item ? 'sales.items.edit' : 'sales.items.create')} onOpenChange={onClose}>
       <Form form={form} onSubmit={save} errorFields={{ item_code_taken: 'code', item_tracking_locked: 'tracking', item_negative_not_quantity: 'allow_negative' }}>
         <CodeField name="code" label={t('sales.item.code')} existing={!!item} />
         <TextField name="name" label={t('sales.item.name')} required maxLength={300} />

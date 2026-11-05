@@ -21,8 +21,8 @@ export function FlowWorkspace() {
         </aside>
       ) : (
         <Drawer
-          opened={selected !== null}
-          onClose={() => select(null)}
+          open={selected !== null}
+          onOpenChange={(open) => !open && select(null)}
           position="bottom"
           size="85%"
           title={t('shared.rule.panel_title')}

@@ -59,7 +59,7 @@ describe('ActionBar', () => {
 
   it('stays under AppShell\'s open drawer where the two fixed overlays meet', async () => {
     const { container } = await render(
-      <AppShell header={<div>Header</div>} navbar={<div>Navbar</div>} navbarOpened>
+      <AppShell header={<div>Header</div>} navbar={<div>Navbar</div>} navbarOpen>
         <ActionBar>
           <button type="button">Save</button>
         </ActionBar>

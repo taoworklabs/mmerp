@@ -141,7 +141,7 @@ function CreateModal({ manageAll, onClose }: { manageAll: boolean; onClose: () =
   }
 
   return (
-    <FormModal opened title={t('core.delegations.create')} onClose={onClose}>
+    <FormModal open title={t('core.delegations.create')} onOpenChange={onClose}>
       <Form form={form} onSubmit={save}>
         {manageAll && <SelectField name="user" label={t('core.delegations.user')} description={t('core.delegations.user_hint')} clearable data={options} />}
         <SelectField name="delegate" label={t('core.delegations.delegate')} description={t('core.delegations.delegate_hint')} required data={options} />
