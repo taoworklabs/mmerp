@@ -19,5 +19,6 @@ const (
 var (
 	ErrAccountCodeTaken     = &platform.Error{Status: http.StatusConflict, Code: "account_code_taken"}
 	ErrAccountParentInvalid = &platform.Error{Status: http.StatusUnprocessableEntity, Code: "account_parent_invalid"}
+	ErrAccountNameRequired  = &platform.Error{Status: http.StatusUnprocessableEntity, Code: "account_name_required"}
 	ErrAccountInUse         = &platform.Error{Status: http.StatusConflict, Code: "account_in_use"}
 )

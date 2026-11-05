@@ -34,7 +34,9 @@ func (s *Service) Accounts(ctx context.Context) ([]Account, error) {
 
 func (s *Service) CreateAccount(ctx context.Context, f AccountFields) (id int64, err error) {
 	err = s.writeAccount(ctx, func(ctx context.Context) error {
-		f.Name = strings.TrimSpace(f.Name)
+		if f.Name = strings.TrimSpace(f.Name); f.Name == "" {
+			return ErrAccountNameRequired
+		}
 		if err := checkParent(ctx, 0, f); err != nil {
 			return err
 		}
@@ -49,7 +51,9 @@ func (s *Service) CreateAccount(ctx context.Context, f AccountFields) (id int64,
 
 func (s *Service) UpdateAccount(ctx context.Context, id int64, f AccountFields) error {
 	return s.writeAccount(ctx, func(ctx context.Context) error {
-		f.Name = strings.TrimSpace(f.Name)
+		if f.Name = strings.TrimSpace(f.Name); f.Name == "" {
+			return ErrAccountNameRequired
+		}
 		cur, err := store.LockAccount.Run(ctx, id)
 		if errors.Is(err, pgx.ErrNoRows) {
 			return platform.ErrNotFound

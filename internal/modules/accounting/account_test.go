@@ -109,3 +109,16 @@ func TestAccountNeedsManage(t *testing.T) {
 		t.Fatalf("accountant lists: %v", err)
 	}
 }
+
+func TestBlankAccountNameRefused(t *testing.T) {
+	core, s := newAccounting(t)
+	f := acct("642", "expense", nil)
+	f.Name = "   "
+	if _, err := s.CreateAccount(core.Admin, f); !errors.Is(err, accounting.ErrAccountNameRequired) {
+		t.Fatalf("create: %v", err)
+	}
+	id := mustCreate(t, s, core.Admin, acct("642", "expense", nil))
+	if err := s.UpdateAccount(core.Admin, id, f); !errors.Is(err, accounting.ErrAccountNameRequired) {
+		t.Fatalf("update: %v", err)
+	}
+}
