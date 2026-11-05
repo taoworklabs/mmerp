@@ -4,7 +4,7 @@ Mandatory rules for every screen. **Agents and people must read this document be
 
 Sources of truth in code:
 
-- `packages/ui` (`@mmerp/ui`): the tokens (`src/tokens/tokens.ts`: every colour, font size, spacing and radius, as `--mmerp-*` CSS variables) and the primitives built on them, each shown in Storybook (`make storybook`, `:6006`). Sizes specific to one component (table row height) live in its CSS module in `shared/ui`; areas set no size apart from the column widths of a lines table.
+- `packages/ui` (`@mmerp/ui`): the tokens (`src/tokens/tokens.ts`: every colour, font size, spacing and radius, as `--mmerp-*` CSS variables) and the primitives built on them, each shown in Storybook (`make storybook`, `:6006`). Sizes specific to one component (table row height) live in that component's CSS module, in the kit (`DataTable`, `Table`) or in `shared/ui`; areas set no size apart from the column widths of a lines table.
 - `web/src/shared/ui/`: page templates and components. New screens are **assembled from what already exists here**.
 - The `/dev/ui` page, dev build only, in six layers: foundations, the `@mmerp/ui` primitives and blocks areas may import directly (linking to Storybook), the ready-made mmerp components (`shared/ui`, `shared/document`), patterns, and page templates. Each component page shows a live example, when to use it, its variants and states, do and don't, its import, and related entries. When unsure what to use, open this page first; the written rules stay here and in the `mmerp-ui` skill.
 
@@ -58,7 +58,7 @@ All of them live in the `@mmerp/ui` tokens. Area code uses only token names or `
 | `background` | `#FFFFFF` | App background and content area |
 | `surface` | `#FFFFFF` | Background of tables, forms, cards |
 | `surface-sunken` | `#F8F8F8` | Background of group and total rows, tile hover, cells that take no value |
-| table header | `#F4F5F6` | Background of a table's column header row: a step deeper than the sunken rows |
+| table header | `#F4F5F6` | Background of a table's column header row: a step deeper than the sunken rows; a list page's table sets it to the body colour |
 | `success` | Green, `#5B7F24` | Posted status, success notifications |
 | `warning` | Orange, `#BD5B00` | Pending approval status, warnings |
 | `danger` | Red `#C9372C` (text `#AE2E24`) | Errors, destructive actions, cancelled status |
@@ -156,7 +156,7 @@ General rules:
 
 Use `<DataTable>` from `shared/ui`, not the kit's `Table` directly.
 
-- Rows are 40px tall. A table that is part of a page (a record's tab, a section, a document, a modal) sits in a frame: a 1px `border` edge with 6px corners, like a document's lines. The table that is a list page's whole content fills the page and has no frame of its own. The column header row sits on the table header tone (`#F4F5F6`, a step deeper than the sunken group and total rows): 12px text, weight 600, in `text-secondary` over a rule. From 1024px a list page is exactly as tall as the window: its header, filter bar and paging bar stay in place and only the content below the filters scrolls; a table that is the whole content scrolls inside itself, under its column headers, which stick. Scrollbars are thin (8px); a table's vertical scrollbar runs between its sticky header and footer, never behind them.
+- Rows are 40px tall. A table that is part of a page (a record's tab, a section, a document, a modal) sits in a frame: a 1px `border` edge with 6px corners, like a document's lines. The table that is a list page's whole content fills the page and has no frame of its own. The column header row sits on the table header tone (`#F4F5F6`, a step deeper than the sunken group and total rows), except in a list page's table, whose header sits on the page's body colour as part of the header block (`ListPage` sets `--mmerp-color-table-header` to `--mmerp-color-body`): 12px text, weight 600, in `text-secondary` over a rule. From 1024px a list page is exactly as tall as the window: its header, filter bar and paging bar stay in place and only the content below the filters scrolls; a table that is the whole content scrolls inside itself, under its column headers, which stick. Scrollbars are thin (8px); a table's vertical scrollbar runs between its sticky header and footer, never behind them.
 - The first column is the identifier (document number, full name with avatar), weight 500 in the main text colour, underlined on hover. The whole row is clickable; the link is a real `<a>` tag, so middle-click or Ctrl+click opens a new tab.
 - Numbers and money are right-aligned and use `tabular-nums`. Text is left-aligned. Dates are left-aligned.
 - The status column uses `<DocumentStatus>` for documents and `<StatusBadge>` (tinted badge, 4px radius, sentence case) for master data, e.g. employees who are active or have left.
@@ -213,6 +213,8 @@ Use the fields of `shared/ui/form`, already wired to React Hook Form.
 | Data | Component | Notes |
 | --- | --- | --- |
 | Date | `DateField` | Formatted per language (below); weeks start on Monday |
+| A master-data record's code | `CodeField` | Typed, or left empty to be issued at creation; read-only once the record exists |
+| Whole number | `IntegerField` | No digit grouping (port, year, levels) |
 | Money | `MoneyField` | Integer, with thousands separators, no decimals for VND |
 | Fractional quantity | `DecimalField` | Number of decimals declared by the field (e.g. workdays: 1) |
 | Pick one from a list | `SelectField` | Has a search box when there are more than 7 options. Lists only valid options: what cannot be chosen is not shown. The selected option only gets a background, no check mark. The dropdown opens below the field's error message, never covering it |
@@ -229,7 +231,7 @@ A field that picks a business object (e.g. picking an employee) belongs to the a
 
 | Kind | Lives in | Examples |
 | --- | --- | --- |
-| Carries no business concept | `shared/ui` | Page templates, `DataTable`, basic input fields (`DateField`, `MoneyField`, `SelectField`…), loading, empty and error states, `FieldList` (read-only label–value pairs, label on the left), `EditablePanel` (a group of a record's values in a card, edited in place), `SensitiveValue` (a masked value shown on request, as text) |
+| Carries no business concept | `shared/ui` | Page templates, `DataTable`, basic input fields (`DateField`, `MoneyField`, `SelectField`…), loading, empty and error states, `EditablePanel` (a group of a record's values in a card, edited in place), `SensitiveValue` (a masked value shown on request, as text) |
 | Shared document features | `shared/document` | `DocumentScreen` (a document's page), `DocumentPreview`, `CreatePage`, `DocumentStatus`, `DocumentActions`, `ApprovalPanel`, `ActivityFeed` (every record's and document's comments and history in one timeline), `AttachmentPanel` |
 | Carries a product's concept | That product's area | Employee picker, contract detail section, payroll breakdown table, leave request preview |
 
@@ -238,8 +240,9 @@ What `shared/ui` already has (see also `/dev/ui`), to use before building your o
 - Actions and feedback: `useConfirm` (confirmation dialog), `useAction` (a region's action: confirm, error kept for the region, success toast), `notifySuccess`/`notifyError`/`notifyUndo` (`notify.tsx`).
 - States (`states.tsx`): `EmptyState`, `ErrorState`, `PageSkeleton`, `ContentSkeleton`, `ForbiddenPage`, `NotFoundPage`, `ReadOnlyBanner`; `QueryView` picks among them for a region fed by one query; `Notice` is a banner whose tone sets colour and icon.
 - Menus: `MoreActions` holds `MenuAction`s (icon at text size, `danger` for an action that loses something).
-- Display: `DataTable`, `FieldList`, `StatusBadge`, `CellGrid` (grid of inputs along two axes, like a timesheet), `DayGrid`/`PeriodNav` (calendar by day with a Month / Week switch), `TileGrid`/`StatTile`/`LinkTile`, `OrgUnitName`, `PersonName`/`PersonAvatar`.
-- Forms (`shared/ui/form`): `Form`, `FormSection`, `InputRow`, `FormActions`, `FormFields`, `EditablePanel`; fields `TextField`, `PasswordField`, `CheckboxField`, `DateField`, `MonthField`, `FileField`, `SelectField`, `MultiSelectField`, `DecimalField`, `MoneyField`, `SensitiveField`, `SensitiveValue`, `OrgUnitField`, `LegalEntityField`, `RemoteSelectField`; filters `SearchInput`, `FilterChip`, `OrgUnitFilter`, `LegalEntityFilter`, `MonthFilter`, `DateFilter`, `YearFilter`, `RemoteFilter`.
+- Display: `DataTable`, `StatusBadge`, `CellGrid` (grid of inputs along two axes, like a timesheet), `DayGrid`/`PeriodNav` (calendar by day with a Month / Week switch), `TileGrid`/`StatTile`/`LinkTile`, `OrgUnitName`, `PersonName`/`PersonAvatar`.
+- Forms (`shared/ui/form`): `Form`, `FormSection`, `InputRow`, `FormActions`, `FormFields`, `EditablePanel`; fields `TextField`, `CodeField`, `PasswordField`, `CheckboxField`, `DateField`, `MonthField`, `FileField`, `SelectField`, `MultiSelectField`, `DecimalField`, `MoneyField`, `IntegerField`, `SensitiveField`, `SensitiveValue`, `OrgUnitField`, `LegalEntityField`, `RemoteSelectField`; filters `SearchInput`, `FilterChip`, `OrgUnitFilter`, `LegalEntityFilter`, `MonthFilter`, `DateFilter`, `YearFilter`, `RemoteFilter`.
+- From the kit (`@mmerp/ui`, on the areas' allowlist): the look-only blocks `Panel`, `FieldList` (read-only label–value pairs, label on the left), `KeyFacts`, `RecordColumns`, `ActionBar`.
 - Outside `shared/ui`: `useListParams` (`shared/url`: filters, sort, page in the URL, and the `filterBar` a filter bar binds its chips to), `ExportButton`/`ImportDialog` (`shared/jobs`), `OrgTree` (`shared/org`).
 
 - Area components are **assembled from `shared/ui` primitives** and follow exactly the rules of this document: no custom colours, no inline `style`, no page-level layout of their own.
@@ -309,7 +312,7 @@ The rules above are enforced by tools wherever tools can do it:
 | Rule | Enforced by |
 | --- | --- |
 | Areas take from `@mmerp/ui` only plain layout and text primitives (`Anchor`, `Button`, `Divider`, `Group`, `List`, `Loader`, `Skeleton`, `Stack`, `Text`, `Tooltip`) and the look-only blocks (`Panel`, `FieldList`, `KeyFacts`, `RecordColumns`, `ActionBar`); everything else comes from `shared/ui`. Only `@mmerp/ui` imports `@base-ui/react` | ESLint `no-restricted-imports` (`allowImportNames` option), with a message pointing to `shared/ui` |
-| No inline `style` and no CSS files in areas | ESLint `no-restricted-syntax` blocks the `style` attribute in JSX (outside `shared/ui`); dependency-cruiser blocks `*.css` imports from areas. CSS modules exist only in `shared/ui` |
+| No inline `style` and no CSS files in areas | ESLint `no-restricted-syntax` blocks the `style` attribute in JSX (outside `shared/ui`); dependency-cruiser blocks `*.css` imports from areas. CSS modules exist only in `shared` (`shared/ui`, `shared/document`, `shared/jobs`) and `app`, never in areas |
 | No colour codes in the app | `make lint` scans for hex codes (3, 6 and 8 digits), `rgb(` and `hsl(` in every file of `web/src`, `.css` files included; colours live only in the `@mmerp/ui` tokens |
 | No hard-coded text in JSX | ESLint `i18next/no-literal-string` |
 | Translation keys have both `vi` and `en` | Check in `make lint` ([techstack.md](./techstack.md#i18n)) |

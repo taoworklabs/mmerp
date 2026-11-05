@@ -3,7 +3,7 @@ import { useId, type ReactNode } from 'react'
 import classes from './Section.module.css'
 
 // Section is a titled region of a page (a table, a group of facts), set off from the section
-// before it by a rule. Its own buttons sit right of the title, at section size (xs).
+// before it by a rule. Its own buttons sit right of the title, at the one button size.
 export function Section({ title, description, actions, children }: { title: string; description?: ReactNode; actions?: ReactNode; children: ReactNode }) {
   const id = useId()
   return (
