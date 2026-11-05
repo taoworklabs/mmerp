@@ -2,6 +2,7 @@ package accounting_test
 
 import (
 	"context"
+	"sync"
 	"testing"
 	"time"
 
@@ -71,7 +72,8 @@ func TestLockAllowedWithoutStartDate(t *testing.T) {
 }
 
 // hold runs fn in a transaction left open, so its locks stay held, until release commits it.
-func hold(ctx context.Context, fn func(context.Context) error) (release func() error, err error) {
+// The test's cleanup releases it too, so an early failure leaves no transaction open.
+func hold(t *testing.T, ctx context.Context, fn func(context.Context) error) (release func() error, err error) {
 	ready, free, done := make(chan error, 1), make(chan struct{}), make(chan error, 1)
 	go func() {
 		done <- platform.InTx(ctx, func(ctx context.Context) error {
@@ -80,7 +82,9 @@ func hold(ctx context.Context, fn func(context.Context) error) (release func() e
 			return nil
 		})
 	}()
-	return func() error { close(free); return <-done }, <-ready
+	release = sync.OnceValue(func() error { close(free); return <-done })
+	t.Cleanup(func() { _ = release() })
+	return release, <-ready
 }
 
 func async(fn func() error) <-chan error {
@@ -110,7 +114,7 @@ func TestLockRacingReconcile(t *testing.T) {
 	// Reconcile first: the lock waits for its entry, then goes through.
 	ref := l.doc(t, until)
 	l.record(t, ref, l.payroll()...)
-	release, err := hold(l.core.Ctx, func(ctx context.Context) error { return l.s.Reconcile(ctx, ref) })
+	release, err := hold(t, l.core.Ctx, func(ctx context.Context) error { return l.s.Reconcile(ctx, ref) })
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -132,7 +136,7 @@ func TestLockRacingReconcile(t *testing.T) {
 	}
 	ref = l.doc(t, until)
 	l.record(t, ref, l.payroll()...)
-	release, err = hold(l.core.Admin, lock)
+	release, err = hold(t, l.core.Admin, lock)
 	if !isCode(err, "period_has_pending_documents") {
 		t.Fatalf("lock over pending: %v", err)
 	}
@@ -147,4 +151,51 @@ func TestLockRacingReconcile(t *testing.T) {
 	if c := lockCode(t, l, until); c != "" {
 		t.Fatalf("lock once reconciled: %q", c)
 	}
+}
+
+// SetStart and a lock on the same legal entity serialize on the period row: whichever goes
+// second sees the other's result.
+func TestSetStartRacingLock(t *testing.T) {
+	early, later, until := "2026-01-01", "2026-07-01", "2026-06-30"
+	setup := func(t *testing.T) *ledger {
+		l := newLedger(t)
+		l.core.Record.SetBeforeLock(l.s.BeforeLock)
+		if err := l.s.SetStart(l.core.Admin, l.le, &later); err != nil {
+			t.Fatal(err)
+		}
+		l.record(t, l.doc(t, "2026-03-31"), l.payroll()...)
+		return l
+	}
+
+	t.Run("start first", func(t *testing.T) {
+		l := setup(t)
+		release, err := hold(t, l.core.Admin, func(ctx context.Context) error { return l.s.SetStart(ctx, l.le, &early) })
+		if err != nil {
+			t.Fatal(err)
+		}
+		locked := async(func() error { return l.core.Record.SetPeriodLock(l.core.Admin, l.le, &until) })
+		waits(t, locked)
+		if err := release(); err != nil {
+			t.Fatal(err)
+		}
+		if err := <-locked; !isCode(err, "period_has_pending_documents") {
+			t.Fatalf("lock: %v", err)
+		}
+	})
+
+	t.Run("lock first", func(t *testing.T) {
+		l := setup(t)
+		release, err := hold(t, l.core.Admin, func(ctx context.Context) error { return l.core.Record.SetPeriodLock(ctx, l.le, &until) })
+		if err != nil {
+			t.Fatal(err)
+		}
+		set := async(func() error { return l.s.SetStart(l.core.Admin, l.le, &early) })
+		waits(t, set)
+		if err := release(); err != nil {
+			t.Fatal(err)
+		}
+		if err := <-set; !isCode(err, "start_date_in_locked_period") {
+			t.Fatalf("start: %v", err)
+		}
+	})
 }

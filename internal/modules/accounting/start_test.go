@@ -142,7 +142,7 @@ func TestSetStartRacingFirstEntry(t *testing.T) {
 		l := newLedger(t)
 		ref := l.doc(t, "2026-03-31")
 		l.record(t, ref, l.payroll()...)
-		release, err := hold(l.core.Ctx, func(ctx context.Context) error { return l.s.Reconcile(ctx, ref) })
+		release, err := hold(t, l.core.Ctx, func(ctx context.Context) error { return l.s.Reconcile(ctx, ref) })
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -164,7 +164,7 @@ func TestSetStartRacingFirstEntry(t *testing.T) {
 		l := newLedger(t)
 		ref := l.doc(t, "2026-03-31")
 		l.record(t, ref, l.payroll()...)
-		release, err := hold(l.core.Admin, setStart(l))
+		release, err := hold(t, l.core.Admin, setStart(l))
 		if err != nil {
 			t.Fatal(err)
 		}
