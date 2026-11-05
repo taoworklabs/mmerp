@@ -1,4 +1,4 @@
-import { IconPencil } from '@tabler/icons-react'
+import { Button } from '@mmerp/ui'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
@@ -8,7 +8,8 @@ import { useCan, useProductOn } from '@/shared/auth/me'
 import { formatDate } from '@/shared/i18n'
 import { type Column } from '@/shared/ui/DataTable'
 import { DateField, Form, FormActions, useLegalEntities } from '@/shared/ui/form'
-import { MenuAction } from '@/shared/ui/MenuAction'
+import { ModalFooter } from '@/shared/ui/ModalFooter'
+import { Notice } from '@/shared/ui/Notice'
 import { notifySuccess } from '@/shared/ui/notify'
 import { FormModal, ListPage } from '@/shared/ui/page'
 import { StatusBadge } from '@/shared/ui/StatusBadge'
@@ -57,26 +58,19 @@ export function StartsPage() {
           label: t('accounting.starts.title'),
           columns,
           rowKey: (s) => s.legal_entity_id,
-          // A start date is fixed once the legal entity has entries, so only open ones offer the edit.
-          menu: writable
-            ? (s) =>
-                !s.fixed && (
-                  <MenuAction icon={IconPencil} onClick={() => setEditing(s)}>
-                    {t('accounting.starts.edit')}
-                  </MenuAction>
-                )
-            : undefined,
+          onRowClick: (s) => setEditing(s),
         },
         empty: { title: t('accounting.starts.empty'), description: t('accounting.starts.empty_description') },
         noResults: t('accounting.common.no_results'),
       }}
     >
-      {editing && <StartModal start={editing} title={entityName(editing.legal_entity_id)} onClose={() => setEditing(null)} />}
+      {editing && <StartModal start={editing} writable={writable} title={entityName(editing.legal_entity_id)} onClose={() => setEditing(null)} />}
     </ListPage>
   )
 }
 
-function StartModal({ start, title, onClose }: { start: Start; title: string; onClose: () => void }) {
+// StartModal edits a start date; it only shows it once fixed, or to whom may not change it.
+function StartModal({ start, writable, title, onClose }: { start: Start; writable: boolean; title: string; onClose: () => void }) {
   const { t } = useTranslation()
   const qc = useQueryClient()
   const form = useForm<{ start_date: string | null }>({ mode: 'onBlur', defaultValues: { start_date: start.start_date ?? null } })
@@ -87,6 +81,20 @@ function StartModal({ start, title, onClose }: { start: Start; title: string; on
     notifySuccess(t('accounting.starts.saved'))
     onClose()
   }
+  if (start.fixed || !writable)
+    return (
+      <FormModal opened title={title} onClose={onClose}>
+        <Form form={form} onSubmit={async () => {}}>
+          <DateField name="start_date" label={t('accounting.start.date')} readOnly />
+          {start.fixed && <Notice tone="info">{t('accounting.start.fixed_hint')}</Notice>}
+          <ModalFooter>
+            <Button variant="subtle" color="gray" onClick={onClose}>
+              {t('accounting.common.close')}
+            </Button>
+          </ModalFooter>
+        </Form>
+      </FormModal>
+    )
   return (
     <FormModal opened title={title} onClose={onClose}>
       <Form form={form} onSubmit={save} errorFields={{ start_date_fixed: 'start_date' }}>

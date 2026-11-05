@@ -136,5 +136,6 @@
   "accounting.trial.empty_description": "The legal entity has no entries yet.",
   "accounting.ledger.no_lines_debit": "Debit balance: {{amount}}.",
   "accounting.ledger.no_lines_credit": "Credit balance: {{amount}}.",
-  "accounting.starts.edit": "Edit start date"
+  "accounting.start.fixed_hint": "The legal entity has entries, so its start date can no longer change.",
+  "accounting.common.close": "Close"
 }
