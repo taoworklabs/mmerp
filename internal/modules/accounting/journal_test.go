@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/taoworklabs/mmerp/internal/core/approval"
+	"github.com/taoworklabs/mmerp/internal/core/iam"
 	"github.com/taoworklabs/mmerp/internal/core/record"
 	"github.com/taoworklabs/mmerp/internal/core/record/recordtest"
 	"github.com/taoworklabs/mmerp/internal/modules/accounting"
@@ -139,6 +140,9 @@ func TestJournalEntryBeforeStartRefused(t *testing.T) {
 	if err := l.s.SetStart(l.core.Admin, l.le, &start); err != nil {
 		t.Fatal(err)
 	}
+	if err := l.post(l.newJournal(t, l.journal("2026-01-01"))); err != nil {
+		t.Fatalf("on the start date: %v", err)
+	}
 }
 
 func TestJournalEntryNotPostableNamesLine(t *testing.T) {
@@ -176,6 +180,11 @@ func TestJournalEntryCancelReverses(t *testing.T) {
 	if _, err := l.core.Record.Transition(l.core.Admin, ref, e.Version, record.Cancelled); err != nil {
 		t.Fatal(err)
 	}
+	var nonZero int
+	if err := l.core.Pool.QueryRow(l.core.Ctx, `SELECT count(*) FROM (SELECT l.account_id FROM accounting.entries e JOIN accounting.entry_lines l ON l.entry_id = e.id
+		WHERE e.doc_id = $1 AND e.doc_type = $2 GROUP BY l.account_id HAVING sum(l.debit) <> sum(l.credit)) x`, ref.ID, ref.Type).Scan(&nonZero); err != nil || nonZero != 0 {
+		t.Fatalf("accounts not netted %d %v", nonZero, err)
+	}
 	var reversals int
 	if err := l.core.Pool.QueryRow(l.core.Ctx, `SELECT count(*) FROM accounting.entries WHERE doc_id = $1 AND reverses IS NOT NULL`, ref.ID).Scan(&reversals); err != nil || reversals != 1 {
 		t.Fatalf("reversals %d %v", reversals, err)
@@ -190,4 +199,52 @@ func asErr(err error) (*platform.Error, bool) {
 func isCode(err error, code string) bool {
 	e, ok := asErr(err)
 	return ok && e.Code == code
+}
+
+func TestJournalEntryBounds(t *testing.T) {
+	l := newLedger(t)
+	f := l.journal("2026-03-31")
+	f.Lines[0].Debit, f.Lines[1].Credit = accounting.MaxLineAmount+1, accounting.MaxLineAmount+1
+	_, err := l.s.CreateJournalEntry(l.core.Admin, accounting.NewJournalEntry{JournalEntryFields: f})
+	if e, ok := asErr(err); !ok || e.Code != "line_amount_invalid" || e.Params["line_no"] != 1 {
+		t.Fatalf("amount: %v", err)
+	}
+	f = l.journal("2026-03-31")
+	for len(f.Lines) <= accounting.MaxLines {
+		f.Lines = append(f.Lines, accounting.JournalEntryLine{AccountID: l.acc["642"], Debit: 1})
+	}
+	if _, err = l.s.CreateJournalEntry(l.core.Admin, accounting.NewJournalEntry{JournalEntryFields: f}); !isCode(err, "journal_entry_too_many_lines") {
+		t.Fatalf("lines: %v", err)
+	}
+}
+
+func TestJournalEntryOrgUnitOfOtherLegalEntity(t *testing.T) {
+	l := newLedger(t)
+	other, err := l.core.IAM.CreateOrgUnit(l.core.Admin, iam.OrgUnitInput{Kind: "company", Name: "D"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	f := l.journal("2026-03-31")
+	f.Lines[1].OrgUnitID = &other
+	_, err = l.s.CreateJournalEntry(l.core.Admin, accounting.NewJournalEntry{JournalEntryFields: f})
+	if e, ok := asErr(err); !ok || e.Code != "line_org_unit_invalid" || e.Params["line_no"] != 2 {
+		t.Fatalf("org unit: %v", err)
+	}
+}
+
+func TestJournalEntryCreateChecksPermissionFirst(t *testing.T) {
+	l := newLedger(t)
+	id, err := l.core.IAM.CreateUser(l.core.Admin, "viewer", "Viewer", "long enough")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := l.core.IAM.GrantRole(l.core.Admin, id, "accounting", "viewer", nil); err != nil {
+		t.Fatal(err)
+	}
+	f := l.journal("2026-03-31")
+	f.Lines[0].AccountID = 999999
+	_, err = l.s.CreateJournalEntry(platform.WithActor(l.core.Ctx, id), accounting.NewJournalEntry{JournalEntryFields: f})
+	if !errors.Is(err, platform.ErrForbidden) {
+		t.Fatalf("want forbidden, got %v", err)
+	}
 }

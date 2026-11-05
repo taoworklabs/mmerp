@@ -16,10 +16,13 @@ func writeEntry(ctx context.Context, legalEntity int64, date pgtype.Date, src re
 	var debit, credit int64
 	ids := make([]int64, 0, len(lines))
 	for _, l := range lines {
+		if l.Debit > MaxLineAmount || l.Credit > MaxLineAmount {
+			return 0, ErrEntryUnbalanced
+		}
 		debit, credit = debit+l.Debit, credit+l.Credit
 		ids = append(ids, l.AccountID)
 	}
-	if len(lines) < 2 || debit != credit {
+	if len(lines) > MaxLines || len(lines) < 2 || debit != credit {
 		return 0, ErrEntryUnbalanced
 	}
 	slices.Sort(ids)

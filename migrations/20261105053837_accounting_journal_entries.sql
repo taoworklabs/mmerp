@@ -10,9 +10,9 @@ CREATE TABLE accounting.journal_entry_lines (
     line_no          int NOT NULL,
     account_id       bigint NOT NULL REFERENCES accounting.accounts,
     org_unit_id      bigint NULL REFERENCES iam.org_units,
-    description      text NULL,
-    debit            bigint NOT NULL CHECK (debit >= 0),
-    credit           bigint NOT NULL CHECK (credit >= 0),
+    description      text NULL CHECK (description IS NULL OR char_length(description) BETWEEN 1 AND 500),
+    debit            bigint NOT NULL CHECK (debit BETWEEN 0 AND 1000000000000000),
+    credit           bigint NOT NULL CHECK (credit BETWEEN 0 AND 1000000000000000),
     CHECK ((debit = 0) <> (credit = 0)),
     PRIMARY KEY (journal_entry_id, line_no)
 );

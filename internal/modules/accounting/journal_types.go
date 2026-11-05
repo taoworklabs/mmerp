@@ -10,6 +10,9 @@ var (
 	ErrLineSideInvalid          = &platform.Error{Status: http.StatusUnprocessableEntity, Code: "line_side_invalid"}
 	ErrJournalEntryUnbalanced   = &platform.Error{Status: http.StatusUnprocessableEntity, Code: "journal_entry_unbalanced"}
 	ErrEntryDescriptionRequired = &platform.Error{Status: http.StatusUnprocessableEntity, Code: "journal_entry_description_required"}
+	ErrLineAmountInvalid        = &platform.Error{Status: http.StatusUnprocessableEntity, Code: "line_amount_invalid"}
+	ErrLineOrgUnitInvalid       = &platform.Error{Status: http.StatusUnprocessableEntity, Code: "line_org_unit_invalid"}
+	ErrTooManyLines             = &platform.Error{Status: http.StatusUnprocessableEntity, Code: "journal_entry_too_many_lines"}
 	ErrAccountingNotStarted     = &platform.Error{Status: http.StatusUnprocessableEntity, Code: "accounting_not_started"}
 )
 
@@ -18,8 +21,8 @@ type JournalEntryLine struct {
 	AccountID   int64   `json:"account_id"`
 	OrgUnitID   *int64  `json:"org_unit_id,omitempty"`
 	Description *string `json:"description,omitempty" minLength:"1" maxLength:"500"`
-	Debit       int64   `json:"debit" minimum:"0" doc:"Minor unit"`
-	Credit      int64   `json:"credit" minimum:"0" doc:"Minor unit"`
+	Debit       int64   `json:"debit" minimum:"0" maximum:"1000000000000000" doc:"Minor unit"`
+	Credit      int64   `json:"credit" minimum:"0" maximum:"1000000000000000" doc:"Minor unit"`
 }
 
 // JournalEntryFields are the editable fields of a manual journal entry.

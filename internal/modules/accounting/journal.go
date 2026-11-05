@@ -84,7 +84,10 @@ func readJournalEntry(ctx context.Context, id int64) (JournalEntry, error) {
 // CreateJournalEntry adds a draft; the same request id returns the first one.
 func (s *Service) CreateJournalEntry(ctx context.Context, in NewJournalEntry) (id int64, err error) {
 	return id, platform.InTx(ctx, func(ctx context.Context) error {
-		h, err := prepareJournalEntry(ctx, &in.JournalEntryFields)
+		if err := s.d.Record.MayCreate(ctx, journalEntryType, record.Header{OrgUnitID: in.LegalEntityID, Date: in.Date}); err != nil {
+			return err
+		}
+		h, err := prepareJournalEntry(ctx, s, &in.JournalEntryFields)
 		if err != nil {
 			return err
 		}
@@ -106,7 +109,7 @@ func (s *Service) UpdateJournalEntry(ctx context.Context, id int64, in JournalEn
 		if _, err := s.d.Record.Read(ctx, ref); err != nil {
 			return err
 		}
-		h, err := prepareJournalEntry(ctx, &in.JournalEntryFields)
+		h, err := prepareJournalEntry(ctx, s, &in.JournalEntryFields)
 		if err != nil {
 			return err
 		}
@@ -125,7 +128,7 @@ func (s *Service) UpdateJournalEntry(ctx context.Context, id int64, in JournalEn
 
 // prepareJournalEntry checks what a draft can check before posting: the legal entity, one
 // side per line, accounts and org units that exist. Balance and postability wait for posting.
-func prepareJournalEntry(ctx context.Context, f *JournalEntryFields) (record.Header, error) {
+func prepareJournalEntry(ctx context.Context, s *Service, f *JournalEntryFields) (record.Header, error) {
 	if f.Description = strings.TrimSpace(f.Description); f.Description == "" {
 		return record.Header{}, ErrEntryDescriptionRequired
 	}
@@ -136,9 +139,15 @@ func prepareJournalEntry(ctx context.Context, f *JournalEntryFields) (record.Hea
 	if !ok {
 		return record.Header{}, platform.ErrNotFound
 	}
+	if len(f.Lines) > MaxLines {
+		return record.Header{}, ErrTooManyLines
+	}
 	var accounts, units []int64
 	var total int64
 	for i, l := range f.Lines {
+		if l.Debit > MaxLineAmount || l.Credit > MaxLineAmount {
+			return record.Header{}, lineErr(ErrLineAmountInvalid, i+1)
+		}
 		if l.Debit < 0 || l.Credit < 0 || (l.Debit == 0) == (l.Credit == 0) {
 			return record.Header{}, lineErr(ErrLineSideInvalid, i+1)
 		}
@@ -157,6 +166,14 @@ func prepareJournalEntry(ctx context.Context, f *JournalEntryFields) (record.Hea
 		return record.Header{}, err
 	} else if int(n) != len(uniq(units)) {
 		return record.Header{}, platform.ErrNotFound
+	}
+	for i, l := range f.Lines {
+		if l.OrgUnitID == nil {
+			continue
+		}
+		if le, err := s.d.IAM.LegalEntityOf(ctx, *l.OrgUnitID); err != nil || le != f.LegalEntityID {
+			return record.Header{}, lineErr(ErrLineOrgUnitInvalid, i+1)
+		}
 	}
 	return record.Header{Date: f.Date, OrgUnitID: f.LegalEntityID, Amount: &total}, nil
 }
@@ -209,9 +226,6 @@ func journalEntryTransition(ctx context.Context, d record.Doc, _ record.Status) 
 		return postJournalEntry(ctx, d)
 	case record.Cancelled:
 		id, err := store.LiveEntryOfDoc.Run(ctx, store.LiveEntryOfDocParams{DocType: d.Type, DocID: d.ID})
-		if errors.Is(err, pgx.ErrNoRows) {
-			return nil
-		}
 		if err != nil {
 			return err
 		}
