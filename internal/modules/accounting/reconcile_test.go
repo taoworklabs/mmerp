@@ -396,6 +396,11 @@ func TestAccountInUse(t *testing.T) {
 	if err := l.s.UpdateAccount(l.core.Admin, id, acct("6420", "expense", nil)); !errors.Is(err, accounting.ErrAccountInUse) {
 		t.Fatalf("code change: %v", err)
 	}
+	// Moving it would change the parent rollups of balances already reported.
+	p := mustCreate(t, l.s, l.core.Admin, acct("64", "expense", nil))
+	if err := l.s.UpdateAccount(l.core.Admin, id, acct("642", "expense", &p)); !errors.Is(err, accounting.ErrAccountInUse) {
+		t.Fatalf("parent change: %v", err)
+	}
 	if _, err := l.s.CreateAccount(l.core.Admin, acct("6421", "expense", &id)); !errors.Is(err, accounting.ErrAccountParentInvalid) {
 		t.Fatalf("child: %v", err)
 	}

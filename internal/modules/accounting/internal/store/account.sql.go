@@ -123,7 +123,7 @@ func (q *Queries) ListAccounts(ctx context.Context) ([]ListAccountsRow, error) {
 }
 
 const lockAccount = `-- name: LockAccount :one
-SELECT code, type, EXISTS (SELECT 1 FROM accounting.entry_lines l WHERE l.account_id = a.id) AS has_lines, EXISTS (SELECT 1 FROM accounting.rules r WHERE r.account_id = a.id) AS has_rule,
+SELECT code, type, parent_id, EXISTS (SELECT 1 FROM accounting.entry_lines l WHERE l.account_id = a.id) AS has_lines, EXISTS (SELECT 1 FROM accounting.rules r WHERE r.account_id = a.id) AS has_rule,
   EXISTS (SELECT 1 FROM accounting.accounts c WHERE c.parent_id = a.id) AS has_children
 FROM accounting.accounts a WHERE a.id = $1 FOR UPDATE
 `
@@ -131,6 +131,7 @@ FROM accounting.accounts a WHERE a.id = $1 FOR UPDATE
 type LockAccountRow struct {
 	Code        string
 	Type        string
+	ParentID    pgtype.Int8
 	HasLines    bool
 	HasRule     bool
 	HasChildren bool
@@ -142,6 +143,7 @@ func (q *Queries) LockAccount(ctx context.Context, id int64) (LockAccountRow, er
 	err := row.Scan(
 		&i.Code,
 		&i.Type,
+		&i.ParentID,
 		&i.HasLines,
 		&i.HasRule,
 		&i.HasChildren,
