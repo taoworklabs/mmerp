@@ -62,7 +62,7 @@ test('seed Accounting on the Demo demo company', async ({ baseURL }) => {
     api.post('/api/accounting/journal-entries', {
       data: {
         request_id: crypto.randomUUID(),
-        date: '2026-01-01',
+        date: '2026-07-01',
         legal_entity_id: demo,
         description: 'Số dư đầu kỳ',
         lines: [
