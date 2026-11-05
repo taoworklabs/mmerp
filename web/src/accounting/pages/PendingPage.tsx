@@ -18,7 +18,7 @@ import { kindLabel } from '../balance'
 import { asList } from '../hooks/useAccounting'
 import { accountingKeys } from '../keys'
 
-const reasonTone: Record<PendingDoc['reason'], StatusTone> = { queued: 'info', unmapped: 'warning', unbalanced: 'negative', too_large: 'negative' }
+const reasonTone: Record<PendingDoc['reason'], StatusTone> = { queued: 'info', unmapped: 'warning', unbalanced: 'danger', too_large: 'danger' }
 
 // PendingPage: the documents of a legal entity whose lines have not reached the ledger, and why;
 // each opens in the area that owns it.

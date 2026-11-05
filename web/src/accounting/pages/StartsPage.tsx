@@ -39,7 +39,7 @@ export function StartsPage() {
       kind: 'status',
       render: (s) =>
         s.fixed ? (
-          <StatusBadge tone="positive">{t('accounting.start.fixed')}</StatusBadge>
+          <StatusBadge tone="success">{t('accounting.start.fixed')}</StatusBadge>
         ) : s.start_date ? (
           <StatusBadge tone="neutral">{t('accounting.start.open')}</StatusBadge>
         ) : (
@@ -88,7 +88,7 @@ function StartModal({ start, writable, title, onClose }: { start: Start; writabl
           <DateField name="start_date" label={t('accounting.start.date')} readOnly />
           {start.fixed && <Notice tone="info">{t('accounting.start.fixed_hint')}</Notice>}
           <ModalFooter>
-            <Button variant="subtle" color="gray" onClick={onClose}>
+            <Button variant="subtle" tone="neutral" onClick={onClose}>
               {t('accounting.common.close')}
             </Button>
           </ModalFooter>

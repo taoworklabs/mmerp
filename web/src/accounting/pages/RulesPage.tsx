@@ -45,7 +45,7 @@ export function RulesPage() {
       kind: 'status',
       render: (r) =>
         r.account_id ? (
-          <StatusBadge tone="positive">{t('accounting.rule.set')}</StatusBadge>
+          <StatusBadge tone="success">{t('accounting.rule.set')}</StatusBadge>
         ) : (
           <StatusBadge tone="neutral">{t('accounting.rule.unset')}</StatusBadge>
         ),
