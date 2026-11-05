@@ -3,6 +3,7 @@ package accounting_test
 import (
 	"context"
 	"errors"
+	"fmt"
 	"slices"
 	"testing"
 
@@ -501,8 +502,9 @@ func TestPostingChangedQueuesOneJob(t *testing.T) {
 	}
 }
 
-// A document whose mapped lines exceed MaxLines is shown as a problem, not retried forever.
-func TestReconcileTooLarge(t *testing.T) {
+// Business lines collapse per account, side, org unit and kind, so a payroll with more lines than
+// MaxLines still posts.
+func TestReconcileAggregatesLines(t *testing.T) {
 	l := newLedger(t)
 	ref := l.doc(t, "2026-03-31")
 	var lines []posting.Line
@@ -512,10 +514,59 @@ func TestReconcileTooLarge(t *testing.T) {
 	}
 	l.record(t, ref, lines...)
 	l.reconcile(t, ref)
+	es := l.entries(t, ref)
+	n := int64(accounting.MaxLines/2 + 1)
+	if len(es) != 1 || es[0].debit["642"] != n || es[0].credit["334"] != n {
+		t.Fatalf("entries %+v", es)
+	}
+	var count int
+	if err := l.core.Pool.QueryRow(l.core.Ctx, `SELECT count(*) FROM accounting.entry_lines WHERE entry_id = $1`, es[0].id).Scan(&count); err != nil || count != 2 {
+		t.Fatalf("lines %d %v", count, err)
+	}
+}
+
+// Still more than MaxLines after aggregation: shown as a problem, not retried forever.
+func TestReconcileTooLarge(t *testing.T) {
+	l := newLedger(t)
+	ref := l.doc(t, "2026-03-31")
+	var lines []posting.Line
+	for i := 0; i <= accounting.MaxLines/2; i++ {
+		u, err := l.core.IAM.CreateOrgUnit(l.core.Admin, iam.OrgUnitInput{ParentID: &l.le, Kind: "department", Name: fmt.Sprint("U", i)})
+		if err != nil {
+			t.Fatal(err)
+		}
+		lines = append(lines, posting.Line{Kind: posting.SalaryExpense, OrgUnitID: u, Amount: 1},
+			posting.Line{Kind: posting.SalaryPayable, OrgUnitID: u, Amount: 1})
+	}
+	l.record(t, ref, lines...)
+	l.reconcile(t, ref)
 	if es := l.entries(t, ref); len(es) != 0 {
 		t.Fatalf("entries %d", len(es))
 	}
 	if s := l.source(t, ref); s.posted != nil || s.problem == nil || *s.problem != "too_large" {
 		t.Fatalf("source %+v", s)
+	}
+}
+
+// Lines that each fit but sum past MaxLineAmount are a problem, not an error retried forever.
+func TestReconcileLineAmountTooLarge(t *testing.T) {
+	l := newLedger(t)
+	ref := l.doc(t, "2026-03-31")
+	m := int64(accounting.MaxLineAmount)
+	l.record(t, ref, posting.Line{Kind: posting.SalaryExpense, OrgUnitID: l.unit, Amount: m},
+		posting.Line{Kind: posting.SalaryExpense, OrgUnitID: l.unit, Amount: m},
+		posting.Line{Kind: posting.SalaryPayable, OrgUnitID: l.unit, Amount: m},
+		posting.Line{Kind: posting.SalaryPayable, OrgUnitID: l.unit, Amount: m})
+	// One line over the bound on its own, too.
+	one := l.doc(t, "2026-03-31")
+	l.record(t, one, posting.Line{Kind: posting.SalaryExpense, OrgUnitID: l.unit, Amount: m + 1},
+		posting.Line{Kind: posting.SalaryPayable, OrgUnitID: l.unit, Amount: m + 1})
+	for _, r := range []record.Ref{ref, one} {
+		if err := l.s.Reconcile(l.core.Ctx, r); err != nil {
+			t.Fatal(err)
+		}
+		if s := l.source(t, r); s.posted != nil || s.problem == nil || *s.problem != "too_large" {
+			t.Fatalf("source %+v", s)
+		}
 	}
 }

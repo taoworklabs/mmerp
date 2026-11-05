@@ -81,16 +81,17 @@ func (s *Service) reconcile(ctx context.Context, ref record.Ref) error {
 		src.Problem, src.MissingKinds = pgtype.Text{String: "unmapped", Valid: true}, missing
 		return save()
 	}
+	// Checked first: within the bounds the sums below cannot overflow.
+	if len(lines) > MaxLines || slices.ContainsFunc(lines, func(l JournalLine) bool { return l.Debit > MaxLineAmount || l.Credit > MaxLineAmount }) {
+		src.Problem = pgtype.Text{String: "too_large", Valid: true}
+		return save()
+	}
 	var debit, credit int64
 	for _, l := range lines {
 		debit, credit = debit+l.Debit, credit+l.Credit
 	}
 	if debit != credit {
 		src.Problem = pgtype.Text{String: "unbalanced", Valid: true}
-		return save()
-	}
-	if len(lines) > MaxLines {
-		src.Problem = pgtype.Text{String: "too_large", Valid: true}
 		return save()
 	}
 	if len(lines) > 0 {
@@ -102,8 +103,9 @@ func (s *Service) reconcile(ctx context.Context, ref record.Ref) error {
 	return save()
 }
 
-// journal maps ref's live posting lines through the rules; missing lists, sorted, the kinds
-// without a rule or whose account is not postable and active.
+// journal maps ref's live posting lines through the rules, one line per account, side, org unit
+// and kind; missing lists, sorted, the kinds without a rule or whose account is not postable
+// and active. An amount past MaxLineAmount stops at MaxLineAmount+1, for the caller to refuse.
 func journal(ctx context.Context, ref record.Ref) ([]JournalLine, []string, error) {
 	rows, err := store.LiveLines.Run(ctx, store.LiveLinesParams{DocType: ref.Type, DocID: ref.ID})
 	if err != nil {
@@ -132,6 +134,12 @@ func journal(ctx context.Context, ref record.Ref) ([]JournalLine, []string, erro
 	if err != nil {
 		return nil, nil, err
 	}
+	type key struct {
+		account, unit int64
+		debit         bool
+		kind          string
+	}
+	at := map[key]int{}
 	var lines []JournalLine
 	var missing []string
 	for _, r := range rows {
@@ -143,18 +151,28 @@ func journal(ctx context.Context, ref record.Ref) ([]JournalLine, []string, erro
 		if r.Amount == 0 {
 			continue
 		}
-		l := JournalLine{AccountID: rule.AccountID, OrgUnitID: &r.OrgUnitID, Kind: r.Kind}
 		// A negative amount goes on the opposite side.
 		amount, debit := r.Amount, rule.Side == "debit"
 		if amount < 0 {
 			amount, debit = -amount, !debit
 		}
-		if debit {
-			l.Debit = amount
-		} else {
-			l.Credit = amount
+		// The negation of the smallest int64 stays negative.
+		if amount < 0 || amount > MaxLineAmount {
+			amount = MaxLineAmount + 1
 		}
-		lines = append(lines, l)
+		k := key{rule.AccountID, r.OrgUnitID, debit, r.Kind}
+		i, ok := at[k]
+		if !ok {
+			i, at[k] = len(lines), len(lines)
+			lines = append(lines, JournalLine{AccountID: rule.AccountID, OrgUnitID: &r.OrgUnitID, Kind: r.Kind})
+		}
+		l := &lines[i]
+		// Both terms are at most MaxLineAmount+1, so the sum cannot overflow.
+		if debit {
+			l.Debit = min(l.Debit+amount, MaxLineAmount+1)
+		} else {
+			l.Credit = min(l.Credit+amount, MaxLineAmount+1)
+		}
 	}
 	slices.Sort(missing)
 	return lines, slices.Compact(missing), nil
