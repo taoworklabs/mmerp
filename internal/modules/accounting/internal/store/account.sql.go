@@ -17,7 +17,7 @@ WITH RECURSIVE sub AS (
   UNION
   SELECT a.id FROM accounting.accounts a JOIN sub ON a.parent_id = sub.id
 )
-SELECT p.type, false AS has_lines, EXISTS (SELECT 1 FROM sub WHERE sub.id = p.id) AS cyclic
+SELECT p.type, EXISTS (SELECT 1 FROM accounting.entry_lines l WHERE l.account_id = p.id) AS has_lines, EXISTS (SELECT 1 FROM sub WHERE sub.id = p.id) AS cyclic
 FROM accounting.accounts p WHERE p.id = $1::bigint
 `
 
@@ -76,10 +76,9 @@ func (q *Queries) DeleteAccount(ctx context.Context, id int64) error {
 }
 
 const listAccounts = `-- name: ListAccounts :many
-
 SELECT a.id, a.code, a.name, a.type, a.parent_id, a.active,
   NOT EXISTS (SELECT 1 FROM accounting.accounts c WHERE c.parent_id = a.id) AS postable,
-  false AS has_lines
+  EXISTS (SELECT 1 FROM accounting.entry_lines l WHERE l.account_id = a.id) AS has_lines
 FROM accounting.accounts a ORDER BY a.code
 `
 
@@ -94,7 +93,6 @@ type ListAccountsRow struct {
 	HasLines bool
 }
 
-// TODO(task5): has_lines is false until entry_lines exists.
 func (q *Queries) ListAccounts(ctx context.Context) ([]ListAccountsRow, error) {
 	rows, err := q.db.Query(ctx, listAccounts)
 	if err != nil {
@@ -125,7 +123,7 @@ func (q *Queries) ListAccounts(ctx context.Context) ([]ListAccountsRow, error) {
 }
 
 const lockAccount = `-- name: LockAccount :one
-SELECT code, type, false AS has_lines, EXISTS (SELECT 1 FROM accounting.rules r WHERE r.account_id = a.id) AS has_rule,
+SELECT code, type, EXISTS (SELECT 1 FROM accounting.entry_lines l WHERE l.account_id = a.id) AS has_lines, EXISTS (SELECT 1 FROM accounting.rules r WHERE r.account_id = a.id) AS has_rule,
   EXISTS (SELECT 1 FROM accounting.accounts c WHERE c.parent_id = a.id) AS has_children
 FROM accounting.accounts a WHERE a.id = $1 FOR UPDATE
 `
@@ -149,6 +147,16 @@ func (q *Queries) LockAccount(ctx context.Context, id int64) (LockAccountRow, er
 		&i.HasChildren,
 	)
 	return i, err
+}
+
+const lockAccounts = `-- name: LockAccounts :exec
+SELECT 1 FROM accounting.accounts WHERE id = ANY($1::bigint[]) ORDER BY id FOR UPDATE
+`
+
+// An edited account and its new parent, in id order: entry writes share-lock the accounts they use.
+func (q *Queries) LockAccounts(ctx context.Context, ids []int64) error {
+	_, err := q.db.Exec(ctx, lockAccounts, ids)
+	return err
 }
 
 const lockChart = `-- name: LockChart :exec

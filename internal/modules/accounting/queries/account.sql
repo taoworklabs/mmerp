@@ -1,13 +1,11 @@
--- TODO(task5): has_lines is false until entry_lines exists.
-
 -- name: ListAccounts :many
 SELECT a.id, a.code, a.name, a.type, a.parent_id, a.active,
   NOT EXISTS (SELECT 1 FROM accounting.accounts c WHERE c.parent_id = a.id) AS postable,
-  false AS has_lines
+  EXISTS (SELECT 1 FROM accounting.entry_lines l WHERE l.account_id = a.id) AS has_lines
 FROM accounting.accounts a ORDER BY a.code;
 
 -- name: LockAccount :one
-SELECT code, type, false AS has_lines, EXISTS (SELECT 1 FROM accounting.rules r WHERE r.account_id = a.id) AS has_rule,
+SELECT code, type, EXISTS (SELECT 1 FROM accounting.entry_lines l WHERE l.account_id = a.id) AS has_lines, EXISTS (SELECT 1 FROM accounting.rules r WHERE r.account_id = a.id) AS has_rule,
   EXISTS (SELECT 1 FROM accounting.accounts c WHERE c.parent_id = a.id) AS has_children
 FROM accounting.accounts a WHERE a.id = $1 FOR UPDATE;
 
@@ -18,7 +16,7 @@ WITH RECURSIVE sub AS (
   UNION
   SELECT a.id FROM accounting.accounts a JOIN sub ON a.parent_id = sub.id
 )
-SELECT p.type, false AS has_lines, EXISTS (SELECT 1 FROM sub WHERE sub.id = p.id) AS cyclic
+SELECT p.type, EXISTS (SELECT 1 FROM accounting.entry_lines l WHERE l.account_id = p.id) AS has_lines, EXISTS (SELECT 1 FROM sub WHERE sub.id = p.id) AS cyclic
 FROM accounting.accounts p WHERE p.id = @parent_id::bigint;
 
 -- name: CreateAccount :one
@@ -41,3 +39,7 @@ WHERE a.id = ANY(@ids::bigint[]) AND a.active
 -- Serializes chart writes: parent checks and rule checks read rows other writes change. The two-int
 -- form is a key space apart from the bigint keys of request ids.
 SELECT pg_advisory_xact_lock(hashtext('accounting.chart'), 0);
+
+-- name: LockAccounts :exec
+-- An edited account and its new parent, in id order: entry writes share-lock the accounts they use.
+SELECT 1 FROM accounting.accounts WHERE id = ANY(@ids::bigint[]) ORDER BY id FOR UPDATE;

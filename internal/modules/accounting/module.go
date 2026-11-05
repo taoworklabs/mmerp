@@ -2,6 +2,7 @@ package accounting
 
 import (
 	"github.com/danielgtaylor/huma/v2"
+	"github.com/riverqueue/river"
 
 	"github.com/taoworklabs/mmerp/internal/platform"
 )
@@ -11,5 +12,6 @@ func Module(s *Service) platform.Module {
 		Name:    "accounting",
 		Product: "accounting",
 		Routes:  func(api huma.API) { registerAccountHandlers(api, s); registerRuleHandlers(api, s) },
+		Workers: func(w *river.Workers) { platform.AddWorker(w, &reconcileWorker{s: s}) },
 	}
 }

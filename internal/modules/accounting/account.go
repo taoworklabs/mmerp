@@ -37,6 +37,9 @@ func (s *Service) CreateAccount(ctx context.Context, f AccountFields) (id int64,
 		if f.Name = strings.TrimSpace(f.Name); f.Name == "" {
 			return ErrAccountNameRequired
 		}
+		if err := lockAccounts(ctx, 0, f.ParentID); err != nil {
+			return err
+		}
 		if err := checkParent(ctx, 0, f); err != nil {
 			return err
 		}
@@ -53,6 +56,9 @@ func (s *Service) UpdateAccount(ctx context.Context, id int64, f AccountFields) 
 	return s.writeAccount(ctx, func(ctx context.Context) error {
 		if f.Name = strings.TrimSpace(f.Name); f.Name == "" {
 			return ErrAccountNameRequired
+		}
+		if err := lockAccounts(ctx, id, f.ParentID); err != nil {
+			return err
 		}
 		cur, err := store.LockAccount.Run(ctx, id)
 		if errors.Is(err, pgx.ErrNoRows) {
@@ -103,6 +109,16 @@ func (s *Service) writeAccount(ctx context.Context, fn func(context.Context) err
 		}
 		return fn(ctx)
 	})
+}
+
+// lockAccounts locks the edited account (0 on create) and its new parent, so no entry is
+// written on either while their lines or children are checked.
+func lockAccounts(ctx context.Context, id int64, parent *int64) error {
+	ids := []int64{id}
+	if parent != nil {
+		ids = append(ids, *parent)
+	}
+	return store.LockAccounts.Run(ctx, ids)
 }
 
 // checkParent: id is 0 on create. A parent exists, is not the account or below it, has its

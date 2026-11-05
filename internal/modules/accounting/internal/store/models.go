@@ -3,3 +3,9 @@
 //   sqlc v1.30.0
 
 package store
+
+type AccountingRule struct {
+	Kind      string
+	AccountID int64
+	Side      string
+}

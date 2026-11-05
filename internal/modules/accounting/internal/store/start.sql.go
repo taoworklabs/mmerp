@@ -32,7 +32,7 @@ func (q *Queries) IsLegalEntity(ctx context.Context, id int64) (bool, error) {
 }
 
 const listStarts = `-- name: ListStarts :many
-SELECT o.id AS legal_entity_id, s.start_date
+SELECT o.id AS legal_entity_id, s.start_date, EXISTS (SELECT 1 FROM accounting.entries e WHERE e.legal_entity_id = o.id) AS fixed
 FROM iam.org_units o LEFT JOIN accounting.starts s ON s.legal_entity_id = o.id
 WHERE o.kind = 'company' ORDER BY o.id
 `
@@ -40,6 +40,7 @@ WHERE o.kind = 'company' ORDER BY o.id
 type ListStartsRow struct {
 	LegalEntityID int64
 	StartDate     pgtype.Date
+	Fixed         bool
 }
 
 func (q *Queries) ListStarts(ctx context.Context) ([]ListStartsRow, error) {
@@ -51,7 +52,7 @@ func (q *Queries) ListStarts(ctx context.Context) ([]ListStartsRow, error) {
 	var items []ListStartsRow
 	for rows.Next() {
 		var i ListStartsRow
-		if err := rows.Scan(&i.LegalEntityID, &i.StartDate); err != nil {
+		if err := rows.Scan(&i.LegalEntityID, &i.StartDate, &i.Fixed); err != nil {
 			return nil, err
 		}
 		items = append(items, i)

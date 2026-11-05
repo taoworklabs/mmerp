@@ -26,8 +26,7 @@ func (s *Service) Starts(ctx context.Context) ([]Start, error) {
 	}
 	out := make([]Start, 0, len(rows))
 	for _, r := range rows {
-		// TODO(task5): Fixed once the legal entity has entries.
-		out = append(out, Start{LegalEntityID: r.LegalEntityID, StartDate: platform.DatePtr(r.StartDate)})
+		out = append(out, Start{LegalEntityID: r.LegalEntityID, StartDate: platform.DatePtr(r.StartDate), Fixed: r.Fixed})
 	}
 	return out, nil
 }
@@ -42,7 +41,17 @@ func (s *Service) SetStart(ctx context.Context, legalEntity int64, date *string)
 		if !ok {
 			return platform.ErrNotFound
 		}
-		// TODO(task5): ErrStartDateFixed once accounting.entries has a row for this legal entity.
+		// Locked before the check, so the first entry under the old date waits or is seen.
+		if err := store.LockStart.Run(ctx, legalEntity); err != nil {
+			return err
+		}
+		fixed, err := store.HasEntries.Run(ctx, legalEntity)
+		if err != nil {
+			return err
+		}
+		if fixed {
+			return ErrStartDateFixed
+		}
 		if date == nil {
 			err = store.ClearStart.Run(ctx, legalEntity)
 		} else {

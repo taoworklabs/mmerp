@@ -1,5 +1,5 @@
 -- name: ListStarts :many
-SELECT o.id AS legal_entity_id, s.start_date
+SELECT o.id AS legal_entity_id, s.start_date, EXISTS (SELECT 1 FROM accounting.entries e WHERE e.legal_entity_id = o.id) AS fixed
 FROM iam.org_units o LEFT JOIN accounting.starts s ON s.legal_entity_id = o.id
 WHERE o.kind = 'company' ORDER BY o.id;
 
