@@ -15,3 +15,8 @@ ON CONFLICT (legal_entity_id) DO UPDATE SET start_date = EXCLUDED.start_date;
 
 -- name: ClearStart :exec
 DELETE FROM accounting.starts WHERE legal_entity_id = $1;
+
+-- name: RecordedBetween :one
+-- Whether a live posting recording of the legal entity is dated in [from, until].
+SELECT EXISTS (SELECT 1 FROM posting.recordings r JOIN record.documents d ON d.doc_type = r.doc_type AND d.id = r.doc_id
+WHERE r.voided_at IS NULL AND d.legal_entity_id = @legal_entity_id AND d.date BETWEEN @from_date::date AND @until::date);

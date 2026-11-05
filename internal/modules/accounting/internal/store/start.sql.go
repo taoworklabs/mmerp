@@ -63,6 +63,25 @@ func (q *Queries) ListStarts(ctx context.Context) ([]ListStartsRow, error) {
 	return items, nil
 }
 
+const recordedBetween = `-- name: RecordedBetween :one
+SELECT EXISTS (SELECT 1 FROM posting.recordings r JOIN record.documents d ON d.doc_type = r.doc_type AND d.id = r.doc_id
+WHERE r.voided_at IS NULL AND d.legal_entity_id = $1 AND d.date BETWEEN $2::date AND $3::date)
+`
+
+type RecordedBetweenParams struct {
+	LegalEntityID int64
+	FromDate      pgtype.Date
+	Until         pgtype.Date
+}
+
+// Whether a live posting recording of the legal entity is dated in [from, until].
+func (q *Queries) RecordedBetween(ctx context.Context, arg RecordedBetweenParams) (bool, error) {
+	row := q.db.QueryRow(ctx, recordedBetween, arg.LegalEntityID, arg.FromDate, arg.Until)
+	var exists bool
+	err := row.Scan(&exists)
+	return exists, err
+}
+
 const setStart = `-- name: SetStart :exec
 INSERT INTO accounting.starts (legal_entity_id, start_date) VALUES ($1, $2)
 ON CONFLICT (legal_entity_id) DO UPDATE SET start_date = EXCLUDED.start_date

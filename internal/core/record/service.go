@@ -913,6 +913,12 @@ func (s *Service) lock(ctx context.Context, ref Ref) (Doc, pgtype.Date, error) {
 	return d, locked, err
 }
 
+// SharePeriod share-locks a legal entity's period lock row, the first lock of the shared
+// order, for a module that checks its own rows against the lock date.
+func (s *Service) SharePeriod(ctx context.Context, legalEntity int64) (pgtype.Date, error) {
+	return s.sharePeriod(ctx, legalEntity)
+}
+
 func (s *Service) sharePeriod(ctx context.Context, legalEntity int64) (pgtype.Date, error) {
 	if err := store.EnsurePeriodLock.Run(ctx, legalEntity); err != nil {
 		return pgtype.Date{}, err

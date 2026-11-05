@@ -71,3 +71,49 @@ func TestStartOf(t *testing.T) {
 		t.Fatalf("set %v %v", d, err)
 	}
 }
+
+func startErr(t *testing.T, err error) (string, any) {
+	t.Helper()
+	if err == nil {
+		return "", nil
+	}
+	var e *platform.Error
+	if !errors.As(err, &e) {
+		t.Fatal(err)
+	}
+	return e.Code, e.Params["locked_until"]
+}
+
+// A document recorded while it was before the start date, then locked, cannot become
+// pending inside the locked period by moving the start earlier.
+func TestSetStartRefusedIntoLockedPeriod(t *testing.T) {
+	l := newLedger(t)
+	l.core.Record.SetBeforeLock(l.s.BeforeLock)
+	later := "2026-07-01"
+	if err := l.s.SetStart(l.core.Admin, l.le, &later); err != nil {
+		t.Fatal(err)
+	}
+	l.record(t, l.doc(t, "2026-03-31"), l.payroll()...)
+	if c := lockCode(t, l, "2026-06-30"); c != "" {
+		t.Fatalf("lock %q", c)
+	}
+	early := "2026-01-01"
+	if c, p := startErr(t, l.s.SetStart(l.core.Admin, l.le, &early)); c != "start_date_in_locked_period" || p != "2026-06-30" {
+		t.Fatalf("moved earlier: %q %v", c, p)
+	}
+	// Setting one for the first time after the lock is the same.
+	if err := l.s.SetStart(l.core.Admin, l.le, nil); err != nil {
+		t.Fatal(err)
+	}
+	if c, _ := startErr(t, l.s.SetStart(l.core.Admin, l.le, &early)); c != "start_date_in_locked_period" {
+		t.Fatalf("first start: %q", c)
+	}
+	// After the lock date, or with nothing recorded in the locked part, is allowed.
+	if err := l.s.SetStart(l.core.Admin, l.le, &later); err != nil {
+		t.Fatalf("after lock: %v", err)
+	}
+	inside := "2026-04-01"
+	if err := l.s.SetStart(l.core.Admin, l.le, &inside); err != nil {
+		t.Fatalf("no lines in locked part: %v", err)
+	}
+}

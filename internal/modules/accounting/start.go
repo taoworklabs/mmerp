@@ -3,6 +3,7 @@ package accounting
 import (
 	"context"
 	"errors"
+	"time"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
@@ -41,6 +42,11 @@ func (s *Service) SetStart(ctx context.Context, legalEntity int64, date *string)
 		if !ok {
 			return platform.ErrNotFound
 		}
+		// The period row before the starts row, as every document write takes them.
+		locked, err := s.d.Record.SharePeriod(ctx, legalEntity)
+		if err != nil {
+			return err
+		}
 		// Locked before the check, so the first entry under the old date waits or is seen.
 		if err := store.LockStart.Run(ctx, legalEntity); err != nil {
 			return err
@@ -51,6 +57,19 @@ func (s *Service) SetStart(ctx context.Context, legalEntity int64, date *string)
 		}
 		if fixed {
 			return ErrStartDateFixed
+		}
+		// Documents recorded in the locked part would become pending where nothing can post.
+		if date != nil && locked.Valid {
+			until := locked.Time.Format(time.DateOnly)
+			if *date <= until {
+				in, err := store.RecordedBetween.Run(ctx, store.RecordedBetweenParams{LegalEntityID: legalEntity, FromDate: platform.NullDate(date), Until: locked})
+				if err != nil {
+					return err
+				}
+				if in {
+					return &platform.Error{Status: ErrStartDateInLockedPeriod.Status, Code: ErrStartDateInLockedPeriod.Code, Params: map[string]any{"locked_until": until}}
+				}
+			}
 		}
 		if date == nil {
 			err = store.ClearStart.Run(ctx, legalEntity)

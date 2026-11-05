@@ -57,8 +57,8 @@ func (s *Service) reconcile(ctx context.Context, ref record.Ref) error {
 	if posted == liveID {
 		return save()
 	}
-	// What the ledger lacks for a document (its first posting, or the reversal of one cancelled
-	// while accounting was off) may land in a locked period.
+	// What the ledger lacks for a document (its first posting, or a reversal) may land in a
+	// period locked while accounting was off; SetStart keeps any other way out.
 	if posted.Valid {
 		entry, err := store.EntryOfRecording.Run(ctx, posted)
 		if err == nil {

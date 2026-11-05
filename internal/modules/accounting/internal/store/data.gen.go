@@ -56,3 +56,4 @@ var IsLegalEntity = data.OneArg("accounting.IsLegalEntity", newQ, (*Queries).IsL
 var StartOf = data.OneArg("accounting.StartOf", newQ, (*Queries).StartOf)
 var SetStart = data.ExecArg("accounting.SetStart", newQ, (*Queries).SetStart)
 var ClearStart = data.ExecArg("accounting.ClearStart", newQ, (*Queries).ClearStart)
+var RecordedBetween = data.OneArg("accounting.RecordedBetween", newQ, (*Queries).RecordedBetween)

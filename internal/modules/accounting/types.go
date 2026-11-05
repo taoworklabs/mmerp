@@ -23,7 +23,9 @@ var (
 	ErrAccountNotPostable   = &platform.Error{Status: http.StatusUnprocessableEntity, Code: "account_not_postable"}
 	ErrRuleSideInvalid      = &platform.Error{Status: http.StatusUnprocessableEntity, Code: "rule_side_invalid"}
 	ErrStartDateFixed       = &platform.Error{Status: http.StatusConflict, Code: "start_date_fixed"}
-	ErrAccountInUse         = &platform.Error{Status: http.StatusConflict, Code: "account_in_use"}
+	// Params: locked_until.
+	ErrStartDateInLockedPeriod = &platform.Error{Status: http.StatusConflict, Code: "start_date_in_locked_period"}
+	ErrAccountInUse            = &platform.Error{Status: http.StatusConflict, Code: "account_in_use"}
 	// Fewer than two lines, or debits differ from credits.
 	ErrEntryUnbalanced = &platform.Error{Status: http.StatusUnprocessableEntity, Code: "entry_unbalanced"}
 )
