@@ -14,8 +14,10 @@ export type ButtonBaseProps = React.ComponentPropsWithRef<'button'> & {
 }
 
 function Plain({ render, focusableWhenDisabled, ...props }: ButtonBaseProps & { render: RenderProp }) {
-  const { disabled, ...rest } = props
-  return useRender({ defaultTagName: 'button', render, props: { ...rest, 'aria-disabled': disabled || undefined, tabIndex: disabled && !focusableWhenDisabled ? -1 : undefined } })
+  const { disabled, onClick, ...rest } = props
+  // A link has no native disabled; block activation (click and Enter, which fires click) like Base UI does.
+  const guardedClick = disabled ? (event: React.MouseEvent<HTMLButtonElement>) => event.preventDefault() : onClick
+  return useRender({ defaultTagName: 'button', render, props: { ...rest, onClick: guardedClick, 'aria-disabled': disabled || undefined, tabIndex: disabled && !focusableWhenDisabled ? -1 : undefined } })
 }
 
 export function ButtonBase({ render, ...props }: ButtonBaseProps) {
