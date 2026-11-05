@@ -83,7 +83,7 @@ describe('isShort', () => {
 describe('deliveryStateBadge', () => {
   it('shows only a partial or full delivery', () => {
     expect(deliveryStateBadge('partial')).toEqual({ tone: 'info', label: 'sales.order.delivery_state.partial' })
-    expect(deliveryStateBadge('full')).toEqual({ tone: 'positive', label: 'sales.order.delivery_state.full' })
+    expect(deliveryStateBadge('full')).toEqual({ tone: 'success', label: 'sales.order.delivery_state.full' })
     expect(deliveryStateBadge('none')).toBeNull()
     expect(deliveryStateBadge('not_applicable')).toBeNull()
     expect(deliveryStateBadge(undefined)).toBeNull()

@@ -55,7 +55,7 @@
   cursor: not-allowed;
 }
 
-.item[data-color='danger'] {
+.item[data-tone='danger'] {
   color: var(--mmerp-color-danger-light-color);
 }
 

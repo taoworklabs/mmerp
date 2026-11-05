@@ -80,7 +80,7 @@ export function MailServerPage() {
       actions={
         server.data && (
           <Group gap="xs">
-            <Button variant="subtle" color="danger" leftSection={<IconTrash {...icon.button} />} onClick={() => void remove()}>
+            <Button variant="subtle" tone="danger" leftSection={<IconTrash {...icon.button} />} onClick={() => void remove()}>
               {t('core.mail.delete')}
             </Button>
             <Button variant="default" leftSection={<IconMailForward {...icon.button} />} onClick={() => void test()}>

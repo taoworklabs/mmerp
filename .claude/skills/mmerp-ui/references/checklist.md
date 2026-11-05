@@ -6,14 +6,14 @@ Run every item against the change before calling it done. An item that does not 
 
 - [ ] No colour code, `rgb(`, `hsl(` in `web/src`; colours live in the `@mmerp/ui` tokens (`make lint` checks).
 - [ ] No pixel or rem number for spacing, font size or radius in a component; only token keys (`gap="xs"`, `size="xs"`) or `var(--mmerp-…)`. A component-specific size sits in a `shared/ui` CSS module with a comment.
-- [ ] Colours named by meaning (`color="danger"`, `tone="dimmed"`), never by hue (`"red"`, `"orange"`) or step (`"gray.6"`); accent hues only name a kind (avatars, org unit kinds, file types), never a state.
+- [ ] Colours named by meaning (`tone="danger"`, `tone="dimmed"`), never by hue (`"red"`, `"orange"`) or step (`"gray.6"`); accent hues only name a kind (avatars, org unit kinds, file types), never a state.
 - [ ] Icons through `icon.text` / `icon.button` / `icon.empty`.
 - [ ] No `style` attribute and no CSS file in an area.
 
 ## Components
 
 - [ ] Built from an existing `shared/ui` template and components; anything new and generic is in `shared/ui` with a `/dev/ui` entry and a row in `components.md`.
-- [ ] One primary button per view; others by `components.md` (default, subtle, light); the way out beside the primary is `subtle` grey; `color="danger"` only for a step that loses data.
+- [ ] One primary button per view; others by `components.md` (default, subtle, light); the way out beside the primary is `subtle` grey; `tone="danger"` only for a step that loses data.
 - [ ] Buttons keep the default size (30px) everywhere, with `icon.button`; no `size` on a button. Controls in one strip share one height.
 - [ ] Status through `DocumentStatus` (documents) or `StatusBadge` (everything else).
 - [ ] Comments and history through `ActivityFeed` (`activity` on `DocumentPage`; on a `RecordPage` the "Hoạt động" tab, and `recent` in the overview's digest), never a history or discussion panel of their own.

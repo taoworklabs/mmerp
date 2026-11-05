@@ -10,7 +10,7 @@ export function UserBadges({ user }: { user: Pick<User, 'root' | 'locked'> }) {
   return (
     <Group gap="xs">
       {user.root && <StatusBadge tone="info">{t('core.user.root')}</StatusBadge>}
-      {user.locked && <StatusBadge tone="negative">{t('core.user.locked')}</StatusBadge>}
+      {user.locked && <StatusBadge tone="danger">{t('core.user.locked')}</StatusBadge>}
     </Group>
   )
 }

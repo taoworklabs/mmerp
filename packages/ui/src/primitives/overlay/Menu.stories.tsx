@@ -19,7 +19,7 @@ export const Default: StoryObj<{ onRename(): void; onDelete(): void }> = {
       <Menu.Popup>
         <Menu.Item onClick={args.onRename}>Đổi tên</Menu.Item>
         <Menu.Item>Lưu trữ</Menu.Item>
-        <Menu.Item color="danger" onClick={args.onDelete}>
+        <Menu.Item tone="danger" onClick={args.onDelete}>
           Xóa
         </Menu.Item>
       </Menu.Popup>
@@ -58,7 +58,7 @@ export const Typeahead: Story = {
       <Menu.Popup>
         <Menu.Item>Đổi tên</Menu.Item>
         <Menu.Item>Lưu trữ</Menu.Item>
-        <Menu.Item color="danger">Xóa</Menu.Item>
+        <Menu.Item tone="danger">Xóa</Menu.Item>
       </Menu.Popup>
     </Menu.Root>
   ),
@@ -83,7 +83,7 @@ export const WithLabelAndSeparator: Story = {
         <Menu.Label>Thao tác</Menu.Label>
         <Menu.Item leftSection={<span aria-hidden="true">Đ</span>}>Đổi tên</Menu.Item>
         <Menu.Separator />
-        <Menu.Item color="danger" disabled>
+        <Menu.Item tone="danger" disabled>
           Xóa
         </Menu.Item>
       </Menu.Popup>

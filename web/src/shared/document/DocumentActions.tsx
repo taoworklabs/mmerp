@@ -83,12 +83,12 @@ export function DocumentActions({ docType, id, version, number, actions, listPat
         <ExportButton kind={printKind ?? `printing.${docType}`} params={{ id }} label={printLabel ?? t('shared.document.action.print')} icon={IconPrinter} />
       )}
       {has('delete') && (
-        <Button variant="subtle" color="danger" leftSection={<IconTrash {...icon.button} />} disabled={busy} onClick={() => void destructive('delete', remove)}>
+        <Button variant="subtle" tone="danger" leftSection={<IconTrash {...icon.button} />} disabled={busy} onClick={() => void destructive('delete', remove)}>
           {t('shared.document.action.delete')}
         </Button>
       )}
       {has('cancel') && (
-        <Button variant="subtle" color="danger" leftSection={<IconX {...icon.button} />} disabled={busy} onClick={() => void destructive('cancel', transition('cancelled'))}>
+        <Button variant="subtle" tone="danger" leftSection={<IconX {...icon.button} />} disabled={busy} onClick={() => void destructive('cancel', transition('cancelled'))}>
           {t('shared.document.action.cancel')}
         </Button>
       )}

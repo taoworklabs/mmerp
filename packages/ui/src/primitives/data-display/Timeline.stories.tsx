@@ -41,13 +41,13 @@ export const Default: Story = {
 export const Coloured: Story = {
   render: () => (
     <Timeline>
-      <Timeline.Item title="Trưởng phòng đã duyệt" active color="success">
+      <Timeline.Item title="Trưởng phòng đã duyệt" active tone="success">
         01/10/2026
       </Timeline.Item>
-      <Timeline.Item title="Giám đốc đang xem" active color="warning" lineVariant="dashed">
+      <Timeline.Item title="Giám đốc đang xem" active tone="warning" lineVariant="dashed">
         02/10/2026
       </Timeline.Item>
-      <Timeline.Item title="Kế toán" active color="gray" />
+      <Timeline.Item title="Kế toán" active tone="neutral" />
     </Timeline>
   ),
   play: async ({ canvasElement }) => {

@@ -25,7 +25,7 @@ export const Default: Story = {
     children: (
       <>
         <Button variant="default">Xuất file</Button>
-        <Button color="danger" variant="outline">
+        <Button tone="danger" variant="outline">
           Xóa
         </Button>
       </>

@@ -50,7 +50,7 @@ export function DocPage({ path, example, variants, doDont, code }: { path: Path;
   const snippet = [imports, code].filter(Boolean).join('\n\n')
   const tag =
     entry.layer === 'kit' ? (
-      <Badge variant="light" color="gray">
+      <Badge variant="light" tone="neutral">
         {t('shared.devui.source_kit')}
       </Badge>
     ) : entry.layer === 'mmerp' ? (

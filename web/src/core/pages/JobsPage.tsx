@@ -20,7 +20,7 @@ import { icon } from '@/shared/ui/theme'
 // after its record type (or its own name, like hrm.payslip).
 const printed = (j: Job) => (j.target?.startsWith('printing.') ? j.target.slice('printing.'.length) : null)
 
-const tone: Record<Job['state'], StatusTone> = { queued: 'neutral', running: 'info', retrying: 'warning', completed: 'positive', failed: 'negative' }
+const tone: Record<Job['state'], StatusTone> = { queued: 'neutral', running: 'info', retrying: 'warning', completed: 'success', failed: 'danger' }
 
 // The user's own background jobs (imports, exports) of the last 7 days, newest first; an
 // administrator may list the system jobs instead, and only failing ones.

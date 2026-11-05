@@ -56,7 +56,7 @@ function DialogRoot({
           <div className={styles.header}>
             <BaseDialog.Title className={styles.title}>{title}</BaseDialog.Title>
             {withCloseButton && (
-              <ActionIcon variant="subtle" color="gray" aria-label={closeLabel} onClick={onClose}>
+              <ActionIcon variant="subtle" tone="neutral" aria-label={closeLabel} onClick={onClose}>
                 <CloseIcon size={12} />
               </ActionIcon>
             )}

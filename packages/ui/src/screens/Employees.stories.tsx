@@ -118,7 +118,7 @@ function PersonAvatar({ name, size = 30 }: { name: string; size?: number }) {
   let h = 0
   for (const ch of name) h = (h * 31 + ch.codePointAt(0)!) >>> 0
   return (
-    <Avatar alt="" size={size} color={avatarColors[h % avatarColors.length]} aria-hidden>
+    <Avatar alt="" size={size} accent={avatarColors[h % avatarColors.length]} aria-hidden>
       {initials(name)}
     </Avatar>
   )
@@ -134,7 +134,7 @@ function PersonName({ name }: { name: string }) {
 }
 
 function Status({ status }: { status: Employee['status'] }) {
-  return status === 'active' ? <Badge color="success">Đang làm việc</Badge> : <Badge color="gray">Đã nghỉ việc</Badge>
+  return status === 'active' ? <Badge tone="success">Đang làm việc</Badge> : <Badge tone="neutral">Đã nghỉ việc</Badge>
 }
 
 // MissingValue is an empty field's placeholder: "+ Bổ sung" where a value would otherwise sit.
@@ -189,18 +189,18 @@ function Shell({ children }: { children: ReactNode }) {
           <Group gap="xs" wrap={false}>
             <Tooltip label="Thông báo">
               <Indicator label={3}>
-                <ActionIcon variant="subtle" color="gray" aria-label="Thông báo, 3 chưa đọc">
+                <ActionIcon variant="subtle" tone="neutral" aria-label="Thông báo, 3 chưa đọc">
                   <IconBell {...icon.button} aria-hidden />
                 </ActionIcon>
               </Indicator>
             </Tooltip>
             <Tooltip label="Hộp duyệt">
-              <ActionIcon variant="subtle" color="gray" aria-label="Hộp duyệt">
+              <ActionIcon variant="subtle" tone="neutral" aria-label="Hộp duyệt">
                 <IconInbox {...icon.button} aria-hidden />
               </ActionIcon>
             </Tooltip>
             <Tooltip label="Tác vụ nền">
-              <ActionIcon variant="subtle" color="gray" aria-label="Tác vụ nền">
+              <ActionIcon variant="subtle" tone="neutral" aria-label="Tác vụ nền">
                 <IconHourglass {...icon.button} aria-hidden />
               </ActionIcon>
             </Tooltip>
@@ -209,7 +209,7 @@ function Shell({ children }: { children: ReactNode }) {
                   already just the "Quản trị" text, matching it exactly; on a phone that text is only
                   hidden visually, so the name stays. */}
               <Menu.Trigger
-                render={<Button variant="subtle" color="gray" rightSection={mobile ? undefined : <IconChevronDown {...icon.text} aria-hidden />} />}
+                render={<Button variant="subtle" tone="neutral" rightSection={mobile ? undefined : <IconChevronDown {...icon.text} aria-hidden />} />}
               >
                 <Group gap="xs" wrap={false}>
                   <PersonAvatar name="Quản trị" size={24} />
@@ -261,7 +261,7 @@ function Shell({ children }: { children: ReactNode }) {
       }
       navbarFooter={
         <Tooltip label={collapsed ? 'Mở rộng menu' : 'Thu gọn menu'} side="right">
-          <ActionIcon variant="subtle" color="gray" aria-label={collapsed ? 'Mở rộng menu' : 'Thu gọn menu'} onClick={() => setCollapsed(!collapsed)}>
+          <ActionIcon variant="subtle" tone="neutral" aria-label={collapsed ? 'Mở rộng menu' : 'Thu gọn menu'} onClick={() => setCollapsed(!collapsed)}>
             {collapsed ? <IconLayoutSidebarLeftExpand {...icon.button} aria-hidden /> : <IconLayoutSidebarLeftCollapse {...icon.button} aria-hidden />}
           </ActionIcon>
         </Tooltip>
@@ -417,7 +417,7 @@ function ListScreen({ go }: { go: (route: Route) => void }) {
         menu={() => (
           <>
             <Menu.Item leftSection={<IconArrowsExchange {...icon.text} aria-hidden />}>Điều chuyển</Menu.Item>
-            <Menu.Item color="danger" leftSection={<IconUserOff {...icon.text} aria-hidden />}>
+            <Menu.Item tone="danger" leftSection={<IconUserOff {...icon.text} aria-hidden />}>
               Cho nghỉ việc
             </Menu.Item>
           </>
@@ -456,7 +456,7 @@ function MainInfoPanel({ employee: e }: { employee: Employee }) {
             <DateInput label="Ngày vào làm" required value={hire} onChange={setHire} {...dateProps} />
           </FormFields>
           <FormBar>
-            <Button variant="subtle" color="gray" onClick={() => setEditing(false)}>
+            <Button variant="subtle" tone="neutral" onClick={() => setEditing(false)}>
               Hủy
             </Button>
             <Button onClick={() => setEditing(false)}>Lưu</Button>
@@ -520,7 +520,7 @@ function SideColumn() {
             <Text weight={600} render={<span />}>
               <Anchor href="#">HĐ-2024-0012</Anchor>
             </Text>
-            <Badge color="success">Đã ghi sổ</Badge>
+            <Badge tone="success">Đã ghi sổ</Badge>
           </Group>
           <Text size="sm" tone="dimmed">
             Không xác định thời hạn, từ 01/03/2024
@@ -585,7 +585,7 @@ function DetailScreen({ id, go }: { id: number; go: (route: Route) => void }) {
                   Điều chuyển
                 </Button>
                 <MoreActions label="Thao tác khác" place="page">
-                  <Menu.Item color="danger" leftSection={<IconUserOff {...icon.text} aria-hidden />}>
+                  <Menu.Item tone="danger" leftSection={<IconUserOff {...icon.text} aria-hidden />}>
                     Cho nghỉ việc
                   </Menu.Item>
                 </MoreActions>
@@ -673,7 +673,7 @@ function NewScreen({ go }: { go: (route: Route) => void }) {
             title="Thông tin chính"
             description="Những gì mọi nhân viên cần có"
             icon={<IconUser {...icon.text} aria-hidden />}
-            badge={mainErrors > 0 && <Badge color="danger" aria-label={`${mainErrors} trường còn lỗi`}>{mainErrors}</Badge>}
+            badge={mainErrors > 0 && <Badge tone="danger" aria-label={`${mainErrors} trường còn lỗi`}>{mainErrors}</Badge>}
           >
             <FormSection.Row>
               <TextInput label="Họ tên" required maxLength={200} value={name} onChange={(e) => setName(e.currentTarget.value)} error={tried && !name ? 'Bắt buộc nhập' : undefined} />
@@ -743,7 +743,7 @@ function NewScreen({ go }: { go: (route: Route) => void }) {
             )}
           </FormSection>
           <FormBar>
-            <Button variant="subtle" color="gray" onClick={() => go({ page: 'list' })}>
+            <Button variant="subtle" tone="neutral" onClick={() => go({ page: 'list' })}>
               Hủy
             </Button>
             <Button type="submit">Thêm nhân viên</Button>

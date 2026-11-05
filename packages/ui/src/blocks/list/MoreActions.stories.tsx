@@ -18,7 +18,7 @@ export const Row: StoryObj<{ onArchive(): void }> = {
   render: (args) => (
     <MoreActions label="Thao tác khác">
       <Menu.Item onClick={args.onArchive}>Lưu trữ</Menu.Item>
-      <Menu.Item color="danger">Xóa</Menu.Item>
+      <Menu.Item tone="danger">Xóa</Menu.Item>
     </MoreActions>
   ),
   play: async ({ canvasElement, args }) => {

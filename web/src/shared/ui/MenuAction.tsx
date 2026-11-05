@@ -7,7 +7,7 @@ import { icon as iconSize } from './theme'
 // action that loses something.
 export function MenuAction({ icon: Icon, danger, onClick, children }: { icon: TablerIcon; danger?: boolean; onClick: () => void; children: ReactNode }) {
   return (
-    <Menu.Item color={danger ? 'danger' : undefined} leftSection={<Icon {...iconSize.text} />} onClick={onClick}>
+    <Menu.Item tone={danger ? 'danger' : undefined} leftSection={<Icon {...iconSize.text} />} onClick={onClick}>
       {children}
     </Menu.Item>
   )

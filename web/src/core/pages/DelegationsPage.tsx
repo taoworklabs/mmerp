@@ -68,7 +68,7 @@ export default function DelegationsPage() {
       header: t('core.delegations.status'),
       role: 'status',
       kind: 'status',
-      render: (d) => <StatusBadge tone={d.active ? 'positive' : 'info'}>{t(d.active ? 'core.delegations.active' : 'core.delegations.upcoming')}</StatusBadge>,
+      render: (d) => <StatusBadge tone={d.active ? 'success' : 'info'}>{t(d.active ? 'core.delegations.active' : 'core.delegations.upcoming')}</StatusBadge>,
     },
   ]
 

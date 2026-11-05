@@ -75,7 +75,7 @@ export const WithForm: Story = {
       <>
         <TextInput label="Họ và tên" placeholder="Nhập họ và tên" />
         <Dialog.Actions>
-          <Button variant="subtle" color="gray">
+          <Button variant="subtle" tone="neutral">
             Hủy
           </Button>
           <Button type="submit">Lưu</Button>
@@ -129,7 +129,7 @@ export const DialogWithMenu: Story = {
         <Menu.Trigger render={<Button>Mở menu</Button>} />
         <Menu.Popup>
           <Menu.Item>Đổi tên</Menu.Item>
-          <Menu.Item color="danger">Xóa</Menu.Item>
+          <Menu.Item tone="danger">Xóa</Menu.Item>
         </Menu.Popup>
       </Menu.Root>
     ),
@@ -162,10 +162,10 @@ export const InitialFocus: Story = {
       return (
         <Demo {...args} initialFocus={confirm}>
           <Dialog.Actions>
-            <Button variant="subtle" color="gray">
+            <Button variant="subtle" tone="neutral">
               Quay lại
             </Button>
-            <Button ref={confirm} color="danger">
+            <Button ref={confirm} tone="danger">
               Xóa tệp
             </Button>
           </Dialog.Actions>

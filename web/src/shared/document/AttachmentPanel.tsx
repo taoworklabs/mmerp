@@ -44,16 +44,16 @@ export function useAttachmentSection(docType: string, id: number): DocumentSecti
 }
 
 // Each kind of file has its own icon and accent colour, so a list of them reads at a glance.
-const photo = { Icon: IconPhoto, color: 'success' as const }
-const fileLooks: Record<string, { Icon: TablerIcon; color: ThemeIconProps['color'] }> = {
-  pdf: { Icon: IconFileTypePdf, color: 'danger' },
+const photo = { Icon: IconPhoto, tone: 'success' as const }
+const fileLooks: Record<string, { Icon: TablerIcon; tone: ThemeIconProps['tone'] }> = {
+  pdf: { Icon: IconFileTypePdf, tone: 'danger' },
   png: photo,
   jpg: photo,
   jpeg: photo,
-  docx: { Icon: IconFileTypeDocx, color: 'primary' },
-  xlsx: { Icon: IconFileTypeXls, color: 'success' },
+  docx: { Icon: IconFileTypeDocx, tone: 'primary' },
+  xlsx: { Icon: IconFileTypeXls, tone: 'success' },
 }
-const fileLook = (name: string) => fileLooks[name.toLowerCase().split('.').pop() ?? ''] ?? { Icon: IconFile, color: 'gray' }
+const fileLook = (name: string) => fileLooks[name.toLowerCase().split('.').pop() ?? ''] ?? { Icon: IconFile, tone: 'neutral' }
 
 // AttachmentPanel lists a record's files to download and, as allowed_actions say, adds and removes
 // them: by clicking the empty list or "Add file" under the files, or by dropping files anywhere on the panel.
@@ -197,10 +197,10 @@ function AttachmentPanel({ docType, id }: { docType: string; id: number }) {
         // The files sit in a frame, like a table inside a page; it lights up while files are dragged over the panel.
         <Paper withBorder className={classes.list} data-active={dragging || undefined}>
           {q.data.items.map((a) => {
-            const { Icon, color } = fileLook(a.name)
+            const { Icon, tone } = fileLook(a.name)
             return (
               <Group key={a.id} gap="sm" wrap={false} align="center" className={classes.row}>
-                <ThemeIcon variant="light" color={color} size={36} aria-hidden>
+                <ThemeIcon variant="light" tone={tone} size={36} aria-hidden>
                   <Icon {...icon.button} />
                 </ThemeIcon>
                 <Stack gap={0} fill>
@@ -212,7 +212,7 @@ function AttachmentPanel({ docType, id }: { docType: string; id: number }) {
                   </Text>
                 </Stack>
                 {a.allowed_actions.includes('delete') && (
-                  <ActionIcon variant="subtle" color="gray" aria-label={t('shared.attachments.remove_named', { name: a.name })} onClick={() => void remove(a)}>
+                  <ActionIcon variant="subtle" tone="neutral" aria-label={t('shared.attachments.remove_named', { name: a.name })} onClick={() => void remove(a)}>
                     <IconTrash {...icon.text} />
                   </ActionIcon>
                 )}

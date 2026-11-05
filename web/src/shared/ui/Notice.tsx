@@ -1,9 +1,9 @@
-import { Alert } from '@mmerp/ui'
+import { Alert, type AlertProps } from '@mmerp/ui'
 import { IconAlertCircle, IconAlertTriangle, IconCircleCheck, IconInfoCircle, IconSparkles, type Icon as TablerIcon } from '@tabler/icons-react'
 import type { ReactNode } from 'react'
 import { icon as iconSize } from './theme'
 
-type Tone = 'info' | 'success' | 'warning' | 'danger' | 'discovery'
+type Tone = NonNullable<AlertProps['tone']>
 
 const icons: Record<Tone, TablerIcon> = {
   info: IconInfoCircle,
@@ -32,7 +32,7 @@ export function Notice({
   const Icon = icons[tone]
   return (
     <Alert
-      color={tone}
+      tone={tone}
       title={title}
       icon={icon ?? <Icon {...iconSize.button} />}
       role={announce === 'alert' ? 'alert' : undefined}

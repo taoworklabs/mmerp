@@ -25,10 +25,10 @@ export function useConfirm(): [(o: ConfirmOptions) => Promise<boolean>, ReactNod
       <Stack gap="md">
         <Text>{opts.message}</Text>
         <ModalFooter>
-          <Button variant="subtle" color="gray" onClick={() => close(false)}>
+          <Button variant="subtle" tone="neutral" onClick={() => close(false)}>
             {t('shared.confirm.back')}
           </Button>
-          <Button color={opts.danger ? 'danger' : undefined} onClick={() => close(true)} ref={confirmRef}>
+          <Button tone={opts.danger ? 'danger' : undefined} onClick={() => close(true)} ref={confirmRef}>
             {opts.confirmLabel}
           </Button>
         </ModalFooter>

@@ -6,13 +6,13 @@ How to reach a token:
 
 | From | Use |
 | --- | --- |
-| A `@mmerp/ui` prop in any component | The token key: `gap="xs"`, `padding="md"`, `tone="dimmed"`, `color="danger"`, `size="xs"`, `weight={600}` |
+| A `@mmerp/ui` prop in any component | The token key: `gap="xs"`, `padding="md"`, `tone="dimmed"`, `tone="danger"`, `size="xs"`, `weight={600}` |
 | A CSS module in `shared/ui` | The CSS variable: `var(--mmerp-space-xs)`, `var(--mmerp-color-border)`, `var(--mmerp-color-elevation-surface-sunken)` |
 | An icon | The `icon` constant: `<IconPlus {...icon.button} />` |
 
 ## Colour
 
-Each colour is a ten-step scale, palest (0) to darkest (9). Components read it by role, so a screen names the colour (`color="success"`), never the step.
+Each colour is a ten-step scale, palest (0) to darkest (9). Components read it by role, so a screen names the colour (`tone="success"`), never the step.
 
 | Step | Role | Why |
 | --- | --- | --- |
@@ -37,11 +37,11 @@ Each colour is a ten-step scale, palest (0) to darkest (9). Components read it b
 | surface sunken | `var(--mmerp-color-elevation-surface-sunken)` | `#F8F8F8` | Group and total rows, tile hover, grid cells that take no value |
 | table header | `var(--mmerp-color-table-header)` | `#F4F5F6` | A table's column header row (`DataTable`, `LinesTable`, `CellGrid`): a step deeper than the sunken rows. A list page's table (`ListPage`) sets it to the body colour, so its header reads as part of the page header |
 | disabled | automatic | `#F0F1F2` | Disabled input background |
-| neutral | `color="gray"` | tint `#F0F1F2`, text `#505258` (badges: `#DDDEE1`, `#3B3D42`) | Neutral badges, quiet icon buttons, empty-state icon |
+| neutral | `tone="neutral"` | tint `#F0F1F2`, text `#505258` (badges: `#DDDEE1`, `#3B3D42`) | Neutral badges, quiet icon buttons, empty-state icon |
 
 ### Primary and semantic scales
 
-| Colour | `color=` | Filled (6) | Tint (0) | Text on tint (7) | Means |
+| Colour | `tone=` | Filled (6) | Tint (0) | Text on tint (7) | Means |
 | --- | --- | --- | --- | --- | --- |
 | primary | default | `#1868DB` | `#E9F2FE` | `#1558BC` | The one primary action, links, focus, selected item |
 | success | `"success"` | `#5B7F24` | `#EFFFD6` | `#4C6B1F` | Posted, active, done |
@@ -54,7 +54,7 @@ Field errors and the required `*` use `var(--mmerp-color-error)` = `#AE2E24`.
 
 Selected state, everywhere (navigation, menus, dropdown options, inbox rows): tint `var(--mmerp-color-primary-light)` and text `var(--mmerp-color-primary-light-color)`. Nothing else marks selection.
 
-Avatars take their colour from `PersonAvatar` (derived from the name); set no colour on a person yourself.
+Colour that means something is `tone`, on every kit component (`Button`, `ActionIcon`, `Badge`, `ThemeIcon`, `Indicator`, `Timeline.Item`, `Alert`, toasts, `Menu.Item`, `Text`, `Anchor`); `Text` and `Anchor` also take `dimmed`, and without a tone show their own colour. An avatar's colour means nothing, so `Avatar` takes `accent` (a decorative hue) instead. Avatars take their colour from `PersonAvatar` (derived from the name); set no colour on a person yourself.
 
 Do:
 
@@ -68,7 +68,7 @@ Don't:
 ```tsx
 <Text style={{ color: '#666' }}>…</Text> // colour code and inline style: lint fails
 <Text className={grey6}>…</Text>   // a step instead of a role: use tone="dimmed"
-<Button color="orange">…</Button>  // a hue instead of a meaning: use a role (color="danger", tone="dimmed")
+<Button tone="orange">…</Button>  // a hue instead of a meaning: use a role (tone="danger", tone="dimmed")
 // Accent hues (grape, blue, teal, orange, red, green) only name a kind: PersonAvatar, OrgUnitIcon, the file-type icons of AttachmentPanel.
 <Notice tone="discovery">…</Notice> // discovery for something that is not new
 ```

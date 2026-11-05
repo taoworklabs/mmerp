@@ -88,7 +88,7 @@ export const Colours: Story = {
     <Button
       onClick={() => {
         for (const color of ['success', 'danger', 'info', 'warning'] as const) {
-          toast.show({ message: colourMessages[color], color, timeout: null })
+          toast.show({ message: colourMessages[color], tone: color, timeout: null })
         }
       }}
     >

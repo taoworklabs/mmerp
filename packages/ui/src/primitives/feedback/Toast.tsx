@@ -1,22 +1,23 @@
 import { Toast as BaseToast } from '@base-ui/react/toast'
 import type * as React from 'react'
 import type { StyleVars } from '../../internal/style.ts'
+import type { Tone } from '../../internal/tone.ts'
 import { ActionIcon } from '../input/ActionIcon.tsx'
 import { Button } from '../input/Button.tsx'
 import styles from './Toast.module.css'
 import { CloseIcon } from '../../internal/icons.tsx'
 
-export type ToastColor = 'success' | 'danger' | 'info' | 'warning'
+type ToastTone = Extract<Tone, 'success' | 'danger' | 'info' | 'warning'>
 
 export interface ToastOptions {
   message: React.ReactNode
-  color?: ToastColor
+  tone?: ToastTone
   timeout?: number | null
   action?: { label: string; onClick(): void }
 }
 
 interface ToastData {
-  color: ToastColor
+  tone: ToastTone
   action?: { label: string; onClick(): void }
 }
 
@@ -30,7 +31,7 @@ export const toast = {
     return manager.add({
       description: options.message,
       timeout,
-      data: { color: options.color ?? 'info', action: options.action },
+      data: { tone: options.tone ?? 'info', action: options.action },
     })
   },
   close(id: string) {
@@ -47,9 +48,9 @@ export interface ToasterProps {
 function ToastList({ closeLabel }: { closeLabel: string }) {
   const { toasts, close } = BaseToast.useToastManager<ToastData>()
   return toasts.map((item) => {
-    const color = item.data?.color ?? 'info'
+    const tone = item.data?.tone ?? 'info'
     const action = item.data?.action
-    const vars: StyleVars = { '--mmerp-toast-bar': `var(--mmerp-color-${color}-6)` }
+    const vars: StyleVars = { '--mmerp-toast-bar': `var(--mmerp-color-${tone}-6)` }
     return (
       <BaseToast.Root
         key={item.id}
@@ -72,7 +73,7 @@ function ToastList({ closeLabel }: { closeLabel: string }) {
             {action.label}
           </Button>
         )}
-        <ActionIcon variant="subtle" color="gray" aria-label={closeLabel} onClick={() => close(item.id)}>
+        <ActionIcon variant="subtle" tone="neutral" aria-label={closeLabel} onClick={() => close(item.id)}>
           <CloseIcon size={12} />
         </ActionIcon>
       </BaseToast.Root>

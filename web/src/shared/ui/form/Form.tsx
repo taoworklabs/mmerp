@@ -169,7 +169,7 @@ export function FormSection({ title, description, icon: Icon, wide, compact, chi
       icon={Icon && <Icon {...icon.text} aria-hidden />}
       badge={
         count > 0 && (
-          <Badge color="danger" className={classes.count} aria-label={t('shared.form.section_invalid', { count })}>
+          <Badge tone="danger" className={classes.count} aria-label={t('shared.form.section_invalid', { count })}>
             {count}
           </Badge>
         )
@@ -242,12 +242,12 @@ export function FormActions({ submitLabel, onCancel, cancelLabel, cancelTo }: { 
         </Button>
       )}
       {onCancel && (
-        <Button variant="subtle" color="gray" onClick={onCancel}>
+        <Button variant="subtle" tone="neutral" onClick={onCancel}>
           {cancelLabel}
         </Button>
       )}
       {page && cancelTo && (
-        <Button variant="subtle" color="gray" render={<Link to={cancelTo} />}>
+        <Button variant="subtle" tone="neutral" render={<Link to={cancelTo} />}>
           {t('shared.form.cancel')}
         </Button>
       )}
