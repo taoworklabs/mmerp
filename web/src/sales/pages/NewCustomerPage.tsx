@@ -1,7 +1,6 @@
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router'
 import { useInvalidateRecord } from '@/shared/area'
-import { errorText } from '@/shared/i18n'
 import { notifySuccess } from '@/shared/ui/notify'
 import { Page } from '@/shared/ui/page'
 import { ErrorState, ForbiddenPage, PageSkeleton } from '@/shared/ui/states'
@@ -15,7 +14,7 @@ export function NewCustomerPage() {
   const navigate = useNavigate()
   const actions = useCustomerActions()
   if (actions.isPending) return <PageSkeleton />
-  if (actions.isError) return <ErrorState message={errorText(t, actions.error)} onRetry={() => void actions.refetch()} />
+  if (actions.isError) return <ErrorState queries={[actions]} />
   if (!actions.data.includes('create')) return <ForbiddenPage />
   return (
     <Page centered title={t('sales.customers.create')} breadcrumbs={[{ label: t('sales.customers.title'), to: '/sales/customers' }]}>

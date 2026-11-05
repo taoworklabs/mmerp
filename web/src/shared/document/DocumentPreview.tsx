@@ -1,8 +1,6 @@
 import { FieldList, Stack } from '@mmerp/ui'
 import type { UseQueryResult } from '@tanstack/react-query'
 import type { ReactNode } from 'react'
-import { useTranslation } from 'react-i18next'
-import { errorText } from '@/shared/i18n'
 import { ContentSkeleton, ErrorState } from '@/shared/ui/states'
 import { DocumentStatus, type DocStatus } from './DocumentStatus'
 
@@ -23,9 +21,8 @@ type Props<T> = {
 // its status, then its rows. An area's preview loads outside its screens, so its strings live
 // in the area's meta translations.
 export function DocumentPreview<T extends { status: DocStatus }>({ docType, query, rows, notice }: Props<T>) {
-  const { t } = useTranslation()
   if (query.isPending) return <ContentSkeleton />
-  if (query.isError) return <ErrorState message={errorText(t, query.error)} onRetry={() => void query.refetch()} />
+  if (query.isError) return <ErrorState queries={[query]} />
   const d = query.data
   return (
     <Stack gap="sm">

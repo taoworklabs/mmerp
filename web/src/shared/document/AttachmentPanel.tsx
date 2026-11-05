@@ -68,7 +68,7 @@ function AttachmentPanel({ docType, id }: { docType: string; id: number }) {
   const [ask, confirm] = useConfirm()
   const fileInput = useRef<HTMLInputElement>(null)
   if (q.isPending) return <ContentSkeleton />
-  if (q.isError) return <ErrorState message={errorText(t, q.error)} onRetry={() => void q.refetch()} />
+  if (q.isError) return <ErrorState queries={[q]} />
   if (q.data.hidden)
     return (
       <Text size="sm" tone="dimmed">

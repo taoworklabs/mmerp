@@ -4,7 +4,7 @@ import { Fragment, useId, useState, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { HistoryEntry } from '@/shared/api/core'
 import { useMe } from '@/shared/auth/me'
-import { errorText, formatDateTime } from '@/shared/i18n'
+import { formatDateTime } from '@/shared/i18n'
 import { PersonAvatar } from '@/shared/ui/avatar'
 import { ContentSkeleton, ErrorState } from '@/shared/ui/states'
 import { icon } from '@/shared/ui/theme'
@@ -41,8 +41,7 @@ export function ActivityFeed({ docType, id, recent }: { docType: string; id: num
   const [closed, setClosed] = useState<ReadonlySet<string>>(new Set())
   const ids = useId()
   if (log.isPending || talk.isPending) return <ContentSkeleton />
-  if (log.isError) return <ErrorState message={errorText(t, log.error)} onRetry={() => void log.refetch()} />
-  if (talk.isError) return <ErrorState message={errorText(t, talk.error)} onRetry={() => void talk.refetch()} />
+  if (log.isError || talk.isError) return <ErrorState queries={[log, talk]} />
 
   // The log also notes each comment; the comment itself, with its text, stands for it.
   const audit = [...(log.data ?? [])].reverse().filter((e: HistoryEntry) => e.action !== 'discussion.commented')

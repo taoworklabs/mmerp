@@ -5,7 +5,7 @@ import { useTranslation } from 'react-i18next'
 import { useSearchParams } from 'react-router'
 import { api, unwrap, type PITAuthorisationPerson } from '@/shared/api/hrm'
 import { useMe } from '@/shared/auth/me'
-import { currentYear, errorText } from '@/shared/i18n'
+import { currentYear } from '@/shared/i18n'
 import { DataTable, type Column } from '@/shared/ui/DataTable'
 import { LegalEntityFilter, useLegalEntities, YearFilter } from '@/shared/ui/form'
 import { ListPage } from '@/shared/ui/page'
@@ -41,7 +41,7 @@ export function PITAuthorisationsPage() {
 
   let body
   if (entities.isPending || (entity !== undefined && query.isPending)) body = <ContentSkeleton />
-  else if (entities.isError || query.isError) body = <ErrorState message={errorText(t, entities.error ?? query.error)} onRetry={() => void query.refetch()} />
+  else if (entities.isError || query.isError) body = <ErrorState queries={[entities, query]} />
   else if (entity === undefined || !query.data) body = <EmptyState title={t('hrm.reports.no_legal_entity')} />
   else if (query.data.people.length === 0) body = <EmptyState title={t('hrm.pit_authorisations.empty', { year })} />
   else

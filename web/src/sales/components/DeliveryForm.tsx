@@ -86,7 +86,7 @@ export function DeliveryForm(props: Props) {
         </Stack>
       )
     if (options.error instanceof ApiError && options.error.status === 403) return <ForbiddenPage />
-    if (options.isError) return <ErrorState message={errorText(t, options.error)} onRetry={() => void options.refetch()} />
+    if (options.isError) return <ErrorState queries={[options]} />
   }
   // The options count a draft's own lines as taken; editing it may take them again.
   const data = options.data && props.doc ? withOwnLines(options.data, props.doc.lines) : options.data

@@ -7,7 +7,6 @@ import type { TFunction } from 'i18next'
 import { useTranslation } from 'react-i18next'
 import { useParams } from 'react-router'
 import { api, ApiError, unwrap, type Grant } from '@/shared/api/core'
-import { errorText } from '@/shared/i18n'
 import { PersonAvatar } from '@/shared/ui/avatar'
 import { DataTable, type Column } from '@/shared/ui/DataTable'
 import { Form, FormActions, OrgUnitField, PasswordField, SelectField, passwordErrorText } from '@/shared/ui/form'
@@ -17,7 +16,8 @@ import { MenuAction } from '@/shared/ui/MenuAction'
 import { notifySuccess } from '@/shared/ui/notify'
 import { FormModal, RecordPage, SeeAll, TabContent } from '@/shared/ui/page'
 import { QueryView } from '@/shared/ui/QueryView'
-import { ContentSkeleton, EmptyState, ErrorState, NotFoundPage, PageSkeleton } from '@/shared/ui/states'
+import { loaded } from '@/shared/ui/loaded'
+import { ContentSkeleton, EmptyState, ErrorState } from '@/shared/ui/states'
 import { icon } from '@/shared/ui/theme'
 import { useAction } from '@/shared/ui/useAction'
 import { coreKeys } from '../keys'
@@ -34,10 +34,9 @@ export function UserPage() {
   const user = useQuery({ queryKey: coreKeys.users.detail(id), queryFn: () => unwrap(api.GET('/users/{id}', { params: { path: { id } } })) })
   const grants = useGrants(id)
 
-  if (user.isPending) return <PageSkeleton />
-  if (user.error instanceof ApiError && user.error.status === 404) return <NotFoundPage back={{ to: '/admin/users', label: t('core.user.back') }} />
-  if (user.isError) return <ErrorState message={errorText(t, user.error)} onRetry={() => void user.refetch()} />
-  const u = user.data
+  const state = loaded(user, t, { to: '/admin/users', label: t('core.user.back') })
+  if (!state.ok) return state.fallback
+  const u = state.data
   const count = grants.data?.length
   const toggleLock = () =>
     action.run(
@@ -118,7 +117,7 @@ function RolesDigest({ userId }: { userId: number }) {
       {grants.isPending ? (
         <ContentSkeleton />
       ) : grants.isError ? (
-        <ErrorState message={errorText(t, grants.error)} onRetry={() => void grants.refetch()} />
+        <ErrorState queries={[grants]} />
       ) : grants.data.length === 0 ? (
         <Text size="sm" tone="dimmed">
           {t('core.user.no_roles')}
