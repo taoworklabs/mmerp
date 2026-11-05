@@ -157,7 +157,7 @@ Moving the lock date: `record` takes `FOR UPDATE` on the legal entity's row, che
 - A document operation that started earlier commits first; the period lock checks see its result.
 - A document operation that starts later waits for the period lock to commit, then reads the new lock date and is rejected if the document falls in the newly locked period.
 
-There is no `BeforeLock(legal_entity, date)` hook yet for other modules to refuse a period lock; this hook is added together with `accounting` (see Posting).
+`record` calls `BeforeLock(legal_entity, date)` so other modules can refuse a period lock; `accounting` implements it, and only while the accounting product is enabled (see Posting).
 
 **No period lock while documents are pending approval, or held by a request.** `record` itself refuses to move the lock date if the part of the period about to be locked still contains `pending_approval` documents, or documents held by an open request for any other action (the gate's `HeldInPeriod`), and lists them. If the lock were allowed, these documents would be stuck: the request could never complete, since completion itself checks the period. This check runs while holding `FOR UPDATE` on the legal entity's row, so no document can move to `pending_approval`, or become held, in that period between the check and the commit.
 
@@ -206,22 +206,22 @@ Decision: [ADR-0003](./adr/0003-business-lines-are-data.md). Accounting is an **
 - **Business lines contain no sensitive data tied to an individual.** `posting.lines` and the general ledger are not encrypted, and accounting reads them with SQL. The module must aggregate such lines, for example salaries payable aggregated by department. Per-person detail stays in the owning module's tables, encrypted.
 - Business lines are written even when the tenant has no accounting. `record` knows nothing about posting.
 - `posting` exposes the hook `posting.Hooks{OnChanged func(ctx, ref) error}`, which runs in the transaction that wrote or voided the lines; a `nil` hook is a no-op. `accounting` (in `modules/`, only running when the accounting product is enabled) implements the hook by enqueueing a `(doc_type, doc_id)` job in the same transaction. Without accounting the hook stays `nil`.
-- **Account mapping** (from line kind to account) is done by `accounting` using configurable rules, with defaults following Circular 200 (TT200) and Circular 133 (TT133).
+- **Account mapping** (from line kind to account and side) is done by `accounting` using configurable rules. The generic core ships no defaults; defaults following Circular 200 (TT200) and Circular 133 (TT133) belong to a later localisation pack ([ADR-0050](./adr/0050-accounting-product-and-general-ledger.md)).
 
 ### Posting jobs: reconcile, do not replay
 
 A job carries no change content, only `(doc_type, doc_id)`. The worker always brings the general ledger in line with the **current state** of `posting.lines`:
 
-1. Take `FOR SHARE` on the legal entity's period-lock row (the same lock order as `record`), then lock the document's row in `accounting`'s tracking table (`FOR UPDATE`). Never write journal entries into a locked period, except for the first posting run when accounting is enabled.
-2. Read the current `posting.lines`. If they are in effect, ensure exactly the matching journal entries exist; if voided, ensure the journal entries have been removed. If already in line, do nothing.
+1. Take `FOR SHARE` on the legal entity's period-lock row (the same lock order as `record`), then lock the document's row in `accounting`'s tracking table (`FOR UPDATE`). Never write journal entries into a locked period, except a document's first posting to the ledger. A reversal never writes into a locked period.
+2. Read the current `posting.lines`. If they are in effect, ensure exactly the matching journal entries exist; if voided, ensure a reversing entry exists (dated with the original document, linked to the entry it reverses; the original is never removed). If already in line, do nothing.
 
-So job order does not matter. If the cancellation's job runs before the posting's job, the cancellation job has already brought the ledger to the "cancelled" state, and the posting job that runs later finds the ledger already in line and does nothing. A failed job retries; running it any number of times gives the same result.
+So job order does not matter. If the cancellation's job runs before the posting's job, the cancellation job has already brought the ledger to the "cancelled" state (nothing is written for a document that never reached the ledger), and the posting job that runs later finds the ledger already in line and does nothing. A failed job retries; running it any number of times gives the same result.
 
 ### Period lock and re-posting
 
 - **No period lock while documents are not yet posted to the ledger.** `accounting` implements `BeforeLock` (added to `record` at the same time), and refuses to move the lock date if the period still has documents whose `posting.lines` do not match the general ledger (a job waiting or failing). An admin screen lists those documents.
 - **A locked period is never re-posted automatically.** Changing account mapping rules does not affect existing journal entries. To apply new rules, the user runs "re-post" for a date range, and that range must lie entirely in the open period.
-- **Tenants that enable accounting later:** when it is enabled, `accounting` posts all `posting.lines` from the start-of-use date, without calling the business modules again. This is the only exception allowed to write into a locked period, because the general ledger was empty before.
+- **Tenants that enable accounting later:** each legal entity has an accounting start date, which can be set or changed only while it has no ledger entry. Documents dated on or after it with no ledger record count as pending and enter through "post pending", without calling the business modules again. A document's first posting is the only write allowed into a locked period, because the ledger had nothing for it.
 - The general ledger is kept separately per legal entity (see [backend.md](./backend.md#org-units)).
 
 ## Sample flow: leave and payroll

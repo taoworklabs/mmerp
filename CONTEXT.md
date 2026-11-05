@@ -72,7 +72,7 @@ A term used by two products must have the same meaning, or the two must use diff
 - **Mention** (vi: "Nhắc tên"): `@login` in a comment. The mentioned user gets a notification if they can view the record; otherwise the mention is ignored, without telling the author.
 - **Notification** (`notification`, vi: "Thông báo"): a line telling a user about an event that concerns them (a document waiting for their approval, their document approved or rejected, being mentioned, their job finished or failed). Carries no record content; opening it re-checks view permission. May come with an email. See [ADR-0025](./docs/adr/0025-notifications.md).
 - **Mail server** (vi: "Máy chủ mail"): the tenant's SMTP configuration. Without it no email is sent; in-app notifications still work.
-- **Journal entry mapping** (vi: "Định khoản"): `accounting` turning business lines into debit/credit journal entries by configurable rules. Not built: accounting is out of scope.
+- **Journal entry mapping** (vi: "Quy tắc định khoản"): see **Mapping rule** in the Accounting section.
 
 ## HRM
 
@@ -169,3 +169,19 @@ Product description: [products/sales.md](./products/sales.md).
 - **Create sales order** (vi: "Tạo đơn bán hàng"): turning a posted, unexpired quotation into a draft order with the same customer, terms and lines. Repeating it returns the same order while that order is not cancelled.
 - **Request id** (`request_id`, vi: "Mã yêu cầu"): a UUID a create form generates once; sending the same create twice returns the first document.
 - **Sales roles** (vi: "Vai trò bán hàng"): `staff` and `manager` (customers, quotations and orders, view and edit; same permissions, two names for approval routing), `viewer` (view), `approval_admin` (`sales.approval.manage`; tenant-wide only). They no longer grant partner or item access: Sales users also hold `partner.viewer`/`partner.editor`, and `item.viewer`/`item.admin` to read or manage the catalogue screen (shared roles, ADR-0039); picking items on a quotation or order needs no item role. See [ADR-0027](./docs/adr/0027-sales-product.md).
+
+## Accounting
+
+Product description: [products/accounting.md](./products/accounting.md).
+
+- **Account** (vi: "Tài khoản"): one entry of the chart of accounts: unique code, name, type (`asset`, `liability`, `equity`, `revenue`, `expense`), optional parent, active flag.
+- **Chart of accounts** (vi: "Hệ thống tài khoản"): the tree of accounts, one per tenant, shared by every legal entity. Data, never code.
+- **Postable account** (vi: "Tài khoản chi tiết"): an account without children; only these take journal lines. Parents roll up balances.
+- **Mapping rule** (vi: "Quy tắc định khoản"): turns one business line kind into an account and a side (debit or credit). A negative amount goes on the opposite side. Changing a rule never changes existing entries. See [ADR-0050](./docs/adr/0050-accounting-product-and-general-ledger.md).
+- **Journal entry** (vi: "Bút toán"): a balanced set of debit and credit lines on one date for one legal entity, written once to the ledger and never edited. Automatic entries come from business lines and take the source document's number.
+- **Reversing entry** (vi: "Bút toán đảo"): the entry that cancels an earlier one, dated with the original, linked to it. Written when business lines are voided or a manual entry is cancelled; the original stays.
+- **Manual journal entry** (`accounting.journal_entry`, vi: "Phiếu kế toán"): a document (prefix `PK`) in which an accountant enters a journal entry by hand. `posted` means written to the ledger.
+- **Accounting start date** (vi: "Ngày bắt đầu dùng kế toán"): per legal entity; documents dated before it never reach the ledger, and with none set accounting is not in use there. Fixed once the legal entity has a ledger entry.
+- **Pending document** (vi: "Chứng từ chờ ghi sổ"): a document with business lines that has not reached the ledger: no tracking row, awaiting mapping (a kind has no rule) or unbalanced. Listed under awaiting posting; blocks the period lock.
+- **General ledger** (vi: "Sổ cái"): the journal lines of one account over a date range, with opening balance, running balance and closing balance.
+- **Trial balance** (vi: "Bảng cân đối số phát sinh"): per account over a date range: opening balance, debit, credit, closing balance; total debits equal total credits.
