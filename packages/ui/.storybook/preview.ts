@@ -4,7 +4,14 @@ import '../src/styles/index.css'
 const preview: Preview = {
   tags: ['autodocs'],
   parameters: {
-    a11y: { test: 'error' },
+    a11y: {
+      test: 'error',
+      config: {
+        // Base UI's focus guards are aria-hidden yet tabbable on purpose: they catch Tab at a
+        // popup's edges. axe flags them only when it runs while a popup is open, so at random.
+        rules: [{ id: 'aria-hidden-focus', selector: '[aria-hidden="true"]:not([data-base-ui-focus-guard])' }],
+      },
+    },
     // Stories pick one with globals.viewport; addon-vitest sizes the test browser from it too.
     viewport: {
       options: {
