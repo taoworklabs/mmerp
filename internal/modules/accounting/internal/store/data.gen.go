@@ -9,4 +9,10 @@ import (
 
 func newQ(c platform.Conn) *Queries { return New(c) }
 
-var AnyAccount = data.One("accounting.AnyAccount", newQ, (*Queries).AnyAccount)
+var ListAccounts = data.Many("accounting.ListAccounts", newQ, (*Queries).ListAccounts)
+var LockAccount = data.OneArg("accounting.LockAccount", newQ, (*Queries).LockAccount)
+var AccountParent = data.OneArg("accounting.AccountParent", newQ, (*Queries).AccountParent)
+var CreateAccount = data.OneArg("accounting.CreateAccount", newQ, (*Queries).CreateAccount)
+var UpdateAccount = data.ExecArg("accounting.UpdateAccount", newQ, (*Queries).UpdateAccount)
+var DeleteAccount = data.ExecArg("accounting.DeleteAccount", newQ, (*Queries).DeleteAccount)
+var PostableActive = data.ManyArg("accounting.PostableActive", newQ, (*Queries).PostableActive)

@@ -7,15 +7,198 @@ package store
 
 import (
 	"context"
+
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
-const anyAccount = `-- name: AnyAccount :one
-SELECT EXISTS (SELECT 1 FROM accounting.accounts)::bool AS any
+const accountParent = `-- name: AccountParent :one
+WITH RECURSIVE sub AS (
+  SELECT x.id FROM accounting.accounts x WHERE x.id = $2::bigint
+  UNION ALL
+  SELECT a.id FROM accounting.accounts a JOIN sub ON a.parent_id = sub.id
+)
+SELECT p.type, false AS has_lines, EXISTS (SELECT 1 FROM sub WHERE sub.id = p.id) AS cyclic
+FROM accounting.accounts p WHERE p.id = $1::bigint
 `
 
-func (q *Queries) AnyAccount(ctx context.Context) (bool, error) {
-	row := q.db.QueryRow(ctx, anyAccount)
-	var any bool
-	err := row.Scan(&any)
-	return any, err
+type AccountParentParams struct {
+	ParentID int64
+	ID       int64
+}
+
+type AccountParentRow struct {
+	Type     string
+	HasLines bool
+	Cyclic   bool
+}
+
+// The prospective parent of account @id (0 on create): its type, and whether it is @id or below it.
+func (q *Queries) AccountParent(ctx context.Context, arg AccountParentParams) (AccountParentRow, error) {
+	row := q.db.QueryRow(ctx, accountParent, arg.ParentID, arg.ID)
+	var i AccountParentRow
+	err := row.Scan(&i.Type, &i.HasLines, &i.Cyclic)
+	return i, err
+}
+
+const createAccount = `-- name: CreateAccount :one
+INSERT INTO accounting.accounts (code, name, type, parent_id, active)
+VALUES ($1, $2, $3, $4, $5) RETURNING id
+`
+
+type CreateAccountParams struct {
+	Code     string
+	Name     string
+	Type     string
+	ParentID pgtype.Int8
+	Active   bool
+}
+
+func (q *Queries) CreateAccount(ctx context.Context, arg CreateAccountParams) (int64, error) {
+	row := q.db.QueryRow(ctx, createAccount,
+		arg.Code,
+		arg.Name,
+		arg.Type,
+		arg.ParentID,
+		arg.Active,
+	)
+	var id int64
+	err := row.Scan(&id)
+	return id, err
+}
+
+const deleteAccount = `-- name: DeleteAccount :exec
+DELETE FROM accounting.accounts WHERE id = $1
+`
+
+func (q *Queries) DeleteAccount(ctx context.Context, id int64) error {
+	_, err := q.db.Exec(ctx, deleteAccount, id)
+	return err
+}
+
+const listAccounts = `-- name: ListAccounts :many
+
+SELECT a.id, a.code, a.name, a.type, a.parent_id, a.active,
+  NOT EXISTS (SELECT 1 FROM accounting.accounts c WHERE c.parent_id = a.id) AS postable,
+  false AS has_lines
+FROM accounting.accounts a ORDER BY a.code
+`
+
+type ListAccountsRow struct {
+	ID       int64
+	Code     string
+	Name     string
+	Type     string
+	ParentID pgtype.Int8
+	Active   bool
+	Postable bool
+	HasLines bool
+}
+
+// TODO(task5): has_lines and the rule reference are false until entry_lines and rules exist.
+func (q *Queries) ListAccounts(ctx context.Context) ([]ListAccountsRow, error) {
+	rows, err := q.db.Query(ctx, listAccounts)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListAccountsRow
+	for rows.Next() {
+		var i ListAccountsRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Code,
+			&i.Name,
+			&i.Type,
+			&i.ParentID,
+			&i.Active,
+			&i.Postable,
+			&i.HasLines,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const lockAccount = `-- name: LockAccount :one
+SELECT code, type, false AS has_lines, false AS has_rule,
+  EXISTS (SELECT 1 FROM accounting.accounts c WHERE c.parent_id = a.id) AS has_children
+FROM accounting.accounts a WHERE a.id = $1 FOR UPDATE
+`
+
+type LockAccountRow struct {
+	Code        string
+	Type        string
+	HasLines    bool
+	HasRule     bool
+	HasChildren bool
+}
+
+func (q *Queries) LockAccount(ctx context.Context, id int64) (LockAccountRow, error) {
+	row := q.db.QueryRow(ctx, lockAccount, id)
+	var i LockAccountRow
+	err := row.Scan(
+		&i.Code,
+		&i.Type,
+		&i.HasLines,
+		&i.HasRule,
+		&i.HasChildren,
+	)
+	return i, err
+}
+
+const postableActive = `-- name: PostableActive :many
+SELECT a.id FROM accounting.accounts a
+WHERE a.id = ANY($1::bigint[]) AND a.active
+  AND NOT EXISTS (SELECT 1 FROM accounting.accounts c WHERE c.parent_id = a.id)
+`
+
+func (q *Queries) PostableActive(ctx context.Context, ids []int64) ([]int64, error) {
+	rows, err := q.db.Query(ctx, postableActive, ids)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []int64
+	for rows.Next() {
+		var id int64
+		if err := rows.Scan(&id); err != nil {
+			return nil, err
+		}
+		items = append(items, id)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const updateAccount = `-- name: UpdateAccount :exec
+UPDATE accounting.accounts SET code = $1, name = $2, type = $3, parent_id = $4, active = $5
+WHERE id = $6
+`
+
+type UpdateAccountParams struct {
+	Code     string
+	Name     string
+	Type     string
+	ParentID pgtype.Int8
+	Active   bool
+	ID       int64
+}
+
+func (q *Queries) UpdateAccount(ctx context.Context, arg UpdateAccountParams) error {
+	_, err := q.db.Exec(ctx, updateAccount,
+		arg.Code,
+		arg.Name,
+		arg.Type,
+		arg.ParentID,
+		arg.Active,
+		arg.ID,
+	)
+	return err
 }
