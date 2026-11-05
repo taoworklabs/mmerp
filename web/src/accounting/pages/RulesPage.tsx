@@ -96,7 +96,7 @@ function RuleModal({ rule, options, onClose }: { rule: Rule; options: { value: s
     onClose()
   }
   return (
-    <FormModal opened title={kindLabel(t, rule.kind)} onClose={onClose}>
+    <FormModal open title={kindLabel(t, rule.kind)} onOpenChange={onClose}>
       <Form form={form} onSubmit={save} errorFields={{ account_not_postable: 'account_id', rule_side_invalid: 'side' }}>
         <SelectField name="account_id" label={t('accounting.rule.account')} required data={options} />
         <SelectField
