@@ -1,6 +1,6 @@
 # Accounting: a minimal general ledger
 
-Date: 2026-11-05 · Status: draft, awaiting the product owner's approval
+Date: 2026-11-05 · Status: approved by the product owner, 2026-11-05
 
 ## Intent
 
