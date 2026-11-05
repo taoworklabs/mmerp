@@ -7,8 +7,6 @@ package store
 
 import (
 	"context"
-
-	"github.com/jackc/pgx/v5/pgtype"
 )
 
 const deleteRule = `-- name: DeleteRule :exec
@@ -21,28 +19,18 @@ func (q *Queries) DeleteRule(ctx context.Context, kind string) error {
 }
 
 const listRules = `-- name: ListRules :many
-SELECT k.kind, r.account_id, r.side
-FROM (SELECT kind FROM accounting.rules UNION SELECT kind FROM posting.lines) k
-LEFT JOIN accounting.rules r ON r.kind = k.kind
-ORDER BY k.kind
+SELECT kind, account_id, side FROM accounting.rules ORDER BY kind
 `
 
-type ListRulesRow struct {
-	Kind      string
-	AccountID pgtype.Int8
-	Side      pgtype.Text
-}
-
-// Every kind that has a rule or a posting line; the declared kinds are added by the service.
-func (q *Queries) ListRules(ctx context.Context) ([]ListRulesRow, error) {
+func (q *Queries) ListRules(ctx context.Context) ([]AccountingRule, error) {
 	rows, err := q.db.Query(ctx, listRules)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []ListRulesRow
+	var items []AccountingRule
 	for rows.Next() {
-		var i ListRulesRow
+		var i AccountingRule
 		if err := rows.Scan(&i.Kind, &i.AccountID, &i.Side); err != nil {
 			return nil, err
 		}

@@ -8,7 +8,7 @@ import (
 	"github.com/taoworklabs/mmerp/internal/shared/posting"
 )
 
-// Rules lists one rule per declared posting kind, then any other kind that has a rule or lines.
+// Rules lists one rule per declared posting kind, then any other kind that has a rule.
 func (s *Service) Rules(ctx context.Context) ([]Rule, error) {
 	sc, err := s.d.IAM.Scope(ctx, "accounting", PermView)
 	if err != nil {
@@ -23,7 +23,7 @@ func (s *Service) Rules(ctx context.Context) ([]Rule, error) {
 	}
 	stored := make(map[string]Rule, len(rows))
 	for _, r := range rows {
-		stored[r.Kind] = Rule{Kind: r.Kind, AccountID: platform.Int8Ptr(r.AccountID), Side: platform.TextPtr(r.Side)}
+		stored[r.Kind] = Rule{Kind: r.Kind, AccountID: &r.AccountID, Side: &r.Side}
 	}
 	out := []Rule{}
 	for _, k := range posting.Kinds() {

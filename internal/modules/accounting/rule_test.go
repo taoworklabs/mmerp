@@ -64,13 +64,14 @@ func TestSaveRuleRefusesInactiveAccount(t *testing.T) {
 	}
 }
 
+// A rule for an undeclared kind is listed; posting lines alone add nothing, so the list never scans them.
 func TestRuleForUnknownKindIsListed(t *testing.T) {
-	core, s := newAccounting(t)
-	a := mustCreate(t, s, core.Admin, acct("642", "expense", nil))
-	if err := s.SaveRule(core.Admin, "legacy_kind", a, "debit"); err != nil {
+	l := newLedger(t)
+	if err := l.s.SaveRule(l.core.Admin, "legacy_kind", l.acc["642"], "debit"); err != nil {
 		t.Fatal(err)
 	}
-	rs, _ := s.Rules(core.Admin)
+	l.record(t, l.doc(t, "2026-03-31"), posting.Line{Kind: "lines_only_kind", OrgUnitID: l.unit, Amount: 1})
+	rs, _ := l.s.Rules(l.core.Admin)
 	if len(rs) != len(posting.Kinds())+1 || rs[len(rs)-1].Kind != "legacy_kind" {
 		t.Fatalf("rules %+v", rs)
 	}
