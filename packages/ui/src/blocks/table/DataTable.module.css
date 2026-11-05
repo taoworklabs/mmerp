@@ -140,9 +140,9 @@
   color: var(--mmerp-color-text);
 }
 
-/* The whole card is the link's hit area. */
+/* The whole card is the link's hit area: the link stays static so its ::after stretches over
+   .card, and the focus ring follows the hit area. */
 .cardLink {
-  position: relative;
   display: block;
   color: inherit;
   font-weight: 600;
@@ -153,6 +153,16 @@
   content: '';
   position: absolute;
   inset: 0;
+  border-radius: var(--mmerp-radius-md);
+}
+
+.cardLink:focus-visible {
+  outline: none;
+}
+
+.cardLink:focus-visible::after {
+  outline: 2px solid var(--mmerp-color-primary-6);
+  outline-offset: 2px;
 }
 
 .card {
