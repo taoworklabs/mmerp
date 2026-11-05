@@ -60,7 +60,7 @@ test.beforeAll(async ({ baseURL }) => {
   pay = await signedInApi(baseURL!, login.pay, password)
 })
 
-test('the chart of accounts is set up and shown; rules start unset', async ({ page }) => {
+test('the chart of accounts is set up and shown; no rule is set yet', async ({ page }) => {
   const chart: [string, string, string, string?][] = [
     ['111', 'Tiền mặt', 'asset'],
     ['112', 'Tiền gửi ngân hàng', 'asset'],
@@ -78,6 +78,9 @@ test('the chart of accounts is set up and shown; rules start unset', async ({ pa
       (await created(api.post('/api/accounting/accounts', { data: { code, name, type, parent_id: parent ? acct[parent] : null, active: true } })))
   }
   await ok(api.put(`/api/accounting/starts/${c}`, { data: { start_date: from } }))
+
+  const rules = ((await (await api.get('/api/accounting/rules')).json()) as { items: { account_id: number | null }[] }).items
+  expect(rules.filter((r) => r.account_id !== null)).toHaveLength(0)
 
   await signedIn(page, '/accounting/accounts')
   await expect(page.getByRole('heading', { name: 'Hệ thống tài khoản' })).toBeVisible()
@@ -129,7 +132,7 @@ test('a payroll posted before its rules exist waits for mapping, then reaches th
   for (const l of expense.lines) {
     expect(l.doc_number).toBe(payroll.number)
     expect(l.date.startsWith('2026-03')).toBe(true)
-    expect(l.org_unit_id).toBe(dept)
+    expect(l.org_unit_id).toBe(c)
   }
   await expect.poll(async () => (await pending()) === undefined).toBe(true)
   const trial = (await (await api.get(`/api/accounting/trial-balance?legal_entity_id=${c}&from=${from}&to=${to}`)).json()) as { total_debit: number; total_credit: number }
