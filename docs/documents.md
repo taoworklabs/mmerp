@@ -220,7 +220,7 @@ So job order does not matter. If the cancellation's job runs before the posting'
 ### Period lock and re-posting
 
 - **No period lock while documents are not yet posted to the ledger.** `accounting` implements `BeforeLock` (added to `record` at the same time), and refuses to move the lock date if the period still has documents whose `posting.lines` do not match the general ledger (a job waiting or failing). An admin screen lists those documents.
-- **A locked period is never re-posted automatically.** Changing account mapping rules does not affect existing journal entries. To apply new rules, the user runs "re-post" for a date range, and that range must lie entirely in the open period.
+- **A locked period is never re-posted.** Changing account mapping rules does not affect existing journal entries. Re-posting a date range is not built; the accountant corrects the ledger with manual journal entries.
 - **Tenants that enable accounting later:** each legal entity has an accounting start date, which can be set or changed only while it has no ledger entry. Documents dated on or after it with no ledger record count as pending and enter through "post pending", without calling the business modules again. A document's first posting is the only write allowed into a locked period, because the ledger had nothing for it.
 - The general ledger is kept separately per legal entity (see [backend.md](./backend.md#org-units)).
 
