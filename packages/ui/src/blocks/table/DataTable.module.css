@@ -51,6 +51,11 @@
   border-left: 1px solid var(--mmerp-table-rule-color);
 }
 
+/* Right after the identifier, the sticky cell's background covers that rule: the cell draws it. */
+.root [data-sticky]:has(+ .bandStart) {
+  box-shadow: inset -1px 0 0 var(--mmerp-table-rule-color);
+}
+
 .bandLabel {
   text-align: center;
 }
