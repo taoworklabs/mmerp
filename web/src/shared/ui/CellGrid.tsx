@@ -51,7 +51,7 @@ export function CellGrid({ label, corner, rows, columns, value, onChange, invali
   }
 
   return (
-    <Paper withBorder>
+    <Paper withBorder className={classes.frame}>
       <ScrollArea>
         <table className={classes.grid} aria-label={label}>
           <thead>

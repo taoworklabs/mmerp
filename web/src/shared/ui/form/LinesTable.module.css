@@ -5,6 +5,11 @@
   overflow: hidden;
 }
 
+/* The frame draws the bottom edge; the last line adds none of its own. */
+.table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
 .table thead th {
   height: var(--mmerp-table-header-height);
   background: var(--mmerp-color-table-header);

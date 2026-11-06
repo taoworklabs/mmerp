@@ -17,6 +17,21 @@
   text-align: center;
 }
 
+/* The frame draws the outer edge: the last column and row add none of their own, and the
+   header's tint is clipped to the frame's rounded corners. */
+.frame {
+  overflow: hidden;
+}
+
+.grid th:last-child,
+.grid td:last-child {
+  border-right: 0;
+}
+
+.grid tbody tr:last-child > * {
+  border-bottom: 0;
+}
+
 .grid thead th {
   background: var(--mmerp-color-table-header);
   color: var(--mmerp-color-dimmed);
