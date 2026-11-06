@@ -154,4 +154,11 @@ describe('DataTable', () => {
     expect(getComputedStyle(container.querySelector('[data-table]')!).borderBottomStyle).toBe('none')
     expect(getComputedStyle(container.querySelector('tbody tr:last-child td')!).borderBottomStyle).toBe('solid')
   })
+
+  it('keeps the rule between the identifier and a band that opens right after it', async () => {
+    await page.viewport(1300, 900)
+    const banded = columns.map((c) => (c.key === 'full_name' ? c : { ...c, band: 'Hồ sơ' }))
+    const { container } = await render(<DataTable columns={banded} rows={rows} rowKey={(e) => e.id} label="Nhân viên" labels={labels} />)
+    for (const cell of container.querySelectorAll('[data-sticky]')) expect(getComputedStyle(cell).boxShadow).not.toBe('none')
+  })
 })
