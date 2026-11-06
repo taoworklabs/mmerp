@@ -12,6 +12,11 @@
   border-radius: 0;
 }
 
+/* Without a frame, the last row keeps its rule to end the table. */
+.content > :global([data-table]) :global(table > :last-child > tr:last-child > td) {
+  border-bottom: var(--mmerp-table-row-rule);
+}
+
 /* From 64em the table runs edge to edge and only the content scrolls, under the table's own
    header; anything else in it (an alert, a tree, an empty state) keeps the page's margins. */
 @media (min-width: 64em) {

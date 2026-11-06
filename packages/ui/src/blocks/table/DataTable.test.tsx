@@ -1,6 +1,7 @@
 import { render } from 'vitest-browser-react'
 import { page, userEvent } from 'vitest/browser'
 import { describe, expect, it } from 'vitest'
+import { Page } from '../page/Page.tsx'
 import { DataTable, type Column, type DataTableLabels } from './DataTable.tsx'
 import '../../styles/index.css'
 
@@ -131,5 +132,26 @@ describe('DataTable', () => {
     await button.click()
     await button.click()
     expect(asked).toEqual(['full_name', '-full_name'])
+  })
+
+  it('draws each rule once: the frame closes the last row, one rule under the header', async () => {
+    await page.viewport(1300, 900)
+    const { container } = await render(<DataTable columns={columns} rows={rows} rowKey={(e) => e.id} label="Nhân viên" labels={labels} />)
+    const lastCell = container.querySelector('tbody tr:last-child td')!
+    expect(getComputedStyle(lastCell).borderBottomStyle).toBe('none')
+    const th = container.querySelector('th')!
+    expect(getComputedStyle(th).borderBottomStyle).toBe('none')
+    expect(getComputedStyle(th, '::after').borderBottomStyle).toBe('solid')
+  })
+
+  it('keeps the last row rule on a list page, where the table has no frame', async () => {
+    await page.viewport(1300, 900)
+    const { container } = await render(
+      <Page variant="list" header={null}>
+        <DataTable columns={columns} rows={rows} rowKey={(e) => e.id} label="Nhân viên" labels={labels} />
+      </Page>,
+    )
+    expect(getComputedStyle(container.querySelector('[data-table]')!).borderBottomStyle).toBe('none')
+    expect(getComputedStyle(container.querySelector('tbody tr:last-child td')!).borderBottomStyle).toBe('solid')
   })
 })
