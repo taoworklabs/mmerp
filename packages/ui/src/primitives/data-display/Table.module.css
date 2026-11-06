@@ -113,6 +113,11 @@
   position: relative;
 }
 
+/* The ::after rule replaces the cell's own: both together draw a doubled line. */
+.root[data-sticky-header] .thead .th {
+  border-bottom: none;
+}
+
 .root[data-sticky-header] .thead .th::after {
   content: '';
   position: absolute;

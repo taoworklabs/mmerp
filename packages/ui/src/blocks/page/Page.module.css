@@ -94,6 +94,11 @@
   border-radius: 0;
 }
 
+/* Without a frame, the last row keeps its rule to end the table. */
+.listBody > [data-table] table > :last-child > tr:last-child > td {
+  border-bottom: var(--mmerp-table-row-rule);
+}
+
 .listBody [data-table] :is(th, td):first-child {
   padding-inline-start: var(--mmerp-page-inline);
 }

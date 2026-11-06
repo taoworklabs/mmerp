@@ -16,6 +16,11 @@
   min-height: 0;
 }
 
+/* The frame closes the table: the last row's own rule would double its bottom edge. */
+.root table > :last-child > tr:last-child > td {
+  border-bottom: none;
+}
+
 /* The checkbox column has no sticky cell of its own: it scrolls away, and the identifier column
    takes its place at the left edge once selectable, offset by the checkbox column's width. */
 .selectable {
