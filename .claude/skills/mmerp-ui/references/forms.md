@@ -157,6 +157,7 @@ const lineColumns: LineColumn[] = [
 </FormSection>
 ```
 
+- A column's `width` is kept as the frame grows; the one column without a width takes the rest. Amounts go last, next to the remove button and the totals. The header marks required columns with `*`, unless every column is required.
 - One row per line, `#` first, a grey remove button last (no confirmation: Discard covers mistakes; hidden at `minLines`). "Add line" appends an empty line at the end.
 - Each column gives its smallest `width`; the one without takes the rest. A frame too narrow scrolls sideways.
 - Cells use the normal fields with `bare`; their `aria-label` names the line ("Số lượng (1)"). Numeric cells are right-aligned without spin buttons.

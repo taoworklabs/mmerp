@@ -440,7 +440,7 @@
   "hrm.contract.line_name_col": "Tên khoản",
   "hrm.contract.line_amount_col": "Số tiền (đ)",
   "hrm.contract.line_taxable_col": "Chịu thuế",
-  "hrm.payroll.adjustment_amount_col": "Số tiền (đ, âm là truy thu)",
+  "hrm.payroll.adjustment_amount_col": "Số tiền (đ)",
   "hrm.payroll.adjustment_title": "Điều chỉnh {{n}}",
   "hrm.common.yes": "Có",
   "hrm.common.no": "Không",

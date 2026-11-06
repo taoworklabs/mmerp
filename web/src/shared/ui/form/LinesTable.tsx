@@ -15,8 +15,8 @@ export type LineColumn<L extends object = Record<string, unknown>> = {
   header: string
   numeric?: boolean
   required?: boolean
-  // Smallest width in pixels; the column without one takes what is left (200px at least).
-  // Too narrow a frame scrolls sideways rather than squeezing the inputs.
+  // Width in pixels, kept as the frame grows; the column without one takes what is left (200px
+  // at least). Too narrow a frame scrolls sideways rather than squeezing the inputs.
   width?: number
   cell?: (index: number, bare: boolean, line: Record<string, unknown>) => ReactNode
   value?: (line: L, index: number) => ReactNode
@@ -169,15 +169,22 @@ function ReadOnlyLines<L extends object>({ label, columns: all, lines, lineLabel
 }
 
 // Head is the header row; read-only lines take only their text's width and mark nothing required.
+// A column with a width keeps it, so the spare width goes to the one without; when every column
+// is required, a * on each says nothing and is left out.
 function Head<L extends object>({ columns, readOnly }: { columns: LineColumn<L>[]; readOnly?: boolean }) {
+  const mark = !readOnly && !columns.every((c) => c.required)
   return (
     <Table.Thead>
       <Table.Tr>
         <Table.Th className={classes.n}>#</Table.Th>
         {columns.map((c) => (
-          <Table.Th key={c.key} style={readOnly ? undefined : { minWidth: c.width ?? 200 }} look={c.numeric ? 'numeric' : undefined}>
+          <Table.Th
+            key={c.key}
+            style={readOnly ? undefined : c.width ? { width: c.width, minWidth: c.width } : { minWidth: 200 }}
+            look={c.numeric ? 'numeric' : undefined}
+          >
             {c.header}
-            {c.required && !readOnly && (
+            {c.required && mark && (
               <Text render={<span />} tone="danger" aria-hidden>
                 {' *'}
               </Text>
