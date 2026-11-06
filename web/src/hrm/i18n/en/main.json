@@ -440,7 +440,7 @@
   "hrm.contract.line_name_col": "Name",
   "hrm.contract.line_amount_col": "Amount (₫)",
   "hrm.contract.line_taxable_col": "Taxable",
-  "hrm.payroll.adjustment_amount_col": "Amount (₫, negative recovers)",
+  "hrm.payroll.adjustment_amount_col": "Amount (₫)",
   "hrm.payroll.adjustment_title": "Adjustment {{n}}",
   "hrm.common.yes": "Yes",
   "hrm.common.no": "No",

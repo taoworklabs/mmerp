@@ -80,14 +80,6 @@ function AdjustmentsForm({ payroll, onQueued }: { payroll: Payroll; onQueued: (j
               },
             },
             {
-              key: 'amount',
-              header: t('hrm.payroll.adjustment_amount_col'),
-              numeric: true,
-              required: true,
-              width: 144,
-              cell: (i, bare) => <MoneyField name={`items.${i}.amount`} label={t('hrm.payroll.adjustment_amount', { n: i + 1 })} bare={bare} min={-1e12} required />,
-            },
-            {
               key: 'period',
               header: t('hrm.payroll.source_period'),
               required: true,
@@ -99,6 +91,14 @@ function AdjustmentsForm({ payroll, onQueued }: { payroll: Payroll; onQueued: (j
               header: t('hrm.payroll.reason'),
               required: true,
               cell: (i, bare) => <TextField name={`items.${i}.reason`} label={t('hrm.payroll.adjustment_reason', { n: i + 1 })} bare={bare} required maxLength={1000} />,
+            },
+            {
+              key: 'amount',
+              header: t('hrm.payroll.adjustment_amount_col'),
+              numeric: true,
+              required: true,
+              width: 144,
+              cell: (i, bare) => <MoneyField name={`items.${i}.amount`} label={t('hrm.payroll.adjustment_amount', { n: i + 1 })} bare={bare} min={-1e12} required />,
             },
           ]}
           newLine={() => ({ employee_id: null, amount: null, source_period: null, reason: '' })}
