@@ -182,7 +182,6 @@ function Fields({ order, doc, onCreated, ro, initial }: Props & { ro: boolean; i
       key: 'order_line',
       header: t('sales.delivery.line.order_line_col'),
       required: true,
-      width: 240,
       value: (l) => `${l.item_code} · ${l.description}`,
       cell: (i, bare) => (
         <SelectField

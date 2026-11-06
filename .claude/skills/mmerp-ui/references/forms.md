@@ -157,9 +157,8 @@ const lineColumns: LineColumn[] = [
 </FormSection>
 ```
 
-- A column's `width` is kept as the frame grows; the one column without a width takes the rest. Amounts go last, next to the remove button and the totals. The header marks required columns with `*`, unless every column is required.
+- A column's `width` is kept as the frame grows; exactly one column, the widest text (description, item, name), has no width and takes the rest (200px at least). A frame too narrow scrolls sideways. Amounts go last, next to the remove button and the totals. The header marks required columns with `*`, unless every column is required.
 - One row per line, `#` first, a grey remove button last (no confirmation: Discard covers mistakes; hidden at `minLines`). "Add line" appends an empty line at the end.
-- Each column gives its smallest `width`; the one without takes the rest. A frame too narrow scrolls sideways.
 - Cells use the normal fields with `bare`; their `aria-label` names the line ("Số lượng (1)"). Numeric cells are right-aligned without spin buttons.
 - Keyboard: Tab moves cell by cell; Enter moves to the next cell instead of submitting (an open dropdown keeps Enter to pick).
 - **Totals are the server's.** Rounding happens only on the server, so the footer shows the stored totals with a note that they are as of the last save; a new document shows none. Never multiply, divide, apply a percentage or round money in the screen. Adding or subtracting stored amounts of one document (net = amount − discount) is exact and allowed only when the API sends no field for it.

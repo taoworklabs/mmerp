@@ -185,7 +185,6 @@ function lineColumns(t: TFunction): LineColumn<Line>[] {
       key: 'name',
       header: t('hrm.contract.line_name_col'),
       required: true,
-      width: 144,
       value: (l) => l.name,
       cell: (i, bare) => <TextField name={`lines.${i}.name`} label={t('hrm.contract.line_name', { n: i + 1 })} bare={bare} required maxLength={200} />,
     },

@@ -145,7 +145,6 @@ export function AdjustmentForm({ doc, onCreated }: Props) {
       key: 'item',
       header: t('sales.line.item_col'),
       required: true,
-      width: 240,
       value: (l) => `${l.item_code} · ${l.item_name}`,
       cell: (i, bare, line) => (
         <ItemField
