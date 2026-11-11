@@ -22,12 +22,9 @@ export type PageHeaderProps = {
   tabs?: ReactNode
   // No rule under the header: the content draws its own frame.
   plain?: boolean
-  // One record's page (DetailPage, DocumentPage): the breadcrumb ends with the page itself and a
-  // back button leads the title.
+  // One record's page (DetailPage, DocumentPage, RecordPage): the breadcrumb ends with the page
+  // itself and a back button leads the title.
   withBack?: boolean
-  // The breadcrumb ends with the page itself, without the back button: a record page whose
-  // breadcrumb already leads back.
-  current?: boolean
 }
 
 // readingWidth is the width of a side panel (approval, attachments) shown full width as a tab.
@@ -45,11 +42,11 @@ export function Page({ children, className, centered, ...header }: PageHeaderPro
   )
 }
 
-export function PageHeader({ breadcrumbs, withBack, current, ...props }: PageHeaderProps) {
+export function PageHeader({ breadcrumbs, withBack, ...props }: PageHeaderProps) {
   const { t } = useTranslation()
   const parent = breadcrumbs?.at(-1)
   const crumbs = breadcrumbs?.length ? { breadcrumbs: breadcrumbs.map((c) => ({ label: c.label, render: <Link to={c.to} /> })), breadcrumbsLabel: t('shared.page.breadcrumb') } : {}
-  return <KitPageHeader {...props} {...crumbs} current={withBack || current} back={withBack && parent ? <BackButton to={parent.to} /> : undefined} />
+  return <KitPageHeader {...props} {...crumbs} current={withBack} back={withBack && parent ? <BackButton to={parent.to} /> : undefined} />
 }
 
 // BackButton returns to where the user came from, the list with its filters and page; opened

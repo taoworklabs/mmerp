@@ -110,7 +110,7 @@ Working examples: `web/src/hrm/pages/EmployeePage.tsx` with `hrm/components/Empl
 ```tsx
 <RecordPage
   title={e.full_name}
-  breadcrumbs={[{ label: t('hrm.employees.title'), to: '/hrm/employees' }]}        // ends with the page; no back button
+  breadcrumbs={[{ label: t('hrm.employees.title'), to: '/hrm/employees' }]}        // ends with the page; a back button leads the title
   leading={<PersonAvatar name={e.full_name} size="lg" />}
   status={<EmployeeStatus status={e.status} />}                                    // beside the title
   description={[e.code, e.org_unit_name, e.user_login].filter(Boolean).join(' · ')}

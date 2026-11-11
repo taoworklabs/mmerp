@@ -9,7 +9,7 @@ import { Page, type PageHeaderProps } from './Page'
 // A part of the record: its tab's value on the URL, label (a count once known) and content.
 export type RecordTab = { value: string; label: string; content: ReactNode }
 
-type Props = Omit<PageHeaderProps, 'tabs' | 'withBack' | 'plain' | 'current'> & {
+type Props = Omit<PageHeaderProps, 'tabs' | 'withBack' | 'plain'> & {
   // MenuAction children: the rarer and the destructive actions, in a "…" menu after the buttons.
   more?: ReactNode
   // The record's parts, the first (its overview) open by default; a label may carry a count.
@@ -48,7 +48,7 @@ export function RecordPage({ more, actions, tabs, aliases, children, ...header }
     >
       <Page
         {...header}
-        current
+        withBack
         actions={all}
         centered="detail"
         tabs={
