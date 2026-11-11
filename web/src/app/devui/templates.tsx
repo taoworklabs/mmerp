@@ -69,7 +69,7 @@ export function PageTemplate() {
           <Page
             title="Nguyễn Văn An"
             breadcrumbs={crumbs}
-            current
+            withBack
             leading={<PersonAvatar name="Nguyễn Văn An" size="lg" />}
             status={<StatusBadge tone="success">{t('shared.devui.status_positive')}</StatusBadge>}
             description="NV0019 · Kế toán"
