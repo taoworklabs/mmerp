@@ -178,3 +178,73 @@ test('a manual journal entry is entered, posted and cancelled; the trial balance
   await move(api, 'accounting.journal_entry', '/api/accounting/journal-entries', entry, 'cancelled')
   expect((await ledger('112')).closing).toBe(0)
 })
+
+test('partners are tracked on receivables and show in partner balances and the partner ledger', async ({ page }) => {
+  test.setTimeout(120_000)
+  const existing = ((await (await api.get('/api/accounting/accounts')).json()) as { items: { id: number; code: string }[] }).items
+  acct['131'] =
+    existing.find((a) => a.code === '131')?.id ??
+    (await created(api.post('/api/accounting/accounts', { data: { code: '131', name: 'Phải thu của khách hàng', type: 'asset', parent_id: null, active: true } })))
+
+  // The accountant marks 131 as tracked by partner.
+  await signedIn(page, '/accounting/accounts')
+  await page.getByRole('listitem').filter({ hasText: 'Phải thu của khách hàng' }).last().getByRole('button', { name: 'Thao tác khác' }).click()
+  await page.getByRole('menuitem', { name: 'Sửa tài khoản' }).click()
+  await page.getByRole('checkbox', { name: 'Theo dõi theo đối tác' }).check()
+  await page.getByRole('button', { name: 'Lưu' }).click()
+  await expect(page.getByRole('listitem').filter({ hasText: 'Phải thu của khách hàng' }).last().getByText('Theo đối tác')).toBeVisible()
+
+  // A payroll kind names no partner, so it cannot map to 131.
+  const rule = await api.put('/api/accounting/rules/salary_expense', { data: { account_id: acct['131'], side: 'debit' } })
+  expect(rule.status()).toBe(422)
+  expect(((await rule.json()) as { code: string }).code).toBe('rule_partner_mismatch')
+
+  const partner = (name: string) =>
+    created(api.post('/api/partners', { data: { name: `${name} ${run}`, tax_code: null, address: null, phone: null, email: null, contact_name: null } }))
+  const a = await partner('Khách A')
+  const b = await partner('Khách B')
+  const entry = (lines: { account_id: number | undefined; partner_id?: number; debit: number; credit: number }[]) =>
+    created(api.post('/api/accounting/journal-entries', { data: { request_id: crypto.randomUUID(), date: '2026-05-05', legal_entity_id: c, description: `Phải thu đầu kỳ ${run}`, lines } }))
+
+  // A line on 131 without a partner is refused when posted.
+  const bare = await entry([
+    { account_id: acct['131'], debit: 50_000_000, credit: 0 },
+    { account_id: acct['411'], debit: 0, credit: 50_000_000 },
+  ])
+  const refused = await api.post(`/api/documents/accounting.journal_entry/${bare}/transitions`, { data: { to: 'posted', version: 1 } })
+  expect(refused.status()).toBe(422)
+  expect(((await refused.json()) as { code: string }).code).toBe('journal_line_partner_required')
+
+  const opening = await entry([
+    { account_id: acct['131'], partner_id: a, debit: 30_000_000, credit: 0 },
+    { account_id: acct['131'], partner_id: b, debit: 20_000_000, credit: 0 },
+    { account_id: acct['411'], debit: 0, credit: 50_000_000 },
+  ])
+  await move(api, 'accounting.journal_entry', '/api/accounting/journal-entries', opening, 'posted')
+
+  // The partner balances add up to 131's row in the trial balance.
+  const balances = (await (await api.get(`/api/accounting/partner-balances?legal_entity_id=${c}&account_id=${acct['131']}&from=${from}&to=${to}`)).json()) as {
+    rows: { partner_id: number; closing: number }[]
+    total_closing: number
+  }
+  expect(balances.rows.map((r) => [r.partner_id, r.closing])).toEqual([
+    [a, 30_000_000],
+    [b, 20_000_000],
+  ])
+  const trial = (await (await api.get(`/api/accounting/trial-balance?legal_entity_id=${c}&from=${from}&to=${to}`)).json()) as { rows: { code: string; closing: number }[] }
+  expect(trial.rows.find((r) => r.code === '131')?.closing).toBe(balances.total_closing)
+
+  await page.goto(`/accounting/partner-balances?legal_entity_id=${c}&from=${from}&to=${to}`)
+  await expect(page.getByRole('heading', { name: 'Công nợ theo đối tác' })).toBeVisible()
+  await expect(page.getByText(`Khách B ${run}`)).toBeVisible()
+  await page.getByRole('link', { name: new RegExp(`Khách A ${run}`) }).click()
+  await expect(page.getByRole('heading', { name: 'Sổ chi tiết công nợ' })).toBeVisible()
+  const number = ((await (await api.get(`/api/accounting/journal-entries/${opening}`)).json()) as { number: string }).number
+  await expect(page.getByRole('link', { name: number })).toBeVisible()
+
+  // Cancelling the entry reverses it: the partner's balance returns to zero.
+  await move(api, 'accounting.journal_entry', '/api/accounting/journal-entries', opening, 'cancelled')
+  const after = (await (await api.get(`/api/accounting/partner-ledger?legal_entity_id=${c}&partner_id=${a}&from=${from}&to=${to}`)).json()) as { closing: number; lines: unknown[] }
+  expect(after.closing).toBe(0)
+  expect(after.lines).toHaveLength(2)
+})
