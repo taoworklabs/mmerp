@@ -60,16 +60,17 @@ func (q *Queries) InsertEntry(ctx context.Context, arg InsertEntryParams) (int64
 }
 
 const insertEntryLines = `-- name: InsertEntryLines :exec
-INSERT INTO accounting.entry_lines (entry_id, line_no, account_id, org_unit_id, kind, description, debit, credit)
+INSERT INTO accounting.entry_lines (entry_id, line_no, account_id, org_unit_id, partner_id, kind, description, debit, credit)
 SELECT $1::bigint, generate_series(1, cardinality($2::bigint[])), unnest($2::bigint[]),
-       NULLIF(unnest($3::bigint[]), 0), NULLIF(unnest($4::text[]), ''), NULLIF(unnest($5::text[]), ''),
-       unnest($6::bigint[]), unnest($7::bigint[])
+       NULLIF(unnest($3::bigint[]), 0), NULLIF(unnest($4::bigint[]), 0), NULLIF(unnest($5::text[]), ''), NULLIF(unnest($6::text[]), ''),
+       unnest($7::bigint[]), unnest($8::bigint[])
 `
 
 type InsertEntryLinesParams struct {
 	EntryID      int64
 	AccountIds   []int64
 	OrgUnitIds   []int64
+	PartnerIds   []int64
 	Kinds        []string
 	Descriptions []string
 	Debits       []int64
@@ -81,6 +82,7 @@ func (q *Queries) InsertEntryLines(ctx context.Context, arg InsertEntryLinesPara
 		arg.EntryID,
 		arg.AccountIds,
 		arg.OrgUnitIds,
+		arg.PartnerIds,
 		arg.Kinds,
 		arg.Descriptions,
 		arg.Debits,
@@ -90,7 +92,7 @@ func (q *Queries) InsertEntryLines(ctx context.Context, arg InsertEntryLinesPara
 }
 
 const liveLines = `-- name: LiveLines :many
-SELECT kind, org_unit_id, amount FROM posting.lines
+SELECT kind, org_unit_id, partner_id, amount FROM posting.lines
 WHERE doc_type = $1 AND doc_id = $2 AND voided_at IS NULL ORDER BY id
 `
 
@@ -102,6 +104,7 @@ type LiveLinesParams struct {
 type LiveLinesRow struct {
 	Kind      string
 	OrgUnitID int64
+	PartnerID pgtype.Int8
 	Amount    int64
 }
 
@@ -114,7 +117,12 @@ func (q *Queries) LiveLines(ctx context.Context, arg LiveLinesParams) ([]LiveLin
 	var items []LiveLinesRow
 	for rows.Next() {
 		var i LiveLinesRow
-		if err := rows.Scan(&i.Kind, &i.OrgUnitID, &i.Amount); err != nil {
+		if err := rows.Scan(
+			&i.Kind,
+			&i.OrgUnitID,
+			&i.PartnerID,
+			&i.Amount,
+		); err != nil {
 			return nil, err
 		}
 		items = append(items, i)
@@ -191,8 +199,8 @@ func (q *Queries) ReverseEntry(ctx context.Context, id int64) (int64, error) {
 }
 
 const reverseEntryLines = `-- name: ReverseEntryLines :exec
-INSERT INTO accounting.entry_lines (entry_id, line_no, account_id, org_unit_id, kind, description, debit, credit)
-SELECT $1::bigint, line_no, account_id, org_unit_id, kind, description, credit, debit
+INSERT INTO accounting.entry_lines (entry_id, line_no, account_id, org_unit_id, partner_id, kind, description, debit, credit)
+SELECT $1::bigint, line_no, account_id, org_unit_id, partner_id, kind, description, credit, debit
 FROM accounting.entry_lines WHERE entry_id = $2::bigint
 `
 

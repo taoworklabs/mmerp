@@ -103,8 +103,8 @@ func (s *Service) reconcile(ctx context.Context, ref record.Ref) error {
 	return save()
 }
 
-// journal maps ref's live posting lines through the rules, one line per account, side, org unit
-// and kind; missing lists, sorted, the kinds without a rule or whose account is not postable
+// journal maps ref's live posting lines through the rules, one line per account, side, org unit,
+// partner and kind; missing lists, sorted, the kinds without a rule or whose account is not postable
 // and active. An amount past MaxLineAmount stops at MaxLineAmount+1, for the caller to refuse.
 func journal(ctx context.Context, ref record.Ref) ([]JournalLine, []string, error) {
 	rows, err := store.LiveLines.Run(ctx, store.LiveLinesParams{DocType: ref.Type, DocID: ref.ID})
@@ -135,9 +135,9 @@ func journal(ctx context.Context, ref record.Ref) ([]JournalLine, []string, erro
 		return nil, nil, err
 	}
 	type key struct {
-		account, unit int64
-		debit         bool
-		kind          string
+		account, unit, partner int64
+		debit                  bool
+		kind                   string
 	}
 	at := map[key]int{}
 	var lines []JournalLine
@@ -160,11 +160,11 @@ func journal(ctx context.Context, ref record.Ref) ([]JournalLine, []string, erro
 		if amount < 0 || amount > MaxLineAmount {
 			amount = MaxLineAmount + 1
 		}
-		k := key{rule.AccountID, r.OrgUnitID, debit, r.Kind}
+		k := key{rule.AccountID, r.OrgUnitID, r.PartnerID.Int64, debit, r.Kind}
 		i, ok := at[k]
 		if !ok {
 			i, at[k] = len(lines), len(lines)
-			lines = append(lines, JournalLine{AccountID: rule.AccountID, OrgUnitID: &r.OrgUnitID, Kind: r.Kind})
+			lines = append(lines, JournalLine{AccountID: rule.AccountID, OrgUnitID: &r.OrgUnitID, PartnerID: platform.Int8Ptr(r.PartnerID), Kind: r.Kind})
 		}
 		l := &lines[i]
 		// Both terms are at most MaxLineAmount+1, so the sum cannot overflow.

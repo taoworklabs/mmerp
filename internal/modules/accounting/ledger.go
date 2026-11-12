@@ -11,7 +11,8 @@ import (
 )
 
 // writeEntry is the only way a new journal entry reaches the ledger: balanced, at least two
-// lines, every account postable and active (share-locked, so the chart cannot change under it).
+// lines, every account postable and active (share-locked, so the chart cannot change under it),
+// a partner on exactly the lines of accounts tracked by partner.
 func writeEntry(ctx context.Context, legalEntity int64, date pgtype.Date, src record.Ref, recording *int64, lines []JournalLine) (int64, error) {
 	var debit, credit int64
 	ids := make([]int64, 0, len(lines))
@@ -39,6 +40,15 @@ func writeEntry(ctx context.Context, legalEntity int64, date pgtype.Date, src re
 			return 0, ErrAccountNotPostable
 		}
 	}
+	tracked, err := accountFlags(ctx, ids)
+	if err != nil {
+		return 0, err
+	}
+	for _, l := range lines {
+		if tracked[l.AccountID] != (l.PartnerID != nil) {
+			return 0, ErrEntryPartnerMismatch
+		}
+	}
 	rec := pgtype.Int8{}
 	if recording != nil {
 		rec = pgtype.Int8{Int64: *recording, Valid: true}
@@ -55,6 +65,11 @@ func writeEntry(ctx context.Context, legalEntity int64, date pgtype.Date, src re
 		}
 		p.AccountIds = append(p.AccountIds, l.AccountID)
 		p.OrgUnitIds = append(p.OrgUnitIds, unit)
+		var partner int64
+		if l.PartnerID != nil {
+			partner = *l.PartnerID
+		}
+		p.PartnerIds = append(p.PartnerIds, partner)
 		p.Kinds = append(p.Kinds, l.Kind)
 		p.Descriptions = append(p.Descriptions, l.Description)
 		p.Debits = append(p.Debits, l.Debit)

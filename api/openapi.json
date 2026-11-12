@@ -4710,6 +4710,25 @@
               "integer",
               "null"
             ]
+          },
+          "partner_code": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "partner_id": {
+            "format": "int64",
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "partner_name": {
+            "type": [
+              "string",
+              "null"
+            ]
           }
         },
         "required": [
@@ -4721,6 +4740,9 @@
           "kind",
           "description",
           "org_unit_id",
+          "partner_id",
+          "partner_code",
+          "partner_name",
           "account_code",
           "debit",
           "credit",

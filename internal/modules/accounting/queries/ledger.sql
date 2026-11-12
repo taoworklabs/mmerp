@@ -12,7 +12,7 @@ SELECT EXISTS (SELECT 1 FROM accounting.entries WHERE legal_entity_id = $1);
 SELECT id FROM posting.recordings WHERE doc_type = $1 AND doc_id = $2 AND voided_at IS NULL;
 
 -- name: LiveLines :many
-SELECT kind, org_unit_id, amount FROM posting.lines
+SELECT kind, org_unit_id, partner_id, amount FROM posting.lines
 WHERE doc_type = $1 AND doc_id = $2 AND voided_at IS NULL ORDER BY id;
 
 -- name: LockSource :one
@@ -39,9 +39,9 @@ INSERT INTO accounting.entries (legal_entity_id, date, doc_type, doc_id, recordi
 VALUES (@legal_entity_id, @date, @doc_type, @doc_id, sqlc.narg(recording_id)) RETURNING id;
 
 -- name: InsertEntryLines :exec
-INSERT INTO accounting.entry_lines (entry_id, line_no, account_id, org_unit_id, kind, description, debit, credit)
+INSERT INTO accounting.entry_lines (entry_id, line_no, account_id, org_unit_id, partner_id, kind, description, debit, credit)
 SELECT @entry_id::bigint, generate_series(1, cardinality(@account_ids::bigint[])), unnest(@account_ids::bigint[]),
-       NULLIF(unnest(@org_unit_ids::bigint[]), 0), NULLIF(unnest(@kinds::text[]), ''), NULLIF(unnest(@descriptions::text[]), ''),
+       NULLIF(unnest(@org_unit_ids::bigint[]), 0), NULLIF(unnest(@partner_ids::bigint[]), 0), NULLIF(unnest(@kinds::text[]), ''), NULLIF(unnest(@descriptions::text[]), ''),
        unnest(@debits::bigint[]), unnest(@credits::bigint[]);
 
 -- name: ReverseEntry :one
@@ -51,6 +51,6 @@ SELECT e.legal_entity_id, e.date, e.doc_type, e.doc_id, e.recording_id, e.id FRO
 RETURNING id;
 
 -- name: ReverseEntryLines :exec
-INSERT INTO accounting.entry_lines (entry_id, line_no, account_id, org_unit_id, kind, description, debit, credit)
-SELECT @reversal::bigint, line_no, account_id, org_unit_id, kind, description, credit, debit
+INSERT INTO accounting.entry_lines (entry_id, line_no, account_id, org_unit_id, partner_id, kind, description, debit, credit)
+SELECT @reversal::bigint, line_no, account_id, org_unit_id, partner_id, kind, description, credit, debit
 FROM accounting.entry_lines WHERE entry_id = @entry_id::bigint;

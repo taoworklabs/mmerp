@@ -29,11 +29,12 @@ WITH RECURSIVE sub AS (
   SELECT a.id FROM accounting.accounts a JOIN sub ON a.parent_id = sub.id
 )
 SELECT e.date, e.id AS entry_id, e.doc_type, e.doc_id, COALESCE(d.number, '') AS doc_number, l.kind, l.description, l.org_unit_id,
-  a.code AS account_code, l.debit, l.credit
+  a.code AS account_code, l.debit, l.credit, l.partner_id, p.code AS partner_code, p.name AS partner_name
 FROM accounting.entries e
 JOIN accounting.entry_lines l ON l.entry_id = e.id
 JOIN accounting.accounts a ON a.id = l.account_id
 LEFT JOIN record.documents d ON d.doc_type = e.doc_type AND d.id = e.doc_id
+LEFT JOIN partner.partners p ON p.id = l.partner_id
 WHERE e.legal_entity_id = $1 AND l.account_id IN (SELECT id FROM sub)
   AND e.date >= $2::date AND e.date <= $3::date
 ORDER BY e.date, e.id, l.line_no
@@ -58,6 +59,9 @@ type LedgerLinesRow struct {
 	AccountCode string
 	Debit       int64
 	Credit      int64
+	PartnerID   pgtype.Int8
+	PartnerCode pgtype.Text
+	PartnerName pgtype.Text
 }
 
 func (q *Queries) LedgerLines(ctx context.Context, arg LedgerLinesParams) ([]LedgerLinesRow, error) {
@@ -86,6 +90,9 @@ func (q *Queries) LedgerLines(ctx context.Context, arg LedgerLinesParams) ([]Led
 			&i.AccountCode,
 			&i.Debit,
 			&i.Credit,
+			&i.PartnerID,
+			&i.PartnerCode,
+			&i.PartnerName,
 		); err != nil {
 			return nil, err
 		}

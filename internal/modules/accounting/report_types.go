@@ -18,6 +18,9 @@ type LedgerLine struct {
 	Kind        *string `json:"kind"`
 	Description *string `json:"description"`
 	OrgUnitID   *int64  `json:"org_unit_id"`
+	PartnerID   *int64  `json:"partner_id"`
+	PartnerCode *string `json:"partner_code"`
+	PartnerName *string `json:"partner_name"`
 	AccountCode string  `json:"account_code"`
 	Debit       int64   `json:"debit"`
 	Credit      int64   `json:"credit"`

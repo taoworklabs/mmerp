@@ -32,4 +32,6 @@ var (
 	ErrAccountRuleMismatch = &platform.Error{Status: http.StatusConflict, Code: "account_partner_rule_mismatch"}
 	// Fewer than two lines, or debits differ from credits.
 	ErrEntryUnbalanced = &platform.Error{Status: http.StatusUnprocessableEntity, Code: "entry_unbalanced"}
+	// ErrEntryPartnerMismatch: a line names a partner on an untracked account, or none on a tracked one.
+	ErrEntryPartnerMismatch = &platform.Error{Status: http.StatusUnprocessableEntity, Code: "entry_partner_mismatch"}
 )

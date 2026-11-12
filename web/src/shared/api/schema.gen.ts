@@ -3870,6 +3870,10 @@ export interface components {
             kind: string | null;
             /** Format: int64 */
             org_unit_id: number | null;
+            partner_code: string | null;
+            /** Format: int64 */
+            partner_id: number | null;
+            partner_name: string | null;
         };
         LegalEntitySetting: {
             /** @description Translated as <key> and <key>.<value> */

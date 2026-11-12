@@ -60,6 +60,9 @@ func (s *Service) Ledger(ctx context.Context, legalEntity, accountID int64, from
 		if r.OrgUnitID.Valid {
 			ln.OrgUnitID = &r.OrgUnitID.Int64
 		}
+		if r.PartnerID.Valid {
+			ln.PartnerID, ln.PartnerCode, ln.PartnerName = &r.PartnerID.Int64, &r.PartnerCode.String, &r.PartnerName.String
+		}
 		out.Lines = append(out.Lines, ln)
 	}
 	return out, nil
