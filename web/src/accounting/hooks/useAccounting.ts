@@ -44,7 +44,7 @@ export const asList = <T>(q: UseQueryResult<unknown>, items: T[] | undefined) =>
   data: items && { items, total: items.length },
 })
 
-// useReportParams reads a report's legal entity, account and range from the URL; the range
+// useReportParams reads a report's legal entity, account, partner and range from the URL; the range
 // defaults to the current month up to today, the legal entity to the first the user may view.
 export function useReportParams() {
   const today = todayIn(useMe().timezone)
@@ -53,6 +53,7 @@ export function useReportParams() {
   const p = {
     legal_entity_id: entities.chosen ?? 0,
     account_id: Number(search.get('account_id')) || 0,
+    partner_id: Number(search.get('partner_id')) || 0,
     from: search.get('from') || `${today.slice(0, 7)}-01`,
     to: search.get('to') || today,
   }

@@ -18,3 +18,4 @@ export type JournalEntryListItem = components['schemas']['JournalEntryListItem']
 export type JournalEntrySort = NonNullable<NonNullable<operations['list-journal-entries']['parameters']['query']>['sort']>
 export type LedgerLine = components['schemas']['LedgerLine']
 export type TrialRow = components['schemas']['TrialRow']
+export type PartnerBalanceRow = components['schemas']['PartnerBalanceRow']

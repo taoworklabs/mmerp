@@ -34,5 +34,12 @@
   "accounting.error.invalid_range": "Invalid date range: the start must come before the end.",
   "accounting.preview.total_debit": "Total debit",
   "accounting.preview.total_credit": "Total credit",
-  "accounting.error.start_date_in_locked_period": "The legal entity has a period locked until {{locked_until}}, so the start date cannot move into it."
+  "accounting.error.start_date_in_locked_period": "The legal entity has a period locked until {{locked_until}}, so the start date cannot move into it.",
+  "accounting.nav.partner_balances": "Partner balances",
+  "accounting.error.rule_partner_mismatch": "A kind that names a partner maps only to an account tracked by partner, and the other way round.",
+  "accounting.error.account_partner_rule_mismatch": "A mapping rule uses this account and would no longer match. Change the rule first.",
+  "accounting.error.entry_partner_mismatch": "The entry's partners do not match how its accounts are tracked.",
+  "accounting.error.journal_line_partner_required": "Line {{line_no}}: the account is tracked by partner. Choose a partner.",
+  "accounting.error.journal_line_partner_not_allowed": "Line {{line_no}}: the account is not tracked by partner. Remove the partner.",
+  "accounting.error.account_not_tracked": "The account is not tracked by partner. Choose one that is."
 }

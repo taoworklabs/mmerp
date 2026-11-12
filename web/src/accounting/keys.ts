@@ -19,5 +19,8 @@ export const accountingKeys = {
   },
   ledger: (q: RangeQuery & { account_id: number }) => ['accounting', 'books', 'ledger', q] as const,
   trialBalance: (q: RangeQuery) => ['accounting', 'books', 'trial-balance', q] as const,
+  partnerBalances: (q: RangeQuery & { account_id?: number }) => ['accounting', 'books', 'partner-balances', q] as const,
+  partnerLedger: (q: RangeQuery & { partner_id: number; account_id?: number }) => ['accounting', 'books', 'partner-ledger', q] as const,
+  partners: (q: string) => ['accounting', 'partners', q] as const,
   pending: (legalEntity: number) => ['accounting', 'books', 'pending', legalEntity] as const,
 }

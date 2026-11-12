@@ -32,7 +32,7 @@ function accountTree(accounts: Account[]): TreeNode<Account>[] {
   return roots
 }
 
-const fieldsOf = (a: Account): AccountFields => ({ code: a.code, name: a.name, type: a.type, parent_id: a.parent_id ?? null, active: a.active })
+const fieldsOf = (a: Account): AccountFields => ({ code: a.code, name: a.name, type: a.type, parent_id: a.parent_id ?? null, active: a.active, by_partner: !!a.by_partner })
 
 // AccountsPage: the chart of accounts as a tree; accounting administrators add, edit and retire accounts.
 export function AccountsPage() {
@@ -78,6 +78,7 @@ export function AccountsPage() {
             <Text size="sm" truncate>
               {a.name}
             </Text>
+            {a.by_partner && <StatusBadge tone="info">{t('accounting.account.tracked')}</StatusBadge>}
             {!a.active && <StatusBadge tone="neutral">{t('accounting.account.retired')}</StatusBadge>}
           </Group>
         )}
@@ -120,14 +121,16 @@ export function AccountsPage() {
   )
 }
 
-type Values = { code: string; name: string; type: string; parent_id: string | null; active: boolean }
+type Values = { code: string; name: string; type: string; parent_id: string | null; active: boolean; by_partner: boolean }
 
 function AccountModal({ account: a, accounts, onClose }: { account: Account | null; accounts: Account[]; onClose: () => void }) {
   const { t } = useTranslation()
   const qc = useQueryClient()
   const form = useForm<Values>({
     mode: 'onBlur',
-    defaultValues: a ? { ...a, parent_id: a.parent_id ? String(a.parent_id) : null } : { code: '', name: '', type: '', parent_id: null, active: true },
+    defaultValues: a
+      ? { ...a, parent_id: a.parent_id ? String(a.parent_id) : null, by_partner: !!a.by_partner }
+      : { code: '', name: '', type: '', parent_id: null, active: true, by_partner: false },
   })
   const type = form.watch('type')
   // The server refuses code, type and parent changes once the account, or one under it, has lines.
@@ -140,6 +143,7 @@ function AccountModal({ account: a, accounts, onClose }: { account: Account | nu
       type: v.type as Account['type'],
       parent_id: v.parent_id ? Number(v.parent_id) : null,
       active: v.active,
+      by_partner: v.by_partner,
     }
     if (a) await unwrap(api.PUT('/accounting/accounts/{id}', { params: { path: { id: a.id } }, body }))
     else await unwrap(api.POST('/accounting/accounts', { body }))
@@ -149,7 +153,7 @@ function AccountModal({ account: a, accounts, onClose }: { account: Account | nu
   }
   return (
     <FormModal open title={t(a ? 'accounting.accounts.edit' : 'accounting.accounts.create')} onOpenChange={onClose}>
-      <Form form={form} onSubmit={save} errorFields={{ account_code_taken: 'code', account_parent_invalid: 'parent_id', account_in_use: 'parent_id', account_name_required: 'name' }}>
+      <Form form={form} onSubmit={save} errorFields={{ account_code_taken: 'code', account_parent_invalid: 'parent_id', account_in_use: 'parent_id', account_name_required: 'name', account_partner_rule_mismatch: 'by_partner', account_not_postable: 'by_partner' }}>
         <TextField name="code" label={t('accounting.account.code')} required maxLength={20} readOnly={codeLocked} rules={{ pattern: { value: /^[0-9A-Za-z.]+$/, message: t('accounting.account.code_hint') } }} />
         <TextField name="name" label={t('accounting.account.name')} required maxLength={200} />
         <SelectField name="type" label={t('accounting.account.type')} required readOnly={codeLocked} data={types.map((k) => ({ value: k, label: t(`accounting.account.type_${k}`) }))} />
@@ -161,6 +165,8 @@ function AccountModal({ account: a, accounts, onClose }: { account: Account | nu
           readOnly={used}
           data={accountOptions(parentCandidates(accounts, type, a?.id))}
         />
+        {/* The server refuses the flag on an account with lines or children. */}
+        <CheckboxField name="by_partner" label={t('accounting.account.by_partner')} description={t('accounting.account.by_partner_hint')} readOnly={!!a && (a.has_lines || !a.postable)} />
         <CheckboxField name="active" label={t('accounting.account.active')} description={t('accounting.account.active_hint')} />
         <FormActions submitLabel={t('accounting.common.save')} onCancel={onClose} cancelLabel={t('accounting.common.cancel')} />
       </Form>

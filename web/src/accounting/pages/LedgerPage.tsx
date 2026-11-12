@@ -45,10 +45,12 @@ export function LedgerPage() {
   const units = useOrgUnits({}).data ?? []
   const { p, put, entities } = useReportParams()
   const ready = !!p.legal_entity_id && !!p.account_id
+  const tracked = !!accounts.data?.find((a) => a.id === p.account_id)?.by_partner
+  const range = { legal_entity_id: p.legal_entity_id, account_id: p.account_id, from: p.from, to: p.to }
 
   const ledger = useQuery({
-    queryKey: accountingKeys.ledger(p),
-    queryFn: () => unwrap(api.GET('/accounting/ledger', { params: { query: p } })),
+    queryKey: accountingKeys.ledger(range),
+    queryFn: () => unwrap(api.GET('/accounting/ledger', { params: { query: range } })),
     enabled: ready,
     placeholderData: keepPreviousData,
   })
@@ -67,6 +69,7 @@ export function LedgerPage() {
       },
     },
     { key: 'description', header: t('accounting.ledger.description'), role: 'meta', render: (r) => r.description ?? (r.kind ? kindLabel(t, r.kind) : '') },
+    ...(tracked ? [{ key: 'partner', header: t('accounting.ledger.partner'), role: 'meta', render: (r) => r.partner_name ?? '' } satisfies Column<Row>] : []),
     { key: 'org_unit', header: t('accounting.ledger.org_unit'), role: 'hidden', render: (r) => units.find((u) => u.id === r.org_unit_id)?.name ?? '' },
     { key: 'account', header: t('accounting.ledger.account'), role: 'hidden', kind: 'code', render: (r) => r.account_code },
     { key: 'debit', header: t('accounting.side.debit_money'), band: t('accounting.ledger.movement'), role: 'meta', kind: 'number', render: (r) => formatNumber(r.debit) },

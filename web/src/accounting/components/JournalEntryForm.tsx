@@ -24,14 +24,22 @@ import {
   type LineColumn,
 } from '@/shared/ui/form'
 import { accountLabel, accountOptions, useAccounts } from '../hooks/useAccounting'
+import { AccountingPartnerPicker } from './AccountingPartnerPicker'
 import { journalEntryDocType } from '../keys'
 import { keepUnitsIn, subtree } from '../tree'
 
-type LineValues = { account_id: string | null; org_unit_id: string | null; description: string; debit: number | null; credit: number | null }
+type LineValues = {
+  account_id: string | null
+  partner_id: string | null
+  org_unit_id: string | null
+  description: string
+  debit: number | null
+  credit: number | null
+}
 
 type Values = { date: string | null; legal_entity_id: string | null; description: string; lines: LineValues[] }
 
-const emptyLine: LineValues = { account_id: null, org_unit_id: null, description: '', debit: null, credit: null }
+const emptyLine: LineValues = { account_id: null, partner_id: null, org_unit_id: null, description: '', debit: null, credit: null }
 
 function defaults(doc?: JournalEntry): Values {
   return {
@@ -41,6 +49,7 @@ function defaults(doc?: JournalEntry): Values {
     lines: doc
       ? doc.lines.map((l) => ({
           account_id: String(l.account_id),
+          partner_id: l.partner_id ? String(l.partner_id) : null,
           org_unit_id: l.org_unit_id ? String(l.org_unit_id) : null,
           description: l.description ?? '',
           debit: l.debit || null,
@@ -57,6 +66,8 @@ const errorFields: ErrorFields<Values> = {
   line_side_invalid: 'lines.*.debit',
   line_amount_invalid: 'lines.*.debit',
   line_org_unit_invalid: 'lines.*.org_unit_id',
+  journal_line_partner_required: 'lines.*.partner_id',
+  journal_line_partner_not_allowed: 'lines.*.partner_id',
 }
 
 type Line = JournalEntry['lines'][number]
@@ -82,6 +93,9 @@ export function JournalEntryForm({ doc, onCreated }: Props) {
   // Only postable accounts take lines; a saved line's account still shows.
   const saved = new Set(doc?.lines.map((l) => l.account_id))
   const accountChoices = accountOptions(accounts, (a) => (a.active && a.postable) || saved.has(a.id))
+  // A line names a partner exactly when its account is tracked by partner.
+  const trackedIds = new Set(accounts?.filter((a) => a.by_partner).map((a) => a.id))
+  const tracked = (accountId: string | null) => !!accountId && trackedIds.has(Number(accountId))
   // A line's org unit must belong to the entry's legal entity.
   const inEntity = subtree(units, Number(form.watch('legal_entity_id')))
   const unitChoices = orgUnitOptions(units.filter((u) => inEntity.has(u.id))).map(({ value, label }) => ({ value, label }))
@@ -114,6 +128,7 @@ export function JournalEntryForm({ doc, onCreated }: Props) {
       lines: v.lines.map(
         (l): JournalEntryLine => ({
           account_id: Number(l.account_id),
+          partner_id: tracked(l.account_id) && l.partner_id ? Number(l.partner_id) : undefined,
           org_unit_id: l.org_unit_id ? Number(l.org_unit_id) : undefined,
           description: l.description.trim() || undefined,
           debit: l.debit ?? 0,
@@ -137,6 +152,18 @@ export function JournalEntryForm({ doc, onCreated }: Props) {
       width: 240,
       value: (l) => accountLabel({ code: l.account_code, name: l.account_name }),
       cell: (i, bare) => <SelectField name={`lines.${i}.account_id`} label={t('accounting.line.account', { n: i + 1 })} bare={bare} required data={accountChoices} />,
+    },
+    {
+      key: 'partner',
+      header: t('accounting.line.partner_col'),
+      width: 220,
+      value: (l) => l.partner_name ?? '',
+      cell: (i, bare) => {
+        if (!tracked(form.watch(`lines.${i}.account_id`))) return null
+        const l = doc?.lines[i]
+        const current = l?.partner_id && l.partner_code && l.partner_name ? { id: l.partner_id, code: l.partner_code, name: l.partner_name } : undefined
+        return <AccountingPartnerPicker name={`lines.${i}.partner_id`} label={t('accounting.line.partner', { n: i + 1 })} bare={bare} required current={current} />
+      },
     },
     {
       key: 'description',

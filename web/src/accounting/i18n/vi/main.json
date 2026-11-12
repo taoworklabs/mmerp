@@ -141,5 +141,22 @@
   "accounting.common.close": "Đóng",
   "accounting.entry.total_debit": "Tổng Nợ (đ)",
   "accounting.entry.total_credit": "Tổng Có (đ)",
-  "accounting.entry.totals_saved": "Số tiền tính theo lần lưu gần nhất; lưu để tính lại."
+  "accounting.entry.totals_saved": "Số tiền tính theo lần lưu gần nhất; lưu để tính lại.",
+  "accounting.account.by_partner": "Theo dõi theo đối tác",
+  "accounting.account.by_partner_hint": "Mỗi dòng bút toán trên tài khoản này ghi một đối tác, như phải thu khách hàng hay phải trả người bán. Không đổi được khi tài khoản đã có bút toán hoặc có tài khoản con.",
+  "accounting.account.tracked": "Theo đối tác",
+  "accounting.rule.by_partner": "Theo đối tác",
+  "accounting.line.partner_col": "Đối tác",
+  "accounting.line.partner": "Đối tác dòng {{n}}",
+  "accounting.ledger.partner": "Đối tác",
+  "accounting.partners.title": "Công nợ theo đối tác",
+  "accounting.partners.description": "Số dư đầu kỳ, phát sinh và số dư cuối kỳ của từng đối tác trên các tài khoản theo dõi theo đối tác.",
+  "accounting.partners.account": "Tài khoản",
+  "accounting.partners.partner": "Đối tác",
+  "accounting.partners.empty": "Chưa có công nợ",
+  "accounting.partners.empty_description": "Chưa có bút toán nào ghi đối tác trên các tài khoản theo dõi theo đối tác.",
+  "accounting.partner_ledger.title": "Sổ chi tiết công nợ",
+  "accounting.partner_ledger.description": "Phát sinh của một đối tác trong kỳ, kèm số dư.",
+  "accounting.partner_ledger.pick": "Chọn đối tác",
+  "accounting.partner_ledger.pick_description": "Chọn pháp nhân và đối tác để xem sổ chi tiết công nợ."
 }
