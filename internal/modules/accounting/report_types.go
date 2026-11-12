@@ -6,7 +6,11 @@ import (
 	"github.com/taoworklabs/mmerp/internal/platform"
 )
 
-var ErrInvalidRange = &platform.Error{Status: http.StatusUnprocessableEntity, Code: "invalid_range"}
+var (
+	ErrInvalidRange = &platform.Error{Status: http.StatusUnprocessableEntity, Code: "invalid_range"}
+	// ErrAccountNotTracked: partner reports read accounts tracked by partner only.
+	ErrAccountNotTracked = &platform.Error{Status: http.StatusUnprocessableEntity, Code: "account_not_tracked"}
+)
 
 // LedgerLine is one entry line; Balance is the running signed balance (debit minus credit) after it.
 type LedgerLine struct {
@@ -50,4 +54,26 @@ type TrialBalance struct {
 	Rows        []TrialRow `json:"rows"`
 	TotalDebit  int64      `json:"total_debit"`
 	TotalCredit int64      `json:"total_credit"`
+}
+
+// PartnerBalanceRow is one partner on one tracked account; balances are signed debit minus credit.
+type PartnerBalanceRow struct {
+	AccountID   int64  `json:"account_id"`
+	AccountCode string `json:"account_code"`
+	PartnerID   int64  `json:"partner_id"`
+	PartnerCode string `json:"partner_code"`
+	PartnerName string `json:"partner_name"`
+	Opening     int64  `json:"opening"`
+	Debit       int64  `json:"debit"`
+	Credit      int64  `json:"credit"`
+	Closing     int64  `json:"closing"`
+}
+
+// PartnerBalances totals equal the trial balance rows of the accounts covered.
+type PartnerBalances struct {
+	Rows         []PartnerBalanceRow `json:"rows" nullable:"false"`
+	TotalOpening int64               `json:"total_opening"`
+	TotalDebit   int64               `json:"total_debit"`
+	TotalCredit  int64               `json:"total_credit"`
+	TotalClosing int64               `json:"total_closing"`
 }

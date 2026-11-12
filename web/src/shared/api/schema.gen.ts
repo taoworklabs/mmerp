@@ -101,6 +101,38 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/accounting/partner-balances": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["get-accounting-partner-balances"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/accounting/partner-ledger": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["get-accounting-partner-ledger"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/accounting/partners": {
         parameters: {
             query?: never;
@@ -4792,6 +4824,40 @@ export interface components {
             phone: string | null;
             tax_code: string | null;
         };
+        PartnerBalanceRow: {
+            account_code: string;
+            /** Format: int64 */
+            account_id: number;
+            /** Format: int64 */
+            closing: number;
+            /** Format: int64 */
+            credit: number;
+            /** Format: int64 */
+            debit: number;
+            /** Format: int64 */
+            opening: number;
+            partner_code: string;
+            /** Format: int64 */
+            partner_id: number;
+            partner_name: string;
+        };
+        PartnerBalances: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example /api/schemas/PartnerBalances.json
+             */
+            readonly $schema?: string;
+            rows: components["schemas"]["PartnerBalanceRow"][];
+            /** Format: int64 */
+            total_closing: number;
+            /** Format: int64 */
+            total_credit: number;
+            /** Format: int64 */
+            total_debit: number;
+            /** Format: int64 */
+            total_opening: number;
+        };
         PartnerFields: {
             /**
              * Format: uri
@@ -6223,6 +6289,77 @@ export interface operations {
             query: {
                 legal_entity_id: number;
                 account_id: number;
+                from: string;
+                to: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Ledger"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "get-accounting-partner-balances": {
+        parameters: {
+            query: {
+                legal_entity_id: number;
+                /** @description A tracked account; all of them when left out */
+                account_id?: number;
+                from: string;
+                to: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PartnerBalances"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "get-accounting-partner-ledger": {
+        parameters: {
+            query: {
+                legal_entity_id: number;
+                partner_id: number;
+                /** @description A tracked account; all of them when left out */
+                account_id?: number;
                 from: string;
                 to: string;
             };

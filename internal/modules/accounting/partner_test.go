@@ -6,6 +6,7 @@ import (
 	"os"
 	"testing"
 
+	"github.com/taoworklabs/mmerp/internal/core/iam"
 	"github.com/taoworklabs/mmerp/internal/core/record"
 	"github.com/taoworklabs/mmerp/internal/modules/accounting"
 	"github.com/taoworklabs/mmerp/internal/platform"
@@ -302,5 +303,131 @@ func TestAccountingPartnersLookup(t *testing.T) {
 	}
 	if _, err := l.s.Partners(user("view", "viewer"), ""); !errors.Is(err, platform.ErrForbidden) {
 		t.Fatalf("viewer: %v", err)
+	}
+}
+
+// owed posts a manual entry moving amount on account for partner against 411: positive debits the account.
+func (l *ledger) owed(t *testing.T, date string, account, partner, amount int64) {
+	t.Helper()
+	if _, ok := l.acc["411"]; !ok {
+		l.acc["411"] = mustCreate(t, l.s, l.core.Admin, acct("411", "equity", nil))
+	}
+	a := accounting.JournalEntryLine{AccountID: account, PartnerID: &partner, Debit: amount}
+	b := accounting.JournalEntryLine{AccountID: l.acc["411"], Credit: amount}
+	if amount < 0 {
+		a.Debit, a.Credit, b.Credit, b.Debit = 0, -amount, 0, -amount
+	}
+	if err := l.post(l.newJournal(t, accounting.JournalEntryFields{Date: date, LegalEntityID: l.le, Description: "x", Lines: []accounting.JournalEntryLine{a, b}})); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestPartnerBalancesMatchTrialBalance(t *testing.T) {
+	l := newLedger(t)
+	l.receivables(t)
+	a, b := l.partner(t, "A"), l.partner(t, "B")
+	ar := l.acc["131"]
+	l.owed(t, "2026-01-10", ar, a, 100)
+	l.owed(t, "2026-02-10", ar, a, 40)
+	l.owed(t, "2026-02-15", ar, a, -30)
+	l.owed(t, "2026-02-20", ar, b, 25)
+	l.owed(t, "2026-03-10", ar, b, 999)
+	got, err := l.s.PartnerBalances(l.core.Admin, l.le, &ar, "2026-02-01", "2026-02-28")
+	if err != nil || len(got.Rows) != 2 {
+		t.Fatalf("balances %+v %v", got, err)
+	}
+	ra, rb := got.Rows[0], got.Rows[1]
+	if ra.PartnerCode != "A" || ra.AccountCode != "131" || ra.Opening != 100 || ra.Debit != 40 || ra.Credit != 30 || ra.Closing != 110 ||
+		rb.PartnerCode != "B" || rb.PartnerName != "Partner B" || rb.Opening != 0 || rb.Debit != 25 || rb.Closing != 25 {
+		t.Fatalf("rows %+v", got.Rows)
+	}
+	tb, err := l.s.TrialBalance(l.core.Admin, l.le, "2026-02-01", "2026-02-28")
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, r := range tb.Rows {
+		if r.Code == "131" && (r.Opening != got.TotalOpening || r.Debit != got.TotalDebit || r.Credit != got.TotalCredit || r.Closing != got.TotalClosing) {
+			t.Fatalf("trial %+v, partners %+v", r, got)
+		}
+	}
+	untracked := l.acc["642"]
+	if _, err := l.s.PartnerBalances(l.core.Admin, l.le, &untracked, "2026-02-01", "2026-02-28"); !errors.Is(err, accounting.ErrAccountNotTracked) {
+		t.Fatalf("untracked account: %v", err)
+	}
+}
+
+func TestPartnerBalancesOneRowPerAccount(t *testing.T) {
+	l := newLedger(t)
+	l.receivables(t)
+	ap := mustCreate(t, l.s, l.core.Admin, tracked("331", "liability", nil))
+	a := l.partner(t, "A")
+	l.owed(t, "2026-02-10", l.acc["131"], a, 40)
+	l.owed(t, "2026-02-11", ap, a, -15)
+	got, err := l.s.PartnerBalances(l.core.Admin, l.le, nil, "2026-02-01", "2026-02-28")
+	if err != nil || len(got.Rows) != 2 || got.Rows[0].AccountCode != "131" || got.Rows[0].Closing != 40 ||
+		got.Rows[1].AccountCode != "331" || got.Rows[1].Closing != -15 || got.TotalClosing != 25 {
+		t.Fatalf("balances %+v %v", got, err)
+	}
+}
+
+func TestPartnerLedgerRunningBalance(t *testing.T) {
+	l := newLedger(t)
+	l.receivables(t)
+	a, b := l.partner(t, "A"), l.partner(t, "B")
+	ar := l.acc["131"]
+	l.owed(t, "2026-01-10", ar, a, 100)
+	l.owed(t, "2026-02-10", ar, a, 40)
+	l.owed(t, "2026-02-12", ar, b, 7)
+	l.owed(t, "2026-02-15", ar, a, -30)
+	got, err := l.s.PartnerLedger(l.core.Admin, l.le, a, nil, "2026-02-01", "2026-02-28")
+	if err != nil || got.Opening != 100 || got.Closing != 110 || len(got.Lines) != 2 {
+		t.Fatalf("ledger %+v %v", got, err)
+	}
+	if x, y := got.Lines[0], got.Lines[1]; x.Balance != 140 || x.DocNumber == "" || x.AccountCode != "131" || y.Balance != 110 || y.Credit != 30 {
+		t.Fatalf("lines %+v", got.Lines)
+	}
+}
+
+func TestPartnerReportsStayInLegalEntity(t *testing.T) {
+	l := newLedger(t)
+	l.receivables(t)
+	a := l.partner(t, "A")
+	le2, err := l.core.IAM.CreateOrgUnit(l.core.Admin, iam.OrgUnitInput{Kind: "company", Name: "C2"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	start := "2026-01-01"
+	if err := l.s.SetStart(l.core.Admin, le2, &start); err != nil {
+		t.Fatal(err)
+	}
+	l.owed(t, "2026-02-10", l.acc["131"], a, 40)
+	ref := l.newJournal(t, accounting.JournalEntryFields{Date: "2026-02-10", LegalEntityID: le2, Description: "x", Lines: []accounting.JournalEntryLine{
+		{AccountID: l.acc["131"], PartnerID: &a, Debit: 5}, {AccountID: l.acc["411"], Credit: 5}}})
+	if err := l.post(ref); err != nil {
+		t.Fatal(err)
+	}
+	for le, want := range map[int64]int64{l.le: 40, le2: 5} {
+		b, err := l.s.PartnerBalances(l.core.Admin, le, nil, "2026-02-01", "2026-02-28")
+		if err != nil || len(b.Rows) != 1 || b.Rows[0].Closing != want {
+			t.Fatalf("balances %d %+v %v", le, b, err)
+		}
+		g, err := l.s.PartnerLedger(l.core.Admin, le, a, nil, "2026-02-01", "2026-02-28")
+		if err != nil || len(g.Lines) != 1 || g.Closing != want {
+			t.Fatalf("ledger %d %+v %v", le, g, err)
+		}
+	}
+	id, err := l.core.IAM.CreateUser(l.core.Admin, "view2", "View", "long enough")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := l.core.IAM.GrantRole(l.core.Admin, id, "accounting", "viewer", &le2); err != nil {
+		t.Fatal(err)
+	}
+	other := platform.WithActor(l.core.Ctx, id)
+	if _, err := l.s.PartnerBalances(other, l.le, nil, "2026-02-01", "2026-02-28"); !errors.Is(err, platform.ErrForbidden) {
+		t.Fatalf("balances elsewhere: %v", err)
+	}
+	if _, err := l.s.PartnerLedger(other, l.le, a, nil, "2026-02-01", "2026-02-28"); !errors.Is(err, platform.ErrForbidden) {
+		t.Fatalf("ledger elsewhere: %v", err)
 	}
 }
