@@ -26,6 +26,10 @@ var (
 	// Params: locked_until.
 	ErrStartDateInLockedPeriod = &platform.Error{Status: http.StatusConflict, Code: "start_date_in_locked_period"}
 	ErrAccountInUse            = &platform.Error{Status: http.StatusConflict, Code: "account_in_use"}
+	// ErrRulePartnerMismatch: a kind naming a partner maps only to a tracked account, any other kind only to an untracked one.
+	ErrRulePartnerMismatch = &platform.Error{Status: http.StatusUnprocessableEntity, Code: "rule_partner_mismatch"}
+	// ErrAccountRuleMismatch: changing the flag would leave a rule pointing at the account unmatched.
+	ErrAccountRuleMismatch = &platform.Error{Status: http.StatusConflict, Code: "account_partner_rule_mismatch"}
 	// Fewer than two lines, or debits differ from credits.
 	ErrEntryUnbalanced = &platform.Error{Status: http.StatusUnprocessableEntity, Code: "entry_unbalanced"}
 )

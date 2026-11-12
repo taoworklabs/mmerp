@@ -7,6 +7,9 @@
           "active": {
             "type": "boolean"
           },
+          "by_partner": {
+            "type": "boolean"
+          },
           "code": {
             "pattern": "^[0-9A-Za-z.]{1,20}$",
             "type": "string"
@@ -68,6 +71,9 @@
             "type": "string"
           },
           "active": {
+            "type": "boolean"
+          },
+          "by_partner": {
             "type": "boolean"
           },
           "code": {
@@ -8729,6 +8735,9 @@
               "null"
             ]
           },
+          "by_partner": {
+            "type": "boolean"
+          },
           "kind": {
             "type": "string"
           },
@@ -8746,7 +8755,8 @@
         "required": [
           "kind",
           "account_id",
-          "side"
+          "side",
+          "by_partner"
         ],
         "type": "object"
       },

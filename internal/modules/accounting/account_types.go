@@ -7,6 +7,9 @@ type AccountFields struct {
 	Type     string `json:"type" enum:"asset,liability,equity,revenue,expense"`
 	ParentID *int64 `json:"parent_id" required:"false" nullable:"true"`
 	Active   bool   `json:"active"`
+	// ByPartner: every journal line on the account names a partner. Postable accounts only;
+	// fixed once the account has lines.
+	ByPartner bool `json:"by_partner" required:"false"`
 }
 
 // Account is a chart line. Postable: active entries may be booked to it (it has no child).

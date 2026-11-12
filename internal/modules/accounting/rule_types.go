@@ -5,6 +5,8 @@ type Rule struct {
 	Kind      string  `json:"kind"`
 	AccountID *int64  `json:"account_id" nullable:"true"`
 	Side      *string `json:"side" nullable:"true" enum:"debit,credit"`
+	// ByPartner: the kind's lines name a partner, so it maps only to an account tracked by partner.
+	ByPartner bool `json:"by_partner"`
 }
 
 type RuleList struct {

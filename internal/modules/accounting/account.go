@@ -9,6 +9,7 @@ import (
 
 	"github.com/taoworklabs/mmerp/internal/modules/accounting/internal/store"
 	"github.com/taoworklabs/mmerp/internal/platform"
+	"github.com/taoworklabs/mmerp/internal/shared/posting"
 )
 
 // Accounts lists the whole chart by code to anyone who may view accounting at some org unit.
@@ -27,7 +28,7 @@ func (s *Service) Accounts(ctx context.Context) ([]Account, error) {
 	out := make([]Account, 0, len(rows))
 	for _, r := range rows {
 		out = append(out, Account{ID: r.ID, Postable: r.Postable, HasLines: r.HasLines,
-			AccountFields: AccountFields{Code: r.Code, Name: r.Name, Type: r.Type, ParentID: platform.Int8Ptr(r.ParentID), Active: r.Active}})
+			AccountFields: AccountFields{Code: r.Code, Name: r.Name, Type: r.Type, ParentID: platform.Int8Ptr(r.ParentID), Active: r.Active, ByPartner: r.ByPartner}})
 	}
 	return out, nil
 }
@@ -43,11 +44,11 @@ func (s *Service) CreateAccount(ctx context.Context, f AccountFields) (id int64,
 		if err := checkParent(ctx, 0, f); err != nil {
 			return err
 		}
-		id, err = store.CreateAccount.Run(ctx, store.CreateAccountParams{Code: f.Code, Name: f.Name, Type: f.Type, ParentID: platform.NullInt8(f.ParentID), Active: f.Active})
+		id, err = store.CreateAccount.Run(ctx, store.CreateAccountParams{Code: f.Code, Name: f.Name, Type: f.Type, ParentID: platform.NullInt8(f.ParentID), Active: f.Active, ByPartner: f.ByPartner})
 		if err != nil {
 			return err
 		}
-		return s.d.Audit.Record(ctx, "accounting.account_saved", map[string]any{"id": id, "code": f.Code, "name": f.Name, "type": f.Type, "active": f.Active})
+		return s.d.Audit.Record(ctx, "accounting.account_saved", map[string]any{"id": id, "code": f.Code, "name": f.Name, "type": f.Type, "active": f.Active, "by_partner": f.ByPartner})
 	})
 	return id, err
 }
@@ -72,13 +73,18 @@ func (s *Service) UpdateAccount(ctx context.Context, id int64, f AccountFields) 
 		if cur.HasLines && (cur.Code != f.Code || cur.Type != f.Type) || cur.TreeHasLines && moved || cur.HasChildren && cur.Type != f.Type {
 			return ErrAccountInUse
 		}
+		if cur.ByPartner != f.ByPartner {
+			if err := checkFlagChange(ctx, id, cur.HasLines, cur.HasChildren, f.ByPartner); err != nil {
+				return err
+			}
+		}
 		if err := checkParent(ctx, id, f); err != nil {
 			return err
 		}
-		if err := store.UpdateAccount.Run(ctx, store.UpdateAccountParams{ID: id, Code: f.Code, Name: f.Name, Type: f.Type, ParentID: platform.NullInt8(f.ParentID), Active: f.Active}); err != nil {
+		if err := store.UpdateAccount.Run(ctx, store.UpdateAccountParams{ID: id, Code: f.Code, Name: f.Name, Type: f.Type, ParentID: platform.NullInt8(f.ParentID), Active: f.Active, ByPartner: f.ByPartner}); err != nil {
 			return err
 		}
-		return s.d.Audit.Record(ctx, "accounting.account_saved", map[string]any{"id": id, "code": f.Code, "name": f.Name, "type": f.Type, "active": f.Active})
+		return s.d.Audit.Record(ctx, "accounting.account_saved", map[string]any{"id": id, "code": f.Code, "name": f.Name, "type": f.Type, "active": f.Active, "by_partner": f.ByPartner})
 	})
 }
 
@@ -130,10 +136,42 @@ func checkParent(ctx context.Context, id int64, f AccountFields) error {
 		return nil
 	}
 	p, err := store.AccountParent.Run(ctx, store.AccountParentParams{ID: id, ParentID: *f.ParentID})
-	if errors.Is(err, pgx.ErrNoRows) || err == nil && (p.Cyclic || p.Type != f.Type || p.HasLines) {
+	// A tracked account must stay postable, so it takes no child.
+	if errors.Is(err, pgx.ErrNoRows) || err == nil && (p.Cyclic || p.Type != f.Type || p.HasLines || p.ByPartner) {
 		return ErrAccountParentInvalid
 	}
 	return err
+}
+
+// checkFlagChange: the flag moves only on a leaf without lines, and never so that a rule
+// pointing at the account stops matching its kind.
+func checkFlagChange(ctx context.Context, id int64, hasLines, hasChildren, byPartner bool) error {
+	if hasLines {
+		return ErrAccountInUse
+	}
+	if byPartner && hasChildren {
+		return ErrAccountNotPostable
+	}
+	kinds, err := store.RuleKindsOfAccount.Run(ctx, id)
+	if err != nil {
+		return err
+	}
+	for _, k := range kinds {
+		if d, _ := posting.Declared(posting.Kind(k)); d.ByPartner != byPartner {
+			return ErrAccountRuleMismatch
+		}
+	}
+	return nil
+}
+
+// accountFlags maps each existing account among ids to its by_partner flag.
+func accountFlags(ctx context.Context, ids []int64) (map[int64]bool, error) {
+	rows, err := store.AccountFlags.Run(ctx, ids)
+	out := make(map[int64]bool, len(rows))
+	for _, r := range rows {
+		out[r.ID] = r.ByPartner
+	}
+	return out, err
 }
 
 // postableActive: true for accounts that exist, are active and have no child.

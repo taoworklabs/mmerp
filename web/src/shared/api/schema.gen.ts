@@ -2362,6 +2362,7 @@ export interface components {
     schemas: {
         Account: {
             active: boolean;
+            by_partner?: boolean;
             code: string;
             has_lines: boolean;
             /** Format: int64 */
@@ -2381,6 +2382,7 @@ export interface components {
              */
             readonly $schema?: string;
             active: boolean;
+            by_partner?: boolean;
             code: string;
             name: string;
             /** Format: int64 */
@@ -5254,6 +5256,7 @@ export interface components {
         Rule: {
             /** Format: int64 */
             account_id: number | null;
+            by_partner: boolean;
             kind: string;
             /** @enum {string|null} */
             side: "debit" | "credit" | null;

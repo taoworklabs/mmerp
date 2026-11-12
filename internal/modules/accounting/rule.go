@@ -23,14 +23,15 @@ func (s *Service) Rules(ctx context.Context) ([]Rule, error) {
 	}
 	stored := make(map[string]Rule, len(rows))
 	for _, r := range rows {
-		stored[r.Kind] = Rule{Kind: r.Kind, AccountID: &r.AccountID, Side: &r.Side}
+		d, _ := posting.Declared(posting.Kind(r.Kind))
+		stored[r.Kind] = Rule{Kind: r.Kind, AccountID: &r.AccountID, Side: &r.Side, ByPartner: d.ByPartner}
 	}
 	out := []Rule{}
 	for _, d := range posting.Kinds() {
 		k := d.Kind
 		r, ok := stored[string(k)]
 		if !ok {
-			r = Rule{Kind: string(k)}
+			r = Rule{Kind: string(k), ByPartner: d.ByPartner}
 		}
 		out = append(out, r)
 		delete(stored, string(k))
@@ -54,6 +55,13 @@ func (s *Service) SaveRule(ctx context.Context, kind string, accountID int64, si
 		}
 		if !ok[accountID] {
 			return ErrAccountNotPostable
+		}
+		flags, err := accountFlags(ctx, []int64{accountID})
+		if err != nil {
+			return err
+		}
+		if d, _ := posting.Declared(posting.Kind(kind)); d.ByPartner != flags[accountID] {
+			return ErrRulePartnerMismatch
 		}
 		if err := store.SaveRule.Run(ctx, store.SaveRuleParams{Kind: kind, AccountID: accountID, Side: side}); err != nil {
 			return err
