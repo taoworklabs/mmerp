@@ -26,7 +26,8 @@ func (s *Service) Rules(ctx context.Context) ([]Rule, error) {
 		stored[r.Kind] = Rule{Kind: r.Kind, AccountID: &r.AccountID, Side: &r.Side}
 	}
 	out := []Rule{}
-	for _, k := range posting.Kinds() {
+	for _, d := range posting.Kinds() {
+		k := d.Kind
 		r, ok := stored[string(k)]
 		if !ok {
 			r = Rule{Kind: string(k)}

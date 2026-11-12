@@ -24,6 +24,11 @@ func NewService(h Hooks) *Service {
 // Record writes the posting lines of a document being posted, in the caller's transaction,
 // under the document's legal entity and date. It refuses while earlier lines are not voided.
 func (s *Service) Record(ctx context.Context, ref record.Ref, lines []Line) error {
+	for _, l := range lines {
+		if d, _ := Declared(l.Kind); d.ByPartner != (l.PartnerID != nil) {
+			return ErrPartnerMismatch
+		}
+	}
 	h, err := store.DocumentHeader.Run(ctx, store.DocumentHeaderParams{DocType: ref.Type, ID: ref.ID})
 	if errors.Is(err, pgx.ErrNoRows) {
 		return platform.ErrNotFound
@@ -38,6 +43,11 @@ func (s *Service) Record(ctx context.Context, ref record.Ref, lines []Line) erro
 	for _, l := range lines {
 		p.Kinds = append(p.Kinds, string(l.Kind))
 		p.OrgUnitIds = append(p.OrgUnitIds, l.OrgUnitID)
+		var partner int64
+		if l.PartnerID != nil {
+			partner = *l.PartnerID
+		}
+		p.PartnerIds = append(p.PartnerIds, partner)
 		p.Amounts = append(p.Amounts, l.Amount)
 	}
 	if err := store.InsertLines.Run(ctx, p); err != nil {

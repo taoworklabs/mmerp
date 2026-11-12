@@ -5,9 +5,9 @@ SELECT legal_entity_id, date FROM record.documents WHERE doc_type = $1 AND id = 
 INSERT INTO posting.recordings (doc_type, doc_id) VALUES ($1, $2);
 
 -- name: InsertLines :exec
-INSERT INTO posting.lines (doc_type, doc_id, legal_entity_id, date, kind, org_unit_id, amount)
+INSERT INTO posting.lines (doc_type, doc_id, legal_entity_id, date, kind, org_unit_id, partner_id, amount)
 SELECT @doc_type::text, @doc_id::bigint, @legal_entity_id::bigint, @date::date,
-       unnest(@kinds::text[]), unnest(@org_unit_ids::bigint[]), unnest(@amounts::bigint[]);
+       unnest(@kinds::text[]), unnest(@org_unit_ids::bigint[]), NULLIF(unnest(@partner_ids::bigint[]), 0), unnest(@amounts::bigint[]);
 
 -- name: VoidRecording :exec
 UPDATE posting.recordings SET voided_at = now() WHERE doc_type = $1 AND doc_id = $2 AND voided_at IS NULL;
