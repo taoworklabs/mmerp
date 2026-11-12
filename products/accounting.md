@@ -8,11 +8,12 @@ A minimal general ledger, generic first: the parts that are the same in every co
 | --- | --- |
 | Chart of accounts as data (one per tenant), postable accounts | The Vietnamese layer: Circular 133/200 charts, default rules, Ministry of Finance reports (B01, B02...), VAT and CIT |
 | Mapping rules from business line kind to account and side | Financial statements, period closing entries, profit carry-forward |
-| Automatic journal entries from `posting.lines`, reversing entries when lines are voided | Receivables and payables per customer, supplier or employee |
+| Automatic journal entries from `posting.lines`, reversing entries when lines are voided | Open-item matching, due dates and aging; balances per employee |
 | Awaiting posting: pending, awaiting-mapping and unbalanced documents, "post pending" | Multiple currencies, exchange rates |
 | Manual journal entries with approval | Re-posting a date range after rules change (fix with manual entries) |
 | General ledger and trial balance per legal entity and date range | Business lines from Sales, budgets, cost centres beyond org units, fixed assets, bank reconciliation |
 | Accounting start date per legal entity, refusal to lock a period with unposted documents | Printing manual entries |
+| Accounts tracked by partner, partner balances and partner ledger (M16, [ADR-0051](../docs/adr/0051-business-lines-name-a-partner.md)) | |
 
 The Vietnamese layer is mostly data (charts, default rules, report forms), but it also needs HRM to split its insurance business line kinds per fund: HRM folds BHXH, BHYT, BHTN and the union fee into `employer_insurance_expense` and `insurance_payable`, while Circular 133/200 books them to 3382, 3383, 3384 and 3386 separately, which needs new posting kinds in HRM (a code change). Splitting them is cheapest before any tenant has a ledger.
 

@@ -27,6 +27,7 @@ A milestone only passes when what it adds keeps the contract intact from table t
 ```
 M11 Attachments and discussion ─► M12 Notifications ─► M13 PDF printing ─► M14 Sales   (all done)
    ─► HRM review ─► Core work after M14   (done) ─► M15 Accounting   (done)
+   ─► M16 Partner subledger ─► M17 Sales to cash ─► M18 Purchasing ─► M19 Stock
    ┄► M10 On-premise operations ┄► [Gate: production readiness]   (on hold)
 ```
 
@@ -134,6 +135,18 @@ Vertical slices, each from migration to screen:
 6. The accountant enters, posts and cancels a manual journal entry.
 7. The trial balance for a period shows equal debit and credit totals.
 
+## M16. Partner subledger
+
+**Goal:** business lines may name a partner and accounting keeps balances per partner, so that Sales to cash (M17: invoices, receipts, receivables) and Purchasing (M18: purchase orders, goods receipts, supplier invoices, payments, payables) only add kinds and documents ([ADR-0051](./adr/0051-business-lines-name-a-partner.md), [design](./superpowers/specs/2026-11-12-partner-subledger-design.md)). M19 completes stock: valuation, transfers, stocktakes.
+
+**Done when**, with `make seed` data and `PRODUCTS=hrm,sales,accounting`:
+
+1. The accountant marks an account as tracked by partner; mapping a payroll kind to it is refused.
+2. An opening entry with a line on a tracked account and no partner is refused when sent; with partners it posts.
+3. Partner balances for that account list each partner, and the total equals the account's closing balance in the trial balance.
+4. The partner ledger of one customer shows the opening line with a running balance; cancelling the entry adds a reversal and the balance returns to zero.
+5. A payroll posts and reaches the ledger exactly as before, with no partner on its lines.
+
 ## HRM review
 
 After M14, HRM went through a business review ([docs/hrm-review-plan.md](./hrm-review-plan.md), rounds [one](./hrm-review-round1.md) and [two](./hrm-review-round2.md)). The decisions are settled and built:
@@ -156,7 +169,7 @@ Core and frontend foundations built once Sales opened:
 - [ADR-0038](./adr/0038-data-engine-over-sqlc.md): Data engine over sqlc: dynamic parts compiled from code-declared fragments, no ORM
 - [ADR-0039](./adr/0039-shared-master-data.md): Shared master data: partners, items and tax in `shared/`, with their own namespace
 
-**Next:** M15 (accounting general ledger) is done; the next milestone is not chosen yet. M10 and the production-readiness gate stay on hold.
+**Next:** M16 (partner subledger), then M17 Sales to cash, M18 Purchasing, M19 Stock. M10 and the production-readiness gate stay on hold.
 
 ## M10. On-premise operations
 
