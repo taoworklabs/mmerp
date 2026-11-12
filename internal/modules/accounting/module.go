@@ -17,6 +17,7 @@ func Module(s *Service) platform.Module {
 			registerPendingHandlers(api, s)
 			registerJournalHandlers(api, s)
 			registerReportHandlers(api, s)
+			registerPartnerHandlers(api, s)
 		},
 		Workers: func(w *river.Workers) { platform.AddWorker(w, &reconcileWorker{s: s}) },
 	}

@@ -14,12 +14,16 @@ var (
 	ErrLineOrgUnitInvalid       = &platform.Error{Status: http.StatusUnprocessableEntity, Code: "line_org_unit_invalid"}
 	ErrTooManyLines             = &platform.Error{Status: http.StatusUnprocessableEntity, Code: "journal_entry_too_many_lines"}
 	ErrAccountingNotStarted     = &platform.Error{Status: http.StatusUnprocessableEntity, Code: "accounting_not_started"}
+	ErrLinePartnerRequired      = &platform.Error{Status: http.StatusUnprocessableEntity, Code: "journal_line_partner_required"}
+	ErrLinePartnerNotAllowed    = &platform.Error{Status: http.StatusUnprocessableEntity, Code: "journal_line_partner_not_allowed"}
 )
 
 // JournalEntryLine is one line of a manual journal entry: exactly one of Debit and Credit is positive.
 type JournalEntryLine struct {
-	AccountID   int64   `json:"account_id"`
-	OrgUnitID   *int64  `json:"org_unit_id,omitempty"`
+	AccountID int64  `json:"account_id"`
+	OrgUnitID *int64 `json:"org_unit_id,omitempty"`
+	// PartnerID: required on an account tracked by partner, refused on any other.
+	PartnerID   *int64  `json:"partner_id,omitempty"`
 	Description *string `json:"description,omitempty" minLength:"1" maxLength:"500"`
 	Debit       int64   `json:"debit" minimum:"0" maximum:"1000000000000000" doc:"Minor unit"`
 	Credit      int64   `json:"credit" minimum:"0" maximum:"1000000000000000" doc:"Minor unit"`
@@ -45,8 +49,10 @@ type JournalEntryUpdate struct {
 
 type JournalEntryLineOut struct {
 	JournalEntryLine
-	AccountCode string `json:"account_code"`
-	AccountName string `json:"account_name"`
+	AccountCode string  `json:"account_code"`
+	AccountName string  `json:"account_name"`
+	PartnerCode *string `json:"partner_code"`
+	PartnerName *string `json:"partner_name"`
 }
 
 type JournalEntry struct {

@@ -221,3 +221,86 @@ func TestLedgerShowsPartner(t *testing.T) {
 		t.Fatalf("line %+v", ln)
 	}
 }
+
+func lineNo(err error) any {
+	e, _ := asErr(err)
+	if e == nil {
+		return nil
+	}
+	return e.Params["line_no"]
+}
+
+// opening books 50 to 131 against 411 on a manual entry; partner is set on the 131 line when given.
+func (l *ledger) opening(t *testing.T, partner *int64) accounting.JournalEntryFields {
+	t.Helper()
+	if _, ok := l.acc["411"]; !ok {
+		l.acc["411"] = mustCreate(t, l.s, l.core.Admin, acct("411", "equity", nil))
+	}
+	return accounting.JournalEntryFields{Date: "2026-02-01", LegalEntityID: l.le, Description: "Số dư đầu kỳ", Lines: []accounting.JournalEntryLine{
+		{AccountID: l.acc["131"], PartnerID: partner, Debit: 50},
+		{AccountID: l.acc["411"], Credit: 50},
+	}}
+}
+
+func TestJournalEntryPartnerChecks(t *testing.T) {
+	l := newLedger(t)
+	l.receivables(t)
+	a := l.partner(t, "A")
+	missing := l.newJournal(t, l.opening(t, nil))
+	if err := l.post(missing); !isCode(err, "journal_line_partner_required") || lineNo(err) != 1 {
+		t.Fatalf("no partner on the tracked line: %v", err)
+	}
+	extra := l.opening(t, &a)
+	extra.Lines[1].PartnerID = &a
+	if err := l.post(l.newJournal(t, extra)); !isCode(err, "journal_line_partner_not_allowed") || lineNo(err) != 2 {
+		t.Fatalf("partner on an untracked line: %v", err)
+	}
+	ok := l.newJournal(t, l.opening(t, &a))
+	if err := l.post(ok); err != nil {
+		t.Fatal(err)
+	}
+	got := l.partnerLines(t, ok)
+	if len(got) != 2 || got[0].code != "131" || got[0].partner != a || got[1].partner != 0 {
+		t.Fatalf("lines %+v", got)
+	}
+	e, err := l.s.JournalEntry(l.core.Admin, ok.ID)
+	if err != nil || e.Lines[0].PartnerCode == nil || *e.Lines[0].PartnerCode != "A" || e.Lines[0].PartnerName == nil || e.Lines[1].PartnerCode != nil {
+		t.Fatalf("entry %+v %v", e, err)
+	}
+}
+
+func TestJournalEntryUnknownPartner(t *testing.T) {
+	l := newLedger(t)
+	l.receivables(t)
+	unknown := int64(-1)
+	if _, err := l.s.CreateJournalEntry(l.core.Admin, accounting.NewJournalEntry{JournalEntryFields: l.opening(t, &unknown)}); !errors.Is(err, platform.ErrNotFound) {
+		t.Fatalf("got %v", err)
+	}
+}
+
+func TestAccountingPartnersLookup(t *testing.T) {
+	l := newLedger(t)
+	l.partner(t, "ANH")
+	l.partner(t, "BINH")
+	user := func(login, role string) context.Context {
+		id, err := l.core.IAM.CreateUser(l.core.Admin, login, login, "long enough")
+		if err != nil {
+			t.Fatal(err)
+		}
+		if _, err := l.core.IAM.GrantRole(l.core.Admin, id, "accounting", role, nil); err != nil {
+			t.Fatal(err)
+		}
+		return platform.WithActor(l.core.Ctx, id)
+	}
+	got, err := l.s.Partners(user("acc", "accountant"), "nh")
+	if err != nil || len(got.Items) != 2 {
+		t.Fatalf("partners %+v %v", got, err)
+	}
+	got, err = l.s.Partners(user("acc2", "accountant"), "Partner BI")
+	if err != nil || len(got.Items) != 1 || got.Items[0].Code != "BINH" || got.Items[0].Name != "Partner BINH" {
+		t.Fatalf("partners %+v %v", got, err)
+	}
+	if _, err := l.s.Partners(user("view", "viewer"), ""); !errors.Is(err, platform.ErrForbidden) {
+		t.Fatalf("viewer: %v", err)
+	}
+}

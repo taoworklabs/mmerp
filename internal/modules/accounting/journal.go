@@ -76,8 +76,9 @@ func readJournalEntry(ctx context.Context, id int64) (JournalEntry, error) {
 	out := JournalEntry{ID: id, Number: h.Number, Status: h.Status, Version: h.Version, Date: *platform.DatePtr(h.Date),
 		LegalEntityID: h.LegalEntityID, Description: h.Description, Lines: make([]JournalEntryLineOut, len(lines))}
 	for i, l := range lines {
-		out.Lines[i] = JournalEntryLineOut{AccountCode: l.AccountCode, AccountName: l.AccountName, JournalEntryLine: JournalEntryLine{
-			AccountID: l.AccountID, OrgUnitID: platform.Int8Ptr(l.OrgUnitID), Description: platform.TextPtr(l.Description), Debit: l.Debit, Credit: l.Credit}}
+		out.Lines[i] = JournalEntryLineOut{AccountCode: l.AccountCode, AccountName: l.AccountName, PartnerCode: platform.TextPtr(l.PartnerCode),
+			PartnerName: platform.TextPtr(l.PartnerName), JournalEntryLine: JournalEntryLine{AccountID: l.AccountID, OrgUnitID: platform.Int8Ptr(l.OrgUnitID),
+				PartnerID: platform.Int8Ptr(l.PartnerID), Description: platform.TextPtr(l.Description), Debit: l.Debit, Credit: l.Credit}}
 		out.TotalDebit, out.TotalCredit = out.TotalDebit+l.Debit, out.TotalCredit+l.Credit
 	}
 	return out, nil
@@ -144,7 +145,7 @@ func prepareJournalEntry(ctx context.Context, s *Service, f *JournalEntryFields)
 	if len(f.Lines) > MaxLines {
 		return record.Header{}, ErrTooManyLines
 	}
-	var accounts, units []int64
+	var accounts, units, partners []int64
 	var total int64
 	for i, l := range f.Lines {
 		if l.Debit > MaxLineAmount || l.Credit > MaxLineAmount {
@@ -158,6 +159,9 @@ func prepareJournalEntry(ctx context.Context, s *Service, f *JournalEntryFields)
 		if l.OrgUnitID != nil {
 			units = append(units, *l.OrgUnitID)
 		}
+		if l.PartnerID != nil {
+			partners = append(partners, *l.PartnerID)
+		}
 	}
 	if n, err := store.CountAccounts.Run(ctx, accounts); err != nil {
 		return record.Header{}, err
@@ -167,6 +171,11 @@ func prepareJournalEntry(ctx context.Context, s *Service, f *JournalEntryFields)
 	if n, err := store.CountOrgUnits.Run(ctx, units); err != nil {
 		return record.Header{}, err
 	} else if int(n) != len(uniq(units)) {
+		return record.Header{}, platform.ErrNotFound
+	}
+	if n, err := store.CountPartners.Run(ctx, partners); err != nil {
+		return record.Header{}, err
+	} else if int(n) != len(uniq(partners)) {
 		return record.Header{}, platform.ErrNotFound
 	}
 	for i, l := range f.Lines {
@@ -203,6 +212,11 @@ func (s *Service) writeJournalEntryLines(ctx context.Context, id int64, f Journa
 		}
 		p.AccountIds = append(p.AccountIds, l.AccountID)
 		p.OrgUnitIds = append(p.OrgUnitIds, unit)
+		var partner int64
+		if l.PartnerID != nil {
+			partner = *l.PartnerID
+		}
+		p.PartnerIds = append(p.PartnerIds, partner)
 		p.Descriptions = append(p.Descriptions, desc)
 		p.Debits = append(p.Debits, l.Debit)
 		p.Credits = append(p.Credits, l.Credit)
@@ -247,7 +261,8 @@ func postJournalEntry(ctx context.Context, d record.Doc) error {
 }
 
 // checkJournalEntry runs what posting needs, so sending an entry refuses what posting would:
-// accounting started, at least two balanced lines, postable accounts. It returns the lines.
+// accounting started, at least two balanced lines, postable accounts, partners exactly on the
+// lines of tracked accounts. It returns the lines.
 func checkJournalEntry(ctx context.Context, d record.Doc) ([]JournalLine, error) {
 	e, err := readJournalEntry(ctx, d.ID)
 	if err != nil {
@@ -267,7 +282,7 @@ func checkJournalEntry(ctx context.Context, d record.Doc) ([]JournalLine, error)
 	for i, l := range e.Lines {
 		debit, credit = debit+l.Debit, credit+l.Credit
 		ids[i] = l.AccountID
-		lines[i] = JournalLine{AccountID: l.AccountID, OrgUnitID: l.OrgUnitID, Debit: l.Debit, Credit: l.Credit}
+		lines[i] = JournalLine{AccountID: l.AccountID, OrgUnitID: l.OrgUnitID, PartnerID: l.PartnerID, Debit: l.Debit, Credit: l.Credit}
 		if l.Description != nil {
 			lines[i].Description = *l.Description
 		}
@@ -283,6 +298,18 @@ func checkJournalEntry(ctx context.Context, d record.Doc) ([]JournalLine, error)
 	for i, id := range ids {
 		if !ok[id] {
 			return nil, lineErr(ErrAccountNotPostable, i+1)
+		}
+	}
+	tracked, err := accountFlags(ctx, uniq(ids))
+	if err != nil {
+		return nil, err
+	}
+	for i, l := range lines {
+		switch {
+		case tracked[l.AccountID] && l.PartnerID == nil:
+			return nil, lineErr(ErrLinePartnerRequired, i+1)
+		case !tracked[l.AccountID] && l.PartnerID != nil:
+			return nil, lineErr(ErrLinePartnerNotAllowed, i+1)
 		}
 	}
 	return lines, nil

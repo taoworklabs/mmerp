@@ -101,6 +101,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/accounting/partners": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["list-accounting-partners"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/accounting/pending": {
         parameters: {
             query?: never;
@@ -2399,6 +2415,21 @@ export interface components {
             readonly $schema?: string;
             items: components["schemas"]["Account"][];
         };
+        AccountingPartner: {
+            code: string;
+            /** Format: int64 */
+            id: number;
+            name: string;
+        };
+        AccountingPartnerList: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example /api/schemas/AccountingPartnerList.json
+             */
+            readonly $schema?: string;
+            items: components["schemas"]["AccountingPartner"][];
+        };
         Actions: {
             /**
              * Format: uri
@@ -3637,6 +3668,8 @@ export interface components {
             description?: string;
             /** Format: int64 */
             org_unit_id?: number;
+            /** Format: int64 */
+            partner_id?: number;
         };
         JournalEntryLineOut: {
             account_code: string;
@@ -3656,6 +3689,10 @@ export interface components {
             description?: string;
             /** Format: int64 */
             org_unit_id?: number;
+            partner_code: string | null;
+            /** Format: int64 */
+            partner_id?: number;
+            partner_name: string | null;
         };
         JournalEntryList: {
             /**
@@ -6202,6 +6239,38 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Ledger"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "list-accounting-partners": {
+        parameters: {
+            query?: {
+                /** @description Code, name or tax code */
+                q?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AccountingPartnerList"];
                 };
             };
             /** @description Error */
