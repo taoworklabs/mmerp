@@ -9,10 +9,11 @@ import { type Column } from '@/shared/ui/DataTable'
 import { DateFilter, FilterChip, LegalEntityFilter } from '@/shared/ui/form'
 import { ListPage } from '@/shared/ui/page'
 import { EmptyState } from '@/shared/ui/states'
-import { splitBalance } from '../balance'
+import { rowBalance } from '../balance'
 import { accountOptions, asList, useAccounts, useReportParams } from '../hooks/useAccounting'
 import { accountingKeys } from '../keys'
 
+// The totals row carries only the period's debits and credits; balances on both sides do not add up.
 type Row = PartnerBalanceRow & { total?: boolean }
 
 // PartnerBalancesPage: per partner and tracked account, the opening balance, the period's debits
@@ -31,7 +32,10 @@ export function PartnerBalancesPage() {
 
   const ledgerOf = (r: Row) =>
     `/accounting/partner-ledger?${new URLSearchParams({ legal_entity_id: String(p.legal_entity_id), partner_id: String(r.partner_id), account_id: String(r.account_id), from: p.from, to: p.to })}`
-  const balance = (of: 'opening' | 'closing', side: 'debit' | 'credit') => (r: Row) => formatNumber(splitBalance(r[of])[side])
+  const balance = (of: 'opening' | 'closing', side: 'debit' | 'credit') => (r: Row) => {
+    const n = rowBalance(r, of, side)
+    return n === null ? '' : formatNumber(n)
+  }
   const opening = t('accounting.trial.opening')
   const movement = t('accounting.trial.movement')
   const closing = t('accounting.trial.closing')

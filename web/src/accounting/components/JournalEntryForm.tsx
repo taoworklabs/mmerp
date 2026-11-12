@@ -26,6 +26,7 @@ import {
 import { accountLabel, accountOptions, useAccounts } from '../hooks/useAccounting'
 import { AccountingPartnerPicker } from './AccountingPartnerPicker'
 import { journalEntryDocType } from '../keys'
+import { savedPartner } from '../balance'
 import { keepUnitsIn, subtree } from '../tree'
 
 type LineValues = {
@@ -160,8 +161,7 @@ export function JournalEntryForm({ doc, onCreated }: Props) {
       value: (l) => l.partner_name ?? '',
       cell: (i, bare) => {
         if (!tracked(form.watch(`lines.${i}.account_id`))) return null
-        const l = doc?.lines[i]
-        const current = l?.partner_id && l.partner_code && l.partner_name ? { id: l.partner_id, code: l.partner_code, name: l.partner_name } : undefined
+        const current = savedPartner(doc?.lines[i], form.watch(`lines.${i}.partner_id`))
         return <AccountingPartnerPicker name={`lines.${i}.partner_id`} label={t('accounting.line.partner', { n: i + 1 })} bare={bare} required current={current} />
       },
     },
