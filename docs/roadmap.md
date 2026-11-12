@@ -26,7 +26,7 @@ A milestone only passes when what it adds keeps the contract intact from table t
 
 ```
 M11 Attachments and discussion ─► M12 Notifications ─► M13 PDF printing ─► M14 Sales   (all done)
-   ─► HRM review ─► Core work after M14   (done) ─► M15 in progress
+   ─► HRM review ─► Core work after M14   (done) ─► M15 Accounting   (done)
    ┄► M10 On-premise operations ┄► [Gate: production readiness]   (on hold)
 ```
 
@@ -120,6 +120,8 @@ Vertical slices, each from migration to screen:
 
 ## M15. Accounting general ledger
 
+**Done** (2026-11-12): [ADR-0050](./adr/0050-accounting-product-and-general-ledger.md).
+
 **Goal:** accounting as the third product, generic first: a chart of accounts held as data, mapping rules from business line kinds, automatic journal entries from `posting.lines`, manual journal entries, a general ledger and a trial balance ([ADR-0050](./adr/0050-accounting-product-and-general-ledger.md), [products/accounting.md](../products/accounting.md)).
 
 **Done when**, with `make seed` data and `PRODUCTS=hrm,sales,accounting`:
@@ -154,7 +156,7 @@ Core and frontend foundations built once Sales opened:
 - [ADR-0038](./adr/0038-data-engine-over-sqlc.md): Data engine over sqlc: dynamic parts compiled from code-declared fragments, no ORM
 - [ADR-0039](./adr/0039-shared-master-data.md): Shared master data: partners, items and tax in `shared/`, with their own namespace
 
-**Next:** M15 (accounting general ledger) is in progress. M10 and the production-readiness gate stay on hold.
+**Next:** M15 (accounting general ledger) is done; the next milestone is not chosen yet. M10 and the production-readiness gate stay on hold.
 
 ## M10. On-premise operations
 
