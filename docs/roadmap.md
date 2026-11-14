@@ -27,7 +27,7 @@ A milestone only passes when what it adds keeps the contract intact from table t
 ```
 M11 Attachments and discussion ─► M12 Notifications ─► M13 PDF printing ─► M14 Sales   (all done)
    ─► HRM review ─► Core work after M14   (done) ─► M15 Accounting   (done)
-   ─► M16 Partner subledger ─► M17 Sales to cash ─► M18 Purchasing ─► M19 Stock
+   ─► M16 Partner subledger   (done) ─► M17 Sales to cash ─► M18 Purchasing ─► M19 Stock
    ┄► M10 On-premise operations ┄► [Gate: production readiness]   (on hold)
 ```
 
@@ -137,6 +137,8 @@ Vertical slices, each from migration to screen:
 
 ## M16. Partner subledger
 
+**Done** (2026-11-14): [ADR-0051](./adr/0051-business-lines-name-a-partner.md).
+
 **Goal:** business lines may name a partner and accounting keeps balances per partner, so that Sales to cash (M17: invoices, receipts, receivables) and Purchasing (M18: purchase orders, goods receipts, supplier invoices, payments, payables) only add kinds and documents ([ADR-0051](./adr/0051-business-lines-name-a-partner.md), [design](./superpowers/specs/2026-11-12-partner-subledger-design.md)). M19 completes stock: valuation, transfers, stocktakes.
 
 **Done when**, with `make seed` data and `PRODUCTS=hrm,sales,accounting`:
@@ -169,7 +171,7 @@ Core and frontend foundations built once Sales opened:
 - [ADR-0038](./adr/0038-data-engine-over-sqlc.md): Data engine over sqlc: dynamic parts compiled from code-declared fragments, no ORM
 - [ADR-0039](./adr/0039-shared-master-data.md): Shared master data: partners, items and tax in `shared/`, with their own namespace
 
-**Next:** M16 (partner subledger), then M17 Sales to cash, M18 Purchasing, M19 Stock. M10 and the production-readiness gate stay on hold.
+**Next:** M17 Sales to cash, then M18 Purchasing, M19 Stock. M10 and the production-readiness gate stay on hold.
 
 ## M10. On-premise operations
 
