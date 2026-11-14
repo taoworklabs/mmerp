@@ -1,4 +1,4 @@
-import { IconBook, IconBook2, IconCalculator, IconCalendarEvent, IconClockHour4, IconGitBranch, IconListNumbers, IconRoute, IconScale } from '@tabler/icons-react'
+import { IconBook, IconBook2, IconCalculator, IconCalendarEvent, IconClockHour4, IconGitBranch, IconListNumbers, IconRoute, IconScale, IconUsers } from '@tabler/icons-react'
 import type { AreaManifest } from '@/shared/area'
 import { accountingKeys, journalEntryDocType } from './keys'
 
@@ -11,6 +11,7 @@ export const accounting: AreaManifest = {
     { label: 'accounting.nav.journal_entries', path: 'journal-entries', icon: IconBook, permission: 'accounting.view' },
     { label: 'accounting.nav.ledger', path: 'ledger', icon: IconBook2, permission: 'accounting.view' },
     { label: 'accounting.nav.trial_balance', path: 'trial-balance', icon: IconScale, permission: 'accounting.view' },
+    { label: 'accounting.nav.partner_balances', path: 'partner-balances', icon: IconUsers, permission: 'accounting.view' },
     { label: 'accounting.nav.pending', path: 'pending', icon: IconClockHour4, permission: 'accounting.view' },
     { label: 'accounting.nav.accounts', path: 'accounts', icon: IconListNumbers, permission: 'accounting.manage', group: 'accounting.nav.group_config' },
     { label: 'accounting.nav.rules', path: 'rules', icon: IconRoute, permission: 'accounting.manage', group: 'accounting.nav.group_config' },

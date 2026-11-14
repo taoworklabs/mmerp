@@ -33,9 +33,9 @@ func (q *Queries) DocumentHeader(ctx context.Context, arg DocumentHeaderParams) 
 }
 
 const insertLines = `-- name: InsertLines :exec
-INSERT INTO posting.lines (doc_type, doc_id, legal_entity_id, date, kind, org_unit_id, amount)
+INSERT INTO posting.lines (doc_type, doc_id, legal_entity_id, date, kind, org_unit_id, partner_id, amount)
 SELECT $1::text, $2::bigint, $3::bigint, $4::date,
-       unnest($5::text[]), unnest($6::bigint[]), unnest($7::bigint[])
+       unnest($5::text[]), unnest($6::bigint[]), NULLIF(unnest($7::bigint[]), 0), unnest($8::bigint[])
 `
 
 type InsertLinesParams struct {
@@ -45,6 +45,7 @@ type InsertLinesParams struct {
 	Date          pgtype.Date
 	Kinds         []string
 	OrgUnitIds    []int64
+	PartnerIds    []int64
 	Amounts       []int64
 }
 
@@ -56,6 +57,7 @@ func (q *Queries) InsertLines(ctx context.Context, arg InsertLinesParams) error 
 		arg.Date,
 		arg.Kinds,
 		arg.OrgUnitIds,
+		arg.PartnerIds,
 		arg.Amounts,
 	)
 	return err

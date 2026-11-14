@@ -1,3 +1,4 @@
+import { Group } from '@mmerp/ui'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
@@ -27,7 +28,17 @@ export function RulesPage() {
   const accountOf = (id: number | null | undefined) => accounts.data?.find((a) => a.id === id)
 
   const columns: Column<Rule>[] = [
-    { key: 'kind', header: t('accounting.rule.kind'), role: 'title', render: (r) => kindLabel(t, r.kind) },
+    {
+      key: 'kind',
+      header: t('accounting.rule.kind'),
+      role: 'title',
+      render: (r) => (
+        <Group gap="xs" wrap={false}>
+          {kindLabel(t, r.kind)}
+          {r.by_partner && <StatusBadge tone="info">{t('accounting.rule.by_partner')}</StatusBadge>}
+        </Group>
+      ),
+    },
     {
       key: 'account',
       header: t('accounting.rule.account'),
@@ -72,7 +83,7 @@ export function RulesPage() {
         <RuleModal
           rule={editing}
           // A retired or parent account is no longer offered, but the saved one still shows.
-          options={accountOptions(accounts.data, (a) => (a.active && a.postable) || a.id === editing.account_id)}
+          options={accountOptions(accounts.data, (a) => (a.active && a.postable && !!a.by_partner === editing.by_partner) || a.id === editing.account_id)}
           onClose={() => setEditing(null)}
         />
       )}
@@ -97,7 +108,7 @@ function RuleModal({ rule, options, onClose }: { rule: Rule; options: { value: s
   }
   return (
     <FormModal open title={kindLabel(t, rule.kind)} onOpenChange={onClose}>
-      <Form form={form} onSubmit={save} errorFields={{ account_not_postable: 'account_id', rule_side_invalid: 'side' }}>
+      <Form form={form} onSubmit={save} errorFields={{ account_not_postable: 'account_id', rule_side_invalid: 'side', rule_partner_mismatch: 'account_id' }}>
         <SelectField name="account_id" label={t('accounting.rule.account')} required data={options} />
         <SelectField
           name="side"

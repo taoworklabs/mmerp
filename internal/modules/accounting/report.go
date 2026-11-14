@@ -60,6 +60,9 @@ func (s *Service) Ledger(ctx context.Context, legalEntity, accountID int64, from
 		if r.OrgUnitID.Valid {
 			ln.OrgUnitID = &r.OrgUnitID.Int64
 		}
+		if r.PartnerID.Valid {
+			ln.PartnerID, ln.PartnerCode, ln.PartnerName = &r.PartnerID.Int64, &r.PartnerCode.String, &r.PartnerName.String
+		}
 		out.Lines = append(out.Lines, ln)
 	}
 	return out, nil
@@ -86,6 +89,84 @@ func (s *Service) TrialBalance(ctx context.Context, legalEntity int64, from, to 
 			out.TotalCredit += r.Credit
 		}
 		out.Rows = append(out.Rows, row)
+	}
+	return out, nil
+}
+
+// trackedAccount checks an optional account filter of the partner reports.
+func trackedAccount(ctx context.Context, accountID *int64) (pgtype.Int8, error) {
+	if accountID == nil {
+		return pgtype.Int8{}, nil
+	}
+	flags, err := accountFlags(ctx, []int64{*accountID})
+	if err != nil {
+		return pgtype.Int8{}, err
+	}
+	tracked, ok := flags[*accountID]
+	if !ok {
+		return pgtype.Int8{}, platform.ErrNotFound
+	}
+	if !tracked {
+		return pgtype.Int8{}, ErrAccountNotTracked
+	}
+	return pgtype.Int8{Int64: *accountID, Valid: true}, nil
+}
+
+// PartnerBalances lists each partner's balance per tracked account (or on one) in a period.
+func (s *Service) PartnerBalances(ctx context.Context, legalEntity int64, accountID *int64, from, to string) (PartnerBalances, error) {
+	f, t, err := s.reportRange(ctx, legalEntity, from, to)
+	if err != nil {
+		return PartnerBalances{}, err
+	}
+	acc, err := trackedAccount(ctx, accountID)
+	if err != nil {
+		return PartnerBalances{}, err
+	}
+	rows, err := store.PartnerBalanceRows.Run(ctx, store.PartnerBalanceRowsParams{LegalEntityID: legalEntity, FromDate: f, ToDate: t, AccountID: acc})
+	if err != nil {
+		return PartnerBalances{}, err
+	}
+	out := PartnerBalances{Rows: make([]PartnerBalanceRow, len(rows))}
+	for i, r := range rows {
+		row := PartnerBalanceRow{AccountID: r.AccountID, AccountCode: r.AccountCode, PartnerID: r.PartnerID, PartnerCode: r.PartnerCode, PartnerName: r.PartnerName,
+			Opening: r.Opening, Debit: r.Debit, Credit: r.Credit, Closing: r.Opening + r.Debit - r.Credit}
+		out.Rows[i] = row
+		out.TotalOpening += row.Opening
+		out.TotalDebit += row.Debit
+		out.TotalCredit += row.Credit
+		out.TotalClosing += row.Closing
+	}
+	return out, nil
+}
+
+// PartnerLedger lists one partner's lines on tracked accounts (or on one) in a period, with running balances.
+func (s *Service) PartnerLedger(ctx context.Context, legalEntity, partnerID int64, accountID *int64, from, to string) (Ledger, error) {
+	f, t, err := s.reportRange(ctx, legalEntity, from, to)
+	if err != nil {
+		return Ledger{}, err
+	}
+	acc, err := trackedAccount(ctx, accountID)
+	if err != nil {
+		return Ledger{}, err
+	}
+	if ok, err := store.PartnerExists.Run(ctx, partnerID); err != nil || !ok {
+		return Ledger{}, platform.OrErr(err, platform.ErrNotFound)
+	}
+	opening, err := store.PartnerLedgerOpening.Run(ctx, store.PartnerLedgerOpeningParams{LegalEntityID: legalEntity, PartnerID: pgtype.Int8{Int64: partnerID, Valid: true}, FromDate: f, AccountID: acc})
+	if err != nil {
+		return Ledger{}, err
+	}
+	rows, err := store.PartnerLedgerLines.Run(ctx, store.PartnerLedgerLinesParams{LegalEntityID: legalEntity, PartnerID: pgtype.Int8{Int64: partnerID, Valid: true}, FromDate: f, ToDate: t, AccountID: acc})
+	if err != nil {
+		return Ledger{}, err
+	}
+	out := Ledger{Opening: opening, Closing: opening, Lines: make([]LedgerLine, 0, len(rows))}
+	for _, r := range rows {
+		out.Closing += r.Debit - r.Credit
+		code, name := r.PartnerCode, r.PartnerName
+		out.Lines = append(out.Lines, LedgerLine{Date: r.Date.Time.Format("2006-01-02"), EntryID: r.EntryID, DocType: r.DocType, DocID: r.DocID, DocNumber: r.DocNumber,
+			Kind: platform.TextPtr(r.Kind), Description: platform.TextPtr(r.Description), OrgUnitID: platform.Int8Ptr(r.OrgUnitID), AccountCode: r.AccountCode,
+			PartnerID: &partnerID, PartnerCode: &code, PartnerName: &name, Debit: r.Debit, Credit: r.Credit, Balance: out.Closing})
 	}
 	return out, nil
 }

@@ -34,5 +34,12 @@
   "accounting.error.invalid_range": "Khoảng ngày không hợp lệ: ngày bắt đầu phải trước ngày kết thúc.",
   "accounting.preview.total_debit": "Tổng Nợ",
   "accounting.preview.total_credit": "Tổng Có",
-  "accounting.error.start_date_in_locked_period": "Pháp nhân đã khóa kỳ đến {{locked_until}} nên không dời ngày bắt đầu vào kỳ đã khóa."
+  "accounting.error.start_date_in_locked_period": "Pháp nhân đã khóa kỳ đến {{locked_until}} nên không dời ngày bắt đầu vào kỳ đã khóa.",
+  "accounting.nav.partner_balances": "Công nợ theo đối tác",
+  "accounting.error.rule_partner_mismatch": "Loại dòng này ghi đối tác thì phải định khoản vào tài khoản theo dõi theo đối tác, và ngược lại.",
+  "accounting.error.account_partner_rule_mismatch": "Một quy tắc định khoản đang dùng tài khoản này không còn khớp nếu đổi cách theo dõi. Sửa quy tắc trước.",
+  "accounting.error.entry_partner_mismatch": "Bút toán ghi đối tác không đúng với cách theo dõi của tài khoản.",
+  "accounting.error.journal_line_partner_required": "Dòng {{line_no}}: tài khoản theo dõi theo đối tác, chọn đối tác.",
+  "accounting.error.journal_line_partner_not_allowed": "Dòng {{line_no}}: tài khoản không theo dõi theo đối tác, bỏ đối tác.",
+  "accounting.error.account_not_tracked": "Tài khoản không theo dõi theo đối tác. Chọn tài khoản theo dõi theo đối tác."
 }

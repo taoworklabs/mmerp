@@ -10,6 +10,7 @@ const (
 type JournalLine struct {
 	AccountID   int64
 	OrgUnitID   *int64
+	PartnerID   *int64
 	Kind        string
 	Description string
 	Debit       int64

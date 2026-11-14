@@ -2,9 +2,10 @@ import { expect, test, type APIResponse } from '@playwright/test'
 import { created, signedInApi } from './api'
 import { admin as root } from './helpers'
 
-// Accounting on top of the Demo demo company (demo.seed.ts runs first): a small chart of
-// accounts, the payroll mapping rules, a start date per company, an opening-balance entry,
-// then "post pending" so the seeded payrolls reach the ledger. Skipped once accounts exist.
+// Accounting on top of the Demo demo company (demo.seed.ts and sales.seed.ts run first): a small
+// chart of accounts with 131 and 331 tracked by partner, the payroll mapping rules, a start date
+// per company, an opening-balance entry with two customers and a supplier, then "post pending"
+// so the seeded payrolls reach the ledger. Skipped once accounts exist.
 
 async function ok(res: Promise<APIResponse>, what: string) {
   const r = await res
@@ -12,13 +13,15 @@ async function ok(res: Promise<APIResponse>, what: string) {
 }
 
 type Type = 'asset' | 'liability' | 'equity' | 'expense'
-// [code, name, type, parent code]
-const chart: [string, string, Type, string?][] = [
+// [code, name, type, parent code, tracked by partner]
+const chart: [string, string, Type, string?, boolean?][] = [
   ['111', 'Tiền mặt', 'asset'],
   ['112', 'Tiền gửi ngân hàng', 'asset'],
+  ['131', 'Phải thu của khách hàng', 'asset', undefined, true],
   ['333', 'Thuế và các khoản phải nộp Nhà nước', 'liability'],
   ['3335', 'Thuế thu nhập cá nhân', 'liability', '333'],
   ['334', 'Phải trả người lao động', 'liability'],
+  ['331', 'Phải trả cho người bán', 'liability', undefined, true],
   ['338', 'Phải trả, phải nộp khác', 'liability'],
   ['411', 'Vốn đầu tư của chủ sở hữu', 'equity'],
   ['642', 'Chi phí quản lý doanh nghiệp', 'expense'],
@@ -45,8 +48,8 @@ test('seed Accounting on the Demo demo company', async ({ baseURL }) => {
   expect([201, 409], await role.text()).toContain(role.status())
 
   const id: Record<string, number> = {}
-  for (const [code, name, type, parent] of chart) {
-    id[code] = await created(api.post('/api/accounting/accounts', { data: { code, name, type, parent_id: parent ? id[parent] : null, active: true } }))
+  for (const [code, name, type, parent, byPartner] of chart) {
+    id[code] = await created(api.post('/api/accounting/accounts', { data: { code, name, type, parent_id: parent ? id[parent] : null, active: true, by_partner: !!byPartner } }))
   }
   for (const [kind, code, side] of rules) {
     await ok(api.put(`/api/accounting/rules/${kind}`, { data: { account_id: id[code], side } }), `rule ${kind}`)
@@ -56,8 +59,15 @@ test('seed Accounting on the Demo demo company', async ({ baseURL }) => {
   const companies = units.filter((u) => u.kind === 'company')
   for (const c of companies) await ok(api.put(`/api/accounting/starts/${c.id}`, { data: { start_date: '2026-01-01' } }), `start ${c.name}`)
 
-  // Opening balances of Demo: 500 million in the bank against owner capital.
+  // Opening balances of Demo: 500 million in the bank, what two customers owe and what a
+  // supplier is owed, against owner capital.
   const demo = companies.find((c) => c.name === 'Công ty CP Demo')!.id
+  const partners = ((await (await api.get('/api/partners?page_size=20&sort=code')).json()) as { items: { id: number }[] }).items
+  expect(partners.length, 'Sales seeded its customers').toBeGreaterThanOrEqual(2)
+  const [first, second] = partners as [{ id: number }, { id: number }]
+  const supplier = await created(
+    api.post('/api/partners', { data: { name: 'Công ty TNHH Văn phòng phẩm Hồng Hà', tax_code: '0101234567', address: null, phone: null, email: null, contact_name: null } }),
+  )
   const entry = await created(
     api.post('/api/accounting/journal-entries', {
       data: {
@@ -67,7 +77,10 @@ test('seed Accounting on the Demo demo company', async ({ baseURL }) => {
         description: 'Số dư đầu kỳ',
         lines: [
           { account_id: id['112'], debit: 500_000_000, credit: 0 },
-          { account_id: id['411'], debit: 0, credit: 500_000_000 },
+          { account_id: id['131'], partner_id: first.id, debit: 80_000_000, credit: 0 },
+          { account_id: id['131'], partner_id: second.id, debit: 45_000_000, credit: 0 },
+          { account_id: id['331'], partner_id: supplier, debit: 0, credit: 60_000_000 },
+          { account_id: id['411'], debit: 0, credit: 565_000_000 },
         ],
       },
     }),

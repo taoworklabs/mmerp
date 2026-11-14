@@ -33,6 +33,17 @@ func (q *Queries) CountOrgUnits(ctx context.Context, ids []int64) (int64, error)
 	return count, err
 }
 
+const countPartners = `-- name: CountPartners :one
+SELECT count(*) FROM partner.partners WHERE id = ANY($1::bigint[])
+`
+
+func (q *Queries) CountPartners(ctx context.Context, ids []int64) (int64, error) {
+	row := q.db.QueryRow(ctx, countPartners, ids)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
 const deleteJournalEntry = `-- name: DeleteJournalEntry :exec
 DELETE FROM accounting.journal_entries WHERE id = $1
 `
@@ -80,8 +91,10 @@ func (q *Queries) GetJournalEntry(ctx context.Context, id int64) (GetJournalEntr
 }
 
 const getJournalEntryLines = `-- name: GetJournalEntryLines :many
-SELECT l.line_no, l.account_id, a.code AS account_code, a.name AS account_name, l.org_unit_id, l.description, l.debit, l.credit
+SELECT l.line_no, l.account_id, a.code AS account_code, a.name AS account_name, l.org_unit_id, l.description, l.debit, l.credit,
+  l.partner_id, p.code AS partner_code, p.name AS partner_name
 FROM accounting.journal_entry_lines l JOIN accounting.accounts a ON a.id = l.account_id
+LEFT JOIN partner.partners p ON p.id = l.partner_id
 WHERE l.journal_entry_id = $1 ORDER BY l.line_no
 `
 
@@ -94,6 +107,9 @@ type GetJournalEntryLinesRow struct {
 	Description pgtype.Text
 	Debit       int64
 	Credit      int64
+	PartnerID   pgtype.Int8
+	PartnerCode pgtype.Text
+	PartnerName pgtype.Text
 }
 
 func (q *Queries) GetJournalEntryLines(ctx context.Context, journalEntryID int64) ([]GetJournalEntryLinesRow, error) {
@@ -114,6 +130,9 @@ func (q *Queries) GetJournalEntryLines(ctx context.Context, journalEntryID int64
 			&i.Description,
 			&i.Debit,
 			&i.Credit,
+			&i.PartnerID,
+			&i.PartnerCode,
+			&i.PartnerName,
 		); err != nil {
 			return nil, err
 		}
@@ -140,27 +159,29 @@ func (q *Queries) InsertJournalEntry(ctx context.Context, arg InsertJournalEntry
 }
 
 const insertJournalEntryLines = `-- name: InsertJournalEntryLines :exec
-INSERT INTO accounting.journal_entry_lines (journal_entry_id, line_no, account_id, org_unit_id, description, debit, credit)
+INSERT INTO accounting.journal_entry_lines (journal_entry_id, line_no, account_id, org_unit_id, partner_id, description, debit, credit)
 SELECT $1::bigint, generate_series(1, cardinality($2::bigint[])), unnest($2::bigint[]),
-       NULLIF(unnest($3::bigint[]), 0), NULLIF(unnest($4::text[]), ''),
-       unnest($5::bigint[]), unnest($6::bigint[])
+       NULLIF(unnest($3::bigint[]), 0), NULLIF(unnest($4::bigint[]), 0), NULLIF(unnest($5::text[]), ''),
+       unnest($6::bigint[]), unnest($7::bigint[])
 `
 
 type InsertJournalEntryLinesParams struct {
 	JournalEntryID int64
 	AccountIds     []int64
 	OrgUnitIds     []int64
+	PartnerIds     []int64
 	Descriptions   []string
 	Debits         []int64
 	Credits        []int64
 }
 
-// No org unit or description travels as 0 and ”.
+// No org unit, partner or description travels as 0 and ”.
 func (q *Queries) InsertJournalEntryLines(ctx context.Context, arg InsertJournalEntryLinesParams) error {
 	_, err := q.db.Exec(ctx, insertJournalEntryLines,
 		arg.JournalEntryID,
 		arg.AccountIds,
 		arg.OrgUnitIds,
+		arg.PartnerIds,
 		arg.Descriptions,
 		arg.Debits,
 		arg.Credits,

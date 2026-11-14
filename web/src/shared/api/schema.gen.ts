@@ -101,6 +101,54 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/accounting/partner-balances": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["get-accounting-partner-balances"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/accounting/partner-ledger": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["get-accounting-partner-ledger"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/accounting/partners": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["list-accounting-partners"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/accounting/pending": {
         parameters: {
             query?: never;
@@ -2362,6 +2410,7 @@ export interface components {
     schemas: {
         Account: {
             active: boolean;
+            by_partner?: boolean;
             code: string;
             has_lines: boolean;
             /** Format: int64 */
@@ -2381,6 +2430,7 @@ export interface components {
              */
             readonly $schema?: string;
             active: boolean;
+            by_partner?: boolean;
             code: string;
             name: string;
             /** Format: int64 */
@@ -2396,6 +2446,21 @@ export interface components {
              */
             readonly $schema?: string;
             items: components["schemas"]["Account"][];
+        };
+        AccountingPartner: {
+            code: string;
+            /** Format: int64 */
+            id: number;
+            name: string;
+        };
+        AccountingPartnerList: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example /api/schemas/AccountingPartnerList.json
+             */
+            readonly $schema?: string;
+            items: components["schemas"]["AccountingPartner"][];
         };
         Actions: {
             /**
@@ -3635,6 +3700,8 @@ export interface components {
             description?: string;
             /** Format: int64 */
             org_unit_id?: number;
+            /** Format: int64 */
+            partner_id?: number;
         };
         JournalEntryLineOut: {
             account_code: string;
@@ -3654,6 +3721,10 @@ export interface components {
             description?: string;
             /** Format: int64 */
             org_unit_id?: number;
+            partner_code: string | null;
+            /** Format: int64 */
+            partner_id?: number;
+            partner_name: string | null;
         };
         JournalEntryList: {
             /**
@@ -3868,6 +3939,10 @@ export interface components {
             kind: string | null;
             /** Format: int64 */
             org_unit_id: number | null;
+            partner_code: string | null;
+            /** Format: int64 */
+            partner_id: number | null;
+            partner_name: string | null;
         };
         LegalEntitySetting: {
             /** @description Translated as <key> and <key>.<value> */
@@ -4749,6 +4824,40 @@ export interface components {
             phone: string | null;
             tax_code: string | null;
         };
+        PartnerBalanceRow: {
+            account_code: string;
+            /** Format: int64 */
+            account_id: number;
+            /** Format: int64 */
+            closing: number;
+            /** Format: int64 */
+            credit: number;
+            /** Format: int64 */
+            debit: number;
+            /** Format: int64 */
+            opening: number;
+            partner_code: string;
+            /** Format: int64 */
+            partner_id: number;
+            partner_name: string;
+        };
+        PartnerBalances: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example /api/schemas/PartnerBalances.json
+             */
+            readonly $schema?: string;
+            rows: components["schemas"]["PartnerBalanceRow"][];
+            /** Format: int64 */
+            total_closing: number;
+            /** Format: int64 */
+            total_credit: number;
+            /** Format: int64 */
+            total_debit: number;
+            /** Format: int64 */
+            total_opening: number;
+        };
         PartnerFields: {
             /**
              * Format: uri
@@ -5254,6 +5363,7 @@ export interface components {
         Rule: {
             /** Format: int64 */
             account_id: number | null;
+            by_partner: boolean;
             kind: string;
             /** @enum {string|null} */
             side: "debit" | "credit" | null;
@@ -6195,6 +6305,109 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Ledger"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "get-accounting-partner-balances": {
+        parameters: {
+            query: {
+                legal_entity_id: number;
+                /** @description A tracked account; all of them when left out */
+                account_id?: number;
+                from: string;
+                to: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PartnerBalances"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "get-accounting-partner-ledger": {
+        parameters: {
+            query: {
+                legal_entity_id: number;
+                partner_id: number;
+                /** @description A tracked account; all of them when left out */
+                account_id?: number;
+                from: string;
+                to: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Ledger"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "list-accounting-partners": {
+        parameters: {
+            query?: {
+                /** @description Code, name or tax code */
+                q?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AccountingPartnerList"];
                 };
             };
             /** @description Error */

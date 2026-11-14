@@ -7,6 +7,9 @@
           "active": {
             "type": "boolean"
           },
+          "by_partner": {
+            "type": "boolean"
+          },
           "code": {
             "pattern": "^[0-9A-Za-z.]{1,20}$",
             "type": "string"
@@ -70,6 +73,9 @@
           "active": {
             "type": "boolean"
           },
+          "by_partner": {
+            "type": "boolean"
+          },
           "code": {
             "pattern": "^[0-9A-Za-z.]{1,20}$",
             "type": "string"
@@ -120,6 +126,51 @@
           "items": {
             "items": {
               "$ref": "#/components/schemas/Account"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "items"
+        ],
+        "type": "object"
+      },
+      "AccountingPartner": {
+        "additionalProperties": false,
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "id": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "name": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "code",
+          "name"
+        ],
+        "type": "object"
+      },
+      "AccountingPartnerList": {
+        "additionalProperties": false,
+        "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "/api/schemas/AccountingPartnerList.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/AccountingPartner"
             },
             "type": "array"
           }
@@ -4043,6 +4094,10 @@
           "org_unit_id": {
             "format": "int64",
             "type": "integer"
+          },
+          "partner_id": {
+            "format": "int64",
+            "type": "integer"
           }
         },
         "required": [
@@ -4087,11 +4142,29 @@
           "org_unit_id": {
             "format": "int64",
             "type": "integer"
+          },
+          "partner_code": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "partner_id": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "partner_name": {
+            "type": [
+              "string",
+              "null"
+            ]
           }
         },
         "required": [
           "account_code",
           "account_name",
+          "partner_code",
+          "partner_name",
           "account_id",
           "debit",
           "credit"
@@ -4704,6 +4777,25 @@
               "integer",
               "null"
             ]
+          },
+          "partner_code": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "partner_id": {
+            "format": "int64",
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "partner_name": {
+            "type": [
+              "string",
+              "null"
+            ]
           }
         },
         "required": [
@@ -4715,6 +4807,9 @@
           "kind",
           "description",
           "org_unit_id",
+          "partner_id",
+          "partner_code",
+          "partner_name",
           "account_code",
           "debit",
           "credit",
@@ -7373,6 +7468,100 @@
         ],
         "type": "object"
       },
+      "PartnerBalanceRow": {
+        "additionalProperties": false,
+        "properties": {
+          "account_code": {
+            "type": "string"
+          },
+          "account_id": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "closing": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "credit": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "debit": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "opening": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "partner_code": {
+            "type": "string"
+          },
+          "partner_id": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "partner_name": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "account_id",
+          "account_code",
+          "partner_id",
+          "partner_code",
+          "partner_name",
+          "opening",
+          "debit",
+          "credit",
+          "closing"
+        ],
+        "type": "object"
+      },
+      "PartnerBalances": {
+        "additionalProperties": false,
+        "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "/api/schemas/PartnerBalances.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
+          "rows": {
+            "items": {
+              "$ref": "#/components/schemas/PartnerBalanceRow"
+            },
+            "type": "array"
+          },
+          "total_closing": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "total_credit": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "total_debit": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "total_opening": {
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "rows",
+          "total_opening",
+          "total_debit",
+          "total_credit",
+          "total_closing"
+        ],
+        "type": "object"
+      },
       "PartnerFields": {
         "additionalProperties": false,
         "properties": {
@@ -8729,6 +8918,9 @@
               "null"
             ]
           },
+          "by_partner": {
+            "type": "boolean"
+          },
           "kind": {
             "type": "string"
           },
@@ -8746,7 +8938,8 @@
         "required": [
           "kind",
           "account_id",
-          "side"
+          "side",
+          "by_partner"
         ],
         "type": "object"
       },
@@ -11110,6 +11303,208 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Ledger"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "tags": [
+          "accounting",
+          "accounting"
+        ]
+      }
+    },
+    "/accounting/partner-balances": {
+      "get": {
+        "operationId": "get-accounting-partner-balances",
+        "parameters": [
+          {
+            "explode": false,
+            "in": "query",
+            "name": "legal_entity_id",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          },
+          {
+            "description": "A tracked account; all of them when left out",
+            "explode": false,
+            "in": "query",
+            "name": "account_id",
+            "schema": {
+              "description": "A tracked account; all of them when left out",
+              "format": "int64",
+              "type": "integer"
+            }
+          },
+          {
+            "explode": false,
+            "in": "query",
+            "name": "from",
+            "required": true,
+            "schema": {
+              "format": "date",
+              "type": "string"
+            }
+          },
+          {
+            "explode": false,
+            "in": "query",
+            "name": "to",
+            "required": true,
+            "schema": {
+              "format": "date",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PartnerBalances"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "tags": [
+          "accounting",
+          "accounting"
+        ]
+      }
+    },
+    "/accounting/partner-ledger": {
+      "get": {
+        "operationId": "get-accounting-partner-ledger",
+        "parameters": [
+          {
+            "explode": false,
+            "in": "query",
+            "name": "legal_entity_id",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          },
+          {
+            "explode": false,
+            "in": "query",
+            "name": "partner_id",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          },
+          {
+            "description": "A tracked account; all of them when left out",
+            "explode": false,
+            "in": "query",
+            "name": "account_id",
+            "schema": {
+              "description": "A tracked account; all of them when left out",
+              "format": "int64",
+              "type": "integer"
+            }
+          },
+          {
+            "explode": false,
+            "in": "query",
+            "name": "from",
+            "required": true,
+            "schema": {
+              "format": "date",
+              "type": "string"
+            }
+          },
+          {
+            "explode": false,
+            "in": "query",
+            "name": "to",
+            "required": true,
+            "schema": {
+              "format": "date",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Ledger"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "tags": [
+          "accounting",
+          "accounting"
+        ]
+      }
+    },
+    "/accounting/partners": {
+      "get": {
+        "operationId": "list-accounting-partners",
+        "parameters": [
+          {
+            "description": "Code, name or tax code",
+            "explode": false,
+            "in": "query",
+            "name": "q",
+            "schema": {
+              "description": "Code, name or tax code",
+              "maxLength": 100,
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccountingPartnerList"
                 }
               }
             },

@@ -29,11 +29,12 @@ WITH RECURSIVE sub AS (
   SELECT a.id FROM accounting.accounts a JOIN sub ON a.parent_id = sub.id
 )
 SELECT e.date, e.id AS entry_id, e.doc_type, e.doc_id, COALESCE(d.number, '') AS doc_number, l.kind, l.description, l.org_unit_id,
-  a.code AS account_code, l.debit, l.credit
+  a.code AS account_code, l.debit, l.credit, l.partner_id, p.code AS partner_code, p.name AS partner_name
 FROM accounting.entries e
 JOIN accounting.entry_lines l ON l.entry_id = e.id
 JOIN accounting.accounts a ON a.id = l.account_id
 LEFT JOIN record.documents d ON d.doc_type = e.doc_type AND d.id = e.doc_id
+LEFT JOIN partner.partners p ON p.id = l.partner_id
 WHERE e.legal_entity_id = $1 AND l.account_id IN (SELECT id FROM sub)
   AND e.date >= $2::date AND e.date <= $3::date
 ORDER BY e.date, e.id, l.line_no
@@ -58,6 +59,9 @@ type LedgerLinesRow struct {
 	AccountCode string
 	Debit       int64
 	Credit      int64
+	PartnerID   pgtype.Int8
+	PartnerCode pgtype.Text
+	PartnerName pgtype.Text
 }
 
 func (q *Queries) LedgerLines(ctx context.Context, arg LedgerLinesParams) ([]LedgerLinesRow, error) {
@@ -86,6 +90,9 @@ func (q *Queries) LedgerLines(ctx context.Context, arg LedgerLinesParams) ([]Led
 			&i.AccountCode,
 			&i.Debit,
 			&i.Credit,
+			&i.PartnerID,
+			&i.PartnerCode,
+			&i.PartnerName,
 		); err != nil {
 			return nil, err
 		}
@@ -117,6 +124,191 @@ type LedgerOpeningParams struct {
 // Signed debit minus credit of the account and every descendant before @from_date.
 func (q *Queries) LedgerOpening(ctx context.Context, arg LedgerOpeningParams) (int64, error) {
 	row := q.db.QueryRow(ctx, ledgerOpening, arg.LegalEntityID, arg.FromDate, arg.AccountID)
+	var opening int64
+	err := row.Scan(&opening)
+	return opening, err
+}
+
+const partnerBalanceRows = `-- name: PartnerBalanceRows :many
+WITH mv AS (
+  SELECT l.account_id, l.partner_id,
+    sum(CASE WHEN e.date < $1::date THEN l.debit - l.credit ELSE 0 END)::bigint AS opening,
+    sum(CASE WHEN e.date >= $1::date THEN l.debit ELSE 0 END)::bigint AS debit,
+    sum(CASE WHEN e.date >= $1::date THEN l.credit ELSE 0 END)::bigint AS credit
+  FROM accounting.entries e JOIN accounting.entry_lines l ON l.entry_id = e.id
+  WHERE e.legal_entity_id = $2 AND e.date <= $3::date AND l.partner_id IS NOT NULL
+    AND ($4::bigint IS NULL OR l.account_id = $4::bigint)
+  GROUP BY l.account_id, l.partner_id
+)
+SELECT mv.account_id, a.code AS account_code, p.id AS partner_id, p.code AS partner_code, p.name AS partner_name, mv.opening, mv.debit, mv.credit
+FROM mv JOIN accounting.accounts a ON a.id = mv.account_id JOIN partner.partners p ON p.id = mv.partner_id
+WHERE mv.opening <> 0 OR mv.debit <> 0 OR mv.credit <> 0
+ORDER BY a.code, p.code
+`
+
+type PartnerBalanceRowsParams struct {
+	FromDate      pgtype.Date
+	LegalEntityID int64
+	ToDate        pgtype.Date
+	AccountID     pgtype.Int8
+}
+
+type PartnerBalanceRowsRow struct {
+	AccountID   int64
+	AccountCode string
+	PartnerID   int64
+	PartnerCode string
+	PartnerName string
+	Opening     int64
+	Debit       int64
+	Credit      int64
+}
+
+// Per tracked account and partner; rows with nothing to show are left out.
+func (q *Queries) PartnerBalanceRows(ctx context.Context, arg PartnerBalanceRowsParams) ([]PartnerBalanceRowsRow, error) {
+	rows, err := q.db.Query(ctx, partnerBalanceRows,
+		arg.FromDate,
+		arg.LegalEntityID,
+		arg.ToDate,
+		arg.AccountID,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []PartnerBalanceRowsRow
+	for rows.Next() {
+		var i PartnerBalanceRowsRow
+		if err := rows.Scan(
+			&i.AccountID,
+			&i.AccountCode,
+			&i.PartnerID,
+			&i.PartnerCode,
+			&i.PartnerName,
+			&i.Opening,
+			&i.Debit,
+			&i.Credit,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const partnerExists = `-- name: PartnerExists :one
+SELECT EXISTS (SELECT 1 FROM partner.partners WHERE id = $1)
+`
+
+func (q *Queries) PartnerExists(ctx context.Context, id int64) (bool, error) {
+	row := q.db.QueryRow(ctx, partnerExists, id)
+	var exists bool
+	err := row.Scan(&exists)
+	return exists, err
+}
+
+const partnerLedgerLines = `-- name: PartnerLedgerLines :many
+SELECT e.date, e.id AS entry_id, e.doc_type, e.doc_id, COALESCE(d.number, '') AS doc_number, l.kind, l.description, l.org_unit_id,
+  a.code AS account_code, l.debit, l.credit, p.code AS partner_code, p.name AS partner_name
+FROM accounting.entries e
+JOIN accounting.entry_lines l ON l.entry_id = e.id
+JOIN accounting.accounts a ON a.id = l.account_id
+JOIN partner.partners p ON p.id = l.partner_id
+LEFT JOIN record.documents d ON d.doc_type = e.doc_type AND d.id = e.doc_id
+WHERE e.legal_entity_id = $1 AND l.partner_id = $2
+  AND ($3::bigint IS NULL OR l.account_id = $3::bigint)
+  AND e.date >= $4::date AND e.date <= $5::date
+ORDER BY e.date, e.id, l.line_no
+`
+
+type PartnerLedgerLinesParams struct {
+	LegalEntityID int64
+	PartnerID     pgtype.Int8
+	AccountID     pgtype.Int8
+	FromDate      pgtype.Date
+	ToDate        pgtype.Date
+}
+
+type PartnerLedgerLinesRow struct {
+	Date        pgtype.Date
+	EntryID     int64
+	DocType     string
+	DocID       int64
+	DocNumber   string
+	Kind        pgtype.Text
+	Description pgtype.Text
+	OrgUnitID   pgtype.Int8
+	AccountCode string
+	Debit       int64
+	Credit      int64
+	PartnerCode string
+	PartnerName string
+}
+
+func (q *Queries) PartnerLedgerLines(ctx context.Context, arg PartnerLedgerLinesParams) ([]PartnerLedgerLinesRow, error) {
+	rows, err := q.db.Query(ctx, partnerLedgerLines,
+		arg.LegalEntityID,
+		arg.PartnerID,
+		arg.AccountID,
+		arg.FromDate,
+		arg.ToDate,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []PartnerLedgerLinesRow
+	for rows.Next() {
+		var i PartnerLedgerLinesRow
+		if err := rows.Scan(
+			&i.Date,
+			&i.EntryID,
+			&i.DocType,
+			&i.DocID,
+			&i.DocNumber,
+			&i.Kind,
+			&i.Description,
+			&i.OrgUnitID,
+			&i.AccountCode,
+			&i.Debit,
+			&i.Credit,
+			&i.PartnerCode,
+			&i.PartnerName,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const partnerLedgerOpening = `-- name: PartnerLedgerOpening :one
+SELECT COALESCE(sum(l.debit - l.credit), 0)::bigint AS opening
+FROM accounting.entries e JOIN accounting.entry_lines l ON l.entry_id = e.id
+WHERE e.legal_entity_id = $1 AND l.partner_id = $2 AND e.date < $3::date
+  AND ($4::bigint IS NULL OR l.account_id = $4::bigint)
+`
+
+type PartnerLedgerOpeningParams struct {
+	LegalEntityID int64
+	PartnerID     pgtype.Int8
+	FromDate      pgtype.Date
+	AccountID     pgtype.Int8
+}
+
+func (q *Queries) PartnerLedgerOpening(ctx context.Context, arg PartnerLedgerOpeningParams) (int64, error) {
+	row := q.db.QueryRow(ctx, partnerLedgerOpening,
+		arg.LegalEntityID,
+		arg.PartnerID,
+		arg.FromDate,
+		arg.AccountID,
+	)
 	var opening int64
 	err := row.Scan(&opening)
 	return opening, err

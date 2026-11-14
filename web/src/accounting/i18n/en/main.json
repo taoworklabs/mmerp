@@ -141,5 +141,22 @@
   "accounting.common.close": "Close",
   "accounting.entry.total_debit": "Total debit (₫)",
   "accounting.entry.total_credit": "Total credit (₫)",
-  "accounting.entry.totals_saved": "Amounts as of the last save; save to recompute."
+  "accounting.entry.totals_saved": "Amounts as of the last save; save to recompute.",
+  "accounting.account.by_partner": "Tracked by partner",
+  "accounting.account.by_partner_hint": "Every journal line on this account names a partner, as for receivables and payables. Fixed once the account has entries or children.",
+  "accounting.account.tracked": "By partner",
+  "accounting.rule.by_partner": "By partner",
+  "accounting.line.partner_col": "Partner",
+  "accounting.line.partner": "Partner of line {{n}}",
+  "accounting.ledger.partner": "Partner",
+  "accounting.partners.title": "Partner balances",
+  "accounting.partners.description": "Each partner's opening balance, movements and closing balance on the accounts tracked by partner.",
+  "accounting.partners.account": "Account",
+  "accounting.partners.partner": "Partner",
+  "accounting.partners.empty": "No balances yet",
+  "accounting.partners.empty_description": "No journal line names a partner on an account tracked by partner yet.",
+  "accounting.partner_ledger.title": "Partner ledger",
+  "accounting.partner_ledger.description": "A partner's movements over a range with its balance.",
+  "accounting.partner_ledger.pick": "Choose a partner",
+  "accounting.partner_ledger.pick_description": "Choose a legal entity and a partner to see their ledger."
 }

@@ -8,6 +8,8 @@ import { JournalEntriesPage } from './pages/JournalEntriesPage'
 import { JournalEntryPage } from './pages/JournalEntryPage'
 import { LedgerPage } from './pages/LedgerPage'
 import { NewJournalEntryPage } from './pages/NewJournalEntryPage'
+import { PartnerBalancesPage } from './pages/PartnerBalancesPage'
+import { PartnerLedgerPage } from './pages/PartnerLedgerPage'
 import { PendingPage } from './pages/PendingPage'
 import { RulesPage } from './pages/RulesPage'
 import { StartsPage } from './pages/StartsPage'
@@ -29,6 +31,8 @@ export default function AccountingRoutes() {
       <Route path="journal-entries/:id" element={view(<JournalEntryPage />)} />
       <Route path="ledger" element={view(<LedgerPage />)} />
       <Route path="trial-balance" element={view(<TrialBalancePage />)} />
+      <Route path="partner-balances" element={view(<PartnerBalancesPage />)} />
+      <Route path="partner-ledger" element={view(<PartnerLedgerPage />)} />
       <Route path="pending" element={view(<PendingPage />)} />
       <Route path="accounts" element={manage(<AccountsPage />)} />
       <Route path="rules" element={manage(<RulesPage />)} />

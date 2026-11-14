@@ -15,7 +15,7 @@ func TestRulesListEveryKind(t *testing.T) {
 		t.Fatalf("rules %+v %v", rs, err)
 	}
 	for i, r := range rs {
-		if r.Kind != string(posting.Kinds()[i]) || r.AccountID != nil || r.Side != nil {
+		if r.Kind != string(posting.Kinds()[i].Kind) || r.AccountID != nil || r.Side != nil {
 			t.Fatalf("rule %d %+v", i, r)
 		}
 	}

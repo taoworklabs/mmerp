@@ -11,13 +11,42 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const accountFlags = `-- name: AccountFlags :many
+SELECT id, by_partner FROM accounting.accounts WHERE id = ANY($1::bigint[])
+`
+
+type AccountFlagsRow struct {
+	ID        int64
+	ByPartner bool
+}
+
+func (q *Queries) AccountFlags(ctx context.Context, ids []int64) ([]AccountFlagsRow, error) {
+	rows, err := q.db.Query(ctx, accountFlags, ids)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []AccountFlagsRow
+	for rows.Next() {
+		var i AccountFlagsRow
+		if err := rows.Scan(&i.ID, &i.ByPartner); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const accountParent = `-- name: AccountParent :one
 WITH RECURSIVE sub AS (
   SELECT x.id FROM accounting.accounts x WHERE x.id = $2::bigint
   UNION
   SELECT a.id FROM accounting.accounts a JOIN sub ON a.parent_id = sub.id
 )
-SELECT p.type, EXISTS (SELECT 1 FROM accounting.entry_lines l WHERE l.account_id = p.id) AS has_lines, EXISTS (SELECT 1 FROM sub WHERE sub.id = p.id) AS cyclic
+SELECT p.type, p.by_partner, EXISTS (SELECT 1 FROM accounting.entry_lines l WHERE l.account_id = p.id) AS has_lines, EXISTS (SELECT 1 FROM sub WHERE sub.id = p.id) AS cyclic
 FROM accounting.accounts p WHERE p.id = $1::bigint
 `
 
@@ -27,30 +56,37 @@ type AccountParentParams struct {
 }
 
 type AccountParentRow struct {
-	Type     string
-	HasLines bool
-	Cyclic   bool
+	Type      string
+	ByPartner bool
+	HasLines  bool
+	Cyclic    bool
 }
 
 // The prospective parent of account @id (0 on create): its type, and whether it is @id or below it.
 func (q *Queries) AccountParent(ctx context.Context, arg AccountParentParams) (AccountParentRow, error) {
 	row := q.db.QueryRow(ctx, accountParent, arg.ParentID, arg.ID)
 	var i AccountParentRow
-	err := row.Scan(&i.Type, &i.HasLines, &i.Cyclic)
+	err := row.Scan(
+		&i.Type,
+		&i.ByPartner,
+		&i.HasLines,
+		&i.Cyclic,
+	)
 	return i, err
 }
 
 const createAccount = `-- name: CreateAccount :one
-INSERT INTO accounting.accounts (code, name, type, parent_id, active)
-VALUES ($1, $2, $3, $4, $5) RETURNING id
+INSERT INTO accounting.accounts (code, name, type, parent_id, active, by_partner)
+VALUES ($1, $2, $3, $4, $5, $6) RETURNING id
 `
 
 type CreateAccountParams struct {
-	Code     string
-	Name     string
-	Type     string
-	ParentID pgtype.Int8
-	Active   bool
+	Code      string
+	Name      string
+	Type      string
+	ParentID  pgtype.Int8
+	Active    bool
+	ByPartner bool
 }
 
 func (q *Queries) CreateAccount(ctx context.Context, arg CreateAccountParams) (int64, error) {
@@ -60,6 +96,7 @@ func (q *Queries) CreateAccount(ctx context.Context, arg CreateAccountParams) (i
 		arg.Type,
 		arg.ParentID,
 		arg.Active,
+		arg.ByPartner,
 	)
 	var id int64
 	err := row.Scan(&id)
@@ -76,21 +113,22 @@ func (q *Queries) DeleteAccount(ctx context.Context, id int64) error {
 }
 
 const listAccounts = `-- name: ListAccounts :many
-SELECT a.id, a.code, a.name, a.type, a.parent_id, a.active,
+SELECT a.id, a.code, a.name, a.type, a.parent_id, a.active, a.by_partner,
   NOT EXISTS (SELECT 1 FROM accounting.accounts c WHERE c.parent_id = a.id) AS postable,
   EXISTS (SELECT 1 FROM accounting.entry_lines l WHERE l.account_id = a.id) AS has_lines
 FROM accounting.accounts a ORDER BY a.code
 `
 
 type ListAccountsRow struct {
-	ID       int64
-	Code     string
-	Name     string
-	Type     string
-	ParentID pgtype.Int8
-	Active   bool
-	Postable bool
-	HasLines bool
+	ID        int64
+	Code      string
+	Name      string
+	Type      string
+	ParentID  pgtype.Int8
+	Active    bool
+	ByPartner bool
+	Postable  bool
+	HasLines  bool
 }
 
 func (q *Queries) ListAccounts(ctx context.Context) ([]ListAccountsRow, error) {
@@ -109,6 +147,7 @@ func (q *Queries) ListAccounts(ctx context.Context) ([]ListAccountsRow, error) {
 			&i.Type,
 			&i.ParentID,
 			&i.Active,
+			&i.ByPartner,
 			&i.Postable,
 			&i.HasLines,
 		); err != nil {
@@ -128,7 +167,7 @@ WITH RECURSIVE sub AS (
   UNION
   SELECT c.id FROM accounting.accounts c JOIN sub ON c.parent_id = sub.id
 )
-SELECT code, type, parent_id, EXISTS (SELECT 1 FROM accounting.entry_lines l WHERE l.account_id = a.id) AS has_lines, EXISTS (SELECT 1 FROM accounting.rules r WHERE r.account_id = a.id) AS has_rule,
+SELECT code, type, parent_id, by_partner, EXISTS (SELECT 1 FROM accounting.entry_lines l WHERE l.account_id = a.id) AS has_lines, EXISTS (SELECT 1 FROM accounting.rules r WHERE r.account_id = a.id) AS has_rule,
   EXISTS (SELECT 1 FROM accounting.accounts c WHERE c.parent_id = a.id) AS has_children,
   EXISTS (SELECT 1 FROM accounting.entry_lines l JOIN sub ON l.account_id = sub.id) AS tree_has_lines
 FROM accounting.accounts a WHERE a.id = $1 FOR UPDATE OF a
@@ -138,6 +177,7 @@ type LockAccountRow struct {
 	Code         string
 	Type         string
 	ParentID     pgtype.Int8
+	ByPartner    bool
 	HasLines     bool
 	HasRule      bool
 	HasChildren  bool
@@ -152,6 +192,7 @@ func (q *Queries) LockAccount(ctx context.Context, id int64) (LockAccountRow, er
 		&i.Code,
 		&i.Type,
 		&i.ParentID,
+		&i.ByPartner,
 		&i.HasLines,
 		&i.HasRule,
 		&i.HasChildren,
@@ -208,18 +249,43 @@ func (q *Queries) PostableActive(ctx context.Context, ids []int64) ([]int64, err
 	return items, nil
 }
 
+const ruleKindsOfAccount = `-- name: RuleKindsOfAccount :many
+SELECT kind FROM accounting.rules WHERE account_id = $1 ORDER BY kind
+`
+
+func (q *Queries) RuleKindsOfAccount(ctx context.Context, accountID int64) ([]string, error) {
+	rows, err := q.db.Query(ctx, ruleKindsOfAccount, accountID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []string
+	for rows.Next() {
+		var kind string
+		if err := rows.Scan(&kind); err != nil {
+			return nil, err
+		}
+		items = append(items, kind)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const updateAccount = `-- name: UpdateAccount :exec
-UPDATE accounting.accounts SET code = $1, name = $2, type = $3, parent_id = $4, active = $5
-WHERE id = $6
+UPDATE accounting.accounts SET code = $1, name = $2, type = $3, parent_id = $4, active = $5, by_partner = $6
+WHERE id = $7
 `
 
 type UpdateAccountParams struct {
-	Code     string
-	Name     string
-	Type     string
-	ParentID pgtype.Int8
-	Active   bool
-	ID       int64
+	Code      string
+	Name      string
+	Type      string
+	ParentID  pgtype.Int8
+	Active    bool
+	ByPartner bool
+	ID        int64
 }
 
 func (q *Queries) UpdateAccount(ctx context.Context, arg UpdateAccountParams) error {
@@ -229,6 +295,7 @@ func (q *Queries) UpdateAccount(ctx context.Context, arg UpdateAccountParams) er
 		arg.Type,
 		arg.ParentID,
 		arg.Active,
+		arg.ByPartner,
 		arg.ID,
 	)
 	return err

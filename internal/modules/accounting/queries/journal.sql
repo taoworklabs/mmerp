@@ -11,10 +11,10 @@ DELETE FROM accounting.journal_entries WHERE id = $1;
 DELETE FROM accounting.journal_entry_lines WHERE journal_entry_id = $1;
 
 -- name: InsertJournalEntryLines :exec
--- No org unit or description travels as 0 and ''.
-INSERT INTO accounting.journal_entry_lines (journal_entry_id, line_no, account_id, org_unit_id, description, debit, credit)
+-- No org unit, partner or description travels as 0 and ''.
+INSERT INTO accounting.journal_entry_lines (journal_entry_id, line_no, account_id, org_unit_id, partner_id, description, debit, credit)
 SELECT @journal_entry_id::bigint, generate_series(1, cardinality(@account_ids::bigint[])), unnest(@account_ids::bigint[]),
-       NULLIF(unnest(@org_unit_ids::bigint[]), 0), NULLIF(unnest(@descriptions::text[]), ''),
+       NULLIF(unnest(@org_unit_ids::bigint[]), 0), NULLIF(unnest(@partner_ids::bigint[]), 0), NULLIF(unnest(@descriptions::text[]), ''),
        unnest(@debits::bigint[]), unnest(@credits::bigint[]);
 
 -- name: GetJournalEntry :one
@@ -22,8 +22,10 @@ SELECT j.description, d.number, d.status, d.version, d.date, d.legal_entity_id
 FROM accounting.journal_entries j JOIN record.documents d ON d.id = j.id WHERE j.id = $1;
 
 -- name: GetJournalEntryLines :many
-SELECT l.line_no, l.account_id, a.code AS account_code, a.name AS account_name, l.org_unit_id, l.description, l.debit, l.credit
+SELECT l.line_no, l.account_id, a.code AS account_code, a.name AS account_name, l.org_unit_id, l.description, l.debit, l.credit,
+  l.partner_id, p.code AS partner_code, p.name AS partner_name
 FROM accounting.journal_entry_lines l JOIN accounting.accounts a ON a.id = l.account_id
+LEFT JOIN partner.partners p ON p.id = l.partner_id
 WHERE l.journal_entry_id = $1 ORDER BY l.line_no;
 
 -- name: JournalEntryListBase :many
@@ -43,3 +45,6 @@ SELECT count(*) FROM iam.org_units WHERE id = ANY(@ids::bigint[]);
 SELECT e.id FROM accounting.entries e
 WHERE e.doc_type = $1 AND e.doc_id = $2 AND e.reverses IS NULL
   AND NOT EXISTS (SELECT 1 FROM accounting.entries r WHERE r.reverses = e.id);
+
+-- name: CountPartners :one
+SELECT count(*) FROM partner.partners WHERE id = ANY(@ids::bigint[]);
