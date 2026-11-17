@@ -149,6 +149,21 @@ Vertical slices, each from migration to screen:
 4. The partner ledger of one customer shows the opening line with a running balance; cancelling the entry adds a reversal and the balance returns to zero.
 5. A payroll posts and reaches the ledger exactly as before, with no partner on its lines.
 
+## M17. Sales to cash
+
+**In progress** (2026-11-17): [ADR-0052](./adr/0052-receipts-settle-named-invoices.md).
+
+**Goal:** a confirmed order is billed in parts and paid, sales staff see on each invoice and order whether it is paid, and accounting gets the receivable, revenue, output VAT and cash per customer ([ADR-0052](./adr/0052-receipts-settle-named-invoices.md), [design](./superpowers/specs/2026-11-17-sales-to-cash-design.md)).
+
+**Done when**, with `make seed` data and `PRODUCTS=hrm,sales,accounting`:
+
+1. A confirmed order of goods and a service gets two invoices for parts of its quantities; a third that exceeds the remaining quantity is refused; the order shows invoice state `partial`, then `full`.
+2. After posting an invoice, the general ledger shows Dr 131 (with the customer) / Cr 5111 / Cr 33311 for it, and the customer's partner balance grows by its total.
+3. A receipt split across two invoices of the customer posts; each invoice shows `partial` or `paid` correctly, the order shows its paid amount, and the ledger shows Dr 1111 or 1121 / Cr 131.
+4. Allocating more than an invoice's remaining amount is refused; cancelling an invoice with a receipt is refused; cancelling the receipt returns the remaining amounts, then the invoice can be cancelled and its lines are reversed.
+5. With accounting disabled, invoices and receipts work and their business lines wait for posting; with Sales disabled, everything reads and prints.
+6. Another team's staff sees none of the invoices or receipts. `recordtest` passes for both types. HRM and payroll posting unchanged.
+
 ## HRM review
 
 After M14, HRM went through a business review ([docs/hrm-review-plan.md](./hrm-review-plan.md), rounds [one](./hrm-review-round1.md) and [two](./hrm-review-round2.md)). The decisions are settled and built:
