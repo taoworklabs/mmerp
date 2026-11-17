@@ -93,3 +93,10 @@ export const openInvoices = (customer: number, unit: number, receipt: number) =>
       )
     ).items,
 })
+
+export function useReceiptActions() {
+  return useQuery({
+    queryKey: salesKeys.receipts.actions(),
+    queryFn: async () => (await unwrap(api.GET('/sales/receipts/actions'))).allowed_actions,
+  })
+}

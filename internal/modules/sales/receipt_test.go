@@ -305,3 +305,14 @@ func TestReceiptList(t *testing.T) {
 		t.Fatalf("staff of B %+v", l)
 	}
 }
+
+// Receipts are created directly: create shows to who may edit orders somewhere.
+func TestReceiptTypeActions(t *testing.T) {
+	r := newReceipts(t)
+	if a, err := r.sales.ReceiptActions(r.staff); err != nil || !slices.Contains(a.AllowedActions, "create") {
+		t.Fatalf("staff %+v %v", a, err)
+	}
+	if a, _ := r.sales.ReceiptActions(r.ctxFor("viewer", "viewer@A")); slices.Contains(a.AllowedActions, "create") {
+		t.Fatalf("viewer %+v", a)
+	}
+}

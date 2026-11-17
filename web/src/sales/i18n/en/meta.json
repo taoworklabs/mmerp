@@ -66,5 +66,14 @@
   "sales.error.sales_invoice_over_ordered": "Line {{line_no}}: more than is left to invoice ({{remaining}}).",
   "sales.error.sales_invoice_position": "Line {{line_no}}: the sales order has no such line. Pick the order line again.",
   "sales.error.sales_invoice_before_order": "The invoice date cannot be before the sales order date.",
-  "sales.error.sales_invoice_has_receipt": "The invoice has a receipt. Cancel the receipt first."
+  "sales.error.sales_invoice_has_receipt": "The invoice has a receipt. Cancel the receipt first.",
+  "sales.nav.receipts": "Customer receipts",
+  "sales.receipt.name": "Customer receipt",
+  "sales.preview.invoices": "Invoices",
+  "sales.preview.amount": "Amount (VND)",
+  "sales.error.sales_receipt_over_invoice": "Line {{line_no}}: more than is left to receive on the invoice ({{remaining}} VND).",
+  "sales.error.sales_receipt_invoice": "Line {{line_no}}: the invoice is not posted or belongs to another customer.",
+  "sales.error.sales_receipt_invoice_org_unit": "Line {{line_no}}: the invoice belongs to another org unit than the receipt. Make a separate receipt for that org unit.",
+  "sales.error.sales_receipt_before_invoice": "Line {{line_no}}: the receipt date cannot be before the invoice date.",
+  "sales.error.sales_receipt_duplicate_invoice": "Line {{line_no}}: the invoice is already on another line."
 }

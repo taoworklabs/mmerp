@@ -21336,6 +21336,37 @@
         ]
       }
     },
+    "/sales/receipts/actions": {
+      "get": {
+        "operationId": "get-receipt-actions",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Actions"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "tags": [
+          "sales",
+          "sales"
+        ]
+      }
+    },
     "/sales/receipts/{id}": {
       "get": {
         "operationId": "get-receipt",

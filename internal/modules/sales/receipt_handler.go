@@ -41,6 +41,11 @@ func registerReceiptHandlers(api huma.API, s *Service) {
 			out.Body.Items = items
 			return out, err
 		})
+	huma.Register(api, huma.Operation{OperationID: "get-receipt-actions", Method: http.MethodGet, Path: "/sales/receipts/actions"},
+		func(ctx context.Context, _ *struct{}) (*actionsOutput, error) {
+			a, err := s.ReceiptActions(ctx)
+			return &actionsOutput{Body: a}, err
+		})
 	huma.Register(api, huma.Operation{OperationID: "list-receipts", Method: http.MethodGet, Path: "/sales/receipts"},
 		func(ctx context.Context, in *ReceiptFilter) (*receiptsOutput, error) {
 			l, err := s.Receipts(ctx, *in)

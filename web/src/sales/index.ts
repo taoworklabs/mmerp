@@ -1,7 +1,7 @@
-import { IconAddressBook, IconAdjustmentsHorizontal, IconBuildingWarehouse, IconFileDollar, IconFileInvoice, IconTruckDelivery, IconGitBranch, IconListDetails, IconPackage, IconPackages, IconReceipt, IconShoppingCart } from '@tabler/icons-react'
+import { IconAddressBook, IconCash, IconAdjustmentsHorizontal, IconBuildingWarehouse, IconFileDollar, IconFileInvoice, IconTruckDelivery, IconGitBranch, IconListDetails, IconPackage, IconPackages, IconReceipt, IconShoppingCart } from '@tabler/icons-react'
 import type { AreaManifest } from '@/shared/area'
 import { masterKeys } from '@/shared/master'
-import { adjustmentDocType, customerDocType, deliveryDocType, invoiceDocType, orderDocType, partnerType, quoteDocType, salesKeys } from './keys'
+import { adjustmentDocType, customerDocType, deliveryDocType, invoiceDocType, orderDocType, partnerType, quoteDocType, receiptDocType, salesKeys } from './keys'
 
 export const sales: AreaManifest = {
   product: 'sales',
@@ -14,6 +14,7 @@ export const sales: AreaManifest = {
     { label: 'sales.nav.orders', path: 'orders', icon: IconReceipt, permission: 'sales.order.view' },
     { label: 'sales.nav.deliveries', path: 'deliveries', icon: IconTruckDelivery, permission: 'sales.order.view' },
     { label: 'sales.nav.invoices', path: 'invoices', icon: IconFileInvoice, permission: 'sales.order.view' },
+    { label: 'sales.nav.receipts', path: 'receipts', icon: IconCash, permission: 'sales.order.view' },
     { label: 'sales.nav.on_hand', path: 'stock/on-hand', icon: IconPackages, permission: 'stock.view', group: 'sales.nav.group_stock' },
     { label: 'sales.nav.stock_card', path: 'stock/card', icon: IconListDetails, permission: 'stock.view', group: 'sales.nav.group_stock' },
     { label: 'sales.nav.adjustments', path: 'stock/adjustments', icon: IconAdjustmentsHorizontal, permission: 'stock.view', group: 'sales.nav.group_stock' },
@@ -56,6 +57,12 @@ export const sales: AreaManifest = {
       preview: () => import('./components/InvoicePreview'),
       // Its order shows what is invoiced and paid.
       invalidate: () => [salesKeys.invoices.all(), salesKeys.docs.all('order')],
+    },
+    [receiptDocType]: {
+      path: (id) => `receipts/${id}`,
+      preview: () => import('./components/ReceiptPreview'),
+      // Its invoices and their orders show what is paid.
+      invalidate: () => [salesKeys.receipts.all(), salesKeys.invoices.all(), salesKeys.docs.all('order')],
     },
     [customerDocType]: {
       path: (id) => `customers/${id}`,

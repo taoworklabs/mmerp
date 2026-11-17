@@ -65,6 +65,11 @@ func (s *Service) receiptTransition(ctx context.Context, d record.Doc, _ record.
 	return nil
 }
 
+// ReceiptActions lists what the actor may do before picking a receipt: create.
+func (s *Service) ReceiptActions(ctx context.Context) (Actions, error) {
+	return s.typeActions(ctx, receiptType)
+}
+
 // Receipt returns one receipt; one the actor may not view does not exist.
 func (s *Service) Receipt(ctx context.Context, id int64) (Receipt, error) {
 	d, err := s.d.Record.Read(ctx, record.Ref{Type: receiptType, ID: id})

@@ -83,6 +83,7 @@ export const salesKeys = {
   },
   receipts: {
     all: () => ['sales', 'receipts'] as const,
+    actions: () => ['sales', 'receipts', 'actions'] as const,
     list: (q: ReceiptQuery) => ['sales', 'receipts', 'list', q] as const,
     detail: (id: number) => ['sales', 'receipts', 'detail', id] as const,
     // Under invoices, so a saved receipt or invoice refreshes what is left to receive.

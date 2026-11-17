@@ -17,9 +17,12 @@ import { NewAdjustmentPage } from './pages/NewAdjustmentPage'
 import { NewCustomerPage } from './pages/NewCustomerPage'
 import { NewDeliveryPage } from './pages/NewDeliveryPage'
 import { NewInvoicePage } from './pages/NewInvoicePage'
+import { NewReceiptPage } from './pages/NewReceiptPage'
 import { NewDocPage } from './pages/NewDocPage'
 import { OnHandPage } from './pages/OnHandPage'
 import { PartnerPage } from './pages/PartnerPage'
+import { ReceiptPage } from './pages/ReceiptPage'
+import { ReceiptsPage } from './pages/ReceiptsPage'
 import { StockCardPage } from './pages/StockCardPage'
 import { WarehousesPage } from './pages/WarehousesPage'
 
@@ -53,6 +56,10 @@ export default function SalesRoutes() {
       {/* Without create_invoice on the order the new page itself answers forbidden. */}
       <Route path="invoices/new" element={canOrders ? <NewInvoicePage /> : <ForbiddenPage />} />
       <Route path="invoices/:id" element={canOrders ? <InvoicePage /> : <ForbiddenPage />} />
+      <Route path="receipts" element={canOrders ? <ReceiptsPage /> : <ForbiddenPage />} />
+      {/* Without create (or create_receipt on the invoice) the new page itself answers forbidden. */}
+      <Route path="receipts/new" element={canOrders ? <NewReceiptPage /> : <ForbiddenPage />} />
+      <Route path="receipts/:id" element={canOrders ? <ReceiptPage /> : <ForbiddenPage />} />
       <Route path="items" element={canItems ? <ItemsPage /> : <ForbiddenPage />} />
       <Route path="stock/on-hand" element={canStock ? <OnHandPage /> : <ForbiddenPage />} />
       <Route path="stock/card" element={canStock ? <StockCardPage /> : <ForbiddenPage />} />
