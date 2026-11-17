@@ -75,7 +75,7 @@ func (s *Service) docs(ctx context.Context, k kind, f DocFilter) (DocList, error
 			ID: r.ID, Number: r.Number, Status: r.Status, Date: *platform.DatePtr(r.Date), CustomerID: r.CustomerID,
 			CustomerCode: r.CustomerCode, CustomerName: r.CustomerName, OrgUnitName: r.OrgUnitName, Total: r.Total,
 			ValidUntil: platform.DatePtr(r.ValidUntil), Expired: shownExpired(r.Status, r.Ordered, r.ValidUntil, today),
-			Ordered: r.Ordered, FromQuote: r.FromQuote, DeliveryState: r.DeliveryState, InvoiceState: r.InvoiceState,
+			Ordered: r.Ordered, FromQuote: r.FromQuote, DeliveryState: r.DeliveryState, InvoiceState: r.InvoiceState, PaymentState: r.PaymentState,
 		})
 	}
 	return out, nil
@@ -588,8 +588,11 @@ func (s *Service) orderProgress(ctx context.Context, out *Doc, lines []store.Get
 		return err
 	}
 	out.Paid = &pay.Paid
-	out.PaymentState = paymentState(pay.Paid, pay.Invoiced)
-	if out.PaymentState == "paid" && out.InvoiceState != "full" {
+	// Paid needs everything invoiced; before any invoice, nothing is paid.
+	switch out.PaymentState = paymentState(pay.Paid, pay.Invoiced); {
+	case out.InvoiceState == "none":
+		out.PaymentState = "unpaid"
+	case out.PaymentState == "paid" && out.InvoiceState != "full":
 		out.PaymentState = "partial"
 	}
 	vs, err := store.OrderInvoices.Run(ctx, out.ID)

@@ -1,9 +1,9 @@
 import { Button } from '@mmerp/ui'
-import { IconPlus, IconTruckDelivery } from '@tabler/icons-react'
+import { IconCash, IconPlus, IconTruckDelivery } from '@tabler/icons-react'
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router'
-import { api, unwrap, type DocSort } from '@/shared/api/sales'
+import { api, unwrap, type DocSort, type PaymentState } from '@/shared/api/sales'
 import { DocumentStatusFilter, type DocStatus } from '@/shared/document'
 import { FilterChip, SearchInput } from '@/shared/ui/form'
 import { ListPage } from '@/shared/ui/page'
@@ -17,7 +17,8 @@ import { docTypeOf, pathOf, salesKeys, type Kind } from '../keys'
 const sorts = ['-date', 'date', '-number', 'number', '-total', 'total'] as const satisfies readonly DocSort[]
 const deliveryStates = ['none', 'partial', 'full', 'not_applicable'] as const
 type DeliveryState = (typeof deliveryStates)[number]
-const defaults = { filters: { q: '', status: '', delivery_state: '' }, sort: '-date', sorts: [...sorts], pageSize: 50 }
+const paymentStates: PaymentState[] = ['unpaid', 'partial', 'paid']
+const defaults = { filters: { q: '', status: '', delivery_state: '', payment_state: '' }, sort: '-date', sorts: [...sorts], pageSize: 50 }
 
 // DocsPage lists the quotations or the orders the user may see.
 export function DocsPage({ kind: docKind }: { kind: Kind }) {
@@ -26,8 +27,8 @@ export function DocsPage({ kind: docKind }: { kind: Kind }) {
   const base = `/sales/${pathOf(docKind)}`
   const canCreate = useDocActions(docKind).data?.includes('create') ?? false
   const [params, set, filterBar] = useListParams(defaults)
-  const { q, status, delivery_state } = params.filters as typeof defaults.filters
-  const query = { q, status, delivery_state, sort: params.sort, page: params.page, pageSize: params.pageSize }
+  const { q, status, delivery_state, payment_state } = params.filters as typeof defaults.filters
+  const query = { q, status, delivery_state, payment_state, sort: params.sort, page: params.page, pageSize: params.pageSize }
   const list = useQuery({
     queryKey: salesKeys.docs.list(docKind, query),
     queryFn: () => {
@@ -43,7 +44,12 @@ export function DocsPage({ kind: docKind }: { kind: Kind }) {
         },
       }
       if (docKind === 'quote') return unwrap(api.GET('/sales/quotes', p))
-      return unwrap(api.GET('/sales/orders', { params: { query: { ...p.params.query, delivery_state: (delivery_state || undefined) as DeliveryState | undefined } } }))
+      const orderQuery = {
+        ...p.params.query,
+        delivery_state: (delivery_state || undefined) as DeliveryState | undefined,
+        payment_state: (payment_state || undefined) as PaymentState | undefined,
+      }
+      return unwrap(api.GET('/sales/orders', { params: { query: orderQuery } }))
     },
     placeholderData: keepPreviousData,
   })
@@ -73,6 +79,14 @@ export function DocsPage({ kind: docKind }: { kind: Kind }) {
               icon={IconTruckDelivery}
               data={deliveryStates.map((s) => ({ value: s, label: t(`sales.order.delivery_state.${s}`) }))}
               {...filterBar.bind('delivery_state')}
+            />
+          )}
+          {docKind === 'order' && (
+            <FilterChip
+              label={t('sales.payment_state.title')}
+              icon={IconCash}
+              data={paymentStates.map((s) => ({ value: s, label: t(`sales.payment_state.${s}`) }))}
+              {...filterBar.bind('payment_state')}
             />
           )}
         </>

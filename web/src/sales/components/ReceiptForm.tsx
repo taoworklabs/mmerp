@@ -30,7 +30,6 @@ const idOf = (id: number | undefined) => (id ? String(id) : null)
 const toValues = (a: AllocationInput): AllocationValues => ({ invoice_id: String(a.invoice_id), amount: a.amount })
 
 const errorFields: ErrorFields<Values> = {
-  customer_inactive: 'customer_id',
   sales_receipt_invoice: 'allocations.*.invoice_id',
   sales_receipt_invoice_org_unit: 'allocations.*.invoice_id',
   sales_receipt_duplicate_invoice: 'allocations.*.invoice_id',

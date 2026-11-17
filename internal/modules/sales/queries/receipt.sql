@@ -65,9 +65,6 @@ DELETE FROM sales.receipt_allocations WHERE receipt_id = $1;
 INSERT INTO sales.receipt_allocations (receipt_id, position, invoice_id, amount)
 SELECT @receipt_id::bigint, unnest(@positions::int[]), unnest(@invoice_ids::bigint[]), unnest(@amounts::bigint[]);
 
--- name: ReceiptCustomerActive :one
-SELECT c.active FROM sales.receipts r JOIN sales.customers c ON c.id = r.customer_id WHERE r.id = $1;
-
 -- name: ReceiptListBase :many
 -- data:base
 SELECT r.id, d.number, d.status, d.date, d.org_unit_id, r.customer_id, p.name AS customer_name, r.method, r.amount,

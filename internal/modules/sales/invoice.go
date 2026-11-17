@@ -133,12 +133,13 @@ func (s *Service) Invoice(ctx context.Context, id int64) (Invoice, error) {
 	return out, err
 }
 
+// paymentState: what was paid against what is owed; owing nothing is paid.
 func paymentState(paid, total int64) string {
 	switch {
-	case paid == 0:
-		return "unpaid"
 	case paid >= total:
 		return "paid"
+	case paid == 0:
+		return "unpaid"
 	}
 	return "partial"
 }
@@ -174,7 +175,7 @@ func (s *Service) CreateInvoice(ctx context.Context, in NewInvoice) (id int64, e
 			return err
 		}
 		// A posted order's prices never change, so the amount priced before the locks holds.
-		_, t, err := s.priceInvoice(ctx, 0, in.OrderID, o.OrgUnitID, in.InvoiceFields)
+		_, t, err := s.priceInvoice(ctx, 0, in.OrderID, o.OrgUnitID, in.InvoiceFields, false)
 		if err != nil {
 			return err
 		}
@@ -206,7 +207,7 @@ func (s *Service) UpdateInvoice(ctx context.Context, id int64, in InvoiceUpdate)
 		if err != nil {
 			return err
 		}
-		_, t, err := s.priceInvoice(ctx, id, order, d.OrgUnitID, in.InvoiceFields)
+		_, t, err := s.priceInvoice(ctx, id, order, d.OrgUnitID, in.InvoiceFields, false)
 		if err != nil {
 			return err
 		}
@@ -242,12 +243,13 @@ func (s *Service) checkInvoice(ctx context.Context, id, orderID, unit int64, f I
 	if f.Date < o.Date {
 		return nil, Totals{}, ErrInvoiceBeforeOrder
 	}
-	return s.priceInvoice(ctx, id, orderID, unit, f)
+	return s.priceInvoice(ctx, id, orderID, unit, f, true)
 }
 
-// priceInvoice takes each line's item, texts, price, discount and VAT rate from the order line,
-// refuses a quantity beyond what other non-cancelled invoices leave, and computes the amounts.
-func (s *Service) priceInvoice(ctx context.Context, id, orderID, unit int64, f InvoiceFields) ([]InvoiceLine, Totals, error) {
+// priceInvoice takes each line's item, texts, price, discount and VAT rate from the order line
+// and computes the amounts; with held, it also refuses a quantity beyond what other non-cancelled
+// invoices leave. Before the locks it only prices: a retried create must reach its reuse check.
+func (s *Service) priceInvoice(ctx context.Context, id, orderID, unit int64, f InvoiceFields, held bool) ([]InvoiceLine, Totals, error) {
 	rows, err := store.InvoiceableLines.Run(ctx, store.InvoiceableLinesParams{InvoiceID: id, OrderID: orderID})
 	if err != nil {
 		return nil, Totals{}, err
@@ -272,7 +274,7 @@ func (s *Service) priceInvoice(ctx context.Context, id, orderID, unit int64, f I
 			return nil, Totals{}, err
 		}
 		used[l.OrderPosition] = used[l.OrderPosition].Add(q)
-		if taken.Add(used[l.OrderPosition]).GreaterThan(ordered) {
+		if held && taken.Add(used[l.OrderPosition]).GreaterThan(ordered) {
 			return nil, Totals{}, deliveryErr(ErrInvoiceOverOrdered, i+1, map[string]any{
 				"order_position": l.OrderPosition, "remaining": ordered.Sub(taken).StringFixed(3)})
 		}

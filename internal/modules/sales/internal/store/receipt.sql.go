@@ -287,17 +287,6 @@ func (q *Queries) OpenInvoices(ctx context.Context, arg OpenInvoicesParams) ([]O
 	return items, nil
 }
 
-const receiptCustomerActive = `-- name: ReceiptCustomerActive :one
-SELECT c.active FROM sales.receipts r JOIN sales.customers c ON c.id = r.customer_id WHERE r.id = $1
-`
-
-func (q *Queries) ReceiptCustomerActive(ctx context.Context, id int64) (bool, error) {
-	row := q.db.QueryRow(ctx, receiptCustomerActive, id)
-	var active bool
-	err := row.Scan(&active)
-	return active, err
-}
-
 const receiptListBase = `-- name: ReceiptListBase :many
 SELECT r.id, d.number, d.status, d.date, d.org_unit_id, r.customer_id, p.name AS customer_name, r.method, r.amount,
        u.name AS org_unit_name

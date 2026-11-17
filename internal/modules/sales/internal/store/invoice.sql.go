@@ -216,7 +216,8 @@ func (q *Queries) InsertInvoiceLines(ctx context.Context, arg InsertInvoiceLines
 const invoiceListBase = `-- name: InvoiceListBase :many
 SELECT v.id, d.number, d.status, d.date, d.org_unit_id, v.order_id, o.number AS order_number,
        h.customer_id, h.customer_name, v.total, u.name AS org_unit_name,
-       (CASE WHEN p.paid = 0 THEN 'unpaid' WHEN p.paid >= v.total THEN 'paid' ELSE 'partial' END)::text AS payment_state
+       -- Posted invoices only; one of nothing owes nothing.
+       (CASE WHEN d.status <> 'posted' THEN '' WHEN p.paid >= v.total THEN 'paid' WHEN p.paid = 0 THEN 'unpaid' ELSE 'partial' END)::text AS payment_state
 FROM sales.invoices v
 CROSS JOIN LATERAL (
     SELECT coalesce(sum(a.amount), 0) AS paid FROM sales.receipt_allocations a JOIN record.documents rd ON rd.id = a.receipt_id

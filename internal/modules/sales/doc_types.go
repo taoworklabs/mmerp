@@ -117,6 +117,7 @@ type DocFilter struct {
 	// Orders only.
 	DeliveryState string `query:"delivery_state" enum:"none,partial,full,not_applicable"`
 	InvoiceState  string `query:"invoice_state" enum:"none,partial,full"`
+	PaymentState  string `query:"payment_state" enum:"unpaid,partial,paid"`
 	Sort          string `query:"sort" enum:"date,-date,number,-number,total,-total" default:"-date"`
 	platform.Paging
 }
@@ -139,6 +140,7 @@ type DocListItem struct {
 	// Orders only.
 	DeliveryState string `json:"delivery_state,omitempty" enum:"none,partial,full,not_applicable"`
 	InvoiceState  string `json:"invoice_state,omitempty" enum:"none,partial,full"`
+	PaymentState  string `json:"payment_state,omitempty" enum:"unpaid,partial,paid"`
 }
 
 type DocList struct {

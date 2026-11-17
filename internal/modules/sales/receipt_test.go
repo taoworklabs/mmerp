@@ -86,12 +86,6 @@ func TestReceiptRecordContract(t *testing.T) {
 				_, err := v.system.Exec(v.admin, `UPDATE sales.invoices SET total = 0 WHERE id = $1`, inv)
 				v.check(err)
 			},
-			// A deactivated customer keeps the receipt a draft.
-			BreakSubmit: func(*testing.T, record.Ref) {
-				c := customer("KH1", v.a)
-				c.Active = false
-				v.check(v.sales.UpdateCustomer(v.staff, v.customer, upd(c)))
-			},
 			Effects:      func(t *testing.T, ref record.Ref) int { return min(count(t, ref), 1) },
 			PostingLines: count,
 		}
@@ -268,6 +262,11 @@ func TestReceiptDraftHoldsAmount(t *testing.T) {
 
 func TestOrderPaymentState(t *testing.T) {
 	r := newReceipts(t)
+	fresh := r.newOrder("0")
+	r.check(r.move(r.staff, "sales.order", fresh, record.Posted))
+	if o, _ := r.sales.Order(r.staff, fresh); o.PaymentState != "unpaid" {
+		t.Fatalf("order without invoices: %s", o.PaymentState)
+	}
 	if o := r.orderState(); o.PaymentState != "unpaid" || o.Paid == nil || *o.Paid != 0 {
 		t.Fatalf("fresh %+v", o.PaymentState)
 	}
@@ -314,5 +313,39 @@ func TestReceiptTypeActions(t *testing.T) {
 	}
 	if a, _ := r.sales.ReceiptActions(r.ctxFor("viewer", "viewer@A")); slices.Contains(a.AllowedActions, "create") {
 		t.Fatalf("viewer %+v", a)
+	}
+}
+
+// An invoice of nothing owes nothing: it reads paid, and offers no receipt.
+func TestZeroInvoicePaid(t *testing.T) {
+	v := newInvoices(t)
+	_, err := v.system.Exec(v.admin, `UPDATE sales.lines SET unit_price = 0, amount = 0, vat = 0 WHERE doc_id = $1 AND position = 3`, v.order)
+	v.check(err)
+	id := v.postedInvoice(il(3, "1"))
+	if inv, err := v.sales.Invoice(v.staff, id); err != nil || inv.Totals.Total != 0 || inv.PaymentState != "paid" || slices.Contains(inv.AllowedActions, "create_receipt") {
+		t.Fatalf("%+v %v", inv, err)
+	}
+}
+
+// Payment state is a posted invoice's: drafts and cancelled invoices are in no payment filter.
+func TestInvoiceListPaymentOnlyPosted(t *testing.T) {
+	r := newReceipts(t)
+	must(t)(r.createInvoice(r.staff, r.order, r.invoiceFields(il(1, "1"))))
+	r.check(r.move(r.staff, "sales.invoice", r.inv2, record.Cancelled))
+	f := sales.InvoiceFilter{PaymentState: "unpaid", Sort: "-date", Paging: platform.Paging{Page: 1, PageSize: 50}}
+	if l, err := r.sales.Invoices(r.staff, f); err != nil || l.Total != 1 || l.Items[0].ID != r.inv1 {
+		t.Fatalf("unpaid %+v %v", l, err)
+	}
+}
+
+// A customer deactivated while invoices are open still pays them.
+func TestReceiptFromInactiveCustomer(t *testing.T) {
+	r := newReceipts(t)
+	c := customer("KH1", r.a)
+	c.Active = false
+	r.check(r.sales.UpdateCustomer(r.staff, r.customer, upd(c)))
+	r.postedReceipt(r.receiptFields("cash", al(r.inv1, total1)))
+	if v := r.invoice(r.inv1); v.PaymentState != "paid" {
+		t.Fatalf("payment %s", v.PaymentState)
 	}
 }

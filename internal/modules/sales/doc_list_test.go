@@ -94,3 +94,22 @@ func TestDocListInvoiceStateFilter(t *testing.T) {
 		t.Fatalf("other %+v", o)
 	}
 }
+
+func TestDocListPaymentStateFilter(t *testing.T) {
+	r := newReceipts(t)
+	other := r.newOrder("0")
+	r.check(r.move(r.staff, "sales.order", other, record.Posted))
+	r.postedReceipt(r.receiptFields("cash", al(r.inv1, total1)))
+	f := sales.DocFilter{PaymentState: "partial", Sort: "-date", Paging: platform.Paging{Page: 1, PageSize: 50}}
+	l, err := r.sales.Orders(r.staff, f)
+	r.check(err)
+	if l.Total != 1 || l.Items[0].ID != r.order || l.Items[0].PaymentState != "partial" {
+		t.Fatalf("partial %+v", l)
+	}
+	if o := find(r.listed(r.staff, r.sales.Orders), other); o.PaymentState != "unpaid" {
+		t.Fatalf("other %+v", o)
+	}
+	if q := find(r.listed(r.staff, r.sales.Quotes), 0); q.PaymentState != "" {
+		t.Fatalf("quote %+v", q)
+	}
+}

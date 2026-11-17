@@ -13,20 +13,14 @@ import (
 
 const receiptType = "sales.receipt"
 
-// A receipt is as open as the orders of its org unit.
+// A receipt is as open as the orders of its org unit. It has no customer check on sending:
+// an inactive customer still pays what it owes.
 func (s *Service) registerReceipt() {
 	s.d.Record.Register(record.Type{
 		Code: receiptType, Product: "sales", Kind: record.Document, NumberPrefix: "PT",
 		Perms:        record.Perms{View: PermOrderView, Edit: PermOrderEdit, ViewFiles: PermOrderView, Attach: PermOrderEdit},
 		OnTransition: s.receiptTransition,
-		BeforeSubmit: func(ctx context.Context, d record.Doc) error {
-			active, err := store.ReceiptCustomerActive.Run(ctx, d.ID)
-			if err == nil && !active {
-				return ErrCustomerInactive
-			}
-			return err
-		},
-		OnDelete: func(ctx context.Context, id int64) error { return store.DeleteReceipt.Run(ctx, id) },
+		OnDelete:     func(ctx context.Context, id int64) error { return store.DeleteReceipt.Run(ctx, id) },
 	})
 }
 
@@ -169,18 +163,11 @@ func (s *Service) UpdateReceipt(ctx context.Context, id int64, in ReceiptUpdate)
 	})
 }
 
-// receiptAmount checks the customer may be seen and is active, refuses an invoice named
-// twice, and sums the allocations.
+// receiptAmount checks the customer may be seen, refuses an invoice named twice, and sums the
+// allocations. An inactive customer still pays what it owes.
 func (s *Service) receiptAmount(ctx context.Context, f ReceiptFields) (int64, error) {
 	if err := s.d.Record.Visible(ctx, record.Ref{Type: customerType, ID: f.CustomerID}, record.View); err != nil {
 		return 0, err
-	}
-	c, err := store.GetCustomer.Run(ctx, f.CustomerID)
-	if err != nil {
-		return 0, err
-	}
-	if !c.Active {
-		return 0, ErrCustomerInactive
 	}
 	var sum int64
 	seen := map[int64]bool{}

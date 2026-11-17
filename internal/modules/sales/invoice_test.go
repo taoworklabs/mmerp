@@ -298,3 +298,13 @@ func TestInvoiceList(t *testing.T) {
 		t.Fatalf("staff of B: %+v", l)
 	}
 }
+
+// Sending the same create again, after the first billed all that was left, returns the first invoice.
+func TestInvoiceRetryReturnsFirst(t *testing.T) {
+	v := newInvoices(t)
+	in := sales.NewInvoice{RequestID: newRequest(), OrderID: v.order, InvoiceFields: v.invoiceFields(il(1, "10"), il(2, "5"), il(3, "2"))}
+	first := must(t)(v.sales.CreateInvoice(v.staff, in))
+	if again := must(t)(v.sales.CreateInvoice(v.staff, in)); again != first {
+		t.Fatalf("retry made %d, first %d", again, first)
+	}
+}

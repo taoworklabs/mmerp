@@ -2728,6 +2728,14 @@
           "org_unit_name": {
             "type": "string"
           },
+          "payment_state": {
+            "enum": [
+              "unpaid",
+              "partial",
+              "paid"
+            ],
+            "type": "string"
+          },
           "status": {
             "enum": [
               "draft",
@@ -4036,8 +4044,7 @@
           "customer_id",
           "customer_name",
           "total",
-          "org_unit_name",
-          "payment_state"
+          "org_unit_name"
         ],
         "type": "object"
       },
@@ -20515,6 +20522,19 @@
           {
             "explode": false,
             "in": "query",
+            "name": "payment_state",
+            "schema": {
+              "enum": [
+                "unpaid",
+                "partial",
+                "paid"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "explode": false,
+            "in": "query",
             "name": "sort",
             "schema": {
               "default": "-date",
@@ -20897,6 +20917,19 @@
                 "none",
                 "partial",
                 "full"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "explode": false,
+            "in": "query",
+            "name": "payment_state",
+            "schema": {
+              "enum": [
+                "unpaid",
+                "partial",
+                "paid"
               ],
               "type": "string"
             }

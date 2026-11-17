@@ -3392,6 +3392,8 @@ export interface components {
             ordered: boolean;
             org_unit_name: string;
             /** @enum {string} */
+            payment_state?: "unpaid" | "partial" | "paid";
+            /** @enum {string} */
             status: "draft" | "pending_approval" | "posted" | "cancelled";
             /** Format: int64 */
             total: number;
@@ -3768,7 +3770,7 @@ export interface components {
             order_number: string;
             org_unit_name: string;
             /** @enum {string} */
-            payment_state: "unpaid" | "partial" | "paid";
+            payment_state?: "unpaid" | "partial" | "paid";
             /** @enum {string} */
             status: "draft" | "pending_approval" | "posted" | "cancelled";
             /** Format: int64 */
@@ -12057,6 +12059,7 @@ export interface operations {
                 customer_id?: number;
                 delivery_state?: "none" | "partial" | "full" | "not_applicable";
                 invoice_state?: "none" | "partial" | "full";
+                payment_state?: "unpaid" | "partial" | "paid";
                 sort?: "date" | "-date" | "number" | "-number" | "total" | "-total";
                 page?: number;
                 page_size?: 20 | 50 | 100;
@@ -12287,6 +12290,7 @@ export interface operations {
                 customer_id?: number;
                 delivery_state?: "none" | "partial" | "full" | "not_applicable";
                 invoice_state?: "none" | "partial" | "full";
+                payment_state?: "unpaid" | "partial" | "paid";
                 sort?: "date" | "-date" | "number" | "-number" | "total" | "-total";
                 page?: number;
                 page_size?: 20 | 50 | 100;

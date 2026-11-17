@@ -125,7 +125,8 @@ type InvoiceListItem struct {
 	CustomerName string `json:"customer_name"`
 	Total        int64  `json:"total"`
 	OrgUnitName  string `json:"org_unit_name"`
-	PaymentState string `json:"payment_state" enum:"unpaid,partial,paid"`
+	// Posted invoices only.
+	PaymentState string `json:"payment_state,omitempty" enum:"unpaid,partial,paid"`
 }
 
 type InvoiceList struct {
