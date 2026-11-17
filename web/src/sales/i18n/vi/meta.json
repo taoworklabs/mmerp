@@ -59,5 +59,12 @@
   "sales.nav.deliveries": "Phiếu giao hàng",
   "sales.delivery.name": "Phiếu giao hàng",
   "sales.preview.order": "Đơn bán hàng",
-  "sales.error.delivery_options_loading": "Đang tải gợi ý cho kho mới, vui lòng thử lại sau giây lát."
+  "sales.error.delivery_options_loading": "Đang tải gợi ý cho kho mới, vui lòng thử lại sau giây lát.",
+  "sales.nav.invoices": "Hoá đơn bán hàng",
+  "sales.invoice.name": "Hoá đơn bán hàng",
+  "sales.error.sales_order_has_invoice": "Đơn bán hàng đã có hoá đơn. Hủy hoá đơn trước.",
+  "sales.error.sales_invoice_over_ordered": "Dòng {{line_no}}: vượt số còn phải xuất hoá đơn ({{remaining}}).",
+  "sales.error.sales_invoice_position": "Dòng {{line_no}}: đơn bán hàng không có dòng tương ứng. Chọn lại dòng đơn.",
+  "sales.error.sales_invoice_before_order": "Ngày hoá đơn không được trước ngày đơn bán hàng.",
+  "sales.error.sales_invoice_has_receipt": "Hoá đơn đã có phiếu thu. Hủy phiếu thu trước."
 }

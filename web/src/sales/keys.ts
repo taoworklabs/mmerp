@@ -5,6 +5,8 @@ export const quoteDocType = 'sales.quote'
 export const orderDocType = 'sales.order'
 export const customerDocType = 'sales.customer'
 export const deliveryDocType = 'sales.delivery'
+export const invoiceDocType = 'sales.invoice'
+export const receiptDocType = 'sales.receipt'
 // Stock is a shared module; its documents open in this area.
 export const adjustmentDocType = 'stock.adjustment'
 // Shared master data, opened in this area.
@@ -24,6 +26,8 @@ export type StockCardQuery = { warehouse_id: string; item_id: string; from: stri
 export type DocQuery = { q: string; status: string; sort: string; page: number; pageSize: number }
 export type OrderQuery = DocQuery & { delivery_state: string }
 export type DeliveryQuery = DocQuery & { order: string }
+export type InvoiceQuery = DocQuery & { order: string; payment_state: string }
+export type ReceiptQuery = DocQuery & { method: string }
 
 export const salesKeys = {
   customers: {
@@ -69,6 +73,20 @@ export const salesKeys = {
     detail: (id: number) => ['sales', 'deliveries', 'detail', id] as const,
     // Under all, so a saved delivery refreshes what is left to deliver.
     options: (order: number, warehouse: number) => ['sales', 'deliveries', 'options', order, warehouse] as const,
+  },
+  invoices: {
+    all: () => ['sales', 'invoices'] as const,
+    list: (q: InvoiceQuery) => ['sales', 'invoices', 'list', q] as const,
+    detail: (id: number) => ['sales', 'invoices', 'detail', id] as const,
+    // Under all, so a saved invoice refreshes what is left to bill.
+    options: (order: number) => ['sales', 'invoices', 'options', order] as const,
+  },
+  receipts: {
+    all: () => ['sales', 'receipts'] as const,
+    list: (q: ReceiptQuery) => ['sales', 'receipts', 'list', q] as const,
+    detail: (id: number) => ['sales', 'receipts', 'detail', id] as const,
+    // Under invoices, so a saved receipt or invoice refreshes what is left to receive.
+    open: (customer: number, unit: number, receipt: number) => ['sales', 'invoices', 'open', customer, unit, receipt] as const,
   },
   docs: {
     all: (k: Kind) => ['sales', k] as const,

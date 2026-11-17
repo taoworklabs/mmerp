@@ -60,3 +60,36 @@ export const deliveryOptions = (order: number, warehouse: number) => ({
   queryFn: () =>
     unwrap(api.GET('/sales/orders/{id}/delivery-options', { params: { path: { id: order }, query: { warehouse_id: warehouse || undefined } } })),
 })
+
+export function useInvoice(id: number, enabled = true) {
+  return useQuery({
+    enabled,
+    queryKey: salesKeys.invoices.detail(id),
+    queryFn: () => unwrap(api.GET('/sales/invoices/{id}', { params: { path: { id } } })),
+  })
+}
+
+// invoiceOptions is the query of the order's lines with what non-cancelled invoices leave.
+export const invoiceOptions = (order: number) => ({
+  queryKey: salesKeys.invoices.options(order),
+  queryFn: () => unwrap(api.GET('/sales/orders/{id}/invoice-options', { params: { path: { id: order } } })),
+})
+
+export function useReceipt(id: number) {
+  return useQuery({
+    queryKey: salesKeys.receipts.detail(id),
+    queryFn: () => unwrap(api.GET('/sales/receipts/{id}', { params: { path: { id } } })),
+  })
+}
+
+// openInvoices is the query of a customer's posted invoices at an org unit with something left
+// to receive; receipt is the draft being edited, 0 for none.
+export const openInvoices = (customer: number, unit: number, receipt: number) => ({
+  queryKey: salesKeys.receipts.open(customer, unit, receipt),
+  queryFn: async () =>
+    (
+      await unwrap(
+        api.GET('/sales/customers/{id}/open-invoices', { params: { path: { id: customer }, query: { org_unit_id: unit, receipt_id: receipt || undefined } } }),
+      )
+    ).items,
+})

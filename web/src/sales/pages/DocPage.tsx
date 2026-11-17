@@ -1,5 +1,5 @@
 import { Anchor, Button, Group } from '@mmerp/ui'
-import { IconShoppingCartPlus, IconTruckDelivery } from '@tabler/icons-react'
+import { IconFileInvoice, IconShoppingCartPlus, IconTruckDelivery } from '@tabler/icons-react'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link, useNavigate, useParams } from 'react-router'
@@ -13,7 +13,7 @@ import { icon } from '@/shared/ui/theme'
 import { DocForm } from '../components/DocForm'
 import { DocProgress } from '../components/DocProgress'
 import { useDoc } from '../hooks/useSales'
-import { deliveryDocType, docTypeOf, pathOf, quoteDocType, type Kind } from '../keys'
+import { deliveryDocType, docTypeOf, invoiceDocType, pathOf, quoteDocType, type Kind } from '../keys'
 
 // DocPage shows a quotation or order; a draft the user may edit is edited in place.
 export function DocPage({ kind }: { kind: Kind }) {
@@ -28,6 +28,7 @@ export function DocPage({ kind }: { kind: Kind }) {
   const d = state.data
   const linked = d.order ?? d.quote
   const deliveries = d.deliveries ?? []
+  const invoices = d.invoices ?? []
   return (
     <DocumentScreen
       docType={docType}
@@ -47,6 +48,21 @@ export function DocPage({ kind }: { kind: Kind }) {
               </Group>
             ))}
             <Anchor render={<Link to={`/sales/deliveries?order_id=${d.id}`} />} size="sm">
+              {t('sales.order.deliveries_all')}
+            </Anchor>
+          </Group>
+        ),
+        invoices.length > 0 && (
+          <Group gap="xs" render={<span />}>
+            {invoices.map((r) => (
+              <Group key={r.id} gap="xs" wrap={false} render={<span />}>
+                <Anchor render={<Link to={`/sales/invoices/${r.id}`} />} size="sm">
+                  {t('sales.order.invoice_link', { number: r.number })}
+                </Anchor>
+                <DocumentStatus docType={invoiceDocType} status={r.status} />
+              </Group>
+            ))}
+            <Anchor render={<Link to={`/sales/invoices?order_id=${d.id}`} />} size="sm">
               {t('sales.order.deliveries_all')}
             </Anchor>
           </Group>
@@ -71,6 +87,11 @@ export function DocPage({ kind }: { kind: Kind }) {
           {d.allowed_actions.includes('create_delivery') && (
             <Button variant="default" leftSection={<IconTruckDelivery {...icon.button} />} render={<Link to={`/sales/deliveries/new?order=${d.id}`} />}>
               {t('sales.order.create_delivery')}
+            </Button>
+          )}
+          {d.allowed_actions.includes('create_invoice') && (
+            <Button variant="default" leftSection={<IconFileInvoice {...icon.button} />} render={<Link to={`/sales/invoices/new?order=${d.id}`} />}>
+              {t('sales.order.create_invoice')}
             </Button>
           )}
         </>

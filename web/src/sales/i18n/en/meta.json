@@ -59,5 +59,12 @@
   "sales.nav.deliveries": "Deliveries",
   "sales.delivery.name": "Delivery",
   "sales.preview.order": "Sales order",
-  "sales.error.delivery_options_loading": "Loading suggestions for the new warehouse; try again in a moment."
+  "sales.error.delivery_options_loading": "Loading suggestions for the new warehouse; try again in a moment.",
+  "sales.nav.invoices": "Sales invoices",
+  "sales.invoice.name": "Sales invoice",
+  "sales.error.sales_order_has_invoice": "The sales order has an invoice. Cancel the invoice first.",
+  "sales.error.sales_invoice_over_ordered": "Line {{line_no}}: more than is left to invoice ({{remaining}}).",
+  "sales.error.sales_invoice_position": "Line {{line_no}}: the sales order has no such line. Pick the order line again.",
+  "sales.error.sales_invoice_before_order": "The invoice date cannot be before the sales order date.",
+  "sales.error.sales_invoice_has_receipt": "The invoice has a receipt. Cancel the receipt first."
 }
