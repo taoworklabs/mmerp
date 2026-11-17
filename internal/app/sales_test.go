@@ -293,3 +293,60 @@ func TestItemMigration(t *testing.T) {
 		t.Fatalf("sales.item series left %d %v", old, err)
 	}
 }
+
+// move sends a document of the sales area to a status, reading its version first.
+func (f *salesFixture) move(docType, path string, id int64, to string) {
+	f.t.Helper()
+	var d struct{ Version int32 }
+	_ = json.Unmarshal(f.ok(f.staffA, "GET", fmt.Sprintf("/api/sales/%s/%d", path, id), "", 200), &d)
+	f.ok(f.staffA, "POST", fmt.Sprintf("/api/documents/%s/%d/transitions", docType, id), fmt.Sprintf(`{"to":%q,"version":%d}`, to, d.Version), 200)
+}
+
+// A posted invoice and a posted receipt print the same after the customer and the seller are
+// edited; team B can print neither.
+func TestPrintInvoiceAndReceipt(t *testing.T) {
+	f := newSalesFixture(t, []string{"sales"})
+	f.work([]string{"sales"})
+	f.moveQuote("posted")
+	var o struct {
+		ID   int64
+		Date string
+	}
+	_ = json.Unmarshal(f.ok(f.staffA, "POST", fmt.Sprintf("/api/sales/quotes/%d/order", f.quote), "", 200), &o)
+	_ = json.Unmarshal(f.ok(f.staffA, "GET", fmt.Sprintf("/api/sales/orders/%d", o.ID), "", 200), &o)
+	f.move("sales.order", "orders", o.ID, "posted")
+	year := o.Date[:4]
+	inv := f.id(f.staffA, "/api/sales/invoices", fmt.Sprintf(`{"request_id":"0d7c1a52-6c8e-4f7a-9d0e-1f2a3b4c5d6e","order_id":%d,
+		"date":%q,"note":null,"lines":[{"order_position":1,"quantity":"12"}]}`, o.ID, o.Date))
+	f.move("sales.invoice", "invoices", inv, "posted")
+	rc := f.id(f.staffA, "/api/sales/receipts", fmt.Sprintf(`{"request_id":"1d7c1a52-6c8e-4f7a-9d0e-1f2a3b4c5d6e","date":%q,
+		"org_unit_id":%d,"customer_id":%d,"method":"bank","note":null,"allocations":[{"invoice_id":%d,"amount":100000}]}`, o.Date, f.a, f.customer, inv))
+	f.move("sales.receipt", "receipts", rc, "posted")
+
+	invParams, rcParams := fmt.Sprintf(`{"id":%d}`, inv), fmt.Sprintf(`{"id":%d}`, rc)
+	invoice, receipt := f.printed(f.staffA, "sales.invoice", invParams), f.printed(f.staffA, "sales.receipt", rcParams)
+	for _, want := range []string{"HOÁ ĐƠN BÁN HÀNG", "HD-" + year + "-00001", "DH-" + year + "-00001", "Công ty Ánh Dương", "Bút bi xanh", "123.182", "Công ty TNHH C"} {
+		if !strings.Contains(invoice[0], want) {
+			t.Errorf("no %q in invoice %q", want, invoice[0])
+		}
+	}
+	for _, want := range []string{"PHIẾU THU", "PT-" + year + "-00001", "Công ty Ánh Dương", "Chuyển khoản", "100.000", "HD-" + year + "-00001"} {
+		if !strings.Contains(receipt[0], want) {
+			t.Errorf("no %q in receipt %q", want, receipt[0])
+		}
+	}
+	for _, c := range [][2]string{{"sales.invoice", invParams}, {"sales.receipt", rcParams}} {
+		if j := f.print(f.staffB, c[0], c[1]); j.Code == nil || *j.Code != "not_found" {
+			t.Fatalf("B prints %s: %+v", c[0], j)
+		}
+	}
+	f.ok(f.staffA, "PUT", fmt.Sprintf("/api/sales/customers/%d", f.customer), fmt.Sprintf(`{"partner":{"name":"Công ty Mới","tax_code":null,
+		"address":null,"phone":null,"email":null,"contact_name":null},"payment_terms":null,"org_unit_id":%d,"active":true}`, f.a), 204)
+	f.ok(f.admin, "PUT", fmt.Sprintf("/api/org-units/%d", f.company), `{"parent_id":null,"kind":"company","name":"C","legal_name":"Công ty Cổ phần C"}`, 204)
+	if again := f.printed(f.staffA, "sales.invoice", invParams); !slices.Equal(again, invoice) {
+		t.Fatalf("invoice reprint differs:\n%q\n%q", again, invoice)
+	}
+	if again := f.printed(f.staffA, "sales.receipt", rcParams); !slices.Equal(again, receipt) {
+		t.Fatalf("receipt reprint differs:\n%q\n%q", again, receipt)
+	}
+}

@@ -98,6 +98,7 @@ func NewService(d Deps) *Service {
 	s.registerInvoice()
 	s.registerReceipt()
 	s.registerPrints()
+	s.registerPaymentPrints()
 	return s
 }
 
