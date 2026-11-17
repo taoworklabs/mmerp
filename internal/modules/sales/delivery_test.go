@@ -565,7 +565,7 @@ func TestDeliveriesList(t *testing.T) {
 
 func TestDeliveryOptions(t *testing.T) {
 	d := newDeliveries(t)
-	exp1, exp2 := "2026-12-01", "2026-11-15"
+	exp1, exp2 := "2027-12-01", "2027-11-15"
 	d.adjust(stock.AdjustmentLine{ItemID: d.goods, Quantity: "15"},
 		stock.AdjustmentLine{ItemID: d.lotted, Lot: &stock.LotRef{Code: "L1", Expiry: &exp1}, Quantity: "3"},
 		stock.AdjustmentLine{ItemID: d.lotted, Lot: &stock.LotRef{Code: "L2", Expiry: &exp2}, Quantity: "2"})

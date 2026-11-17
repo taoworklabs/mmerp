@@ -54,6 +54,7 @@ func NewService(d Deps) *Service {
 	if err := loadTranslations(); err != nil {
 		panic(err) // embedded files: broken only by a bad build
 	}
+	declareKinds()
 	s := &Service{d: d}
 	data.RegisterConstraints(data.Constraints{
 		"sales.customers_code_key":             ErrCustomerCodeTaken,
