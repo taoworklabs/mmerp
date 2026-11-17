@@ -2000,6 +2000,39 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/sales/invoices": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Sending the same request_id again returns the invoice created the first time. */
+        post: operations["create-invoice"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/sales/invoices/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["get-invoice"];
+        put: operations["update-invoice"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/sales/line-items": {
         parameters: {
             query?: never;
@@ -2073,6 +2106,22 @@ export interface paths {
             cookie?: never;
         };
         get: operations["get-delivery-options"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/sales/orders/{id}/invoice-options": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["get-invoice-options"];
         put?: never;
         post?: never;
         delete?: never;
@@ -3536,6 +3585,101 @@ export interface components {
             /** @description The latest submission; absent when never sent for approval */
             instance?: components["schemas"]["Instance"];
         };
+        Invoice: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example /api/schemas/Invoice.json
+             */
+            readonly $schema?: string;
+            allowed_actions: string[];
+            customer: components["schemas"]["CustomerCopy"];
+            /** Format: date */
+            date: string;
+            /** Format: int64 */
+            id: number;
+            lines: components["schemas"]["InvoiceLine"][];
+            note: string | null;
+            number: string;
+            /** Format: int64 */
+            order_id: number;
+            order_number: string;
+            /** Format: int64 */
+            org_unit_id: number;
+            org_unit_name: string;
+            /** @enum {string} */
+            status: "draft" | "pending_approval" | "posted" | "cancelled";
+            totals: components["schemas"]["Totals"];
+            /** Format: int32 */
+            version: number;
+        };
+        InvoiceLine: {
+            /** Format: int64 */
+            amount: number;
+            description: string;
+            /** Format: int64 */
+            discount: number;
+            discount_percent: string;
+            item_code: string;
+            /** Format: int64 */
+            item_id: number;
+            /** Format: int64 */
+            order_position: number;
+            /** @description More than 0, up to 3 decimals */
+            quantity: string;
+            unit: string;
+            /** Format: int64 */
+            unit_price: number;
+            /** Format: int64 */
+            vat: number;
+            /** @enum {string} */
+            vat_rate: "none" | "0" | "5" | "8" | "10";
+        };
+        InvoiceLineInput: {
+            /** Format: int64 */
+            order_position: number;
+            /** @description More than 0, up to 3 decimals */
+            quantity: string;
+        };
+        InvoiceOptionLine: {
+            description: string;
+            discount_percent: string;
+            item_code: string;
+            /** Format: int64 */
+            item_id: number;
+            /** Format: int64 */
+            order_position: number;
+            ordered: string;
+            remaining: string;
+            unit: string;
+            /** Format: int64 */
+            unit_price: number;
+            /** @enum {string} */
+            vat_rate: "none" | "0" | "5" | "8" | "10";
+        };
+        InvoiceOptions: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example /api/schemas/InvoiceOptions.json
+             */
+            readonly $schema?: string;
+            lines: components["schemas"]["InvoiceOptionLine"][];
+        };
+        InvoiceUpdate: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example /api/schemas/InvoiceUpdate.json
+             */
+            readonly $schema?: string;
+            /** Format: date */
+            date: string;
+            lines: components["schemas"]["InvoiceLineInput"][];
+            note: string | null;
+            /** Format: int32 */
+            version: number;
+        };
         Item: {
             active: boolean;
             allow_negative: boolean;
@@ -4401,6 +4545,25 @@ export interface components {
             termination_date: string | null;
             /** @description Login of the linked account */
             user_login: string | null;
+        };
+        NewInvoice: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example /api/schemas/NewInvoice.json
+             */
+            readonly $schema?: string;
+            /** Format: date */
+            date: string;
+            lines: components["schemas"]["InvoiceLineInput"][];
+            note: string | null;
+            /** Format: int64 */
+            order_id: number;
+            /**
+             * Format: uuid
+             * @description Generated once per form: sending it again returns the first invoice
+             */
+            request_id: string;
         };
         NewItem: {
             /**
@@ -5820,6 +5983,16 @@ export interface components {
             date: string;
             /** Format: int64 */
             employee_id: number;
+        };
+        Totals: {
+            /** Format: int64 */
+            discount_total: number;
+            /** Format: int64 */
+            subtotal: number;
+            /** Format: int64 */
+            total: number;
+            /** Format: int64 */
+            vat_total: number;
         };
         TransitionInputBody: {
             /**
@@ -11419,6 +11592,103 @@ export interface operations {
             };
         };
     };
+    "create-invoice": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NewInvoice"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CreatedOutputBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "get-invoice": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Invoice"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "update-invoice": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["InvoiceUpdate"];
+            };
+        };
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
     "list-line-items": {
         parameters: {
             query?: {
@@ -11635,6 +11905,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["DeliveryOptions"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "get-invoice-options": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InvoiceOptions"];
                 };
             };
             /** @description Error */

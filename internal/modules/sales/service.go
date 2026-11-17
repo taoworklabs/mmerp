@@ -95,6 +95,7 @@ func NewService(d Deps) *Service {
 		})
 	}
 	s.registerDelivery()
+	s.registerInvoice()
 	s.registerPrints()
 	return s
 }
@@ -124,6 +125,13 @@ func (s *Service) transition(ctx context.Context, d record.Doc, _ record.Status)
 			_, err := store.LiveDeliveryOfOrder.Run(ctx, d.ID)
 			if err == nil {
 				return ErrOrderHasDelivery
+			}
+			if !errors.Is(err, pgx.ErrNoRows) {
+				return err
+			}
+			_, err = store.LiveInvoiceOfOrder.Run(ctx, d.ID)
+			if err == nil {
+				return ErrOrderHasInvoice
 			}
 			if !errors.Is(err, pgx.ErrNoRows) {
 				return err
