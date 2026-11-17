@@ -204,6 +204,63 @@ func (q *Queries) InsertInvoiceLines(ctx context.Context, arg InsertInvoiceLines
 	return err
 }
 
+const invoiceListBase = `-- name: InvoiceListBase :many
+SELECT v.id, d.number, d.status, d.date, d.org_unit_id, v.order_id, o.number AS order_number,
+       h.customer_id, h.customer_name, v.total, u.name AS org_unit_name
+FROM sales.invoices v
+JOIN record.documents d ON d.id = v.id
+JOIN record.documents o ON o.id = v.order_id
+JOIN sales.headers h ON h.id = v.order_id
+JOIN iam.org_units u ON u.id = d.org_unit_id
+`
+
+type InvoiceListBaseRow struct {
+	ID           int64
+	Number       string
+	Status       string
+	Date         pgtype.Date
+	OrgUnitID    int64
+	OrderID      int64
+	OrderNumber  string
+	CustomerID   int64
+	CustomerName string
+	Total        int64
+	OrgUnitName  string
+}
+
+// data:base
+func (q *Queries) InvoiceListBase(ctx context.Context) ([]InvoiceListBaseRow, error) {
+	rows, err := q.db.Query(ctx, invoiceListBase)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []InvoiceListBaseRow
+	for rows.Next() {
+		var i InvoiceListBaseRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Number,
+			&i.Status,
+			&i.Date,
+			&i.OrgUnitID,
+			&i.OrderID,
+			&i.OrderNumber,
+			&i.CustomerID,
+			&i.CustomerName,
+			&i.Total,
+			&i.OrgUnitName,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const invoiceOrder = `-- name: InvoiceOrder :one
 SELECT order_id FROM sales.invoices WHERE id = $1
 `

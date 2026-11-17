@@ -67,3 +67,13 @@ SELECT c.partner_id FROM sales.invoices v
 JOIN sales.headers h ON h.id = v.order_id
 JOIN sales.customers c ON c.id = h.customer_id
 WHERE v.id = $1;
+
+-- name: InvoiceListBase :many
+-- data:base
+SELECT v.id, d.number, d.status, d.date, d.org_unit_id, v.order_id, o.number AS order_number,
+       h.customer_id, h.customer_name, v.total, u.name AS org_unit_name
+FROM sales.invoices v
+JOIN record.documents d ON d.id = v.id
+JOIN record.documents o ON o.id = v.order_id
+JOIN sales.headers h ON h.id = v.order_id
+JOIN iam.org_units u ON u.id = d.org_unit_id;

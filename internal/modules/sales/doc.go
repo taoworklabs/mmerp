@@ -75,7 +75,7 @@ func (s *Service) docs(ctx context.Context, k kind, f DocFilter) (DocList, error
 			ID: r.ID, Number: r.Number, Status: r.Status, Date: *platform.DatePtr(r.Date), CustomerID: r.CustomerID,
 			CustomerCode: r.CustomerCode, CustomerName: r.CustomerName, OrgUnitName: r.OrgUnitName, Total: r.Total,
 			ValidUntil: platform.DatePtr(r.ValidUntil), Expired: shownExpired(r.Status, r.Ordered, r.ValidUntil, today),
-			Ordered: r.Ordered, FromQuote: r.FromQuote, DeliveryState: r.DeliveryState,
+			Ordered: r.Ordered, FromQuote: r.FromQuote, DeliveryState: r.DeliveryState, InvoiceState: r.InvoiceState,
 		})
 	}
 	return out, nil
@@ -172,6 +172,13 @@ func (s *Service) doc(ctx context.Context, k kind, id int64) (Doc, error) {
 			extra = append(extra, "create_delivery")
 		}
 	}
+	if k == orderKind && d.Status == record.Posted {
+		if ok, err := s.canInvoice(ctx, id, h.OrgUnitID); err != nil {
+			return Doc{}, err
+		} else if ok {
+			extra = append(extra, "create_invoice")
+		}
+	}
 	out.AllowedActions, err = s.d.Record.Actions(ctx, d, extra...)
 	return out, err
 }
@@ -195,6 +202,28 @@ func (s *Service) canDeliver(ctx context.Context, order, unit int64) (bool, erro
 			return false, err
 		}
 		taken, err := decimal.NewFromString(r.Taken)
+		if err != nil {
+			return false, err
+		}
+		if ordered.GreaterThan(taken) {
+			return true, nil
+		}
+	}
+	return false, nil
+}
+
+// canInvoice: the actor may make orders at the unit and a line still has something no
+// invoice, draft or posted, has taken.
+func (s *Service) canInvoice(ctx context.Context, order, unit int64) (bool, error) {
+	if ok, err := s.canMakeOrder(ctx, unit); err != nil || !ok {
+		return false, err
+	}
+	rows, err := store.InvoiceableLines.Run(ctx, store.InvoiceableLinesParams{OrderID: order})
+	if err != nil {
+		return false, err
+	}
+	for _, r := range rows {
+		ordered, taken, err := decimals(r.Quantity, r.Taken)
 		if err != nil {
 			return false, err
 		}
@@ -534,6 +563,32 @@ func (s *Service) orderProgress(ctx context.Context, out *Doc, lines []store.Get
 				out.Lines[i].Available = &v
 			}
 		}
+	}
+	allInvoiced, noneInvoiced := true, true
+	for i, l := range lines {
+		ordered, invoiced, err := decimals(l.Quantity, l.Invoiced)
+		if err != nil {
+			return err
+		}
+		allInvoiced = allInvoiced && invoiced.GreaterThanOrEqual(ordered)
+		noneInvoiced = noneInvoiced && invoiced.IsZero()
+		v := invoiced.String()
+		out.Lines[i].Invoiced = &v
+	}
+	switch {
+	case allInvoiced:
+		out.InvoiceState = "full"
+	case noneInvoiced:
+		out.InvoiceState = "none"
+	default:
+		out.InvoiceState = "partial"
+	}
+	vs, err := store.OrderInvoices.Run(ctx, out.ID)
+	if err != nil {
+		return err
+	}
+	for _, v := range vs {
+		out.Invoices = append(out.Invoices, DocRef{ID: v.ID, Number: v.Number, Status: v.Status})
 	}
 	ds, err := store.OrderDeliveries.Run(ctx, out.ID)
 	if err != nil {

@@ -2007,7 +2007,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get?: never;
+        get: operations["list-invoices"];
         put?: never;
         /** @description Sending the same request_id again returns the invoice created the first time. */
         post: operations["create-invoice"];
@@ -3245,6 +3245,9 @@ export interface components {
             /** Format: int64 */
             id: number;
             /** @enum {string} */
+            invoice_state?: "none" | "partial" | "full";
+            invoices?: components["schemas"]["DocRef"][] | null;
+            /** @enum {string} */
             kind: "quote" | "order";
             lines: components["schemas"]["Line"][];
             max_discount: string;
@@ -3294,6 +3297,8 @@ export interface components {
             from_quote: boolean;
             /** Format: int64 */
             id: number;
+            /** @enum {string} */
+            invoice_state?: "none" | "partial" | "full";
             number: string;
             ordered: boolean;
             org_unit_name: string;
@@ -3640,6 +3645,35 @@ export interface components {
             order_position: number;
             /** @description More than 0, up to 3 decimals */
             quantity: string;
+        };
+        InvoiceList: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example /api/schemas/InvoiceList.json
+             */
+            readonly $schema?: string;
+            items: components["schemas"]["InvoiceListItem"][];
+            /** Format: int64 */
+            total: number;
+        };
+        InvoiceListItem: {
+            /** Format: int64 */
+            customer_id: number;
+            customer_name: string;
+            /** Format: date */
+            date: string;
+            /** Format: int64 */
+            id: number;
+            number: string;
+            /** Format: int64 */
+            order_id: number;
+            order_number: string;
+            org_unit_name: string;
+            /** @enum {string} */
+            status: "draft" | "pending_approval" | "posted" | "cancelled";
+            /** Format: int64 */
+            total: number;
         };
         InvoiceOptionLine: {
             description: string;
@@ -4132,6 +4166,7 @@ export interface components {
             discount: number;
             /** @description 0 to 100, up to 2 decimals */
             discount_percent: string;
+            invoiced?: string;
             item_code: string;
             /** Format: int64 */
             item_id: number;
@@ -11592,6 +11627,44 @@ export interface operations {
             };
         };
     };
+    "list-invoices": {
+        parameters: {
+            query?: {
+                /** @description Number, order number or customer name */
+                q?: string;
+                status?: "draft" | "pending_approval" | "posted" | "cancelled";
+                order_id?: number;
+                customer_id?: number;
+                sort?: "date" | "-date" | "number" | "-number" | "total" | "-total";
+                page?: number;
+                page_size?: 20 | 50 | 100;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InvoiceList"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
     "create-invoice": {
         parameters: {
             query?: never;
@@ -11728,6 +11801,7 @@ export interface operations {
                 status?: "draft" | "pending_approval" | "posted" | "cancelled";
                 customer_id?: number;
                 delivery_state?: "none" | "partial" | "full" | "not_applicable";
+                invoice_state?: "none" | "partial" | "full";
                 sort?: "date" | "-date" | "number" | "-number" | "total" | "-total";
                 page?: number;
                 page_size?: 20 | 50 | 100;
@@ -11957,6 +12031,7 @@ export interface operations {
                 status?: "draft" | "pending_approval" | "posted" | "cancelled";
                 customer_id?: number;
                 delivery_state?: "none" | "partial" | "full" | "not_applicable";
+                invoice_state?: "none" | "partial" | "full";
                 sort?: "date" | "-date" | "number" | "-number" | "total" | "-total";
                 page?: number;
                 page_size?: 20 | 50 | 100;

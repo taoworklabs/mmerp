@@ -32,6 +32,7 @@ func docQuery(sc data.Scope, k kind, f DocFilter) data.Query {
 			data.When(f.Status != "", data.Eq("status", f.Status)),
 			data.When(f.CustomerID != 0, data.Eq("customer_id", f.CustomerID)),
 			data.When(f.DeliveryState != "", data.Eq("delivery_state", f.DeliveryState)),
+			data.When(f.InvoiceState != "", data.Eq("invoice_state", f.InvoiceState)),
 		),
 	}
 }

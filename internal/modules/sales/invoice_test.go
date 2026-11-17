@@ -3,6 +3,7 @@ package sales_test
 import (
 	"context"
 	"errors"
+	"slices"
 	"testing"
 
 	"github.com/taoworklabs/mmerp/internal/core/approval"
@@ -233,5 +234,64 @@ func TestInvoiceOptions(t *testing.T) {
 	v.check(err)
 	if len(o.Lines) != 3 || o.Lines[0].Remaining != "6.000" || o.Lines[0].Ordered != "10.000" || o.Lines[2].Remaining != "2.000" {
 		t.Fatalf("options %+v", o.Lines)
+	}
+}
+
+func (v *invoices) orderState() sales.Doc {
+	v.t.Helper()
+	o, err := v.sales.Order(v.staff, v.order)
+	v.check(err)
+	return o
+}
+
+// Invoice state counts posted invoices over all lines; create_invoice disappears once
+// non-cancelled invoices, drafts included, take everything.
+func TestOrderInvoiceState(t *testing.T) {
+	v := newInvoices(t)
+	if o := v.orderState(); o.InvoiceState != "none" || !slices.Contains(o.AllowedActions, "create_invoice") {
+		t.Fatalf("fresh order %s %v", o.InvoiceState, o.AllowedActions)
+	}
+	v.postedInvoice(il(1, "4"))
+	o := v.orderState()
+	if o.InvoiceState != "partial" || o.Lines[0].Invoiced == nil || *o.Lines[0].Invoiced != "4" || len(o.Invoices) != 1 {
+		t.Fatalf("after one invoice %+v %v", o.InvoiceState, o.Lines[0].Invoiced)
+	}
+	rest := must(t)(v.createInvoice(v.staff, v.order, v.invoiceFields(il(1, "6"), il(2, "5"), il(3, "2"))))
+	if o := v.orderState(); o.InvoiceState != "partial" || slices.Contains(o.AllowedActions, "create_invoice") {
+		t.Fatalf("draft takes the rest: %s %v", o.InvoiceState, o.AllowedActions)
+	}
+	v.check(v.move(v.staff, "sales.invoice", rest, record.Posted))
+	if o := v.orderState(); o.InvoiceState != "full" || len(o.Invoices) != 2 {
+		t.Fatalf("all invoiced: %s", o.InvoiceState)
+	}
+	if o, _ := v.sales.Order(v.ctxFor("viewer", "viewer@A"), v.order); slices.Contains(o.AllowedActions, "create_invoice") {
+		t.Fatal("viewer offered create_invoice")
+	}
+}
+
+func TestInvoiceList(t *testing.T) {
+	v := newInvoices(t)
+	posted := v.postedInvoice(il(1, "4"))
+	draft := must(t)(v.createInvoice(v.staff, v.order, v.invoiceFields(il(3, "1"))))
+	all := sales.InvoiceFilter{Sort: "-date", Paging: platform.Paging{Page: 1, PageSize: 50}}
+	l, err := v.sales.Invoices(v.staff, all)
+	v.check(err)
+	if l.Total != 2 || l.Items[0].CustomerName != "Công ty KH1" || l.Items[0].OrderID != v.order {
+		t.Fatalf("list %+v", l)
+	}
+	f := all
+	f.Status = "posted"
+	if l, _ := v.sales.Invoices(v.staff, f); l.Total != 1 || l.Items[0].ID != posted || l.Items[0].Total != 4_320 {
+		t.Fatalf("posted %+v", l)
+	}
+	f = all
+	d, err := v.sales.Invoice(v.staff, draft)
+	v.check(err)
+	f.Q = d.Number
+	if l, _ := v.sales.Invoices(v.staff, f); l.Total != 1 || l.Items[0].ID != draft {
+		t.Fatalf("by number %+v", l)
+	}
+	if l, _ := v.sales.Invoices(v.ctxFor("staff_b", "staff@B"), all); l.Total != 0 {
+		t.Fatalf("staff of B: %+v", l)
 	}
 }

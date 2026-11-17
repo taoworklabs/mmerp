@@ -90,3 +90,30 @@ var (
 	ErrInvoiceBeforeOrder = &platform.Error{Status: http.StatusUnprocessableEntity, Code: "sales_invoice_before_order"}
 	ErrInvoiceHasReceipt  = &platform.Error{Status: http.StatusConflict, Code: "sales_invoice_has_receipt"}
 )
+
+type InvoiceFilter struct {
+	Q          string `query:"q" maxLength:"100" doc:"Number, order number or customer name"`
+	Status     string `query:"status" enum:"draft,pending_approval,posted,cancelled"`
+	OrderID    int64  `query:"order_id"`
+	CustomerID int64  `query:"customer_id"`
+	Sort       string `query:"sort" enum:"date,-date,number,-number,total,-total" default:"-date"`
+	platform.Paging
+}
+
+type InvoiceListItem struct {
+	ID           int64  `json:"id"`
+	Number       string `json:"number"`
+	Status       string `json:"status" enum:"draft,pending_approval,posted,cancelled"`
+	Date         string `json:"date" format:"date"`
+	OrderID      int64  `json:"order_id"`
+	OrderNumber  string `json:"order_number"`
+	CustomerID   int64  `json:"customer_id"`
+	CustomerName string `json:"customer_name"`
+	Total        int64  `json:"total"`
+	OrgUnitName  string `json:"org_unit_name"`
+}
+
+type InvoiceList struct {
+	Items []InvoiceListItem `json:"items" nullable:"false"`
+	Total int64             `json:"total"`
+}

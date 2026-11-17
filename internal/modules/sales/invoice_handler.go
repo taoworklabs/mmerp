@@ -20,11 +20,18 @@ type updateInvoiceInput struct {
 
 type invoiceOptionsOutput struct{ Body InvoiceOptions }
 
+type invoicesOutput struct{ Body InvoiceList }
+
 func registerInvoiceHandlers(api huma.API, s *Service) {
 	huma.Register(api, huma.Operation{OperationID: "get-invoice-options", Method: http.MethodGet, Path: "/sales/orders/{id}/invoice-options"},
 		func(ctx context.Context, in *platform.IDInput) (*invoiceOptionsOutput, error) {
 			o, err := s.InvoiceOptions(ctx, in.ID)
 			return &invoiceOptionsOutput{Body: o}, err
+		})
+	huma.Register(api, huma.Operation{OperationID: "list-invoices", Method: http.MethodGet, Path: "/sales/invoices"},
+		func(ctx context.Context, in *InvoiceFilter) (*invoicesOutput, error) {
+			l, err := s.Invoices(ctx, *in)
+			return &invoicesOutput{Body: l}, err
 		})
 	huma.Register(api, huma.Operation{OperationID: "create-invoice", Method: http.MethodPost, Path: "/sales/invoices", DefaultStatus: http.StatusCreated,
 		Description: "Sending the same request_id again returns the invoice created the first time."},

@@ -180,7 +180,10 @@ func contract(t *testing.T, docType string) {
 			"write actions leave allowed_actions when the product is off or the period locked": "a posted quotation in a locked period still offers create_order",
 		}
 		if docType == "sales.order" {
-			create, update, read, routes, gaps = f.sales.CreateOrder, f.sales.UpdateOrder, f.sales.Order, nil, nil
+			create, update, read, routes = f.sales.CreateOrder, f.sales.UpdateOrder, f.sales.Order, nil
+			gaps = map[string]string{
+				"write actions leave allowed_actions when the product is off or the period locked": "a posted order in a locked period still offers create_invoice, dated in an open period",
+			}
 		}
 		deactivate := func(*testing.T, record.Ref) {
 			c := customer("KH1", f.a)

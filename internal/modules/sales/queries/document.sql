@@ -55,9 +55,23 @@ SELECT l.item_id, l.item_code, l.description, l.unit, l.quantity::text AS quanti
            JOIN sales.deliveries v ON v.id = dl.delivery_id
            JOIN record.documents d ON d.id = v.id
            WHERE v.order_id = l.doc_id AND dl.order_position = l.position AND d.status = 'posted'
-       ), 0)::text AS delivered
+       ), 0)::text AS delivered,
+       coalesce((
+           SELECT sum(il.quantity)
+           FROM sales.invoice_lines il
+           JOIN sales.invoices v ON v.id = il.invoice_id
+           JOIN record.documents d ON d.id = v.id
+           WHERE v.order_id = l.doc_id AND il.order_position = l.position AND d.status = 'posted'
+       ), 0)::text AS invoiced
 FROM sales.lines l JOIN item.items i ON i.id = l.item_id
 WHERE l.doc_id = $1 ORDER BY l.position;
+
+-- name: OrderInvoices :many
+-- The order's invoices not cancelled.
+SELECT d.id, d.number, d.status
+FROM sales.invoices v JOIN record.documents d ON d.id = v.id
+WHERE v.order_id = $1 AND d.status <> 'cancelled'
+ORDER BY d.id;
 
 -- name: OrderDeliveries :many
 -- The order's deliveries not cancelled.
@@ -91,7 +105,24 @@ SELECT h.id, h.kind, d.number, d.status, d.date, d.org_unit_id, h.customer_id, h
                FROM sales.lines l JOIN item.items i ON i.id = l.item_id
                WHERE l.doc_id = h.id AND i.tracking <> 'none'
            ) x
-       ) END, '')::text AS delivery_state
+       ) END, '')::text AS delivery_state,
+       -- Orders only, over all lines and posted invoices: none, partial, full.
+       coalesce(CASE WHEN h.kind = 'order' THEN (
+           SELECT CASE WHEN bool_and(x.invoiced >= x.quantity) THEN 'full'
+                       WHEN bool_and(x.invoiced = 0) THEN 'none'
+                       ELSE 'partial' END
+           FROM (
+               SELECT l.quantity, coalesce((
+                   SELECT sum(il.quantity)
+                   FROM sales.invoice_lines il
+                   JOIN sales.invoices v ON v.id = il.invoice_id
+                   JOIN record.documents vd ON vd.id = v.id
+                   WHERE v.order_id = l.doc_id AND il.order_position = l.position AND vd.status = 'posted'
+               ), 0) AS invoiced
+               FROM sales.lines l
+               WHERE l.doc_id = h.id
+           ) x
+       ) END, '')::text AS invoice_state
 FROM sales.headers h
 JOIN record.documents d ON d.id = h.id
 JOIN iam.org_units u ON u.id = d.org_unit_id;

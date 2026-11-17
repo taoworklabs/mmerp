@@ -78,3 +78,19 @@ func TestDocListSearchLiteralPercent(t *testing.T) {
 		t.Fatalf("q %q matched %d, want 0", "%", l.Total)
 	}
 }
+
+func TestDocListInvoiceStateFilter(t *testing.T) {
+	v := newInvoices(t)
+	other := v.newOrder("0")
+	v.check(v.move(v.staff, "sales.order", other, record.Posted))
+	v.postedInvoice(il(3, "1"))
+	f := sales.DocFilter{InvoiceState: "partial", Sort: "-date", Paging: platform.Paging{Page: 1, PageSize: 50}}
+	l, err := v.sales.Orders(v.staff, f)
+	v.check(err)
+	if l.Total != 1 || l.Items[0].ID != v.order || l.Items[0].InvoiceState != "partial" {
+		t.Fatalf("partial %+v", l)
+	}
+	if o := find(v.listed(v.staff, v.sales.Orders), other); o.InvoiceState != "none" {
+		t.Fatalf("other %+v", o)
+	}
+}
