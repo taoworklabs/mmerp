@@ -68,6 +68,7 @@ Points the product owner chose in the conversation:
 - Locks: own row, then each allocated invoice through `record.LockToDepend`, sorted by id, so two receipts for the same invoices take turns. Posting re-checks under those locks.
 - Approval field `amount`. Permissions: `sales.order.edit` at the receipt's org unit, and view on every allocated invoice; view needs `sales.order.view`. *My call*: no new permission until a cashier role is asked for.
 - A receipt allocating to invoices the user cannot view answers not found for those lines' invoices when creating; reading a receipt shows invoice numbers only.
+- An inactive customer still pays what it owes: receipts have no active-customer check (decided after review).
 - Into `posted`: business lines. Into `cancelled`: void; the invoices' remaining receivable returns.
 - Printing (template `sales.receipt`), attachments and discussion.
 
