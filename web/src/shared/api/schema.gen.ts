@@ -1967,6 +1967,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/sales/customers/{id}/open-invoices": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Posted invoices of the customer at the org unit with something left to receive, oldest first; amount is the remaining. */
+        get: operations["list-open-invoices"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/sales/deliveries": {
         parameters: {
             query?: never;
@@ -2190,6 +2207,39 @@ export interface paths {
         put?: never;
         /** @description While an order from the quotation is not cancelled, returns that order instead of making another. When an approval rule holds the quotation, answers held with no id. */
         post: operations["create-order-from-quote"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/sales/receipts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Sending the same request_id again returns the receipt created the first time. */
+        post: operations["create-receipt"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/sales/receipts/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["get-receipt"];
+        put: operations["update-receipt"];
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -2636,6 +2686,25 @@ export interface components {
             version: number;
             /** Format: int64 */
             warehouse_id: number;
+        };
+        Allocation: {
+            /** Format: int64 */
+            amount: number;
+            /** Format: date */
+            invoice_date: string;
+            /** Format: int64 */
+            invoice_id: number;
+            invoice_number: string;
+            /** Format: int64 */
+            invoice_total: number;
+            /** Format: int64 */
+            remaining: number;
+        };
+        AllocationInput: {
+            /** Format: int64 */
+            amount: number;
+            /** Format: int64 */
+            invoice_id: number;
         };
         ApproveInputBody: {
             /**
@@ -4730,6 +4799,29 @@ export interface components {
              */
             request_id?: string;
         };
+        NewReceipt: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example /api/schemas/NewReceipt.json
+             */
+            readonly $schema?: string;
+            allocations: components["schemas"]["AllocationInput"][];
+            /** Format: int64 */
+            customer_id: number;
+            /** Format: date */
+            date: string;
+            /** @enum {string} */
+            method: "cash" | "bank";
+            note: string | null;
+            /** Format: int64 */
+            org_unit_id: number;
+            /**
+             * Format: uuid
+             * @description Generated once per form: sending it again returns the first receipt
+             */
+            request_id: string;
+        };
         NewTermination: {
             /**
              * Format: uri
@@ -4846,6 +4938,15 @@ export interface components {
             warehouse_code: string;
             /** Format: int64 */
             warehouse_id: number;
+        };
+        OpenInvoicesOutputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example /api/schemas/OpenInvoicesOutputBody.json
+             */
+            readonly $schema?: string;
+            items: components["schemas"]["Allocation"][];
         };
         Option: {
             label: string;
@@ -5517,6 +5618,57 @@ export interface components {
             login: string;
             /** Format: int32 */
             step: number;
+        };
+        Receipt: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example /api/schemas/Receipt.json
+             */
+            readonly $schema?: string;
+            allocations: components["schemas"]["Allocation"][];
+            allowed_actions: string[];
+            /** Format: int64 */
+            amount: number;
+            customer_code: string;
+            /** Format: int64 */
+            customer_id: number;
+            customer_name: string;
+            /** Format: date */
+            date: string;
+            /** Format: int64 */
+            id: number;
+            /** @enum {string} */
+            method: "cash" | "bank";
+            note: string | null;
+            number: string;
+            /** Format: int64 */
+            org_unit_id: number;
+            org_unit_name: string;
+            /** @enum {string} */
+            status: "draft" | "pending_approval" | "posted" | "cancelled";
+            /** Format: int32 */
+            version: number;
+        };
+        ReceiptUpdate: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example /api/schemas/ReceiptUpdate.json
+             */
+            readonly $schema?: string;
+            allocations: components["schemas"]["AllocationInput"][];
+            /** Format: int64 */
+            customer_id: number;
+            /** Format: date */
+            date: string;
+            /** @enum {string} */
+            method: "cash" | "bank";
+            note: string | null;
+            /** Format: int64 */
+            org_unit_id: number;
+            /** Format: int32 */
+            version: number;
         };
         RejectInputBody: {
             /**
@@ -11492,6 +11644,41 @@ export interface operations {
             };
         };
     };
+    "list-open-invoices": {
+        parameters: {
+            query: {
+                org_unit_id: number;
+                /** @description The receipt being edited, whose own allocations are not held back */
+                receipt_id?: number;
+            };
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenInvoicesOutputBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
     "list-deliveries": {
         parameters: {
             query?: {
@@ -12207,6 +12394,103 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["OrderFromQuoteOutputBody"];
                 };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "create-receipt": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NewReceipt"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CreatedOutputBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "get-receipt": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Receipt"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "update-receipt": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReceiptUpdate"];
+            };
+        };
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Error */
             default: {
