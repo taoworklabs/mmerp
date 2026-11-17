@@ -6,7 +6,7 @@ import { Link, useNavigate, useParams } from 'react-router'
 import { api, unwrap, type Doc } from '@/shared/api/sales'
 import { useInvalidateRecord } from '@/shared/area'
 import { DocumentScreen, DocumentStatus } from '@/shared/document'
-import { errorText } from '@/shared/i18n'
+import { errorText, formatNumber } from '@/shared/i18n'
 import { loaded } from '@/shared/ui/loaded'
 import { notifySuccess } from '@/shared/ui/notify'
 import { icon } from '@/shared/ui/theme'
@@ -37,6 +37,7 @@ export function DocPage({ kind }: { kind: Kind }) {
       facts={[
         d.customer.name,
         d.org_unit_name,
+        invoices.length > 0 && d.paid !== undefined && t('sales.order.paid_of', { paid: formatNumber(d.paid), total: formatNumber(d.total) }),
         deliveries.length > 0 && (
           <Group gap="xs" render={<span />}>
             {deliveries.map((r) => (
@@ -63,7 +64,7 @@ export function DocPage({ kind }: { kind: Kind }) {
               </Group>
             ))}
             <Anchor render={<Link to={`/sales/invoices?order_id=${d.id}`} />} size="sm">
-              {t('sales.order.deliveries_all')}
+              {t('sales.order.invoices_all')}
             </Anchor>
           </Group>
         ),

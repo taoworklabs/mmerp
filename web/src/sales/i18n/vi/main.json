@@ -337,5 +337,8 @@
   "sales.receipt.allocation.remaining": "Còn phải thu",
   "sales.receipt.allocation.amount_col": "Số thu",
   "sales.receipt.allocation.amount": "Số thu ({{n}})",
-  "sales.receipt.allocation.add": "Thêm hoá đơn"
+  "sales.receipt.allocation.add": "Thêm hoá đơn",
+  "sales.line.invoiced_col": "Đã xuất hoá đơn",
+  "sales.order.paid_of": "Đã thu {{paid}} / {{total}} đ",
+  "sales.order.invoices_all": "Xem tất cả hoá đơn"
 }

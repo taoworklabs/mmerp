@@ -94,6 +94,14 @@ type InvoiceOptions struct {
 	Lines []InvoiceOptionLine `json:"lines" nullable:"false"`
 }
 
+// Payment states of an invoice or order, and receipt methods.
+const (
+	paymentUnpaid  = "unpaid"
+	paymentPartial = "partial"
+	paymentPaid    = "paid"
+	methodBank     = "bank"
+)
+
 var (
 	ErrOrderHasInvoice = &platform.Error{Status: http.StatusConflict, Code: "sales_order_has_invoice"}
 	// A line takes more than ordered less other non-cancelled invoices (params line_no, order_position, remaining).

@@ -67,7 +67,7 @@ Points the product owner chose in the conversation:
 - An allocation never exceeds the invoice's total less the allocations of other non-cancelled receipts (`sales_receipt_over_invoice`, with the remaining amount as parameter). Receipt date on or after each invoice's date (`sales_receipt_before_invoice`).
 - Locks: own row, then each allocated invoice through `record.LockToDepend`, sorted by id, so two receipts for the same invoices take turns. Posting re-checks under those locks.
 - Approval field `amount`. Permissions: `sales.order.edit` at the receipt's org unit, and view on every allocated invoice; view needs `sales.order.view`. *My call*: no new permission until a cashier role is asked for.
-- A receipt allocating to invoices the user cannot view answers not found for those lines' invoices when creating; reading a receipt shows invoice numbers only.
+- A receipt allocating to invoices the user cannot view answers not found for those lines' invoices when creating; reading a receipt shows each invoice's number, date, total and remaining; the receipt and its invoices share an org unit and permissions, so this shows nothing the reader could not open.
 - An inactive customer still pays what it owes: receipts have no active-customer check (decided after review).
 - Into `posted`: business lines. Into `cancelled`: void; the invoices' remaining receivable returns.
 - Printing (template `sales.receipt`), attachments and discussion.
@@ -104,7 +104,7 @@ No backend change beyond what the kinds bring: the rules screen lists the new ki
 
 - Invoices list and `DocumentPage` (lines table: order line, item, quantity, price, discount, VAT, amounts; side: order, payment state, receipts).
 - Receipts list and `DocumentPage` (allocations table: invoice number, invoice date, total, remaining, amount).
-- Order page: invoiced and paid columns, invoice and payment state, "Tạo hoá đơn".
+- Order page: an invoiced column per line, the paid amount of the order (payments settle invoices, not lines), invoice and payment state, "Lập hoá đơn".
 - Invoice page: "Thu tiền". Menu: invoices and receipts under Sales. Approval rules page gains both types.
 
 ### Glossary

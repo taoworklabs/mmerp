@@ -223,6 +223,7 @@ export function DocForm({ kind, doc, onCreated }: Props) {
     { key: 'net', header: t('sales.line.net_col'), numeric: true, value: (l) => formatNumber(l.amount - l.discount) },
     // Only stock lines carry what was delivered.
     ...(ro && doc?.status === 'posted' && !quote ? [{ key: 'delivered', header: t('sales.line.delivered_col'), numeric: true, value: (l: Line) => l.delivered && formatDecimal(l.delivered, 3) }] : []),
+    ...(ro && doc?.status === 'posted' && !quote ? [{ key: 'invoiced', header: t('sales.line.invoiced_col'), numeric: true, value: (l: Line) => l.invoiced && formatDecimal(l.invoiced, 3) }] : []),
   ]
 
   return (

@@ -9,6 +9,7 @@ import (
 	"github.com/taoworklabs/mmerp/internal/core/approval"
 	"github.com/taoworklabs/mmerp/internal/core/record"
 	"github.com/taoworklabs/mmerp/internal/core/record/recordtest"
+	"github.com/taoworklabs/mmerp/internal/core/setting"
 	"github.com/taoworklabs/mmerp/internal/modules/sales"
 	"github.com/taoworklabs/mmerp/internal/platform"
 )
@@ -306,5 +307,20 @@ func TestInvoiceRetryReturnsFirst(t *testing.T) {
 	first := must(t)(v.sales.CreateInvoice(v.staff, in))
 	if again := must(t)(v.sales.CreateInvoice(v.staff, in)); again != first {
 		t.Fatalf("retry made %d, first %d", again, first)
+	}
+}
+
+// Posting writes what the invoice stored, even when the rounding setting changed since the save.
+func TestInvoicePostsStoredTotals(t *testing.T) {
+	v := newInvoices(t)
+	// Two lines of 1 006 đ at 8 %: line rounding gives 80 + 80, total rounding 161.
+	id := must(t)(v.createInvoice(v.staff, v.order, v.invoiceFields(il(1, "1.006"), il(2, "1.006"))))
+	v.check(v.set.SetFor(v.admin, v.c, setting.Rounding, "total"))
+	v.check(v.move(v.staff, "sales.invoice", id, record.Posted))
+	inv, err := v.sales.Invoice(v.staff, id)
+	v.check(err)
+	got := v.liveLines("sales.invoice", id)
+	if inv.Totals.Total != 2_172 || got["sales_receivable"].amount != inv.Totals.Total || got["sales_output_vat"].amount != inv.Totals.VatTotal {
+		t.Fatalf("stored %+v, lines %+v", inv.Totals, got)
 	}
 }

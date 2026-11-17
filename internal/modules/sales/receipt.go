@@ -46,7 +46,7 @@ func (s *Service) receiptTransition(ctx context.Context, d record.Doc, _ record.
 			return err
 		}
 		money := KindCashReceipt
-		if h.Method == "bank" {
+		if h.Method == methodBank {
 			money = KindBankReceipt
 		}
 		return s.d.Posting.Record(ctx, d.Ref, []posting.Line{
@@ -173,7 +173,7 @@ func (s *Service) receiptAmount(ctx context.Context, f ReceiptFields) (int64, er
 	seen := map[int64]bool{}
 	for i, a := range f.Allocations {
 		if seen[a.InvoiceID] {
-			return 0, deliveryErr(ErrReceiptDuplicateInvoice, i+1, nil)
+			return 0, lineErr(ErrReceiptDuplicateInvoice, i+1, nil)
 		}
 		seen[a.InvoiceID] = true
 		sum += a.Amount
@@ -209,13 +209,13 @@ func (s *Service) checkReceipt(ctx context.Context, id int64, f ReceiptFields) (
 		r := byID[a.InvoiceID]
 		switch {
 		case r.Status != string(record.Posted) || r.CustomerID != f.CustomerID:
-			return nil, deliveryErr(ErrReceiptInvoice, i+1, nil)
+			return nil, lineErr(ErrReceiptInvoice, i+1, nil)
 		case r.OrgUnitID != f.OrgUnitID:
-			return nil, deliveryErr(ErrReceiptInvoiceOrgUnit, i+1, nil)
+			return nil, lineErr(ErrReceiptInvoiceOrgUnit, i+1, nil)
 		case f.Date < *platform.DatePtr(r.Date):
-			return nil, deliveryErr(ErrReceiptBeforeInvoice, i+1, nil)
+			return nil, lineErr(ErrReceiptBeforeInvoice, i+1, nil)
 		case a.Amount > r.Remaining:
-			return nil, deliveryErr(ErrReceiptOverInvoice, i+1, map[string]any{"invoice_id": a.InvoiceID, "remaining": max(r.Remaining, 0)})
+			return nil, lineErr(ErrReceiptOverInvoice, i+1, map[string]any{"invoice_id": a.InvoiceID, "remaining": max(r.Remaining, 0)})
 		}
 	}
 	return rows, nil

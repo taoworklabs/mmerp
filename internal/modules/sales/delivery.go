@@ -192,10 +192,10 @@ func (s *Service) checkDelivery(ctx context.Context, id, orderID int64, f Delive
 	for i, l := range f.Lines {
 		r, ok := byPos[l.OrderPosition]
 		if !ok {
-			return nil, deliveryErr(ErrDeliveryPosition, i+1, nil)
+			return nil, lineErr(ErrDeliveryPosition, i+1, nil)
 		}
 		if r.Tracking == "none" {
-			return nil, deliveryErr(ErrDeliveryLineNotStock, i+1, nil)
+			return nil, lineErr(ErrDeliveryLineNotStock, i+1, nil)
 		}
 		q, ok := record.ParseNumber(l.Quantity)
 		if !ok || !q.IsPositive() || !q.Equal(q.Truncate(3)) {
@@ -215,7 +215,7 @@ func (s *Service) checkDelivery(ctx context.Context, id, orderID int64, f Delive
 		}
 		used[l.OrderPosition] = used[l.OrderPosition].Add(q)
 		if taken.Add(used[l.OrderPosition]).GreaterThan(ordered) {
-			return nil, deliveryErr(ErrDeliveryOverOrdered, i+1, map[string]any{
+			return nil, lineErr(ErrDeliveryOverOrdered, i+1, map[string]any{
 				"order_position": l.OrderPosition, "remaining": ordered.Sub(taken).StringFixed(3)})
 		}
 		out[i] = DeliveryLine{
@@ -249,7 +249,7 @@ func checkLotExpiry(ctx context.Context, lines []DeliveryLine, date string) erro
 	for _, r := range rows {
 		if e := *platform.DatePtr(r.Expiry); e < date {
 			i := at[r.Pos-1]
-			return deliveryErr(ErrLotExpired, i+1, map[string]any{"lot_code": *lines[i].LotCode, "expiry": e})
+			return lineErr(ErrLotExpired, i+1, map[string]any{"lot_code": *lines[i].LotCode, "expiry": e})
 		}
 	}
 	return nil
@@ -352,8 +352,8 @@ func (s *Service) writeDeliveryLines(ctx context.Context, id, warehouse int64, l
 		map[string]any{"warehouse_id": warehouse, "lines": len(lines)})
 }
 
-// deliveryErr names the delivery line (1-based) a refusal is about.
-func deliveryErr(e *platform.Error, line int, params map[string]any) error {
+// lineErr names the line (1-based) of a delivery, invoice or receipt a refusal is about, as line_no.
+func lineErr(e *platform.Error, line int, params map[string]any) error {
 	p := map[string]any{"line_no": line}
 	maps.Copy(p, params)
 	return &platform.Error{Status: e.Status, Code: e.Code, Params: p}

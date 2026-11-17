@@ -1,5 +1,5 @@
 import { Button } from '@mmerp/ui'
-import { IconCash, IconPlus, IconTruckDelivery } from '@tabler/icons-react'
+import { IconCash, IconFileInvoice, IconPlus, IconTruckDelivery } from '@tabler/icons-react'
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router'
@@ -18,7 +18,8 @@ const sorts = ['-date', 'date', '-number', 'number', '-total', 'total'] as const
 const deliveryStates = ['none', 'partial', 'full', 'not_applicable'] as const
 type DeliveryState = (typeof deliveryStates)[number]
 const paymentStates: PaymentState[] = ['unpaid', 'partial', 'paid']
-const defaults = { filters: { q: '', status: '', delivery_state: '', payment_state: '' }, sort: '-date', sorts: [...sorts], pageSize: 50 }
+const invoiceStates = ['none', 'partial', 'full'] as const
+const defaults = { filters: { q: '', status: '', delivery_state: '', invoice_state: '', payment_state: '' }, sort: '-date', sorts: [...sorts], pageSize: 50 }
 
 // DocsPage lists the quotations or the orders the user may see.
 export function DocsPage({ kind: docKind }: { kind: Kind }) {
@@ -27,8 +28,8 @@ export function DocsPage({ kind: docKind }: { kind: Kind }) {
   const base = `/sales/${pathOf(docKind)}`
   const canCreate = useDocActions(docKind).data?.includes('create') ?? false
   const [params, set, filterBar] = useListParams(defaults)
-  const { q, status, delivery_state, payment_state } = params.filters as typeof defaults.filters
-  const query = { q, status, delivery_state, payment_state, sort: params.sort, page: params.page, pageSize: params.pageSize }
+  const { q, status, delivery_state, invoice_state, payment_state } = params.filters as typeof defaults.filters
+  const query = { q, status, delivery_state, invoice_state, payment_state, sort: params.sort, page: params.page, pageSize: params.pageSize }
   const list = useQuery({
     queryKey: salesKeys.docs.list(docKind, query),
     queryFn: () => {
@@ -47,6 +48,7 @@ export function DocsPage({ kind: docKind }: { kind: Kind }) {
       const orderQuery = {
         ...p.params.query,
         delivery_state: (delivery_state || undefined) as DeliveryState | undefined,
+        invoice_state: (invoice_state || undefined) as (typeof invoiceStates)[number] | undefined,
         payment_state: (payment_state || undefined) as PaymentState | undefined,
       }
       return unwrap(api.GET('/sales/orders', { params: { query: orderQuery } }))
@@ -79,6 +81,14 @@ export function DocsPage({ kind: docKind }: { kind: Kind }) {
               icon={IconTruckDelivery}
               data={deliveryStates.map((s) => ({ value: s, label: t(`sales.order.delivery_state.${s}`) }))}
               {...filterBar.bind('delivery_state')}
+            />
+          )}
+          {docKind === 'order' && (
+            <FilterChip
+              label={t('sales.order.invoice_state.title')}
+              icon={IconFileInvoice}
+              data={invoiceStates.map((s) => ({ value: s, label: t(`sales.order.invoice_state.${s}`) }))}
+              {...filterBar.bind('invoice_state')}
             />
           )}
           {docKind === 'order' && (

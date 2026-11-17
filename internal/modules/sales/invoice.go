@@ -43,10 +43,16 @@ func (s *Service) invoiceTransition(ctx context.Context, d record.Doc, _ record.
 		for i, l := range saved {
 			f.Lines[i] = InvoiceLineInput{OrderPosition: int(l.OrderPosition), Quantity: l.Quantity}
 		}
-		_, t, err := s.checkInvoice(ctx, d.ID, order, d.OrgUnitID, f)
+		if _, _, err := s.checkInvoice(ctx, d.ID, order, d.OrgUnitID, f); err != nil {
+			return err
+		}
+		// The amounts are those saved, which the approver saw: a rounding setting changed since
+		// would otherwise post other amounts than the invoice shows.
+		h, err := store.GetInvoice.Run(ctx, d.ID)
 		if err != nil {
 			return err
 		}
+		t := Totals{Subtotal: h.Subtotal, DiscountTotal: h.DiscountTotal, VatTotal: h.VatTotal, Total: h.Total}
 		partner, err := store.InvoicePartner.Run(ctx, d.ID)
 		if err != nil {
 			return err
@@ -123,7 +129,7 @@ func (s *Service) Invoice(ctx context.Context, id int64) (Invoice, error) {
 	}
 	var extra []string
 	if d.Status == record.Posted && h.Total > h.Held {
-		if ok, err := s.canMakeOrder(ctx, h.OrgUnitID); err != nil {
+		if ok, err := s.canWriteOrders(ctx, h.OrgUnitID); err != nil {
 			return Invoice{}, err
 		} else if ok {
 			extra = append(extra, "create_receipt")
@@ -137,11 +143,11 @@ func (s *Service) Invoice(ctx context.Context, id int64) (Invoice, error) {
 func paymentState(paid, total int64) string {
 	switch {
 	case paid >= total:
-		return "paid"
+		return paymentPaid
 	case paid == 0:
-		return "unpaid"
+		return paymentUnpaid
 	}
-	return "partial"
+	return paymentPartial
 }
 
 // InvoiceOptions lists the order's lines with what non-cancelled invoices leave of each.
@@ -263,7 +269,7 @@ func (s *Service) priceInvoice(ctx context.Context, id, orderID, unit int64, f I
 	for i, l := range f.Lines {
 		r, ok := byPos[l.OrderPosition]
 		if !ok {
-			return nil, Totals{}, deliveryErr(ErrInvoicePosition, i+1, nil)
+			return nil, Totals{}, lineErr(ErrInvoicePosition, i+1, nil)
 		}
 		q, ok := record.ParseNumber(l.Quantity)
 		if !ok || !q.IsPositive() || !q.Equal(q.Truncate(3)) {
@@ -275,7 +281,7 @@ func (s *Service) priceInvoice(ctx context.Context, id, orderID, unit int64, f I
 		}
 		used[l.OrderPosition] = used[l.OrderPosition].Add(q)
 		if held && taken.Add(used[l.OrderPosition]).GreaterThan(ordered) {
-			return nil, Totals{}, deliveryErr(ErrInvoiceOverOrdered, i+1, map[string]any{
+			return nil, Totals{}, lineErr(ErrInvoiceOverOrdered, i+1, map[string]any{
 				"order_position": l.OrderPosition, "remaining": ordered.Sub(taken).StringFixed(3)})
 		}
 		in[i] = LineInput{ItemID: r.ItemID, Description: r.Description, Quantity: q.String(), UnitPrice: r.UnitPrice,

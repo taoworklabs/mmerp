@@ -111,7 +111,8 @@ SELECT h.id, h.kind, d.number, d.status, d.date, d.org_unit_id, h.customer_id, h
        (CASE WHEN inv.state IS NULL THEN ''
              WHEN inv.state = 'none' OR pay.paid = 0 AND pay.invoiced > 0 THEN 'unpaid'
              WHEN pay.paid >= pay.invoiced AND inv.state = 'full' THEN 'paid'
-             ELSE 'partial' END)::text AS payment_state
+             ELSE 'partial' END)::text AS payment_state,
+       coalesce(pay.paid, 0)::bigint AS paid
 FROM sales.headers h
 JOIN record.documents d ON d.id = h.id
 JOIN iam.org_units u ON u.id = d.org_unit_id

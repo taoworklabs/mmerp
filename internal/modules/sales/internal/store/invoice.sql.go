@@ -435,27 +435,6 @@ func (q *Queries) LiveReceiptOfInvoice(ctx context.Context, invoiceID int64) (in
 	return receipt_id, err
 }
 
-const orderPayment = `-- name: OrderPayment :one
-SELECT coalesce(sum(v.total), 0)::bigint AS invoiced,
-       coalesce(sum((SELECT sum(a.amount) FROM sales.receipt_allocations a JOIN record.documents rd ON rd.id = a.receipt_id
-                     WHERE a.invoice_id = v.id AND rd.status = 'posted')), 0)::bigint AS paid
-FROM sales.invoices v JOIN record.documents d ON d.id = v.id
-WHERE v.order_id = $1 AND d.status = 'posted'
-`
-
-type OrderPaymentRow struct {
-	Invoiced int64
-	Paid     int64
-}
-
-// Over the order's posted invoices: their totals and what posted receipts paid of them.
-func (q *Queries) OrderPayment(ctx context.Context, orderID int64) (OrderPaymentRow, error) {
-	row := q.db.QueryRow(ctx, orderPayment, orderID)
-	var i OrderPaymentRow
-	err := row.Scan(&i.Invoiced, &i.Paid)
-	return i, err
-}
-
 const updateInvoice = `-- name: UpdateInvoice :exec
 UPDATE sales.invoices SET subtotal = $2, discount_total = $3, vat_total = $4, total = $5, note = $6 WHERE id = $1
 `

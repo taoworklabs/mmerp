@@ -95,11 +95,3 @@ SELECT d.id, d.number, d.status, a.amount
 FROM sales.receipt_allocations a JOIN record.documents d ON d.id = a.receipt_id
 WHERE a.invoice_id = $1 AND d.status <> 'cancelled'
 ORDER BY d.id;
-
--- name: OrderPayment :one
--- Over the order's posted invoices: their totals and what posted receipts paid of them.
-SELECT coalesce(sum(v.total), 0)::bigint AS invoiced,
-       coalesce(sum((SELECT sum(a.amount) FROM sales.receipt_allocations a JOIN record.documents rd ON rd.id = a.receipt_id
-                     WHERE a.invoice_id = v.id AND rd.status = 'posted')), 0)::bigint AS paid
-FROM sales.invoices v JOIN record.documents d ON d.id = v.id
-WHERE v.order_id = $1 AND d.status = 'posted';

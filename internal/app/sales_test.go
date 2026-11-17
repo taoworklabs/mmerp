@@ -307,21 +307,7 @@ func (f *salesFixture) move(docType, path string, id int64, to string) {
 func TestPrintInvoiceAndReceipt(t *testing.T) {
 	f := newSalesFixture(t, []string{"sales"})
 	f.work([]string{"sales"})
-	f.moveQuote("posted")
-	var o struct {
-		ID   int64
-		Date string
-	}
-	_ = json.Unmarshal(f.ok(f.staffA, "POST", fmt.Sprintf("/api/sales/quotes/%d/order", f.quote), "", 200), &o)
-	_ = json.Unmarshal(f.ok(f.staffA, "GET", fmt.Sprintf("/api/sales/orders/%d", o.ID), "", 200), &o)
-	f.move("sales.order", "orders", o.ID, "posted")
-	year := o.Date[:4]
-	inv := f.id(f.staffA, "/api/sales/invoices", fmt.Sprintf(`{"request_id":"0d7c1a52-6c8e-4f7a-9d0e-1f2a3b4c5d6e","order_id":%d,
-		"date":%q,"note":null,"lines":[{"order_position":1,"quantity":"12"}]}`, o.ID, o.Date))
-	f.move("sales.invoice", "invoices", inv, "posted")
-	rc := f.id(f.staffA, "/api/sales/receipts", fmt.Sprintf(`{"request_id":"1d7c1a52-6c8e-4f7a-9d0e-1f2a3b4c5d6e","date":%q,
-		"org_unit_id":%d,"customer_id":%d,"method":"bank","note":null,"allocations":[{"invoice_id":%d,"amount":100000}]}`, o.Date, f.a, f.customer, inv))
-	f.move("sales.receipt", "receipts", rc, "posted")
+	inv, rc, year := f.paid()
 
 	invParams, rcParams := fmt.Sprintf(`{"id":%d}`, inv), fmt.Sprintf(`{"id":%d}`, rc)
 	invoice, receipt := f.printed(f.staffA, "sales.invoice", invParams), f.printed(f.staffA, "sales.receipt", rcParams)
@@ -348,5 +334,53 @@ func TestPrintInvoiceAndReceipt(t *testing.T) {
 	}
 	if again := f.printed(f.staffA, "sales.receipt", rcParams); !slices.Equal(again, receipt) {
 		t.Fatalf("receipt reprint differs:\n%q\n%q", again, receipt)
+	}
+
+}
+
+// paid posts an order from the quotation, an invoice of all of it and a receipt of 100 000 đ,
+// all dated as the order; it returns the invoice, the receipt and their year.
+func (f *salesFixture) paid() (inv, rc int64, year string) {
+	f.t.Helper()
+	f.moveQuote("posted")
+	var o struct {
+		ID   int64
+		Date string
+	}
+	_ = json.Unmarshal(f.ok(f.staffA, "POST", fmt.Sprintf("/api/sales/quotes/%d/order", f.quote), "", 200), &o)
+	_ = json.Unmarshal(f.ok(f.staffA, "GET", fmt.Sprintf("/api/sales/orders/%d", o.ID), "", 200), &o)
+	f.move("sales.order", "orders", o.ID, "posted")
+	year = o.Date[:4]
+	inv = f.id(f.staffA, "/api/sales/invoices", fmt.Sprintf(`{"request_id":"0d7c1a52-6c8e-4f7a-9d0e-1f2a3b4c5d6e","order_id":%d,
+		"date":%q,"note":null,"lines":[{"order_position":1,"quantity":"12"}]}`, o.ID, o.Date))
+	f.move("sales.invoice", "invoices", inv, "posted")
+	rc = f.id(f.staffA, "/api/sales/receipts", fmt.Sprintf(`{"request_id":"1d7c1a52-6c8e-4f7a-9d0e-1f2a3b4c5d6e","date":%q,
+		"org_unit_id":%d,"customer_id":%d,"method":"bank","note":null,"allocations":[{"invoice_id":%d,"amount":100000}]}`, o.Date, f.a, f.customer, inv))
+	f.move("sales.receipt", "receipts", rc, "posted")
+	return inv, rc, year
+}
+
+// With Sales off, a posted invoice and receipt read and print, and offer nothing else.
+func TestInvoiceAndReceiptProductOff(t *testing.T) {
+	f := newSalesFixture(t, []string{"sales"})
+	inv, rc, year := f.paid()
+	// The worker starts on the Sales-off env, so the prints land where it serves files.
+	off := newSalesFixtureOn(f, nil)
+	f.work(nil)
+	invParams, rcParams := fmt.Sprintf(`{"id":%d}`, inv), fmt.Sprintf(`{"id":%d}`, rc)
+	for _, c := range []struct{ path, template, params, number string }{
+		{fmt.Sprintf("/api/sales/invoices/%d", inv), "sales.invoice", invParams, "HD-" + year + "-00001"},
+		{fmt.Sprintf("/api/sales/receipts/%d", rc), "sales.receipt", rcParams, "PT-" + year + "-00001"},
+	} {
+		var d struct {
+			AllowedActions []string `json:"allowed_actions"`
+		}
+		_ = json.Unmarshal(f.ok(off, "GET", c.path, "", 200), &d)
+		if !slices.Equal(d.AllowedActions, []string{"print"}) {
+			t.Errorf("%s with Sales off: %v", c.template, d.AllowedActions)
+		}
+		if pages := f.printed(off, c.template, c.params); !strings.Contains(pages[0], c.number) {
+			t.Errorf("%s print with Sales off: %q", c.template, pages[0])
+		}
 	}
 }

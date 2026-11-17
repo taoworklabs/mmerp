@@ -142,6 +142,9 @@ test('the order is invoiced in two parts; a third invoice beyond what is left is
 
   await page.reload()
   await expect(page.getByText('Đã xuất hoá đơn đủ').first()).toBeVisible()
+  // The order list filters by invoicing.
+  await page.goto(`/sales/orders?invoice_state=full&q=${encodeURIComponent(customerName)}`)
+  await expect(page.getByRole('link', { name: /^DH-\d{4}-/ })).toHaveCount(1)
 })
 
 test('a posted invoice reaches the ledger: receivable with the customer, revenue and output VAT', async () => {
@@ -177,6 +180,9 @@ test('one receipt settles the first invoice and part of the second; payment show
   await expect(page.getByText('Thu một phần').first()).toBeVisible()
   await page.goto(`/sales/orders/${order}`)
   await expect(page.getByText('Thu một phần').first()).toBeVisible()
+  // The order shows what was received of it, and each line what was invoiced.
+  await expect(page.getByText('Đã thu 1.180.000 / 2.180.000 đ')).toBeVisible()
+  await expect(page.getByRole('columnheader', { name: 'Đã xuất hoá đơn' })).toBeVisible()
 
   const number = ((await (await staff.get(`/api/sales/receipts/${receipt}`)).json()) as { number: string }).number
   await expect.poll(() => net('112', number), { timeout: 60_000 }).toBe(1_180_000)

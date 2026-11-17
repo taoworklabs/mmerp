@@ -337,5 +337,8 @@
   "sales.receipt.allocation.remaining": "Left to receive",
   "sales.receipt.allocation.amount_col": "Amount",
   "sales.receipt.allocation.amount": "Amount ({{n}})",
-  "sales.receipt.allocation.add": "Add invoice"
+  "sales.receipt.allocation.add": "Add invoice",
+  "sales.line.invoiced_col": "Invoiced",
+  "sales.order.paid_of": "Received {{paid}} of {{total}} VND",
+  "sales.order.invoices_all": "All invoices"
 }
