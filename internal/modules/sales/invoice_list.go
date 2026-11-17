@@ -38,6 +38,7 @@ func (s *Service) Invoices(ctx context.Context, f InvoiceFilter) (InvoiceList, e
 			data.When(f.Status != "", data.Eq("status", f.Status)),
 			data.When(f.OrderID != 0, data.Eq("order_id", f.OrderID)),
 			data.When(f.CustomerID != 0, data.Eq("customer_id", f.CustomerID)),
+			data.When(f.PaymentState != "", data.Eq("payment_state", f.PaymentState)),
 		),
 	})
 	if err != nil {
@@ -47,7 +48,7 @@ func (s *Service) Invoices(ctx context.Context, f InvoiceFilter) (InvoiceList, e
 	for _, r := range page.Items {
 		out.Items = append(out.Items, InvoiceListItem{ID: r.ID, Number: r.Number, Status: r.Status, Date: *platform.DatePtr(r.Date),
 			OrderID: r.OrderID, OrderNumber: r.OrderNumber, CustomerID: r.CustomerID, CustomerName: r.CustomerName,
-			Total: r.Total, OrgUnitName: r.OrgUnitName})
+			Total: r.Total, OrgUnitName: r.OrgUnitName, PaymentState: r.PaymentState})
 	}
 	return out, nil
 }

@@ -298,6 +298,61 @@ func (q *Queries) ReceiptCustomerActive(ctx context.Context, id int64) (bool, er
 	return active, err
 }
 
+const receiptListBase = `-- name: ReceiptListBase :many
+SELECT r.id, d.number, d.status, d.date, d.org_unit_id, r.customer_id, p.name AS customer_name, r.method, r.amount,
+       u.name AS org_unit_name
+FROM sales.receipts r
+JOIN record.documents d ON d.id = r.id
+JOIN sales.customers c ON c.id = r.customer_id
+JOIN partner.partners p ON p.id = c.partner_id
+JOIN iam.org_units u ON u.id = d.org_unit_id
+`
+
+type ReceiptListBaseRow struct {
+	ID           int64
+	Number       string
+	Status       string
+	Date         pgtype.Date
+	OrgUnitID    int64
+	CustomerID   int64
+	CustomerName string
+	Method       string
+	Amount       int64
+	OrgUnitName  string
+}
+
+// data:base
+func (q *Queries) ReceiptListBase(ctx context.Context) ([]ReceiptListBaseRow, error) {
+	rows, err := q.db.Query(ctx, receiptListBase)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ReceiptListBaseRow
+	for rows.Next() {
+		var i ReceiptListBaseRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Number,
+			&i.Status,
+			&i.Date,
+			&i.OrgUnitID,
+			&i.CustomerID,
+			&i.CustomerName,
+			&i.Method,
+			&i.Amount,
+			&i.OrgUnitName,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const updateReceipt = `-- name: UpdateReceipt :exec
 UPDATE sales.receipts SET customer_id = $2, method = $3, amount = $4, note = $5 WHERE id = $1
 `

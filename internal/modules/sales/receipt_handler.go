@@ -11,6 +11,8 @@ import (
 
 type receiptOutput struct{ Body Receipt }
 
+type receiptsOutput struct{ Body ReceiptList }
+
 type newReceiptInput struct{ Body NewReceipt }
 
 type updateReceiptInput struct {
@@ -38,6 +40,11 @@ func registerReceiptHandlers(api huma.API, s *Service) {
 			out := &openInvoicesOutput{}
 			out.Body.Items = items
 			return out, err
+		})
+	huma.Register(api, huma.Operation{OperationID: "list-receipts", Method: http.MethodGet, Path: "/sales/receipts"},
+		func(ctx context.Context, in *ReceiptFilter) (*receiptsOutput, error) {
+			l, err := s.Receipts(ctx, *in)
+			return &receiptsOutput{Body: l}, err
 		})
 	huma.Register(api, huma.Operation{OperationID: "create-receipt", Method: http.MethodPost, Path: "/sales/receipts", DefaultStatus: http.StatusCreated,
 		Description: "Sending the same request_id again returns the receipt created the first time."},

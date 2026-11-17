@@ -583,6 +583,15 @@ func (s *Service) orderProgress(ctx context.Context, out *Doc, lines []store.Get
 	default:
 		out.InvoiceState = "partial"
 	}
+	pay, err := store.OrderPayment.Run(ctx, out.ID)
+	if err != nil {
+		return err
+	}
+	out.Paid = &pay.Paid
+	out.PaymentState = paymentState(pay.Paid, pay.Invoiced)
+	if out.PaymentState == "paid" && out.InvoiceState != "full" {
+		out.PaymentState = "partial"
+	}
 	vs, err := store.OrderInvoices.Run(ctx, out.ID)
 	if err != nil {
 		return err

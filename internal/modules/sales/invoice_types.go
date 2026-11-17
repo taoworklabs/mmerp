@@ -59,11 +59,24 @@ type Invoice struct {
 	Note        *string       `json:"note"`
 	Lines       []InvoiceLine `json:"lines" nullable:"false"`
 	Totals      Totals        `json:"totals"`
-	// edit, delete, submit, withdraw, cancel, print.
+	// Paid counts posted receipts; remaining is the total less paid.
+	Paid         int64        `json:"paid"`
+	Remaining    int64        `json:"remaining"`
+	PaymentState string       `json:"payment_state" enum:"unpaid,partial,paid"`
+	Receipts     []ReceiptRef `json:"receipts" nullable:"false" doc:"Receipts not cancelled, drafts included, that the actor may view"`
+	// edit, delete, submit, withdraw, cancel, print, create_receipt.
 	AllowedActions []string `json:"allowed_actions" nullable:"false"`
 }
 
 // InvoiceOptionLine is an order line with what non-cancelled invoices leave of it.
+// ReceiptRef names a receipt settling an invoice and the amount it settles.
+type ReceiptRef struct {
+	ID     int64  `json:"id"`
+	Number string `json:"number"`
+	Status string `json:"status" enum:"draft,pending_approval,posted,cancelled"`
+	Amount int64  `json:"amount"`
+}
+
 type InvoiceOptionLine struct {
 	OrderPosition   int    `json:"order_position"`
 	ItemID          int64  `json:"item_id"`
@@ -92,11 +105,12 @@ var (
 )
 
 type InvoiceFilter struct {
-	Q          string `query:"q" maxLength:"100" doc:"Number, order number or customer name"`
-	Status     string `query:"status" enum:"draft,pending_approval,posted,cancelled"`
-	OrderID    int64  `query:"order_id"`
-	CustomerID int64  `query:"customer_id"`
-	Sort       string `query:"sort" enum:"date,-date,number,-number,total,-total" default:"-date"`
+	Q            string `query:"q" maxLength:"100" doc:"Number, order number or customer name"`
+	Status       string `query:"status" enum:"draft,pending_approval,posted,cancelled"`
+	OrderID      int64  `query:"order_id"`
+	CustomerID   int64  `query:"customer_id"`
+	PaymentState string `query:"payment_state" enum:"unpaid,partial,paid"`
+	Sort         string `query:"sort" enum:"date,-date,number,-number,total,-total" default:"-date"`
 	platform.Paging
 }
 
@@ -111,6 +125,7 @@ type InvoiceListItem struct {
 	CustomerName string `json:"customer_name"`
 	Total        int64  `json:"total"`
 	OrgUnitName  string `json:"org_unit_name"`
+	PaymentState string `json:"payment_state" enum:"unpaid,partial,paid"`
 }
 
 type InvoiceList struct {

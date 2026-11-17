@@ -71,3 +71,29 @@ var (
 	ErrReceiptBeforeInvoice    = &platform.Error{Status: http.StatusUnprocessableEntity, Code: "sales_receipt_before_invoice"}
 	ErrReceiptDuplicateInvoice = &platform.Error{Status: http.StatusUnprocessableEntity, Code: "sales_receipt_duplicate_invoice"}
 )
+
+type ReceiptFilter struct {
+	Q          string `query:"q" maxLength:"100" doc:"Number or customer name"`
+	Status     string `query:"status" enum:"draft,pending_approval,posted,cancelled"`
+	CustomerID int64  `query:"customer_id"`
+	Method     string `query:"method" enum:"cash,bank"`
+	Sort       string `query:"sort" enum:"date,-date,number,-number,amount,-amount" default:"-date"`
+	platform.Paging
+}
+
+type ReceiptListItem struct {
+	ID           int64  `json:"id"`
+	Number       string `json:"number"`
+	Status       string `json:"status" enum:"draft,pending_approval,posted,cancelled"`
+	Date         string `json:"date" format:"date"`
+	CustomerID   int64  `json:"customer_id"`
+	CustomerName string `json:"customer_name"`
+	Method       string `json:"method" enum:"cash,bank"`
+	Amount       int64  `json:"amount"`
+	OrgUnitName  string `json:"org_unit_name"`
+}
+
+type ReceiptList struct {
+	Items []ReceiptListItem `json:"items" nullable:"false"`
+	Total int64             `json:"total"`
+}

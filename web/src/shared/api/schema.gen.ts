@@ -2220,7 +2220,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get?: never;
+        get: operations["list-receipts"];
         put?: never;
         /** @description Sending the same request_id again returns the receipt created the first time. */
         post: operations["create-receipt"];
@@ -3327,6 +3327,10 @@ export interface components {
             /** Format: int64 */
             org_unit_id: number;
             org_unit_name: string;
+            /** Format: int64 */
+            paid?: number;
+            /** @enum {string} */
+            payment_state?: "unpaid" | "partial" | "paid";
             payment_terms: string | null;
             quote: components["schemas"]["DocRef"];
             /** @enum {string} */
@@ -3681,6 +3685,14 @@ export interface components {
             /** Format: int64 */
             org_unit_id: number;
             org_unit_name: string;
+            /** Format: int64 */
+            paid: number;
+            /** @enum {string} */
+            payment_state: "unpaid" | "partial" | "paid";
+            /** @description Receipts not cancelled, drafts included, that the actor may view */
+            receipts: components["schemas"]["ReceiptRef"][];
+            /** Format: int64 */
+            remaining: number;
             /** @enum {string} */
             status: "draft" | "pending_approval" | "posted" | "cancelled";
             totals: components["schemas"]["Totals"];
@@ -3739,6 +3751,8 @@ export interface components {
             order_id: number;
             order_number: string;
             org_unit_name: string;
+            /** @enum {string} */
+            payment_state: "unpaid" | "partial" | "paid";
             /** @enum {string} */
             status: "draft" | "pending_approval" | "posted" | "cancelled";
             /** Format: int64 */
@@ -5649,6 +5663,43 @@ export interface components {
             status: "draft" | "pending_approval" | "posted" | "cancelled";
             /** Format: int32 */
             version: number;
+        };
+        ReceiptList: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example /api/schemas/ReceiptList.json
+             */
+            readonly $schema?: string;
+            items: components["schemas"]["ReceiptListItem"][];
+            /** Format: int64 */
+            total: number;
+        };
+        ReceiptListItem: {
+            /** Format: int64 */
+            amount: number;
+            /** Format: int64 */
+            customer_id: number;
+            customer_name: string;
+            /** Format: date */
+            date: string;
+            /** Format: int64 */
+            id: number;
+            /** @enum {string} */
+            method: "cash" | "bank";
+            number: string;
+            org_unit_name: string;
+            /** @enum {string} */
+            status: "draft" | "pending_approval" | "posted" | "cancelled";
+        };
+        ReceiptRef: {
+            /** Format: int64 */
+            amount: number;
+            /** Format: int64 */
+            id: number;
+            number: string;
+            /** @enum {string} */
+            status: "draft" | "pending_approval" | "posted" | "cancelled";
         };
         ReceiptUpdate: {
             /**
@@ -11822,6 +11873,7 @@ export interface operations {
                 status?: "draft" | "pending_approval" | "posted" | "cancelled";
                 order_id?: number;
                 customer_id?: number;
+                payment_state?: "unpaid" | "partial" | "paid";
                 sort?: "date" | "-date" | "number" | "-number" | "total" | "-total";
                 page?: number;
                 page_size?: 20 | 50 | 100;
@@ -12393,6 +12445,44 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["OrderFromQuoteOutputBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "list-receipts": {
+        parameters: {
+            query?: {
+                /** @description Number or customer name */
+                q?: string;
+                status?: "draft" | "pending_approval" | "posted" | "cancelled";
+                customer_id?: number;
+                method?: "cash" | "bank";
+                sort?: "date" | "-date" | "number" | "-number" | "amount" | "-amount";
+                page?: number;
+                page_size?: 20 | 50 | 100;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReceiptList"];
                 };
             };
             /** @description Error */

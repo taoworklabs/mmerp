@@ -3,6 +3,7 @@ package sales_test
 import (
 	"context"
 	"errors"
+	"slices"
 	"testing"
 
 	"github.com/taoworklabs/mmerp/internal/core/approval"
@@ -212,5 +213,95 @@ func TestReceiptTeamBoundary(t *testing.T) {
 	id := r.postedReceipt(r.receiptFields("cash", al(r.inv1, 100)))
 	if _, err := r.sales.Receipt(r.ctxFor("staff_b", "staff@B"), id); !errors.Is(err, platform.ErrNotFound) {
 		t.Fatalf("staff of B opens: %v", err)
+	}
+}
+
+func (r *receipts) invoice(id int64) sales.Invoice {
+	r.t.Helper()
+	v, err := r.sales.Invoice(r.staff, id)
+	r.check(err)
+	return v
+}
+
+func TestInvoicePaymentState(t *testing.T) {
+	r := newReceipts(t)
+	if v := r.invoice(r.inv1); v.PaymentState != "unpaid" || v.Paid != 0 || v.Remaining != total1 || !slices.Contains(v.AllowedActions, "create_receipt") {
+		t.Fatalf("fresh %+v", v)
+	}
+	first := r.postedReceipt(r.receiptFields("cash", al(r.inv1, 1_000)))
+	if v := r.invoice(r.inv1); v.PaymentState != "partial" || v.Paid != 1_000 || v.Remaining != total1-1_000 {
+		t.Fatalf("partial %+v", v)
+	}
+	r.postedReceipt(r.receiptFields("cash", al(r.inv1, total1-1_000)))
+	if v := r.invoice(r.inv1); v.PaymentState != "paid" || v.Remaining != 0 || slices.Contains(v.AllowedActions, "create_receipt") {
+		t.Fatalf("paid %+v", v)
+	}
+	r.check(r.move(r.staff, "sales.receipt", first, record.Cancelled))
+	if v := r.invoice(r.inv1); v.PaymentState != "partial" || v.Paid != total1-1_000 {
+		t.Fatalf("after cancelling %+v", v)
+	}
+	f := sales.InvoiceFilter{PaymentState: "partial", Sort: "-date", Paging: platform.Paging{Page: 1, PageSize: 50}}
+	if l, err := r.sales.Invoices(r.staff, f); err != nil || l.Total != 1 || l.Items[0].ID != r.inv1 || l.Items[0].PaymentState != "partial" {
+		t.Fatalf("list %+v %v", l, err)
+	}
+}
+
+// A draft receipt holds its amount back: nothing is paid yet, but nothing is left to receive.
+func TestReceiptDraftHoldsAmount(t *testing.T) {
+	r := newReceipts(t)
+	draft := must(t)(r.createReceipt(r.staff, r.receiptFields("cash", al(r.inv1, total1))))
+	v := r.invoice(r.inv1)
+	if v.PaymentState != "unpaid" || slices.Contains(v.AllowedActions, "create_receipt") || len(v.Receipts) != 1 ||
+		v.Receipts[0].ID != draft || v.Receipts[0].Status != "draft" || v.Receipts[0].Amount != total1 {
+		t.Fatalf("invoice %+v", v)
+	}
+	open, err := r.sales.OpenInvoices(r.staff, r.customer, r.a, 0)
+	r.check(err)
+	if len(open) != 1 || open[0].InvoiceID != r.inv2 || open[0].Amount != total2 {
+		t.Fatalf("open %+v", open)
+	}
+	// The draft being edited sees its own amount as still open.
+	if open, _ := r.sales.OpenInvoices(r.staff, r.customer, r.a, draft); len(open) != 2 {
+		t.Fatalf("open for the draft %+v", open)
+	}
+}
+
+func TestOrderPaymentState(t *testing.T) {
+	r := newReceipts(t)
+	if o := r.orderState(); o.PaymentState != "unpaid" || o.Paid == nil || *o.Paid != 0 {
+		t.Fatalf("fresh %+v", o.PaymentState)
+	}
+	r.postedReceipt(r.receiptFields("bank", al(r.inv1, total1), al(r.inv2, total2)))
+	if o := r.orderState(); o.PaymentState != "partial" || *o.Paid != total1+total2 {
+		t.Fatalf("invoices paid, order not all invoiced: %s %d", o.PaymentState, *o.Paid)
+	}
+	last := r.postedInvoice(il(1, "6"), il(2, "5"), il(3, "1"))
+	r.postedReceipt(r.receiptFields("cash", al(last, r.invoice(last).Totals.Total)))
+	if o := r.orderState(); o.PaymentState != "paid" {
+		t.Fatalf("all paid: %s", o.PaymentState)
+	}
+}
+
+func TestReceiptList(t *testing.T) {
+	r := newReceipts(t)
+	cash := r.postedReceipt(r.receiptFields("cash", al(r.inv1, 100)))
+	must(t)(r.createReceipt(r.staff, r.receiptFields("bank", al(r.inv2, 200))))
+	all := sales.ReceiptFilter{Sort: "-date", Paging: platform.Paging{Page: 1, PageSize: 50}}
+	if l, err := r.sales.Receipts(r.staff, all); err != nil || l.Total != 2 || l.Items[0].CustomerName != "Công ty KH1" {
+		t.Fatalf("all %+v %v", l, err)
+	}
+	f := all
+	f.Method = "cash"
+	if l, _ := r.sales.Receipts(r.staff, f); l.Total != 1 || l.Items[0].ID != cash || l.Items[0].Amount != 100 {
+		t.Fatalf("cash %+v", l)
+	}
+	f = all
+	f.Status = "draft"
+	f.CustomerID = r.customer
+	if l, _ := r.sales.Receipts(r.staff, f); l.Total != 1 || l.Items[0].Method != "bank" {
+		t.Fatalf("draft %+v", l)
+	}
+	if l, _ := r.sales.Receipts(r.ctxFor("staff_b", "staff@B"), all); l.Total != 0 {
+		t.Fatalf("staff of B %+v", l)
 	}
 }

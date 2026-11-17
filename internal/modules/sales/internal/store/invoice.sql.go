@@ -31,6 +31,10 @@ func (q *Queries) DeleteInvoiceLines(ctx context.Context, invoiceID int64) error
 
 const getInvoice = `-- name: GetInvoice :one
 SELECT v.order_id, v.subtotal, v.discount_total, v.vat_total, v.total, v.note,
+       coalesce((SELECT sum(a.amount) FROM sales.receipt_allocations a JOIN record.documents rd ON rd.id = a.receipt_id
+                 WHERE a.invoice_id = v.id AND rd.status = 'posted'), 0)::bigint AS paid,
+       coalesce((SELECT sum(a.amount) FROM sales.receipt_allocations a JOIN record.documents rd ON rd.id = a.receipt_id
+                 WHERE a.invoice_id = v.id AND rd.status <> 'cancelled'), 0)::bigint AS held,
        d.number, d.status, d.version, d.date, d.org_unit_id, u.name AS org_unit_name, o.number AS order_number
 FROM sales.invoices v
 JOIN record.documents d ON d.id = v.id
@@ -46,6 +50,8 @@ type GetInvoiceRow struct {
 	VatTotal      int64
 	Total         int64
 	Note          pgtype.Text
+	Paid          int64
+	Held          int64
 	Number        string
 	Status        string
 	Version       int32
@@ -55,6 +61,7 @@ type GetInvoiceRow struct {
 	OrderNumber   string
 }
 
+// Paid counts posted receipts; held counts every receipt not cancelled, drafts included.
 func (q *Queries) GetInvoice(ctx context.Context, id int64) (GetInvoiceRow, error) {
 	row := q.db.QueryRow(ctx, getInvoice, id)
 	var i GetInvoiceRow
@@ -65,6 +72,8 @@ func (q *Queries) GetInvoice(ctx context.Context, id int64) (GetInvoiceRow, erro
 		&i.VatTotal,
 		&i.Total,
 		&i.Note,
+		&i.Paid,
+		&i.Held,
 		&i.Number,
 		&i.Status,
 		&i.Version,
@@ -206,8 +215,13 @@ func (q *Queries) InsertInvoiceLines(ctx context.Context, arg InsertInvoiceLines
 
 const invoiceListBase = `-- name: InvoiceListBase :many
 SELECT v.id, d.number, d.status, d.date, d.org_unit_id, v.order_id, o.number AS order_number,
-       h.customer_id, h.customer_name, v.total, u.name AS org_unit_name
+       h.customer_id, h.customer_name, v.total, u.name AS org_unit_name,
+       (CASE WHEN p.paid = 0 THEN 'unpaid' WHEN p.paid >= v.total THEN 'paid' ELSE 'partial' END)::text AS payment_state
 FROM sales.invoices v
+CROSS JOIN LATERAL (
+    SELECT coalesce(sum(a.amount), 0) AS paid FROM sales.receipt_allocations a JOIN record.documents rd ON rd.id = a.receipt_id
+    WHERE a.invoice_id = v.id AND rd.status = 'posted'
+) p
 JOIN record.documents d ON d.id = v.id
 JOIN record.documents o ON o.id = v.order_id
 JOIN sales.headers h ON h.id = v.order_id
@@ -226,6 +240,7 @@ type InvoiceListBaseRow struct {
 	CustomerName string
 	Total        int64
 	OrgUnitName  string
+	PaymentState string
 }
 
 // data:base
@@ -250,6 +265,7 @@ func (q *Queries) InvoiceListBase(ctx context.Context) ([]InvoiceListBaseRow, er
 			&i.CustomerName,
 			&i.Total,
 			&i.OrgUnitName,
+			&i.PaymentState,
 		); err != nil {
 			return nil, err
 		}
@@ -285,6 +301,46 @@ func (q *Queries) InvoicePartner(ctx context.Context, id int64) (int64, error) {
 	var partner_id int64
 	err := row.Scan(&partner_id)
 	return partner_id, err
+}
+
+const invoiceReceipts = `-- name: InvoiceReceipts :many
+SELECT d.id, d.number, d.status, a.amount
+FROM sales.receipt_allocations a JOIN record.documents d ON d.id = a.receipt_id
+WHERE a.invoice_id = $1 AND d.status <> 'cancelled'
+ORDER BY d.id
+`
+
+type InvoiceReceiptsRow struct {
+	ID     int64
+	Number string
+	Status string
+	Amount int64
+}
+
+// The receipts not cancelled that settle the invoice, with the amount each settles.
+func (q *Queries) InvoiceReceipts(ctx context.Context, invoiceID int64) ([]InvoiceReceiptsRow, error) {
+	rows, err := q.db.Query(ctx, invoiceReceipts, invoiceID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []InvoiceReceiptsRow
+	for rows.Next() {
+		var i InvoiceReceiptsRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Number,
+			&i.Status,
+			&i.Amount,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const invoiceableLines = `-- name: InvoiceableLines :many
@@ -376,6 +432,27 @@ func (q *Queries) LiveReceiptOfInvoice(ctx context.Context, invoiceID int64) (in
 	var receipt_id int64
 	err := row.Scan(&receipt_id)
 	return receipt_id, err
+}
+
+const orderPayment = `-- name: OrderPayment :one
+SELECT coalesce(sum(v.total), 0)::bigint AS invoiced,
+       coalesce(sum((SELECT sum(a.amount) FROM sales.receipt_allocations a JOIN record.documents rd ON rd.id = a.receipt_id
+                     WHERE a.invoice_id = v.id AND rd.status = 'posted')), 0)::bigint AS paid
+FROM sales.invoices v JOIN record.documents d ON d.id = v.id
+WHERE v.order_id = $1 AND d.status = 'posted'
+`
+
+type OrderPaymentRow struct {
+	Invoiced int64
+	Paid     int64
+}
+
+// Over the order's posted invoices: their totals and what posted receipts paid of them.
+func (q *Queries) OrderPayment(ctx context.Context, orderID int64) (OrderPaymentRow, error) {
+	row := q.db.QueryRow(ctx, orderPayment, orderID)
+	var i OrderPaymentRow
+	err := row.Scan(&i.Invoiced, &i.Paid)
+	return i, err
 }
 
 const updateInvoice = `-- name: UpdateInvoice :exec

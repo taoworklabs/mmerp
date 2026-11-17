@@ -108,8 +108,39 @@ func (s *Service) Invoice(ctx context.Context, id int64) (Invoice, error) {
 			DiscountPercent: platform.PlainDecimal(l.DiscountPercent), VatRate: l.VatRate, Amount: l.Amount, Discount: l.Discount, Vat: l.Vat,
 		}
 	}
-	out.AllowedActions, err = s.d.Record.Actions(ctx, d)
+	out.Paid, out.Remaining, out.PaymentState = h.Paid, h.Total-h.Paid, paymentState(h.Paid, h.Total)
+	rs, err := store.InvoiceReceipts.Run(ctx, id)
+	if err != nil {
+		return Invoice{}, err
+	}
+	out.Receipts = []ReceiptRef{}
+	for _, r := range rs {
+		if ok, err := s.d.Record.Can(ctx, receiptType, r.ID, record.View); err != nil {
+			return Invoice{}, err
+		} else if ok {
+			out.Receipts = append(out.Receipts, ReceiptRef{ID: r.ID, Number: r.Number, Status: r.Status, Amount: r.Amount})
+		}
+	}
+	var extra []string
+	if d.Status == record.Posted && h.Total > h.Held {
+		if ok, err := s.canMakeOrder(ctx, h.OrgUnitID); err != nil {
+			return Invoice{}, err
+		} else if ok {
+			extra = append(extra, "create_receipt")
+		}
+	}
+	out.AllowedActions, err = s.d.Record.Actions(ctx, d, extra...)
 	return out, err
+}
+
+func paymentState(paid, total int64) string {
+	switch {
+	case paid == 0:
+		return "unpaid"
+	case paid >= total:
+		return "paid"
+	}
+	return "partial"
 }
 
 // InvoiceOptions lists the order's lines with what non-cancelled invoices leave of each.

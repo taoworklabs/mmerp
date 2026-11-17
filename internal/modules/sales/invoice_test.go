@@ -104,6 +104,9 @@ func TestInvoiceRecordContract(t *testing.T) {
 			},
 			Effects:      func(t *testing.T, r record.Ref) int { return min(count(t, r), 1) },
 			PostingLines: count,
+			Gaps: map[string]string{
+				"write actions leave allowed_actions when the product is off or the period locked": "a posted invoice in a locked period still offers create_receipt, dated in an open period",
+			},
 		}
 	})
 }

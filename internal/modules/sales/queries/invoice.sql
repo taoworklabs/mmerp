@@ -12,7 +12,12 @@ DELETE FROM sales.invoices WHERE id = $1;
 SELECT order_id FROM sales.invoices WHERE id = $1;
 
 -- name: GetInvoice :one
+-- Paid counts posted receipts; held counts every receipt not cancelled, drafts included.
 SELECT v.order_id, v.subtotal, v.discount_total, v.vat_total, v.total, v.note,
+       coalesce((SELECT sum(a.amount) FROM sales.receipt_allocations a JOIN record.documents rd ON rd.id = a.receipt_id
+                 WHERE a.invoice_id = v.id AND rd.status = 'posted'), 0)::bigint AS paid,
+       coalesce((SELECT sum(a.amount) FROM sales.receipt_allocations a JOIN record.documents rd ON rd.id = a.receipt_id
+                 WHERE a.invoice_id = v.id AND rd.status <> 'cancelled'), 0)::bigint AS held,
        d.number, d.status, d.version, d.date, d.org_unit_id, u.name AS org_unit_name, o.number AS order_number
 FROM sales.invoices v
 JOIN record.documents d ON d.id = v.id
@@ -71,9 +76,29 @@ WHERE v.id = $1;
 -- name: InvoiceListBase :many
 -- data:base
 SELECT v.id, d.number, d.status, d.date, d.org_unit_id, v.order_id, o.number AS order_number,
-       h.customer_id, h.customer_name, v.total, u.name AS org_unit_name
+       h.customer_id, h.customer_name, v.total, u.name AS org_unit_name,
+       (CASE WHEN p.paid = 0 THEN 'unpaid' WHEN p.paid >= v.total THEN 'paid' ELSE 'partial' END)::text AS payment_state
 FROM sales.invoices v
+CROSS JOIN LATERAL (
+    SELECT coalesce(sum(a.amount), 0) AS paid FROM sales.receipt_allocations a JOIN record.documents rd ON rd.id = a.receipt_id
+    WHERE a.invoice_id = v.id AND rd.status = 'posted'
+) p
 JOIN record.documents d ON d.id = v.id
 JOIN record.documents o ON o.id = v.order_id
 JOIN sales.headers h ON h.id = v.order_id
 JOIN iam.org_units u ON u.id = d.org_unit_id;
+
+-- name: InvoiceReceipts :many
+-- The receipts not cancelled that settle the invoice, with the amount each settles.
+SELECT d.id, d.number, d.status, a.amount
+FROM sales.receipt_allocations a JOIN record.documents d ON d.id = a.receipt_id
+WHERE a.invoice_id = $1 AND d.status <> 'cancelled'
+ORDER BY d.id;
+
+-- name: OrderPayment :one
+-- Over the order's posted invoices: their totals and what posted receipts paid of them.
+SELECT coalesce(sum(v.total), 0)::bigint AS invoiced,
+       coalesce(sum((SELECT sum(a.amount) FROM sales.receipt_allocations a JOIN record.documents rd ON rd.id = a.receipt_id
+                     WHERE a.invoice_id = v.id AND rd.status = 'posted')), 0)::bigint AS paid
+FROM sales.invoices v JOIN record.documents d ON d.id = v.id
+WHERE v.order_id = $1 AND d.status = 'posted';

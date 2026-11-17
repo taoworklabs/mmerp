@@ -67,3 +67,13 @@ SELECT @receipt_id::bigint, unnest(@positions::int[]), unnest(@invoice_ids::bigi
 
 -- name: ReceiptCustomerActive :one
 SELECT c.active FROM sales.receipts r JOIN sales.customers c ON c.id = r.customer_id WHERE r.id = $1;
+
+-- name: ReceiptListBase :many
+-- data:base
+SELECT r.id, d.number, d.status, d.date, d.org_unit_id, r.customer_id, p.name AS customer_name, r.method, r.amount,
+       u.name AS org_unit_name
+FROM sales.receipts r
+JOIN record.documents d ON d.id = r.id
+JOIN sales.customers c ON c.id = r.customer_id
+JOIN partner.partners p ON p.id = c.partner_id
+JOIN iam.org_units u ON u.id = d.org_unit_id;

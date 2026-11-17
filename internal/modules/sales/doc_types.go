@@ -102,6 +102,9 @@ type Doc struct {
 	// Orders: how far posted invoices went over all lines, and the invoices not cancelled.
 	InvoiceState string   `json:"invoice_state,omitempty" enum:"none,partial,full"`
 	Invoices     []DocRef `json:"invoices,omitempty"`
+	// Orders: what posted receipts paid of posted invoices; paid once all is invoiced and paid.
+	Paid         *int64 `json:"paid,omitempty"`
+	PaymentState string `json:"payment_state,omitempty" enum:"unpaid,partial,paid"`
 	// edit, delete, submit, withdraw, cancel, print; quotations also create_order, orders
 	// create_delivery and create_invoice.
 	AllowedActions []string `json:"allowed_actions" nullable:"false"`
