@@ -158,8 +158,8 @@ Vertical slices, each from migration to screen:
 **Done when**, with `make seed` data and `PRODUCTS=hrm,sales,accounting`:
 
 1. A confirmed order of goods and a service gets two invoices for parts of its quantities; a third that exceeds the remaining quantity is refused; the order shows invoice state `partial`, then `full`.
-2. After posting an invoice, the general ledger shows Dr 131 (with the customer) / Cr 5111 / Cr 33311 for it, and the customer's partner balance grows by its total.
-3. A receipt split across two invoices of the customer posts; each invoice shows `partial` or `paid` correctly, the order shows its paid amount, and the ledger shows Dr 1111 or 1121 / Cr 131.
+2. After posting an invoice, the general ledger shows Dr 131 (with the customer) / Cr 511 / Cr 3331 for it, and the customer's partner balance grows by its total.
+3. A receipt split across two invoices of the customer posts; each invoice shows `partial` or `paid` correctly, the order shows its paid amount, and the ledger shows Dr 111 or 112 / Cr 131.
 4. Allocating more than an invoice's remaining amount is refused; cancelling an invoice with a receipt is refused; cancelling the receipt returns the remaining amounts, then the invoice can be cancelled and its lines are reversed.
 5. With accounting disabled, invoices and receipts work and their business lines wait for posting; with Sales disabled, everything reads and prints.
 6. Another team's staff sees none of the invoices or receipts. `recordtest` passes for both types. HRM and payroll posting unchanged.

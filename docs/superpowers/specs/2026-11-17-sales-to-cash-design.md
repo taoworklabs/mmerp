@@ -88,16 +88,16 @@ Amounts are positive and the mapping rule gives the side; a negative amount goes
 | Kind | Partner | Written by | Amount | Seed rule |
 | --- | --- | --- | --- | --- |
 | `sales_receivable` | yes | invoice; receipt | invoice: +total; receipt: −amount | 131, debit |
-| `sales_revenue` | no | invoice | +net (total less VAT) | 5111, credit |
-| `sales_output_vat` | no | invoice, when VAT > 0 | +VAT | 33311, credit |
-| `sales_cash_receipt` | no | receipt, method `cash` | +amount | 1111, debit |
-| `sales_bank_receipt` | no | receipt, method `bank` | +amount | 1121, debit |
+| `sales_revenue` | no | invoice | +net (total less VAT) | 511, credit |
+| `sales_output_vat` | no | invoice, when VAT > 0 | +VAT | 3331, credit |
+| `sales_cash_receipt` | no | receipt, method `cash` | +amount | 111, debit |
+| `sales_bank_receipt` | no | receipt, method `bank` | +amount | 112, debit |
 
 The partner is the customer's partner. Invoice lines carry the invoice's org unit. A receipt's lines carry its org unit, which is every allocated invoice's, so 131 clears per org unit. Sales needs `posting` in its deps.
 
 ### Accounting
 
-No backend change beyond what the kinds bring: the rules screen lists the new kinds, `sales_receivable` maps only to a tracked account. The five kind labels go in the accounting area's i18n (`web/src/accounting/i18n/{vi,en}`), where the payroll kinds' labels are (*my call*). The seed adds 1111, 1121, 5111, 33311 (or the chart's equivalents) and rules for the five kinds.
+No backend change beyond what the kinds bring: the rules screen lists the new kinds, `sales_receivable` maps only to a tracked account. The five kind labels go in the accounting area's i18n (`web/src/accounting/i18n/{vi,en}`), where the payroll kinds' labels are (*my call*). The seed adds 3331 and 511 to its sample chart (111, 112 and 131 are there already) and rules for the five kinds.
 
 ### Screens (Sales area)
 
@@ -115,8 +115,8 @@ No backend change beyond what the kinds bring: the rules screen lists the new ki
 With `make seed` and `PRODUCTS=hrm,sales,accounting`:
 
 1. A confirmed order of goods and a service gets two invoices for parts of its quantities; a third that exceeds the remaining quantity is refused; the order shows invoice state `partial`, then `full`.
-2. After posting an invoice, the general ledger shows Dr 131 (with the customer) / Cr 5111 / Cr 33311 for it, and the customer's partner balance grows by its total.
-3. A receipt split across two invoices of the customer posts; each invoice shows `partial` or `paid` correctly, the order shows its paid amount, and the ledger shows Dr 1111 or 1121 / Cr 131.
+2. After posting an invoice, the general ledger shows Dr 131 (with the customer) / Cr 511 / Cr 3331 for it, and the customer's partner balance grows by its total.
+3. A receipt split across two invoices of the customer posts; each invoice shows `partial` or `paid` correctly, the order shows its paid amount, and the ledger shows Dr 111 or 112 / Cr 131.
 4. Allocating more than an invoice's remaining amount is refused; cancelling an invoice with a receipt is refused; cancelling the receipt returns the remaining amounts, then the invoice can be cancelled and its lines are reversed.
 5. With accounting disabled, invoices and receipts work and their business lines wait for posting; with Sales disabled, everything reads and prints.
 6. Another team's staff sees none of the invoices or receipts. `recordtest` passes for both types. HRM and payroll posting unchanged.

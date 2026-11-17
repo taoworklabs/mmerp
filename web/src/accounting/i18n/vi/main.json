@@ -158,5 +158,10 @@
   "accounting.partner_ledger.title": "Sổ chi tiết công nợ",
   "accounting.partner_ledger.description": "Phát sinh của một đối tác trong kỳ, kèm số dư.",
   "accounting.partner_ledger.pick": "Chọn đối tác",
-  "accounting.partner_ledger.pick_description": "Chọn pháp nhân và đối tác để xem sổ chi tiết công nợ."
+  "accounting.partner_ledger.pick_description": "Chọn pháp nhân và đối tác để xem sổ chi tiết công nợ.",
+  "accounting.kind.sales_receivable": "Phải thu khách hàng (bán hàng)",
+  "accounting.kind.sales_revenue": "Doanh thu bán hàng",
+  "accounting.kind.sales_output_vat": "Thuế GTGT đầu ra",
+  "accounting.kind.sales_cash_receipt": "Thu tiền mặt",
+  "accounting.kind.sales_bank_receipt": "Thu chuyển khoản"
 }

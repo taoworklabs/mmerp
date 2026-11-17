@@ -4,7 +4,7 @@ import { created, signedInApi, toFlow } from './api'
 // Sales on top of the Demo demo company (demo.seed.ts runs first): sales roles for the two
 // sales departments, the item catalogue with its stock tracking, opening stock in each legal
 // entity's warehouse, customers, quotations in every status and orders, from quotations and
-// entered directly, one of them partly delivered. Its own accounts (password Demo@2026) do the work.
+// entered directly, one of them partly delivered, then invoiced in two parts and partly paid. Its own accounts (password Demo@2026) do the work.
 // Skipped once quotations exist; catalogue entries and customers already there are reused.
 
 const password = 'Demo@2026'
@@ -492,6 +492,35 @@ test('seed Sales on the Demo demo company', async ({ baseURL }) => {
         }),
       )
       await postDoc(as, 'sales.delivery', '/api/sales/deliveries', delivery)
+      // Billed in two parts, what was delivered first, then the rest; the customer pays all of
+      // the first invoice and part of the second by one bank transfer.
+      const date = o.delivery ?? o.date
+      const left = await get<{ lines: { order_position: number; item_code: string; remaining: string }[] }>(as, `/api/sales/orders/${id}/invoice-options`)
+      const invoice = async (lines: { order_position: number; quantity: string }[]) => {
+        const inv = await created(as.post('/api/sales/invoices', { data: { request_id: crypto.randomUUID(), order_id: id, date, note: null, lines } }))
+        await postDoc(as, 'sales.invoice', '/api/sales/invoices', inv)
+        return { id: inv, total: (await get<{ totals: { total: number } }>(as, `/api/sales/invoices/${inv}`)).totals.total }
+      }
+      const first = await invoice(o.deliver.map(([code, quantity]) => ({ order_position: left.lines.find((l) => l.item_code === code)!.order_position, quantity })))
+      const rest = (await get<typeof left>(as, `/api/sales/orders/${id}/invoice-options`)).lines.filter((l) => Number(l.remaining) > 0)
+      const second = await invoice(rest.map((l) => ({ order_position: l.order_position, quantity: l.remaining })))
+      const receipt = await created(
+        as.post('/api/sales/receipts', {
+          data: {
+            request_id: crypto.randomUUID(),
+            date,
+            org_unit_id: teamOf(o.customer),
+            customer_id: customerId[o.customer],
+            method: 'bank',
+            note: null,
+            allocations: [
+              { invoice_id: first.id, amount: first.total },
+              { invoice_id: second.id, amount: Math.floor(second.total / 2) },
+            ],
+          },
+        }),
+      )
+      await postDoc(as, 'sales.receipt', '/api/sales/receipts', receipt)
     }
   }
 })

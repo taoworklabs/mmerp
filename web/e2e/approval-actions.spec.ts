@@ -101,7 +101,7 @@ test('cancelling a posted order waits for the manager', async ({ browser }) => {
 
   // The administrator sets the cancel rule of orders in the editor.
   const admin_ = await as(browser, admin.login, '/sales/approval-rules')
-  await admin_.getByRole('link', { name: 'Đơn bán hàng · Hủy chứng từ' }).click()
+  await admin_.getByRole('link', { name: 'Đơn bán hàng · Hủy chứng từ', exact: true }).click()
   await expect(admin_).toHaveURL(/\/sales\/approval-rules\/sales\.order\/cancel$/)
   // No rule yet: one step, approved by the sales managers.
   await admin_.getByRole('main').getByRole('button', { name: 'Thêm vào đây' }).click()

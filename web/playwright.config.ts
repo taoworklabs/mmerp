@@ -1,7 +1,7 @@
 import { defineConfig, devices } from '@playwright/test'
 
 // These files change approval rules other files rely on, or check tenant-wide counts.
-const exclusive = /\/(payroll|hrm-overview|navigation|product-disabled|personal-space|approval-flows|approval-actions|approval-lines|approval-delegation|approval-overdue|accounting)\.spec\.ts$/
+const exclusive = /\/(payroll|hrm-overview|navigation|product-disabled|personal-space|approval-flows|approval-actions|approval-lines|approval-delegation|approval-overdue|accounting|sales-to-cash)\.spec\.ts$/
 
 export default defineConfig({
   testDir: 'e2e',

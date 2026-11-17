@@ -59,4 +59,4 @@ Area `web/src/accounting`, menu: general ledger, trial balance, partner balances
 
 ## Proving flow
 
-Seeded sample chart and rules for the five payroll kinds, a payroll posted, a balanced entry appears split by org unit, the payroll cancelled and a reversing entry appears, a payroll posted before its rule exists waits under awaiting posting and enters after "post pending", a manual entry entered, posted and cancelled, and the trial balance totals are equal. The seed also tracks 131 and 331 by partner and opens two customers' receivables and a supplier's payable.
+Seeded sample chart and rules for the five payroll kinds, a payroll posted, a balanced entry appears split by org unit, the payroll cancelled and a reversing entry appears, a payroll posted before its rule exists waits under awaiting posting and enters after "post pending", a manual entry entered, posted and cancelled, and the trial balance totals are equal. The seed also tracks 131 and 331 by partner and opens two customers' receivables and a supplier's payable; it maps the five sales kinds to 131, 511, 3331, 111 and 112, so the seeded invoices and receipt reach the ledger.
