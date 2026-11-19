@@ -27,7 +27,7 @@ A milestone only passes when what it adds keeps the contract intact from table t
 ```
 M11 Attachments and discussion ─► M12 Notifications ─► M13 PDF printing ─► M14 Sales   (all done)
    ─► HRM review ─► Core work after M14   (done) ─► M15 Accounting   (done)
-   ─► M16 Partner subledger ─► M17 Sales to cash ─► M18 Purchasing   (done) ─► M19 Stock ─► M20 Stock valuation
+   ─► M16 Partner subledger ─► M17 Sales to cash ─► M18 Purchasing ─► M19 Stock   (done) ─► M20 Stock valuation
    ┄► M10 On-premise operations ┄► [Gate: production readiness]   (on hold)
 ```
 
@@ -181,7 +181,7 @@ Vertical slices, each from migration to screen:
 
 ## M19. Stock
 
-**In progress** (2026-11-19): [ADR-0100](./adr/0100-stock-area-transfers-stocktakes.md).
+**Done** (2026-11-19): [ADR-0100](./adr/0100-stock-area-transfers-stocktakes.md).
 
 **Goal:** stock gets its own area, so a tenant without Sales manages items and warehouses, and warehouses gain the two documents they use every day: transfers between warehouses and stocktakes that post the counted difference ([ADR-0100](./adr/0100-stock-area-transfers-stocktakes.md), [design](./superpowers/specs/2026-11-19-stock-design.md)). Valuation moves to M20.
 
@@ -220,7 +220,7 @@ Core and frontend foundations built once Sales opened:
 - [ADR-0038](./adr/0038-data-engine-over-sqlc.md): Data engine over sqlc: dynamic parts compiled from code-declared fragments, no ORM
 - [ADR-0039](./adr/0039-shared-master-data.md): Shared master data: partners, items and tax in `shared/`, with their own namespace
 
-**Next:** M19 Stock, then M20 Stock valuation. M10 and the production-readiness gate stay on hold.
+**Next:** M20 Stock valuation. M10 and the production-readiness gate stay on hold.
 
 ## M10. On-premise operations
 
