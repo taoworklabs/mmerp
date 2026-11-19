@@ -42,7 +42,14 @@ SELECT l.position, l.item_id, l.item_code, l.description, l.unit, l.stocked, l.q
            JOIN purchase.goods_receipts r ON r.id = rl.receipt_id
            JOIN record.documents d ON d.id = r.id
            WHERE r.order_id = l.order_id AND rl.order_position = l.position AND d.status = 'posted'
-       ), 0)::text AS received
+       ), 0)::text AS received,
+       coalesce((
+           SELECT sum(il.quantity)
+           FROM purchase.invoice_lines il
+           JOIN purchase.invoices v ON v.id = il.invoice_id
+           JOIN record.documents d ON d.id = v.id
+           WHERE v.order_id = l.order_id AND il.order_position = l.position AND d.status = 'posted'
+       ), 0)::text AS invoiced
 FROM purchase.order_lines l
 WHERE l.order_id = $1 ORDER BY l.position;
 
@@ -65,7 +72,22 @@ SELECT o.id, d.number, d.status, d.date, d.org_unit_id, o.supplier_id, o.supplie
             ), 0) AS received
             FROM purchase.order_lines l
             WHERE l.order_id = o.id AND l.stocked
-        ) x)::text AS receipt_state
+        ) x)::text AS receipt_state,
+       -- Over all lines and posted invoices, by quantity: none, partial, full.
+       (SELECT CASE WHEN bool_and(x.invoiced >= x.quantity) THEN 'full'
+                    WHEN bool_and(x.invoiced = 0) THEN 'none'
+                    ELSE 'partial' END
+        FROM (
+            SELECT l.quantity, coalesce((
+                SELECT sum(il.quantity)
+                FROM purchase.invoice_lines il
+                JOIN purchase.invoices v ON v.id = il.invoice_id
+                JOIN record.documents vd ON vd.id = v.id
+                WHERE v.order_id = l.order_id AND il.order_position = l.position AND vd.status = 'posted'
+            ), 0) AS invoiced
+            FROM purchase.order_lines l
+            WHERE l.order_id = o.id
+        ) x)::text AS invoice_state
 FROM purchase.orders o
 JOIN record.documents d ON d.id = o.id
 JOIN iam.org_units u ON u.id = d.org_unit_id;

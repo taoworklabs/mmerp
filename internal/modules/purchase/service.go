@@ -38,6 +38,7 @@ func NewService(d Deps) *Service {
 		HasData: func(ctx context.Context) (bool, error) { return store.AnyCatalog.Run(ctx) }})
 	s.registerOrder()
 	s.registerGoodsReceipt()
+	s.registerInvoice()
 	return s
 }
 

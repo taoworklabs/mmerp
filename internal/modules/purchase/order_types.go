@@ -48,6 +48,8 @@ type Line struct {
 	Vat      int64 `json:"vat"`
 	// Posted orders' stock lines: what posted goods receipts brought in.
 	Received *string `json:"received,omitempty"`
+	// Posted orders: what posted invoices billed.
+	Invoiced *string `json:"invoiced,omitempty"`
 }
 
 // DocRef names another document.
@@ -81,7 +83,10 @@ type Order struct {
 	// Posted orders: how far posted goods receipts went over the stock lines, and the receipts not cancelled.
 	ReceiptState  string   `json:"receipt_state,omitempty" enum:"none,partial,full,not_applicable"`
 	GoodsReceipts []DocRef `json:"goods_receipts,omitempty"`
-	// edit, delete, submit, withdraw, cancel, print, create_goods_receipt.
+	// Posted orders: how far posted invoices went over all lines, by quantity, and the invoices not cancelled.
+	InvoiceState string   `json:"invoice_state,omitempty" enum:"none,partial,full"`
+	Invoices     []DocRef `json:"invoices,omitempty"`
+	// edit, delete, submit, withdraw, cancel, print, create_goods_receipt, create_invoice.
 	AllowedActions []string `json:"allowed_actions" nullable:"false"`
 }
 
@@ -90,6 +95,7 @@ type OrderFilter struct {
 	Status     string `query:"status" enum:"draft,pending_approval,posted,cancelled"`
 	SupplierID int64  `query:"supplier_id"`
 	ReceiptState string `query:"receipt_state" enum:"none,partial,full,not_applicable"`
+	InvoiceState string `query:"invoice_state" enum:"none,partial,full"`
 	Sort       string `query:"sort" enum:"date,-date,number,-number,total,-total" default:"-date"`
 	platform.Paging
 }
@@ -105,6 +111,7 @@ type OrderListItem struct {
 	OrgUnitName  string `json:"org_unit_name"`
 	Total        int64  `json:"total"`
 	ReceiptState string `json:"receipt_state" enum:"none,partial,full,not_applicable"`
+	InvoiceState string `json:"invoice_state" enum:"none,partial,full"`
 }
 
 type OrderList struct {

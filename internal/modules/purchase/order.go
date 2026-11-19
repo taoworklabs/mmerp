@@ -49,7 +49,7 @@ func (s *Service) Orders(ctx context.Context, f OrderFilter) (OrderList, error) 
 	for _, r := range page.Items {
 		out.Items = append(out.Items, OrderListItem{ID: r.ID, Number: r.Number, Status: r.Status, Date: *platform.DatePtr(r.Date),
 			SupplierID: r.SupplierID, SupplierCode: r.SupplierCode, SupplierName: r.SupplierName, OrgUnitName: r.OrgUnitName, Total: r.Total,
-			ReceiptState: r.ReceiptState})
+			ReceiptState: r.ReceiptState, InvoiceState: r.InvoiceState})
 	}
 	return out, nil
 }
@@ -92,6 +92,11 @@ func (s *Service) Order(ctx context.Context, id int64) (Order, error) {
 		} else if ok {
 			extra = append(extra, "create_goods_receipt")
 		}
+		if ok, err := s.canInvoice(ctx, id, h.OrgUnitID); err != nil {
+			return Order{}, err
+		} else if ok {
+			extra = append(extra, "create_invoice")
+		}
 	}
 	out.AllowedActions, err = s.d.Record.Actions(ctx, d, extra...)
 	return out, err
@@ -113,8 +118,10 @@ func (s *Service) orderProgress(ctx context.Context, out *Order, lines []store.G
 		return platform.ErrNotFound
 	}
 	row := page.Items[0]
-	out.ReceiptState = row.ReceiptState
+	out.ReceiptState, out.InvoiceState = row.ReceiptState, row.InvoiceState
 	for i, l := range lines {
+		invoiced := platform.PlainDecimal(l.Invoiced)
+		out.Lines[i].Invoiced = &invoiced
 		if l.Stocked {
 			received := platform.PlainDecimal(l.Received)
 			out.Lines[i].Received = &received
@@ -127,7 +134,27 @@ func (s *Service) orderProgress(ctx context.Context, out *Order, lines []store.G
 	for _, r := range rs {
 		out.GoodsReceipts = append(out.GoodsReceipts, DocRef{ID: r.ID, Number: r.Number, Status: r.Status})
 	}
+	vs, err := store.OrderInvoices.Run(ctx, out.ID)
+	if err != nil {
+		return err
+	}
+	for _, v := range vs {
+		out.Invoices = append(out.Invoices, DocRef{ID: v.ID, Number: v.Number, Status: v.Status})
+	}
 	return nil
+}
+
+// canInvoice: the actor may write orders at the unit and a line still has something no
+// invoice, draft or posted, has taken.
+func (s *Service) canInvoice(ctx context.Context, order, unit int64) (bool, error) {
+	if ok, err := s.canWriteOrders(ctx, unit); err != nil || !ok {
+		return false, err
+	}
+	rows, err := store.InvoiceableLines.Run(ctx, store.InvoiceableLinesParams{OrderID: order})
+	if err != nil {
+		return false, err
+	}
+	return anyRemaining(rows, func(r store.InvoiceableLinesRow) (bool, string, string) { return true, r.Quantity, r.Taken })
 }
 
 // canReceive: the actor may write orders at the unit and a stock line still has something no
@@ -313,7 +340,10 @@ func (s *Service) writeOrderLines(ctx context.Context, id int64, p preparedOrder
 // or invoices from being cancelled.
 func (s *Service) orderTransition(ctx context.Context, d record.Doc, _ record.Status) error {
 	if d.Status == record.Cancelled {
-		return refuseIfLive(ctx, d.ID, store.LiveReceiptOfOrder.Run, ErrOrderHasReceipt)
+		if err := refuseIfLive(ctx, d.ID, store.LiveReceiptOfOrder.Run, ErrOrderHasReceipt); err != nil {
+			return err
+		}
+		return refuseIfLive(ctx, d.ID, store.LiveInvoiceOfOrder.Run, ErrOrderHasInvoice)
 	}
 	if d.Status != record.Posted {
 		return nil

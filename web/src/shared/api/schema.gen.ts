@@ -1867,6 +1867,39 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/purchase/invoices": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["list-purchase-invoices"];
+        put?: never;
+        /** @description Sending the same request_id again returns the invoice created the first time. */
+        post: operations["create-purchase-invoice"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/purchase/invoices/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["get-purchase-invoice"];
+        put: operations["update-purchase-invoice"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/purchase/line-items": {
         parameters: {
             query?: never;
@@ -1925,6 +1958,22 @@ export interface paths {
         };
         get: operations["get-purchase-order"];
         put: operations["update-purchase-order"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/purchase/orders/{id}/invoice-options": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["get-purchase-invoice-options"];
+        put?: never;
         post?: never;
         delete?: never;
         options?: never;
@@ -5891,6 +5940,151 @@ export interface components {
             /** Format: int64 */
             warehouse_id: number;
         };
+        PurchaseInvoice: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example /api/schemas/PurchaseInvoice.json
+             */
+            readonly $schema?: string;
+            allowed_actions: string[];
+            /** Format: date */
+            date: string;
+            /** Format: int64 */
+            id: number;
+            lines: components["schemas"]["PurchaseInvoiceLine"][];
+            note: string | null;
+            number: string;
+            /** Format: int64 */
+            order_id: number;
+            order_number: string;
+            /** Format: int64 */
+            org_unit_id: number;
+            org_unit_name: string;
+            /** @enum {string} */
+            status: "draft" | "pending_approval" | "posted" | "cancelled";
+            supplier: components["schemas"]["PurchaseSupplierCopy"];
+            /** Format: date */
+            supplier_invoice_date: string | null;
+            supplier_invoice_no: string | null;
+            supplier_invoice_symbol: string | null;
+            totals: components["schemas"]["PurchaseTotals"];
+            /** Format: int32 */
+            version: number;
+        };
+        PurchaseInvoiceLine: {
+            /** Format: int64 */
+            amount: number;
+            description: string;
+            /** Format: int64 */
+            discount: number;
+            /** @description 0 to 100, up to 2 decimals */
+            discount_percent: string;
+            item_code: string;
+            /** Format: int64 */
+            item_id: number;
+            /** Format: int64 */
+            order_position: number;
+            /** @description More than 0, up to 3 decimals */
+            quantity: string;
+            stocked: boolean;
+            unit: string;
+            /** Format: int64 */
+            unit_price: number;
+            /** Format: int64 */
+            vat: number;
+            /** @enum {string} */
+            vat_rate: "none" | "0" | "5" | "8" | "10";
+        };
+        PurchaseInvoiceLineInput: {
+            /** @description 0 to 100, up to 2 decimals */
+            discount_percent: string;
+            /** Format: int64 */
+            order_position: number;
+            /** @description More than 0, up to 3 decimals */
+            quantity: string;
+            /** Format: int64 */
+            unit_price: number;
+            /** @enum {string} */
+            vat_rate: "none" | "0" | "5" | "8" | "10";
+        };
+        PurchaseInvoiceList: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example /api/schemas/PurchaseInvoiceList.json
+             */
+            readonly $schema?: string;
+            items: components["schemas"]["PurchaseInvoiceListItem"][];
+            /** Format: int64 */
+            total: number;
+        };
+        PurchaseInvoiceListItem: {
+            /** Format: date */
+            date: string;
+            /** Format: int64 */
+            id: number;
+            number: string;
+            /** Format: int64 */
+            order_id: number;
+            order_number: string;
+            org_unit_name: string;
+            /** @enum {string} */
+            payment_state?: "unpaid" | "partial" | "paid";
+            /** @enum {string} */
+            status: "draft" | "pending_approval" | "posted" | "cancelled";
+            /** Format: int64 */
+            supplier_id: number;
+            supplier_invoice_no: string | null;
+            supplier_invoice_symbol: string | null;
+            supplier_name: string;
+            /** Format: int64 */
+            total: number;
+        };
+        PurchaseInvoiceOptionLine: {
+            description: string;
+            discount_percent: string;
+            item_code: string;
+            /** Format: int64 */
+            item_id: number;
+            /** Format: int64 */
+            order_position: number;
+            ordered: string;
+            remaining: string;
+            unit: string;
+            /** Format: int64 */
+            unit_price: number;
+            /** @enum {string} */
+            vat_rate: "none" | "0" | "5" | "8" | "10";
+        };
+        PurchaseInvoiceOptions: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example /api/schemas/PurchaseInvoiceOptions.json
+             */
+            readonly $schema?: string;
+            lines: components["schemas"]["PurchaseInvoiceOptionLine"][];
+        };
+        PurchaseInvoiceUpdate: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example /api/schemas/PurchaseInvoiceUpdate.json
+             */
+            readonly $schema?: string;
+            /** Format: date */
+            date: string;
+            lines: components["schemas"]["PurchaseInvoiceLineInput"][];
+            note: string | null;
+            /** Format: date */
+            supplier_invoice_date: string | null;
+            supplier_invoice_no: string | null;
+            /** @description Ký hiệu hoá đơn, e.g. 1C26TAA */
+            supplier_invoice_symbol: string | null;
+            /** Format: int32 */
+            version: number;
+        };
         PurchaseLine: {
             /**
              * Format: int64
@@ -5902,6 +6096,7 @@ export interface components {
             discount: number;
             /** @description 0 to 100, up to 2 decimals */
             discount_percent: string;
+            invoiced?: string;
             item_code: string;
             /** Format: int64 */
             item_id: number;
@@ -5973,6 +6168,30 @@ export interface components {
             /** Format: int64 */
             warehouse_id: number;
         };
+        PurchaseNewInvoice: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example /api/schemas/PurchaseNewInvoice.json
+             */
+            readonly $schema?: string;
+            /** Format: date */
+            date: string;
+            lines: components["schemas"]["PurchaseInvoiceLineInput"][];
+            note: string | null;
+            /** Format: int64 */
+            order_id: number;
+            /**
+             * Format: uuid
+             * @description Generated once per form: sending it again returns the first invoice
+             */
+            request_id: string;
+            /** Format: date */
+            supplier_invoice_date: string | null;
+            supplier_invoice_no: string | null;
+            /** @description Ký hiệu hoá đơn, e.g. 1C26TAA */
+            supplier_invoice_symbol: string | null;
+        };
         PurchaseNewOrder: {
             /**
              * Format: uri
@@ -6042,6 +6261,9 @@ export interface components {
             goods_receipts?: components["schemas"]["PurchaseDocRef"][] | null;
             /** Format: int64 */
             id: number;
+            /** @enum {string} */
+            invoice_state?: "none" | "partial" | "full";
+            invoices?: components["schemas"]["PurchaseDocRef"][] | null;
             lines: components["schemas"]["PurchaseLine"][];
             note: string | null;
             number: string;
@@ -6079,6 +6301,8 @@ export interface components {
             date: string;
             /** Format: int64 */
             id: number;
+            /** @enum {string} */
+            invoice_state: "none" | "partial" | "full";
             number: string;
             org_unit_name: string;
             /** @enum {string} */
@@ -6240,6 +6464,16 @@ export interface components {
             partner?: components["schemas"]["PartnerFields"];
             /** @description Prefilled on new purchase orders */
             payment_terms: string | null;
+        };
+        PurchaseTotals: {
+            /** Format: int64 */
+            discount_total: number;
+            /** Format: int64 */
+            subtotal: number;
+            /** Format: int64 */
+            total: number;
+            /** Format: int64 */
+            vat_total: number;
         };
         PurchaseWarehouseOption: {
             code: string;
@@ -12065,6 +12299,142 @@ export interface operations {
             };
         };
     };
+    "list-purchase-invoices": {
+        parameters: {
+            query?: {
+                /** @description Number, order number, supplier name or the supplier's invoice symbol and number */
+                q?: string;
+                status?: "draft" | "pending_approval" | "posted" | "cancelled";
+                order_id?: number;
+                supplier_id?: number;
+                payment_state?: "unpaid" | "partial" | "paid";
+                sort?: "date" | "-date" | "number" | "-number" | "total" | "-total";
+                page?: number;
+                page_size?: 20 | 50 | 100;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PurchaseInvoiceList"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "create-purchase-invoice": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PurchaseNewInvoice"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CreatedOutputBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "get-purchase-invoice": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PurchaseInvoice"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "update-purchase-invoice": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PurchaseInvoiceUpdate"];
+            };
+        };
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
     "list-purchase-line-items": {
         parameters: {
             query?: {
@@ -12104,6 +12474,7 @@ export interface operations {
                 status?: "draft" | "pending_approval" | "posted" | "cancelled";
                 supplier_id?: number;
                 receipt_state?: "none" | "partial" | "full" | "not_applicable";
+                invoice_state?: "none" | "partial" | "full";
                 sort?: "date" | "-date" | "number" | "-number" | "total" | "-total";
                 page?: number;
                 page_size?: 20 | 50 | 100;
@@ -12248,6 +12619,37 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "get-purchase-invoice-options": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PurchaseInvoiceOptions"];
+                };
             };
             /** @description Error */
             default: {

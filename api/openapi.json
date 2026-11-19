@@ -9717,6 +9717,504 @@
         ],
         "type": "object"
       },
+      "PurchaseInvoice": {
+        "additionalProperties": false,
+        "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "/api/schemas/PurchaseInvoice.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
+          "allowed_actions": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "date": {
+            "format": "date",
+            "type": "string"
+          },
+          "id": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "lines": {
+            "items": {
+              "$ref": "#/components/schemas/PurchaseInvoiceLine"
+            },
+            "type": "array"
+          },
+          "note": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "number": {
+            "type": "string"
+          },
+          "order_id": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "order_number": {
+            "type": "string"
+          },
+          "org_unit_id": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "org_unit_name": {
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "draft",
+              "pending_approval",
+              "posted",
+              "cancelled"
+            ],
+            "type": "string"
+          },
+          "supplier": {
+            "$ref": "#/components/schemas/PurchaseSupplierCopy"
+          },
+          "supplier_invoice_date": {
+            "format": "date",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "supplier_invoice_no": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "supplier_invoice_symbol": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "totals": {
+            "$ref": "#/components/schemas/PurchaseTotals"
+          },
+          "version": {
+            "format": "int32",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "order_id",
+          "order_number",
+          "number",
+          "status",
+          "version",
+          "date",
+          "org_unit_id",
+          "org_unit_name",
+          "supplier",
+          "supplier_invoice_symbol",
+          "supplier_invoice_no",
+          "supplier_invoice_date",
+          "note",
+          "lines",
+          "totals",
+          "allowed_actions"
+        ],
+        "type": "object"
+      },
+      "PurchaseInvoiceLine": {
+        "additionalProperties": false,
+        "properties": {
+          "amount": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "description": {
+            "type": "string"
+          },
+          "discount": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "discount_percent": {
+            "description": "0 to 100, up to 2 decimals",
+            "pattern": "^[0-9]{1,3}(\\.[0-9]{1,2})?$",
+            "type": "string"
+          },
+          "item_code": {
+            "type": "string"
+          },
+          "item_id": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "order_position": {
+            "format": "int64",
+            "minimum": 1,
+            "type": "integer"
+          },
+          "quantity": {
+            "description": "More than 0, up to 3 decimals",
+            "pattern": "^[0-9]{1,12}(\\.[0-9]{1,3})?$",
+            "type": "string"
+          },
+          "stocked": {
+            "type": "boolean"
+          },
+          "unit": {
+            "type": "string"
+          },
+          "unit_price": {
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "vat": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "vat_rate": {
+            "enum": [
+              "none",
+              "0",
+              "5",
+              "8",
+              "10"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "item_id",
+          "item_code",
+          "description",
+          "unit",
+          "stocked",
+          "amount",
+          "discount",
+          "vat",
+          "order_position",
+          "quantity",
+          "unit_price",
+          "discount_percent",
+          "vat_rate"
+        ],
+        "type": "object"
+      },
+      "PurchaseInvoiceLineInput": {
+        "additionalProperties": false,
+        "properties": {
+          "discount_percent": {
+            "description": "0 to 100, up to 2 decimals",
+            "pattern": "^[0-9]{1,3}(\\.[0-9]{1,2})?$",
+            "type": "string"
+          },
+          "order_position": {
+            "format": "int64",
+            "minimum": 1,
+            "type": "integer"
+          },
+          "quantity": {
+            "description": "More than 0, up to 3 decimals",
+            "pattern": "^[0-9]{1,12}(\\.[0-9]{1,3})?$",
+            "type": "string"
+          },
+          "unit_price": {
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "vat_rate": {
+            "enum": [
+              "none",
+              "0",
+              "5",
+              "8",
+              "10"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "order_position",
+          "quantity",
+          "unit_price",
+          "discount_percent",
+          "vat_rate"
+        ],
+        "type": "object"
+      },
+      "PurchaseInvoiceList": {
+        "additionalProperties": false,
+        "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "/api/schemas/PurchaseInvoiceList.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/PurchaseInvoiceListItem"
+            },
+            "type": "array"
+          },
+          "total": {
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "items",
+          "total"
+        ],
+        "type": "object"
+      },
+      "PurchaseInvoiceListItem": {
+        "additionalProperties": false,
+        "properties": {
+          "date": {
+            "format": "date",
+            "type": "string"
+          },
+          "id": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "number": {
+            "type": "string"
+          },
+          "order_id": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "order_number": {
+            "type": "string"
+          },
+          "org_unit_name": {
+            "type": "string"
+          },
+          "payment_state": {
+            "enum": [
+              "unpaid",
+              "partial",
+              "paid"
+            ],
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "draft",
+              "pending_approval",
+              "posted",
+              "cancelled"
+            ],
+            "type": "string"
+          },
+          "supplier_id": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "supplier_invoice_no": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "supplier_invoice_symbol": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "supplier_name": {
+            "type": "string"
+          },
+          "total": {
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "number",
+          "status",
+          "date",
+          "order_id",
+          "order_number",
+          "supplier_id",
+          "supplier_name",
+          "supplier_invoice_symbol",
+          "supplier_invoice_no",
+          "total",
+          "org_unit_name"
+        ],
+        "type": "object"
+      },
+      "PurchaseInvoiceOptionLine": {
+        "additionalProperties": false,
+        "properties": {
+          "description": {
+            "type": "string"
+          },
+          "discount_percent": {
+            "type": "string"
+          },
+          "item_code": {
+            "type": "string"
+          },
+          "item_id": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "order_position": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "ordered": {
+            "type": "string"
+          },
+          "remaining": {
+            "type": "string"
+          },
+          "unit": {
+            "type": "string"
+          },
+          "unit_price": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "vat_rate": {
+            "enum": [
+              "none",
+              "0",
+              "5",
+              "8",
+              "10"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "order_position",
+          "item_id",
+          "item_code",
+          "description",
+          "unit",
+          "unit_price",
+          "discount_percent",
+          "vat_rate",
+          "ordered",
+          "remaining"
+        ],
+        "type": "object"
+      },
+      "PurchaseInvoiceOptions": {
+        "additionalProperties": false,
+        "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "/api/schemas/PurchaseInvoiceOptions.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
+          "lines": {
+            "items": {
+              "$ref": "#/components/schemas/PurchaseInvoiceOptionLine"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "lines"
+        ],
+        "type": "object"
+      },
+      "PurchaseInvoiceUpdate": {
+        "additionalProperties": false,
+        "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "/api/schemas/PurchaseInvoiceUpdate.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
+          "date": {
+            "format": "date",
+            "type": "string"
+          },
+          "lines": {
+            "items": {
+              "$ref": "#/components/schemas/PurchaseInvoiceLineInput"
+            },
+            "maxItems": 500,
+            "minItems": 1,
+            "type": "array"
+          },
+          "note": {
+            "maxLength": 2000,
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "supplier_invoice_date": {
+            "format": "date",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "supplier_invoice_no": {
+            "maxLength": 20,
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "supplier_invoice_symbol": {
+            "description": "Ký hiệu hoá đơn, e.g. 1C26TAA",
+            "maxLength": 20,
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "version": {
+            "format": "int32",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "version",
+          "date",
+          "supplier_invoice_symbol",
+          "supplier_invoice_no",
+          "supplier_invoice_date",
+          "note",
+          "lines"
+        ],
+        "type": "object"
+      },
       "PurchaseLine": {
         "additionalProperties": false,
         "properties": {
@@ -9737,6 +10235,9 @@
           "discount_percent": {
             "description": "0 to 100, up to 2 decimals",
             "pattern": "^[0-9]{1,3}(\\.[0-9]{1,2})?$",
+            "type": "string"
+          },
+          "invoiced": {
             "type": "string"
           },
           "item_code": {
@@ -9974,6 +10475,81 @@
         ],
         "type": "object"
       },
+      "PurchaseNewInvoice": {
+        "additionalProperties": false,
+        "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "/api/schemas/PurchaseNewInvoice.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
+          "date": {
+            "format": "date",
+            "type": "string"
+          },
+          "lines": {
+            "items": {
+              "$ref": "#/components/schemas/PurchaseInvoiceLineInput"
+            },
+            "maxItems": 500,
+            "minItems": 1,
+            "type": "array"
+          },
+          "note": {
+            "maxLength": 2000,
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "order_id": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "request_id": {
+            "description": "Generated once per form: sending it again returns the first invoice",
+            "format": "uuid",
+            "type": "string"
+          },
+          "supplier_invoice_date": {
+            "format": "date",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "supplier_invoice_no": {
+            "maxLength": 20,
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "supplier_invoice_symbol": {
+            "description": "Ký hiệu hoá đơn, e.g. 1C26TAA",
+            "maxLength": 20,
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "request_id",
+          "order_id",
+          "date",
+          "supplier_invoice_symbol",
+          "supplier_invoice_no",
+          "supplier_invoice_date",
+          "note",
+          "lines"
+        ],
+        "type": "object"
+      },
       "PurchaseNewOrder": {
         "additionalProperties": false,
         "properties": {
@@ -10142,6 +10718,23 @@
             "format": "int64",
             "type": "integer"
           },
+          "invoice_state": {
+            "enum": [
+              "none",
+              "partial",
+              "full"
+            ],
+            "type": "string"
+          },
+          "invoices": {
+            "items": {
+              "$ref": "#/components/schemas/PurchaseDocRef"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          },
           "lines": {
             "items": {
               "$ref": "#/components/schemas/PurchaseLine"
@@ -10269,6 +10862,14 @@
             "format": "int64",
             "type": "integer"
           },
+          "invoice_state": {
+            "enum": [
+              "none",
+              "partial",
+              "full"
+            ],
+            "type": "string"
+          },
           "number": {
             "type": "string"
           },
@@ -10318,7 +10919,8 @@
           "supplier_name",
           "org_unit_name",
           "total",
-          "receipt_state"
+          "receipt_state",
+          "invoice_state"
         ],
         "type": "object"
       },
@@ -10795,6 +11397,34 @@
           "payment_terms",
           "org_unit_id",
           "active"
+        ],
+        "type": "object"
+      },
+      "PurchaseTotals": {
+        "additionalProperties": false,
+        "properties": {
+          "discount_total": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "subtotal": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "total": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "vat_total": {
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "subtotal",
+          "discount_total",
+          "vat_total",
+          "total"
         ],
         "type": "object"
       },
@@ -20843,6 +21473,264 @@
         ]
       }
     },
+    "/purchase/invoices": {
+      "get": {
+        "operationId": "list-purchase-invoices",
+        "parameters": [
+          {
+            "description": "Number, order number, supplier name or the supplier's invoice symbol and number",
+            "explode": false,
+            "in": "query",
+            "name": "q",
+            "schema": {
+              "description": "Number, order number, supplier name or the supplier's invoice symbol and number",
+              "maxLength": 100,
+              "type": "string"
+            }
+          },
+          {
+            "explode": false,
+            "in": "query",
+            "name": "status",
+            "schema": {
+              "enum": [
+                "draft",
+                "pending_approval",
+                "posted",
+                "cancelled"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "explode": false,
+            "in": "query",
+            "name": "order_id",
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          },
+          {
+            "explode": false,
+            "in": "query",
+            "name": "supplier_id",
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          },
+          {
+            "explode": false,
+            "in": "query",
+            "name": "payment_state",
+            "schema": {
+              "enum": [
+                "unpaid",
+                "partial",
+                "paid"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "explode": false,
+            "in": "query",
+            "name": "sort",
+            "schema": {
+              "default": "-date",
+              "enum": [
+                "date",
+                "-date",
+                "number",
+                "-number",
+                "total",
+                "-total"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "explode": false,
+            "in": "query",
+            "name": "page",
+            "schema": {
+              "default": 1,
+              "format": "int64",
+              "maximum": 100000,
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "explode": false,
+            "in": "query",
+            "name": "page_size",
+            "schema": {
+              "default": 50,
+              "enum": [
+                20,
+                50,
+                100
+              ],
+              "format": "int64",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PurchaseInvoiceList"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "tags": [
+          "purchase",
+          "purchase"
+        ]
+      },
+      "post": {
+        "description": "Sending the same request_id again returns the invoice created the first time.",
+        "operationId": "create-purchase-invoice",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PurchaseNewInvoice"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreatedOutputBody"
+                }
+              }
+            },
+            "description": "Created"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "tags": [
+          "purchase",
+          "purchase"
+        ]
+      }
+    },
+    "/purchase/invoices/{id}": {
+      "get": {
+        "operationId": "get-purchase-invoice",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PurchaseInvoice"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "tags": [
+          "purchase",
+          "purchase"
+        ]
+      },
+      "put": {
+        "operationId": "update-purchase-invoice",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PurchaseInvoiceUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "tags": [
+          "purchase",
+          "purchase"
+        ]
+      }
+    },
     "/purchase/line-items": {
       "get": {
         "operationId": "list-purchase-line-items",
@@ -20933,6 +21821,19 @@
                 "partial",
                 "full",
                 "not_applicable"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "explode": false,
+            "in": "query",
+            "name": "invoice_state",
+            "schema": {
+              "enum": [
+                "none",
+                "partial",
+                "full"
               ],
               "type": "string"
             }
@@ -21148,6 +22049,48 @@
         "responses": {
           "204": {
             "description": "No Content"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "tags": [
+          "purchase",
+          "purchase"
+        ]
+      }
+    },
+    "/purchase/orders/{id}/invoice-options": {
+      "get": {
+        "operationId": "get-purchase-invoice-options",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PurchaseInvoiceOptions"
+                }
+              }
+            },
+            "description": "OK"
           },
           "default": {
             "content": {
