@@ -10,5 +10,9 @@
   "stock.preview.reason": "Reason",
   "stock.preview.date": "Date",
   "stock.preview.lines": "Lines",
-  "stock.adjustment.name": "Stock adjustment"
+  "stock.adjustment.name": "Stock adjustment",
+  "stock.nav.transfers": "Transfers",
+  "stock.transfer.name": "Stock transfer",
+  "stock.preview.from_warehouse": "From warehouse",
+  "stock.preview.to_warehouse": "To warehouse"
 }

@@ -10,5 +10,9 @@
   "stock.preview.reason": "Lý do",
   "stock.preview.date": "Ngày",
   "stock.preview.lines": "Số dòng hàng",
-  "stock.adjustment.name": "Phiếu điều chỉnh kho"
+  "stock.adjustment.name": "Phiếu điều chỉnh kho",
+  "stock.nav.transfers": "Phiếu chuyển kho",
+  "stock.transfer.name": "Phiếu chuyển kho",
+  "stock.preview.from_warehouse": "Kho xuất",
+  "stock.preview.to_warehouse": "Kho nhập"
 }

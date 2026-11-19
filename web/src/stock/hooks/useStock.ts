@@ -28,3 +28,17 @@ export function useAdjustment(id: number) {
     queryFn: () => unwrap(api.GET('/stock/adjustments/{id}', { params: { path: { id } } })),
   })
 }
+
+export function useTransferActions() {
+  return useQuery({
+    queryKey: stockKeys.transfers.actions(),
+    queryFn: async () => (await unwrap(api.GET('/stock/transfers/actions'))).allowed_actions,
+  })
+}
+
+export function useTransfer(id: number) {
+  return useQuery({
+    queryKey: stockKeys.transfers.detail(id),
+    queryFn: () => unwrap(api.GET('/stock/transfers/{id}', { params: { path: { id } } })),
+  })
+}

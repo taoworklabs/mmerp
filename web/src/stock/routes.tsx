@@ -5,8 +5,11 @@ import { AdjustmentPage } from './pages/AdjustmentPage'
 import { AdjustmentsPage } from './pages/AdjustmentsPage'
 import { ItemsPage } from './pages/ItemsPage'
 import { NewAdjustmentPage } from './pages/NewAdjustmentPage'
+import { NewTransferPage } from './pages/NewTransferPage'
 import { OnHandPage } from './pages/OnHandPage'
 import { StockCardPage } from './pages/StockCardPage'
+import { TransferPage } from './pages/TransferPage'
+import { TransfersPage } from './pages/TransfersPage'
 import { WarehousesPage } from './pages/WarehousesPage'
 
 export default function StockRoutes() {
@@ -22,6 +25,9 @@ export default function StockRoutes() {
       {/* Without create in the type's actions the new page itself answers forbidden. */}
       <Route path="adjustments/new" element={canStock ? <NewAdjustmentPage /> : <ForbiddenPage />} />
       <Route path="adjustments/:id" element={canStock ? <AdjustmentPage /> : <ForbiddenPage />} />
+      <Route path="transfers" element={canStock ? <TransfersPage /> : <ForbiddenPage />} />
+      <Route path="transfers/new" element={canStock ? <NewTransferPage /> : <ForbiddenPage />} />
+      <Route path="transfers/:id" element={canStock ? <TransferPage /> : <ForbiddenPage />} />
       <Route path="warehouses" element={canStock ? <WarehousesPage /> : <ForbiddenPage />} />
       <Route path="*" element={<NotFoundPage />} />
     </Routes>
