@@ -8,7 +8,7 @@ mmerp is closing its core ERP loops one at a time; M17 closes order to cash. Tod
 
 ## Goals
 
-- **Sales invoice** (`sales.invoice`, document `HD`, vi: "Hoá đơn bán hàng"), made from a confirmed order; several per order, by quantity, independent of delivery.
+- **Sales invoice** (`sales.invoice`, document `HB`, vi: "Hoá đơn bán hàng"), made from a confirmed order; several per order, by quantity, independent of delivery.
 - **Customer receipt** (`sales.receipt`, document `PT`, vi: "Phiếu thu"): money from one customer, cash or bank transfer, allocated to named posted invoices of that customer.
 - Derived progress: invoiced quantities and invoice state on orders; paid amount and payment state on invoices and orders.
 - Business lines from Sales, mapped by accounting like payroll's.

@@ -117,7 +117,7 @@ test('the order is invoiced in two parts; a third invoice beyond what is left is
   await page.getByRole('textbox', { name: 'Số lượng (1)' }).fill('4')
   await page.getByRole('textbox', { name: 'Số lượng (2)' }).fill('1')
   await page.getByRole('button', { name: 'Tạo bản nháp' }).click()
-  const heading = page.getByRole('heading', { name: /^HD-\d{4}-/ })
+  const heading = page.getByRole('heading', { name: /^HB-\d{4}-/ })
   await expect(heading).toBeVisible()
   await page.getByRole('button', { name: 'Gửi duyệt' }).click()
   await status(page, 'Đã ghi sổ')

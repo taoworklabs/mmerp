@@ -97,6 +97,12 @@ func (s *Service) Register(t Type) {
 	if t.Kind == Document && t.NumberPrefix == "" {
 		panic("record: document type " + t.Code + " has no number prefix")
 	}
+	// Each type counts its own numbers, so a shared prefix would print the same number twice.
+	for _, o := range s.types {
+		if t.NumberPrefix != "" && o.NumberPrefix == t.NumberPrefix {
+			panic("record: document type " + t.Code + " shares number prefix " + t.NumberPrefix + " with " + o.Code)
+		}
+	}
 	s.checkDeclaration(t)
 	s.types[t.Code] = t
 }

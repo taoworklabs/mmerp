@@ -311,12 +311,12 @@ func TestPrintInvoiceAndReceipt(t *testing.T) {
 
 	invParams, rcParams := fmt.Sprintf(`{"id":%d}`, inv), fmt.Sprintf(`{"id":%d}`, rc)
 	invoice, receipt := f.printed(f.staffA, "sales.invoice", invParams), f.printed(f.staffA, "sales.receipt", rcParams)
-	for _, want := range []string{"HOÁ ĐƠN BÁN HÀNG", "HD-" + year + "-00001", "DH-" + year + "-00001", "Công ty Ánh Dương", "Bút bi xanh", "123.182", "Công ty TNHH C"} {
+	for _, want := range []string{"HOÁ ĐƠN BÁN HÀNG", "HB-" + year + "-00001", "DH-" + year + "-00001", "Công ty Ánh Dương", "Bút bi xanh", "123.182", "Công ty TNHH C"} {
 		if !strings.Contains(invoice[0], want) {
 			t.Errorf("no %q in invoice %q", want, invoice[0])
 		}
 	}
-	for _, want := range []string{"PHIẾU THU", "PT-" + year + "-00001", "Công ty Ánh Dương", "Chuyển khoản", "100.000", "HD-" + year + "-00001"} {
+	for _, want := range []string{"PHIẾU THU", "PT-" + year + "-00001", "Công ty Ánh Dương", "Chuyển khoản", "100.000", "HB-" + year + "-00001"} {
 		if !strings.Contains(receipt[0], want) {
 			t.Errorf("no %q in receipt %q", want, receipt[0])
 		}
@@ -369,7 +369,7 @@ func TestInvoiceAndReceiptProductOff(t *testing.T) {
 	f.work(nil)
 	invParams, rcParams := fmt.Sprintf(`{"id":%d}`, inv), fmt.Sprintf(`{"id":%d}`, rc)
 	for _, c := range []struct{ path, template, params, number string }{
-		{fmt.Sprintf("/api/sales/invoices/%d", inv), "sales.invoice", invParams, "HD-" + year + "-00001"},
+		{fmt.Sprintf("/api/sales/invoices/%d", inv), "sales.invoice", invParams, "HB-" + year + "-00001"},
 		{fmt.Sprintf("/api/sales/receipts/%d", rc), "sales.receipt", rcParams, "PT-" + year + "-00001"},
 	} {
 		var d struct {

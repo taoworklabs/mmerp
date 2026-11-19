@@ -19,7 +19,7 @@ const invoiceType = "sales.invoice"
 // An invoice is as open as its order: same org unit, same permissions.
 func (s *Service) registerInvoice() {
 	s.d.Record.Register(record.Type{
-		Code: invoiceType, Product: "sales", Kind: record.Document, NumberPrefix: "HD",
+		Code: invoiceType, Product: "sales", Kind: record.Document, NumberPrefix: "HB",
 		Perms:        record.Perms{View: PermOrderView, Edit: PermOrderEdit, ViewFiles: PermOrderView, Attach: PermOrderEdit},
 		OnTransition: s.invoiceTransition,
 		OnDelete:     func(ctx context.Context, id int64) error { return store.DeleteInvoice.Run(ctx, id) },

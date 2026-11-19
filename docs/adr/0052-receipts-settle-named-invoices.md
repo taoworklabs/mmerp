@@ -8,12 +8,13 @@ A confirmed order can be delivered ([ADR-0049](./0049-shared-stock-ledger-and-sa
 
 ## Decision
 
-- **Sales invoice** (`sales.invoice`, document `HD`): made from a confirmed order, several per order, by quantity, whatever has been delivered. Prices, discounts and VAT rates are the order line's. `posted` means billed; the invoice date is the revenue date.
+- **Sales invoice** (`sales.invoice`, document `HB`): made from a confirmed order, several per order, by quantity, whatever has been delivered. Prices, discounts and VAT rates are the order line's. `posted` means billed; the invoice date is the revenue date.
 - **Customer receipt** (`sales.receipt`, document `PT`): money from one customer, method `cash` or `bank`, **allocated** to posted invoices of the same customer and the same org unit as the receipt. Its amount is the sum of its allocations: there is no unallocated money. An allocation never exceeds what other non-cancelled receipts leave of the invoice.
 - **Paid is derived**: an invoice's paid amount sums the allocations of posted receipts; its payment state is `unpaid`, `partial` or `paid`. An order is `paid` once fully invoiced and every invoice is paid. Drafts hold quantities and amounts back, as draft deliveries do.
 - **Cancelling runs backwards**: an invoice with a non-cancelled receipt cannot be cancelled, nor an order with a non-cancelled invoice.
 - **Business lines**: Sales declares `sales_receivable` (names the customer's partner), `sales_revenue`, `sales_output_vat`, `sales_cash_receipt`, `sales_bank_receipt`. Amounts are positive; the accountant's rules give accounts and sides (in the sample chart: 131 debit, 511 credit, 3331 credit, 111 and 112 debit). A receipt writes the receivable negative. Lines carry the document's org unit.
 - Both documents reuse the order's permissions, like deliveries, and declare the `amount` approval field.
+- The invoice prefix is `HB` (hoá đơn bán): `HD` already numbers employment contracts. Registering a document type whose prefix another type uses is refused at startup, since each type counts its own numbers.
 
 ## Rejected alternatives
 
