@@ -111,7 +111,7 @@ func (s *Service) RecordCounts(ctx context.Context, ref record.Ref, warehouse in
 		if c.Quantity.IsNegative() || !c.Quantity.Equal(c.Quantity.Truncate(3)) || c.Quantity.GreaterThanOrEqual(maxQuantity) {
 			return nil, lineErr(ErrQuantityInvalid, m)
 		}
-		if c.Serial != nil && c.Quantity.GreaterThan(m.Quantity) {
+		if c.Serial != nil && !c.Quantity.IsZero() && !c.Quantity.Equal(m.Quantity) {
 			return nil, lineErr(ErrSerialQuantity, m)
 		}
 		if c.Quantity.IsZero() {
@@ -127,10 +127,21 @@ func (s *Service) RecordCounts(ctx context.Context, ref record.Ref, warehouse in
 	if err != nil {
 		return nil, err
 	}
+	// One count per key, codes compared as the unique indexes do: a second would move on hand again.
+	type countKey struct {
+		item int64
+		code string
+	}
+	seen := map[countKey]bool{}
 	for _, m := range probes {
 		if err := check(m, whs, items, h.LegalEntityID); err != nil {
 			return nil, err
 		}
+		k := countKey{m.ItemID, trackCode(m)}
+		if seen[k] {
+			return nil, lineErr(ErrCountDuplicate, m)
+		}
+		seen[k] = true
 	}
 	keyOf := make([]key, len(counts))
 	known := make([]bool, len(counts))

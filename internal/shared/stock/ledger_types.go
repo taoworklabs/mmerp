@@ -26,6 +26,8 @@ var (
 	ErrSerialNotFound = &platform.Error{Status: http.StatusUnprocessableEntity, Code: "stock_serial_not_found"}
 	// ErrQuantityInvalid: zero, more than three decimals, or too large for a balance.
 	ErrQuantityInvalid = &platform.Error{Status: http.StatusUnprocessableEntity, Code: "stock_quantity_invalid"}
+	// ErrCountDuplicate: two counts of one item, lot or serial; params name the second line.
+	ErrCountDuplicate = &platform.Error{Status: http.StatusUnprocessableEntity, Code: "stock_count_duplicate"}
 )
 
 // Move is one document line's effect on stock: positive in, negative out.

@@ -4,6 +4,8 @@ import (
 	"context"
 	"testing"
 
+	"github.com/shopspring/decimal"
+
 	"github.com/taoworklabs/mmerp/internal/core/record"
 	"github.com/taoworklabs/mmerp/internal/platform"
 	"github.com/taoworklabs/mmerp/internal/shared/item"
@@ -114,4 +116,26 @@ func TestRecordCountsRefusesTwice(t *testing.T) {
 	}
 	_, err := l.count(ref, l.wh, stock.Count{LineNo: 1, ItemID: it, Quantity: qty(3)})
 	_ = wantCode(t, err, stock.ErrAlreadyRecorded)
+}
+
+func TestRecordCountsSerialFraction(t *testing.T) {
+	l := newLedger(t)
+	it := l.item(t, item.TrackSerial, false)
+	s := "S1"
+	_, err := l.count(l.doc(t, l.unit), l.wh, stock.Count{LineNo: 1, ItemID: it, Serial: &s, Quantity: decimal.RequireFromString("0.5")})
+	_ = wantCode(t, err, stock.ErrSerialQuantity)
+}
+
+// Two counts of one key would each move on hand; the second is refused.
+func TestRecordCountsDuplicateKey(t *testing.T) {
+	l := newLedger(t)
+	q, lt := l.item(t, item.TrackQuantity, false), l.item(t, item.TrackLot, false)
+	_, err := l.count(l.doc(t, l.unit), l.wh, stock.Count{LineNo: 1, ItemID: q, Quantity: qty(3)}, stock.Count{LineNo: 2, ItemID: q, Quantity: qty(4)})
+	if e := wantCode(t, err, stock.ErrCountDuplicate); e.Params["line_no"] != 2 {
+		t.Fatalf("params %+v", e.Params)
+	}
+	// Unknown lots too, compared as the unique index does.
+	_, err = l.count(l.doc(t, l.unit), l.wh, stock.Count{LineNo: 1, ItemID: lt, Lot: lot(" n1", nil), Quantity: qty(0)},
+		stock.Count{LineNo: 2, ItemID: lt, Lot: lot("N1", nil), Quantity: qty(0)})
+	_ = wantCode(t, err, stock.ErrCountDuplicate)
 }
