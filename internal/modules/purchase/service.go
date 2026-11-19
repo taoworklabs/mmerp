@@ -15,6 +15,9 @@ type Service struct{ d Deps }
 
 // NewService registers Purchasing roles and record types with core.
 func NewService(d Deps) *Service {
+	if err := loadTranslations(); err != nil {
+		panic(err) // embedded files: broken only by a bad build
+	}
 	declareKinds()
 	s := &Service{d: d}
 	data.RegisterConstraints(data.Constraints{
@@ -40,6 +43,7 @@ func NewService(d Deps) *Service {
 	s.registerGoodsReceipt()
 	s.registerInvoice()
 	s.registerPayment()
+	s.registerPrints()
 	return s
 }
 
