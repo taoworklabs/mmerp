@@ -10,7 +10,6 @@ Buying goods and services from suppliers: suppliers, purchase orders, goods rece
 | Purchase orders with approval, PDF print | Buying without a purchase order |
 | Goods receipts from a confirmed order into one warehouse, creating lots and serials | Returns to suppliers, landed costs, stock valuation |
 | Supplier invoices from a confirmed order, in parts, priced as the supplier billed; supplier payments allocated to invoices; business lines for accounting | Prepayments, debit notes, due dates and aging, a cash and bank catalogue, e-invoice intake |
-| | Item, warehouse and stock screens of its own (they stay in the Sales area) |
 
 ## Module
 

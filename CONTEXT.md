@@ -147,6 +147,10 @@ Product description: [products/hrm.md](./products/hrm.md).
 - **Negative stock** (`allow_negative`, vi: "Cho phép xuất âm"): an item counted by `quantity` whose on hand may go below zero. Off by default; never for lots and serials.
 - **Stock adjustment** (`stock.adjustment`, vi: "Phiếu điều chỉnh kho"): a document changing on hand by hand, with a reason; how opening stock is entered.
 - **Lot suggestion** (vi: "Gợi ý lô"): pre-filling the lots of an outgoing line, earliest expiry first, then earliest received, skipping expired lots. Serials are never suggested.
+- **Stock area** (vi: "Kho"): the frontend area holding items, warehouses, on hand, stock card and the stock documents, open to any holder of a `stock.` or `item.` permission whatever products are enabled. See [ADR-0100](./docs/adr/0100-stock-area-transfers-stocktakes.md).
+- **Transfer** (`stock.transfer`, vi: "Phiếu chuyển kho"): a document moving goods from one warehouse to another of the same legal entity; both sides move on its date, with no goods in transit.
+- **Stocktake** (`stock.stocktake`, vi: "Phiếu kiểm kê kho"): a document recording what was counted in one warehouse; posting moves on hand to the counts. Only the lines it lists are counted.
+- **Counted quantity, book quantity, stocktake difference** (vi: "Số lượng kiểm kê, Tồn sổ sách, Chênh lệch kiểm kê"): what was found on the shelf; on hand when the stocktake posted; counted less book, written as stock moves.
 
 ## Sales
 

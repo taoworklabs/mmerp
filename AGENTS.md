@@ -67,7 +67,7 @@ The design docs are written in English; keep them in English when you edit them.
 
 ### Frontend (`web/src/`)
 
-`app → core, <product areas> → shared`. Each product is an **area** entered only through its `index.ts` manifest (routes, nav, i18n, `recordTypes` with `path`/`preview`/`invalidate`). Areas never import each other; each area calls only `shared/api/core` and its own `shared/api/<product>` client, typed to that product's `/<product>/` routes (core gets the rest), so calling another area's endpoint fails `tsc`. Business components stay in their area, built from `shared/ui` primitives. Page layout always comes from a `shared/ui/page` template.
+`app → core, <product areas> → shared`. Each product is an **area** entered only through its `index.ts` manifest (the Stock area is shared master data, not a product: `shared: true`, always on) (routes, nav, i18n, `recordTypes` with `path`/`preview`/`invalidate`). Areas never import each other; each area calls only `shared/api/core` and its own `shared/api/<product>` client, typed to that product's `/<product>/` routes (core gets the rest), so calling another area's endpoint fails `tsc`. Business components stay in their area, built from `shared/ui` primitives. Page layout always comes from a `shared/ui/page` template.
 
 ## Commands
 

@@ -13,11 +13,11 @@ import { ListPage } from '@/shared/ui/page'
 import { icon } from '@/shared/ui/theme'
 import { useListParams } from '@/shared/url/listParams'
 import { useAdjustmentActions } from '../hooks/useStock'
-import { adjustmentDocType, salesKeys } from '../keys'
+import { adjustmentDocType, stockKeys } from '../keys'
 
 const sorts = ['-date', 'date', '-number', 'number'] as const satisfies readonly AdjustmentSort[]
 const defaults = { filters: { q: '', status: '' }, sort: '-date', sorts: [...sorts], pageSize: 50 }
-const base = '/sales/stock/adjustments'
+const base = '/stock/adjustments'
 
 // AdjustmentsPage lists the stock adjustments the user may see.
 export function AdjustmentsPage() {
@@ -27,7 +27,7 @@ export function AdjustmentsPage() {
   const { q, status } = params.filters as typeof defaults.filters
   const query = { q, status, sort: params.sort, page: params.page, pageSize: params.pageSize }
   const list = useQuery({
-    queryKey: salesKeys.stock.adjustments.list(query),
+    queryKey: stockKeys.adjustments.list(query),
     queryFn: () =>
       unwrap(
         api.GET('/stock/adjustments', {
@@ -46,29 +46,29 @@ export function AdjustmentsPage() {
   })
 
   const columns: Column<AdjustmentListItem>[] = [
-    { key: 'number', header: t('sales.doc.number'), role: 'title', kind: 'code', sortable: true, render: (d) => d.number },
-    { key: 'date', header: t('sales.adjustment.date'), role: 'meta', kind: 'date', sortable: true, render: (d) => formatDate(d.date) },
-    { key: 'warehouse', header: t('sales.adjustment.warehouse'), role: 'meta', render: (d) => `${d.warehouse_code} · ${d.warehouse_name}` },
-    { key: 'reason', header: t('sales.adjustment.reason'), role: 'meta', render: (d) => d.reason },
-    { key: 'status', header: t('sales.doc.status'), role: 'status', kind: 'status', render: (d) => <DocumentStatus docType={adjustmentDocType} status={d.status} /> },
+    { key: 'number', header: t('stock.doc.number'), role: 'title', kind: 'code', sortable: true, render: (d) => d.number },
+    { key: 'date', header: t('stock.adjustment.date'), role: 'meta', kind: 'date', sortable: true, render: (d) => formatDate(d.date) },
+    { key: 'warehouse', header: t('stock.adjustment.warehouse'), role: 'meta', render: (d) => `${d.warehouse_code} · ${d.warehouse_name}` },
+    { key: 'reason', header: t('stock.adjustment.reason'), role: 'meta', render: (d) => d.reason },
+    { key: 'status', header: t('stock.doc.status'), role: 'status', kind: 'status', render: (d) => <DocumentStatus docType={adjustmentDocType} status={d.status} /> },
   ]
-  const view = useListView('sales.stock.adjustments', columns)
+  const view = useListView('stock.adjustments', columns)
 
   return (
     <ListPage
-      title={t('sales.adjustments.title')}
-      description={t('sales.adjustments.description')}
+      title={t('stock.adjustments.title')}
+      description={t('stock.adjustments.description')}
       action={
         canCreate && (
           <Button render={<Link to={`${base}/new`} />} leftSection={<IconPlus {...icon.button} />}>
-            {t('sales.adjustments.create')}
+            {t('stock.adjustments.create')}
           </Button>
         )
       }
       onClearFilters={filterBar.active ? filterBar.clear : undefined}
       filters={
         <>
-          <SearchInput label={t('sales.adjustments.search')} placeholder={t('sales.adjustments.search_hint')} value={q} onSearch={(v) => set({ filters: { q: v } })} />
+          <SearchInput label={t('stock.adjustments.search')} placeholder={t('stock.adjustments.search_hint')} value={q} onSearch={(v) => set({ filters: { q: v } })} />
           <DocumentStatusFilter docType={adjustmentDocType} {...filterBar.bind('status')} />
         </>
       }
@@ -76,7 +76,7 @@ export function AdjustmentsPage() {
       list={{
         query: list,
         table: {
-          label: t('sales.adjustments.title'),
+          label: t('stock.adjustments.title'),
           columns: view.columns,
           onResize: view.onResize,
           rowKey: (d) => d.id,
@@ -84,8 +84,8 @@ export function AdjustmentsPage() {
           sort: params.sort,
           onSort: (sort) => set({ sort }),
         },
-        empty: { title: t('sales.adjustments.empty'), description: t('sales.adjustments.empty_description') },
-        noResults: t('sales.common.no_results'),
+        empty: { title: t('stock.adjustments.empty'), description: t('stock.adjustments.empty_description') },
+        noResults: t('stock.common.no_results'),
         paging: { page: params.page, pageSize: params.pageSize, onPage: (page) => set({ page }), onPageSize: (pageSize) => set({ pageSize }) },
       }}
     />

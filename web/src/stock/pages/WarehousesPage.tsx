@@ -14,7 +14,7 @@ import { FormModal, ListPage } from '@/shared/ui/page'
 import { StatusBadge } from '@/shared/ui/StatusBadge'
 import { icon } from '@/shared/ui/theme'
 import { useListParams } from '@/shared/url/listParams'
-import { salesKeys } from '../keys'
+import { stockKeys } from '../keys'
 
 const sorts = ['code', '-code', 'name', '-name'] as const satisfies readonly WarehouseSort[]
 const defaults = { filters: { q: '', active: '' }, sort: 'code', sorts: [...sorts], pageSize: 50 }
@@ -31,7 +31,7 @@ export function WarehousesPage() {
   const { q, active } = params.filters as typeof defaults.filters
   const query = { q, active, sort: params.sort, page: params.page, pageSize: params.pageSize }
   const list = useQuery({
-    queryKey: salesKeys.stock.warehouses.list(query),
+    queryKey: stockKeys.warehouses.list(query),
     queryFn: () =>
       unwrap(
         api.GET('/stock/warehouses', {
@@ -52,48 +52,48 @@ export function WarehousesPage() {
   const columns: Column<Warehouse>[] = [
     {
       key: 'name',
-      header: t('sales.warehouse.name'),
+      header: t('stock.warehouse.name'),
       role: 'title',
       sortable: true,
       render: (x) => (
         <Group gap="xs" wrap={false}>
           {x.name}
-          {x.is_default && <StatusBadge tone="neutral">{t('sales.warehouse.default')}</StatusBadge>}
+          {x.is_default && <StatusBadge tone="neutral">{t('stock.warehouse.default')}</StatusBadge>}
         </Group>
       ),
     },
-    { key: 'code', header: t('sales.warehouse.code'), role: 'meta', kind: 'code', sortable: true, render: (x) => x.code },
-    { key: 'legal_entity', header: t('sales.warehouse.legal_entity'), role: 'meta', render: (x) => entityName(x.legal_entity_id) },
+    { key: 'code', header: t('stock.warehouse.code'), role: 'meta', kind: 'code', sortable: true, render: (x) => x.code },
+    { key: 'legal_entity', header: t('stock.warehouse.legal_entity'), role: 'meta', render: (x) => entityName(x.legal_entity_id) },
     {
       key: 'active',
-      header: t('sales.warehouse.status'),
+      header: t('stock.warehouse.status'),
       role: 'status',
       kind: 'status',
-      render: (x) => <StatusBadge tone={x.active ? 'success' : 'neutral'}>{t(x.active ? 'sales.warehouse.in_use' : 'sales.warehouse.retired')}</StatusBadge>,
+      render: (x) => <StatusBadge tone={x.active ? 'success' : 'neutral'}>{t(x.active ? 'stock.warehouse.in_use' : 'stock.warehouse.retired')}</StatusBadge>,
     },
   ]
-  const view = useListView('sales.warehouses', columns)
+  const view = useListView('stock.warehouses', columns)
   return (
     <ListPage
-      title={t('sales.warehouses.title')}
-      description={t('sales.warehouses.description')}
+      title={t('stock.warehouses.title')}
+      description={t('stock.warehouses.description')}
       action={
         writable && (
           <Button leftSection={<IconPlus {...icon.button} />} onClick={() => setEditing('new')}>
-            {t('sales.warehouses.create')}
+            {t('stock.warehouses.create')}
           </Button>
         )
       }
       onClearFilters={filterBar.active ? filterBar.clear : undefined}
       filters={
         <>
-          <SearchInput label={t('sales.warehouses.search')} placeholder={t('sales.warehouses.search_hint')} value={q} onSearch={(v) => set({ filters: { q: v } })} />
+          <SearchInput label={t('stock.warehouses.search')} placeholder={t('stock.warehouses.search_hint')} value={q} onSearch={(v) => set({ filters: { q: v } })} />
           <FilterChip
-            label={t('sales.warehouse.status')}
+            label={t('stock.warehouse.status')}
             icon={IconCircleDot}
             data={[
-              { value: 'true', label: t('sales.warehouse.in_use') },
-              { value: 'false', label: t('sales.warehouse.retired') },
+              { value: 'true', label: t('stock.warehouse.in_use') },
+              { value: 'false', label: t('stock.warehouse.retired') },
             ]}
             {...filterBar.bind('active')}
           />
@@ -103,7 +103,7 @@ export function WarehousesPage() {
       list={{
         query: list,
         table: {
-          label: t('sales.warehouses.title'),
+          label: t('stock.warehouses.title'),
           columns: view.columns,
           onResize: view.onResize,
           rowKey: (x) => x.id,
@@ -111,8 +111,8 @@ export function WarehousesPage() {
           onSort: (sort) => set({ sort }),
           onRowClick: writable ? (x) => setEditing(x) : undefined,
         },
-        empty: { title: t('sales.warehouses.empty'), description: t('sales.warehouses.empty_description') },
-        noResults: t('sales.common.no_results'),
+        empty: { title: t('stock.warehouses.empty'), description: t('stock.warehouses.empty_description') },
+        noResults: t('stock.common.no_results'),
         paging: { page: params.page, pageSize: params.pageSize, onPage: (page) => set({ page }), onPageSize: (pageSize) => set({ pageSize }) },
       }}
     >
@@ -134,24 +134,23 @@ function WarehouseModal({ warehouse: w, entities, onClose }: { warehouse: Wareho
     const body = { name: v.name.trim(), active: v.active }
     if (w) await unwrap(api.PUT('/stock/warehouses/{id}', { params: { path: { id: w.id } }, body }))
     else await unwrap(api.POST('/stock/warehouses', { body: { ...body, code: v.code.trim(), legal_entity_id: Number(v.legal_entity_id) } }))
-    // Delivery options list the warehouses in use.
-    await Promise.all([qc.invalidateQueries({ queryKey: salesKeys.stock.warehouses.all() }), qc.invalidateQueries({ queryKey: salesKeys.deliveries.all() })])
-    notifySuccess(t('sales.warehouses.saved'))
+    await qc.invalidateQueries({ queryKey: stockKeys.warehouses.all() })
+    notifySuccess(t('stock.warehouses.saved'))
     onClose()
   }
   return (
-    <FormModal open title={t(w ? 'sales.warehouses.edit' : 'sales.warehouses.create')} onOpenChange={onClose}>
+    <FormModal open title={t(w ? 'stock.warehouses.edit' : 'stock.warehouses.create')} onOpenChange={onClose}>
       <Form form={form} onSubmit={save} errorFields={{ warehouse_code_taken: 'code' }}>
-        <CodeField name="code" label={t('sales.warehouse.code')} existing={!!w} />
-        <TextField name="name" label={t('sales.warehouse.name')} required maxLength={300} />
+        <CodeField name="code" label={t('stock.warehouse.code')} existing={!!w} />
+        <TextField name="name" label={t('stock.warehouse.name')} required maxLength={300} />
         {/* A warehouse stays with the legal entity it was created for. */}
         {w ? (
-          <SelectField name="legal_entity_id" label={t('sales.warehouse.legal_entity')} data={entities} readOnly />
+          <SelectField name="legal_entity_id" label={t('stock.warehouse.legal_entity')} data={entities} readOnly />
         ) : (
-          <LegalEntityField name="legal_entity_id" label={t('sales.warehouse.legal_entity')} product="stock" permission="stock.manage" required />
+          <LegalEntityField name="legal_entity_id" label={t('stock.warehouse.legal_entity')} product="stock" permission="stock.manage" required />
         )}
-        <CheckboxField name="active" label={t('sales.warehouse.active')} description={t('sales.warehouse.active_hint')} />
-        <FormActions submitLabel={t('sales.common.save')} onCancel={onClose} cancelLabel={t('sales.common.cancel')} />
+        <CheckboxField name="active" label={t('stock.warehouse.active')} description={t('stock.warehouse.active_hint')} />
+        <FormActions submitLabel={t('stock.common.save')} onCancel={onClose} cancelLabel={t('stock.common.cancel')} />
       </Form>
     </FormModal>
   )

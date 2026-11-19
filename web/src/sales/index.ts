@@ -1,7 +1,7 @@
-import { IconAddressBook, IconCash, IconAdjustmentsHorizontal, IconBuildingWarehouse, IconFileDollar, IconFileInvoice, IconTruckDelivery, IconGitBranch, IconListDetails, IconPackage, IconPackages, IconReceipt, IconShoppingCart } from '@tabler/icons-react'
+import { IconAddressBook, IconCash, IconFileDollar, IconFileInvoice, IconTruckDelivery, IconGitBranch, IconReceipt, IconShoppingCart } from '@tabler/icons-react'
 import type { AreaManifest } from '@/shared/area'
 import { masterKeys } from '@/shared/master'
-import { adjustmentDocType, customerDocType, deliveryDocType, invoiceDocType, orderDocType, partnerType, quoteDocType, receiptDocType, salesKeys } from './keys'
+import { customerDocType, deliveryDocType, invoiceDocType, orderDocType, partnerType, quoteDocType, receiptDocType, salesKeys } from './keys'
 
 export const sales: AreaManifest = {
   product: 'sales',
@@ -15,11 +15,6 @@ export const sales: AreaManifest = {
     { label: 'sales.nav.deliveries', path: 'deliveries', icon: IconTruckDelivery, permission: 'sales.order.view' },
     { label: 'sales.nav.invoices', path: 'invoices', icon: IconFileInvoice, permission: 'sales.order.view' },
     { label: 'sales.nav.receipts', path: 'receipts', icon: IconCash, permission: 'sales.order.view' },
-    { label: 'sales.nav.on_hand', path: 'stock/on-hand', icon: IconPackages, permission: 'stock.view', group: 'sales.nav.group_stock' },
-    { label: 'sales.nav.stock_card', path: 'stock/card', icon: IconListDetails, permission: 'stock.view', group: 'sales.nav.group_stock' },
-    { label: 'sales.nav.adjustments', path: 'stock/adjustments', icon: IconAdjustmentsHorizontal, permission: 'stock.view', group: 'sales.nav.group_stock' },
-    { label: 'sales.nav.warehouses', path: 'stock/warehouses', icon: IconBuildingWarehouse, permission: 'stock.view', group: 'sales.nav.group_stock' },
-    { label: 'sales.nav.items', path: 'items', icon: IconPackage, permission: 'item.view', group: 'sales.nav.group_config' },
     {
       label: 'sales.nav.approval_rules',
       path: 'approval-rules',
@@ -28,7 +23,7 @@ export const sales: AreaManifest = {
       group: 'sales.nav.group_config',
     },
   ],
-  collapsibleGroups: ['sales.nav.group_stock', 'sales.nav.group_config'],
+  collapsibleGroups: ['sales.nav.group_config'],
   homeIcon: IconShoppingCart,
   i18n: {
     meta: { vi: () => import('./i18n/vi/meta.json'), en: () => import('./i18n/en/meta.json') },
@@ -49,8 +44,8 @@ export const sales: AreaManifest = {
     [deliveryDocType]: {
       path: (id) => `deliveries/${id}`,
       preview: () => import('./components/DeliveryPreview'),
-      // Its order shows what is delivered, and posting or cancelling one moves stock.
-      invalidate: () => [salesKeys.deliveries.all(), salesKeys.docs.all('order'), salesKeys.stock.onHand.all(), salesKeys.stock.cards()],
+      // Its order shows what is delivered.
+      invalidate: () => [salesKeys.deliveries.all(), salesKeys.docs.all('order')],
     },
     [invoiceDocType]: {
       path: (id) => `invoices/${id}`,
@@ -68,18 +63,6 @@ export const sales: AreaManifest = {
       path: (id) => `customers/${id}`,
       // Names show in pickers too, so every customer query; its identity is its partner's.
       invalidate: () => [salesKeys.customers.all(), masterKeys.partners.all()],
-    },
-    [adjustmentDocType]: {
-      path: (id) => `stock/adjustments/${id}`,
-      preview: () => import('./components/AdjustmentPreview'),
-      // Posting or cancelling one moves stock, which delivery options and draft orders' availability read.
-      invalidate: () => [
-        salesKeys.stock.adjustments.all(),
-        salesKeys.stock.onHand.all(),
-        salesKeys.stock.cards(),
-        salesKeys.deliveries.all(),
-        salesKeys.docs.all('order'),
-      ],
     },
     // Partners open in Sales for now; their identity shows on every customer of theirs.
     [partnerType]: {

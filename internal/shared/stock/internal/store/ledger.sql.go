@@ -67,6 +67,59 @@ func (q *Queries) ApplyDeltas(ctx context.Context, arg ApplyDeltasParams) ([]App
 	return items, nil
 }
 
+const balanceQuantities = `-- name: BalanceQuantities :many
+SELECT b.warehouse_id, b.item_id, coalesce(b.lot_id, 0)::bigint AS lot_id, coalesce(b.serial_id, 0)::bigint AS serial_id, b.quantity::text AS quantity
+FROM stock.balances b
+JOIN (SELECT unnest($1::bigint[]) AS w, unnest($2::bigint[]) AS i, unnest($3::bigint[]) AS l, unnest($4::bigint[]) AS s) AS k
+  ON b.warehouse_id = k.w AND b.item_id = k.i AND coalesce(b.lot_id, 0) = k.l AND coalesce(b.serial_id, 0) = k.s
+`
+
+type BalanceQuantitiesParams struct {
+	WarehouseIds []int64
+	ItemIds      []int64
+	LotIds       []int64
+	SerialIds    []int64
+}
+
+type BalanceQuantitiesRow struct {
+	WarehouseID int64
+	ItemID      int64
+	LotID       int64
+	SerialID    int64
+	Quantity    string
+}
+
+func (q *Queries) BalanceQuantities(ctx context.Context, arg BalanceQuantitiesParams) ([]BalanceQuantitiesRow, error) {
+	rows, err := q.db.Query(ctx, balanceQuantities,
+		arg.WarehouseIds,
+		arg.ItemIds,
+		arg.LotIds,
+		arg.SerialIds,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []BalanceQuantitiesRow
+	for rows.Next() {
+		var i BalanceQuantitiesRow
+		if err := rows.Scan(
+			&i.WarehouseID,
+			&i.ItemID,
+			&i.LotID,
+			&i.SerialID,
+			&i.Quantity,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const documentHeader = `-- name: DocumentHeader :one
 SELECT legal_entity_id, date FROM record.documents WHERE doc_type = $1 AND id = $2
 `

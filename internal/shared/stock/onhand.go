@@ -3,6 +3,7 @@ package stock
 import (
 	"context"
 	"errors"
+	"strings"
 	"time"
 
 	"github.com/shopspring/decimal"
@@ -99,4 +100,18 @@ func (s *Service) StockCard(ctx context.Context, warehouse, item int64, from, to
 	}
 	out.Closing = bal.StringFixed(3)
 	return out, nil
+}
+
+// StockItems lists the first active items with stock matching q, to anyone who may view
+// stock somewhere: stock documents pick their lines from it.
+func (s *Service) StockItems(ctx context.Context, q string) (StockItemList, error) {
+	out := StockItemList{Items: []StockItem{}}
+	if err := s.requireView(ctx); err != nil {
+		return out, err
+	}
+	rows, err := store.StockItems.Run(ctx, strings.TrimSpace(q))
+	for _, r := range rows {
+		out.Items = append(out.Items, StockItem{ID: r.ID, Code: r.Code, Name: r.Name, Unit: r.Unit, Tracking: r.Tracking})
+	}
+	return out, err
 }

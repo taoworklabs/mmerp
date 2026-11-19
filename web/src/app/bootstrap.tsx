@@ -47,7 +47,7 @@ export async function bootstrap(root: HTMLElement) {
       }
       rememberLocale(locale)
       // A disabled product with data stays readable, so its area shows.
-      const shown = areas.filter((a) => a.product === 'core' || me.products.includes(a.product) || me.products_with_data.includes(a.product))
+      const shown = areas.filter((a) => a.product === 'core' || a.shared || me.products.includes(a.product) || me.products_with_data.includes(a.product))
       await addTranslations(locale, shown.filter((a) => a !== core).map((a) => a.i18n.meta[locale]))
       page = (
         <MeProvider me={me}>

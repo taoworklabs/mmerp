@@ -10,10 +10,10 @@ export function NewAdjustmentPage() {
     <CreatePage
       docType={adjustmentDocType}
       actions={useAdjustmentActions()}
-      title={t('sales.adjustments.create')}
-      breadcrumbs={[{ label: t('sales.adjustments.title'), to: '/sales/stock/adjustments' }]}
-      description={t('sales.adjustments.create_description')}
-      created={t('sales.adjustment.created')}
+      title={t('stock.adjustments.create')}
+      breadcrumbs={[{ label: t('stock.adjustments.title'), to: '/stock/adjustments' }]}
+      description={t('stock.adjustments.create_description')}
+      created={t('stock.adjustment.created')}
     >
       {(onCreated) => <AdjustmentForm onCreated={onCreated} />}
     </CreatePage>

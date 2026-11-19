@@ -152,3 +152,45 @@ func (q *Queries) StockCardOpening(ctx context.Context, arg StockCardOpeningPara
 	err := row.Scan(&quantity)
 	return quantity, err
 }
+
+const stockItems = `-- name: StockItems :many
+SELECT id, code, name, unit, tracking FROM item.items
+WHERE active AND tracking <> 'none' AND ($1::text = '' OR code ILIKE '%' || $1 || '%' OR name ILIKE '%' || $1 || '%')
+ORDER BY code, id
+LIMIT 50
+`
+
+type StockItemsRow struct {
+	ID       int64
+	Code     string
+	Name     string
+	Unit     string
+	Tracking string
+}
+
+// Active items with stock matching q in code or name, for stock document lines.
+func (q *Queries) StockItems(ctx context.Context, q_ string) ([]StockItemsRow, error) {
+	rows, err := q.db.Query(ctx, stockItems, q_)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []StockItemsRow
+	for rows.Next() {
+		var i StockItemsRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Code,
+			&i.Name,
+			&i.Unit,
+			&i.Tracking,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}

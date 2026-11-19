@@ -16,5 +16,17 @@
   "stock.print.serial": "Serial",
   "stock.print.quantity": "Quantity",
   "stock.print.block.footer": "Footer",
-  "stock.print.block.footer.default": "Prepared by\n\n\n\nStorekeeper"
+  "stock.print.block.footer.default": "Prepared by\n\n\n\nStorekeeper",
+  "stock.print.transfer.name": "Stock transfer",
+  "stock.print.transfer.title": "STOCK TRANSFER",
+  "stock.print.from_warehouse": "From warehouse",
+  "stock.print.to_warehouse": "To warehouse",
+  "stock.print.note": "Note",
+  "stock.print.transfer.footer.default": "Prepared by\n\n\n\nIssued by\n\n\n\nReceived by",
+  "stock.print.stocktake.name": "Stocktake",
+  "stock.print.stocktake.title": "STOCKTAKE",
+  "stock.print.book": "Book",
+  "stock.print.counted": "Counted",
+  "stock.print.difference": "Difference",
+  "stock.print.stocktake.footer.default": "Counted by\n\n\n\nStorekeeper"
 }

@@ -37,7 +37,7 @@ const today = () => {
 
 test('customer and item, a quotation approved by the manager, printed, then ordered once', async ({ browser }) => {
   // The catalogue admin adds an item.
-  const cat = await as(browser, login.catalog, '/sales/items')
+  const cat = await as(browser, login.catalog, '/stock/items')
   await cat.getByRole('button', { name: 'Thêm mặt hàng' }).click()
   const dialog = cat.getByRole('dialog')
   await dialog.getByRole('textbox', { name: 'Mã hàng' }).fill(`BUT${run}`)

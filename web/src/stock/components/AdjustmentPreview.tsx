@@ -13,10 +13,10 @@ export default function AdjustmentPreview({ id }: { id: number }) {
       docType={adjustmentDocType}
       query={useAdjustment(id)}
       rows={(d) => [
-        [t('sales.preview.warehouse'), `${d.warehouse_code} · ${d.warehouse_name}`],
-        [t('sales.preview.date'), formatDate(d.date)],
-        [t('sales.preview.reason'), d.reason],
-        [t('sales.preview.lines'), String(d.lines.length)],
+        [t('stock.preview.warehouse'), `${d.warehouse_code} · ${d.warehouse_name}`],
+        [t('stock.preview.date'), formatDate(d.date)],
+        [t('stock.preview.reason'), d.reason],
+        [t('stock.preview.lines'), String(d.lines.length)],
       ]}
     />
   )

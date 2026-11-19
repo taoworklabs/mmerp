@@ -26,6 +26,8 @@ export type RecordTypeEntry = {
 // AreaManifest is the only thing app knows about an area.
 export type AreaManifest = {
   product: string // 'core' is always on
+  // Shared master data, not a product: always on, whatever PRODUCTS enables.
+  shared?: true
   label: string // i18n key of the area's home tile and of the header title inside the area
   basePath: string
   routes?: () => Promise<{ default: ComponentType }> // lazy; renders the area's <Routes>

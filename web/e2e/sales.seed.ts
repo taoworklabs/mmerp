@@ -368,6 +368,43 @@ test('seed Sales on the Demo demo company', async ({ baseURL }) => {
     )
     await postDoc(admin, 'stock.adjustment', '/api/stock/adjustments', id)
   }
+  // The first company also keeps a second warehouse, stocked by a transfer, and counts its main one.
+  const firstCompany = units.find((u) => u.kind === 'company')!
+  const mainWh = (await get<{ items: { id: number; legal_entity_id: number; is_default: boolean }[] }>(admin, '/api/stock/warehouses?page_size=100')).items.find(
+    (w) => w.legal_entity_id === firstCompany.id && w.is_default,
+  )!.id
+  const sideWh = await created(admin.post('/api/stock/warehouses', { data: { name: `Kho phụ ${firstCompany.name}`, legal_entity_id: firstCompany.id, active: true } }))
+  const transfer = await created(
+    admin.post('/api/stock/transfers', {
+      data: {
+        request_id: crypto.randomUUID(),
+        date: '2026-09-15',
+        from_warehouse_id: mainWh,
+        to_warehouse_id: sideWh,
+        note: 'Chuyển hàng sang kho phụ',
+        lines: [
+          { item_id: itemId['VPP-A4'], quantity: '100' },
+          { item_id: itemId['GHE-VP'], quantity: '10' },
+        ],
+      },
+    }),
+  )
+  await postDoc(admin, 'stock.transfer', '/api/stock/transfers', transfer)
+  const stocktake = await created(
+    admin.post('/api/stock/stocktakes', {
+      data: {
+        request_id: crypto.randomUUID(),
+        date: '2026-09-30',
+        warehouse_id: mainWh,
+        note: 'Kiểm kê cuối tháng 9',
+        lines: [
+          { item_id: itemId['BUT-TL'], counted: '118' },
+          { item_id: itemId['MUC-LZ'], counted: '41' },
+        ],
+      },
+    }),
+  )
+  await postDoc(admin, 'stock.stocktake', '/api/stock/stocktakes', stocktake)
   const customerId: Record<string, number> = {}
   const customerTerms: Record<string, string> = {}
   for (const [code, name, t, tax_code, address, phone, contact_name, payment_terms, active] of customers) {

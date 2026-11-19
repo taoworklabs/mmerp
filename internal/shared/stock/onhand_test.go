@@ -88,3 +88,23 @@ func TestStockCardBounds(t *testing.T) {
 		t.Fatalf("no role: %v", err)
 	}
 }
+
+// Stock documents pick items with stock; stock users need no item role for it.
+func TestStockItemsPicker(t *testing.T) {
+	l := newLedger(t)
+	stocked := l.item(t, item.TrackLot, false)
+	_ = l.item(t, item.TrackNone, false)
+	tr := item.TrackQuantity
+	inactive, err := l.items.CreateItem(l.admin, item.NewItem{ItemFields: item.ItemFields{Name: "Old", Unit: "cái", VatRate: "8", Active: false, Tracking: &tr}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	viewer := l.user(t, "viewer", "viewer")
+	got, err := l.stock.StockItems(viewer, "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(got.Items) != 1 || got.Items[0].ID != stocked || got.Items[0].Tracking != item.TrackLot || got.Items[0].ID == inactive {
+		t.Fatalf("items %+v", got.Items)
+	}
+}

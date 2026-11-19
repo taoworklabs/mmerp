@@ -109,3 +109,20 @@ type StockCard struct {
 	Rows    []StockCardRow `json:"rows" nullable:"false"`
 	Closing string         `json:"closing" doc:"Decimal"`
 }
+
+// StockItem is an item a stock document line may name.
+type StockItem struct {
+	ID       int64  `json:"id"`
+	Code     string `json:"code"`
+	Name     string `json:"name"`
+	Unit     string `json:"unit"`
+	Tracking string `json:"tracking" enum:"quantity,lot,serial"`
+}
+
+type StockItemList struct {
+	Items []StockItem `json:"items" nullable:"false"`
+}
+
+type StockItemFilter struct {
+	Q string `query:"q" maxLength:"100" doc:"Code or name"`
+}

@@ -27,7 +27,7 @@ A milestone only passes when what it adds keeps the contract intact from table t
 ```
 M11 Attachments and discussion ─► M12 Notifications ─► M13 PDF printing ─► M14 Sales   (all done)
    ─► HRM review ─► Core work after M14   (done) ─► M15 Accounting   (done)
-   ─► M16 Partner subledger ─► M17 Sales to cash ─► M18 Purchasing   (done) ─► M19 Stock
+   ─► M16 Partner subledger ─► M17 Sales to cash ─► M18 Purchasing   (done) ─► M19 Stock ─► M20 Stock valuation
    ┄► M10 On-premise operations ┄► [Gate: production readiness]   (on hold)
 ```
 
@@ -139,7 +139,7 @@ Vertical slices, each from migration to screen:
 
 **Done** (2026-11-14): [ADR-0051](./adr/0051-business-lines-name-a-partner.md).
 
-**Goal:** business lines may name a partner and accounting keeps balances per partner, so that Sales to cash (M17: invoices, receipts, receivables) and Purchasing (M18: purchase orders, goods receipts, supplier invoices, payments, payables) only add kinds and documents ([ADR-0051](./adr/0051-business-lines-name-a-partner.md), [design](./superpowers/specs/2026-11-12-partner-subledger-design.md)). M19 completes stock: valuation, transfers, stocktakes.
+**Goal:** business lines may name a partner and accounting keeps balances per partner, so that Sales to cash (M17: invoices, receipts, receivables) and Purchasing (M18: purchase orders, goods receipts, supplier invoices, payments, payables) only add kinds and documents ([ADR-0051](./adr/0051-business-lines-name-a-partner.md), [design](./superpowers/specs/2026-11-12-partner-subledger-design.md)). M19 adds transfers and stocktakes; M20 valuation.
 
 **Done when**, with `make seed` data and `PRODUCTS=hrm,sales,accounting`:
 
@@ -179,6 +179,25 @@ Vertical slices, each from migration to screen:
 5. Over-allocating is refused; cancelling an invoice with a payment is refused; cancelling a goods receipt whose goods were delivered is refused unless the item allows negative stock.
 6. With accounting disabled, purchasing works and its lines wait for posting; with Purchasing disabled, everything reads and prints. Another team's staff sees nothing. `recordtest` passes for the four document types. Sales and payroll posting unchanged.
 
+## M19. Stock
+
+**In progress** (2026-11-19): [ADR-0100](./adr/0100-stock-area-transfers-stocktakes.md).
+
+**Goal:** stock gets its own area, so a tenant without Sales manages items and warehouses, and warehouses gain the two documents they use every day: transfers between warehouses and stocktakes that post the counted difference ([ADR-0100](./adr/0100-stock-area-transfers-stocktakes.md), [design](./superpowers/specs/2026-11-19-stock-design.md)). Valuation moves to M20.
+
+**Done when**, with `make seed` data and `PRODUCTS=hrm,sales,purchase`:
+
+1. A user with `stock.admin` opens the Stock area and sees items, warehouses, on hand and the stock card; the Sales area has no stock or item screens. With `PRODUCTS=hrm,purchase` the Stock area still opens and writes.
+2. A transfer of a quantity item, a lot and a serial from the default warehouse to a second one posts; on hand falls in one and grows in the other; the stock card of each shows the move. A transfer taking more than on hand is refused with the line named.
+3. Cancelling the transfer returns both sides; cancelling after the goods left the destination is refused.
+4. A stocktake loaded from on hand, with one count lowered, one raised and one new lot found, posts; on hand equals the counts, the posted lines show book quantity and difference, and lines not listed are unchanged.
+5. A delivery posted between saving and posting the stocktake is taken into account: the difference is computed at posting.
+6. Users without `stock.manage` cannot write either document through the API. `recordtest` passes for both types. Sales and Purchasing stock moves unchanged.
+
+## M20. Stock valuation
+
+**Not started.** Costing method (moving average or FIFO), cost on stock moves, cost of goods sold on deliveries, and whether goods reach 156 at the goods receipt with a "received, not invoiced" clearing account ([ADR-0090](./adr/0090-purchasing-product.md#consequences)). Needs an ADR first.
+
 ## HRM review
 
 After M14, HRM went through a business review ([docs/hrm-review-plan.md](./hrm-review-plan.md), rounds [one](./hrm-review-round1.md) and [two](./hrm-review-round2.md)). The decisions are settled and built:
@@ -201,7 +220,7 @@ Core and frontend foundations built once Sales opened:
 - [ADR-0038](./adr/0038-data-engine-over-sqlc.md): Data engine over sqlc: dynamic parts compiled from code-declared fragments, no ORM
 - [ADR-0039](./adr/0039-shared-master-data.md): Shared master data: partners, items and tax in `shared/`, with their own namespace
 
-**Next:** M19 Stock. M10 and the production-readiness gate stay on hold.
+**Next:** M19 Stock, then M20 Stock valuation. M10 and the production-readiness gate stay on hold.
 
 ## M10. On-premise operations
 

@@ -45,6 +45,8 @@ func NewService(d Deps) *Service {
 	d.Numbering.RegisterSeries(warehouseSeries, "", "KHO")
 	s := &Service{d: d}
 	s.registerAdjustment()
+	s.registerTransfer()
+	s.registerStocktake()
 	return s
 }
 

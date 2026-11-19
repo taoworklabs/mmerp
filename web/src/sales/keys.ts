@@ -7,8 +7,6 @@ export const customerDocType = 'sales.customer'
 export const deliveryDocType = 'sales.delivery'
 export const invoiceDocType = 'sales.invoice'
 export const receiptDocType = 'sales.receipt'
-// Stock is a shared module; its documents open in this area.
-export const adjustmentDocType = 'stock.adjustment'
 // Shared master data, opened in this area.
 export const partnerType = 'partner.partner'
 
@@ -19,10 +17,6 @@ export const pathOf = (k: Kind) => (k === 'quote' ? 'quotes' : 'orders')
 
 // Query keys of the sales area; every parameter that changes a result is part of its key.
 export type CustomerQuery = { q: string; active: string; sort: string; page: number; pageSize: number }
-export type ItemQuery = { q: string; active: string; page: number; pageSize: number }
-export type WarehouseQuery = { q: string; active: string; sort: string; page: number; pageSize: number }
-export type OnHandQuery = { warehouse: string; item: string; q: string; expiring: string; page: number; pageSize: number }
-export type StockCardQuery = { warehouse_id: string; item_id: string; from: string; to: string }
 export type DocQuery = { q: string; status: string; sort: string; page: number; pageSize: number }
 export type OrderQuery = DocQuery & { delivery_state: string; invoice_state?: string; payment_state?: string }
 export type DeliveryQuery = DocQuery & { order: string }
@@ -41,31 +35,7 @@ export const salesKeys = {
     detail: (id: number) => ['sales', 'customers', id] as const,
   },
   items: {
-    all: () => ['sales', 'items'] as const,
-    list: (q: ItemQuery) => ['sales', 'items', 'list', q] as const,
     picker: (q: string) => ['sales', 'items', 'picker', q] as const,
-  },
-  // Stock is a shared module; its screens live in this area.
-  stock: {
-    warehouses: {
-      all: () => ['sales', 'stock', 'warehouses'] as const,
-      list: (q: WarehouseQuery) => ['sales', 'stock', 'warehouses', 'list', q] as const,
-    },
-    onHand: {
-      all: () => ['sales', 'stock', 'on-hand'] as const,
-      list: (q: OnHandQuery) => ['sales', 'stock', 'on-hand', 'list', q] as const,
-    },
-    card: (q: StockCardQuery) => ['sales', 'stock', 'card', q] as const,
-    // Every stock card, whatever its item and range.
-    cards: () => ['sales', 'stock', 'card'] as const,
-    adjustments: {
-      all: () => ['sales', 'stock', 'adjustments'] as const,
-      actions: () => ['sales', 'stock', 'adjustments', 'actions'] as const,
-      list: (q: DocQuery) => ['sales', 'stock', 'adjustments', 'list', q] as const,
-      detail: (id: number) => ['sales', 'stock', 'adjustments', 'detail', id] as const,
-    },
-    // The core item list, unlike items.picker which searches document line items.
-    items: (q: string) => ['sales', 'stock', 'items', q] as const,
   },
   deliveries: {
     all: () => ['sales', 'deliveries'] as const,

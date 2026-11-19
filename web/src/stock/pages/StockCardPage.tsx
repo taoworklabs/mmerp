@@ -5,14 +5,14 @@ import { useTranslation } from 'react-i18next'
 import { Link, useSearchParams } from 'react-router'
 import { api, ApiError, unwrap, type StockCardRow } from '@/shared/api/core'
 import { useRecordLinks } from '@/shared/area'
-import { useCan, useMe } from '@/shared/auth/me'
+import { useMe } from '@/shared/auth/me'
 import { errorText, formatDate, formatDecimal, today as todayIn } from '@/shared/i18n'
 import { type Column } from '@/shared/ui/DataTable'
 import { DateFilter, FilterChip, RemoteFilter } from '@/shared/ui/form'
 import { ListPage } from '@/shared/ui/page'
 import { EmptyState } from '@/shared/ui/states'
 import { useWarehouseOptions } from '../hooks/useStock'
-import { salesKeys, type StockCardQuery } from '../keys'
+import { stockKeys, type StockCardQuery } from '../keys'
 import { docTypeLabelKey, monthToDate } from '../stock'
 
 // The opening balance heads the moves; the closing one is the table's footer.
@@ -24,7 +24,6 @@ const edgeRow = (edge: 'opening' | 'closing', date: string, balance: string): Ro
 export function StockCardPage() {
   const { t } = useTranslation()
   const today = todayIn(useMe().timezone)
-  const canItems = useCan('item.view')
   const links = useRecordLinks()
   const warehouses = useWarehouseOptions()
   const [search, setSearch] = useSearchParams()
@@ -38,7 +37,9 @@ export function StockCardPage() {
   const ready = !!p.warehouse_id && !!p.item_id
 
   const card = useQuery({
-    queryKey: salesKeys.stock.card(p),
+    queryKey: stockKeys.card(p),
+    // Sales and Purchasing documents move stock without refreshing this area's queries.
+    staleTime: 0,
     queryFn: () =>
       unwrap(api.GET('/stock/card', { params: { query: { warehouse_id: Number(p.warehouse_id), item_id: Number(p.item_id), from: p.from, to: p.to } } })),
     enabled: ready,
@@ -50,7 +51,7 @@ export function StockCardPage() {
   // The picker only knows the item's id from the URL; its on-hand rows name it.
   // ponytail: an item with no stock left anywhere shows no name in the picker; add GET /items/{id} if that matters.
   const named = useQuery({
-    queryKey: salesKeys.stock.onHand.list({ warehouse: '', item: p.item_id, q: '', expiring: '', page: 1, pageSize: 20 }),
+    queryKey: stockKeys.onHand.list({ warehouse: '', item: p.item_id, q: '', expiring: '', page: 1, pageSize: 20 }),
     queryFn: () => unwrap(api.GET('/stock/on-hand', { params: { query: { item_id: Number(p.item_id), page_size: 20 } } })),
     enabled: !!p.item_id,
   })
@@ -66,14 +67,14 @@ export function StockCardPage() {
   const columns: Column<Row>[] = [
     {
       key: 'date',
-      header: t('sales.stock_card.date'),
+      header: t('stock.stock_card.date'),
       role: 'title',
       kind: 'date',
-      render: (r) => (r.edge ? t(`sales.stock_card.${r.edge}`) : formatDate(r.date)),
+      render: (r) => (r.edge ? t(`stock.stock_card.${r.edge}`) : formatDate(r.date)),
     },
     {
       key: 'document',
-      header: t('sales.stock_card.document'),
+      header: t('stock.stock_card.document'),
       role: 'meta',
       kind: 'code',
       render: (r) => {
@@ -90,21 +91,21 @@ export function StockCardPage() {
         return key ? t(key) : r.doc_type
       },
     },
-    { key: 'lot', header: t('sales.stock_card.lot'), role: 'meta', kind: 'code', render: (r) => r.lot_code ?? '' },
-    { key: 'serial', header: t('sales.stock_card.serial'), role: 'meta', kind: 'code', render: (r) => r.serial_code ?? '' },
-    { key: 'quantity', header: t('sales.stock_card.quantity'), role: 'meta', kind: 'number', render: (r) => formatDecimal(r.quantity, 3) },
-    { key: 'balance', header: t('sales.stock_card.balance'), role: 'meta', kind: 'number', strong: true, render: (r) => formatDecimal(r.balance, 3) },
+    { key: 'lot', header: t('stock.stock_card.lot'), role: 'meta', kind: 'code', render: (r) => r.lot_code ?? '' },
+    { key: 'serial', header: t('stock.stock_card.serial'), role: 'meta', kind: 'code', render: (r) => r.serial_code ?? '' },
+    { key: 'quantity', header: t('stock.stock_card.quantity'), role: 'meta', kind: 'number', render: (r) => formatDecimal(r.quantity, 3) },
+    { key: 'balance', header: t('stock.stock_card.balance'), role: 'meta', kind: 'number', strong: true, render: (r) => formatDecimal(r.balance, 3) },
   ]
   const rows = card.data && [edgeRow('opening', p.from, card.data.opening), ...card.data.rows.map((r, i) => ({ ...r, key: String(i) }))]
 
   return (
     <ListPage
-      title={t('sales.stock_card.title')}
-      description={t('sales.stock_card.description')}
+      title={t('stock.stock_card.title')}
+      description={t('stock.stock_card.description')}
       filters={
         <>
           <FilterChip
-            label={t('sales.stock_card.warehouse')}
+            label={t('stock.stock_card.warehouse')}
             icon={IconBuildingWarehouse}
             data={warehouses}
             searchable
@@ -112,18 +113,16 @@ export function StockCardPage() {
             onChange={put('warehouse_id')}
           />
           <RemoteFilter
-            label={t('sales.stock_card.item')}
+            label={t('stock.stock_card.item')}
             icon={IconPackage}
             current={current}
-            // Without the item role the card shows only the item it was opened for.
-            readOnly={!canItems}
             value={p.item_id || null}
             onChange={put('item_id')}
-            queryKey={salesKeys.stock.items}
-            search={async (q) => (await unwrap(api.GET('/items', { params: { query: { q: q || undefined, active: 'true', page_size: 20 } } }))).items}
+            queryKey={stockKeys.pickerItems}
+            search={async (q) => (await unwrap(api.GET('/stock/items', { params: { query: { q: q || undefined } } }))).items}
           />
-          <DateFilter label={t('sales.stock_card.from')} value={p.from} onChange={put('from')} clearable={false} />
-          <DateFilter label={t('sales.stock_card.to')} value={p.to} onChange={put('to')} clearable={false} />
+          <DateFilter label={t('stock.stock_card.from')} value={p.from} onChange={put('from')} clearable={false} />
+          <DateFilter label={t('stock.stock_card.to')} value={p.to} onChange={put('to')} clearable={false} />
         </>
       }
       list={
@@ -131,18 +130,18 @@ export function StockCardPage() {
           ? {
               query: { isPending: card.isPending, isError: card.isError, error: card.error, refetch: card.refetch, data: rows && { items: rows, total: rows.length } },
               table: {
-                label: t('sales.stock_card.title'),
+                label: t('stock.stock_card.title'),
                 columns,
                 rowKey: (r) => r.key,
                 footer: card.data && edgeRow('closing', p.to, card.data.closing),
               },
-              empty: { title: t('sales.stock_card.no_moves') },
-              noResults: t('sales.common.no_results'),
+              empty: { title: t('stock.stock_card.no_moves') },
+              noResults: t('stock.common.no_results'),
             }
           : undefined
       }
     >
-      {!ready && <EmptyState icon={IconListDetails} title={t('sales.stock_card.pick')} description={t('sales.stock_card.pick_description')} />}
+      {!ready && <EmptyState icon={IconListDetails} title={t('stock.stock_card.pick')} description={t('stock.stock_card.pick_description')} />}
       {ready && rangeError && <EmptyState icon={IconCalendarX} title={rangeError} />}
     </ListPage>
   )
