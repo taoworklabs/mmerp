@@ -195,3 +195,9 @@ func TestCheckProductsAcceptsAccounting(t *testing.T) {
 		t.Fatal(err)
 	}
 }
+
+func TestCheckProductsAcceptsPurchase(t *testing.T) {
+	if err := app.CheckProducts([]string{"hrm", "sales", "accounting", "purchase"}); err != nil {
+		t.Fatal(err)
+	}
+}

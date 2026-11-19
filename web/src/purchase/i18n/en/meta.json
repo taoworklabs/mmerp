@@ -1,0 +1,7 @@
+{
+  "purchase.nav.group": "Purchasing",
+  "purchase.role.staff": "Purchasing staff",
+  "purchase.role.manager": "Purchasing manager",
+  "purchase.role.viewer": "Purchasing viewer",
+  "purchase.role.approval_admin": "Purchasing approval setup"
+}
