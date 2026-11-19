@@ -23,31 +23,31 @@ var page = platform.Paging{Page: 1, PageSize: 50}
 
 func TestSupplierScope(t *testing.T) {
 	f := newFixture(t)
-	id := must(t)(f.purchase.CreateSupplier(f.staff, supplier("NCC1", f.a)))
+	id := must(t)(f.purchase.CreateSupplier(f.staff, supplier("NCC5", f.a)))
 	staffB := f.ctxFor("staff_b", "staff@B", "partner.editor@B")
 	viewer := f.ctxFor("viewer", "viewer@*", "partner.viewer@*")
 
 	if _, err := f.purchase.CreateSupplier(f.staff, supplier("NCCB", f.b)); !errors.Is(err, platform.ErrForbidden) {
 		t.Fatalf("create in B as staff of A: %v", err)
 	}
-	wantCode(t, must2(f.purchase.CreateSupplier(staffB, supplier("ncc1", f.b))), "supplier_code_taken")
+	wantCode(t, must2(f.purchase.CreateSupplier(staffB, supplier("ncc5", f.b))), "supplier_code_taken")
 	if l, err := f.purchase.Suppliers(staffB, purchase.SupplierFilter{Sort: "code", Paging: page}); err != nil || l.Total != 0 {
 		t.Fatalf("B lists %+v %v", l, err)
 	}
 	if _, err := f.purchase.Supplier(staffB, id); !errors.Is(err, platform.ErrNotFound) {
 		t.Fatalf("B opens A's supplier: %v", err)
 	}
-	if err := f.purchase.UpdateSupplier(staffB, id, updSupplier(supplier("NCC1", f.b))); !errors.Is(err, platform.ErrNotFound) {
+	if err := f.purchase.UpdateSupplier(staffB, id, updSupplier(supplier("NCC5", f.b))); !errors.Is(err, platform.ErrNotFound) {
 		t.Fatalf("B edits A's supplier: %v", err)
 	}
 	s, err := f.purchase.Supplier(viewer, id)
-	if err != nil || len(s.AllowedActions) != 0 || s.Partner.Name != "Công ty NCC1" || *s.PaymentTerms != "15 ngày" {
+	if err != nil || len(s.AllowedActions) != 0 || s.Partner.Name != "Công ty NCC5" || *s.PaymentTerms != "15 ngày" {
 		t.Fatalf("viewer: %+v %v", s, err)
 	}
 	if s, _ := f.purchase.Supplier(f.staff, id); !slices.Equal(s.AllowedActions, []string{"edit"}) {
 		t.Fatalf("staff actions %v", s.AllowedActions)
 	}
-	if l, err := f.purchase.Suppliers(f.staff, purchase.SupplierFilter{Q: "ncc1", Sort: "code", Paging: page}); err != nil || l.Total != 1 || l.Items[0].Name != "Công ty NCC1" {
+	if l, err := f.purchase.Suppliers(f.staff, purchase.SupplierFilter{Q: "ncc5", Sort: "code", Paging: page}); err != nil || l.Total != 1 || l.Items[0].Name != "Công ty NCC5" {
 		t.Fatalf("A lists %+v %v", l, err)
 	}
 }
@@ -69,15 +69,15 @@ func TestSupplierOnExistingPartner(t *testing.T) {
 
 func TestSupplierEditWithoutPartnerEdit(t *testing.T) {
 	f := newFixture(t)
-	id := must(t)(f.purchase.CreateSupplier(f.staff, supplier("NCC1", f.a)))
+	id := must(t)(f.purchase.CreateSupplier(f.staff, supplier("NCC5", f.a)))
 	ctx := f.ctxFor("staff_only", "staff@A")
-	c := supplier("NCC1", f.a)
+	c := supplier("NCC5", f.a)
 	c.PaymentTerms = str("60 ngày")
 	c.Partner = nil
 	f.check(f.purchase.UpdateSupplier(ctx, id, updSupplier(c)))
 	c.Partner = &partner.PartnerFields{Name: "Đổi tên"}
 	wantCode(t, f.purchase.UpdateSupplier(ctx, id, updSupplier(c)), "forbidden")
-	if got, _ := f.purchase.Supplier(ctx, id); got.Partner.Name != "Công ty NCC1" || *got.PaymentTerms != "60 ngày" {
+	if got, _ := f.purchase.Supplier(ctx, id); got.Partner.Name != "Công ty NCC5" || *got.PaymentTerms != "60 ngày" {
 		t.Fatalf("supplier %+v", got)
 	}
 }

@@ -9,6 +9,18 @@ import (
 
 func newQ(c platform.Conn) *Queries { return New(c) }
 
+var ItemsByID = data.ManyArg("purchase.ItemsByID", newQ, (*Queries).ItemsByID)
+var ItemOptionsBase = data.NewBase("purchase.ItemOptionsBase", itemOptionsBase, []string{"id", "code", "name"}, (*Queries).ItemOptionsBase)
+var LineItemsBase = data.NewBase("purchase.LineItemsBase", lineItemsBase, []string{"id", "code", "name", "unit", "price", "vat_rate", "active", "tracking", "allow_negative"}, (*Queries).LineItemsBase)
+var InsertOrder = data.ExecArg("purchase.InsertOrder", newQ, (*Queries).InsertOrder)
+var UpdateOrder = data.ExecArg("purchase.UpdateOrder", newQ, (*Queries).UpdateOrder)
+var DeleteOrder = data.ExecArg("purchase.DeleteOrder", newQ, (*Queries).DeleteOrder)
+var GetOrder = data.OneArg("purchase.GetOrder", newQ, (*Queries).GetOrder)
+var DeleteOrderLines = data.ExecArg("purchase.DeleteOrderLines", newQ, (*Queries).DeleteOrderLines)
+var InsertOrderLines = data.ExecArg("purchase.InsertOrderLines", newQ, (*Queries).InsertOrderLines)
+var GetOrderLines = data.ManyArg("purchase.GetOrderLines", newQ, (*Queries).GetOrderLines)
+var OrderListBase = data.NewBase("purchase.OrderListBase", orderListBase, []string{"id", "number", "status", "date", "org_unit_id", "supplier_id", "supplier_code", "supplier_name", "total", "org_unit_name"}, (*Queries).OrderListBase)
+var CopySupplier = data.OneArg("purchase.CopySupplier", newQ, (*Queries).CopySupplier)
 var CreateSupplier = data.OneArg("purchase.CreateSupplier", newQ, (*Queries).CreateSupplier)
 var UpdateSupplier = data.ExecArg("purchase.UpdateSupplier", newQ, (*Queries).UpdateSupplier)
 var GetSupplier = data.OneArg("purchase.GetSupplier", newQ, (*Queries).GetSupplier)

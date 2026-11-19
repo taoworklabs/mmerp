@@ -24,13 +24,13 @@ func locateSupplier(ctx context.Context, id int64) (int64, error) {
 }
 
 // SupplierActions: create when the actor may edit suppliers somewhere and Sales is on.
-func (s *Service) SupplierActions(ctx context.Context) (PurchaseActions, error) {
+func (s *Service) SupplierActions(ctx context.Context) (Actions, error) {
 	return s.typeActions(ctx, supplierType)
 }
 
-func (s *Service) typeActions(ctx context.Context, code string) (PurchaseActions, error) {
+func (s *Service) typeActions(ctx context.Context, code string) (Actions, error) {
 	acts, err := s.d.Record.TypeActions(ctx, code)
-	return PurchaseActions{AllowedActions: acts}, err
+	return Actions{AllowedActions: acts}, err
 }
 
 // Suppliers lists the suppliers under the org units where the actor may view them.

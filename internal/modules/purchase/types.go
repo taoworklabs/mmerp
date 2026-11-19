@@ -17,8 +17,8 @@ const (
 	PermApprovalManage = "purchase.approval.manage"
 )
 
-// PurchaseActions is what the actor may do before picking a record: create.
-type PurchaseActions struct {
+// Actions is what the actor may do before picking a record: create.
+type Actions struct {
 	AllowedActions []string `json:"allowed_actions" nullable:"false"`
 }
 

@@ -1834,6 +1834,71 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/purchase/line-items": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["list-purchase-line-items"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/purchase/orders": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["list-purchase-orders"];
+        put?: never;
+        /** @description Sending the same request_id again returns the document created the first time. */
+        post: operations["create-purchase-order"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/purchase/orders/actions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["get-purchase-order-actions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/purchase/orders/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["get-purchase-order"];
+        put: operations["update-purchase-order"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/purchase/suppliers": {
         parameters: {
             query?: never;
@@ -4902,31 +4967,6 @@ export interface components {
              */
             request_id: string;
         };
-        NewSupplier: {
-            /**
-             * Format: uri
-             * @description A URL to the JSON Schema for this object.
-             * @example /api/schemas/NewSupplier.json
-             */
-            readonly $schema?: string;
-            active: boolean;
-            /** @description Empty or absent: issued from the purchase.supplier code series */
-            code?: string;
-            /**
-             * Format: int64
-             * @description Owning org unit: who may see the supplier
-             */
-            org_unit_id: number;
-            /** @description A new partner's identity */
-            partner?: components["schemas"]["PartnerFields"];
-            /**
-             * Format: int64
-             * @description An existing partner
-             */
-            partner_id?: number;
-            /** @description Prefilled on new purchase orders */
-            payment_terms: string | null;
-        };
         NewTermination: {
             /**
              * Format: uri
@@ -5720,6 +5760,281 @@ export interface components {
             readonly $schema?: string;
             allowed_actions: string[];
         };
+        PurchaseLine: {
+            /**
+             * Format: int64
+             * @description Quantity × unit price
+             */
+            amount: number;
+            description: string;
+            /** Format: int64 */
+            discount: number;
+            /** @description 0 to 100, up to 2 decimals */
+            discount_percent: string;
+            item_code: string;
+            /** Format: int64 */
+            item_id: number;
+            /** @description More than 0, up to 3 decimals */
+            quantity: string;
+            stocked: boolean;
+            unit: string;
+            /** Format: int64 */
+            unit_price: number;
+            /** Format: int64 */
+            vat: number;
+            /** @enum {string} */
+            vat_rate: "none" | "0" | "5" | "8" | "10";
+        };
+        PurchaseLineInput: {
+            description: string;
+            /** @description 0 to 100, up to 2 decimals */
+            discount_percent: string;
+            /** Format: int64 */
+            item_id: number;
+            /** @description More than 0, up to 3 decimals */
+            quantity: string;
+            /** Format: int64 */
+            unit_price: number;
+            /** @enum {string} */
+            vat_rate: "none" | "0" | "5" | "8" | "10";
+        };
+        PurchaseLineItem: {
+            code: string;
+            /** Format: int64 */
+            id: number;
+            name: string;
+            /** Format: int64 */
+            price: number;
+            /** @enum {string} */
+            tracking: "none" | "quantity" | "lot" | "serial";
+            unit: string;
+            /** @enum {string} */
+            vat_rate: "none" | "0" | "5" | "8" | "10";
+        };
+        PurchaseLineItemList: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example /api/schemas/PurchaseLineItemList.json
+             */
+            readonly $schema?: string;
+            items: components["schemas"]["PurchaseLineItem"][];
+        };
+        PurchaseNewOrder: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example /api/schemas/PurchaseNewOrder.json
+             */
+            readonly $schema?: string;
+            /** Format: date */
+            date: string;
+            /**
+             * Format: date
+             * @description When the goods are expected; not before the order date
+             */
+            expected_date: string | null;
+            lines: components["schemas"]["PurchaseLineInput"][];
+            note: string | null;
+            /** Format: int64 */
+            org_unit_id: number;
+            payment_terms: string | null;
+            /**
+             * Format: uuid
+             * @description Generated once per form: sending it again returns the first document
+             */
+            request_id: string;
+            /** Format: int64 */
+            supplier_id: number;
+        };
+        PurchaseNewSupplier: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example /api/schemas/PurchaseNewSupplier.json
+             */
+            readonly $schema?: string;
+            active: boolean;
+            /** @description Empty or absent: issued from the purchase.supplier code series */
+            code?: string;
+            /**
+             * Format: int64
+             * @description Owning org unit: who may see the supplier
+             */
+            org_unit_id: number;
+            /** @description A new partner's identity */
+            partner?: components["schemas"]["PartnerFields"];
+            /**
+             * Format: int64
+             * @description An existing partner
+             */
+            partner_id?: number;
+            /** @description Prefilled on new purchase orders */
+            payment_terms: string | null;
+        };
+        PurchaseOrder: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example /api/schemas/PurchaseOrder.json
+             */
+            readonly $schema?: string;
+            allowed_actions: string[];
+            /** Format: date */
+            date: string;
+            /** Format: int64 */
+            discount_total: number;
+            /** Format: date */
+            expected_date: string | null;
+            /** Format: int64 */
+            id: number;
+            lines: components["schemas"]["PurchaseLine"][];
+            note: string | null;
+            number: string;
+            /** Format: int64 */
+            org_unit_id: number;
+            org_unit_name: string;
+            payment_terms: string | null;
+            /** @enum {string} */
+            status: "draft" | "pending_approval" | "posted" | "cancelled";
+            /** Format: int64 */
+            subtotal: number;
+            supplier: components["schemas"]["PurchaseSupplierCopy"];
+            /** Format: int64 */
+            total: number;
+            /** Format: int64 */
+            vat_total: number;
+            /** Format: int32 */
+            version: number;
+        };
+        PurchaseOrderList: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example /api/schemas/PurchaseOrderList.json
+             */
+            readonly $schema?: string;
+            items: components["schemas"]["PurchaseOrderListItem"][];
+            /** Format: int64 */
+            total: number;
+        };
+        PurchaseOrderListItem: {
+            /** Format: date */
+            date: string;
+            /** Format: int64 */
+            id: number;
+            number: string;
+            org_unit_name: string;
+            /** @enum {string} */
+            status: "draft" | "pending_approval" | "posted" | "cancelled";
+            supplier_code: string;
+            /** Format: int64 */
+            supplier_id: number;
+            supplier_name: string;
+            /** Format: int64 */
+            total: number;
+        };
+        PurchaseOrderUpdate: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example /api/schemas/PurchaseOrderUpdate.json
+             */
+            readonly $schema?: string;
+            /** Format: date */
+            date: string;
+            /**
+             * Format: date
+             * @description When the goods are expected; not before the order date
+             */
+            expected_date: string | null;
+            lines: components["schemas"]["PurchaseLineInput"][];
+            note: string | null;
+            /** Format: int64 */
+            org_unit_id: number;
+            payment_terms: string | null;
+            /** Format: int64 */
+            supplier_id: number;
+            /** Format: int32 */
+            version: number;
+        };
+        PurchaseSupplier: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example /api/schemas/PurchaseSupplier.json
+             */
+            readonly $schema?: string;
+            active: boolean;
+            allowed_actions: string[];
+            code: string;
+            /** Format: int64 */
+            id: number;
+            /**
+             * Format: int64
+             * @description Owning org unit: who may see the supplier
+             */
+            org_unit_id: number;
+            org_unit_name: string;
+            partner: components["schemas"]["PartnerFields"];
+            partner_actions: string[];
+            partner_code: string;
+            /** Format: int64 */
+            partner_id: number;
+            /** @description Prefilled on new purchase orders */
+            payment_terms: string | null;
+        };
+        PurchaseSupplierCopy: {
+            address: string | null;
+            code: string;
+            contact_name: string | null;
+            email: string | null;
+            /** Format: int64 */
+            id: number;
+            name: string;
+            phone: string | null;
+            tax_code: string | null;
+        };
+        PurchaseSupplierList: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example /api/schemas/PurchaseSupplierList.json
+             */
+            readonly $schema?: string;
+            items: components["schemas"]["PurchaseSupplierListItem"][];
+            /** Format: int64 */
+            total: number;
+        };
+        PurchaseSupplierListItem: {
+            active: boolean;
+            code: string;
+            /** Format: int64 */
+            id: number;
+            name: string;
+            org_unit_name: string;
+            payment_terms: string | null;
+            phone: string | null;
+            tax_code: string | null;
+        };
+        PurchaseSupplierUpdate: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example /api/schemas/PurchaseSupplierUpdate.json
+             */
+            readonly $schema?: string;
+            active: boolean;
+            /**
+             * Format: int64
+             * @description Owning org unit: who may see the supplier
+             */
+            org_unit_id: number;
+            /** @description Absent: the identity is left as it is */
+            partner?: components["schemas"]["PartnerFields"];
+            /** @description Prefilled on new purchase orders */
+            payment_terms: string | null;
+        };
         ReassignInputBody: {
             /**
              * Format: uri
@@ -6096,72 +6411,6 @@ export interface components {
             /** @description Decimal, signed */
             quantity: string;
             serial_code?: string;
-        };
-        Supplier: {
-            /**
-             * Format: uri
-             * @description A URL to the JSON Schema for this object.
-             * @example /api/schemas/Supplier.json
-             */
-            readonly $schema?: string;
-            active: boolean;
-            allowed_actions: string[];
-            code: string;
-            /** Format: int64 */
-            id: number;
-            /**
-             * Format: int64
-             * @description Owning org unit: who may see the supplier
-             */
-            org_unit_id: number;
-            org_unit_name: string;
-            partner: components["schemas"]["PartnerFields"];
-            partner_actions: string[];
-            partner_code: string;
-            /** Format: int64 */
-            partner_id: number;
-            /** @description Prefilled on new purchase orders */
-            payment_terms: string | null;
-        };
-        SupplierList: {
-            /**
-             * Format: uri
-             * @description A URL to the JSON Schema for this object.
-             * @example /api/schemas/SupplierList.json
-             */
-            readonly $schema?: string;
-            items: components["schemas"]["SupplierListItem"][];
-            /** Format: int64 */
-            total: number;
-        };
-        SupplierListItem: {
-            active: boolean;
-            code: string;
-            /** Format: int64 */
-            id: number;
-            name: string;
-            org_unit_name: string;
-            payment_terms: string | null;
-            phone: string | null;
-            tax_code: string | null;
-        };
-        SupplierUpdate: {
-            /**
-             * Format: uri
-             * @description A URL to the JSON Schema for this object.
-             * @example /api/schemas/SupplierUpdate.json
-             */
-            readonly $schema?: string;
-            active: boolean;
-            /**
-             * Format: int64
-             * @description Owning org unit: who may see the supplier
-             */
-            org_unit_id: number;
-            /** @description Absent: the identity is left as it is */
-            partner?: components["schemas"]["PartnerFields"];
-            /** @description Prefilled on new purchase orders */
-            payment_terms: string | null;
         };
         Termination: {
             /**
@@ -11468,6 +11717,200 @@ export interface operations {
             };
         };
     };
+    "list-purchase-line-items": {
+        parameters: {
+            query?: {
+                q?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PurchaseLineItemList"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "list-purchase-orders": {
+        parameters: {
+            query?: {
+                /** @description Number, supplier code or name */
+                q?: string;
+                status?: "draft" | "pending_approval" | "posted" | "cancelled";
+                supplier_id?: number;
+                sort?: "date" | "-date" | "number" | "-number" | "total" | "-total";
+                page?: number;
+                page_size?: 20 | 50 | 100;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PurchaseOrderList"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "create-purchase-order": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PurchaseNewOrder"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CreatedOutputBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "get-purchase-order-actions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PurchaseActions"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "get-purchase-order": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PurchaseOrder"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "update-purchase-order": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PurchaseOrderUpdate"];
+            };
+        };
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
     "list-suppliers": {
         parameters: {
             query?: {
@@ -11490,7 +11933,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["SupplierList"];
+                    "application/json": components["schemas"]["PurchaseSupplierList"];
                 };
             };
             /** @description Error */
@@ -11513,7 +11956,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["NewSupplier"];
+                "application/json": components["schemas"]["PurchaseNewSupplier"];
             };
         };
         responses: {
@@ -11583,7 +12026,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Supplier"];
+                    "application/json": components["schemas"]["PurchaseSupplier"];
                 };
             };
             /** @description Error */
@@ -11608,7 +12051,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["SupplierUpdate"];
+                "application/json": components["schemas"]["PurchaseSupplierUpdate"];
             };
         };
         responses: {

@@ -36,6 +36,7 @@ func NewService(d Deps) *Service {
 		Perms:   record.Perms{View: PermSupplierView, Edit: PermSupplierEdit, ViewFiles: PermSupplierView, Attach: PermSupplierEdit},
 		Locate:  locateSupplier,
 		HasData: func(ctx context.Context) (bool, error) { return store.AnyCatalog.Run(ctx) }})
+	s.registerOrder()
 	return s
 }
 

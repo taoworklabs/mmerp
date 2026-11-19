@@ -9,6 +9,7 @@ import (
 	"io/fs"
 	"log/slog"
 	"net/http"
+	"reflect"
 	"slices"
 	"strings"
 	"time"
@@ -214,9 +215,23 @@ func New(env Env, modules []platform.Module, webFS fs.FS) http.Handler {
 	return r
 }
 
+// schemaName is huma's, except that Purchasing's types take a "Purchase" prefix: they mirror
+// Sales' (Line, Totals, Invoice…) and schema names are global to the spec.
+func schemaName(t reflect.Type, hint string) string {
+	name := huma.DefaultSchemaNamer(t, hint)
+	for t.Kind() == reflect.Pointer || t.Kind() == reflect.Slice {
+		t = t.Elem()
+	}
+	if strings.HasSuffix(t.PkgPath(), "/internal/modules/purchase") && !strings.HasPrefix(name, "Purchase") {
+		return "Purchase" + name
+	}
+	return name
+}
+
 func newAPI(r chi.Router, modules []platform.Module) huma.API {
 	cfg := huma.DefaultConfig("mmerp", Version)
 	cfg.Servers = []*huma.Server{{URL: "/api"}}
+	cfg.Components.Schemas = huma.NewMapRegistry("#/components/schemas/", schemaName)
 	api := humachi.New(r, cfg)
 	api.UseMiddleware(requireSession(api))
 	for _, m := range modules {

@@ -7241,56 +7241,6 @@
         ],
         "type": "object"
       },
-      "NewSupplier": {
-        "additionalProperties": false,
-        "properties": {
-          "$schema": {
-            "description": "A URL to the JSON Schema for this object.",
-            "examples": [
-              "/api/schemas/NewSupplier.json"
-            ],
-            "format": "uri",
-            "readOnly": true,
-            "type": "string"
-          },
-          "active": {
-            "type": "boolean"
-          },
-          "code": {
-            "description": "Empty or absent: issued from the purchase.supplier code series",
-            "maxLength": 50,
-            "type": "string"
-          },
-          "org_unit_id": {
-            "description": "Owning org unit: who may see the supplier",
-            "format": "int64",
-            "type": "integer"
-          },
-          "partner": {
-            "$ref": "#/components/schemas/PartnerFields",
-            "description": "A new partner's identity"
-          },
-          "partner_id": {
-            "description": "An existing partner",
-            "format": "int64",
-            "type": "integer"
-          },
-          "payment_terms": {
-            "description": "Prefilled on new purchase orders",
-            "maxLength": 1000,
-            "type": [
-              "string",
-              "null"
-            ]
-          }
-        },
-        "required": [
-          "payment_terms",
-          "org_unit_id",
-          "active"
-        ],
-        "type": "object"
-      },
       "NewTermination": {
         "additionalProperties": false,
         "properties": {
@@ -9505,6 +9455,847 @@
         ],
         "type": "object"
       },
+      "PurchaseLine": {
+        "additionalProperties": false,
+        "properties": {
+          "amount": {
+            "description": "Quantity × unit price",
+            "format": "int64",
+            "type": "integer"
+          },
+          "description": {
+            "maxLength": 500,
+            "minLength": 1,
+            "type": "string"
+          },
+          "discount": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "discount_percent": {
+            "description": "0 to 100, up to 2 decimals",
+            "pattern": "^[0-9]{1,3}(\\.[0-9]{1,2})?$",
+            "type": "string"
+          },
+          "item_code": {
+            "type": "string"
+          },
+          "item_id": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "quantity": {
+            "description": "More than 0, up to 3 decimals",
+            "pattern": "^[0-9]{1,12}(\\.[0-9]{1,3})?$",
+            "type": "string"
+          },
+          "stocked": {
+            "type": "boolean"
+          },
+          "unit": {
+            "type": "string"
+          },
+          "unit_price": {
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "vat": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "vat_rate": {
+            "enum": [
+              "none",
+              "0",
+              "5",
+              "8",
+              "10"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "item_code",
+          "unit",
+          "stocked",
+          "amount",
+          "discount",
+          "vat",
+          "item_id",
+          "description",
+          "quantity",
+          "unit_price",
+          "discount_percent",
+          "vat_rate"
+        ],
+        "type": "object"
+      },
+      "PurchaseLineInput": {
+        "additionalProperties": false,
+        "properties": {
+          "description": {
+            "maxLength": 500,
+            "minLength": 1,
+            "type": "string"
+          },
+          "discount_percent": {
+            "description": "0 to 100, up to 2 decimals",
+            "pattern": "^[0-9]{1,3}(\\.[0-9]{1,2})?$",
+            "type": "string"
+          },
+          "item_id": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "quantity": {
+            "description": "More than 0, up to 3 decimals",
+            "pattern": "^[0-9]{1,12}(\\.[0-9]{1,3})?$",
+            "type": "string"
+          },
+          "unit_price": {
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "vat_rate": {
+            "enum": [
+              "none",
+              "0",
+              "5",
+              "8",
+              "10"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "item_id",
+          "description",
+          "quantity",
+          "unit_price",
+          "discount_percent",
+          "vat_rate"
+        ],
+        "type": "object"
+      },
+      "PurchaseLineItem": {
+        "additionalProperties": false,
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "id": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "name": {
+            "type": "string"
+          },
+          "price": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "tracking": {
+            "enum": [
+              "none",
+              "quantity",
+              "lot",
+              "serial"
+            ],
+            "type": "string"
+          },
+          "unit": {
+            "type": "string"
+          },
+          "vat_rate": {
+            "enum": [
+              "none",
+              "0",
+              "5",
+              "8",
+              "10"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "code",
+          "name",
+          "unit",
+          "price",
+          "vat_rate",
+          "tracking"
+        ],
+        "type": "object"
+      },
+      "PurchaseLineItemList": {
+        "additionalProperties": false,
+        "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "/api/schemas/PurchaseLineItemList.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/PurchaseLineItem"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "items"
+        ],
+        "type": "object"
+      },
+      "PurchaseNewOrder": {
+        "additionalProperties": false,
+        "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "/api/schemas/PurchaseNewOrder.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
+          "date": {
+            "format": "date",
+            "type": "string"
+          },
+          "expected_date": {
+            "description": "When the goods are expected; not before the order date",
+            "format": "date",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "lines": {
+            "items": {
+              "$ref": "#/components/schemas/PurchaseLineInput"
+            },
+            "maxItems": 200,
+            "minItems": 1,
+            "type": "array"
+          },
+          "note": {
+            "maxLength": 2000,
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "org_unit_id": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "payment_terms": {
+            "maxLength": 1000,
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "request_id": {
+            "description": "Generated once per form: sending it again returns the first document",
+            "format": "uuid",
+            "type": "string"
+          },
+          "supplier_id": {
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "request_id",
+          "date",
+          "org_unit_id",
+          "supplier_id",
+          "expected_date",
+          "payment_terms",
+          "note",
+          "lines"
+        ],
+        "type": "object"
+      },
+      "PurchaseNewSupplier": {
+        "additionalProperties": false,
+        "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "/api/schemas/PurchaseNewSupplier.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
+          "active": {
+            "type": "boolean"
+          },
+          "code": {
+            "description": "Empty or absent: issued from the purchase.supplier code series",
+            "maxLength": 50,
+            "type": "string"
+          },
+          "org_unit_id": {
+            "description": "Owning org unit: who may see the supplier",
+            "format": "int64",
+            "type": "integer"
+          },
+          "partner": {
+            "$ref": "#/components/schemas/PartnerFields",
+            "description": "A new partner's identity"
+          },
+          "partner_id": {
+            "description": "An existing partner",
+            "format": "int64",
+            "type": "integer"
+          },
+          "payment_terms": {
+            "description": "Prefilled on new purchase orders",
+            "maxLength": 1000,
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "payment_terms",
+          "org_unit_id",
+          "active"
+        ],
+        "type": "object"
+      },
+      "PurchaseOrder": {
+        "additionalProperties": false,
+        "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "/api/schemas/PurchaseOrder.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
+          "allowed_actions": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "date": {
+            "format": "date",
+            "type": "string"
+          },
+          "discount_total": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "expected_date": {
+            "format": "date",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "id": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "lines": {
+            "items": {
+              "$ref": "#/components/schemas/PurchaseLine"
+            },
+            "type": "array"
+          },
+          "note": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "number": {
+            "type": "string"
+          },
+          "org_unit_id": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "org_unit_name": {
+            "type": "string"
+          },
+          "payment_terms": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "status": {
+            "enum": [
+              "draft",
+              "pending_approval",
+              "posted",
+              "cancelled"
+            ],
+            "type": "string"
+          },
+          "subtotal": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "supplier": {
+            "$ref": "#/components/schemas/PurchaseSupplierCopy"
+          },
+          "total": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "vat_total": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "version": {
+            "format": "int32",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "number",
+          "status",
+          "version",
+          "date",
+          "org_unit_id",
+          "org_unit_name",
+          "supplier",
+          "expected_date",
+          "payment_terms",
+          "note",
+          "lines",
+          "allowed_actions",
+          "subtotal",
+          "discount_total",
+          "vat_total",
+          "total"
+        ],
+        "type": "object"
+      },
+      "PurchaseOrderList": {
+        "additionalProperties": false,
+        "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "/api/schemas/PurchaseOrderList.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/PurchaseOrderListItem"
+            },
+            "type": "array"
+          },
+          "total": {
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "items",
+          "total"
+        ],
+        "type": "object"
+      },
+      "PurchaseOrderListItem": {
+        "additionalProperties": false,
+        "properties": {
+          "date": {
+            "format": "date",
+            "type": "string"
+          },
+          "id": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "number": {
+            "type": "string"
+          },
+          "org_unit_name": {
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "draft",
+              "pending_approval",
+              "posted",
+              "cancelled"
+            ],
+            "type": "string"
+          },
+          "supplier_code": {
+            "type": "string"
+          },
+          "supplier_id": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "supplier_name": {
+            "type": "string"
+          },
+          "total": {
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "number",
+          "status",
+          "date",
+          "supplier_id",
+          "supplier_code",
+          "supplier_name",
+          "org_unit_name",
+          "total"
+        ],
+        "type": "object"
+      },
+      "PurchaseOrderUpdate": {
+        "additionalProperties": false,
+        "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "/api/schemas/PurchaseOrderUpdate.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
+          "date": {
+            "format": "date",
+            "type": "string"
+          },
+          "expected_date": {
+            "description": "When the goods are expected; not before the order date",
+            "format": "date",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "lines": {
+            "items": {
+              "$ref": "#/components/schemas/PurchaseLineInput"
+            },
+            "maxItems": 200,
+            "minItems": 1,
+            "type": "array"
+          },
+          "note": {
+            "maxLength": 2000,
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "org_unit_id": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "payment_terms": {
+            "maxLength": 1000,
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "supplier_id": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "version": {
+            "format": "int32",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "version",
+          "date",
+          "org_unit_id",
+          "supplier_id",
+          "expected_date",
+          "payment_terms",
+          "note",
+          "lines"
+        ],
+        "type": "object"
+      },
+      "PurchaseSupplier": {
+        "additionalProperties": false,
+        "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "/api/schemas/PurchaseSupplier.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
+          "active": {
+            "type": "boolean"
+          },
+          "allowed_actions": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "code": {
+            "type": "string"
+          },
+          "id": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "org_unit_id": {
+            "description": "Owning org unit: who may see the supplier",
+            "format": "int64",
+            "type": "integer"
+          },
+          "org_unit_name": {
+            "type": "string"
+          },
+          "partner": {
+            "$ref": "#/components/schemas/PartnerFields"
+          },
+          "partner_actions": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "partner_code": {
+            "type": "string"
+          },
+          "partner_id": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "payment_terms": {
+            "description": "Prefilled on new purchase orders",
+            "maxLength": 1000,
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "code",
+          "partner_id",
+          "partner_code",
+          "partner",
+          "org_unit_name",
+          "allowed_actions",
+          "partner_actions",
+          "payment_terms",
+          "org_unit_id",
+          "active"
+        ],
+        "type": "object"
+      },
+      "PurchaseSupplierCopy": {
+        "additionalProperties": false,
+        "properties": {
+          "address": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "code": {
+            "type": "string"
+          },
+          "contact_name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "email": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "id": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "name": {
+            "type": "string"
+          },
+          "phone": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "tax_code": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "code",
+          "name",
+          "tax_code",
+          "address",
+          "phone",
+          "email",
+          "contact_name"
+        ],
+        "type": "object"
+      },
+      "PurchaseSupplierList": {
+        "additionalProperties": false,
+        "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "/api/schemas/PurchaseSupplierList.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/PurchaseSupplierListItem"
+            },
+            "type": "array"
+          },
+          "total": {
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "items",
+          "total"
+        ],
+        "type": "object"
+      },
+      "PurchaseSupplierListItem": {
+        "additionalProperties": false,
+        "properties": {
+          "active": {
+            "type": "boolean"
+          },
+          "code": {
+            "type": "string"
+          },
+          "id": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "name": {
+            "type": "string"
+          },
+          "org_unit_name": {
+            "type": "string"
+          },
+          "payment_terms": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "phone": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "tax_code": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "code",
+          "name",
+          "tax_code",
+          "phone",
+          "org_unit_name",
+          "active",
+          "payment_terms"
+        ],
+        "type": "object"
+      },
+      "PurchaseSupplierUpdate": {
+        "additionalProperties": false,
+        "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "/api/schemas/PurchaseSupplierUpdate.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
+          "active": {
+            "type": "boolean"
+          },
+          "org_unit_id": {
+            "description": "Owning org unit: who may see the supplier",
+            "format": "int64",
+            "type": "integer"
+          },
+          "partner": {
+            "$ref": "#/components/schemas/PartnerFields",
+            "description": "Absent: the identity is left as it is"
+          },
+          "payment_terms": {
+            "description": "Prefilled on new purchase orders",
+            "maxLength": 1000,
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "payment_terms",
+          "org_unit_id",
+          "active"
+        ],
+        "type": "object"
+      },
       "ReassignInputBody": {
         "additionalProperties": false,
         "properties": {
@@ -10676,201 +11467,6 @@
           "number",
           "quantity",
           "balance"
-        ],
-        "type": "object"
-      },
-      "Supplier": {
-        "additionalProperties": false,
-        "properties": {
-          "$schema": {
-            "description": "A URL to the JSON Schema for this object.",
-            "examples": [
-              "/api/schemas/Supplier.json"
-            ],
-            "format": "uri",
-            "readOnly": true,
-            "type": "string"
-          },
-          "active": {
-            "type": "boolean"
-          },
-          "allowed_actions": {
-            "items": {
-              "type": "string"
-            },
-            "type": "array"
-          },
-          "code": {
-            "type": "string"
-          },
-          "id": {
-            "format": "int64",
-            "type": "integer"
-          },
-          "org_unit_id": {
-            "description": "Owning org unit: who may see the supplier",
-            "format": "int64",
-            "type": "integer"
-          },
-          "org_unit_name": {
-            "type": "string"
-          },
-          "partner": {
-            "$ref": "#/components/schemas/PartnerFields"
-          },
-          "partner_actions": {
-            "items": {
-              "type": "string"
-            },
-            "type": "array"
-          },
-          "partner_code": {
-            "type": "string"
-          },
-          "partner_id": {
-            "format": "int64",
-            "type": "integer"
-          },
-          "payment_terms": {
-            "description": "Prefilled on new purchase orders",
-            "maxLength": 1000,
-            "type": [
-              "string",
-              "null"
-            ]
-          }
-        },
-        "required": [
-          "id",
-          "code",
-          "partner_id",
-          "partner_code",
-          "partner",
-          "org_unit_name",
-          "allowed_actions",
-          "partner_actions",
-          "payment_terms",
-          "org_unit_id",
-          "active"
-        ],
-        "type": "object"
-      },
-      "SupplierList": {
-        "additionalProperties": false,
-        "properties": {
-          "$schema": {
-            "description": "A URL to the JSON Schema for this object.",
-            "examples": [
-              "/api/schemas/SupplierList.json"
-            ],
-            "format": "uri",
-            "readOnly": true,
-            "type": "string"
-          },
-          "items": {
-            "items": {
-              "$ref": "#/components/schemas/SupplierListItem"
-            },
-            "type": "array"
-          },
-          "total": {
-            "format": "int64",
-            "type": "integer"
-          }
-        },
-        "required": [
-          "items",
-          "total"
-        ],
-        "type": "object"
-      },
-      "SupplierListItem": {
-        "additionalProperties": false,
-        "properties": {
-          "active": {
-            "type": "boolean"
-          },
-          "code": {
-            "type": "string"
-          },
-          "id": {
-            "format": "int64",
-            "type": "integer"
-          },
-          "name": {
-            "type": "string"
-          },
-          "org_unit_name": {
-            "type": "string"
-          },
-          "payment_terms": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "phone": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "tax_code": {
-            "type": [
-              "string",
-              "null"
-            ]
-          }
-        },
-        "required": [
-          "id",
-          "code",
-          "name",
-          "tax_code",
-          "phone",
-          "org_unit_name",
-          "active",
-          "payment_terms"
-        ],
-        "type": "object"
-      },
-      "SupplierUpdate": {
-        "additionalProperties": false,
-        "properties": {
-          "$schema": {
-            "description": "A URL to the JSON Schema for this object.",
-            "examples": [
-              "/api/schemas/SupplierUpdate.json"
-            ],
-            "format": "uri",
-            "readOnly": true,
-            "type": "string"
-          },
-          "active": {
-            "type": "boolean"
-          },
-          "org_unit_id": {
-            "description": "Owning org unit: who may see the supplier",
-            "format": "int64",
-            "type": "integer"
-          },
-          "partner": {
-            "$ref": "#/components/schemas/PartnerFields",
-            "description": "Absent: the identity is left as it is"
-          },
-          "payment_terms": {
-            "description": "Prefilled on new purchase orders",
-            "maxLength": 1000,
-            "type": [
-              "string",
-              "null"
-            ]
-          }
-        },
-        "required": [
-          "payment_terms",
-          "org_unit_id",
-          "active"
         ],
         "type": "object"
       },
@@ -19477,6 +20073,315 @@
         ]
       }
     },
+    "/purchase/line-items": {
+      "get": {
+        "operationId": "list-purchase-line-items",
+        "parameters": [
+          {
+            "explode": false,
+            "in": "query",
+            "name": "q",
+            "schema": {
+              "maxLength": 100,
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PurchaseLineItemList"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "tags": [
+          "purchase",
+          "purchase"
+        ]
+      }
+    },
+    "/purchase/orders": {
+      "get": {
+        "operationId": "list-purchase-orders",
+        "parameters": [
+          {
+            "description": "Number, supplier code or name",
+            "explode": false,
+            "in": "query",
+            "name": "q",
+            "schema": {
+              "description": "Number, supplier code or name",
+              "maxLength": 100,
+              "type": "string"
+            }
+          },
+          {
+            "explode": false,
+            "in": "query",
+            "name": "status",
+            "schema": {
+              "enum": [
+                "draft",
+                "pending_approval",
+                "posted",
+                "cancelled"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "explode": false,
+            "in": "query",
+            "name": "supplier_id",
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          },
+          {
+            "explode": false,
+            "in": "query",
+            "name": "sort",
+            "schema": {
+              "default": "-date",
+              "enum": [
+                "date",
+                "-date",
+                "number",
+                "-number",
+                "total",
+                "-total"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "explode": false,
+            "in": "query",
+            "name": "page",
+            "schema": {
+              "default": 1,
+              "format": "int64",
+              "maximum": 100000,
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "explode": false,
+            "in": "query",
+            "name": "page_size",
+            "schema": {
+              "default": 50,
+              "enum": [
+                20,
+                50,
+                100
+              ],
+              "format": "int64",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PurchaseOrderList"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "tags": [
+          "purchase",
+          "purchase"
+        ]
+      },
+      "post": {
+        "description": "Sending the same request_id again returns the document created the first time.",
+        "operationId": "create-purchase-order",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PurchaseNewOrder"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreatedOutputBody"
+                }
+              }
+            },
+            "description": "Created"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "tags": [
+          "purchase",
+          "purchase"
+        ]
+      }
+    },
+    "/purchase/orders/actions": {
+      "get": {
+        "operationId": "get-purchase-order-actions",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PurchaseActions"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "tags": [
+          "purchase",
+          "purchase"
+        ]
+      }
+    },
+    "/purchase/orders/{id}": {
+      "get": {
+        "operationId": "get-purchase-order",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PurchaseOrder"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "tags": [
+          "purchase",
+          "purchase"
+        ]
+      },
+      "put": {
+        "operationId": "update-purchase-order",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PurchaseOrderUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "tags": [
+          "purchase",
+          "purchase"
+        ]
+      }
+    },
     "/purchase/suppliers": {
       "get": {
         "operationId": "list-suppliers",
@@ -19559,7 +20464,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/SupplierList"
+                  "$ref": "#/components/schemas/PurchaseSupplierList"
                 }
               }
             },
@@ -19587,7 +20492,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/NewSupplier"
+                "$ref": "#/components/schemas/PurchaseNewSupplier"
               }
             }
           },
@@ -19671,7 +20576,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Supplier"
+                  "$ref": "#/components/schemas/PurchaseSupplier"
                 }
               }
             },
@@ -19710,7 +20615,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/SupplierUpdate"
+                "$ref": "#/components/schemas/PurchaseSupplierUpdate"
               }
             }
           },
