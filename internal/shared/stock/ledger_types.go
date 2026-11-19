@@ -38,6 +38,21 @@ type Move struct {
 	Quantity    decimal.Decimal
 }
 
+// Count is what a stocktake found for one key of one warehouse; Quantity ≥ 0.
+type Count struct {
+	LineNo   int
+	ItemID   int64
+	Lot      *LotRef
+	Serial   *string
+	Quantity decimal.Decimal
+}
+
+// CountResult is a count's on hand when it posted.
+type CountResult struct {
+	LineNo int
+	Book   decimal.Decimal
+}
+
 // LotRef names a lot by code; a move creates it when missing, with Expiry (YYYY-MM-DD).
 type LotRef struct {
 	Code   string  `json:"code" minLength:"1" maxLength:"100"`

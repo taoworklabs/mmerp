@@ -57,19 +57,8 @@ func (s *Service) Record(ctx context.Context, ref record.Ref, moves []Move) erro
 			return err
 		}
 	}
-	// Lots and serials are created in (item, code) order, so two documents creating the
-	// same new ones queue on the unique index instead of deadlocking.
-	order := make([]int, len(moves))
-	for i := range order {
-		order[i] = i
-	}
-	slices.SortFunc(order, func(a, b int) int {
-		// Incoming first for the same code, so an outgoing line sees what the document itself creates.
-		return cmp.Or(cmp.Compare(moves[a].ItemID, moves[b].ItemID), cmp.Compare(trackCode(moves[a]), trackCode(moves[b])),
-			-cmp.Compare(moves[a].Quantity.Sign(), moves[b].Quantity.Sign()), cmp.Compare(moves[a].LineNo, moves[b].LineNo), cmp.Compare(a, b))
-	})
 	keyOf := make([]key, len(moves))
-	for _, i := range order {
+	for _, i := range creationOrder(moves) {
 		m := moves[i]
 		k := key{w: m.WarehouseID, i: m.ItemID}
 		if k.l, k.s, err = s.resolve(ctx, items[m.ItemID].Tracking, m); err != nil {
@@ -83,6 +72,137 @@ func (s *Service) Record(ctx context.Context, ref record.Ref, moves []Move) erro
 		lines[i] = line{k: keyOf[i], lineNo: m.LineNo, qty: m.Quantity}
 	}
 	return apply(ctx, ref, h.Date, items, lines)
+}
+
+// creationOrder sorts moves by (item, code), so two documents creating the same new lots or
+// serials queue on the unique index instead of deadlocking.
+func creationOrder(moves []Move) []int {
+	order := make([]int, len(moves))
+	for i := range order {
+		order[i] = i
+	}
+	slices.SortFunc(order, func(a, b int) int {
+		// Incoming first for the same code, so an outgoing line sees what the document itself creates.
+		return cmp.Or(cmp.Compare(moves[a].ItemID, moves[b].ItemID), cmp.Compare(trackCode(moves[a]), trackCode(moves[b])),
+			-cmp.Compare(moves[a].Quantity.Sign(), moves[b].Quantity.Sign()), cmp.Compare(moves[a].LineNo, moves[b].LineNo), cmp.Compare(a, b))
+	})
+	return order
+}
+
+// RecordCounts moves on hand of a warehouse to counted quantities, in the caller's transaction:
+// each count's difference from on hand, read under the balance lock, becomes a move. A positive
+// count of an unknown lot or serial creates it; a zero count of one leaves nothing. Counts name
+// distinct keys. Results follow counts. Like Record, it checks no permission and records once.
+func (s *Service) RecordCounts(ctx context.Context, ref record.Ref, warehouse int64, counts []Count) ([]CountResult, error) {
+	h, err := store.DocumentHeader.Run(ctx, store.DocumentHeaderParams{DocType: ref.Type, ID: ref.ID})
+	if errors.Is(err, pgx.ErrNoRows) {
+		return nil, platform.ErrNotFound
+	}
+	if err != nil {
+		return nil, err
+	}
+	if live, err := store.HasLiveMoves.Run(ctx, store.HasLiveMovesParams{DocType: ref.Type, DocID: ref.ID}); err != nil || live {
+		return nil, platform.OrErr(err, ErrAlreadyRecorded)
+	}
+	// Probe moves carry the shape checks and lot creation: +1 for a positive count, -1 (look up only) for zero.
+	probes := make([]Move, len(counts))
+	for i, c := range counts {
+		m := Move{LineNo: c.LineNo, WarehouseID: warehouse, ItemID: c.ItemID, Lot: c.Lot, Serial: c.Serial, Quantity: decimal.NewFromInt(1)}
+		if c.Quantity.IsNegative() || !c.Quantity.Equal(c.Quantity.Truncate(3)) || c.Quantity.GreaterThanOrEqual(maxQuantity) {
+			return nil, lineErr(ErrQuantityInvalid, m)
+		}
+		if c.Serial != nil && c.Quantity.GreaterThan(m.Quantity) {
+			return nil, lineErr(ErrSerialQuantity, m)
+		}
+		if c.Quantity.IsZero() {
+			m.Quantity = m.Quantity.Neg()
+		}
+		probes[i] = m
+	}
+	results := make([]CountResult, len(counts))
+	if len(counts) == 0 {
+		return results, nil
+	}
+	whs, items, err := s.moveMasters(ctx, probes)
+	if err != nil {
+		return nil, err
+	}
+	for _, m := range probes {
+		if err := check(m, whs, items, h.LegalEntityID); err != nil {
+			return nil, err
+		}
+	}
+	keyOf := make([]key, len(counts))
+	known := make([]bool, len(counts))
+	for _, i := range creationOrder(probes) {
+		m := probes[i]
+		k := key{w: m.WarehouseID, i: m.ItemID}
+		k.l, k.s, err = s.resolve(ctx, items[m.ItemID].Tracking, m)
+		if errors.Is(err, ErrLotNotFound) || errors.Is(err, ErrSerialNotFound) {
+			continue // counted 0 of a lot or serial that never existed: on hand is 0 already
+		}
+		if err != nil {
+			return nil, err
+		}
+		keyOf[i], known[i] = k, true
+	}
+
+	// Same lock order as apply, which re-locks these rows as a no-op.
+	var serials []int64
+	var ws, is, ls, ss []int64
+	for i, k := range keyOf {
+		if !known[i] {
+			continue
+		}
+		if k.s != 0 {
+			serials = append(serials, k.s)
+		}
+	}
+	slices.Sort(serials)
+	if err := store.LockSerials.Run(ctx, slices.Compact(serials)); err != nil {
+		return nil, err
+	}
+	sorted := slices.SortedFunc(func(yield func(key) bool) {
+		for i, k := range keyOf {
+			if known[i] && !yield(k) {
+				return
+			}
+		}
+	}, key.compare)
+	for _, k := range sorted {
+		ws, is, ls, ss = append(ws, k.w), append(is, k.i), append(ls, k.l), append(ss, k.s)
+	}
+	if err := store.InsertBalances.Run(ctx, store.InsertBalancesParams{WarehouseIds: ws, ItemIds: is, LotIds: ls, SerialIds: ss}); err != nil {
+		return nil, err
+	}
+	if err := store.LockBalances.Run(ctx, store.LockBalancesParams{WarehouseIds: ws, ItemIds: is, LotIds: ls, SerialIds: ss}); err != nil {
+		return nil, err
+	}
+	rows, err := store.BalanceQuantities.Run(ctx, store.BalanceQuantitiesParams{WarehouseIds: ws, ItemIds: is, LotIds: ls, SerialIds: ss})
+	if err != nil {
+		return nil, err
+	}
+	book := map[key]decimal.Decimal{}
+	for _, r := range rows {
+		if book[key{r.WarehouseID, r.ItemID, r.LotID, r.SerialID}], err = decimal.NewFromString(r.Quantity); err != nil {
+			return nil, err
+		}
+	}
+	var lines []line
+	for i, c := range counts {
+		results[i] = CountResult{LineNo: c.LineNo, Book: book[keyOf[i]]}
+		if !known[i] {
+			results[i].Book = decimal.Zero
+			continue
+		}
+		if d := c.Quantity.Sub(results[i].Book); !d.IsZero() {
+			lines = append(lines, line{k: keyOf[i], lineNo: c.LineNo, qty: d})
+		}
+	}
+	if len(lines) == 0 {
+		return results, nil
+	}
+	return results, apply(ctx, ref, h.Date, items, lines)
 }
 
 // line is one resolved move to write; reverses is the id of the move it undoes, or 0.

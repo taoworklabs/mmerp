@@ -84,3 +84,9 @@ SELECT s.code
 FROM stock.balances b JOIN stock.serials s ON s.id = b.serial_id
 WHERE b.warehouse_id = $1 AND b.item_id = $2 AND b.quantity > 0
 ORDER BY s.code, s.id;
+
+-- name: BalanceQuantities :many
+SELECT b.warehouse_id, b.item_id, coalesce(b.lot_id, 0)::bigint AS lot_id, coalesce(b.serial_id, 0)::bigint AS serial_id, b.quantity::text AS quantity
+FROM stock.balances b
+JOIN (SELECT unnest(@warehouse_ids::bigint[]) AS w, unnest(@item_ids::bigint[]) AS i, unnest(@lot_ids::bigint[]) AS l, unnest(@serial_ids::bigint[]) AS s) AS k
+  ON b.warehouse_id = k.w AND b.item_id = k.i AND coalesce(b.lot_id, 0) = k.l AND coalesce(b.serial_id, 0) = k.s;
