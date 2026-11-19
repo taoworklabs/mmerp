@@ -46,6 +46,7 @@ func NewService(d Deps) *Service {
 	s := &Service{d: d}
 	s.registerAdjustment()
 	s.registerTransfer()
+	s.registerStocktake()
 	return s
 }
 

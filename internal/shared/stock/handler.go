@@ -25,6 +25,7 @@ type updateWarehouseInput struct {
 func registerHandlers(api huma.API, s *Service) {
 	registerAdjustmentHandlers(api, s)
 	registerTransferHandlers(api, s)
+	registerStocktakeHandlers(api, s)
 	huma.Register(api, huma.Operation{OperationID: "list-stock-on-hand", Method: http.MethodGet, Path: "/stock/on-hand"},
 		func(ctx context.Context, in *OnHandFilter) (*onHandOutput, error) {
 			l, err := s.OnHand(ctx, *in)

@@ -2620,6 +2620,55 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/stock/stocktakes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["list-stock-stocktakes"];
+        put?: never;
+        /** @description Sending the same request_id again returns the document created the first time. */
+        post: operations["create-stock-stocktake"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/stock/stocktakes/actions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["get-stock-stocktake-actions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/stock/stocktakes/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["get-stock-stocktake"];
+        put: operations["update-stock-stocktake"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/stock/transfers": {
         parameters: {
             query?: never;
@@ -2694,6 +2743,23 @@ export interface paths {
         };
         get?: never;
         put: operations["update-warehouse"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/stock/warehouses/{id}/on-hand-lines": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description A warehouse's balances as stocktake lines counting what is on hand. */
+        get: operations["list-stock-on-hand-lines"];
+        put?: never;
         post?: never;
         delete?: never;
         options?: never;
@@ -5180,6 +5246,25 @@ export interface components {
              */
             request_id: string;
         };
+        NewStocktake: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example /api/schemas/NewStocktake.json
+             */
+            readonly $schema?: string;
+            /** Format: date */
+            date: string;
+            lines: components["schemas"]["StocktakeLine"][];
+            note: string;
+            /**
+             * Format: uuid
+             * @description Generated once per form: sending it again returns the first document
+             */
+            request_id: string;
+            /** Format: int64 */
+            warehouse_id: number;
+        };
         NewTermination: {
             /**
              * Format: uri
@@ -5290,6 +5375,15 @@ export interface components {
             record_id: number | null;
             /** @description e.g. hrm.leave_request; null for a job */
             record_type: string | null;
+        };
+        OnHandLines: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example /api/schemas/OnHandLines.json
+             */
+            readonly $schema?: string;
+            items: components["schemas"]["StocktakeLine"][];
         };
         OnHandList: {
             /**
@@ -7147,6 +7241,99 @@ export interface components {
             /** @description Decimal, signed */
             quantity: string;
             serial_code?: string;
+        };
+        Stocktake: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example /api/schemas/Stocktake.json
+             */
+            readonly $schema?: string;
+            allowed_actions: string[];
+            /** Format: date */
+            date: string;
+            /** Format: int64 */
+            id: number;
+            /** Format: int64 */
+            legal_entity_id: number;
+            lines: components["schemas"]["StocktakeLineOut"][];
+            note: string;
+            number: string;
+            /** @enum {string} */
+            status: "draft" | "pending_approval" | "posted" | "cancelled";
+            /** Format: int32 */
+            version: number;
+            warehouse_code: string;
+            /** Format: int64 */
+            warehouse_id: number;
+            warehouse_name: string;
+        };
+        StocktakeLine: {
+            /** @description 0 or more, up to 3 decimals; a serial counts 0 or 1 */
+            counted: string;
+            /** Format: int64 */
+            item_id: number;
+            /** @description Lot-tracked items: a lot found on the shelf is created at posting */
+            lot?: components["schemas"]["LotRef"];
+            /** @description Serial-tracked items */
+            serial?: string;
+        };
+        StocktakeLineOut: {
+            book?: string;
+            /** @description 0 or more, up to 3 decimals; a serial counts 0 or 1 */
+            counted: string;
+            difference?: string;
+            item_code: string;
+            /** Format: int64 */
+            item_id: number;
+            item_name: string;
+            /** @description Lot-tracked items: a lot found on the shelf is created at posting */
+            lot?: components["schemas"]["LotRef"];
+            on_hand?: string;
+            /** @description Serial-tracked items */
+            serial?: string;
+            unit: string;
+        };
+        StocktakeList: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example /api/schemas/StocktakeList.json
+             */
+            readonly $schema?: string;
+            items: components["schemas"]["StocktakeListItem"][];
+            /** Format: int64 */
+            total: number;
+        };
+        StocktakeListItem: {
+            /** Format: date */
+            date: string;
+            /** Format: int64 */
+            id: number;
+            note: string;
+            number: string;
+            /** @enum {string} */
+            status: "draft" | "pending_approval" | "posted" | "cancelled";
+            warehouse_code: string;
+            /** Format: int64 */
+            warehouse_id: number;
+            warehouse_name: string;
+        };
+        StocktakeUpdate: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example /api/schemas/StocktakeUpdate.json
+             */
+            readonly $schema?: string;
+            /** Format: date */
+            date: string;
+            lines: components["schemas"]["StocktakeLine"][];
+            note: string;
+            /** Format: int32 */
+            version: number;
+            /** Format: int64 */
+            warehouse_id: number;
         };
         Termination: {
             /**
@@ -15001,6 +15188,169 @@ export interface operations {
             };
         };
     };
+    "list-stock-stocktakes": {
+        parameters: {
+            query?: {
+                /** @description Number or note */
+                q?: string;
+                status?: "draft" | "pending_approval" | "posted" | "cancelled";
+                warehouse_id?: number;
+                sort?: "date" | "-date" | "number" | "-number";
+                page?: number;
+                page_size?: 20 | 50 | 100;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StocktakeList"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "create-stock-stocktake": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NewStocktake"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CreatedOutputBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "get-stock-stocktake-actions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdjustmentActions"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "get-stock-stocktake": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Stocktake"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "update-stock-stocktake": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StocktakeUpdate"];
+            };
+        };
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
     "list-stock-transfers": {
         parameters: {
             query?: {
@@ -15254,6 +15604,40 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "list-stock-on-hand-lines": {
+        parameters: {
+            query?: {
+                /** @description Only this item */
+                item_id?: number;
+            };
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OnHandLines"];
+                };
             };
             /** @description Error */
             default: {
