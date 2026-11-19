@@ -175,6 +175,20 @@ Product description: [products/sales.md](./products/sales.md).
 - **Request id** (`request_id`, vi: "Mã yêu cầu"): a UUID a create form generates once; sending the same create twice returns the first document.
 - **Sales roles** (vi: "Vai trò bán hàng"): `staff` and `manager` (customers, quotations and orders, view and edit; same permissions, two names for approval routing), `viewer` (view), `approval_admin` (`sales.approval.manage`; tenant-wide only). They no longer grant partner or item access: Sales users also hold `partner.viewer`/`partner.editor`, and `item.viewer`/`item.admin` to read or manage the catalogue screen (shared roles, ADR-0039); picking items on a quotation or order needs no item role. See [ADR-0027](./docs/adr/0027-sales-product.md).
 
+## Purchasing
+
+Product description: [products/purchasing.md](./products/purchasing.md).
+
+- **Supplier** (`purchase.supplier`, vi: "Nhà cung cấp"): Purchasing's **partner role**: a partner the organisation buys from. One per partner per org unit at most, with an owning org unit, `code`, payment terms and active flag; identity lives on the partner. A company that is both customer and supplier is one partner with two roles. See [ADR-0090](./docs/adr/0090-purchasing-product.md).
+- **Purchase order** (`purchase.order`, vi: "Đơn mua hàng"): a document recording what the organisation orders from a supplier. `posted` means confirmed. Lines and amounts follow Sales' rules.
+- **Goods receipt** (`purchase.goods_receipt`, vi: "Phiếu nhập kho"): a document bringing goods of a confirmed purchase order into one warehouse, naming lots and serials. `posted` means the goods came in. An order may have several.
+- **Received, receipt state** (vi: "Đã nhận, Tình trạng nhận hàng"): received sums an order line's posted goods receipts; the order's receipt state is `none`, `partial`, `full`, or `not_applicable` without stock lines. Derived, not stored.
+- **Supplier invoice** (`purchase.invoice`, vi: "Hoá đơn mua hàng"): a document booking the supplier's bill for quantities of a confirmed purchase order's lines; price, discount and VAT rate follow the supplier's paper. Records the supplier's invoice symbol (vi: "Ký hiệu"), number and date. `posted` means booked.
+- **Supplier payment** (`purchase.payment`, vi: "Phiếu chi"): a document recording money paid to one supplier, by cash or bank transfer, allocated to posted supplier invoices of that supplier in the payment's org unit.
+- **Payment allocation** (vi: "Phân bổ chi"): the part of a supplier payment that settles one supplier invoice.
+- Invoice state, paid, remaining and payment state mean on purchase documents what they mean in Sales (vi for paid and remaining: "Đã trả, Còn phải trả"). "Receipt" alone is avoided: Sales' customer receipt is money, a goods receipt is goods.
+- **Purchasing roles** (vi: "Vai trò mua hàng"): `staff` and `manager` (suppliers and purchase orders, view and edit), `viewer`, `approval_admin` (`purchase.approval.manage`; tenant-wide only).
+
 ## Accounting
 
 Product description: [products/accounting.md](./products/accounting.md).
