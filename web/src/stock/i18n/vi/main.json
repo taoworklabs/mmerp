@@ -171,5 +171,7 @@
   "stock.stocktake.load.action": "Lấy tồn kho",
   "stock.stocktake.load.title": "Thay các dòng bằng tồn kho?",
   "stock.stocktake.load.message": "Các dòng đang nhập sẽ được thay bằng hàng đang tồn trong kho, số đếm bằng tồn hiện tại.",
-  "stock.stocktake.load.confirm": "Thay bằng tồn kho"
+  "stock.stocktake.load.confirm": "Thay bằng tồn kho",
+  "stock.stocktake.load.truncated_title": "Kho có nhiều hơn 2000 dòng tồn",
+  "stock.stocktake.load.truncated": "Chỉ 2000 dòng đầu được lấy. Các dòng không có trong phiếu sẽ không được kiểm; hãy kiểm phần còn lại bằng phiếu khác."
 }

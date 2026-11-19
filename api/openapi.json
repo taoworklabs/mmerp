@@ -7633,10 +7633,14 @@
               "$ref": "#/components/schemas/OnHandLine"
             },
             "type": "array"
+          },
+          "truncated": {
+            "type": "boolean"
           }
         },
         "required": [
-          "items"
+          "items",
+          "truncated"
         ],
         "type": "object"
       },

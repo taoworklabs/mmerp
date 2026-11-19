@@ -4,6 +4,9 @@ SELECT legal_entity_id, active FROM stock.warehouses WHERE id = $1;
 -- name: CountItems :one
 SELECT count(*) FROM item.items WHERE id = ANY(@ids::bigint[]);
 
+-- name: ItemTrackings :many
+SELECT id, tracking FROM item.items WHERE id = ANY(@ids::bigint[]);
+
 -- name: InsertAdjustment :exec
 INSERT INTO stock.adjustments (id, warehouse_id, reason) VALUES ($1, $2, $3);
 

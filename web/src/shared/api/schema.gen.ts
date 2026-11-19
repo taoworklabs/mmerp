@@ -5413,6 +5413,7 @@ export interface components {
              */
             readonly $schema?: string;
             items: components["schemas"]["OnHandLine"][];
+            truncated: boolean;
         };
         OnHandList: {
             /**

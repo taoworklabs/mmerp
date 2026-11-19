@@ -59,4 +59,5 @@ LEFT JOIN stock.lots l ON l.id = b.lot_id
 LEFT JOIN stock.serials s ON s.id = b.serial_id
 WHERE b.warehouse_id = @warehouse_id AND b.quantity <> 0 AND (@item_id::bigint = 0 OR b.item_id = @item_id)
 ORDER BY i.code, i.id, l.code NULLS FIRST, s.code NULLS FIRST
-LIMIT 2000;
+-- One past what a stocktake takes, so the caller knows there is more.
+LIMIT 2001;

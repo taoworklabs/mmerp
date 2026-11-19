@@ -147,6 +147,12 @@ func prepareTransfer(ctx context.Context, f *TransferFields) (record.Header, err
 	ids := make([]int64, len(f.Lines))
 	for i, l := range f.Lines {
 		ids[i] = l.ItemID
+	}
+	tracking, err := itemTrackings(ctx, ids)
+	if err != nil {
+		return record.Header{}, err
+	}
+	for i, l := range f.Lines {
 		if l.Lot != nil && strings.TrimSpace(*l.Lot) == "" || l.Serial != nil && strings.TrimSpace(*l.Serial) == "" {
 			return record.Header{}, lineErr(ErrCodeBlank, Move{LineNo: i + 1})
 		}
@@ -154,9 +160,9 @@ func prepareTransfer(ctx context.Context, f *TransferFields) (record.Header, err
 		if err != nil || !q.IsPositive() || !q.Equal(q.Truncate(3)) || q.GreaterThanOrEqual(maxQuantity) {
 			return record.Header{}, lineErr(ErrQuantityInvalid, Move{LineNo: i + 1})
 		}
-	}
-	if err := itemsExist(ctx, ids); err != nil {
-		return record.Header{}, err
+		if err := CheckShape(tracking[l.ItemID], l.Lot, l.Serial, q, i+1); err != nil {
+			return record.Header{}, err
+		}
 	}
 	return record.Header{Date: f.Date, OrgUnitID: from.LegalEntityID}, nil
 }
@@ -173,16 +179,21 @@ func activeWarehouse(ctx context.Context, id int64) (store.AdjustmentWarehouseRo
 	return w, err
 }
 
-// itemsExist refuses ids naming no item.
-func itemsExist(ctx context.Context, ids []int64) error {
-	n, err := store.CountItems.Run(ctx, ids)
+// itemTrackings reads the tracking of the items a draft names, without locking them;
+// an id naming no item is refused.
+func itemTrackings(ctx context.Context, ids []int64) (map[int64]string, error) {
+	rows, err := store.ItemTrackings.Run(ctx, ids)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	if distinct(ids) != int(n) {
-		return platform.ErrNotFound
+	out := make(map[int64]string, len(rows))
+	for _, r := range rows {
+		out[r.ID] = r.Tracking
 	}
-	return nil
+	if distinct(ids) != len(out) {
+		return nil, platform.ErrNotFound
+	}
+	return out, nil
 }
 
 func (s *Service) writeTransferLines(ctx context.Context, id int64, f TransferFields) error {
@@ -236,6 +247,9 @@ func (s *Service) transferTransition(ctx context.Context, d record.Doc, _ record
 			if l.Lot != nil {
 				lot = &LotRef{Code: *l.Lot}
 			}
+			if err := knownCode(ctx, l, i+1); err != nil {
+				return err
+			}
 			moves = append(moves,
 				Move{LineNo: i + 1, WarehouseID: t.FromWarehouseID, ItemID: l.ItemID, Lot: lot, Serial: l.Serial, Quantity: q.Neg()},
 				Move{LineNo: i + 1, WarehouseID: t.ToWarehouseID, ItemID: l.ItemID, Lot: lot, Serial: l.Serial, Quantity: q})
@@ -243,6 +257,27 @@ func (s *Service) transferTransition(ctx context.Context, d record.Doc, _ record
 		return s.Record(ctx, d.Ref, moves)
 	case record.Cancelled:
 		return s.Void(ctx, d.Ref)
+	}
+	return nil
+}
+
+// knownCode refuses a line naming a lot or serial its item never had: the incoming side would
+// create it and the outgoing side then report a shortage instead.
+func knownCode(ctx context.Context, l TransferLineOut, lineNo int) error {
+	m := Move{LineNo: lineNo}
+	switch {
+	case l.Lot != nil:
+		_, err := store.LotByCode.Run(ctx, store.LotByCodeParams{ItemID: l.ItemID, Code: *l.Lot})
+		if errors.Is(err, pgx.ErrNoRows) {
+			return lineErr(ErrLotNotFound, m)
+		}
+		return err
+	case l.Serial != nil:
+		_, err := store.SerialByCode.Run(ctx, store.SerialByCodeParams{ItemID: l.ItemID, Code: *l.Serial})
+		if errors.Is(err, pgx.ErrNoRows) {
+			return lineErr(ErrSerialNotFound, m)
+		}
+		return err
 	}
 	return nil
 }

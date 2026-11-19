@@ -9,6 +9,7 @@ import { useDocumentMutation } from '@/shared/document'
 import { errorText, formatDate, formatDecimal } from '@/shared/i18n'
 import { useConfirm } from '@/shared/ui/confirm'
 import { DateField, DecimalField, Form, FormActions, FormRow, FormSection, LinesTable, SelectField, TextField, type ErrorFields, type LineColumn } from '@/shared/ui/form'
+import { Notice } from '@/shared/ui/Notice'
 import { notifyError } from '@/shared/ui/notify'
 import { icon } from '@/shared/ui/theme'
 import { useWarehouseOptions } from '../hooks/useStock'
@@ -68,7 +69,8 @@ function thousandths(s: string): bigint {
 // draftDifference is what posting would move for a line: counted less on hand, or null while
 // either is unknown. Display only; posting takes on hand under the balance lock.
 export function draftDifference(onHand: string | undefined, counted: string): string | null {
-  if (onHand === undefined || counted.trim() === '') return null
+  const exact = /^-?\d*(\.\d*)?$/
+  if (onHand === undefined || counted.trim() === '' || !exact.test(onHand.trim()) || !exact.test(counted.trim())) return null
   const d = thousandths(counted) - thousandths(onHand)
   const abs = d < 0n ? -d : d
   const frac = String(abs % 1000n).padStart(3, '0').replace(/0+$/, '')
@@ -135,6 +137,8 @@ export function StocktakeForm({ doc, onCreated }: Props) {
   const [requestId] = useState(() => crypto.randomUUID())
   const form = useForm<Values>({ mode: 'onBlur', defaultValues: defaults(doc) })
   const [confirm, confirmDialog] = useConfirm()
+  // The last load stopped at what a stocktake takes; the rest of the warehouse is not listed.
+  const [truncated, setTruncated] = useState(false)
   const ro = doc ? !doc.allowed_actions.includes('edit') : false
   const posted = !!doc && doc.lines.some((l) => l.book !== undefined)
   const lines = form.watch('lines')
@@ -160,6 +164,7 @@ export function StocktakeForm({ doc, onCreated }: Props) {
         queryFn: () => unwrap(api.GET('/stock/warehouses/{id}/on-hand-lines', { params: { path: { id } } })),
         staleTime: 0,
       })
+      setTruncated(got.truncated)
       form.setValue(
         'lines',
         got.items.length
@@ -280,6 +285,13 @@ export function StocktakeForm({ doc, onCreated }: Props) {
         icon={IconListDetails}
         wide
       >
+        {!ro && truncated && (
+          <FormRow>
+            <Notice tone="warning" announce="polite" title={t('stock.stocktake.load.truncated_title')}>
+              {t('stock.stocktake.load.truncated')}
+            </Notice>
+          </FormRow>
+        )}
         {!ro && (
           <FormRow>
             <Button variant="default" leftSection={<IconPackages {...icon.button} />} disabled={!warehouse} onClick={loadOnHand}>

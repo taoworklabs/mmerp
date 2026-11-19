@@ -13,13 +13,13 @@ func (s *Service) registerStocktakePrint() {
 		Data:   s.stocktakePrintData, Layouts: []printing.Layout{stocktakeLayout1}})
 }
 
-// stocktakePrint is what a transfer prints.
+// stocktakePrint is what a stocktake prints.
 type stocktakePrint struct {
 	Stocktake
 	Company printing.LegalEntity `json:"company"`
 }
 
-// stocktakePrintData reads a transfer as printed; printing checked the actor may print it.
+// stocktakePrintData reads a stocktake as printed; printing checked the actor may print it.
 func (s *Service) stocktakePrintData(ctx context.Context, id int64) ([]printing.Part, error) {
 	t, err := readStocktake(ctx, id)
 	if err != nil {

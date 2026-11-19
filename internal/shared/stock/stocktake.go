@@ -14,6 +14,9 @@ import (
 
 const stocktakeType = "stock.stocktake"
 
+// maxStocktakeLines is the most lines a stocktake takes.
+const maxStocktakeLines = 2000
+
 func (s *Service) registerStocktake() {
 	s.d.Record.Register(record.Type{Code: stocktakeType, Product: "stock", Shared: true, Kind: record.Document, NumberPrefix: "KK",
 		Perms:        record.Perms{View: PermView, Edit: PermManage, ViewFiles: PermView, Attach: PermManage},
@@ -158,6 +161,12 @@ func prepareStocktake(ctx context.Context, f *StocktakeFields) (record.Header, e
 	ids := make([]int64, len(f.Lines))
 	for i, l := range f.Lines {
 		ids[i] = l.ItemID
+	}
+	tracking, err := itemTrackings(ctx, ids)
+	if err != nil {
+		return record.Header{}, err
+	}
+	for i, l := range f.Lines {
 		m := Move{LineNo: i + 1, ItemID: l.ItemID, Lot: l.Lot, Serial: l.Serial}
 		if l.Lot != nil && strings.TrimSpace(l.Lot.Code) == "" || l.Serial != nil && strings.TrimSpace(*l.Serial) == "" {
 			return record.Header{}, lineErr(ErrCodeBlank, m)
@@ -166,14 +175,23 @@ func prepareStocktake(ctx context.Context, f *StocktakeFields) (record.Header, e
 		if err != nil || q.IsNegative() || !q.Equal(q.Truncate(3)) || q.GreaterThanOrEqual(maxQuantity) {
 			return record.Header{}, lineErr(ErrQuantityInvalid, m)
 		}
+		// A serial counts 0 or 1; its shape is checked as one unit.
+		shapeQty := q
+		if q.IsZero() {
+			shapeQty = decimal.NewFromInt(1)
+		}
+		var lot *string
+		if l.Lot != nil {
+			lot = &l.Lot.Code
+		}
+		if err := CheckShape(tracking[l.ItemID], lot, l.Serial, shapeQty, i+1); err != nil {
+			return record.Header{}, err
+		}
 		k := lineKey{l.ItemID, trackCode(m)}
 		if seen[k] {
 			return record.Header{}, lineErr(ErrCountDuplicate, m)
 		}
 		seen[k] = true
-	}
-	if err := itemsExist(ctx, ids); err != nil {
-		return record.Header{}, err
 	}
 	return record.Header{Date: f.Date, OrgUnitID: w.LegalEntityID}, nil
 }
@@ -255,6 +273,9 @@ func (s *Service) OnHandLines(ctx context.Context, warehouse, itemID int64) (OnH
 	rows, err := store.OnHandLines.Run(ctx, store.OnHandLinesParams{WarehouseID: warehouse, ItemID: itemID})
 	if err != nil {
 		return out, err
+	}
+	if len(rows) > maxStocktakeLines {
+		rows, out.Truncated = rows[:maxStocktakeLines], true
 	}
 	for _, r := range rows {
 		l := StocktakeLine{ItemID: r.ItemID, Serial: platform.TextPtr(r.SerialCode), Counted: platform.PlainDecimal(r.Quantity)}

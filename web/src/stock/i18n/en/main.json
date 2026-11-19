@@ -171,5 +171,7 @@
   "stock.stocktake.load.action": "Load on hand",
   "stock.stocktake.load.title": "Replace the lines with on hand?",
   "stock.stocktake.load.message": "The lines entered are replaced by what the warehouse holds, each counted as on hand.",
-  "stock.stocktake.load.confirm": "Replace with on hand"
+  "stock.stocktake.load.confirm": "Replace with on hand",
+  "stock.stocktake.load.truncated_title": "The warehouse holds more than 2000 rows",
+  "stock.stocktake.load.truncated": "Only the first 2000 were loaded. Rows not on the stocktake are not counted; count the rest on another stocktake."
 }

@@ -240,6 +240,35 @@ func (q *Queries) InsertAdjustmentLines(ctx context.Context, arg InsertAdjustmen
 	return err
 }
 
+const itemTrackings = `-- name: ItemTrackings :many
+SELECT id, tracking FROM item.items WHERE id = ANY($1::bigint[])
+`
+
+type ItemTrackingsRow struct {
+	ID       int64
+	Tracking string
+}
+
+func (q *Queries) ItemTrackings(ctx context.Context, ids []int64) ([]ItemTrackingsRow, error) {
+	rows, err := q.db.Query(ctx, itemTrackings, ids)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ItemTrackingsRow
+	for rows.Next() {
+		var i ItemTrackingsRow
+		if err := rows.Scan(&i.ID, &i.Tracking); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const updateAdjustment = `-- name: UpdateAdjustment :exec
 UPDATE stock.adjustments SET warehouse_id = $2, reason = $3 WHERE id = $1
 `

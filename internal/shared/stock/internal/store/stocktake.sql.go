@@ -185,7 +185,7 @@ LEFT JOIN stock.lots l ON l.id = b.lot_id
 LEFT JOIN stock.serials s ON s.id = b.serial_id
 WHERE b.warehouse_id = $1 AND b.quantity <> 0 AND ($2::bigint = 0 OR b.item_id = $2)
 ORDER BY i.code, i.id, l.code NULLS FIRST, s.code NULLS FIRST
-LIMIT 2000
+LIMIT 2001
 `
 
 type OnHandLinesParams struct {
@@ -205,6 +205,7 @@ type OnHandLinesRow struct {
 }
 
 // Non-zero balances of a warehouse, optionally of one item, as stocktake lines counting what is on hand.
+// One past what a stocktake takes, so the caller knows there is more.
 func (q *Queries) OnHandLines(ctx context.Context, arg OnHandLinesParams) ([]OnHandLinesRow, error) {
 	rows, err := q.db.Query(ctx, onHandLines, arg.WarehouseID, arg.ItemID)
 	if err != nil {

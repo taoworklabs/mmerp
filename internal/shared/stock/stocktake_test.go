@@ -2,6 +2,7 @@ package stock_test
 
 import (
 	"context"
+	"fmt"
 	"testing"
 
 	"github.com/shopspring/decimal"
@@ -192,5 +193,37 @@ func TestOnHandLines(t *testing.T) {
 	}
 	if one, err := s.stock.OnHandLines(viewer, s.wh, lt); err != nil || len(one.Items) != 1 {
 		t.Fatalf("one item %+v %v", one, err)
+	}
+}
+
+func TestStocktakeShapeCheckedOnSave(t *testing.T) {
+	s := newStocked(t)
+	lt := s.item(t, item.TrackLot, false)
+	f := s.stocktakeFields("2026-11-02")
+	f.Lines = append(f.Lines, stock.StocktakeLine{ItemID: lt, Counted: "0"})
+	_, err := s.stock.CreateStocktake(s.admin, stock.NewStocktake{StocktakeFields: f})
+	if e := wantCode(t, err, stock.ErrLotRequired); e.Params["line_no"] != 2 {
+		t.Fatalf("params %+v", e.Params)
+	}
+}
+
+// Loading on hand says when the warehouse holds more rows than a stocktake takes.
+func TestOnHandLinesTruncated(t *testing.T) {
+	s := newStocked(t)
+	l, err := s.stock.OnHandLines(s.admin, s.wh, 0)
+	if err != nil || l.Truncated {
+		t.Fatalf("small warehouse %+v %v", l.Truncated, err)
+	}
+	sr := s.item(t, item.TrackSerial, false)
+	moves := make([]stock.Move, 2000)
+	for i := range moves {
+		code := fmt.Sprintf("SN%04d", i)
+		moves[i] = stock.Move{LineNo: i + 1, WarehouseID: s.wh, ItemID: sr, Serial: &code, Quantity: qty(1)}
+	}
+	if err := s.move(t, moves...); err != nil {
+		t.Fatal(err)
+	}
+	if l, err = s.stock.OnHandLines(s.admin, s.wh, 0); err != nil || !l.Truncated || len(l.Items) != 2000 {
+		t.Fatalf("large warehouse %d %v %v", len(l.Items), l.Truncated, err)
 	}
 }

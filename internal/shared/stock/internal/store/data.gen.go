@@ -11,6 +11,7 @@ func newQ(c platform.Conn) *Queries { return New(c) }
 
 var AdjustmentWarehouse = data.OneArg("stock.AdjustmentWarehouse", newQ, (*Queries).AdjustmentWarehouse)
 var CountItems = data.OneArg("stock.CountItems", newQ, (*Queries).CountItems)
+var ItemTrackings = data.ManyArg("stock.ItemTrackings", newQ, (*Queries).ItemTrackings)
 var InsertAdjustment = data.ExecArg("stock.InsertAdjustment", newQ, (*Queries).InsertAdjustment)
 var UpdateAdjustment = data.ExecArg("stock.UpdateAdjustment", newQ, (*Queries).UpdateAdjustment)
 var DeleteAdjustment = data.ExecArg("stock.DeleteAdjustment", newQ, (*Queries).DeleteAdjustment)

@@ -12,6 +12,9 @@ describe('draftDifference', () => {
     expect(draftDifference('4', '')).toBeNull()
     expect(draftDifference(undefined, '4')).toBeNull()
   })
+  it('says nothing for a number it cannot read exactly', () => {
+    expect(draftDifference('0', '1e+21')).toBeNull()
+  })
 })
 
 describe('stocktakeBody', () => {

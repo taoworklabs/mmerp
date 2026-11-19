@@ -91,6 +91,8 @@ type OnHandLine struct {
 // OnHandLines are a warehouse's balances as stocktake lines.
 type OnHandLines struct {
 	Items []OnHandLine `json:"items" nullable:"false"`
+	// The warehouse holds more rows than a stocktake takes; only the first are listed.
+	Truncated bool `json:"truncated"`
 }
 
 type OnHandLinesFilter struct {

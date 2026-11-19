@@ -212,3 +212,41 @@ func TestTransferNeedsManage(t *testing.T) {
 	_, err := s.stock.CreateTransfer(viewer, stock.NewTransfer{TransferFields: s.transferFields("2026-11-02", s.warehouse(t, s.unit))})
 	_ = wantCode(t, err, platform.ErrForbidden)
 }
+
+// Saving checks each line against its item's tracking, as deliveries and receipts do.
+func TestTransferShapeCheckedOnSave(t *testing.T) {
+	s := newStocked(t)
+	to := s.warehouse(t, s.unit)
+	none, sr := s.item(t, item.TrackNone, false), s.item(t, item.TrackSerial, false)
+	serial := "S1"
+	for _, c := range []struct {
+		line stock.TransferLine
+		want error
+	}{
+		{stock.TransferLine{ItemID: none, Quantity: "1"}, stock.ErrUntracked},
+		{stock.TransferLine{ItemID: sr, Serial: &serial, Quantity: "2"}, stock.ErrSerialQuantity},
+		{stock.TransferLine{ItemID: sr, Quantity: "1"}, stock.ErrSerialRequired},
+	} {
+		f := s.transferFields("2026-11-02", to)
+		f.Lines = append(f.Lines, c.line)
+		_, err := s.stock.CreateTransfer(s.admin, stock.NewTransfer{TransferFields: f})
+		if e := wantCode(t, err, c.want); e.Params["line_no"] != 2 {
+			t.Fatalf("%v params %+v", c.want, e.Params)
+		}
+	}
+}
+
+// A lot or serial the source never had is named as unknown, not as short.
+func TestTransferUnknownLot(t *testing.T) {
+	s := newStocked(t)
+	lt := s.item(t, item.TrackLot, false)
+	if err := s.move(t, stock.Move{LineNo: 1, WarehouseID: s.wh, ItemID: lt, Lot: lot("L1", nil), Quantity: qty(5)}); err != nil {
+		t.Fatal(err)
+	}
+	typo := "L9"
+	_, err := s.postTransfer(t, stock.TransferFields{Date: "2026-11-02", FromWarehouseID: s.wh, ToWarehouseID: s.warehouse(t, s.unit),
+		Lines: []stock.TransferLine{{ItemID: lt, Lot: &typo, Quantity: "1"}}})
+	if e := wantCode(t, err, stock.ErrLotNotFound); e.Params["line_no"] != 1 {
+		t.Fatalf("params %+v", e.Params)
+	}
+}
