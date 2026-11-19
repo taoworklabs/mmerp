@@ -27,7 +27,7 @@ A milestone only passes when what it adds keeps the contract intact from table t
 ```
 M11 Attachments and discussion ─► M12 Notifications ─► M13 PDF printing ─► M14 Sales   (all done)
    ─► HRM review ─► Core work after M14   (done) ─► M15 Accounting   (done)
-   ─► M16 Partner subledger   (done) ─► M17 Sales to cash ─► M18 Purchasing ─► M19 Stock
+   ─► M16 Partner subledger ─► M17 Sales to cash   (done) ─► M18 Purchasing ─► M19 Stock
    ┄► M10 On-premise operations ┄► [Gate: production readiness]   (on hold)
 ```
 
@@ -151,7 +151,7 @@ Vertical slices, each from migration to screen:
 
 ## M17. Sales to cash
 
-**In progress** (2026-11-17): [ADR-0052](./adr/0052-receipts-settle-named-invoices.md).
+**Done** (2026-11-19): [ADR-0052](./adr/0052-receipts-settle-named-invoices.md).
 
 **Goal:** a confirmed order is billed in parts and paid, sales staff see on each invoice and order whether it is paid, and accounting gets the receivable, revenue, output VAT and cash per customer ([ADR-0052](./adr/0052-receipts-settle-named-invoices.md), [design](./superpowers/specs/2026-11-17-sales-to-cash-design.md)).
 
@@ -186,7 +186,7 @@ Core and frontend foundations built once Sales opened:
 - [ADR-0038](./adr/0038-data-engine-over-sqlc.md): Data engine over sqlc: dynamic parts compiled from code-declared fragments, no ORM
 - [ADR-0039](./adr/0039-shared-master-data.md): Shared master data: partners, items and tax in `shared/`, with their own namespace
 
-**Next:** M17 Sales to cash, then M18 Purchasing, M19 Stock. M10 and the production-readiness gate stay on hold.
+**Next:** M18 Purchasing, then M19 Stock. M10 and the production-readiness gate stay on hold.
 
 ## M10. On-premise operations
 
