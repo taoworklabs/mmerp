@@ -7,4 +7,5 @@ type actionsOutput struct{ Body Actions }
 func registerHandlers(api huma.API, s *Service) {
 	registerSupplierHandlers(api, s)
 	registerOrderHandlers(api, s)
+	registerReceiptHandlers(api, s)
 }

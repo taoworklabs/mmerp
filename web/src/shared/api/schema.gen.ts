@@ -1834,6 +1834,39 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/purchase/goods-receipts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["list-goods-receipts"];
+        put?: never;
+        /** @description Sending the same request_id again returns the goods receipt created the first time. */
+        post: operations["create-goods-receipt"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/purchase/goods-receipts/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["get-goods-receipt"];
+        put: operations["update-goods-receipt"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/purchase/line-items": {
         parameters: {
             query?: never;
@@ -1892,6 +1925,22 @@ export interface paths {
         };
         get: operations["get-purchase-order"];
         put: operations["update-purchase-order"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/purchase/orders/{id}/receipt-options": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["get-purchase-receipt-options"];
+        put?: never;
         post?: never;
         delete?: never;
         options?: never;
@@ -5760,6 +5809,88 @@ export interface components {
             readonly $schema?: string;
             allowed_actions: string[];
         };
+        PurchaseDocRef: {
+            /** Format: int64 */
+            id: number;
+            number: string;
+            /** @enum {string} */
+            status: "draft" | "pending_approval" | "posted" | "cancelled";
+        };
+        PurchaseGoodsReceipt: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example /api/schemas/PurchaseGoodsReceipt.json
+             */
+            readonly $schema?: string;
+            allowed_actions: string[];
+            /** Format: date */
+            date: string;
+            /** Format: int64 */
+            id: number;
+            lines: components["schemas"]["PurchaseReceiptLine"][];
+            note: string | null;
+            number: string;
+            /** Format: int64 */
+            order_id: number;
+            order_number: string;
+            /** Format: int64 */
+            org_unit_id: number;
+            /** @enum {string} */
+            status: "draft" | "pending_approval" | "posted" | "cancelled";
+            /** Format: int32 */
+            version: number;
+            warehouse_code: string;
+            /** Format: int64 */
+            warehouse_id: number;
+            warehouse_name: string;
+        };
+        PurchaseGoodsReceiptList: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example /api/schemas/PurchaseGoodsReceiptList.json
+             */
+            readonly $schema?: string;
+            items: components["schemas"]["PurchaseGoodsReceiptListItem"][];
+            /** Format: int64 */
+            total: number;
+        };
+        PurchaseGoodsReceiptListItem: {
+            /** Format: date */
+            date: string;
+            /** Format: int64 */
+            id: number;
+            number: string;
+            /** Format: int64 */
+            order_id: number;
+            order_number: string;
+            org_unit_name: string;
+            /** @enum {string} */
+            status: "draft" | "pending_approval" | "posted" | "cancelled";
+            /** Format: int64 */
+            supplier_id: number;
+            supplier_name: string;
+            /** Format: int64 */
+            warehouse_id: number;
+            warehouse_name: string;
+        };
+        PurchaseGoodsReceiptUpdate: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example /api/schemas/PurchaseGoodsReceiptUpdate.json
+             */
+            readonly $schema?: string;
+            /** Format: date */
+            date: string;
+            lines: components["schemas"]["PurchaseReceiptLineInput"][];
+            note: string | null;
+            /** Format: int32 */
+            version: number;
+            /** Format: int64 */
+            warehouse_id: number;
+        };
         PurchaseLine: {
             /**
              * Format: int64
@@ -5776,6 +5907,7 @@ export interface components {
             item_id: number;
             /** @description More than 0, up to 3 decimals */
             quantity: string;
+            received?: string;
             stocked: boolean;
             unit: string;
             /** Format: int64 */
@@ -5819,6 +5951,27 @@ export interface components {
              */
             readonly $schema?: string;
             items: components["schemas"]["PurchaseLineItem"][];
+        };
+        PurchaseNewGoodsReceipt: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example /api/schemas/PurchaseNewGoodsReceipt.json
+             */
+            readonly $schema?: string;
+            /** Format: date */
+            date: string;
+            lines: components["schemas"]["PurchaseReceiptLineInput"][];
+            note: string | null;
+            /** Format: int64 */
+            order_id: number;
+            /**
+             * Format: uuid
+             * @description Generated once per form: sending it again returns the first goods receipt
+             */
+            request_id: string;
+            /** Format: int64 */
+            warehouse_id: number;
         };
         PurchaseNewOrder: {
             /**
@@ -5886,6 +6039,7 @@ export interface components {
             discount_total: number;
             /** Format: date */
             expected_date: string | null;
+            goods_receipts?: components["schemas"]["PurchaseDocRef"][] | null;
             /** Format: int64 */
             id: number;
             lines: components["schemas"]["PurchaseLine"][];
@@ -5895,6 +6049,8 @@ export interface components {
             org_unit_id: number;
             org_unit_name: string;
             payment_terms: string | null;
+            /** @enum {string} */
+            receipt_state?: "none" | "partial" | "full" | "not_applicable";
             /** @enum {string} */
             status: "draft" | "pending_approval" | "posted" | "cancelled";
             /** Format: int64 */
@@ -5925,6 +6081,8 @@ export interface components {
             id: number;
             number: string;
             org_unit_name: string;
+            /** @enum {string} */
+            receipt_state: "none" | "partial" | "full" | "not_applicable";
             /** @enum {string} */
             status: "draft" | "pending_approval" | "posted" | "cancelled";
             supplier_code: string;
@@ -5957,6 +6115,54 @@ export interface components {
             supplier_id: number;
             /** Format: int32 */
             version: number;
+        };
+        PurchaseReceiptLine: {
+            description: string;
+            item_code: string;
+            /** Format: int64 */
+            item_id: number;
+            /** @description Lot-tracked items: created at posting when missing */
+            lot?: components["schemas"]["LotRef"];
+            /** Format: int64 */
+            order_position: number;
+            /** @description More than 0, up to 3 decimals; 1 for a serial */
+            quantity: string;
+            /** @description Serial-tracked items: one per line */
+            serial?: string;
+            unit: string;
+        };
+        PurchaseReceiptLineInput: {
+            /** @description Lot-tracked items: created at posting when missing */
+            lot?: components["schemas"]["LotRef"];
+            /** Format: int64 */
+            order_position: number;
+            /** @description More than 0, up to 3 decimals; 1 for a serial */
+            quantity: string;
+            /** @description Serial-tracked items: one per line */
+            serial?: string;
+        };
+        PurchaseReceiptOptionLine: {
+            description: string;
+            item_code: string;
+            /** Format: int64 */
+            item_id: number;
+            /** Format: int64 */
+            order_position: number;
+            ordered: string;
+            remaining: string;
+            /** @enum {string} */
+            tracking: "none" | "quantity" | "lot" | "serial";
+            unit: string;
+        };
+        PurchaseReceiptOptions: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example /api/schemas/PurchaseReceiptOptions.json
+             */
+            readonly $schema?: string;
+            lines: components["schemas"]["PurchaseReceiptOptionLine"][];
+            warehouses: components["schemas"]["PurchaseWarehouseOption"][];
         };
         PurchaseSupplier: {
             /**
@@ -6034,6 +6240,13 @@ export interface components {
             partner?: components["schemas"]["PartnerFields"];
             /** @description Prefilled on new purchase orders */
             payment_terms: string | null;
+        };
+        PurchaseWarehouseOption: {
+            code: string;
+            /** Format: int64 */
+            id: number;
+            is_default: boolean;
+            name: string;
         };
         ReassignInputBody: {
             /**
@@ -11717,6 +11930,141 @@ export interface operations {
             };
         };
     };
+    "list-goods-receipts": {
+        parameters: {
+            query?: {
+                /** @description Number, order number or supplier name */
+                q?: string;
+                status?: "draft" | "pending_approval" | "posted" | "cancelled";
+                order_id?: number;
+                warehouse_id?: number;
+                sort?: "date" | "-date" | "number" | "-number";
+                page?: number;
+                page_size?: 20 | 50 | 100;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PurchaseGoodsReceiptList"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "create-goods-receipt": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PurchaseNewGoodsReceipt"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CreatedOutputBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "get-goods-receipt": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PurchaseGoodsReceipt"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "update-goods-receipt": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PurchaseGoodsReceiptUpdate"];
+            };
+        };
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
     "list-purchase-line-items": {
         parameters: {
             query?: {
@@ -11755,6 +12103,7 @@ export interface operations {
                 q?: string;
                 status?: "draft" | "pending_approval" | "posted" | "cancelled";
                 supplier_id?: number;
+                receipt_state?: "none" | "partial" | "full" | "not_applicable";
                 sort?: "date" | "-date" | "number" | "-number" | "total" | "-total";
                 page?: number;
                 page_size?: 20 | 50 | 100;
@@ -11899,6 +12248,37 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "get-purchase-receipt-options": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PurchaseReceiptOptions"];
+                };
             };
             /** @description Error */
             default: {

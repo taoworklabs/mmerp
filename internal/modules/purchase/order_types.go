@@ -46,6 +46,8 @@ type Line struct {
 	Amount   int64 `json:"amount" doc:"Quantity × unit price"`
 	Discount int64 `json:"discount"`
 	Vat      int64 `json:"vat"`
+	// Posted orders' stock lines: what posted goods receipts brought in.
+	Received *string `json:"received,omitempty"`
 }
 
 // DocRef names another document.
@@ -76,7 +78,10 @@ type Order struct {
 	Note         *string      `json:"note"`
 	Lines        []Line       `json:"lines" nullable:"false"`
 	Totals
-	// edit, delete, submit, withdraw, cancel, print.
+	// Posted orders: how far posted goods receipts went over the stock lines, and the receipts not cancelled.
+	ReceiptState  string   `json:"receipt_state,omitempty" enum:"none,partial,full,not_applicable"`
+	GoodsReceipts []DocRef `json:"goods_receipts,omitempty"`
+	// edit, delete, submit, withdraw, cancel, print, create_goods_receipt.
 	AllowedActions []string `json:"allowed_actions" nullable:"false"`
 }
 
@@ -84,6 +89,7 @@ type OrderFilter struct {
 	Q          string `query:"q" maxLength:"100" doc:"Number, supplier code or name"`
 	Status     string `query:"status" enum:"draft,pending_approval,posted,cancelled"`
 	SupplierID int64  `query:"supplier_id"`
+	ReceiptState string `query:"receipt_state" enum:"none,partial,full,not_applicable"`
 	Sort       string `query:"sort" enum:"date,-date,number,-number,total,-total" default:"-date"`
 	platform.Paging
 }
@@ -98,6 +104,7 @@ type OrderListItem struct {
 	SupplierName string `json:"supplier_name"`
 	OrgUnitName  string `json:"org_unit_name"`
 	Total        int64  `json:"total"`
+	ReceiptState string `json:"receipt_state" enum:"none,partial,full,not_applicable"`
 }
 
 type OrderList struct {

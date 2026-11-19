@@ -9455,6 +9455,268 @@
         ],
         "type": "object"
       },
+      "PurchaseDocRef": {
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "number": {
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "draft",
+              "pending_approval",
+              "posted",
+              "cancelled"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "number",
+          "status"
+        ],
+        "type": "object"
+      },
+      "PurchaseGoodsReceipt": {
+        "additionalProperties": false,
+        "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "/api/schemas/PurchaseGoodsReceipt.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
+          "allowed_actions": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "date": {
+            "format": "date",
+            "type": "string"
+          },
+          "id": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "lines": {
+            "items": {
+              "$ref": "#/components/schemas/PurchaseReceiptLine"
+            },
+            "type": "array"
+          },
+          "note": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "number": {
+            "type": "string"
+          },
+          "order_id": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "order_number": {
+            "type": "string"
+          },
+          "org_unit_id": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "status": {
+            "enum": [
+              "draft",
+              "pending_approval",
+              "posted",
+              "cancelled"
+            ],
+            "type": "string"
+          },
+          "version": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "warehouse_code": {
+            "type": "string"
+          },
+          "warehouse_id": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "warehouse_name": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "order_id",
+          "order_number",
+          "number",
+          "status",
+          "version",
+          "date",
+          "org_unit_id",
+          "warehouse_id",
+          "warehouse_code",
+          "warehouse_name",
+          "note",
+          "lines",
+          "allowed_actions"
+        ],
+        "type": "object"
+      },
+      "PurchaseGoodsReceiptList": {
+        "additionalProperties": false,
+        "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "/api/schemas/PurchaseGoodsReceiptList.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/PurchaseGoodsReceiptListItem"
+            },
+            "type": "array"
+          },
+          "total": {
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "items",
+          "total"
+        ],
+        "type": "object"
+      },
+      "PurchaseGoodsReceiptListItem": {
+        "additionalProperties": false,
+        "properties": {
+          "date": {
+            "format": "date",
+            "type": "string"
+          },
+          "id": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "number": {
+            "type": "string"
+          },
+          "order_id": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "order_number": {
+            "type": "string"
+          },
+          "org_unit_name": {
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "draft",
+              "pending_approval",
+              "posted",
+              "cancelled"
+            ],
+            "type": "string"
+          },
+          "supplier_id": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "supplier_name": {
+            "type": "string"
+          },
+          "warehouse_id": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "warehouse_name": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "number",
+          "status",
+          "date",
+          "order_id",
+          "order_number",
+          "supplier_id",
+          "supplier_name",
+          "warehouse_id",
+          "warehouse_name",
+          "org_unit_name"
+        ],
+        "type": "object"
+      },
+      "PurchaseGoodsReceiptUpdate": {
+        "additionalProperties": false,
+        "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "/api/schemas/PurchaseGoodsReceiptUpdate.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
+          "date": {
+            "format": "date",
+            "type": "string"
+          },
+          "lines": {
+            "items": {
+              "$ref": "#/components/schemas/PurchaseReceiptLineInput"
+            },
+            "maxItems": 1000,
+            "minItems": 1,
+            "type": "array"
+          },
+          "note": {
+            "maxLength": 2000,
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "version": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "warehouse_id": {
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "version",
+          "date",
+          "warehouse_id",
+          "note",
+          "lines"
+        ],
+        "type": "object"
+      },
       "PurchaseLine": {
         "additionalProperties": false,
         "properties": {
@@ -9487,6 +9749,9 @@
           "quantity": {
             "description": "More than 0, up to 3 decimals",
             "pattern": "^[0-9]{1,12}(\\.[0-9]{1,3})?$",
+            "type": "string"
+          },
+          "received": {
             "type": "string"
           },
           "stocked": {
@@ -9654,6 +9919,61 @@
         ],
         "type": "object"
       },
+      "PurchaseNewGoodsReceipt": {
+        "additionalProperties": false,
+        "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "/api/schemas/PurchaseNewGoodsReceipt.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
+          "date": {
+            "format": "date",
+            "type": "string"
+          },
+          "lines": {
+            "items": {
+              "$ref": "#/components/schemas/PurchaseReceiptLineInput"
+            },
+            "maxItems": 1000,
+            "minItems": 1,
+            "type": "array"
+          },
+          "note": {
+            "maxLength": 2000,
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "order_id": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "request_id": {
+            "description": "Generated once per form: sending it again returns the first goods receipt",
+            "format": "uuid",
+            "type": "string"
+          },
+          "warehouse_id": {
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "request_id",
+          "order_id",
+          "date",
+          "warehouse_id",
+          "note",
+          "lines"
+        ],
+        "type": "object"
+      },
       "PurchaseNewOrder": {
         "additionalProperties": false,
         "properties": {
@@ -9809,6 +10129,15 @@
               "null"
             ]
           },
+          "goods_receipts": {
+            "items": {
+              "$ref": "#/components/schemas/PurchaseDocRef"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          },
           "id": {
             "format": "int64",
             "type": "integer"
@@ -9840,6 +10169,15 @@
               "string",
               "null"
             ]
+          },
+          "receipt_state": {
+            "enum": [
+              "none",
+              "partial",
+              "full",
+              "not_applicable"
+            ],
+            "type": "string"
           },
           "status": {
             "enum": [
@@ -9937,6 +10275,15 @@
           "org_unit_name": {
             "type": "string"
           },
+          "receipt_state": {
+            "enum": [
+              "none",
+              "partial",
+              "full",
+              "not_applicable"
+            ],
+            "type": "string"
+          },
           "status": {
             "enum": [
               "draft",
@@ -9970,7 +10317,8 @@
           "supplier_code",
           "supplier_name",
           "org_unit_name",
-          "total"
+          "total",
+          "receipt_state"
         ],
         "type": "object"
       },
@@ -10041,6 +10389,160 @@
           "expected_date",
           "payment_terms",
           "note",
+          "lines"
+        ],
+        "type": "object"
+      },
+      "PurchaseReceiptLine": {
+        "additionalProperties": false,
+        "properties": {
+          "description": {
+            "type": "string"
+          },
+          "item_code": {
+            "type": "string"
+          },
+          "item_id": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "lot": {
+            "$ref": "#/components/schemas/LotRef",
+            "description": "Lot-tracked items: created at posting when missing"
+          },
+          "order_position": {
+            "format": "int64",
+            "minimum": 1,
+            "type": "integer"
+          },
+          "quantity": {
+            "description": "More than 0, up to 3 decimals; 1 for a serial",
+            "pattern": "^[0-9]{1,12}(\\.[0-9]{1,3})?$",
+            "type": "string"
+          },
+          "serial": {
+            "description": "Serial-tracked items: one per line",
+            "maxLength": 100,
+            "type": "string"
+          },
+          "unit": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "item_id",
+          "item_code",
+          "description",
+          "unit",
+          "order_position",
+          "quantity"
+        ],
+        "type": "object"
+      },
+      "PurchaseReceiptLineInput": {
+        "additionalProperties": false,
+        "properties": {
+          "lot": {
+            "$ref": "#/components/schemas/LotRef",
+            "description": "Lot-tracked items: created at posting when missing"
+          },
+          "order_position": {
+            "format": "int64",
+            "minimum": 1,
+            "type": "integer"
+          },
+          "quantity": {
+            "description": "More than 0, up to 3 decimals; 1 for a serial",
+            "pattern": "^[0-9]{1,12}(\\.[0-9]{1,3})?$",
+            "type": "string"
+          },
+          "serial": {
+            "description": "Serial-tracked items: one per line",
+            "maxLength": 100,
+            "type": "string"
+          }
+        },
+        "required": [
+          "order_position",
+          "quantity"
+        ],
+        "type": "object"
+      },
+      "PurchaseReceiptOptionLine": {
+        "additionalProperties": false,
+        "properties": {
+          "description": {
+            "type": "string"
+          },
+          "item_code": {
+            "type": "string"
+          },
+          "item_id": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "order_position": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "ordered": {
+            "type": "string"
+          },
+          "remaining": {
+            "type": "string"
+          },
+          "tracking": {
+            "enum": [
+              "none",
+              "quantity",
+              "lot",
+              "serial"
+            ],
+            "type": "string"
+          },
+          "unit": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "order_position",
+          "item_id",
+          "item_code",
+          "description",
+          "unit",
+          "tracking",
+          "ordered",
+          "remaining"
+        ],
+        "type": "object"
+      },
+      "PurchaseReceiptOptions": {
+        "additionalProperties": false,
+        "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "/api/schemas/PurchaseReceiptOptions.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
+          "lines": {
+            "items": {
+              "$ref": "#/components/schemas/PurchaseReceiptOptionLine"
+            },
+            "type": "array"
+          },
+          "warehouses": {
+            "items": {
+              "$ref": "#/components/schemas/PurchaseWarehouseOption"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "warehouses",
           "lines"
         ],
         "type": "object"
@@ -10293,6 +10795,31 @@
           "payment_terms",
           "org_unit_id",
           "active"
+        ],
+        "type": "object"
+      },
+      "PurchaseWarehouseOption": {
+        "additionalProperties": false,
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "id": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "is_default": {
+            "type": "boolean"
+          },
+          "name": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "code",
+          "name",
+          "is_default"
         ],
         "type": "object"
       },
@@ -20073,6 +20600,249 @@
         ]
       }
     },
+    "/purchase/goods-receipts": {
+      "get": {
+        "operationId": "list-goods-receipts",
+        "parameters": [
+          {
+            "description": "Number, order number or supplier name",
+            "explode": false,
+            "in": "query",
+            "name": "q",
+            "schema": {
+              "description": "Number, order number or supplier name",
+              "maxLength": 100,
+              "type": "string"
+            }
+          },
+          {
+            "explode": false,
+            "in": "query",
+            "name": "status",
+            "schema": {
+              "enum": [
+                "draft",
+                "pending_approval",
+                "posted",
+                "cancelled"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "explode": false,
+            "in": "query",
+            "name": "order_id",
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          },
+          {
+            "explode": false,
+            "in": "query",
+            "name": "warehouse_id",
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          },
+          {
+            "explode": false,
+            "in": "query",
+            "name": "sort",
+            "schema": {
+              "default": "-date",
+              "enum": [
+                "date",
+                "-date",
+                "number",
+                "-number"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "explode": false,
+            "in": "query",
+            "name": "page",
+            "schema": {
+              "default": 1,
+              "format": "int64",
+              "maximum": 100000,
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "explode": false,
+            "in": "query",
+            "name": "page_size",
+            "schema": {
+              "default": 50,
+              "enum": [
+                20,
+                50,
+                100
+              ],
+              "format": "int64",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PurchaseGoodsReceiptList"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "tags": [
+          "purchase",
+          "purchase"
+        ]
+      },
+      "post": {
+        "description": "Sending the same request_id again returns the goods receipt created the first time.",
+        "operationId": "create-goods-receipt",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PurchaseNewGoodsReceipt"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreatedOutputBody"
+                }
+              }
+            },
+            "description": "Created"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "tags": [
+          "purchase",
+          "purchase"
+        ]
+      }
+    },
+    "/purchase/goods-receipts/{id}": {
+      "get": {
+        "operationId": "get-goods-receipt",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PurchaseGoodsReceipt"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "tags": [
+          "purchase",
+          "purchase"
+        ]
+      },
+      "put": {
+        "operationId": "update-goods-receipt",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PurchaseGoodsReceiptUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "tags": [
+          "purchase",
+          "purchase"
+        ]
+      }
+    },
     "/purchase/line-items": {
       "get": {
         "operationId": "list-purchase-line-items",
@@ -20151,6 +20921,20 @@
             "schema": {
               "format": "int64",
               "type": "integer"
+            }
+          },
+          {
+            "explode": false,
+            "in": "query",
+            "name": "receipt_state",
+            "schema": {
+              "enum": [
+                "none",
+                "partial",
+                "full",
+                "not_applicable"
+              ],
+              "type": "string"
             }
           },
           {
@@ -20364,6 +21148,48 @@
         "responses": {
           "204": {
             "description": "No Content"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "tags": [
+          "purchase",
+          "purchase"
+        ]
+      }
+    },
+    "/purchase/orders/{id}/receipt-options": {
+      "get": {
+        "operationId": "get-purchase-receipt-options",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PurchaseReceiptOptions"
+                }
+              }
+            },
+            "description": "OK"
           },
           "default": {
             "content": {

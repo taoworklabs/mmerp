@@ -30,6 +30,7 @@ func orderQuery(sc data.Scope, f OrderFilter) data.Query {
 		Where: data.And(
 			data.When(f.Status != "", data.Eq("status", f.Status)),
 			data.When(f.SupplierID != 0, data.Eq("supplier_id", f.SupplierID)),
+			data.When(f.ReceiptState != "", data.Eq("receipt_state", f.ReceiptState)),
 		),
 	}
 }

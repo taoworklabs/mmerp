@@ -37,6 +37,7 @@ func NewService(d Deps) *Service {
 		Locate:  locateSupplier,
 		HasData: func(ctx context.Context) (bool, error) { return store.AnyCatalog.Run(ctx) }})
 	s.registerOrder()
+	s.registerGoodsReceipt()
 	return s
 }
 

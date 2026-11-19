@@ -33,15 +33,39 @@ SELECT @order_id::bigint, unnest(@positions::int[]), unnest(@item_ids::bigint[])
     unnest(@amounts::bigint[]), unnest(@discounts::bigint[]), unnest(@vats::bigint[]);
 
 -- name: GetOrderLines :many
+-- Received counts posted goods receipts only.
 SELECT l.position, l.item_id, l.item_code, l.description, l.unit, l.stocked, l.quantity::text AS quantity, l.unit_price,
-       l.discount_percent::text AS discount_percent, l.vat_rate, l.amount, l.discount, l.vat
+       l.discount_percent::text AS discount_percent, l.vat_rate, l.amount, l.discount, l.vat,
+       coalesce((
+           SELECT sum(rl.quantity)
+           FROM purchase.goods_receipt_lines rl
+           JOIN purchase.goods_receipts r ON r.id = rl.receipt_id
+           JOIN record.documents d ON d.id = r.id
+           WHERE r.order_id = l.order_id AND rl.order_position = l.position AND d.status = 'posted'
+       ), 0)::text AS received
 FROM purchase.order_lines l
 WHERE l.order_id = $1 ORDER BY l.position;
 
 -- name: OrderListBase :many
 -- data:base
 SELECT o.id, d.number, d.status, d.date, d.org_unit_id, o.supplier_id, o.supplier_code, o.supplier_name,
-       o.total, u.name AS org_unit_name
+       o.total, u.name AS org_unit_name,
+       -- Over stock lines and posted goods receipts: none, partial, full, not_applicable.
+       (SELECT CASE WHEN count(*) = 0 THEN 'not_applicable'
+                    WHEN bool_and(x.received >= x.quantity) THEN 'full'
+                    WHEN bool_and(x.received = 0) THEN 'none'
+                    ELSE 'partial' END
+        FROM (
+            SELECT l.quantity, coalesce((
+                SELECT sum(rl.quantity)
+                FROM purchase.goods_receipt_lines rl
+                JOIN purchase.goods_receipts r ON r.id = rl.receipt_id
+                JOIN record.documents rd ON rd.id = r.id
+                WHERE r.order_id = l.order_id AND rl.order_position = l.position AND rd.status = 'posted'
+            ), 0) AS received
+            FROM purchase.order_lines l
+            WHERE l.order_id = o.id AND l.stocked
+        ) x)::text AS receipt_state
 FROM purchase.orders o
 JOIN record.documents d ON d.id = o.id
 JOIN iam.org_units u ON u.id = d.org_unit_id;

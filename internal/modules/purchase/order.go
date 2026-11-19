@@ -2,6 +2,10 @@ package purchase
 
 import (
 	"context"
+	"errors"
+
+	"github.com/jackc/pgx/v5"
+	"github.com/taoworklabs/mmerp/internal/platform/data"
 
 	"github.com/taoworklabs/mmerp/internal/core/audit"
 	"github.com/taoworklabs/mmerp/internal/core/record"
@@ -44,7 +48,8 @@ func (s *Service) Orders(ctx context.Context, f OrderFilter) (OrderList, error) 
 	out.Total = page.Total
 	for _, r := range page.Items {
 		out.Items = append(out.Items, OrderListItem{ID: r.ID, Number: r.Number, Status: r.Status, Date: *platform.DatePtr(r.Date),
-			SupplierID: r.SupplierID, SupplierCode: r.SupplierCode, SupplierName: r.SupplierName, OrgUnitName: r.OrgUnitName, Total: r.Total})
+			SupplierID: r.SupplierID, SupplierCode: r.SupplierCode, SupplierName: r.SupplierName, OrgUnitName: r.OrgUnitName, Total: r.Total,
+			ReceiptState: r.ReceiptState})
 	}
 	return out, nil
 }
@@ -77,8 +82,83 @@ func (s *Service) Order(ctx context.Context, id int64) (Order, error) {
 			ItemCode: l.ItemCode, Unit: l.Unit, Stocked: l.Stocked, Amount: l.Amount, Discount: l.Discount, Vat: l.Vat,
 		}
 	}
-	out.AllowedActions, err = s.d.Record.Actions(ctx, d)
+	var extra []string
+	if d.Status == record.Posted {
+		if err := s.orderProgress(ctx, &out, lines); err != nil {
+			return Order{}, err
+		}
+		if ok, err := s.canReceive(ctx, id, h.OrgUnitID); err != nil {
+			return Order{}, err
+		} else if ok {
+			extra = append(extra, "create_goods_receipt")
+		}
+	}
+	out.AllowedActions, err = s.d.Record.Actions(ctx, d, extra...)
 	return out, err
+}
+
+// orderProgress adds what was received of each stock line, the order's states and its documents.
+// The states come from the order list, so the list and the page never disagree. Its documents are
+// viewable by whoever views the order: same org unit, same permission.
+func (s *Service) orderProgress(ctx context.Context, out *Order, lines []store.GetOrderLinesRow) error {
+	sc, err := s.d.IAM.DataScope(ctx, "purchase", PermOrderView)
+	if err != nil {
+		return err
+	}
+	page, err := orderList.Run(ctx, data.Query{Scope: sc, Paging: platform.Paging{Page: 1, PageSize: 20}, Where: data.Eq("id", out.ID)})
+	if err != nil {
+		return err
+	}
+	if len(page.Items) != 1 {
+		return platform.ErrNotFound
+	}
+	row := page.Items[0]
+	out.ReceiptState = row.ReceiptState
+	for i, l := range lines {
+		if l.Stocked {
+			received := platform.PlainDecimal(l.Received)
+			out.Lines[i].Received = &received
+		}
+	}
+	rs, err := store.OrderGoodsReceipts.Run(ctx, out.ID)
+	if err != nil {
+		return err
+	}
+	for _, r := range rs {
+		out.GoodsReceipts = append(out.GoodsReceipts, DocRef{ID: r.ID, Number: r.Number, Status: r.Status})
+	}
+	return nil
+}
+
+// canReceive: the actor may write orders at the unit and a stock line still has something no
+// goods receipt, draft or posted, has taken.
+func (s *Service) canReceive(ctx context.Context, order, unit int64) (bool, error) {
+	if ok, err := s.canWriteOrders(ctx, unit); err != nil || !ok {
+		return false, err
+	}
+	rows, err := store.ReceivableLines.Run(ctx, store.ReceivableLinesParams{OrderID: order})
+	if err != nil {
+		return false, err
+	}
+	return anyRemaining(rows, func(r store.ReceivableLinesRow) (bool, string, string) { return r.Stocked, r.Quantity, r.Taken })
+}
+
+// anyRemaining: some line, among those it keeps, has ordered above taken.
+func anyRemaining[T any](rows []T, line func(T) (keep bool, ordered, taken string)) (bool, error) {
+	for _, r := range rows {
+		keep, o, t := line(r)
+		if !keep {
+			continue
+		}
+		ordered, taken, err := decimals(o, t)
+		if err != nil {
+			return false, err
+		}
+		if ordered.GreaterThan(taken) {
+			return true, nil
+		}
+	}
+	return false, nil
 }
 
 // CreateOrder adds a draft; the same request id returns the first one.
@@ -229,8 +309,12 @@ func (s *Service) writeOrderLines(ctx context.Context, id int64, p preparedOrder
 		map[string]any{"supplier_id": p.supplier.ID, "lines": len(p.lines), "total": p.totals.Total})
 }
 
-// orderTransition keeps posted orders to active suppliers.
+// orderTransition keeps posted orders to active suppliers, and an order with live goods receipts
+// or invoices from being cancelled.
 func (s *Service) orderTransition(ctx context.Context, d record.Doc, _ record.Status) error {
+	if d.Status == record.Cancelled {
+		return refuseIfLive(ctx, d.ID, store.LiveReceiptOfOrder.Run, ErrOrderHasReceipt)
+	}
 	if d.Status != record.Posted {
 		return nil
 	}
@@ -274,4 +358,16 @@ func (s *Service) canWriteOrders(ctx context.Context, unit int64) (bool, error) 
 		return false, nil
 	}
 	return s.d.IAM.Allowed(ctx, "purchase", PermOrderEdit, unit)
+}
+
+// refuseIfLive returns refusal when find finds a row for id.
+func refuseIfLive(ctx context.Context, id int64, find func(context.Context, int64) (int64, error), refusal error) error {
+	_, err := find(ctx, id)
+	if err == nil {
+		return refusal
+	}
+	if errors.Is(err, pgx.ErrNoRows) {
+		return nil
+	}
+	return err
 }
