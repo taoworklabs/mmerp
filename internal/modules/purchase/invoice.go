@@ -30,9 +30,13 @@ func (s *Service) registerInvoice() {
 }
 
 // invoiceBeforeSubmit needs the supplier's invoice reference and refuses a bill already booked.
+// The order is locked first, as posting does, so the supplier row always comes after it.
 func (s *Service) invoiceBeforeSubmit(ctx context.Context, d record.Doc) error {
 	h, err := store.GetInvoice.Run(ctx, d.ID)
 	if err != nil {
+		return err
+	}
+	if _, err := s.d.Record.LockToDepend(ctx, record.Ref{Type: orderType, ID: h.OrderID}); err != nil {
 		return err
 	}
 	return s.checkSupplierRef(ctx, d.ID, h)

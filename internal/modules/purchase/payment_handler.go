@@ -34,7 +34,7 @@ type openInvoicesOutput struct {
 
 func registerPaymentHandlers(api huma.API, s *Service) {
 	huma.Register(api, huma.Operation{OperationID: "list-supplier-open-invoices", Method: http.MethodGet, Path: "/purchase/suppliers/{id}/open-invoices",
-		Description: "Posted invoices of the supplier at the org unit with something left to receive, oldest first; amount is the remaining."},
+		Description: "Posted invoices of the supplier at the org unit with something left to pay, oldest first; amount is the remaining."},
 		func(ctx context.Context, in *openInvoicesInput) (*openInvoicesOutput, error) {
 			items, err := s.OpenInvoices(ctx, in.ID, in.OrgUnitID, in.PaymentID)
 			out := &openInvoicesOutput{}

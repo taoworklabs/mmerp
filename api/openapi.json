@@ -23182,7 +23182,7 @@
     },
     "/purchase/suppliers/{id}/open-invoices": {
       "get": {
-        "description": "Posted invoices of the supplier at the org unit with something left to receive, oldest first; amount is the remaining.",
+        "description": "Posted invoices of the supplier at the org unit with something left to pay, oldest first; amount is the remaining.",
         "operationId": "list-supplier-open-invoices",
         "parameters": [
           {

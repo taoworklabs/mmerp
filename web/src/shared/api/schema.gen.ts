@@ -2101,7 +2101,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** @description Posted invoices of the supplier at the org unit with something left to receive, oldest first; amount is the remaining. */
+        /** @description Posted invoices of the supplier at the org unit with something left to pay, oldest first; amount is the remaining. */
         get: operations["list-supplier-open-invoices"];
         put?: never;
         post?: never;

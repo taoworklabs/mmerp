@@ -3,9 +3,11 @@ package purchase_test
 import (
 	"context"
 	"errors"
+	"fmt"
 	"sync"
 	"testing"
 
+	"github.com/taoworklabs/mmerp/internal/core/approval"
 	"github.com/taoworklabs/mmerp/internal/core/record"
 	"github.com/taoworklabs/mmerp/internal/core/record/recordtest"
 	"github.com/taoworklabs/mmerp/internal/modules/purchase"
@@ -244,4 +246,44 @@ func TestSupplierInvoiceTeamBoundary(t *testing.T) {
 	if _, err := f.invoice(staffB, order, billed("2026-03-12", "10")); !errors.Is(err, platform.ErrNotFound) {
 		t.Fatalf("B invoices A's order: %v", err)
 	}
+}
+
+// A small invoice posting directly while a manager approves a large one of the same order: both
+// take the order before the supplier, so neither waits on the other forever.
+func TestSupplierInvoiceDirectPostRacesApproval(t *testing.T) {
+	f := newFixture(t)
+	f.check(f.appr.SaveRule(f.admin, "purchase.invoice", record.Post, approval.RuleInput{
+		Flow: approval.Flow{{Split: &approval.Split{Mode: approval.ChooseOne, Branches: []approval.Branch{{
+			Condition: &approval.Expr{Field: "amount", Op: "gt", Value: "1000000"},
+			Body:      approval.Flow{{Step: &approval.StepDef{Approver: approval.Approver{Kind: "role", Product: "purchase", Role: "manager"}}}},
+		}}}}},
+		MaxLevels: 3, FallbackProduct: "purchase", FallbackRole: "manager",
+	}))
+	for n := range 15 {
+		order := f.postedOrder("2026-03-10")
+		big := must(t)(f.invoice(f.staff, order, invoiceFields("2026-03-12", "1C26TAA", fmt.Sprint("B", n), il(2, "1", 3_000_000, "10"))))
+		f.check(f.move(f.staff, "purchase.invoice", big, record.Posted)) // held for approval
+		d, err := f.rec.Get(f.admin, record.Ref{Type: "purchase.invoice", ID: big})
+		f.check(err)
+		instance := f.pendingInstance(big)
+		small := must(t)(f.invoice(f.staff, order, invoiceFields("2026-03-12", "1C26TAA", fmt.Sprint("S", n), il(1, "1", 50_000, "8"))))
+		var wg sync.WaitGroup
+		errs := make([]error, 2)
+		wg.Go(func() { errs[0] = f.move(f.staff, "purchase.invoice", small, record.Posted) })
+		wg.Go(func() { errs[1] = f.appr.Approve(f.manager, instance, 1) })
+		wg.Wait()
+		for _, err := range errs {
+			if err != nil {
+				t.Fatalf("round %d (doc v%d): %v", n, d.Version, err)
+			}
+		}
+	}
+}
+
+// pendingInstance is the approval instance waiting on a document.
+func (f *fixture) pendingInstance(doc int64) int64 {
+	f.t.Helper()
+	var id int64
+	f.check(f.core.Pool.QueryRow(f.ctx, `SELECT id FROM approval.instances WHERE doc_id = $1 ORDER BY id DESC LIMIT 1`, doc).Scan(&id))
+	return id
 }
