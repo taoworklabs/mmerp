@@ -163,5 +163,11 @@
   "accounting.kind.sales_revenue": "Sales revenue",
   "accounting.kind.sales_output_vat": "Output VAT",
   "accounting.kind.sales_cash_receipt": "Cash received",
-  "accounting.kind.sales_bank_receipt": "Bank transfer received"
+  "accounting.kind.sales_bank_receipt": "Bank transfer received",
+  "accounting.kind.purchase_goods": "Goods bought for stock (purchasing)",
+  "accounting.kind.purchase_expense": "Services bought",
+  "accounting.kind.purchase_input_vat": "Input VAT",
+  "accounting.kind.purchase_payable": "Payable to suppliers (purchasing)",
+  "accounting.kind.purchase_cash_payment": "Cash paid",
+  "accounting.kind.purchase_bank_payment": "Bank transfer paid"
 }
