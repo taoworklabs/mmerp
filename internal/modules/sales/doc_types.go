@@ -51,6 +51,8 @@ type Line struct {
 	// what its legal entity has available (on hand less what posted orders still owe).
 	Delivered *string `json:"delivered,omitempty"`
 	Available *string `json:"available,omitempty"`
+	// Orders: what posted invoices billed.
+	Invoiced *string `json:"invoiced,omitempty"`
 }
 
 // DocRef names another document: the quotation of an order, the order of a quotation.
@@ -97,7 +99,14 @@ type Doc struct {
 	// Orders: how far posted deliveries went over the stock lines, and the deliveries not cancelled.
 	DeliveryState string   `json:"delivery_state,omitempty" enum:"none,partial,full,not_applicable"`
 	Deliveries    []DocRef `json:"deliveries,omitempty"`
-	// edit, delete, submit, withdraw, cancel, print; quotations also create_order, orders create_delivery.
+	// Orders: how far posted invoices went over all lines, and the invoices not cancelled.
+	InvoiceState string   `json:"invoice_state,omitempty" enum:"none,partial,full"`
+	Invoices     []DocRef `json:"invoices,omitempty"`
+	// Orders: what posted receipts paid of posted invoices; paid once all is invoiced and paid.
+	Paid         *int64 `json:"paid,omitempty"`
+	PaymentState string `json:"payment_state,omitempty" enum:"unpaid,partial,paid"`
+	// edit, delete, submit, withdraw, cancel, print; quotations also create_order, orders
+	// create_delivery and create_invoice.
 	AllowedActions []string `json:"allowed_actions" nullable:"false"`
 }
 
@@ -107,6 +116,8 @@ type DocFilter struct {
 	CustomerID int64  `query:"customer_id"`
 	// Orders only.
 	DeliveryState string `query:"delivery_state" enum:"none,partial,full,not_applicable"`
+	InvoiceState  string `query:"invoice_state" enum:"none,partial,full"`
+	PaymentState  string `query:"payment_state" enum:"unpaid,partial,paid"`
 	Sort          string `query:"sort" enum:"date,-date,number,-number,total,-total" default:"-date"`
 	platform.Paging
 }
@@ -128,6 +139,8 @@ type DocListItem struct {
 	FromQuote bool `json:"from_quote"`
 	// Orders only.
 	DeliveryState string `json:"delivery_state,omitempty" enum:"none,partial,full,not_applicable"`
+	InvoiceState  string `json:"invoice_state,omitempty" enum:"none,partial,full"`
+	PaymentState  string `json:"payment_state,omitempty" enum:"unpaid,partial,paid"`
 }
 
 type DocList struct {

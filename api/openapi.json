@@ -550,6 +550,65 @@
         ],
         "type": "object"
       },
+      "Allocation": {
+        "additionalProperties": false,
+        "properties": {
+          "amount": {
+            "format": "int64",
+            "maximum": 1000000000000000,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "invoice_date": {
+            "format": "date",
+            "type": "string"
+          },
+          "invoice_id": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "invoice_number": {
+            "type": "string"
+          },
+          "invoice_total": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "remaining": {
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "invoice_number",
+          "invoice_date",
+          "invoice_total",
+          "remaining",
+          "invoice_id",
+          "amount"
+        ],
+        "type": "object"
+      },
+      "AllocationInput": {
+        "additionalProperties": false,
+        "properties": {
+          "amount": {
+            "format": "int64",
+            "maximum": 1000000000000000,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "invoice_id": {
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "invoice_id",
+          "amount"
+        ],
+        "type": "object"
+      },
       "ApproveInputBody": {
         "additionalProperties": false,
         "properties": {
@@ -2449,6 +2508,23 @@
             "format": "int64",
             "type": "integer"
           },
+          "invoice_state": {
+            "enum": [
+              "none",
+              "partial",
+              "full"
+            ],
+            "type": "string"
+          },
+          "invoices": {
+            "items": {
+              "$ref": "#/components/schemas/DocRef"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          },
           "kind": {
             "enum": [
               "quote",
@@ -2485,6 +2561,18 @@
             "type": "integer"
           },
           "org_unit_name": {
+            "type": "string"
+          },
+          "paid": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "payment_state": {
+            "enum": [
+              "unpaid",
+              "partial",
+              "paid"
+            ],
             "type": "string"
           },
           "payment_terms": {
@@ -2623,6 +2711,14 @@
             "format": "int64",
             "type": "integer"
           },
+          "invoice_state": {
+            "enum": [
+              "none",
+              "partial",
+              "full"
+            ],
+            "type": "string"
+          },
           "number": {
             "type": "string"
           },
@@ -2630,6 +2726,14 @@
             "type": "boolean"
           },
           "org_unit_name": {
+            "type": "string"
+          },
+          "payment_state": {
+            "enum": [
+              "unpaid",
+              "partial",
+              "paid"
+            ],
             "type": "string"
           },
           "status": {
@@ -3634,6 +3738,440 @@
             "description": "The latest submission; absent when never sent for approval"
           }
         },
+        "type": "object"
+      },
+      "Invoice": {
+        "additionalProperties": false,
+        "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "/api/schemas/Invoice.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
+          "allowed_actions": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "customer": {
+            "$ref": "#/components/schemas/CustomerCopy"
+          },
+          "date": {
+            "format": "date",
+            "type": "string"
+          },
+          "id": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "lines": {
+            "items": {
+              "$ref": "#/components/schemas/InvoiceLine"
+            },
+            "type": "array"
+          },
+          "note": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "number": {
+            "type": "string"
+          },
+          "order_id": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "order_number": {
+            "type": "string"
+          },
+          "org_unit_id": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "org_unit_name": {
+            "type": "string"
+          },
+          "paid": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "payment_state": {
+            "enum": [
+              "unpaid",
+              "partial",
+              "paid"
+            ],
+            "type": "string"
+          },
+          "receipts": {
+            "description": "Receipts not cancelled, drafts included, that the actor may view",
+            "items": {
+              "$ref": "#/components/schemas/ReceiptRef"
+            },
+            "type": "array"
+          },
+          "remaining": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "status": {
+            "enum": [
+              "draft",
+              "pending_approval",
+              "posted",
+              "cancelled"
+            ],
+            "type": "string"
+          },
+          "totals": {
+            "$ref": "#/components/schemas/Totals"
+          },
+          "version": {
+            "format": "int32",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "order_id",
+          "order_number",
+          "number",
+          "status",
+          "version",
+          "date",
+          "org_unit_id",
+          "org_unit_name",
+          "customer",
+          "note",
+          "lines",
+          "totals",
+          "paid",
+          "remaining",
+          "payment_state",
+          "receipts",
+          "allowed_actions"
+        ],
+        "type": "object"
+      },
+      "InvoiceLine": {
+        "additionalProperties": false,
+        "properties": {
+          "amount": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "description": {
+            "type": "string"
+          },
+          "discount": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "discount_percent": {
+            "type": "string"
+          },
+          "item_code": {
+            "type": "string"
+          },
+          "item_id": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "order_position": {
+            "format": "int64",
+            "minimum": 1,
+            "type": "integer"
+          },
+          "quantity": {
+            "description": "More than 0, up to 3 decimals",
+            "pattern": "^[0-9]{1,12}(\\.[0-9]{1,3})?$",
+            "type": "string"
+          },
+          "unit": {
+            "type": "string"
+          },
+          "unit_price": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "vat": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "vat_rate": {
+            "enum": [
+              "none",
+              "0",
+              "5",
+              "8",
+              "10"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "item_id",
+          "item_code",
+          "description",
+          "unit",
+          "unit_price",
+          "discount_percent",
+          "vat_rate",
+          "amount",
+          "discount",
+          "vat",
+          "order_position",
+          "quantity"
+        ],
+        "type": "object"
+      },
+      "InvoiceLineInput": {
+        "additionalProperties": false,
+        "properties": {
+          "order_position": {
+            "format": "int64",
+            "minimum": 1,
+            "type": "integer"
+          },
+          "quantity": {
+            "description": "More than 0, up to 3 decimals",
+            "pattern": "^[0-9]{1,12}(\\.[0-9]{1,3})?$",
+            "type": "string"
+          }
+        },
+        "required": [
+          "order_position",
+          "quantity"
+        ],
+        "type": "object"
+      },
+      "InvoiceList": {
+        "additionalProperties": false,
+        "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "/api/schemas/InvoiceList.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/InvoiceListItem"
+            },
+            "type": "array"
+          },
+          "total": {
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "items",
+          "total"
+        ],
+        "type": "object"
+      },
+      "InvoiceListItem": {
+        "additionalProperties": false,
+        "properties": {
+          "customer_id": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "customer_name": {
+            "type": "string"
+          },
+          "date": {
+            "format": "date",
+            "type": "string"
+          },
+          "id": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "number": {
+            "type": "string"
+          },
+          "order_id": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "order_number": {
+            "type": "string"
+          },
+          "org_unit_name": {
+            "type": "string"
+          },
+          "payment_state": {
+            "enum": [
+              "unpaid",
+              "partial",
+              "paid"
+            ],
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "draft",
+              "pending_approval",
+              "posted",
+              "cancelled"
+            ],
+            "type": "string"
+          },
+          "total": {
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "number",
+          "status",
+          "date",
+          "order_id",
+          "order_number",
+          "customer_id",
+          "customer_name",
+          "total",
+          "org_unit_name"
+        ],
+        "type": "object"
+      },
+      "InvoiceOptionLine": {
+        "additionalProperties": false,
+        "properties": {
+          "description": {
+            "type": "string"
+          },
+          "discount_percent": {
+            "type": "string"
+          },
+          "item_code": {
+            "type": "string"
+          },
+          "item_id": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "order_position": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "ordered": {
+            "type": "string"
+          },
+          "remaining": {
+            "type": "string"
+          },
+          "unit": {
+            "type": "string"
+          },
+          "unit_price": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "vat_rate": {
+            "enum": [
+              "none",
+              "0",
+              "5",
+              "8",
+              "10"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "order_position",
+          "item_id",
+          "item_code",
+          "description",
+          "unit",
+          "unit_price",
+          "discount_percent",
+          "vat_rate",
+          "ordered",
+          "remaining"
+        ],
+        "type": "object"
+      },
+      "InvoiceOptions": {
+        "additionalProperties": false,
+        "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "/api/schemas/InvoiceOptions.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
+          "lines": {
+            "items": {
+              "$ref": "#/components/schemas/InvoiceOptionLine"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "lines"
+        ],
+        "type": "object"
+      },
+      "InvoiceUpdate": {
+        "additionalProperties": false,
+        "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "/api/schemas/InvoiceUpdate.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
+          "date": {
+            "format": "date",
+            "type": "string"
+          },
+          "lines": {
+            "items": {
+              "$ref": "#/components/schemas/InvoiceLineInput"
+            },
+            "maxItems": 500,
+            "minItems": 1,
+            "type": "array"
+          },
+          "note": {
+            "maxLength": 2000,
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "version": {
+            "format": "int32",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "version",
+          "date",
+          "note",
+          "lines"
+        ],
         "type": "object"
       },
       "Item": {
@@ -4944,6 +5482,9 @@
             "pattern": "^[0-9]{1,3}(\\.[0-9]{1,2})?$",
             "type": "string"
           },
+          "invoiced": {
+            "type": "string"
+          },
           "item_code": {
             "type": "string"
           },
@@ -6247,6 +6788,56 @@
         ],
         "type": "object"
       },
+      "NewInvoice": {
+        "additionalProperties": false,
+        "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "/api/schemas/NewInvoice.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
+          "date": {
+            "format": "date",
+            "type": "string"
+          },
+          "lines": {
+            "items": {
+              "$ref": "#/components/schemas/InvoiceLineInput"
+            },
+            "maxItems": 500,
+            "minItems": 1,
+            "type": "array"
+          },
+          "note": {
+            "maxLength": 2000,
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "order_id": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "request_id": {
+            "description": "Generated once per form: sending it again returns the first invoice",
+            "format": "uuid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "request_id",
+          "order_id",
+          "date",
+          "note",
+          "lines"
+        ],
+        "type": "object"
+      },
       "NewItem": {
         "additionalProperties": false,
         "properties": {
@@ -6587,6 +7178,69 @@
         ],
         "type": "object"
       },
+      "NewReceipt": {
+        "additionalProperties": false,
+        "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "/api/schemas/NewReceipt.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
+          "allocations": {
+            "items": {
+              "$ref": "#/components/schemas/AllocationInput"
+            },
+            "maxItems": 200,
+            "minItems": 1,
+            "type": "array"
+          },
+          "customer_id": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "date": {
+            "format": "date",
+            "type": "string"
+          },
+          "method": {
+            "enum": [
+              "cash",
+              "bank"
+            ],
+            "type": "string"
+          },
+          "note": {
+            "maxLength": 2000,
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "org_unit_id": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "request_id": {
+            "description": "Generated once per form: sending it again returns the first receipt",
+            "format": "uuid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "request_id",
+          "date",
+          "org_unit_id",
+          "customer_id",
+          "method",
+          "note",
+          "allocations"
+        ],
+        "type": "object"
+      },
       "NewTermination": {
         "additionalProperties": false,
         "properties": {
@@ -6897,6 +7551,30 @@
           "item_name",
           "unit",
           "quantity"
+        ],
+        "type": "object"
+      },
+      "OpenInvoicesOutputBody": {
+        "additionalProperties": false,
+        "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "/api/schemas/OpenInvoicesOutputBody.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/Allocation"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "items"
         ],
         "type": "object"
       },
@@ -8787,6 +9465,289 @@
         ],
         "type": "object"
       },
+      "Receipt": {
+        "additionalProperties": false,
+        "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "/api/schemas/Receipt.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
+          "allocations": {
+            "items": {
+              "$ref": "#/components/schemas/Allocation"
+            },
+            "type": "array"
+          },
+          "allowed_actions": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "amount": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "customer_code": {
+            "type": "string"
+          },
+          "customer_id": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "customer_name": {
+            "type": "string"
+          },
+          "date": {
+            "format": "date",
+            "type": "string"
+          },
+          "id": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "method": {
+            "enum": [
+              "cash",
+              "bank"
+            ],
+            "type": "string"
+          },
+          "note": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "number": {
+            "type": "string"
+          },
+          "org_unit_id": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "org_unit_name": {
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "draft",
+              "pending_approval",
+              "posted",
+              "cancelled"
+            ],
+            "type": "string"
+          },
+          "version": {
+            "format": "int32",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "number",
+          "status",
+          "version",
+          "date",
+          "org_unit_id",
+          "org_unit_name",
+          "customer_id",
+          "customer_code",
+          "customer_name",
+          "method",
+          "amount",
+          "note",
+          "allocations",
+          "allowed_actions"
+        ],
+        "type": "object"
+      },
+      "ReceiptList": {
+        "additionalProperties": false,
+        "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "/api/schemas/ReceiptList.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/ReceiptListItem"
+            },
+            "type": "array"
+          },
+          "total": {
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "items",
+          "total"
+        ],
+        "type": "object"
+      },
+      "ReceiptListItem": {
+        "additionalProperties": false,
+        "properties": {
+          "amount": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "customer_id": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "customer_name": {
+            "type": "string"
+          },
+          "date": {
+            "format": "date",
+            "type": "string"
+          },
+          "id": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "method": {
+            "enum": [
+              "cash",
+              "bank"
+            ],
+            "type": "string"
+          },
+          "number": {
+            "type": "string"
+          },
+          "org_unit_name": {
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "draft",
+              "pending_approval",
+              "posted",
+              "cancelled"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "number",
+          "status",
+          "date",
+          "customer_id",
+          "customer_name",
+          "method",
+          "amount",
+          "org_unit_name"
+        ],
+        "type": "object"
+      },
+      "ReceiptRef": {
+        "additionalProperties": false,
+        "properties": {
+          "amount": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "id": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "number": {
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "draft",
+              "pending_approval",
+              "posted",
+              "cancelled"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "number",
+          "status",
+          "amount"
+        ],
+        "type": "object"
+      },
+      "ReceiptUpdate": {
+        "additionalProperties": false,
+        "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "/api/schemas/ReceiptUpdate.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
+          "allocations": {
+            "items": {
+              "$ref": "#/components/schemas/AllocationInput"
+            },
+            "maxItems": 200,
+            "minItems": 1,
+            "type": "array"
+          },
+          "customer_id": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "date": {
+            "format": "date",
+            "type": "string"
+          },
+          "method": {
+            "enum": [
+              "cash",
+              "bank"
+            ],
+            "type": "string"
+          },
+          "note": {
+            "maxLength": 2000,
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "org_unit_id": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "version": {
+            "format": "int32",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "version",
+          "date",
+          "org_unit_id",
+          "customer_id",
+          "method",
+          "note",
+          "allocations"
+        ],
+        "type": "object"
+      },
       "RejectInputBody": {
         "additionalProperties": false,
         "properties": {
@@ -10332,6 +11293,34 @@
           "employee_id",
           "date",
           "code"
+        ],
+        "type": "object"
+      },
+      "Totals": {
+        "additionalProperties": false,
+        "properties": {
+          "discount_total": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "subtotal": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "total": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "vat_total": {
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "subtotal",
+          "discount_total",
+          "vat_total",
+          "total"
         ],
         "type": "object"
       },
@@ -18858,6 +19847,70 @@
         ]
       }
     },
+    "/sales/customers/{id}/open-invoices": {
+      "get": {
+        "description": "Posted invoices of the customer at the org unit with something left to receive, oldest first; amount is the remaining.",
+        "operationId": "list-open-invoices",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          },
+          {
+            "explode": false,
+            "in": "query",
+            "name": "org_unit_id",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          },
+          {
+            "description": "The receipt being edited, whose own allocations are not held back",
+            "explode": false,
+            "in": "query",
+            "name": "receipt_id",
+            "schema": {
+              "description": "The receipt being edited, whose own allocations are not held back",
+              "format": "int64",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OpenInvoicesOutputBody"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "tags": [
+          "sales",
+          "sales"
+        ]
+      }
+    },
     "/sales/deliveries": {
       "get": {
         "operationId": "list-deliveries",
@@ -19101,6 +20154,264 @@
         ]
       }
     },
+    "/sales/invoices": {
+      "get": {
+        "operationId": "list-invoices",
+        "parameters": [
+          {
+            "description": "Number, order number or customer name",
+            "explode": false,
+            "in": "query",
+            "name": "q",
+            "schema": {
+              "description": "Number, order number or customer name",
+              "maxLength": 100,
+              "type": "string"
+            }
+          },
+          {
+            "explode": false,
+            "in": "query",
+            "name": "status",
+            "schema": {
+              "enum": [
+                "draft",
+                "pending_approval",
+                "posted",
+                "cancelled"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "explode": false,
+            "in": "query",
+            "name": "order_id",
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          },
+          {
+            "explode": false,
+            "in": "query",
+            "name": "customer_id",
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          },
+          {
+            "explode": false,
+            "in": "query",
+            "name": "payment_state",
+            "schema": {
+              "enum": [
+                "unpaid",
+                "partial",
+                "paid"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "explode": false,
+            "in": "query",
+            "name": "sort",
+            "schema": {
+              "default": "-date",
+              "enum": [
+                "date",
+                "-date",
+                "number",
+                "-number",
+                "total",
+                "-total"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "explode": false,
+            "in": "query",
+            "name": "page",
+            "schema": {
+              "default": 1,
+              "format": "int64",
+              "maximum": 100000,
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "explode": false,
+            "in": "query",
+            "name": "page_size",
+            "schema": {
+              "default": 50,
+              "enum": [
+                20,
+                50,
+                100
+              ],
+              "format": "int64",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InvoiceList"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "tags": [
+          "sales",
+          "sales"
+        ]
+      },
+      "post": {
+        "description": "Sending the same request_id again returns the invoice created the first time.",
+        "operationId": "create-invoice",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NewInvoice"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreatedOutputBody"
+                }
+              }
+            },
+            "description": "Created"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "tags": [
+          "sales",
+          "sales"
+        ]
+      }
+    },
+    "/sales/invoices/{id}": {
+      "get": {
+        "operationId": "get-invoice",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Invoice"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "tags": [
+          "sales",
+          "sales"
+        ]
+      },
+      "put": {
+        "operationId": "update-invoice",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InvoiceUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "tags": [
+          "sales",
+          "sales"
+        ]
+      }
+    },
     "/sales/line-items": {
       "get": {
         "operationId": "list-line-items",
@@ -19191,6 +20502,32 @@
                 "partial",
                 "full",
                 "not_applicable"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "explode": false,
+            "in": "query",
+            "name": "invoice_state",
+            "schema": {
+              "enum": [
+                "none",
+                "partial",
+                "full"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "explode": false,
+            "in": "query",
+            "name": "payment_state",
+            "schema": {
+              "enum": [
+                "unpaid",
+                "partial",
+                "paid"
               ],
               "type": "string"
             }
@@ -19477,6 +20814,48 @@
         ]
       }
     },
+    "/sales/orders/{id}/invoice-options": {
+      "get": {
+        "operationId": "get-invoice-options",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InvoiceOptions"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "tags": [
+          "sales",
+          "sales"
+        ]
+      }
+    },
     "/sales/quotes": {
       "get": {
         "operationId": "list-quotes",
@@ -19525,6 +20904,32 @@
                 "partial",
                 "full",
                 "not_applicable"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "explode": false,
+            "in": "query",
+            "name": "invoice_state",
+            "schema": {
+              "enum": [
+                "none",
+                "partial",
+                "full"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "explode": false,
+            "in": "query",
+            "name": "payment_state",
+            "schema": {
+              "enum": [
+                "unpaid",
+                "partial",
+                "paid"
               ],
               "type": "string"
             }
@@ -19783,6 +21188,285 @@
               }
             },
             "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "tags": [
+          "sales",
+          "sales"
+        ]
+      }
+    },
+    "/sales/receipts": {
+      "get": {
+        "operationId": "list-receipts",
+        "parameters": [
+          {
+            "description": "Number or customer name",
+            "explode": false,
+            "in": "query",
+            "name": "q",
+            "schema": {
+              "description": "Number or customer name",
+              "maxLength": 100,
+              "type": "string"
+            }
+          },
+          {
+            "explode": false,
+            "in": "query",
+            "name": "status",
+            "schema": {
+              "enum": [
+                "draft",
+                "pending_approval",
+                "posted",
+                "cancelled"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "explode": false,
+            "in": "query",
+            "name": "customer_id",
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          },
+          {
+            "explode": false,
+            "in": "query",
+            "name": "method",
+            "schema": {
+              "enum": [
+                "cash",
+                "bank"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "explode": false,
+            "in": "query",
+            "name": "sort",
+            "schema": {
+              "default": "-date",
+              "enum": [
+                "date",
+                "-date",
+                "number",
+                "-number",
+                "amount",
+                "-amount"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "explode": false,
+            "in": "query",
+            "name": "page",
+            "schema": {
+              "default": 1,
+              "format": "int64",
+              "maximum": 100000,
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "explode": false,
+            "in": "query",
+            "name": "page_size",
+            "schema": {
+              "default": 50,
+              "enum": [
+                20,
+                50,
+                100
+              ],
+              "format": "int64",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReceiptList"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "tags": [
+          "sales",
+          "sales"
+        ]
+      },
+      "post": {
+        "description": "Sending the same request_id again returns the receipt created the first time.",
+        "operationId": "create-receipt",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NewReceipt"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreatedOutputBody"
+                }
+              }
+            },
+            "description": "Created"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "tags": [
+          "sales",
+          "sales"
+        ]
+      }
+    },
+    "/sales/receipts/actions": {
+      "get": {
+        "operationId": "get-receipt-actions",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Actions"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "tags": [
+          "sales",
+          "sales"
+        ]
+      }
+    },
+    "/sales/receipts/{id}": {
+      "get": {
+        "operationId": "get-receipt",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Receipt"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "tags": [
+          "sales",
+          "sales"
+        ]
+      },
+      "put": {
+        "operationId": "update-receipt",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReceiptUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "No Content"
           },
           "default": {
             "content": {

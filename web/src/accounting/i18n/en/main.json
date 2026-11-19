@@ -158,5 +158,10 @@
   "accounting.partner_ledger.title": "Partner ledger",
   "accounting.partner_ledger.description": "A partner's movements over a range with its balance.",
   "accounting.partner_ledger.pick": "Choose a partner",
-  "accounting.partner_ledger.pick_description": "Choose a legal entity and a partner to see their ledger."
+  "accounting.partner_ledger.pick_description": "Choose a legal entity and a partner to see their ledger.",
+  "accounting.kind.sales_receivable": "Receivable from customers (sales)",
+  "accounting.kind.sales_revenue": "Sales revenue",
+  "accounting.kind.sales_output_vat": "Output VAT",
+  "accounting.kind.sales_cash_receipt": "Cash received",
+  "accounting.kind.sales_bank_receipt": "Bank transfer received"
 }

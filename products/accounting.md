@@ -11,9 +11,10 @@ A minimal general ledger, generic first: the parts that are the same in every co
 | Automatic journal entries from `posting.lines`, reversing entries when lines are voided | Open-item matching, due dates and aging; balances per employee |
 | Awaiting posting: pending, awaiting-mapping and unbalanced documents, "post pending" | Multiple currencies, exchange rates |
 | Manual journal entries with approval | Re-posting a date range after rules change (fix with manual entries) |
-| General ledger and trial balance per legal entity and date range | Business lines from Sales, budgets, cost centres beyond org units, fixed assets, bank reconciliation |
+| General ledger and trial balance per legal entity and date range | Budgets, cost centres beyond org units, fixed assets, bank reconciliation |
 | Accounting start date per legal entity, refusal to lock a period with unposted documents | Printing manual entries |
 | Accounts tracked by partner, partner balances and partner ledger (M16, [ADR-0051](../docs/adr/0051-business-lines-name-a-partner.md)) | |
+| Business lines from Sales invoices and receipts (M17, [ADR-0052](../docs/adr/0052-receipts-settle-named-invoices.md)) | |
 
 The Vietnamese layer is mostly data (charts, default rules, report forms), but it also needs HRM to split its insurance business line kinds per fund: HRM folds BHXH, BHYT, BHTN and the union fee into `employer_insurance_expense` and `insurance_payable`, while Circular 133/200 books them to 3382, 3383, 3384 and 3386 separately, which needs new posting kinds in HRM (a code change). Splitting them is cheapest before any tenant has a ledger.
 
@@ -58,4 +59,4 @@ Area `web/src/accounting`, menu: general ledger, trial balance, partner balances
 
 ## Proving flow
 
-Seeded sample chart and rules for the five payroll kinds, a payroll posted, a balanced entry appears split by org unit, the payroll cancelled and a reversing entry appears, a payroll posted before its rule exists waits under awaiting posting and enters after "post pending", a manual entry entered, posted and cancelled, and the trial balance totals are equal. The seed also tracks 131 and 331 by partner and opens two customers' receivables and a supplier's payable.
+Seeded sample chart and rules for the five payroll kinds, a payroll posted, a balanced entry appears split by org unit, the payroll cancelled and a reversing entry appears, a payroll posted before its rule exists waits under awaiting posting and enters after "post pending", a manual entry entered, posted and cancelled, and the trial balance totals are equal. The seed also tracks 131 and 331 by partner and opens two customers' receivables and a supplier's payable; it maps the five sales kinds to 131, 511, 3331, 111 and 112, so the seeded invoices and receipt reach the ledger.

@@ -8,8 +8,8 @@ Selling goods and services, for any trade: customers, a catalogue of items, quot
 | --- | --- |
 | Customers (Sales' partner role over a shared partner), with an owning org unit | CRM pipeline, leads, activities |
 | Item catalogue (goods and services alike) with default price and VAT rate, stock tracking per item (lot, serial, negative stock), warehouses with on hand and stock card | Units of measure conversion, price lists |
-| Quotations: approval, PDF print, turning into an order | Payment, invoices and e-invoices |
-| Sales orders, from a quotation or entered directly | Accounting, business lines |
+| Quotations: approval, PDF print, turning into an order | E-invoices, prepayments, credit notes, due dates and aging |
+| Sales orders, from a quotation or entered directly; sales invoices from a confirmed order, in parts; customer receipts allocated to invoices, with business lines for accounting | Cost of goods sold, a cash and bank catalogue |
 | Deliveries from a posted order, taking goods out of a warehouse | Delivery note print, transfers between warehouses, stocktakes, receipts from suppliers, stock valuation, hard reservations |
 | Per-line discount, VAT per line, rounding per legal-entity setting | Foreign currencies, document-level discount, cash rounding |
 
@@ -28,6 +28,8 @@ A single module `internal/modules/sales`, schema `sales`, product `sales`. Depen
 | `sales.headers` | Quotations and orders (`kind`), one row per document, keyed by the `record.documents` id: customer details as copied, terms, totals |
 | `sales.deliveries` | Deliveries, one row per document keyed by the `record.documents` id: the order, the warehouse, org unit as copied from the order |
 | `sales.delivery_lines` | Lines of a delivery: the order line position, copied item code, description and unit, lot or serial, quantity |
+| `sales.invoices`, `sales.invoice_lines` | Sales invoices keyed by the `record.documents` id: the order, totals; lines naming an order line by position, with its prices, discount and VAT rate as copied and the computed amounts |
+| `sales.receipts`, `sales.receipt_allocations` | Customer receipts keyed by the `record.documents` id: the customer, method (`cash`, `bank`), amount; one allocation per invoice settled |
 | `sales.lines` | Lines of a quotation or order, in order: item, copied code and unit, description, quantity, unit price, discount, VAT rate, and the computed amounts |
 
 ## Record types
@@ -38,6 +40,8 @@ A single module `internal/modules/sales`, schema `sales`, product `sales`. Depen
 | `sales.quote` | document `BG` | Approved: may be sent and turned into an order | Quotation date | Into `posted`: customer still active. Into `cancelled`: no non-cancelled order from it | `max_discount`, `items` |
 | `sales.order` | document `DH` | Confirmed | Order date | Into `posted`: customer still active | `max_discount`, `items` |
 | `sales.delivery` | document `GH` | Goods have left the warehouse | Delivery date | Into `posted`: takes the goods out through `stock` (refused while the order's cancel awaits approval). Into `cancelled`: puts them back | — |
+| `sales.invoice` | document `HD` | Billed | Invoice date | Into `posted`: re-checks quantities against the order, writes business lines. Into `cancelled`: refused while a non-cancelled receipt settles it; voids them | `amount` |
+| `sales.receipt` | document `PT` | Money received | Receipt date | Into `posted`: re-checks allocations against the invoices, writes business lines. Into `cancelled`: voids them | `amount` |
 
 Approval fields: `amount` (the header, the total including VAT), `max_discount` (the largest line discount, in percent, measured against the item's catalogue price: a unit price cut below it counts as discount, so lowering the price never slips past a discount rule) and `items` (the set of item ids on the lines). With no approval rule, sending posts at once. Sales approval rules are configured inside the Sales area (`/sales/approval-rules`), needing `sales.approval.manage` or `core.approval.manage`.
 
@@ -64,6 +68,8 @@ Each action needs the permission in the table of [Permissions](#permissions), an
 - **committed** is what confirmed orders still owe, and **available** is on hand less committed, per legal entity and item (`GET /sales/availability`); a draft or pending order shows available per stock line as a warning only.
 
 **Deliveries.** A delivery (`GH`) is made from a posted order for one warehouse of the order's legal entity; an order may have several. Only stock lines (tracking other than none) go on it, and a line never exceeds ordered less the other non-cancelled deliveries. A delivery reuses the order's permissions and org unit and has no approval fields of its own. `GET /sales/orders/{id}/delivery-options` gives warehouses, remaining quantities, suggested lots (first expiry first) and serials.
+
+**Invoices and receipts** ([ADR-0052](../docs/adr/0052-receipts-settle-named-invoices.md)). An invoice (`HD`) is made from a posted order ("Tạo hoá đơn", `create_invoice`); each line takes a quantity of an order line, never more than ordered less the other non-cancelled invoices, at the order line's price, discount and VAT rate; it is dated on or after the order. An order with a non-cancelled invoice cannot be cancelled (`sales_order_has_invoice`). A receipt (`PT`) belongs to one customer and one org unit and allocates amounts to posted invoices of both ("Thu tiền", `create_receipt`, pre-fills one invoice); an allocation never exceeds the invoice's total less the other non-cancelled receipts (`sales_receipt_over_invoice`). Both reuse the order's permissions. A customer deactivated while invoices are open still pays them: a receipt has no active-customer check. **Invoice state** (`none`, `partial`, `full`), **paid**, **remaining** and **payment state** (`unpaid`, `partial`, `paid`) are derived from posted documents. Business lines: an invoice writes `sales_receivable` (total, with the customer's partner), `sales_revenue` (net) and `sales_output_vat`; a receipt writes `sales_cash_receipt` or `sales_bank_receipt` and `sales_receivable` negative.
 
 **Changing a document.** A draft is edited in place (with `version`). A posted quotation or order is never edited: cancel it and make a new one. Cancelling a posted order frees its quotation, which can then be turned into an order again.
 

@@ -3,7 +3,7 @@ import { created, signedInApi } from './api'
 import { admin as root } from './helpers'
 
 // Accounting on top of the Demo demo company (demo.seed.ts and sales.seed.ts run first): a small
-// chart of accounts with 131 and 331 tracked by partner, the payroll mapping rules, a start date
+// chart of accounts with 131 and 331 tracked by partner, the payroll and sales mapping rules, a start date
 // per company, an opening-balance entry with two customers and a supplier, then "post pending"
 // so the seeded payrolls reach the ledger. Skipped once accounts exist.
 
@@ -12,18 +12,20 @@ async function ok(res: Promise<APIResponse>, what: string) {
   expect(r.ok(), `${what}: ${r.status()} ${await r.text()}`).toBe(true)
 }
 
-type Type = 'asset' | 'liability' | 'equity' | 'expense'
+type Type = 'asset' | 'liability' | 'equity' | 'revenue' | 'expense'
 // [code, name, type, parent code, tracked by partner]
 const chart: [string, string, Type, string?, boolean?][] = [
   ['111', 'Tiền mặt', 'asset'],
   ['112', 'Tiền gửi ngân hàng', 'asset'],
   ['131', 'Phải thu của khách hàng', 'asset', undefined, true],
   ['333', 'Thuế và các khoản phải nộp Nhà nước', 'liability'],
+  ['3331', 'Thuế giá trị gia tăng phải nộp', 'liability', '333'],
   ['3335', 'Thuế thu nhập cá nhân', 'liability', '333'],
   ['334', 'Phải trả người lao động', 'liability'],
   ['331', 'Phải trả cho người bán', 'liability', undefined, true],
   ['338', 'Phải trả, phải nộp khác', 'liability'],
   ['411', 'Vốn đầu tư của chủ sở hữu', 'equity'],
+  ['511', 'Doanh thu bán hàng và cung cấp dịch vụ', 'revenue'],
   ['642', 'Chi phí quản lý doanh nghiệp', 'expense'],
 ]
 // [kind, account code, side]
@@ -33,6 +35,11 @@ const rules: [string, string, 'debit' | 'credit'][] = [
   ['salary_payable', '334', 'credit'],
   ['insurance_payable', '338', 'credit'],
   ['pit_payable', '3335', 'credit'],
+  ['sales_receivable', '131', 'debit'],
+  ['sales_revenue', '511', 'credit'],
+  ['sales_output_vat', '3331', 'credit'],
+  ['sales_cash_receipt', '111', 'debit'],
+  ['sales_bank_receipt', '112', 'debit'],
 ]
 
 test('seed Accounting on the Demo demo company', async ({ baseURL }) => {
@@ -87,6 +94,6 @@ test('seed Accounting on the Demo demo company', async ({ baseURL }) => {
   )
   await ok(api.post(`/api/documents/accounting.journal_entry/${entry}/transitions`, { data: { to: 'posted', version: 1 } }), 'post opening entry')
 
-  // The payrolls were posted before Accounting existed; queue them for the ledger.
+  // The payrolls, invoices and receipts were posted before Accounting existed; queue them for the ledger.
   for (const c of companies) await ok(api.post('/api/accounting/pending/post', { data: { legal_entity_id: c.id } }), `post pending ${c.name}`)
 })

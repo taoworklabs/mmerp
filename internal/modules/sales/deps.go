@@ -8,6 +8,7 @@ import (
 	"github.com/taoworklabs/mmerp/internal/core/record"
 	"github.com/taoworklabs/mmerp/internal/core/setting"
 	"github.com/taoworklabs/mmerp/internal/shared/partner"
+	"github.com/taoworklabs/mmerp/internal/shared/posting"
 	"github.com/taoworklabs/mmerp/internal/shared/stock"
 )
 
@@ -20,4 +21,5 @@ type Deps struct {
 	Numbering *numbering.Service
 	Partner   *partner.Service
 	Stock     *stock.Service
+	Posting   *posting.Service
 }

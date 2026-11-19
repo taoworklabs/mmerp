@@ -21,6 +21,7 @@ import (
 	"github.com/taoworklabs/mmerp/internal/platform"
 	"github.com/taoworklabs/mmerp/internal/shared/item"
 	"github.com/taoworklabs/mmerp/internal/shared/partner"
+	"github.com/taoworklabs/mmerp/internal/shared/posting"
 	"github.com/taoworklabs/mmerp/internal/shared/stock"
 )
 
@@ -54,7 +55,7 @@ func newFixture(t *testing.T) *fixture {
 	ctx, admin, ids, set, rec, num := core.Ctx, core.Admin, core.IAM, core.Setting, core.Record, core.Numbering
 	partners := partner.NewService(partner.Deps{IAM: ids, Record: rec, Audit: core.Audit, Numbering: num})
 	stk := stock.NewService(stock.Deps{IAM: ids, Audit: core.Audit, Numbering: num, Record: rec, Printing: core.Printing})
-	s := sales.NewService(sales.Deps{IAM: ids, Record: rec, Audit: core.Audit, Setting: set, Printing: core.Printing, Numbering: num, Partner: partners, Stock: stk})
+	s := sales.NewService(sales.Deps{IAM: ids, Record: rec, Audit: core.Audit, Setting: set, Printing: core.Printing, Numbering: num, Partner: partners, Stock: stk, Posting: posting.NewService(posting.Hooks{})})
 	f := &fixture{t: t, core: core, system: core.System, ctx: ctx, admin: admin, set: set, rec: rec, appr: core.Approval, sales: s, num: num, partners: partners, stock: stk}
 	f.c = must(t)(ids.CreateOrgUnit(admin, iam.OrgUnitInput{Kind: "company", Name: "C"}))
 	f.a = must(t)(ids.CreateOrgUnit(admin, iam.OrgUnitInput{ParentID: &f.c, Kind: "department", Name: "A"}))
@@ -179,7 +180,10 @@ func contract(t *testing.T, docType string) {
 			"write actions leave allowed_actions when the product is off or the period locked": "a posted quotation in a locked period still offers create_order",
 		}
 		if docType == "sales.order" {
-			create, update, read, routes, gaps = f.sales.CreateOrder, f.sales.UpdateOrder, f.sales.Order, nil, nil
+			create, update, read, routes = f.sales.CreateOrder, f.sales.UpdateOrder, f.sales.Order, nil
+			gaps = map[string]string{
+				"write actions leave allowed_actions when the product is off or the period locked": "a posted order in a locked period still offers create_invoice, dated in an open period",
+			}
 		}
 		deactivate := func(*testing.T, record.Ref) {
 			c := customer("KH1", f.a)

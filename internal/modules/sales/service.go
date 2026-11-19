@@ -54,6 +54,7 @@ func NewService(d Deps) *Service {
 	if err := loadTranslations(); err != nil {
 		panic(err) // embedded files: broken only by a bad build
 	}
+	declareKinds()
 	s := &Service{d: d}
 	data.RegisterConstraints(data.Constraints{
 		"sales.customers_code_key":             ErrCustomerCodeTaken,
@@ -94,7 +95,10 @@ func NewService(d Deps) *Service {
 		})
 	}
 	s.registerDelivery()
+	s.registerInvoice()
+	s.registerReceipt()
 	s.registerPrints()
+	s.registerPaymentPrints()
 	return s
 }
 
@@ -123,6 +127,13 @@ func (s *Service) transition(ctx context.Context, d record.Doc, _ record.Status)
 			_, err := store.LiveDeliveryOfOrder.Run(ctx, d.ID)
 			if err == nil {
 				return ErrOrderHasDelivery
+			}
+			if !errors.Is(err, pgx.ErrNoRows) {
+				return err
+			}
+			_, err = store.LiveInvoiceOfOrder.Run(ctx, d.ID)
+			if err == nil {
+				return ErrOrderHasInvoice
 			}
 			if !errors.Is(err, pgx.ErrNoRows) {
 				return err

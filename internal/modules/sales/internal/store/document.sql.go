@@ -71,10 +71,40 @@ SELECT h.id, h.kind, d.number, d.status, d.date, d.org_unit_id, h.customer_id, h
                FROM sales.lines l JOIN item.items i ON i.id = l.item_id
                WHERE l.doc_id = h.id AND i.tracking <> 'none'
            ) x
-       ) END, '')::text AS delivery_state
+       ) END, '')::text AS delivery_state,
+       coalesce(inv.state, '')::text AS invoice_state,
+       -- Orders only: paid once all is invoiced and every posted invoice is paid; nothing before any invoice.
+       (CASE WHEN inv.state IS NULL THEN ''
+             WHEN inv.state = 'none' OR pay.paid = 0 AND pay.invoiced > 0 THEN 'unpaid'
+             WHEN pay.paid >= pay.invoiced AND inv.state = 'full' THEN 'paid'
+             ELSE 'partial' END)::text AS payment_state,
+       coalesce(pay.paid, 0)::bigint AS paid
 FROM sales.headers h
 JOIN record.documents d ON d.id = h.id
 JOIN iam.org_units u ON u.id = d.org_unit_id
+LEFT JOIN LATERAL (
+    SELECT CASE WHEN bool_and(x.invoiced >= x.quantity) THEN 'full'
+                WHEN bool_and(x.invoiced = 0) THEN 'none'
+                ELSE 'partial' END AS state
+    FROM (
+        SELECT l.quantity, coalesce((
+            SELECT sum(il.quantity)
+            FROM sales.invoice_lines il
+            JOIN sales.invoices v ON v.id = il.invoice_id
+            JOIN record.documents vd ON vd.id = v.id
+            WHERE v.order_id = l.doc_id AND il.order_position = l.position AND vd.status = 'posted'
+        ), 0) AS invoiced
+        FROM sales.lines l
+        WHERE l.doc_id = h.id
+    ) x
+) inv ON h.kind = 'order'
+LEFT JOIN LATERAL (
+    SELECT coalesce(sum(v.total), 0) AS invoiced,
+           coalesce(sum((SELECT sum(a.amount) FROM sales.receipt_allocations a JOIN record.documents rd ON rd.id = a.receipt_id
+                         WHERE a.invoice_id = v.id AND rd.status = 'posted')), 0) AS paid
+    FROM sales.invoices v JOIN record.documents vd ON vd.id = v.id
+    WHERE v.order_id = h.id AND vd.status = 'posted'
+) pay ON h.kind = 'order'
 `
 
 type DocListBaseRow struct {
@@ -93,9 +123,14 @@ type DocListBaseRow struct {
 	FromQuote     bool
 	Ordered       bool
 	DeliveryState string
+	InvoiceState  string
+	PaymentState  string
+	Paid          int64
 }
 
 // data:base
+// Orders only, over all lines and posted invoices: none, partial, full.
+// Over the order's posted invoices: their totals and what posted receipts paid of them.
 func (q *Queries) DocListBase(ctx context.Context) ([]DocListBaseRow, error) {
 	rows, err := q.db.Query(ctx, docListBase)
 	if err != nil {
@@ -121,6 +156,9 @@ func (q *Queries) DocListBase(ctx context.Context) ([]DocListBaseRow, error) {
 			&i.FromQuote,
 			&i.Ordered,
 			&i.DeliveryState,
+			&i.InvoiceState,
+			&i.PaymentState,
+			&i.Paid,
 		); err != nil {
 			return nil, err
 		}
@@ -219,7 +257,14 @@ SELECT l.item_id, l.item_code, l.description, l.unit, l.quantity::text AS quanti
            JOIN sales.deliveries v ON v.id = dl.delivery_id
            JOIN record.documents d ON d.id = v.id
            WHERE v.order_id = l.doc_id AND dl.order_position = l.position AND d.status = 'posted'
-       ), 0)::text AS delivered
+       ), 0)::text AS delivered,
+       coalesce((
+           SELECT sum(il.quantity)
+           FROM sales.invoice_lines il
+           JOIN sales.invoices v ON v.id = il.invoice_id
+           JOIN record.documents d ON d.id = v.id
+           WHERE v.order_id = l.doc_id AND il.order_position = l.position AND d.status = 'posted'
+       ), 0)::text AS invoiced
 FROM sales.lines l JOIN item.items i ON i.id = l.item_id
 WHERE l.doc_id = $1 ORDER BY l.position
 `
@@ -238,6 +283,7 @@ type GetLinesRow struct {
 	Vat             int64
 	Stock           bool
 	Delivered       string
+	Invoiced        string
 }
 
 // Delivered counts posted deliveries only; stock tells goods kept in stock from services.
@@ -264,6 +310,7 @@ func (q *Queries) GetLines(ctx context.Context, docID int64) ([]GetLinesRow, err
 			&i.Vat,
 			&i.Stock,
 			&i.Delivered,
+			&i.Invoiced,
 		); err != nil {
 			return nil, err
 		}
@@ -421,6 +468,40 @@ func (q *Queries) OrderDeliveries(ctx context.Context, orderID int64) ([]OrderDe
 	var items []OrderDeliveriesRow
 	for rows.Next() {
 		var i OrderDeliveriesRow
+		if err := rows.Scan(&i.ID, &i.Number, &i.Status); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const orderInvoices = `-- name: OrderInvoices :many
+SELECT d.id, d.number, d.status
+FROM sales.invoices v JOIN record.documents d ON d.id = v.id
+WHERE v.order_id = $1 AND d.status <> 'cancelled'
+ORDER BY d.id
+`
+
+type OrderInvoicesRow struct {
+	ID     int64
+	Number string
+	Status string
+}
+
+// The order's invoices not cancelled.
+func (q *Queries) OrderInvoices(ctx context.Context, orderID int64) ([]OrderInvoicesRow, error) {
+	rows, err := q.db.Query(ctx, orderInvoices, orderID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []OrderInvoicesRow
+	for rows.Next() {
+		var i OrderInvoicesRow
 		if err := rows.Scan(&i.ID, &i.Number, &i.Status); err != nil {
 			return nil, err
 		}

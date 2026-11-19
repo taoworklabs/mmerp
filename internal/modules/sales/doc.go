@@ -13,6 +13,7 @@ import (
 	"github.com/taoworklabs/mmerp/internal/core/record"
 	"github.com/taoworklabs/mmerp/internal/modules/sales/internal/store"
 	"github.com/taoworklabs/mmerp/internal/platform"
+	"github.com/taoworklabs/mmerp/internal/platform/data"
 )
 
 // QuoteActions and OrderActions list what the actor may do before picking a document: create.
@@ -75,7 +76,7 @@ func (s *Service) docs(ctx context.Context, k kind, f DocFilter) (DocList, error
 			ID: r.ID, Number: r.Number, Status: r.Status, Date: *platform.DatePtr(r.Date), CustomerID: r.CustomerID,
 			CustomerCode: r.CustomerCode, CustomerName: r.CustomerName, OrgUnitName: r.OrgUnitName, Total: r.Total,
 			ValidUntil: platform.DatePtr(r.ValidUntil), Expired: shownExpired(r.Status, r.Ordered, r.ValidUntil, today),
-			Ordered: r.Ordered, FromQuote: r.FromQuote, DeliveryState: r.DeliveryState,
+			Ordered: r.Ordered, FromQuote: r.FromQuote, DeliveryState: r.DeliveryState, InvoiceState: r.InvoiceState, PaymentState: r.PaymentState,
 		})
 	}
 	return out, nil
@@ -158,7 +159,7 @@ func (s *Service) doc(ctx context.Context, k kind, id int64) (Doc, error) {
 		}
 		out.Expired = shownExpired(string(d.Status), out.Ordered, h.ValidUntil, today)
 		if d.Status == record.Posted && !out.Expired && !out.Ordered {
-			if ok, err := s.canMakeOrder(ctx, h.OrgUnitID); err != nil {
+			if ok, err := s.canWriteOrders(ctx, h.OrgUnitID); err != nil {
 				return Doc{}, err
 			} else if ok {
 				extra = append(extra, "create_order")
@@ -172,6 +173,13 @@ func (s *Service) doc(ctx context.Context, k kind, id int64) (Doc, error) {
 			extra = append(extra, "create_delivery")
 		}
 	}
+	if k == orderKind && d.Status == record.Posted {
+		if ok, err := s.canInvoice(ctx, id, h.OrgUnitID); err != nil {
+			return Doc{}, err
+		} else if ok {
+			extra = append(extra, "create_invoice")
+		}
+	}
 	out.AllowedActions, err = s.d.Record.Actions(ctx, d, extra...)
 	return out, err
 }
@@ -179,7 +187,7 @@ func (s *Service) doc(ctx context.Context, k kind, id int64) (Doc, error) {
 // canDeliver: the actor may make orders at the unit and a stock line still has something
 // no delivery, draft or posted, has taken.
 func (s *Service) canDeliver(ctx context.Context, order, unit int64) (bool, error) {
-	if ok, err := s.canMakeOrder(ctx, unit); err != nil || !ok {
+	if ok, err := s.canWriteOrders(ctx, unit); err != nil || !ok {
 		return false, err
 	}
 	rows, err := store.DeliverableLines.Run(ctx, store.DeliverableLinesParams{OrderID: order})
@@ -205,7 +213,31 @@ func (s *Service) canDeliver(ctx context.Context, order, unit int64) (bool, erro
 	return false, nil
 }
 
-func (s *Service) canMakeOrder(ctx context.Context, unit int64) (bool, error) {
+// canInvoice: the actor may make orders at the unit and a line still has something no
+// invoice, draft or posted, has taken.
+func (s *Service) canInvoice(ctx context.Context, order, unit int64) (bool, error) {
+	if ok, err := s.canWriteOrders(ctx, unit); err != nil || !ok {
+		return false, err
+	}
+	rows, err := store.InvoiceableLines.Run(ctx, store.InvoiceableLinesParams{OrderID: order})
+	if err != nil {
+		return false, err
+	}
+	for _, r := range rows {
+		ordered, taken, err := decimals(r.Quantity, r.Taken)
+		if err != nil {
+			return false, err
+		}
+		if ordered.GreaterThan(taken) {
+			return true, nil
+		}
+	}
+	return false, nil
+}
+
+// canWriteOrders: Sales is on and the actor may write orders at the unit, which is also what
+// writing their deliveries, invoices and receipts needs.
+func (s *Service) canWriteOrders(ctx context.Context, unit int64) (bool, error) {
 	if platform.ProductGate(ctx, "sales", platform.ClassWrite) != nil {
 		return false, nil
 	}
@@ -484,43 +516,37 @@ func customerCopy(h store.GetHeaderRow) CustomerCopy {
 		ContactName: platform.TextPtr(h.ContactName)}
 }
 
-// orderProgress adds what was delivered of each stock line, the delivery state, the
-// deliveries and, before posting, what is available. Deliveries are viewable by whoever
-// views the order: same org unit, same permission.
+// orderProgress adds what was delivered and invoiced of each line, the order's delivery, invoice
+// and payment states and what was paid, its deliveries and invoices and, before posting, what is
+// available. The states come from the order list, so the list and the page never disagree.
+// Deliveries and invoices are viewable by whoever views the order: same org unit, same permission.
 func (s *Service) orderProgress(ctx context.Context, out *Doc, lines []store.GetLinesRow, legalEntity int64) error {
-	open := out.Status == string(record.Draft) || out.Status == string(record.PendingApproval)
+	sc, err := s.d.IAM.DataScope(ctx, "sales", PermOrderView)
+	if err != nil {
+		return err
+	}
+	page, err := docList.Run(ctx, data.Query{Scope: sc, Paging: platform.Paging{Page: 1, PageSize: 20},
+		Where: data.And(data.Eq("kind", orderKind.name), data.Eq("id", out.ID))})
+	if err != nil {
+		return err
+	}
+	if len(page.Items) != 1 {
+		return platform.ErrNotFound
+	}
+	row := page.Items[0]
+	out.DeliveryState, out.InvoiceState, out.PaymentState, out.Paid = row.DeliveryState, row.InvoiceState, row.PaymentState, &row.Paid
 	var ids []int64
-	stock, full, none := 0, true, true
 	for i, l := range lines {
+		invoiced := platform.PlainDecimal(l.Invoiced)
+		out.Lines[i].Invoiced = &invoiced
 		if !l.Stock {
 			continue
 		}
-		stock++
-		delivered, err := decimal.NewFromString(l.Delivered)
-		if err != nil {
-			return err
-		}
-		ordered, err := decimal.NewFromString(l.Quantity)
-		if err != nil {
-			return err
-		}
-		full = full && delivered.GreaterThanOrEqual(ordered)
-		none = none && delivered.IsZero()
-		v := delivered.String()
-		out.Lines[i].Delivered = &v
+		delivered := platform.PlainDecimal(l.Delivered)
+		out.Lines[i].Delivered = &delivered
 		ids = append(ids, l.ItemID)
 	}
-	switch {
-	case stock == 0:
-		out.DeliveryState = "not_applicable"
-	case full:
-		out.DeliveryState = "full"
-	case none:
-		out.DeliveryState = "none"
-	default:
-		out.DeliveryState = "partial"
-	}
-	if open && len(ids) > 0 {
+	if open := out.Status == string(record.Draft) || out.Status == string(record.PendingApproval); open && len(ids) > 0 {
 		av, err := s.availability(ctx, legalEntity, ids)
 		if err != nil {
 			return err
@@ -534,6 +560,13 @@ func (s *Service) orderProgress(ctx context.Context, out *Doc, lines []store.Get
 				out.Lines[i].Available = &v
 			}
 		}
+	}
+	vs, err := store.OrderInvoices.Run(ctx, out.ID)
+	if err != nil {
+		return err
+	}
+	for _, v := range vs {
+		out.Invoices = append(out.Invoices, DocRef{ID: v.ID, Number: v.Number, Status: v.Status})
 	}
 	ds, err := store.OrderDeliveries.Run(ctx, out.ID)
 	if err != nil {

@@ -99,7 +99,7 @@ func Modules() []platform.Module {
 	stk := stock.NewService(stock.Deps{IAM: ids, Audit: audit.NewService(), Numbering: num, Record: rec, Printing: prn})
 	ids.SetLegalEntityCreated(func(ctx context.Context, le int64) error { _, err := stk.DefaultWarehouse(ctx, le); return err })
 	prt := partner.NewService(partner.Deps{IAM: ids, Record: rec, Audit: audit.NewService(), Numbering: num})
-	sal := sales.NewService(sales.Deps{IAM: ids, Record: rec, Audit: audit.NewService(), Setting: set, Printing: prn, Numbering: num, Partner: prt, Stock: stk})
+	sal := sales.NewService(sales.Deps{IAM: ids, Record: rec, Audit: audit.NewService(), Setting: set, Printing: prn, Numbering: num, Partner: prt, Stock: stk, Posting: pst})
 	return []platform.Module{iam.Module(ids), setting.Module(set), numbering.Module(num), record.Module(rec), approval.Module(appr), dataio.Module(dio), attachment.Module(att), printing.Module(prn), discussion.Module(dis), notification.Module(ntf), item.Module(itm), stock.Module(stk), partner.Module(prt), hrm.Module(h), sales.Module(sal), accounting.Module(acc)}
 }
 

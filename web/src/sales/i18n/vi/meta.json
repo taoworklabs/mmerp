@@ -59,5 +59,21 @@
   "sales.nav.deliveries": "Phiếu giao hàng",
   "sales.delivery.name": "Phiếu giao hàng",
   "sales.preview.order": "Đơn bán hàng",
-  "sales.error.delivery_options_loading": "Đang tải gợi ý cho kho mới, vui lòng thử lại sau giây lát."
+  "sales.error.delivery_options_loading": "Đang tải gợi ý cho kho mới, vui lòng thử lại sau giây lát.",
+  "sales.nav.invoices": "Hoá đơn bán hàng",
+  "sales.invoice.name": "Hoá đơn bán hàng",
+  "sales.error.sales_order_has_invoice": "Đơn bán hàng đã có hoá đơn. Hủy hoá đơn trước.",
+  "sales.error.sales_invoice_over_ordered": "Dòng {{line_no}}: vượt số còn phải xuất hoá đơn ({{remaining}}).",
+  "sales.error.sales_invoice_position": "Dòng {{line_no}}: đơn bán hàng không có dòng tương ứng. Chọn lại dòng đơn.",
+  "sales.error.sales_invoice_before_order": "Ngày hoá đơn không được trước ngày đơn bán hàng.",
+  "sales.error.sales_invoice_has_receipt": "Hoá đơn đã có phiếu thu. Hủy phiếu thu trước.",
+  "sales.nav.receipts": "Phiếu thu",
+  "sales.receipt.name": "Phiếu thu",
+  "sales.preview.invoices": "Hoá đơn",
+  "sales.preview.amount": "Số tiền (đ)",
+  "sales.error.sales_receipt_over_invoice": "Dòng {{line_no}}: vượt số còn phải thu của hoá đơn ({{remaining}} đ).",
+  "sales.error.sales_receipt_invoice": "Dòng {{line_no}}: hoá đơn chưa ghi sổ hoặc của khách hàng khác.",
+  "sales.error.sales_receipt_invoice_org_unit": "Dòng {{line_no}}: hoá đơn thuộc đơn vị khác với phiếu thu. Lập phiếu thu riêng cho đơn vị đó.",
+  "sales.error.sales_receipt_before_invoice": "Dòng {{line_no}}: ngày thu không được trước ngày hoá đơn.",
+  "sales.error.sales_receipt_duplicate_invoice": "Dòng {{line_no}}: hoá đơn đã có ở dòng khác."
 }
