@@ -99,12 +99,14 @@ func TestStockCardHidesUnreadableDocuments(t *testing.T) {
 		DocType string `json:"doc_type"`
 		DocID   int64  `json:"doc_id"`
 		Number  string `json:"number"`
+		Value   int64  `json:"value"`
 	}) {
 		var out struct {
 			Rows []struct {
 				DocType string `json:"doc_type"`
 				DocID   int64  `json:"doc_id"`
 				Number  string `json:"number"`
+				Value   int64  `json:"value"`
 			}
 		}
 		if err := json.Unmarshal(f.ok(c, "GET", fmt.Sprintf("/api/stock/card?warehouse_id=%d&item_id=%d&from=%s&to=%s", wh, item, day, day), "", 200), &out); err != nil {
@@ -113,7 +115,7 @@ func TestStockCardHidesUnreadableDocuments(t *testing.T) {
 		return out.Rows
 	}
 	rows := card(viewer)
-	if len(rows) != 2 || rows[0].DocID != adj || rows[0].Number == "" || rows[1].DocType != "sales.delivery" || rows[1].DocID != 0 || rows[1].Number != "" {
+	if len(rows) != 2 || rows[0].DocID != adj || rows[0].Number == "" || rows[1].DocType != "sales.delivery" || rows[1].DocID != 0 || rows[1].Number != "" || rows[1].Value != 0 || rows[0].Value != 10_000 {
 		t.Fatalf("viewer card: %+v", rows)
 	}
 	rows = card(seller)

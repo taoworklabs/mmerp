@@ -380,6 +380,7 @@
           "unit_cost": {
             "description": "Minor unit; required on increase lines, absent on decreases (valued at average)",
             "format": "int64",
+            "maximum": 1000000000000000,
             "minimum": 0,
             "type": "integer"
           }
@@ -424,6 +425,7 @@
           "unit_cost": {
             "description": "Minor unit; required on increase lines, absent on decreases (valued at average)",
             "format": "int64",
+            "maximum": 1000000000000000,
             "minimum": 0,
             "type": "integer"
           }

@@ -159,6 +159,8 @@ func prepareAdjustment(ctx context.Context, f *AdjustmentFields) (record.Header,
 			return record.Header{}, lineErr(ErrUnitCostRequired, Move{LineNo: i + 1})
 		case q.IsNegative() && l.UnitCost != nil:
 			return record.Header{}, lineErr(ErrUnitCostNotAllowed, Move{LineNo: i + 1})
+		case l.UnitCost != nil && (*l.UnitCost < 0 || q.Mul(decimal.NewFromInt(*l.UnitCost)).GreaterThanOrEqual(maxValue)):
+			return record.Header{}, lineErr(ErrValueTooLarge, Move{LineNo: i + 1})
 		}
 	}
 	n, err := store.CountItems.Run(ctx, ids)

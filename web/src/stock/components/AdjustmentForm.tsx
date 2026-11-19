@@ -83,6 +83,7 @@ const errorFields: ErrorFields<Values> = {
   stock_serial_required: 'lines.*.serial',
   stock_unit_cost_required: 'lines.*.unit_cost',
   stock_unit_cost_not_allowed: 'lines.*.unit_cost',
+  stock_value_too_large: 'lines.*.unit_cost',
 }
 
 type Line = Adjustment['lines'][number]

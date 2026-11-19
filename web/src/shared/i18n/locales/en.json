@@ -83,6 +83,7 @@
   "shared.error.stock_code_blank": "Line {{line_no}}: the lot or serial code cannot be blank.",
   "shared.error.stock_unit_cost_required": "Line {{line_no}}: enter the unit cost of goods brought in.",
   "shared.error.stock_unit_cost_not_allowed": "Line {{line_no}}: goods taken out are valued at average; leave the unit cost empty.",
+  "shared.error.stock_value_too_large": "Line {{line_no}}: quantity times unit cost is too large.",
   "shared.error.stock_card_range_invalid": "The start date cannot be after the end date.",
   "shared.error.stock_card_range_too_long": "The period is too long. Pick a shorter one.",
   "shared.error.org_unit_cycle": "A unit cannot be placed under one of its own sub-units.",

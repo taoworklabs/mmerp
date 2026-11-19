@@ -223,3 +223,13 @@ func TestAdjustmentUnitCostChecked(t *testing.T) {
 		t.Fatalf("params %+v", e.Params)
 	}
 }
+
+func TestAdjustmentValueBounded(t *testing.T) {
+	s := newStocked(t)
+	f := s.fields("2026-11-02")
+	f.Lines[0].Quantity, f.Lines[0].UnitCost = "100000", new(int64(10_000_000_000))
+	_, err := s.stock.CreateAdjustment(s.admin, stock.NewAdjustment{AdjustmentFields: f})
+	if e := wantCode(t, err, stock.ErrValueTooLarge); e.Params["line_no"] != 1 {
+		t.Fatalf("params %+v", e.Params)
+	}
+}

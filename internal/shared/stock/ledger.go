@@ -475,6 +475,9 @@ func (s *Service) moveMasters(ctx context.Context, moves []Move) (map[int64]stor
 // maxQuantity keeps a balance inside numeric(15,3).
 var maxQuantity = decimal.New(1, 12)
 
+// maxValue keeps one line's value, and sums of many, far inside int64.
+var maxValue = decimal.New(1, 15)
+
 // check refuses a move before anything is written: its warehouse, quantity and the
 // lot or serial its item's tracking asks for.
 func check(m Move, whs map[int64]store.MoveWarehousesRow, items map[int64]store.MoveItemsRow, legalEntity int64) error {

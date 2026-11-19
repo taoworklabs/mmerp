@@ -14,6 +14,8 @@ var (
 	// line is valued at average; params name the line.
 	ErrUnitCostRequired   = &platform.Error{Status: http.StatusUnprocessableEntity, Code: "stock_unit_cost_required"}
 	ErrUnitCostNotAllowed = &platform.Error{Status: http.StatusUnprocessableEntity, Code: "stock_unit_cost_not_allowed"}
+	// ErrValueTooLarge: quantity times unit cost reaches maxValue; params name the line.
+	ErrValueTooLarge = &platform.Error{Status: http.StatusUnprocessableEntity, Code: "stock_value_too_large"}
 )
 
 // AdjustmentLine is one line of a stock adjustment: positive brings stock in, negative takes it out.
@@ -22,7 +24,7 @@ type AdjustmentLine struct {
 	Lot      *LotRef `json:"lot,omitempty" doc:"Lot-tracked items: created at posting when missing"`
 	Serial   *string `json:"serial,omitempty" minLength:"1" maxLength:"100" doc:"Serial-tracked items"`
 	Quantity string  `json:"quantity" pattern:"^-?[0-9]{1,12}(\\.[0-9]{1,3})?$" doc:"Signed, not 0, up to 3 decimals"`
-	UnitCost *int64  `json:"unit_cost,omitempty" minimum:"0" doc:"Minor unit; required on increase lines, absent on decreases (valued at average)"`
+	UnitCost *int64  `json:"unit_cost,omitempty" minimum:"0" maximum:"1000000000000000" doc:"Minor unit; required on increase lines, absent on decreases (valued at average)"`
 }
 
 // AdjustmentFields are the editable fields of a stock adjustment.
