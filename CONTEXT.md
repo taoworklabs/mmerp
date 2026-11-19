@@ -151,6 +151,11 @@ Product description: [products/hrm.md](./products/hrm.md).
 - **Transfer** (`stock.transfer`, vi: "Phiếu chuyển kho"): a document moving goods from one warehouse to another of the same legal entity; both sides move on its date, with no goods in transit.
 - **Stocktake** (`stock.stocktake`, vi: "Phiếu kiểm kê kho"): a document recording what was counted in one warehouse; posting moves on hand to the counts. Only the lines it lists are counted.
 - **Counted quantity, book quantity, stocktake difference** (vi: "Số lượng kiểm kê, Tồn sổ sách, Chênh lệch kiểm kê"): what was found on the shelf; on hand when the stocktake posted; counted less book, written as stock moves.
+- **Moving average cost** (vi: "Giá bình quân gia quyền di động"): the unit cost of an item in a legal entity, recomputed at every incoming move; outgoing moves take it at the moment they post. See [ADR-0110](./docs/adr/0110-moving-average-stock-valuation.md).
+- **Stock value** (vi: "Giá trị tồn kho"): the money a stock move carries in or out, signed like its quantity; the sum per legal entity and item is the value on hand.
+- **Received not invoiced** (vi: "Hàng đã nhận, chưa có hóa đơn"): goods received from a supplier at the order price whose supplier invoice is not yet booked.
+- **Price difference** (vi: "Chênh lệch giá mua"): a supplier invoice's net less the order price of the same quantity; added to the value on hand, or to cost of goods sold when none is left.
+- **Cost of goods sold** (vi: "Giá vốn hàng bán"): the value of goods leaving stock through a sales delivery.
 
 ## Sales
 

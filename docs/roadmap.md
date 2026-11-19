@@ -196,7 +196,7 @@ Vertical slices, each from migration to screen:
 
 ## M20. Stock valuation
 
-**Not started.** Costing method (moving average or FIFO), cost on stock moves, cost of goods sold on deliveries, and whether goods reach 156 at the goods receipt with a "received, not invoiced" clearing account ([ADR-0090](./adr/0090-purchasing-product.md#consequences)). Needs an ADR first.
+**Decided, not built.** Moving average per legal entity and item, a value on every stock move, cost of goods sold on deliveries, and goods reaching 156 at the goods receipt through "received, not invoiced" ([ADR-0110](./adr/0110-moving-average-stock-valuation.md)).
 
 ## HRM review
 
