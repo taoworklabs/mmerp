@@ -349,6 +349,46 @@ func (q *Queries) InvoiceOrder(ctx context.Context, id int64) (int64, error) {
 	return order_id, err
 }
 
+const invoicePayments = `-- name: InvoicePayments :many
+SELECT d.id, d.number, d.status, a.amount
+FROM purchase.payment_allocations a JOIN record.documents d ON d.id = a.payment_id
+WHERE a.invoice_id = $1 AND d.status <> 'cancelled'
+ORDER BY d.id
+`
+
+type InvoicePaymentsRow struct {
+	ID     int64
+	Number string
+	Status string
+	Amount int64
+}
+
+// The payments not cancelled that settle the invoice, with the amount each settles.
+func (q *Queries) InvoicePayments(ctx context.Context, invoiceID int64) ([]InvoicePaymentsRow, error) {
+	rows, err := q.db.Query(ctx, invoicePayments, invoiceID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []InvoicePaymentsRow
+	for rows.Next() {
+		var i InvoicePaymentsRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Number,
+			&i.Status,
+			&i.Amount,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const invoiceableLines = `-- name: InvoiceableLines :many
 SELECT l.position, l.item_id, l.item_code, l.description, l.unit, l.stocked, l.quantity::text AS quantity, l.unit_price,
        l.discount_percent::text AS discount_percent, l.vat_rate,

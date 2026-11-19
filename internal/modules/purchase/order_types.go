@@ -86,6 +86,9 @@ type Order struct {
 	// Posted orders: how far posted invoices went over all lines, by quantity, and the invoices not cancelled.
 	InvoiceState string   `json:"invoice_state,omitempty" enum:"none,partial,full"`
 	Invoices     []DocRef `json:"invoices,omitempty"`
+	// Posted orders: what posted payments paid of posted invoices; paid once all is invoiced and paid.
+	Paid         *int64 `json:"paid,omitempty"`
+	PaymentState string `json:"payment_state,omitempty" enum:"unpaid,partial,paid"`
 	// edit, delete, submit, withdraw, cancel, print, create_goods_receipt, create_invoice.
 	AllowedActions []string `json:"allowed_actions" nullable:"false"`
 }
@@ -96,6 +99,7 @@ type OrderFilter struct {
 	SupplierID int64  `query:"supplier_id"`
 	ReceiptState string `query:"receipt_state" enum:"none,partial,full,not_applicable"`
 	InvoiceState string `query:"invoice_state" enum:"none,partial,full"`
+	PaymentState string `query:"payment_state" enum:"unpaid,partial,paid"`
 	Sort       string `query:"sort" enum:"date,-date,number,-number,total,-total" default:"-date"`
 	platform.Paging
 }
@@ -112,6 +116,7 @@ type OrderListItem struct {
 	Total        int64  `json:"total"`
 	ReceiptState string `json:"receipt_state" enum:"none,partial,full,not_applicable"`
 	InvoiceState string `json:"invoice_state" enum:"none,partial,full"`
+	PaymentState string `json:"payment_state" enum:"unpaid,partial,paid"`
 }
 
 type OrderList struct {

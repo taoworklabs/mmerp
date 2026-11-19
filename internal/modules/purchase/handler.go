@@ -9,4 +9,5 @@ func registerHandlers(api huma.API, s *Service) {
 	registerOrderHandlers(api, s)
 	registerReceiptHandlers(api, s)
 	registerInvoiceHandlers(api, s)
+	registerPaymentHandlers(api, s)
 }

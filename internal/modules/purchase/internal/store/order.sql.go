@@ -315,8 +315,25 @@ SELECT o.id, d.number, d.status, d.date, d.org_unit_id, o.supplier_id, o.supplie
             ), 0) AS invoiced
             FROM purchase.order_lines l
             WHERE l.order_id = o.id
-        ) x)::text AS invoice_state
+        ) x)::text AS invoice_state,
+       -- Paid once all is invoiced and every posted invoice is paid; unpaid before any payment.
+       (CASE WHEN pay.paid = 0 THEN 'unpaid'
+             WHEN pay.paid >= pay.invoiced AND NOT EXISTS (
+                 SELECT 1 FROM purchase.order_lines l
+                 WHERE l.order_id = o.id AND l.quantity > coalesce((
+                     SELECT sum(il.quantity) FROM purchase.invoice_lines il
+                     JOIN purchase.invoices v ON v.id = il.invoice_id JOIN record.documents vd ON vd.id = v.id
+                     WHERE v.order_id = o.id AND il.order_position = l.position AND vd.status = 'posted'), 0)) THEN 'paid'
+             ELSE 'partial' END)::text AS payment_state,
+       pay.paid::bigint AS paid
 FROM purchase.orders o
+CROSS JOIN LATERAL (
+    SELECT coalesce(sum(v.total), 0) AS invoiced,
+           coalesce(sum((SELECT sum(a.amount) FROM purchase.payment_allocations a JOIN record.documents pd ON pd.id = a.payment_id
+                         WHERE a.invoice_id = v.id AND pd.status = 'posted')), 0) AS paid
+    FROM purchase.invoices v JOIN record.documents vd ON vd.id = v.id
+    WHERE v.order_id = o.id AND vd.status = 'posted'
+) pay
 JOIN record.documents d ON d.id = o.id
 JOIN iam.org_units u ON u.id = d.org_unit_id
 `
@@ -334,9 +351,12 @@ type OrderListBaseRow struct {
 	OrgUnitName  string
 	ReceiptState string
 	InvoiceState string
+	PaymentState string
+	Paid         int64
 }
 
 // data:base
+// Over the order's posted invoices: their totals and what posted payments paid of them.
 func (q *Queries) OrderListBase(ctx context.Context) ([]OrderListBaseRow, error) {
 	rows, err := q.db.Query(ctx, orderListBase)
 	if err != nil {
@@ -359,6 +379,8 @@ func (q *Queries) OrderListBase(ctx context.Context) ([]OrderListBaseRow, error)
 			&i.OrgUnitName,
 			&i.ReceiptState,
 			&i.InvoiceState,
+			&i.PaymentState,
+			&i.Paid,
 		); err != nil {
 			return nil, err
 		}

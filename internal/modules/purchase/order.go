@@ -49,7 +49,7 @@ func (s *Service) Orders(ctx context.Context, f OrderFilter) (OrderList, error) 
 	for _, r := range page.Items {
 		out.Items = append(out.Items, OrderListItem{ID: r.ID, Number: r.Number, Status: r.Status, Date: *platform.DatePtr(r.Date),
 			SupplierID: r.SupplierID, SupplierCode: r.SupplierCode, SupplierName: r.SupplierName, OrgUnitName: r.OrgUnitName, Total: r.Total,
-			ReceiptState: r.ReceiptState, InvoiceState: r.InvoiceState})
+			ReceiptState: r.ReceiptState, InvoiceState: r.InvoiceState, PaymentState: r.PaymentState})
 	}
 	return out, nil
 }
@@ -118,7 +118,7 @@ func (s *Service) orderProgress(ctx context.Context, out *Order, lines []store.G
 		return platform.ErrNotFound
 	}
 	row := page.Items[0]
-	out.ReceiptState, out.InvoiceState = row.ReceiptState, row.InvoiceState
+	out.ReceiptState, out.InvoiceState, out.PaymentState, out.Paid = row.ReceiptState, row.InvoiceState, row.PaymentState, &row.Paid
 	for i, l := range lines {
 		invoiced := platform.PlainDecimal(l.Invoiced)
 		out.Lines[i].Invoiced = &invoiced

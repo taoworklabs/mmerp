@@ -64,6 +64,9 @@ func TestSupplierInvoiceRecordContract(t *testing.T) {
 		return recordtest.Harness{
 			Core: f.core, Actor: f.staff, Admin: f.admin, LegalEntity: f.c, Table: "purchase.invoices",
 			Get: func(ctx context.Context, r record.Ref) (any, error) { return f.purchase.Invoice(ctx, r.ID) },
+			Gaps: map[string]string{
+				"write actions leave allowed_actions when the product is off or the period locked": "a posted invoice in a locked period still offers create_payment, dated in an open period",
+			},
 			Create: func(ctx context.Context, date, requestID string) (record.Ref, error) {
 				id, err := f.purchase.CreateInvoice(ctx, purchase.NewInvoice{RequestID: requestID, OrderID: order, InvoiceFields: fields(date)})
 				return record.Ref{Type: "purchase.invoice", ID: id}, err

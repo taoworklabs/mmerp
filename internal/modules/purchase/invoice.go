@@ -148,7 +148,28 @@ func (s *Service) Invoice(ctx context.Context, id int64) (Invoice, error) {
 			Amount: l.Amount, Discount: l.Discount, Vat: l.Vat,
 		}
 	}
-	out.AllowedActions, err = s.d.Record.Actions(ctx, d)
+	out.Paid, out.Remaining, out.PaymentState = h.Paid, h.Total-h.Paid, paymentState(h.Paid, h.Total)
+	ps, err := store.InvoicePayments.Run(ctx, id)
+	if err != nil {
+		return Invoice{}, err
+	}
+	out.Payments = []PaymentRef{}
+	for _, p := range ps {
+		if ok, err := s.d.Record.Can(ctx, paymentType, p.ID, record.View); err != nil {
+			return Invoice{}, err
+		} else if ok {
+			out.Payments = append(out.Payments, PaymentRef{ID: p.ID, Number: p.Number, Status: p.Status, Amount: p.Amount})
+		}
+	}
+	var extra []string
+	if d.Status == record.Posted && h.Total > h.Held {
+		if ok, err := s.canWriteOrders(ctx, h.OrgUnitID); err != nil {
+			return Invoice{}, err
+		} else if ok {
+			extra = append(extra, "create_payment")
+		}
+	}
+	out.AllowedActions, err = s.d.Record.Actions(ctx, d, extra...)
 	return out, err
 }
 

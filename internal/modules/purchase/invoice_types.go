@@ -70,7 +70,12 @@ type Invoice struct {
 	Note                  *string       `json:"note"`
 	Lines                 []InvoiceLine `json:"lines" nullable:"false"`
 	Totals                Totals        `json:"totals"`
-	// edit, delete, submit, withdraw, cancel, print.
+	// Paid counts posted payments; remaining is the total less paid.
+	Paid         int64        `json:"paid"`
+	Remaining    int64        `json:"remaining"`
+	PaymentState string       `json:"payment_state" enum:"unpaid,partial,paid"`
+	Payments     []PaymentRef `json:"payments" nullable:"false" doc:"Payments not cancelled, drafts included, that the actor may view"`
+	// edit, delete, submit, withdraw, cancel, print, create_payment.
 	AllowedActions []string `json:"allowed_actions" nullable:"false"`
 }
 

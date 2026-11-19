@@ -39,6 +39,7 @@ func NewService(d Deps) *Service {
 	s.registerOrder()
 	s.registerGoodsReceipt()
 	s.registerInvoice()
+	s.registerPayment()
 	return s
 }
 

@@ -106,3 +106,10 @@ JOIN record.documents d ON d.id = v.id
 JOIN record.documents o ON o.id = v.order_id
 JOIN purchase.orders h ON h.id = v.order_id
 JOIN iam.org_units u ON u.id = d.org_unit_id;
+
+-- name: InvoicePayments :many
+-- The payments not cancelled that settle the invoice, with the amount each settles.
+SELECT d.id, d.number, d.status, a.amount
+FROM purchase.payment_allocations a JOIN record.documents d ON d.id = a.payment_id
+WHERE a.invoice_id = $1 AND d.status <> 'cancelled'
+ORDER BY d.id;

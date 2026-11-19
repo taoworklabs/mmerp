@@ -7578,6 +7578,30 @@
         ],
         "type": "object"
       },
+      "OpenInvoicesOutputBody1": {
+        "additionalProperties": false,
+        "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "/api/schemas/OpenInvoicesOutputBody1.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/PurchaseAllocation"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "items"
+        ],
+        "type": "object"
+      },
       "Option": {
         "additionalProperties": false,
         "properties": {
@@ -9455,6 +9479,65 @@
         ],
         "type": "object"
       },
+      "PurchaseAllocation": {
+        "additionalProperties": false,
+        "properties": {
+          "amount": {
+            "format": "int64",
+            "maximum": 1000000000000000,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "invoice_date": {
+            "format": "date",
+            "type": "string"
+          },
+          "invoice_id": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "invoice_number": {
+            "type": "string"
+          },
+          "invoice_total": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "remaining": {
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "invoice_number",
+          "invoice_date",
+          "invoice_total",
+          "remaining",
+          "invoice_id",
+          "amount"
+        ],
+        "type": "object"
+      },
+      "PurchaseAllocationInput": {
+        "additionalProperties": false,
+        "properties": {
+          "amount": {
+            "format": "int64",
+            "maximum": 1000000000000000,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "invoice_id": {
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "invoice_id",
+          "amount"
+        ],
+        "type": "object"
+      },
       "PurchaseDocRef": {
         "additionalProperties": false,
         "properties": {
@@ -9772,6 +9855,29 @@
           "org_unit_name": {
             "type": "string"
           },
+          "paid": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "payment_state": {
+            "enum": [
+              "unpaid",
+              "partial",
+              "paid"
+            ],
+            "type": "string"
+          },
+          "payments": {
+            "description": "Payments not cancelled, drafts included, that the actor may view",
+            "items": {
+              "$ref": "#/components/schemas/PurchasePaymentRef"
+            },
+            "type": "array"
+          },
+          "remaining": {
+            "format": "int64",
+            "type": "integer"
+          },
           "status": {
             "enum": [
               "draft",
@@ -9828,6 +9934,10 @@
           "note",
           "lines",
           "totals",
+          "paid",
+          "remaining",
+          "payment_state",
+          "payments",
           "allowed_actions"
         ],
         "type": "object"
@@ -10622,6 +10732,69 @@
         ],
         "type": "object"
       },
+      "PurchaseNewPayment": {
+        "additionalProperties": false,
+        "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "/api/schemas/PurchaseNewPayment.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
+          "allocations": {
+            "items": {
+              "$ref": "#/components/schemas/PurchaseAllocationInput"
+            },
+            "maxItems": 200,
+            "minItems": 1,
+            "type": "array"
+          },
+          "date": {
+            "format": "date",
+            "type": "string"
+          },
+          "method": {
+            "enum": [
+              "cash",
+              "bank"
+            ],
+            "type": "string"
+          },
+          "note": {
+            "maxLength": 2000,
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "org_unit_id": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "request_id": {
+            "description": "Generated once per form: sending it again returns the first payment",
+            "format": "uuid",
+            "type": "string"
+          },
+          "supplier_id": {
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "request_id",
+          "date",
+          "org_unit_id",
+          "supplier_id",
+          "method",
+          "note",
+          "allocations"
+        ],
+        "type": "object"
+      },
       "PurchaseNewSupplier": {
         "additionalProperties": false,
         "properties": {
@@ -10757,6 +10930,18 @@
           "org_unit_name": {
             "type": "string"
           },
+          "paid": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "payment_state": {
+            "enum": [
+              "unpaid",
+              "partial",
+              "paid"
+            ],
+            "type": "string"
+          },
           "payment_terms": {
             "type": [
               "string",
@@ -10876,6 +11061,14 @@
           "org_unit_name": {
             "type": "string"
           },
+          "payment_state": {
+            "enum": [
+              "unpaid",
+              "partial",
+              "paid"
+            ],
+            "type": "string"
+          },
           "receipt_state": {
             "enum": [
               "none",
@@ -10920,7 +11113,8 @@
           "org_unit_name",
           "total",
           "receipt_state",
-          "invoice_state"
+          "invoice_state",
+          "payment_state"
         ],
         "type": "object"
       },
@@ -10992,6 +11186,289 @@
           "payment_terms",
           "note",
           "lines"
+        ],
+        "type": "object"
+      },
+      "PurchasePayment": {
+        "additionalProperties": false,
+        "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "/api/schemas/PurchasePayment.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
+          "allocations": {
+            "items": {
+              "$ref": "#/components/schemas/PurchaseAllocation"
+            },
+            "type": "array"
+          },
+          "allowed_actions": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "amount": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "date": {
+            "format": "date",
+            "type": "string"
+          },
+          "id": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "method": {
+            "enum": [
+              "cash",
+              "bank"
+            ],
+            "type": "string"
+          },
+          "note": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "number": {
+            "type": "string"
+          },
+          "org_unit_id": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "org_unit_name": {
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "draft",
+              "pending_approval",
+              "posted",
+              "cancelled"
+            ],
+            "type": "string"
+          },
+          "supplier_code": {
+            "type": "string"
+          },
+          "supplier_id": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "supplier_name": {
+            "type": "string"
+          },
+          "version": {
+            "format": "int32",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "number",
+          "status",
+          "version",
+          "date",
+          "org_unit_id",
+          "org_unit_name",
+          "supplier_id",
+          "supplier_code",
+          "supplier_name",
+          "method",
+          "amount",
+          "note",
+          "allocations",
+          "allowed_actions"
+        ],
+        "type": "object"
+      },
+      "PurchasePaymentList": {
+        "additionalProperties": false,
+        "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "/api/schemas/PurchasePaymentList.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/PurchasePaymentListItem"
+            },
+            "type": "array"
+          },
+          "total": {
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "items",
+          "total"
+        ],
+        "type": "object"
+      },
+      "PurchasePaymentListItem": {
+        "additionalProperties": false,
+        "properties": {
+          "amount": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "date": {
+            "format": "date",
+            "type": "string"
+          },
+          "id": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "method": {
+            "enum": [
+              "cash",
+              "bank"
+            ],
+            "type": "string"
+          },
+          "number": {
+            "type": "string"
+          },
+          "org_unit_name": {
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "draft",
+              "pending_approval",
+              "posted",
+              "cancelled"
+            ],
+            "type": "string"
+          },
+          "supplier_id": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "supplier_name": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "number",
+          "status",
+          "date",
+          "supplier_id",
+          "supplier_name",
+          "method",
+          "amount",
+          "org_unit_name"
+        ],
+        "type": "object"
+      },
+      "PurchasePaymentRef": {
+        "additionalProperties": false,
+        "properties": {
+          "amount": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "id": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "number": {
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "draft",
+              "pending_approval",
+              "posted",
+              "cancelled"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "number",
+          "status",
+          "amount"
+        ],
+        "type": "object"
+      },
+      "PurchasePaymentUpdate": {
+        "additionalProperties": false,
+        "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "/api/schemas/PurchasePaymentUpdate.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
+          "allocations": {
+            "items": {
+              "$ref": "#/components/schemas/PurchaseAllocationInput"
+            },
+            "maxItems": 200,
+            "minItems": 1,
+            "type": "array"
+          },
+          "date": {
+            "format": "date",
+            "type": "string"
+          },
+          "method": {
+            "enum": [
+              "cash",
+              "bank"
+            ],
+            "type": "string"
+          },
+          "note": {
+            "maxLength": 2000,
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "org_unit_id": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "supplier_id": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "version": {
+            "format": "int32",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "version",
+          "date",
+          "org_unit_id",
+          "supplier_id",
+          "method",
+          "note",
+          "allocations"
         ],
         "type": "object"
       },
@@ -21841,6 +22318,19 @@
           {
             "explode": false,
             "in": "query",
+            "name": "payment_state",
+            "schema": {
+              "enum": [
+                "unpaid",
+                "partial",
+                "paid"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "explode": false,
+            "in": "query",
             "name": "sort",
             "schema": {
               "default": "-date",
@@ -22151,6 +22641,285 @@
         ]
       }
     },
+    "/purchase/payments": {
+      "get": {
+        "operationId": "list-payments",
+        "parameters": [
+          {
+            "description": "Number or supplier name",
+            "explode": false,
+            "in": "query",
+            "name": "q",
+            "schema": {
+              "description": "Number or supplier name",
+              "maxLength": 100,
+              "type": "string"
+            }
+          },
+          {
+            "explode": false,
+            "in": "query",
+            "name": "status",
+            "schema": {
+              "enum": [
+                "draft",
+                "pending_approval",
+                "posted",
+                "cancelled"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "explode": false,
+            "in": "query",
+            "name": "supplier_id",
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          },
+          {
+            "explode": false,
+            "in": "query",
+            "name": "method",
+            "schema": {
+              "enum": [
+                "cash",
+                "bank"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "explode": false,
+            "in": "query",
+            "name": "sort",
+            "schema": {
+              "default": "-date",
+              "enum": [
+                "date",
+                "-date",
+                "number",
+                "-number",
+                "amount",
+                "-amount"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "explode": false,
+            "in": "query",
+            "name": "page",
+            "schema": {
+              "default": 1,
+              "format": "int64",
+              "maximum": 100000,
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "explode": false,
+            "in": "query",
+            "name": "page_size",
+            "schema": {
+              "default": 50,
+              "enum": [
+                20,
+                50,
+                100
+              ],
+              "format": "int64",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PurchasePaymentList"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "tags": [
+          "purchase",
+          "purchase"
+        ]
+      },
+      "post": {
+        "description": "Sending the same request_id again returns the payment created the first time.",
+        "operationId": "create-payment",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PurchaseNewPayment"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreatedOutputBody"
+                }
+              }
+            },
+            "description": "Created"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "tags": [
+          "purchase",
+          "purchase"
+        ]
+      }
+    },
+    "/purchase/payments/actions": {
+      "get": {
+        "operationId": "get-payment-actions",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PurchaseActions"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "tags": [
+          "purchase",
+          "purchase"
+        ]
+      }
+    },
+    "/purchase/payments/{id}": {
+      "get": {
+        "operationId": "get-payment",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PurchasePayment"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "tags": [
+          "purchase",
+          "purchase"
+        ]
+      },
+      "put": {
+        "operationId": "update-payment",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PurchasePaymentUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "tags": [
+          "purchase",
+          "purchase"
+        ]
+      }
+    },
     "/purchase/suppliers": {
       "get": {
         "operationId": "list-suppliers",
@@ -22393,6 +23162,70 @@
         "responses": {
           "204": {
             "description": "No Content"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "tags": [
+          "purchase",
+          "purchase"
+        ]
+      }
+    },
+    "/purchase/suppliers/{id}/open-invoices": {
+      "get": {
+        "description": "Posted invoices of the supplier at the org unit with something left to receive, oldest first; amount is the remaining.",
+        "operationId": "list-supplier-open-invoices",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          },
+          {
+            "explode": false,
+            "in": "query",
+            "name": "org_unit_id",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          },
+          {
+            "description": "The payment being edited, whose own allocations are not held back",
+            "explode": false,
+            "in": "query",
+            "name": "payment_id",
+            "schema": {
+              "description": "The payment being edited, whose own allocations are not held back",
+              "format": "int64",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OpenInvoicesOutputBody1"
+                }
+              }
+            },
+            "description": "OK"
           },
           "default": {
             "content": {

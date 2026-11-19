@@ -1997,6 +1997,55 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/purchase/payments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["list-payments"];
+        put?: never;
+        /** @description Sending the same request_id again returns the payment created the first time. */
+        post: operations["create-payment"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/purchase/payments/actions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["get-payment-actions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/purchase/payments/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["get-payment"];
+        put: operations["update-payment"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/purchase/suppliers": {
         parameters: {
             query?: never;
@@ -2038,6 +2087,23 @@ export interface paths {
         };
         get: operations["get-supplier"];
         put: operations["update-supplier"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/purchase/suppliers/{id}/open-invoices": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Posted invoices of the supplier at the org unit with something left to receive, oldest first; amount is the remaining. */
+        get: operations["list-supplier-open-invoices"];
+        put?: never;
         post?: never;
         delete?: never;
         options?: never;
@@ -5191,6 +5257,15 @@ export interface components {
             readonly $schema?: string;
             items: components["schemas"]["Allocation"][];
         };
+        OpenInvoicesOutputBody1: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example /api/schemas/OpenInvoicesOutputBody1.json
+             */
+            readonly $schema?: string;
+            items: components["schemas"]["PurchaseAllocation"][];
+        };
         Option: {
             label: string;
             value: string;
@@ -5858,6 +5933,25 @@ export interface components {
             readonly $schema?: string;
             allowed_actions: string[];
         };
+        PurchaseAllocation: {
+            /** Format: int64 */
+            amount: number;
+            /** Format: date */
+            invoice_date: string;
+            /** Format: int64 */
+            invoice_id: number;
+            invoice_number: string;
+            /** Format: int64 */
+            invoice_total: number;
+            /** Format: int64 */
+            remaining: number;
+        };
+        PurchaseAllocationInput: {
+            /** Format: int64 */
+            amount: number;
+            /** Format: int64 */
+            invoice_id: number;
+        };
         PurchaseDocRef: {
             /** Format: int64 */
             id: number;
@@ -5961,6 +6055,14 @@ export interface components {
             /** Format: int64 */
             org_unit_id: number;
             org_unit_name: string;
+            /** Format: int64 */
+            paid: number;
+            /** @enum {string} */
+            payment_state: "unpaid" | "partial" | "paid";
+            /** @description Payments not cancelled, drafts included, that the actor may view */
+            payments: components["schemas"]["PurchasePaymentRef"][];
+            /** Format: int64 */
+            remaining: number;
             /** @enum {string} */
             status: "draft" | "pending_approval" | "posted" | "cancelled";
             supplier: components["schemas"]["PurchaseSupplierCopy"];
@@ -6219,6 +6321,29 @@ export interface components {
             /** Format: int64 */
             supplier_id: number;
         };
+        PurchaseNewPayment: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example /api/schemas/PurchaseNewPayment.json
+             */
+            readonly $schema?: string;
+            allocations: components["schemas"]["PurchaseAllocationInput"][];
+            /** Format: date */
+            date: string;
+            /** @enum {string} */
+            method: "cash" | "bank";
+            note: string | null;
+            /** Format: int64 */
+            org_unit_id: number;
+            /**
+             * Format: uuid
+             * @description Generated once per form: sending it again returns the first payment
+             */
+            request_id: string;
+            /** Format: int64 */
+            supplier_id: number;
+        };
         PurchaseNewSupplier: {
             /**
              * Format: uri
@@ -6270,6 +6395,10 @@ export interface components {
             /** Format: int64 */
             org_unit_id: number;
             org_unit_name: string;
+            /** Format: int64 */
+            paid?: number;
+            /** @enum {string} */
+            payment_state?: "unpaid" | "partial" | "paid";
             payment_terms: string | null;
             /** @enum {string} */
             receipt_state?: "none" | "partial" | "full" | "not_applicable";
@@ -6306,6 +6435,8 @@ export interface components {
             number: string;
             org_unit_name: string;
             /** @enum {string} */
+            payment_state: "unpaid" | "partial" | "paid";
+            /** @enum {string} */
             receipt_state: "none" | "partial" | "full" | "not_applicable";
             /** @enum {string} */
             status: "draft" | "pending_approval" | "posted" | "cancelled";
@@ -6335,6 +6466,94 @@ export interface components {
             /** Format: int64 */
             org_unit_id: number;
             payment_terms: string | null;
+            /** Format: int64 */
+            supplier_id: number;
+            /** Format: int32 */
+            version: number;
+        };
+        PurchasePayment: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example /api/schemas/PurchasePayment.json
+             */
+            readonly $schema?: string;
+            allocations: components["schemas"]["PurchaseAllocation"][];
+            allowed_actions: string[];
+            /** Format: int64 */
+            amount: number;
+            /** Format: date */
+            date: string;
+            /** Format: int64 */
+            id: number;
+            /** @enum {string} */
+            method: "cash" | "bank";
+            note: string | null;
+            number: string;
+            /** Format: int64 */
+            org_unit_id: number;
+            org_unit_name: string;
+            /** @enum {string} */
+            status: "draft" | "pending_approval" | "posted" | "cancelled";
+            supplier_code: string;
+            /** Format: int64 */
+            supplier_id: number;
+            supplier_name: string;
+            /** Format: int32 */
+            version: number;
+        };
+        PurchasePaymentList: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example /api/schemas/PurchasePaymentList.json
+             */
+            readonly $schema?: string;
+            items: components["schemas"]["PurchasePaymentListItem"][];
+            /** Format: int64 */
+            total: number;
+        };
+        PurchasePaymentListItem: {
+            /** Format: int64 */
+            amount: number;
+            /** Format: date */
+            date: string;
+            /** Format: int64 */
+            id: number;
+            /** @enum {string} */
+            method: "cash" | "bank";
+            number: string;
+            org_unit_name: string;
+            /** @enum {string} */
+            status: "draft" | "pending_approval" | "posted" | "cancelled";
+            /** Format: int64 */
+            supplier_id: number;
+            supplier_name: string;
+        };
+        PurchasePaymentRef: {
+            /** Format: int64 */
+            amount: number;
+            /** Format: int64 */
+            id: number;
+            number: string;
+            /** @enum {string} */
+            status: "draft" | "pending_approval" | "posted" | "cancelled";
+        };
+        PurchasePaymentUpdate: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example /api/schemas/PurchasePaymentUpdate.json
+             */
+            readonly $schema?: string;
+            allocations: components["schemas"]["PurchaseAllocationInput"][];
+            /** Format: date */
+            date: string;
+            /** @enum {string} */
+            method: "cash" | "bank";
+            note: string | null;
+            /** Format: int64 */
+            org_unit_id: number;
             /** Format: int64 */
             supplier_id: number;
             /** Format: int32 */
@@ -12475,6 +12694,7 @@ export interface operations {
                 supplier_id?: number;
                 receipt_state?: "none" | "partial" | "full" | "not_applicable";
                 invoice_state?: "none" | "partial" | "full";
+                payment_state?: "unpaid" | "partial" | "paid";
                 sort?: "date" | "-date" | "number" | "-number" | "total" | "-total";
                 page?: number;
                 page_size?: 20 | 50 | 100;
@@ -12693,6 +12913,170 @@ export interface operations {
             };
         };
     };
+    "list-payments": {
+        parameters: {
+            query?: {
+                /** @description Number or supplier name */
+                q?: string;
+                status?: "draft" | "pending_approval" | "posted" | "cancelled";
+                supplier_id?: number;
+                method?: "cash" | "bank";
+                sort?: "date" | "-date" | "number" | "-number" | "amount" | "-amount";
+                page?: number;
+                page_size?: 20 | 50 | 100;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PurchasePaymentList"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "create-payment": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PurchaseNewPayment"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CreatedOutputBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "get-payment-actions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PurchaseActions"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "get-payment": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PurchasePayment"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "update-payment": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PurchasePaymentUpdate"];
+            };
+        };
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
     "list-suppliers": {
         parameters: {
             query?: {
@@ -12843,6 +13227,41 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "list-supplier-open-invoices": {
+        parameters: {
+            query: {
+                org_unit_id: number;
+                /** @description The payment being edited, whose own allocations are not held back */
+                payment_id?: number;
+            };
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenInvoicesOutputBody1"];
+                };
             };
             /** @description Error */
             default: {
