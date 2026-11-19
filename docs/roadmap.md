@@ -27,7 +27,7 @@ A milestone only passes when what it adds keeps the contract intact from table t
 ```
 M11 Attachments and discussion ─► M12 Notifications ─► M13 PDF printing ─► M14 Sales   (all done)
    ─► HRM review ─► Core work after M14   (done) ─► M15 Accounting   (done)
-   ─► M16 Partner subledger ─► M17 Sales to cash   (done) ─► M18 Purchasing   (in progress) ─► M19 Stock
+   ─► M16 Partner subledger ─► M17 Sales to cash ─► M18 Purchasing   (done) ─► M19 Stock
    ┄► M10 On-premise operations ┄► [Gate: production readiness]   (on hold)
 ```
 
@@ -166,7 +166,7 @@ Vertical slices, each from migration to screen:
 
 ## M18. Purchasing
 
-**In progress**: [ADR-0090](./adr/0090-purchasing-product.md).
+**Done** (2026-11-19): [ADR-0090](./adr/0090-purchasing-product.md).
 
 **Goal:** a buyer orders from a supplier, the warehouse receives the goods in parts, the supplier's invoice is booked and paid, everyone sees on each order whether it is received, invoiced and paid, and accounting gets goods, expenses, input VAT, the payable per supplier and cash out ([ADR-0090](./adr/0090-purchasing-product.md), [design](./superpowers/specs/2026-11-19-purchasing-design.md)). Purchasing is the fourth product, `purchase`.
 
@@ -201,7 +201,7 @@ Core and frontend foundations built once Sales opened:
 - [ADR-0038](./adr/0038-data-engine-over-sqlc.md): Data engine over sqlc: dynamic parts compiled from code-declared fragments, no ORM
 - [ADR-0039](./adr/0039-shared-master-data.md): Shared master data: partners, items and tax in `shared/`, with their own namespace
 
-**Next:** M18 Purchasing (in progress), then M19 Stock. M10 and the production-readiness gate stay on hold.
+**Next:** M19 Stock. M10 and the production-readiness gate stay on hold.
 
 ## M10. On-premise operations
 
