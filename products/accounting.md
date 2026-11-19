@@ -15,6 +15,7 @@ A minimal general ledger, generic first: the parts that are the same in every co
 | Accounting start date per legal entity, refusal to lock a period with unposted documents | Printing manual entries |
 | Accounts tracked by partner, partner balances and partner ledger (M16, [ADR-0051](../docs/adr/0051-business-lines-name-a-partner.md)) | |
 | Business lines from Sales invoices and receipts (M17, [ADR-0052](../docs/adr/0052-receipts-settle-named-invoices.md)) | |
+| Business lines from supplier invoices and payments (M18, [ADR-0090](../docs/adr/0090-purchasing-product.md)) | |
 
 The Vietnamese layer is mostly data (charts, default rules, report forms), but it also needs HRM to split its insurance business line kinds per fund: HRM folds BHXH, BHYT, BHTN and the union fee into `employer_insurance_expense` and `insurance_payable`, while Circular 133/200 books them to 3382, 3383, 3384 and 3386 separately, which needs new posting kinds in HRM (a code change). Splitting them is cheapest before any tenant has a ledger.
 

@@ -27,7 +27,7 @@ A milestone only passes when what it adds keeps the contract intact from table t
 ```
 M11 Attachments and discussion ─► M12 Notifications ─► M13 PDF printing ─► M14 Sales   (all done)
    ─► HRM review ─► Core work after M14   (done) ─► M15 Accounting   (done)
-   ─► M16 Partner subledger ─► M17 Sales to cash   (done) ─► M18 Purchasing ─► M19 Stock
+   ─► M16 Partner subledger ─► M17 Sales to cash   (done) ─► M18 Purchasing   (in progress) ─► M19 Stock
    ┄► M10 On-premise operations ┄► [Gate: production readiness]   (on hold)
 ```
 
@@ -164,6 +164,21 @@ Vertical slices, each from migration to screen:
 5. With accounting disabled, invoices and receipts work and their business lines wait for posting; with Sales disabled, everything reads and prints.
 6. Another team's staff sees none of the invoices or receipts. `recordtest` passes for both types. HRM and payroll posting unchanged.
 
+## M18. Purchasing
+
+**In progress**: [ADR-0090](./adr/0090-purchasing-product.md).
+
+**Goal:** a buyer orders from a supplier, the warehouse receives the goods in parts, the supplier's invoice is booked and paid, everyone sees on each order whether it is received, invoiced and paid, and accounting gets goods, expenses, input VAT, the payable per supplier and cash out ([ADR-0090](./adr/0090-purchasing-product.md), [design](./superpowers/specs/2026-11-19-purchasing-design.md)). Purchasing is the fourth product, `purchase`.
+
+**Done when**, with `make seed` data and `PRODUCTS=hrm,sales,purchase,accounting` (Sales provides the item and stock screens until M19):
+
+1. A supplier is created from an existing partner that is already a customer; a purchase order of a lot item, a serial item and a service is sent, approved and confirmed.
+2. Two goods receipts take parts of the stock lines into a warehouse, creating lots and serials; on hand grows; a third that exceeds the remaining quantity is refused; the order shows receipt state `partial`, then `full`.
+3. A supplier invoice for part of the quantities, with one unit price changed from the order, posts; the ledger shows Dr 156, Dr 642, Dr 1331 / Cr 331 with the supplier, and the supplier's partner balance grows by its total. A second invoice of the supplier with the same symbol and number is refused.
+4. A payment split across two invoices posts; each invoice shows `partial` or `paid`, the order shows its paid amount, the ledger shows Dr 331 / Cr 111 or 112.
+5. Over-allocating is refused; cancelling an invoice with a payment is refused; cancelling a goods receipt whose goods were delivered is refused unless the item allows negative stock.
+6. With accounting disabled, purchasing works and its lines wait for posting; with Purchasing disabled, everything reads and prints. Another team's staff sees nothing. `recordtest` passes for the four document types. Sales and payroll posting unchanged.
+
 ## HRM review
 
 After M14, HRM went through a business review ([docs/hrm-review-plan.md](./hrm-review-plan.md), rounds [one](./hrm-review-round1.md) and [two](./hrm-review-round2.md)). The decisions are settled and built:
@@ -186,7 +201,7 @@ Core and frontend foundations built once Sales opened:
 - [ADR-0038](./adr/0038-data-engine-over-sqlc.md): Data engine over sqlc: dynamic parts compiled from code-declared fragments, no ORM
 - [ADR-0039](./adr/0039-shared-master-data.md): Shared master data: partners, items and tax in `shared/`, with their own namespace
 
-**Next:** M18 Purchasing, then M19 Stock. M10 and the production-readiness gate stay on hold.
+**Next:** M18 Purchasing (in progress), then M19 Stock. M10 and the production-readiness gate stay on hold.
 
 ## M10. On-premise operations
 

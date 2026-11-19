@@ -163,5 +163,11 @@
   "accounting.kind.sales_revenue": "Doanh thu bán hàng",
   "accounting.kind.sales_output_vat": "Thuế GTGT đầu ra",
   "accounting.kind.sales_cash_receipt": "Thu tiền mặt",
-  "accounting.kind.sales_bank_receipt": "Thu chuyển khoản"
+  "accounting.kind.sales_bank_receipt": "Thu chuyển khoản",
+  "accounting.kind.purchase_goods": "Hàng mua nhập kho (mua hàng)",
+  "accounting.kind.purchase_expense": "Chi phí mua dịch vụ",
+  "accounting.kind.purchase_input_vat": "Thuế GTGT đầu vào",
+  "accounting.kind.purchase_payable": "Phải trả người bán (mua hàng)",
+  "accounting.kind.purchase_cash_payment": "Chi tiền mặt",
+  "accounting.kind.purchase_bank_payment": "Chi chuyển khoản"
 }

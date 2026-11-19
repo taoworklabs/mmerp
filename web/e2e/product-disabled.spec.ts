@@ -13,6 +13,12 @@ test.beforeAll(async ({ baseURL }) => {
   const a = await created(api.post('/api/org-units', { data: { parent_id: company, kind: 'department', name: `Phòng A PD ${run}` } }))
   for (let i = 0; i < 3; i++) await created(api.post('/api/hrm/employees', { data: employee(`PDA${run}-${i}`, a) }))
   timesheet = await created(api.post('/api/hrm/timesheets', { data: { org_unit_id: a, month: '2026-09' } }))
+  // A disabled product shows its read-only banner only once it has data.
+  await created(
+    api.post('/api/purchase/suppliers', {
+      data: { partner: { name: `NCC PD ${run}`, tax_code: null, address: null, phone: null, email: null, contact_name: null }, payment_terms: null, org_unit_id: a, active: true },
+    }),
+  )
 })
 
 test('with HRM disabled, its data stays readable behind a read-only banner', async ({ browser, page: withHrm }) => {
@@ -65,4 +71,17 @@ test('with HRM disabled, no screen offers to create, import or edit', async ({ b
   await page.getByRole('main').getByRole('link', { name: 'Nhân sự' }).click()
   await expect(page).toHaveURL(/:8091\/hrm\/overview$/)
   await expect(page.getByText('Phân hệ đang tắt: chỉ xem và xuất được dữ liệu.')).toBeVisible()
+})
+
+test('with Purchasing disabled, its lists stay readable and offer nothing that writes', async ({ browser }) => {
+  const writes = /^(Tạo|Thêm|Nhận hoá đơn|Lập)/
+  const page = await (await browser.newContext()).newPage()
+  await signedIn(page, 'http://localhost:8091/purchase/orders')
+  for (const path of ['suppliers', 'orders', 'goods-receipts', 'invoices', 'payments']) {
+    await page.goto(`http://localhost:8091/purchase/${path}`)
+    await expect(page.getByRole('heading', { level: 1 })).toBeVisible()
+    await expect(page.getByText('Phân hệ đang tắt: chỉ xem và xuất được dữ liệu.')).toBeVisible()
+    await expect(page.getByRole('main').getByRole('link', { name: writes }), path).toHaveCount(0)
+    await expect(page.getByRole('main').getByRole('button', { name: writes }), path).toHaveCount(0)
+  }
 })
