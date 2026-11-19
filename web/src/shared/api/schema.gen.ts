@@ -2004,10 +2004,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get: operations["list-payments"];
+        get: operations["list-purchase-payments"];
         put?: never;
         /** @description Sending the same request_id again returns the payment created the first time. */
-        post: operations["create-payment"];
+        post: operations["create-purchase-payment"];
         delete?: never;
         options?: never;
         head?: never;
@@ -2021,7 +2021,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get: operations["get-payment-actions"];
+        get: operations["get-purchase-payment-actions"];
         put?: never;
         post?: never;
         delete?: never;
@@ -2037,8 +2037,8 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get: operations["get-payment"];
-        put: operations["update-payment"];
+        get: operations["get-purchase-payment"];
+        put: operations["update-purchase-payment"];
         post?: never;
         delete?: never;
         options?: never;
@@ -12913,7 +12913,7 @@ export interface operations {
             };
         };
     };
-    "list-payments": {
+    "list-purchase-payments": {
         parameters: {
             query?: {
                 /** @description Number or supplier name */
@@ -12951,7 +12951,7 @@ export interface operations {
             };
         };
     };
-    "create-payment": {
+    "create-purchase-payment": {
         parameters: {
             query?: never;
             header?: never;
@@ -12984,7 +12984,7 @@ export interface operations {
             };
         };
     };
-    "get-payment-actions": {
+    "get-purchase-payment-actions": {
         parameters: {
             query?: never;
             header?: never;
@@ -13013,7 +13013,7 @@ export interface operations {
             };
         };
     };
-    "get-payment": {
+    "get-purchase-payment": {
         parameters: {
             query?: never;
             header?: never;
@@ -13044,7 +13044,7 @@ export interface operations {
             };
         };
     };
-    "update-payment": {
+    "update-purchase-payment": {
         parameters: {
             query?: never;
             header?: never;

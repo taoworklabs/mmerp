@@ -75,7 +75,9 @@ func TestPaymentRecordContract(t *testing.T) {
 	})
 }
 
-func (p *payments) paymentLines(id int64) map[string]int64 { return p.postingLines("purchase.payment", id) }
+func (p *payments) paymentLines(id int64) map[string]int64 {
+	return p.postingLines("purchase.payment", id)
+}
 
 // Exit criterion 4: one payment settles all of T1 and part of T2.
 func TestPaymentSplit(t *testing.T) {

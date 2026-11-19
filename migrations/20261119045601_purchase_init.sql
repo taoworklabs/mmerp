@@ -105,7 +105,8 @@ CREATE TABLE purchase.invoices (
 );
 
 CREATE INDEX invoices_order_id_idx ON purchase.invoices (order_id);
-CREATE INDEX invoices_supplier_ref_idx ON purchase.invoices (supplier_invoice_no, supplier_invoice_symbol);
+-- The duplicate check compares the supplier's reference without case or surrounding spaces.
+CREATE INDEX invoices_supplier_ref_idx ON purchase.invoices (btrim(supplier_invoice_no), upper(btrim(supplier_invoice_symbol)));
 
 CREATE TABLE purchase.invoice_lines (
     invoice_id       bigint NOT NULL REFERENCES purchase.invoices ON DELETE CASCADE,

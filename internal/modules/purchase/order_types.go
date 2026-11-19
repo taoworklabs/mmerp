@@ -94,13 +94,13 @@ type Order struct {
 }
 
 type OrderFilter struct {
-	Q          string `query:"q" maxLength:"100" doc:"Number, supplier code or name"`
-	Status     string `query:"status" enum:"draft,pending_approval,posted,cancelled"`
-	SupplierID int64  `query:"supplier_id"`
+	Q            string `query:"q" maxLength:"100" doc:"Number, supplier code or name"`
+	Status       string `query:"status" enum:"draft,pending_approval,posted,cancelled"`
+	SupplierID   int64  `query:"supplier_id"`
 	ReceiptState string `query:"receipt_state" enum:"none,partial,full,not_applicable"`
 	InvoiceState string `query:"invoice_state" enum:"none,partial,full"`
 	PaymentState string `query:"payment_state" enum:"unpaid,partial,paid"`
-	Sort       string `query:"sort" enum:"date,-date,number,-number,total,-total" default:"-date"`
+	Sort         string `query:"sort" enum:"date,-date,number,-number,total,-total" default:"-date"`
 	platform.Paging
 }
 
@@ -125,10 +125,10 @@ type OrderList struct {
 }
 
 var (
-	ErrExpectedDate     = &platform.Error{Status: http.StatusUnprocessableEntity, Code: "purchase_order_expected_before_date"}
-	ErrOrderHasReceipt  = &platform.Error{Status: http.StatusConflict, Code: "purchase_order_has_receipt"}
-	ErrOrderHasInvoice  = &platform.Error{Status: http.StatusConflict, Code: "purchase_order_has_invoice"}
-	ErrOrderNotPosted   = &platform.Error{Status: http.StatusConflict, Code: "purchase_order_not_posted"}
+	ErrExpectedDate    = &platform.Error{Status: http.StatusUnprocessableEntity, Code: "purchase_order_expected_before_date"}
+	ErrOrderHasReceipt = &platform.Error{Status: http.StatusConflict, Code: "purchase_order_has_receipt"}
+	ErrOrderHasInvoice = &platform.Error{Status: http.StatusConflict, Code: "purchase_order_has_invoice"}
+	ErrOrderNotPosted  = &platform.Error{Status: http.StatusConflict, Code: "purchase_order_not_posted"}
 )
 
 // errLine names the line (1-based) a value is wrong on.

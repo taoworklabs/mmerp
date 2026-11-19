@@ -190,10 +190,10 @@ func TestSupplierInvoiceDuplicate(t *testing.T) {
 
 func TestSupplierInvoiceDuplicateConcurrent(t *testing.T) {
 	f := newFixture(t)
-	order := f.postedOrder("2026-03-10")
+	// Two orders of the same supplier: only the supplier's row lock makes the sends take turns.
 	ids := []int64{
-		must(t)(f.invoice(f.staff, order, invoiceFields("2026-03-12", "1C26TAA", "77", il(1, "1", 50_000, "8")))),
-		must(t)(f.invoice(f.staff, order, invoiceFields("2026-03-12", "1C26TAA", "77", il(1, "1", 50_000, "8")))),
+		must(t)(f.invoice(f.staff, f.postedOrder("2026-03-10"), invoiceFields("2026-03-12", "1C26TAA", "77", il(1, "1", 50_000, "8")))),
+		must(t)(f.invoice(f.staff, f.postedOrder("2026-03-10"), invoiceFields("2026-03-12", "1C26TAA", "77", il(1, "1", 50_000, "8")))),
 	}
 	var wg sync.WaitGroup
 	errs := make([]error, 2)

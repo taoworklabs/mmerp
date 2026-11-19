@@ -35,4 +35,4 @@ export type Payment = components['schemas']['PurchasePayment']
 export type AllocationInput = components['schemas']['PurchaseAllocationInput']
 export type Allocation = components['schemas']['PurchaseAllocation']
 export type PaymentListItem = components['schemas']['PurchasePaymentListItem']
-export type PaymentSort = NonNullable<NonNullable<operations['list-payments']['parameters']['query']>['sort']>
+export type PaymentSort = NonNullable<NonNullable<operations['list-purchase-payments']['parameters']['query']>['sort']>

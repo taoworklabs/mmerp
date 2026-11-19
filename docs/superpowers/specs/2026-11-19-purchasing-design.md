@@ -148,7 +148,7 @@ No backend change beyond the kinds. The six kind labels go in the accounting are
 ### Screens (Purchasing area)
 
 - Home tile and header title "Mua hàng"; menu: suppliers, purchase orders, goods receipts, supplier invoices, payments; configuration: approval rules. No item or stock screens (they stay in Sales until M19).
-- Order `DocumentPage`: lines with received and invoiced columns, paid amount, the three states, actions "Nhập kho", "Lập hoá đơn".
+- Order `DocumentPage`: lines with received and invoiced columns, paid amount, the three states, actions "Tạo phiếu nhập kho", "Nhận hoá đơn".
 - Goods receipt, invoice and payment pages mirroring Sales delivery, invoice and receipt pages; invoice page "Chi tiền".
 - Lists with state badges and filters. Approval inbox previews orders, invoices and payments.
 

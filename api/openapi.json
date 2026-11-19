@@ -22643,7 +22643,7 @@
     },
     "/purchase/payments": {
       "get": {
-        "operationId": "list-payments",
+        "operationId": "list-purchase-payments",
         "parameters": [
           {
             "description": "Number or supplier name",
@@ -22765,7 +22765,7 @@
       },
       "post": {
         "description": "Sending the same request_id again returns the payment created the first time.",
-        "operationId": "create-payment",
+        "operationId": "create-purchase-payment",
         "requestBody": {
           "content": {
             "application/json": {
@@ -22806,7 +22806,7 @@
     },
     "/purchase/payments/actions": {
       "get": {
-        "operationId": "get-payment-actions",
+        "operationId": "get-purchase-payment-actions",
         "responses": {
           "200": {
             "content": {
@@ -22837,7 +22837,7 @@
     },
     "/purchase/payments/{id}": {
       "get": {
-        "operationId": "get-payment",
+        "operationId": "get-purchase-payment",
         "parameters": [
           {
             "in": "path",
@@ -22877,7 +22877,7 @@
         ]
       },
       "put": {
-        "operationId": "update-payment",
+        "operationId": "update-purchase-payment",
         "parameters": [
           {
             "in": "path",

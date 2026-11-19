@@ -138,9 +138,7 @@ func TestGoodsReceiptSerials(t *testing.T) {
 	id := must(t)(f.receive(order, "2026-03-11", serialLine(2, "S1")))
 	f.check(f.move(f.staff, "purchase.goods_receipt", id, record.Posted))
 	again := must(t)(f.receive(order, "2026-03-12", serialLine(2, "S1")))
-	if err := f.move(f.staff, "purchase.goods_receipt", again, record.Posted); err == nil {
-		t.Fatal("a serial on hand received twice")
-	}
+	wantCode(t, f.move(f.staff, "purchase.goods_receipt", again, record.Posted), "stock_serial_quantity")
 }
 
 // Goods already issued cannot be taken back out by cancelling their receipt.
