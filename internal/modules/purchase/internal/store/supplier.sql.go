@@ -7,6 +7,8 @@ package store
 
 import (
 	"context"
+
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 const anyCatalog = `-- name: AnyCatalog :one
@@ -18,4 +20,187 @@ func (q *Queries) AnyCatalog(ctx context.Context) (bool, error) {
 	var any bool
 	err := row.Scan(&any)
 	return any, err
+}
+
+const createSupplier = `-- name: CreateSupplier :one
+INSERT INTO purchase.suppliers (code, partner_id, payment_terms, org_unit_id, active)
+VALUES ($1, $2, $3, $4, $5)
+RETURNING id
+`
+
+type CreateSupplierParams struct {
+	Code         string
+	PartnerID    int64
+	PaymentTerms pgtype.Text
+	OrgUnitID    int64
+	Active       bool
+}
+
+func (q *Queries) CreateSupplier(ctx context.Context, arg CreateSupplierParams) (int64, error) {
+	row := q.db.QueryRow(ctx, createSupplier,
+		arg.Code,
+		arg.PartnerID,
+		arg.PaymentTerms,
+		arg.OrgUnitID,
+		arg.Active,
+	)
+	var id int64
+	err := row.Scan(&id)
+	return id, err
+}
+
+const getSupplier = `-- name: GetSupplier :one
+SELECT s.id, s.code, s.partner_id, p.code AS partner_code, p.name, p.tax_code, p.address, p.phone, p.email,
+       p.contact_name, s.payment_terms, s.org_unit_id, s.active, u.name AS org_unit_name
+FROM purchase.suppliers s
+JOIN partner.partners p ON p.id = s.partner_id
+JOIN iam.org_units u ON u.id = s.org_unit_id
+WHERE s.id = $1
+`
+
+type GetSupplierRow struct {
+	ID           int64
+	Code         string
+	PartnerID    int64
+	PartnerCode  string
+	Name         string
+	TaxCode      pgtype.Text
+	Address      pgtype.Text
+	Phone        pgtype.Text
+	Email        pgtype.Text
+	ContactName  pgtype.Text
+	PaymentTerms pgtype.Text
+	OrgUnitID    int64
+	Active       bool
+	OrgUnitName  string
+}
+
+// The supplier role with its partner's identity.
+func (q *Queries) GetSupplier(ctx context.Context, id int64) (GetSupplierRow, error) {
+	row := q.db.QueryRow(ctx, getSupplier, id)
+	var i GetSupplierRow
+	err := row.Scan(
+		&i.ID,
+		&i.Code,
+		&i.PartnerID,
+		&i.PartnerCode,
+		&i.Name,
+		&i.TaxCode,
+		&i.Address,
+		&i.Phone,
+		&i.Email,
+		&i.ContactName,
+		&i.PaymentTerms,
+		&i.OrgUnitID,
+		&i.Active,
+		&i.OrgUnitName,
+	)
+	return i, err
+}
+
+const lockSupplier = `-- name: LockSupplier :exec
+SELECT 1 FROM purchase.suppliers WHERE id = $1 FOR NO KEY UPDATE
+`
+
+// NO KEY: documents referencing the supplier stay creatable meanwhile. Also orders supplier
+// invoices being checked for duplicates.
+func (q *Queries) LockSupplier(ctx context.Context, id int64) error {
+	_, err := q.db.Exec(ctx, lockSupplier, id)
+	return err
+}
+
+const supplierActive = `-- name: SupplierActive :one
+SELECT active FROM purchase.suppliers WHERE id = $1 FOR SHARE
+`
+
+// Read under a share lock, so the supplier cannot be deactivated while a document posts.
+func (q *Queries) SupplierActive(ctx context.Context, id int64) (bool, error) {
+	row := q.db.QueryRow(ctx, supplierActive, id)
+	var active bool
+	err := row.Scan(&active)
+	return active, err
+}
+
+const supplierCodeTaken = `-- name: SupplierCodeTaken :one
+SELECT EXISTS (SELECT 1 FROM purchase.suppliers WHERE lower(code) = lower($1))
+`
+
+func (q *Queries) SupplierCodeTaken(ctx context.Context, lower string) (bool, error) {
+	row := q.db.QueryRow(ctx, supplierCodeTaken, lower)
+	var exists bool
+	err := row.Scan(&exists)
+	return exists, err
+}
+
+const supplierListBase = `-- name: SupplierListBase :many
+SELECT s.id, s.code, s.partner_id, p.name, p.tax_code, p.phone, s.payment_terms, s.org_unit_id, u.name AS org_unit_name, s.active
+FROM purchase.suppliers s
+JOIN partner.partners p ON p.id = s.partner_id
+JOIN iam.org_units u ON u.id = s.org_unit_id
+`
+
+type SupplierListBaseRow struct {
+	ID           int64
+	Code         string
+	PartnerID    int64
+	Name         string
+	TaxCode      pgtype.Text
+	Phone        pgtype.Text
+	PaymentTerms pgtype.Text
+	OrgUnitID    int64
+	OrgUnitName  string
+	Active       bool
+}
+
+// data:base
+func (q *Queries) SupplierListBase(ctx context.Context) ([]SupplierListBaseRow, error) {
+	rows, err := q.db.Query(ctx, supplierListBase)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []SupplierListBaseRow
+	for rows.Next() {
+		var i SupplierListBaseRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Code,
+			&i.PartnerID,
+			&i.Name,
+			&i.TaxCode,
+			&i.Phone,
+			&i.PaymentTerms,
+			&i.OrgUnitID,
+			&i.OrgUnitName,
+			&i.Active,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const updateSupplier = `-- name: UpdateSupplier :exec
+UPDATE purchase.suppliers SET payment_terms = $2, org_unit_id = $3, active = $4 WHERE id = $1
+`
+
+type UpdateSupplierParams struct {
+	ID           int64
+	PaymentTerms pgtype.Text
+	OrgUnitID    int64
+	Active       bool
+}
+
+func (q *Queries) UpdateSupplier(ctx context.Context, arg UpdateSupplierParams) error {
+	_, err := q.db.Exec(ctx, updateSupplier,
+		arg.ID,
+		arg.PaymentTerms,
+		arg.OrgUnitID,
+		arg.Active,
+	)
+	return err
 }

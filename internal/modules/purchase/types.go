@@ -1,5 +1,11 @@
 package purchase
 
+import (
+	"net/http"
+
+	"github.com/taoworklabs/mmerp/internal/platform"
+)
+
 const (
 	// Suppliers by their owning org unit.
 	PermSupplierView = "purchase.supplier.view"
@@ -11,7 +17,14 @@ const (
 	PermApprovalManage = "purchase.approval.manage"
 )
 
-// Actions is what the actor may do before picking a record: create.
-type Actions struct {
+// PurchaseActions is what the actor may do before picking a record: create.
+type PurchaseActions struct {
 	AllowedActions []string `json:"allowed_actions" nullable:"false"`
 }
+
+var (
+	ErrSupplierCodeTaken = &platform.Error{Status: http.StatusConflict, Code: "supplier_code_taken"}
+	ErrSupplierExists    = &platform.Error{Status: http.StatusConflict, Code: "supplier_exists_for_partner"}
+	ErrPartnerRequired   = &platform.Error{Status: http.StatusUnprocessableEntity, Code: "supplier_partner_required"}
+	ErrSupplierInactive  = &platform.Error{Status: http.StatusUnprocessableEntity, Code: "supplier_inactive"}
+)

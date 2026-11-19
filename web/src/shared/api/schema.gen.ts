@@ -1834,6 +1834,54 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/purchase/suppliers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["list-suppliers"];
+        put?: never;
+        post: operations["create-supplier"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/purchase/suppliers/actions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["get-supplier-actions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/purchase/suppliers/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["get-supplier"];
+        put: operations["update-supplier"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/records/{type}/{id}/attachments": {
         parameters: {
             query?: never;
@@ -4854,6 +4902,31 @@ export interface components {
              */
             request_id: string;
         };
+        NewSupplier: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example /api/schemas/NewSupplier.json
+             */
+            readonly $schema?: string;
+            active: boolean;
+            /** @description Empty or absent: issued from the purchase.supplier code series */
+            code?: string;
+            /**
+             * Format: int64
+             * @description Owning org unit: who may see the supplier
+             */
+            org_unit_id: number;
+            /** @description A new partner's identity */
+            partner?: components["schemas"]["PartnerFields"];
+            /**
+             * Format: int64
+             * @description An existing partner
+             */
+            partner_id?: number;
+            /** @description Prefilled on new purchase orders */
+            payment_terms: string | null;
+        };
         NewTermination: {
             /**
              * Format: uri
@@ -5638,6 +5711,15 @@ export interface components {
             /** Format: int64 */
             version: number;
         };
+        PurchaseActions: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example /api/schemas/PurchaseActions.json
+             */
+            readonly $schema?: string;
+            allowed_actions: string[];
+        };
         ReassignInputBody: {
             /**
              * Format: uri
@@ -6014,6 +6096,72 @@ export interface components {
             /** @description Decimal, signed */
             quantity: string;
             serial_code?: string;
+        };
+        Supplier: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example /api/schemas/Supplier.json
+             */
+            readonly $schema?: string;
+            active: boolean;
+            allowed_actions: string[];
+            code: string;
+            /** Format: int64 */
+            id: number;
+            /**
+             * Format: int64
+             * @description Owning org unit: who may see the supplier
+             */
+            org_unit_id: number;
+            org_unit_name: string;
+            partner: components["schemas"]["PartnerFields"];
+            partner_actions: string[];
+            partner_code: string;
+            /** Format: int64 */
+            partner_id: number;
+            /** @description Prefilled on new purchase orders */
+            payment_terms: string | null;
+        };
+        SupplierList: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example /api/schemas/SupplierList.json
+             */
+            readonly $schema?: string;
+            items: components["schemas"]["SupplierListItem"][];
+            /** Format: int64 */
+            total: number;
+        };
+        SupplierListItem: {
+            active: boolean;
+            code: string;
+            /** Format: int64 */
+            id: number;
+            name: string;
+            org_unit_name: string;
+            payment_terms: string | null;
+            phone: string | null;
+            tax_code: string | null;
+        };
+        SupplierUpdate: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example /api/schemas/SupplierUpdate.json
+             */
+            readonly $schema?: string;
+            active: boolean;
+            /**
+             * Format: int64
+             * @description Owning org unit: who may see the supplier
+             */
+            org_unit_id: number;
+            /** @description Absent: the identity is left as it is */
+            partner?: components["schemas"]["PartnerFields"];
+            /** @description Prefilled on new purchase orders */
+            payment_terms: string | null;
         };
         Termination: {
             /**
@@ -11299,6 +11447,168 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["BlocksInputBody"];
+            };
+        };
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "list-suppliers": {
+        parameters: {
+            query?: {
+                q?: string;
+                active?: "true" | "false";
+                sort?: "code" | "-code" | "name" | "-name";
+                partner_id?: number;
+                page?: number;
+                page_size?: 20 | 50 | 100;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SupplierList"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "create-supplier": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NewSupplier"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CreatedOutputBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "get-supplier-actions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PurchaseActions"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "get-supplier": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Supplier"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "update-supplier": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SupplierUpdate"];
             };
         };
         responses: {

@@ -9,4 +9,11 @@ import (
 
 func newQ(c platform.Conn) *Queries { return New(c) }
 
+var CreateSupplier = data.OneArg("purchase.CreateSupplier", newQ, (*Queries).CreateSupplier)
+var UpdateSupplier = data.ExecArg("purchase.UpdateSupplier", newQ, (*Queries).UpdateSupplier)
+var GetSupplier = data.OneArg("purchase.GetSupplier", newQ, (*Queries).GetSupplier)
+var LockSupplier = data.ExecArg("purchase.LockSupplier", newQ, (*Queries).LockSupplier)
+var SupplierActive = data.OneArg("purchase.SupplierActive", newQ, (*Queries).SupplierActive)
+var SupplierListBase = data.NewBase("purchase.SupplierListBase", supplierListBase, []string{"id", "code", "partner_id", "name", "tax_code", "phone", "payment_terms", "org_unit_id", "org_unit_name", "active"}, (*Queries).SupplierListBase)
+var SupplierCodeTaken = data.OneArg("purchase.SupplierCodeTaken", newQ, (*Queries).SupplierCodeTaken)
 var AnyCatalog = data.One("purchase.AnyCatalog", newQ, (*Queries).AnyCatalog)

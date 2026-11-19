@@ -2,6 +2,7 @@ package purchase_test
 
 import (
 	"context"
+	"errors"
 	"strings"
 	"testing"
 
@@ -93,5 +94,14 @@ func TestPurchaseRoles(t *testing.T) {
 		if got := f.core.IAM.Require(c.ctx, "purchase", c.perm, f.a) == nil; got != c.want {
 			t.Errorf("%s = %v, want %v", c.perm, got, c.want)
 		}
+	}
+}
+
+func must2(_ int64, err error) error { return err }
+
+func wantCode(t *testing.T, err error, code string) {
+	t.Helper()
+	if e, ok := errors.AsType[*platform.Error](err); !ok || e.Code != code {
+		t.Fatalf("got %v, want %s", err, code)
 	}
 }
