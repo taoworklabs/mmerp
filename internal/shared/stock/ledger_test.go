@@ -70,7 +70,10 @@ func (l *ledger) move(t *testing.T, moves ...stock.Move) error {
 }
 
 func (l *ledger) recordFor(ref record.Ref, moves ...stock.Move) error {
-	return platform.InTx(l.core.Ctx, func(ctx context.Context) error { return l.stock.Record(ctx, ref, moves) })
+	return platform.InTx(l.core.Ctx, func(ctx context.Context) error {
+		_, err := l.stock.Record(ctx, ref, moves)
+		return err
+	})
 }
 
 // onHand sums an item's balances in a warehouse.

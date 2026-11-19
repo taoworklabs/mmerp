@@ -17,11 +17,11 @@ Stock moves carry quantities only ([ADR-0100](./0100-stock-area-transfers-stockt
   - stock adjustment, increase: a unit cost entered on the line (how opening stock is valued); decrease: the average;
   - stocktake surplus or shortage: the average;
   - transfer: the average, out of the source and into the destination at the same value.
-- **No known cost.** An outgoing move when on hand is zero or below (negative stock) uses the last unit cost; if the item never had one, posting is refused (`stock_cost_unknown`).
+- **No known cost.** A move valued at average when the legal entity has none of the item on hand (negative stock) uses the last unit cost; if the item never had one, it is valued at zero and the next receipt absorbs the difference. Refusing would make negative stock useless for a new item.
 - **Cancelling** reverses each move at the value it was written with, not at the current average.
 - **Business lines.** `shared/stock` exports one kind, `stock_inventory` (sample rule: 156), that every document moving goods writes for the value of its moves, with its own counterpart kind:
   - goods receipt: `purchase_received_not_invoiced` credit (sample: 3388), so goods reach 156 when they arrive;
-  - supplier invoice: stock lines now debit `purchase_received_not_invoiced` at the order price instead of `purchase_goods`; the difference between the invoice's net and the order price becomes a value-only move on the item (`purchase_price_difference`, booked to 156) while the legal entity has the item on hand, and to `purchase_price_difference_cogs` (sample: 632) when it has none;
+  - supplier invoice: stock lines now debit `purchase_received_not_invoiced` at the order price instead of `purchase_goods`; the difference between the invoice's net and the order price becomes a value-only move on the item (so `stock_inventory`) while the legal entity has the item on hand, and `purchase_price_difference` (sample: 632) when it has none;
   - sales delivery: `sales_cost_of_goods_sold` (sample: 632);
   - stock adjustment: `stock_adjustment_gain` / `stock_adjustment_loss` (samples: 711, 811);
   - stocktake: `stocktake_surplus` (sample: 3381) / `stocktake_shortage` (sample: 1381).

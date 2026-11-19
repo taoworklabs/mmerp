@@ -359,9 +359,11 @@ test('seed Sales on the Demo demo company', async ({ baseURL }) => {
     const own = warehouses.filter((w) => w.legal_entity_id === company.id).sort((a, b) => Number(b.is_default) - Number(a.is_default))
     const wh =
       own[0]?.id ?? (await created(admin.post('/api/stock/warehouses', { data: { name: `Kho chính ${company.name}`, legal_entity_id: company.id, active: true } })))
+    // Opening stock is valued at 70 % of the selling price.
+    const cost = (code: string) => Math.round(itemOf[code]![3] * 0.7)
     const stock = [
-      ...opening.map(([code, quantity, lot]) => ({ item_id: itemId[code], quantity, lot })),
-      ...Array.from({ length: serials }, (_, n) => ({ item_id: itemId['LAP-14'], quantity: '1', serial: `SN${wh}-${String(n + 1).padStart(3, '0')}` })),
+      ...opening.map(([code, quantity, lot]) => ({ item_id: itemId[code], quantity, lot, unit_cost: cost(code) })),
+      ...Array.from({ length: serials }, (_, n) => ({ item_id: itemId['LAP-14'], quantity: '1', serial: `SN${wh}-${String(n + 1).padStart(3, '0')}`, unit_cost: cost('LAP-14') })),
     ]
     const id = await created(
       admin.post('/api/stock/adjustments', { data: { request_id: crypto.randomUUID(), date: '2026-09-01', warehouse_id: wh, reason: 'Tồn đầu kỳ', lines: stock } }),

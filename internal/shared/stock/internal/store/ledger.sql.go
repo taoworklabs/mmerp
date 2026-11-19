@@ -188,6 +188,22 @@ func (q *Queries) InsertBalances(ctx context.Context, arg InsertBalancesParams) 
 	return err
 }
 
+const insertCosts = `-- name: InsertCosts :exec
+INSERT INTO stock.costs (legal_entity_id, item_id, quantity, value)
+SELECT $1::bigint, unnest($2::bigint[]), 0, 0
+ON CONFLICT DO NOTHING
+`
+
+type InsertCostsParams struct {
+	LegalEntityID int64
+	ItemIds       []int64
+}
+
+func (q *Queries) InsertCosts(ctx context.Context, arg InsertCostsParams) error {
+	_, err := q.db.Exec(ctx, insertCosts, arg.LegalEntityID, arg.ItemIds)
+	return err
+}
+
 const insertLot = `-- name: InsertLot :exec
 INSERT INTO stock.lots (item_id, code, expiry) VALUES ($1, $2, $3) ON CONFLICT DO NOTHING
 `
@@ -204,10 +220,11 @@ func (q *Queries) InsertLot(ctx context.Context, arg InsertLotParams) error {
 }
 
 const insertMoves = `-- name: InsertMoves :exec
-INSERT INTO stock.moves (doc_type, doc_id, line_no, warehouse_id, item_id, lot_id, serial_id, quantity, date, reverses)
-SELECT $1::text, $2::bigint, k.n, k.w, k.i, nullif(k.l, 0), nullif(k.s, 0), k.q::numeric, $3::date, nullif(k.r, 0)
+INSERT INTO stock.moves (doc_type, doc_id, line_no, warehouse_id, item_id, lot_id, serial_id, quantity, value, date, reverses)
+SELECT $1::text, $2::bigint, k.n, nullif(k.w, 0), k.i, nullif(k.l, 0), nullif(k.s, 0), k.q::numeric, k.v, $3::date, nullif(k.r, 0)
 FROM (SELECT unnest($4::int[]) AS n, unnest($5::bigint[]) AS w, unnest($6::bigint[]) AS i,
-             unnest($7::bigint[]) AS l, unnest($8::bigint[]) AS s, unnest($9::text[]) AS q, unnest($10::bigint[]) AS r) AS k
+             unnest($7::bigint[]) AS l, unnest($8::bigint[]) AS s, unnest($9::text[]) AS q,
+             unnest($10::bigint[]) AS v, unnest($11::bigint[]) AS r) AS k
 `
 
 type InsertMovesParams struct {
@@ -220,9 +237,11 @@ type InsertMovesParams struct {
 	LotIds       []int64
 	SerialIds    []int64
 	Quantities   []string
+	Values       []int64
 	ReversesIds  []int64
 }
 
+// A value-only move travels with warehouse 0.
 func (q *Queries) InsertMoves(ctx context.Context, arg InsertMovesParams) error {
 	_, err := q.db.Exec(ctx, insertMoves,
 		arg.DocType,
@@ -234,6 +253,7 @@ func (q *Queries) InsertMoves(ctx context.Context, arg InsertMovesParams) error 
 		arg.LotIds,
 		arg.SerialIds,
 		arg.Quantities,
+		arg.Values,
 		arg.ReversesIds,
 	)
 	return err
@@ -276,6 +296,50 @@ func (q *Queries) LockBalances(ctx context.Context, arg LockBalancesParams) erro
 		arg.SerialIds,
 	)
 	return err
+}
+
+const lockCosts = `-- name: LockCosts :many
+SELECT item_id, quantity::text AS quantity, value, coalesce(unit_cost::text, '')::text AS unit_cost
+FROM stock.costs WHERE legal_entity_id = $1 AND item_id = ANY($2::bigint[])
+ORDER BY item_id FOR UPDATE
+`
+
+type LockCostsParams struct {
+	LegalEntityID int64
+	ItemIds       []int64
+}
+
+type LockCostsRow struct {
+	ItemID   int64
+	Quantity string
+	Value    int64
+	UnitCost string
+}
+
+// After the balances, by item, so documents valuing the same items queue.
+func (q *Queries) LockCosts(ctx context.Context, arg LockCostsParams) ([]LockCostsRow, error) {
+	rows, err := q.db.Query(ctx, lockCosts, arg.LegalEntityID, arg.ItemIds)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []LockCostsRow
+	for rows.Next() {
+		var i LockCostsRow
+		if err := rows.Scan(
+			&i.ItemID,
+			&i.Quantity,
+			&i.Value,
+			&i.UnitCost,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const lockSerials = `-- name: LockSerials :exec
@@ -418,7 +482,8 @@ func (q *Queries) MoveWarehouses(ctx context.Context, ids []int64) ([]MoveWareho
 }
 
 const openMoves = `-- name: OpenMoves :many
-SELECT m.id, m.line_no, m.warehouse_id, m.item_id, coalesce(m.lot_id, 0)::bigint AS lot_id, coalesce(m.serial_id, 0)::bigint AS serial_id, m.quantity::text AS quantity
+SELECT m.id, m.line_no, coalesce(m.warehouse_id, 0)::bigint AS warehouse_id, m.item_id, coalesce(m.lot_id, 0)::bigint AS lot_id, coalesce(m.serial_id, 0)::bigint AS serial_id,
+       m.quantity::text AS quantity, m.value
 FROM stock.moves m
 WHERE m.doc_type = $1 AND m.doc_id = $2 AND m.reverses IS NULL
   AND NOT EXISTS (SELECT 1 FROM stock.moves r WHERE r.reverses = m.id)
@@ -438,6 +503,7 @@ type OpenMovesRow struct {
 	LotID       int64
 	SerialID    int64
 	Quantity    string
+	Value       int64
 }
 
 // Original moves of a document with no reversal yet.
@@ -458,6 +524,7 @@ func (q *Queries) OpenMoves(ctx context.Context, arg OpenMovesParams) ([]OpenMov
 			&i.LotID,
 			&i.SerialID,
 			&i.Quantity,
+			&i.Value,
 		); err != nil {
 			return nil, err
 		}
@@ -539,4 +606,30 @@ func (q *Queries) SerialsOverOne(ctx context.Context, ids []int64) ([]int64, err
 		return nil, err
 	}
 	return items, nil
+}
+
+const updateCosts = `-- name: UpdateCosts :exec
+UPDATE stock.costs c SET quantity = k.q::numeric, value = k.v, unit_cost = coalesce(nullif(k.u, '')::numeric, c.unit_cost)
+FROM (SELECT unnest($2::bigint[]) AS i, unnest($3::text[]) AS q, unnest($4::bigint[]) AS v, unnest($5::text[]) AS u) AS k
+WHERE c.legal_entity_id = $1 AND c.item_id = k.i
+`
+
+type UpdateCostsParams struct {
+	LegalEntityID int64
+	ItemIds       []int64
+	Quantities    []string
+	Values        []int64
+	UnitCosts     []string
+}
+
+// An empty unit cost keeps the one stored.
+func (q *Queries) UpdateCosts(ctx context.Context, arg UpdateCostsParams) error {
+	_, err := q.db.Exec(ctx, updateCosts,
+		arg.LegalEntityID,
+		arg.ItemIds,
+		arg.Quantities,
+		arg.Values,
+		arg.UnitCosts,
+	)
+	return err
 }

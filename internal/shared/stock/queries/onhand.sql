@@ -14,16 +14,16 @@ WHERE b.quantity <> 0;
 -- name: StockCardOpening :one
 SELECT coalesce(sum(quantity), 0)::text AS quantity
 FROM stock.moves
-WHERE warehouse_id = @warehouse_id AND item_id = @item_id AND date < @from_date::date;
+WHERE warehouse_id = @warehouse_id::bigint AND item_id = @item_id AND date < @from_date::date;
 
 -- name: StockCardMoves :many
 SELECT m.id, m.date, m.doc_type, m.doc_id, coalesce(d.number, '') AS number, l.code AS lot_code, s.code AS serial_code,
-       m.quantity::text AS quantity
+       m.quantity::text AS quantity, m.value
 FROM stock.moves m
 LEFT JOIN record.documents d ON d.id = m.doc_id AND d.doc_type = m.doc_type
 LEFT JOIN stock.lots l ON l.id = m.lot_id
 LEFT JOIN stock.serials s ON s.id = m.serial_id
-WHERE m.warehouse_id = @warehouse_id AND m.item_id = @item_id AND m.date BETWEEN @from_date::date AND @to_date::date
+WHERE m.warehouse_id = @warehouse_id::bigint AND m.item_id = @item_id AND m.date BETWEEN @from_date::date AND @to_date::date
 ORDER BY m.date, m.id;
 
 -- name: StockItems :many

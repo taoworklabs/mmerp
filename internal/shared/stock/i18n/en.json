@@ -15,6 +15,7 @@
   "stock.print.expiry": "Expiry",
   "stock.print.serial": "Serial",
   "stock.print.quantity": "Quantity",
+  "stock.print.unit_cost": "Unit cost",
   "stock.print.block.footer": "Footer",
   "stock.print.block.footer.default": "Prepared by\n\n\n\nStorekeeper",
   "stock.print.transfer.name": "Stock transfer",

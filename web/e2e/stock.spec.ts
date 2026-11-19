@@ -44,9 +44,9 @@ test.beforeAll(async ({ baseURL }) => {
         warehouse_id: w.id,
         reason: 'Tồn đầu kỳ',
         lines: [
-          { item_id: q, quantity: '10' },
-          { item_id: s, serial: s1, quantity: '1' },
-          { item_id: s, serial: `S2${run}`, quantity: '1' },
+          { item_id: q, quantity: '10', unit_cost: 50_000 },
+          { item_id: s, serial: s1, quantity: '1', unit_cost: 3_000_000 },
+          { item_id: s, serial: `S2${run}`, quantity: '1', unit_cost: 3_000_000 },
         ],
       },
     }),

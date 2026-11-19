@@ -54,8 +54,9 @@ func newFixture(t *testing.T) *fixture {
 	core := coretest.New(t, "sales")
 	ctx, admin, ids, set, rec, num := core.Ctx, core.Admin, core.IAM, core.Setting, core.Record, core.Numbering
 	partners := partner.NewService(partner.Deps{IAM: ids, Record: rec, Audit: core.Audit, Numbering: num})
-	stk := stock.NewService(stock.Deps{IAM: ids, Audit: core.Audit, Numbering: num, Record: rec, Printing: core.Printing})
-	s := sales.NewService(sales.Deps{IAM: ids, Record: rec, Audit: core.Audit, Setting: set, Printing: core.Printing, Numbering: num, Partner: partners, Stock: stk, Posting: posting.NewService(posting.Hooks{})})
+	pst := posting.NewService(posting.Hooks{})
+	stk := stock.NewService(stock.Deps{IAM: ids, Audit: core.Audit, Numbering: num, Record: rec, Printing: core.Printing, Posting: pst})
+	s := sales.NewService(sales.Deps{IAM: ids, Record: rec, Audit: core.Audit, Setting: set, Printing: core.Printing, Numbering: num, Partner: partners, Stock: stk, Posting: pst})
 	f := &fixture{t: t, core: core, system: core.System, ctx: ctx, admin: admin, set: set, rec: rec, appr: core.Approval, sales: s, num: num, partners: partners, stock: stk}
 	f.c = must(t)(ids.CreateOrgUnit(admin, iam.OrgUnitInput{Kind: "company", Name: "C"}))
 	f.a = must(t)(ids.CreateOrgUnit(admin, iam.OrgUnitInput{ParentID: &f.c, Kind: "department", Name: "A"}))

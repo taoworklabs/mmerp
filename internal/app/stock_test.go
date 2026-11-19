@@ -34,8 +34,8 @@ func TestStockAdjustmentAPI(t *testing.T) {
 		n++
 		return fmt.Sprintf(`{"request_id":"00000000-0000-4000-8000-%012d","date":"2026-11-02","warehouse_id":%d,"reason":%q,"lines":[%s]}`, n, wh, reason, line)
 	}
-	id := f.id(c, "/api/stock/adjustments", body(fmt.Sprintf(`{"item_id":%d,"quantity":"5"}`, item), "Kiểm kê"))
-	f.id(c, "/api/stock/adjustments", body(fmt.Sprintf(`{"item_id":%d,"lot":null,"serial":null,"quantity":"5"}`, item), "Kiểm kê"))
+	id := f.id(c, "/api/stock/adjustments", body(fmt.Sprintf(`{"item_id":%d,"quantity":"5","unit_cost":1000}`, item), "Kiểm kê"))
+	f.id(c, "/api/stock/adjustments", body(fmt.Sprintf(`{"item_id":%d,"lot":null,"serial":null,"quantity":"5","unit_cost":1000}`, item), "Kiểm kê"))
 	f.ok(c, "GET", fmt.Sprintf("/api/stock/adjustments/%d", id), "", 200)
 	wantCode(t, c.do("POST", "/api/stock/adjustments", body(fmt.Sprintf(`{"item_id":%d,"quantity":"5"}`, item), "   ")), 422, "stock_reason_required")
 	wantCode(t, c.do("POST", "/api/stock/adjustments", body(fmt.Sprintf(`{"item_id":%d,"lot":{"code":"  "},"quantity":"5"}`, item), "x")), 422, "stock_code_blank")
@@ -77,7 +77,7 @@ func TestStockCardHidesUnreadableDocuments(t *testing.T) {
 	}
 	day := o.Date
 	adj := f.id(f.admin, "/api/stock/adjustments", fmt.Sprintf(`{"request_id":"00000000-0000-4000-8000-000000000001","date":%q,"warehouse_id":%d,
-		"reason":"Kiểm kê","lines":[{"item_id":%d,"quantity":"10"}]}`, day, wh, item))
+		"reason":"Kiểm kê","lines":[{"item_id":%d,"quantity":"10","unit_cost":1000}]}`, day, wh, item))
 	move(f.admin, "stock.adjustment", adj, "posted")
 	del := f.id(f.staffA, "/api/sales/deliveries", fmt.Sprintf(`{"request_id":"00000000-0000-4000-8000-000000000002","order_id":%d,"date":%q,
 		"warehouse_id":%d,"note":null,"lines":[{"order_position":1,"quantity":"4"}]}`, o.ID, day, wh))

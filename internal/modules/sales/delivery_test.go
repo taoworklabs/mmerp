@@ -276,6 +276,15 @@ func (d *deliveries) onHand(itemID int64) string {
 	return q
 }
 
+// deliveryLine sums a delivery's live business lines of kind.
+func (d *deliveries) deliveryLine(id int64, kind string) int64 {
+	d.t.Helper()
+	var a int64
+	d.check(d.core.Pool.QueryRow(d.ctx, `SELECT coalesce(sum(amount), 0)::bigint FROM posting.lines
+		WHERE doc_type = 'sales.delivery' AND doc_id = $1 AND kind = $2 AND voided_at IS NULL`, id, kind).Scan(&a))
+	return a
+}
+
 // liveMoves counts a delivery's moves not reversed.
 func (d *deliveries) liveMoves(id int64) int {
 	d.t.Helper()
@@ -288,7 +297,7 @@ func (d *deliveries) liveMoves(id int64) int {
 func TestDeliveryRecordContract(t *testing.T) {
 	recordtest.Run(t, func(t *testing.T) recordtest.Harness {
 		d := newDeliveries(t)
-		d.adjust(stock.AdjustmentLine{ItemID: d.goods, Quantity: "100"})
+		d.adjust(stock.AdjustmentLine{ItemID: d.goods, Quantity: "100", UnitCost: new(int64(100))})
 		// The suite dates deliveries freely, so the order is older than any of them.
 		order := d.orderOn("2026-01-01", "0")
 		d.check(d.move(d.staff, "sales.order", order, record.Posted))
@@ -328,7 +337,7 @@ func TestDeliveryRecordContract(t *testing.T) {
 // Posting takes the goods out, lots included; cancelling puts them back.
 func TestDeliveryPostsAndCancelRestores(t *testing.T) {
 	d := newDeliveries(t)
-	d.adjust(stock.AdjustmentLine{ItemID: d.goods, Quantity: "10"}, stock.AdjustmentLine{ItemID: d.lotted, Lot: &stock.LotRef{Code: "L1"}, Quantity: "5"})
+	d.adjust(stock.AdjustmentLine{ItemID: d.goods, Quantity: "10", UnitCost: new(int64(100))}, stock.AdjustmentLine{ItemID: d.lotted, Lot: &stock.LotRef{Code: "L1"}, Quantity: "5", UnitCost: new(int64(100))})
 	id := must(t)(d.create(d.staff, d.order, d.fields(dl(1, "4"), sales.DeliveryLineInput{OrderPosition: 2, LotCode: str("L1"), Quantity: "2"})))
 	if d.onHand(d.goods) != "10.000" {
 		t.Fatalf("a draft moved stock: %s", d.onHand(d.goods))
@@ -337,9 +346,16 @@ func TestDeliveryPostsAndCancelRestores(t *testing.T) {
 	if g, l := d.onHand(d.goods), d.onHand(d.lotted); g != "6.000" || l != "3.000" {
 		t.Fatalf("on hand after posting: %s, %s", g, l)
 	}
+	// Six units at 100 đ leave stock as cost of goods sold.
+	if inv, cogs := d.deliveryLine(id, "stock_inventory"), d.deliveryLine(id, "sales_cost_of_goods_sold"); inv != -600 || cogs != 600 {
+		t.Fatalf("lines %d %d", inv, cogs)
+	}
 	d.check(d.move(d.staff, "sales.delivery", id, record.Cancelled))
 	if g, l := d.onHand(d.goods), d.onHand(d.lotted); g != "10.000" || l != "5.000" {
 		t.Fatalf("on hand after cancelling: %s, %s", g, l)
+	}
+	if cogs := d.deliveryLine(id, "sales_cost_of_goods_sold"); cogs != 0 {
+		t.Fatalf("cancelled cogs %d", cogs)
 	}
 	// A cancelled delivery takes nothing from the order: all 10 can go again.
 	must(t)(d.create(d.staff, d.order, d.fields(dl(1, "10"))))
@@ -349,7 +365,7 @@ func TestDeliveryPostingRefuses(t *testing.T) {
 	d := newDeliveries(t)
 	id := must(t)(d.create(d.staff, d.order, d.fields(dl(1, "4"))))
 	// Short stock refuses posting and moves nothing.
-	d.adjust(stock.AdjustmentLine{ItemID: d.goods, Quantity: "3"})
+	d.adjust(stock.AdjustmentLine{ItemID: d.goods, Quantity: "3", UnitCost: new(int64(100))})
 	wantCode(t, d.move(d.staff, "sales.delivery", id, record.Posted), "stock_insufficient")
 	if d.onHand(d.goods) != "3.000" || d.liveMoves(id) != 0 {
 		t.Fatalf("refused posting moved stock: %s", d.onHand(d.goods))
@@ -464,7 +480,7 @@ func (d *deliveries) orderState(want string, delivered ...string) sales.Doc {
 
 func TestDeliveryStateDerived(t *testing.T) {
 	d := newDeliveries(t)
-	d.adjust(stock.AdjustmentLine{ItemID: d.goods, Quantity: "10"}, stock.AdjustmentLine{ItemID: d.lotted, Lot: &stock.LotRef{Code: "L1"}, Quantity: "5"})
+	d.adjust(stock.AdjustmentLine{ItemID: d.goods, Quantity: "10", UnitCost: new(int64(100))}, stock.AdjustmentLine{ItemID: d.lotted, Lot: &stock.LotRef{Code: "L1"}, Quantity: "5", UnitCost: new(int64(100))})
 	d.orderState("none", "0", "0", "-")
 	// A draft delivery delivers nothing yet.
 	draft := must(t)(d.create(d.staff, d.order, d.fields(dl(1, "1"))))
@@ -500,7 +516,7 @@ func TestDeliveryStateDerived(t *testing.T) {
 func TestAvailableOnDraftOrder(t *testing.T) {
 	d := newDeliveries(t)
 	d.check(d.move(d.staff, "sales.order", d.order, record.Cancelled))
-	d.adjust(stock.AdjustmentLine{ItemID: d.goods, Quantity: "10"})
+	d.adjust(stock.AdjustmentLine{ItemID: d.goods, Quantity: "10", UnitCost: new(int64(100))})
 	a := d.goodsOrder("6")
 	d.check(d.move(d.staff, "sales.order", a, record.Posted))
 	b := d.goodsOrder("5")
@@ -522,7 +538,7 @@ func TestAvailableOnDraftOrder(t *testing.T) {
 
 func TestAvailabilityEndpoint(t *testing.T) {
 	d := newDeliveries(t)
-	d.adjust(stock.AdjustmentLine{ItemID: d.goods, Quantity: "15"}, stock.AdjustmentLine{ItemID: d.lotted, Lot: &stock.LotRef{Code: "L1"}, Quantity: "3"})
+	d.adjust(stock.AdjustmentLine{ItemID: d.goods, Quantity: "15", UnitCost: new(int64(100))}, stock.AdjustmentLine{ItemID: d.lotted, Lot: &stock.LotRef{Code: "L1"}, Quantity: "3", UnitCost: new(int64(100))})
 	// Delivering 4 takes them from both on hand and committed.
 	d.posted(d.order, dl(1, "4"))
 	got, err := d.sales.Availability(d.staff, d.a, []int64{d.goods, d.lotted})
@@ -566,9 +582,9 @@ func TestDeliveriesList(t *testing.T) {
 func TestDeliveryOptions(t *testing.T) {
 	d := newDeliveries(t)
 	exp1, exp2 := "2027-12-01", "2027-11-15"
-	d.adjust(stock.AdjustmentLine{ItemID: d.goods, Quantity: "15"},
-		stock.AdjustmentLine{ItemID: d.lotted, Lot: &stock.LotRef{Code: "L1", Expiry: &exp1}, Quantity: "3"},
-		stock.AdjustmentLine{ItemID: d.lotted, Lot: &stock.LotRef{Code: "L2", Expiry: &exp2}, Quantity: "2"})
+	d.adjust(stock.AdjustmentLine{ItemID: d.goods, Quantity: "15", UnitCost: new(int64(100))},
+		stock.AdjustmentLine{ItemID: d.lotted, Lot: &stock.LotRef{Code: "L1", Expiry: &exp1}, Quantity: "3", UnitCost: new(int64(100))},
+		stock.AdjustmentLine{ItemID: d.lotted, Lot: &stock.LotRef{Code: "L2", Expiry: &exp2}, Quantity: "2", UnitCost: new(int64(100))})
 	// A draft delivery of 2 lot items leaves 3 to suggest.
 	must(t)(d.create(d.staff, d.order, d.fields(dl(1, "4"), lotted(2, "L1", "2"))))
 	o, err := d.sales.DeliveryOptions(d.staff, d.order, 0)
@@ -604,7 +620,7 @@ func TestDeliveryOptionsSerials(t *testing.T) {
 		{ItemID: ser, Description: "Máy", Quantity: "2", UnitPrice: 1_000, DiscountPercent: "0", VatRate: "8"}}}
 	o := must(t)(d.sales.CreateOrder(d.staff, sales.NewDoc{RequestID: newRequest(), DocFields: fl}))
 	d.check(d.move(d.staff, "sales.order", o, record.Posted))
-	d.adjust(stock.AdjustmentLine{ItemID: ser, Serial: new("S2"), Quantity: "1"}, stock.AdjustmentLine{ItemID: ser, Serial: new("S1"), Quantity: "1"})
+	d.adjust(stock.AdjustmentLine{ItemID: ser, Serial: new("S2"), Quantity: "1", UnitCost: new(int64(100))}, stock.AdjustmentLine{ItemID: ser, Serial: new("S1"), Quantity: "1", UnitCost: new(int64(100))})
 	got, err := d.sales.DeliveryOptions(d.staff, o, d.wh)
 	d.check(err)
 	if len(got.Lines) != 1 || !slices.Equal(got.Lines[0].Serials, []string{"S1", "S2"}) {
@@ -615,7 +631,7 @@ func TestDeliveryOptionsSerials(t *testing.T) {
 func TestDeliveryRefusesExpiredLot(t *testing.T) {
 	d := newDeliveries(t)
 	exp := "2026-11-01"
-	d.adjust(stock.AdjustmentLine{ItemID: d.lotted, Lot: &stock.LotRef{Code: "L1", Expiry: &exp}, Quantity: "3"})
+	d.adjust(stock.AdjustmentLine{ItemID: d.lotted, Lot: &stock.LotRef{Code: "L1", Expiry: &exp}, Quantity: "3", UnitCost: new(int64(100))})
 	f := d.fields(lotted(2, "l1", "1"))
 	f.Date = "2026-11-02"
 	_, err := d.create(d.staff, d.order, f)
@@ -648,7 +664,7 @@ func TestDeliveryDateBeforeOrder(t *testing.T) {
 func TestDeliveryRefusesExpiredLotAnyCase(t *testing.T) {
 	d := newDeliveries(t)
 	exp := "2026-11-01"
-	d.adjust(stock.AdjustmentLine{ItemID: d.lotted, Lot: &stock.LotRef{Code: "Lô-a", Expiry: &exp}, Quantity: "3"})
+	d.adjust(stock.AdjustmentLine{ItemID: d.lotted, Lot: &stock.LotRef{Code: "Lô-a", Expiry: &exp}, Quantity: "3", UnitCost: new(int64(100))})
 	f := d.fields(lotted(2, "LÔ-A", "1"))
 	f.Date = "2026-11-02"
 	if _, err := d.create(d.staff, d.order, f); !errors.Is(err, sales.ErrLotExpired) {

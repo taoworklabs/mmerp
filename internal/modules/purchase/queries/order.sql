@@ -119,3 +119,7 @@ SET supplier_code = s.code, supplier_name = p.name, supplier_tax_code = p.tax_co
 FROM purchase.suppliers s JOIN partner.partners p ON p.id = s.partner_id
 WHERE o.id = $1 AND s.id = o.supplier_id
 RETURNING s.active;
+
+-- name: OrderLineNets :many
+-- What each line costs net of its discount, for valuing goods at the order price.
+SELECT position, quantity::text AS quantity, (amount - discount)::bigint AS net FROM purchase.order_lines WHERE order_id = $1;

@@ -81,6 +81,8 @@
   "shared.error.stock_quantity_invalid": "Dòng {{line_no}}: số lượng phải khác 0, tối đa 3 chữ số thập phân và không quá lớn.",
   "shared.error.stock_reason_required": "Nhập lý do điều chỉnh kho.",
   "shared.error.stock_code_blank": "Dòng {{line_no}}: mã lô hoặc số serial không được để trống.",
+  "shared.error.stock_unit_cost_required": "Dòng {{line_no}}: nhập đơn giá cho hàng nhập vào.",
+  "shared.error.stock_unit_cost_not_allowed": "Dòng {{line_no}}: hàng xuất ra tính theo giá bình quân, để trống đơn giá.",
   "shared.error.stock_card_range_invalid": "Ngày bắt đầu không được sau ngày kết thúc.",
   "shared.error.stock_card_range_too_long": "Khoảng thời gian quá dài. Chọn khoảng ngắn hơn.",
   "shared.error.org_unit_cycle": "Không thể đặt một đơn vị dưới chính đơn vị con của nó.",

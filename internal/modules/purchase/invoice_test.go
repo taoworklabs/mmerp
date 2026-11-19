@@ -96,7 +96,9 @@ func TestSupplierInvoiceRecordContract(t *testing.T) {
 	})
 }
 
-// Exit criterion 3: goods, expense, input VAT and the payable with the supplier.
+// Stock lines clear received not invoiced at the order price; with nothing received, the
+// cartons' 2,000 đ over the order price go to price difference. Expense, input VAT and the
+// payable with the supplier as before.
 func TestSupplierInvoicePostingLines(t *testing.T) {
 	f := newFixture(t)
 	order := f.postedOrder("2026-03-10")
@@ -110,7 +112,8 @@ func TestSupplierInvoicePostingLines(t *testing.T) {
 	}
 	f.check(f.move(f.staff, "purchase.invoice", id, record.Posted))
 	got := f.postingLines("purchase.invoice", id)
-	want := map[string]int64{"purchase_goods": 6_208_000, "purchase_expense": 500_000, "purchase_input_vat": 666_640, "purchase_payable": 7_374_640}
+	want := map[string]int64{"purchase_received_not_invoiced": -6_200_000, "purchase_price_difference": 8_000, "purchase_expense": 500_000,
+		"purchase_input_vat": 666_640, "purchase_payable": 7_374_640}
 	if len(got) != len(want) {
 		t.Fatalf("lines %v", got)
 	}
@@ -286,4 +289,44 @@ func (f *fixture) pendingInstance(doc int64) int64 {
 	var id int64
 	f.check(f.core.Pool.QueryRow(f.ctx, `SELECT id FROM approval.instances WHERE doc_id = $1 ORDER BY id DESC LIMIT 1`, doc).Scan(&id))
 	return id
+}
+
+// stockCost is the company's running quantity and value of an item.
+func (f *fixture) stockCost(itemID int64) (string, int64) {
+	f.t.Helper()
+	var q string
+	var v int64
+	if err := f.core.Pool.QueryRow(f.ctx, `SELECT quantity::text, value FROM stock.costs WHERE legal_entity_id = $1 AND item_id = $2`, f.c, itemID).Scan(&q, &v); err != nil {
+		f.t.Fatal(err)
+	}
+	return q, v
+}
+
+// A receipt books the goods at the order price; the invoice's price difference goes to the
+// goods still on hand, and cancelling takes both back.
+func TestReceiptAndInvoiceValueStock(t *testing.T) {
+	f := newFixture(t)
+	order := f.postedOrder("2026-03-10")
+	rc := must(t)(f.receive(order, "2026-03-11", lotLine(1, "6", "L1", nil)))
+	f.check(f.move(f.staff, "purchase.goods_receipt", rc, record.Posted))
+	if got := f.postingLines("purchase.goods_receipt", rc); len(got) != 2 || got["stock_inventory"] != 300_000 || got["purchase_received_not_invoiced"] != 300_000 {
+		t.Fatalf("receipt %v", got)
+	}
+	id := must(t)(f.invoice(f.staff, order, billed("2026-03-12", "0000123")))
+	f.check(f.move(f.staff, "purchase.invoice", id, record.Posted))
+	got := f.postingLines("purchase.invoice", id)
+	if got["stock_inventory"] != 8_000 || got["purchase_price_difference"] != 0 || got["purchase_received_not_invoiced"] != -6_200_000 {
+		t.Fatalf("invoice %v", got)
+	}
+	if q, v := f.stockCost(f.lot); q != "6.000" || v != 308_000 {
+		t.Fatalf("cost %s %d", q, v)
+	}
+	f.check(f.move(f.staff, "purchase.invoice", id, record.Cancelled))
+	f.check(f.move(f.staff, "purchase.goods_receipt", rc, record.Cancelled))
+	if q, v := f.stockCost(f.lot); q != "0.000" || v != 0 {
+		t.Fatalf("after cancel %s %d", q, v)
+	}
+	if got := f.postingLines("purchase.goods_receipt", rc); len(got) != 0 {
+		t.Fatalf("receipt after cancel %v", got)
+	}
 }

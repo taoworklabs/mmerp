@@ -9,7 +9,7 @@ Selling goods and services, for any trade: customers, a catalogue of items, quot
 | Customers (Sales' partner role over a shared partner), with an owning org unit | CRM pipeline, leads, activities |
 | Item catalogue (goods and services alike) with default price and VAT rate, stock tracking per item (lot, serial, negative stock), warehouses with on hand and stock card | Units of measure conversion, price lists |
 | Quotations: approval, PDF print, turning into an order | E-invoices, prepayments, credit notes, due dates and aging |
-| Sales orders, from a quotation or entered directly; sales invoices from a confirmed order, in parts; customer receipts allocated to invoices, with business lines for accounting | Cost of goods sold, a cash and bank catalogue |
+| Sales orders, from a quotation or entered directly; sales invoices from a confirmed order, in parts; customer receipts allocated to invoices, with business lines for accounting; cost of goods sold on deliveries | A cash and bank catalogue |
 | Deliveries from a posted order, taking goods out of a warehouse | Delivery note print, transfers between warehouses, stocktakes, receipts from suppliers, stock valuation, hard reservations |
 | Per-line discount, VAT per line, rounding per legal-entity setting | Foreign currencies, document-level discount, cash rounding |
 
@@ -39,7 +39,7 @@ A single module `internal/modules/sales`, schema `sales`, product `sales`. Depen
 | `sales.customer` | catalogue | — | — | — | — |
 | `sales.quote` | document `BG` | Approved: may be sent and turned into an order | Quotation date | Into `posted`: customer still active. Into `cancelled`: no non-cancelled order from it | `max_discount`, `items` |
 | `sales.order` | document `DH` | Confirmed | Order date | Into `posted`: customer still active | `max_discount`, `items` |
-| `sales.delivery` | document `GH` | Goods have left the warehouse | Delivery date | Into `posted`: takes the goods out through `stock` (refused while the order's cancel awaits approval). Into `cancelled`: puts them back | — |
+| `sales.delivery` | document `GH` | Goods have left the warehouse | Delivery date | Into `posted`: takes the goods out through `stock` (refused while the order's cancel awaits approval) and writes `stock_inventory` negative and `sales_cost_of_goods_sold` at their value. Into `cancelled`: puts them back and voids the lines | — |
 | `sales.invoice` | document `HB` | Billed | Invoice date | Into `posted`: re-checks quantities against the order, writes business lines. Into `cancelled`: refused while a non-cancelled receipt settles it; voids them | `amount` |
 | `sales.receipt` | document `PT` | Money received | Receipt date | Into `posted`: re-checks allocations against the invoices, writes business lines. Into `cancelled`: voids them | `amount` |
 

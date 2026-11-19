@@ -76,7 +76,8 @@ func readAdjustment(ctx context.Context, id int64) (Adjustment, error) {
 		LegalEntityID: h.LegalEntityID, WarehouseID: h.WarehouseID, WarehouseCode: h.WarehouseCode, WarehouseName: h.WarehouseName,
 		Reason: h.Reason, Lines: make([]AdjustmentLineOut, len(lines))}
 	for i, l := range lines {
-		in := AdjustmentLine{ItemID: l.ItemID, Serial: platform.TextPtr(l.SerialCode), Quantity: platform.PlainDecimal(l.Quantity)}
+		in := AdjustmentLine{ItemID: l.ItemID, Serial: platform.TextPtr(l.SerialCode), Quantity: platform.PlainDecimal(l.Quantity),
+			UnitCost: platform.Int8Ptr(l.UnitCost)}
 		if l.LotCode.Valid {
 			in.Lot = &LotRef{Code: l.LotCode.String, Expiry: platform.DatePtr(l.LotExpiry)}
 		}
@@ -153,6 +154,12 @@ func prepareAdjustment(ctx context.Context, f *AdjustmentFields) (record.Header,
 		if err != nil || q.IsZero() || !q.Equal(q.Truncate(3)) || q.Abs().GreaterThanOrEqual(maxQuantity) {
 			return record.Header{}, lineErr(ErrQuantityInvalid, Move{LineNo: i + 1})
 		}
+		switch {
+		case q.IsPositive() && l.UnitCost == nil:
+			return record.Header{}, lineErr(ErrUnitCostRequired, Move{LineNo: i + 1})
+		case q.IsNegative() && l.UnitCost != nil:
+			return record.Header{}, lineErr(ErrUnitCostNotAllowed, Move{LineNo: i + 1})
+		}
 	}
 	n, err := store.CountItems.Run(ctx, ids)
 	if err != nil {
@@ -191,6 +198,11 @@ func (s *Service) writeAdjustmentLines(ctx context.Context, id int64, f Adjustme
 		a.LotExpiries = append(a.LotExpiries, expiry)
 		a.Serials = append(a.Serials, serial)
 		a.Quantities = append(a.Quantities, l.Quantity)
+		cost := int64(-1)
+		if l.UnitCost != nil {
+			cost = *l.UnitCost
+		}
+		a.UnitCosts = append(a.UnitCosts, cost)
 	}
 	if err := store.InsertAdjustmentLines.Run(ctx, a); err != nil {
 		return err
@@ -222,10 +234,18 @@ func (s *Service) adjustmentTransition(ctx context.Context, d record.Doc, _ reco
 				return err
 			}
 			moves[i] = Move{LineNo: i + 1, WarehouseID: a.WarehouseID, ItemID: l.ItemID, Lot: l.Lot, Serial: l.Serial, Quantity: q}
+			if l.UnitCost != nil {
+				v := platform.Round(q.Mul(decimal.NewFromInt(*l.UnitCost)))
+				moves[i].Value = &v
+			}
 		}
-		return s.Record(ctx, d.Ref, moves)
+		vals, err := s.Record(ctx, d.Ref, moves)
+		if err != nil {
+			return err
+		}
+		return s.postDifferences(ctx, d, vals, KindAdjustmentGain, KindAdjustmentLoss)
 	case record.Cancelled:
-		return s.Void(ctx, d.Ref)
+		return s.voidPosted(ctx, d.Ref)
 	}
 	return nil
 }

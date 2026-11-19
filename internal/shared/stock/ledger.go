@@ -30,49 +30,55 @@ func lineErr(e *platform.Error, m Move) error {
 }
 
 // Record writes the moves of a document, in the caller's transaction, under the document's
-// legal entity and date. It checks no permission: documents call it from their transitions.
-// It refuses while earlier moves of the document are not reversed. Callers hold the
-// document's row lock (they run inside record.Transition), so one document never records twice.
-func (s *Service) Record(ctx context.Context, ref record.Ref, moves []Move) error {
+// legal entity and date, and returns the value written for each move (0 for a value-only move
+// skipped). It checks no permission: documents call it from their transitions. It refuses
+// while earlier moves of the document are not reversed. Callers hold the document's row lock
+// (they run inside record.Transition), so one document never records twice.
+func (s *Service) Record(ctx context.Context, ref record.Ref, moves []Move) ([]int64, error) {
 	h, err := store.DocumentHeader.Run(ctx, store.DocumentHeaderParams{DocType: ref.Type, ID: ref.ID})
 	if errors.Is(err, pgx.ErrNoRows) {
-		return platform.ErrNotFound
+		return nil, platform.ErrNotFound
 	}
 	if err != nil {
-		return err
+		return nil, err
 	}
 	if live, err := store.HasLiveMoves.Run(ctx, store.HasLiveMovesParams{DocType: ref.Type, DocID: ref.ID}); err != nil || live {
-		return platform.OrErr(err, ErrAlreadyRecorded)
+		return nil, platform.OrErr(err, ErrAlreadyRecorded)
 	}
 	if len(moves) == 0 {
-		return nil
+		return nil, nil
 	}
 	whs, items, err := s.moveMasters(ctx, moves)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	for _, m := range moves {
 		if err := check(m, whs, items, h.LegalEntityID); err != nil {
-			return err
+			return nil, err
 		}
 	}
 	keyOf := make([]key, len(moves))
 	for _, i := range creationOrder(moves) {
 		m := moves[i]
 		k := key{w: m.WarehouseID, i: m.ItemID}
-		if k.l, k.s, err = s.resolve(ctx, items[m.ItemID].Tracking, m); err != nil {
-			return err
+		if !valueOnly(m) {
+			if k.l, k.s, err = s.resolve(ctx, items[m.ItemID].Tracking, m); err != nil {
+				return nil, err
+			}
 		}
 		keyOf[i] = k
 	}
 
 	lines := make([]line, len(moves))
 	for i, m := range moves {
-		lines[i] = line{k: keyOf[i], lineNo: m.LineNo, qty: m.Quantity}
+		lines[i] = line{k: keyOf[i], lineNo: m.LineNo, qty: m.Quantity, value: m.Value}
 	}
-	return apply(ctx, ref, h.Date, items, lines)
+	return apply(ctx, ref, h.LegalEntityID, h.Date, items, lines)
 }
+
+// valueOnly reports a move changing the value of an item but no quantity, in no warehouse.
+func valueOnly(m Move) bool { return m.WarehouseID == 0 }
 
 // creationOrder sorts moves by (item, code), so two documents creating the same new lots or
 // serials queue on the unique index instead of deadlocking.
@@ -200,6 +206,7 @@ func (s *Service) RecordCounts(ctx context.Context, ref record.Ref, warehouse in
 		}
 	}
 	var lines []line
+	var of []int // the count each line comes from
 	for i, c := range counts {
 		results[i] = CountResult{LineNo: c.LineNo, Book: book[keyOf[i]]}
 		if !known[i] {
@@ -208,31 +215,41 @@ func (s *Service) RecordCounts(ctx context.Context, ref record.Ref, warehouse in
 		}
 		if d := c.Quantity.Sub(results[i].Book); !d.IsZero() {
 			lines = append(lines, line{k: keyOf[i], lineNo: c.LineNo, qty: d})
+			of = append(of, i)
 		}
 	}
 	if len(lines) == 0 {
 		return results, nil
 	}
-	return results, apply(ctx, ref, h.Date, items, lines)
+	vals, err := apply(ctx, ref, h.LegalEntityID, h.Date, items, lines)
+	for j, v := range vals {
+		results[of[j]].Value = v
+	}
+	return results, err
 }
 
-// line is one resolved move to write; reverses is the id of the move it undoes, or 0.
+// line is one resolved move to write; reverses is the id of the move it undoes, or 0. A nil
+// value is valued at average.
 type line struct {
 	k        key
 	lineNo   int
 	qty      decimal.Decimal
+	value    *int64
 	reverses int64
 }
 
-// apply locks and updates the balances of lines, refuses what would go short, and inserts
-// the moves. Record and Void share it so both queue and check the same way.
-func apply(ctx context.Context, ref record.Ref, date pgtype.Date, items map[int64]store.MoveItemsRow, lines []line) error {
-	ins := store.InsertMovesParams{DocType: ref.Type, DocID: ref.ID, Date: date}
+// apply locks and updates the balances of lines, refuses what would go short, values the
+// lines and inserts the moves, returning their values. Record and Void share it so both
+// queue and check the same way.
+func apply(ctx context.Context, ref record.Ref, legalEntity int64, date pgtype.Date, items map[int64]store.MoveItemsRow, lines []line) ([]int64, error) {
 	deltas := map[key]decimal.Decimal{}
 	firstLine := map[key]int{}
 	var serials []int64
 	for _, l := range lines {
 		k := l.k
+		if k.w == 0 {
+			continue // value-only: no balance
+		}
 		if k.s != 0 {
 			serials = append(serials, k.s)
 		}
@@ -240,19 +257,12 @@ func apply(ctx context.Context, ref record.Ref, date pgtype.Date, items map[int6
 			firstLine[k] = l.lineNo
 		}
 		deltas[k] = deltas[k].Add(l.qty)
-		ins.LineNos = append(ins.LineNos, int32(l.lineNo))
-		ins.WarehouseIds = append(ins.WarehouseIds, k.w)
-		ins.ItemIds = append(ins.ItemIds, k.i)
-		ins.LotIds = append(ins.LotIds, k.l)
-		ins.SerialIds = append(ins.SerialIds, k.s)
-		ins.Quantities = append(ins.Quantities, l.qty.String())
-		ins.ReversesIds = append(ins.ReversesIds, l.reverses)
 	}
 	// Lock order: items (read with their tracking), serials, then balances by key, so documents touching the same rows queue.
 	slices.Sort(serials)
 	serials = slices.Compact(serials)
 	if err := store.LockSerials.Run(ctx, serials); err != nil {
-		return err
+		return nil, err
 	}
 	keys := slices.SortedFunc(maps.Keys(deltas), key.compare)
 	var ws, is, ls, ss []int64
@@ -262,19 +272,19 @@ func apply(ctx context.Context, ref record.Ref, date pgtype.Date, items map[int6
 		ds = append(ds, deltas[k].String())
 	}
 	if err := store.InsertBalances.Run(ctx, store.InsertBalancesParams{WarehouseIds: ws, ItemIds: is, LotIds: ls, SerialIds: ss}); err != nil {
-		return err
+		return nil, err
 	}
 	if err := store.LockBalances.Run(ctx, store.LockBalancesParams{WarehouseIds: ws, ItemIds: is, LotIds: ls, SerialIds: ss}); err != nil {
-		return err
+		return nil, err
 	}
 	rows, err := store.ApplyDeltas.Run(ctx, store.ApplyDeltasParams{WarehouseIds: ws, ItemIds: is, LotIds: ls, SerialIds: ss, Deltas: ds})
 	if err != nil {
-		return err
+		return nil, err
 	}
 	result := map[key]decimal.Decimal{}
 	for _, r := range rows {
 		if result[key{r.WarehouseID, r.ItemID, r.LotID, r.SerialID}], err = decimal.NewFromString(r.Quantity); err != nil {
-			return err
+			return nil, err
 		}
 	}
 	for _, k := range keys {
@@ -283,22 +293,113 @@ func apply(ctx context.Context, ref record.Ref, date pgtype.Date, items map[int6
 		if !deltas[k].IsNegative() || !q.IsNegative() || (it.Tracking == item.TrackQuantity && it.AllowNegative) {
 			continue
 		}
-		return &platform.Error{Status: ErrInsufficient.Status, Code: ErrInsufficient.Code, Params: map[string]any{
+		return nil, &platform.Error{Status: ErrInsufficient.Status, Code: ErrInsufficient.Code, Params: map[string]any{
 			"line_no": firstLine[k], "warehouse_id": k.w, "item_id": k.i,
 			"lot_id": nullID(k.l), "serial_id": nullID(k.s), "missing": q.Neg().String()}}
 	}
 	if len(serials) > 0 {
 		over, err := store.SerialsOverOne.Run(ctx, serials)
 		if err != nil {
-			return err
+			return nil, err
 		}
 		for _, k := range keys {
 			if k.s != 0 && slices.Contains(over, k.s) {
-				return &platform.Error{Status: ErrSerialQuantity.Status, Code: ErrSerialQuantity.Code, Params: map[string]any{"line_no": firstLine[k]}}
+				return nil, &platform.Error{Status: ErrSerialQuantity.Status, Code: ErrSerialQuantity.Code, Params: map[string]any{"line_no": firstLine[k]}}
 			}
 		}
 	}
-	return store.InsertMoves.Run(ctx, ins)
+	vals, skip, err := valuate(ctx, legalEntity, lines)
+	if err != nil {
+		return nil, err
+	}
+	ins := store.InsertMovesParams{DocType: ref.Type, DocID: ref.ID, Date: date}
+	for i, l := range lines {
+		if skip[i] {
+			continue
+		}
+		ins.LineNos = append(ins.LineNos, int32(l.lineNo))
+		ins.WarehouseIds = append(ins.WarehouseIds, l.k.w)
+		ins.ItemIds = append(ins.ItemIds, l.k.i)
+		ins.LotIds = append(ins.LotIds, l.k.l)
+		ins.SerialIds = append(ins.SerialIds, l.k.s)
+		ins.Quantities = append(ins.Quantities, l.qty.String())
+		ins.Values = append(ins.Values, vals[i])
+		ins.ReversesIds = append(ins.ReversesIds, l.reverses)
+	}
+	if len(ins.LineNos) == 0 {
+		return vals, nil
+	}
+	return vals, store.InsertMoves.Run(ctx, ins)
+}
+
+// valuate values lines at moving average per item of the legal entity and moves the running
+// totals, under the cost rows' locks. A line with a value keeps it; a value-only line is
+// skipped (value 0) when the legal entity has none of the item on hand. When an item's
+// quantity comes to zero, its last outgoing line valued here takes the rest of the value.
+func valuate(ctx context.Context, legalEntity int64, lines []line) ([]int64, []bool, error) {
+	var ids []int64
+	for _, l := range lines {
+		ids = append(ids, l.k.i)
+	}
+	slices.Sort(ids)
+	ids = slices.Compact(ids)
+	if err := store.InsertCosts.Run(ctx, store.InsertCostsParams{LegalEntityID: legalEntity, ItemIds: ids}); err != nil {
+		return nil, nil, err
+	}
+	rows, err := store.LockCosts.Run(ctx, store.LockCostsParams{LegalEntityID: legalEntity, ItemIds: ids})
+	if err != nil {
+		return nil, nil, err
+	}
+	vals, skip := make([]int64, len(lines)), make([]bool, len(lines))
+	up := store.UpdateCostsParams{LegalEntityID: legalEntity}
+	for _, r := range rows {
+		q, err := decimal.NewFromString(r.Quantity)
+		if err != nil {
+			return nil, nil, err
+		}
+		v := r.Value
+		avg := decimal.Zero
+		switch {
+		case q.IsPositive():
+			avg = decimal.NewFromInt(v).Div(q)
+		case r.UnitCost != "":
+			if avg, err = decimal.NewFromString(r.UnitCost); err != nil {
+				return nil, nil, err
+			}
+		}
+		had, lastOut := q.IsPositive(), -1
+		for i, l := range lines {
+			if l.k.i != r.ItemID {
+				continue
+			}
+			switch {
+			case l.k.w == 0 && l.reverses == 0 && !had:
+				skip[i] = true
+				continue
+			case l.value != nil:
+				vals[i] = *l.value
+			default:
+				vals[i] = platform.Round(l.qty.Mul(avg))
+				if l.qty.IsNegative() {
+					lastOut = i
+				}
+			}
+			q, v = q.Add(l.qty), v+vals[i]
+		}
+		if q.IsZero() && lastOut >= 0 {
+			vals[lastOut] -= v
+			v = 0
+		}
+		unit := ""
+		if q.IsPositive() {
+			unit = decimal.NewFromInt(v).Div(q).String()
+		}
+		up.ItemIds = append(up.ItemIds, r.ItemID)
+		up.Quantities = append(up.Quantities, q.String())
+		up.Values = append(up.Values, v)
+		up.UnitCosts = append(up.UnitCosts, unit)
+	}
+	return vals, skip, store.UpdateCosts.Run(ctx, up)
 }
 
 // Void cancels the moves of a document by inserting a reversal for each one not yet
@@ -325,7 +426,8 @@ func (s *Service) Void(ctx context.Context, ref record.Ref) error {
 			return err
 		}
 		ids = append(ids, r.ItemID)
-		lines[i] = line{k: key{r.WarehouseID, r.ItemID, r.LotID, r.SerialID}, lineNo: int(r.LineNo), qty: q.Neg(), reverses: r.ID}
+		back := -r.Value
+		lines[i] = line{k: key{r.WarehouseID, r.ItemID, r.LotID, r.SerialID}, lineNo: int(r.LineNo), qty: q.Neg(), value: &back, reverses: r.ID}
 	}
 	irows, err := store.MoveItems.Run(ctx, ids)
 	if err != nil {
@@ -335,7 +437,8 @@ func (s *Service) Void(ctx context.Context, ref record.Ref) error {
 	for _, i := range irows {
 		items[i.ID] = i
 	}
-	return apply(ctx, ref, h.Date, items, lines)
+	_, err = apply(ctx, ref, h.LegalEntityID, h.Date, items, lines)
+	return err
 }
 
 // nullID is nil for no lot or serial, so the API sends null.
@@ -375,6 +478,15 @@ var maxQuantity = decimal.New(1, 12)
 // check refuses a move before anything is written: its warehouse, quantity and the
 // lot or serial its item's tracking asks for.
 func check(m Move, whs map[int64]store.MoveWarehousesRow, items map[int64]store.MoveItemsRow, legalEntity int64) error {
+	if valueOnly(m) {
+		if _, found := items[m.ItemID]; !found {
+			return platform.ErrNotFound
+		}
+		if !m.Quantity.IsZero() || m.Value == nil || *m.Value == 0 || m.Lot != nil || m.Serial != nil {
+			return lineErr(ErrQuantityInvalid, m)
+		}
+		return nil
+	}
 	w, ok := whs[m.WarehouseID]
 	it, found := items[m.ItemID]
 	switch {
