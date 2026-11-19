@@ -269,7 +269,7 @@ function Fields({ order, doc, onCreated, ro, initial }: Props & { ro: boolean; i
         <Notice tone="warning" title={t('sales.delivery.no_warehouse')}>
           {t('sales.delivery.no_warehouse_hint')}{' '}
           {canManageStock && (
-            <Anchor render={<Link to="/sales/stock/warehouses" />}>{t('sales.delivery.no_warehouse_link')}</Anchor>
+            <Anchor render={<Link to="/stock/warehouses" />}>{t('sales.delivery.no_warehouse_link')}</Anchor>
           )}
         </Notice>
       )}

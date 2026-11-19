@@ -18,7 +18,7 @@ import { StatusBadge } from '@/shared/ui/StatusBadge'
 import { icon } from '@/shared/ui/theme'
 import { useListParams } from '@/shared/url/listParams'
 import { useVatOptions } from '../components/vat'
-import { salesKeys } from '../keys'
+import { stockKeys } from '../keys'
 
 const sorts = ['code', '-code', 'name', '-name'] as const satisfies readonly ItemSort[]
 const trackings = ['none', 'quantity', 'lot', 'serial'] as const satisfies readonly Item['tracking'][]
@@ -38,7 +38,7 @@ export function ItemsPage() {
   const { q, active } = params.filters as typeof defaults.filters
   const query = { q, active, sort: params.sort, page: params.page, pageSize: params.pageSize }
   const list = useQuery({
-    queryKey: salesKeys.items.list(query),
+    queryKey: stockKeys.items.list(query),
     queryFn: () =>
       unwrap(
         api.GET('/items', {
@@ -62,9 +62,9 @@ export function ItemsPage() {
     mutationFn: ({ item: x }: { item: Item; undo?: boolean }) => unwrap(api.PUT('/items/{id}', { params: { path: { id: x.id } }, body: { ...fieldsOf(x), active: !x.active } })),
     onMutate: async ({ item: x }) => {
       setError(null)
-      await qc.cancelQueries({ queryKey: salesKeys.items.all() })
-      const before = qc.getQueriesData<ItemList>({ queryKey: salesKeys.items.all() })
-      qc.setQueriesData<ItemList>({ queryKey: salesKeys.items.all() }, (old) =>
+      await qc.cancelQueries({ queryKey: stockKeys.items.all() })
+      const before = qc.getQueriesData<ItemList>({ queryKey: stockKeys.items.all() })
+      qc.setQueriesData<ItemList>({ queryKey: stockKeys.items.all() }, (old) =>
         old && { ...old, items: old.items.map((i) => (i.id === x.id ? { ...i, active: !x.active } : i)) },
       )
       return { before }
@@ -75,48 +75,48 @@ export function ItemsPage() {
     },
     onSuccess: (_r, { item: x, undo }) => {
       if (undo) return
-      notifyUndo(t(x.active ? 'sales.items.retired_done' : 'sales.items.reactivated_done', { name: x.name }), t('shared.undo'), () => toggle.mutate({ item: { ...x, active: !x.active }, undo: true }))
+      notifyUndo(t(x.active ? 'stock.items.retired_done' : 'stock.items.reactivated_done', { name: x.name }), t('shared.undo'), () => toggle.mutate({ item: { ...x, active: !x.active }, undo: true }))
     },
-    onSettled: () => qc.invalidateQueries({ queryKey: salesKeys.items.all() }),
+    onSettled: () => qc.invalidateQueries({ queryKey: stockKeys.items.all() }),
   })
 
   const columns: Column<Item>[] = [
-    { key: 'name', header: t('sales.item.name'), role: 'title', sortable: true, render: (x) => x.name },
-    { key: 'code', header: t('sales.item.code'), role: 'meta', kind: 'code', sortable: true, render: (x) => x.code },
-    { key: 'unit', header: t('sales.item.unit'), role: 'hidden', kind: 'code', render: (x) => x.unit },
-    { key: 'price', header: t('sales.item.price'), role: 'meta', kind: 'number', render: (x) => formatNumber(x.price) },
-    { key: 'tracking', header: t('sales.item.tracking'), role: 'meta', render: (x) => t(`sales.item.tracking_${x.tracking}`) },
-    { key: 'vat_rate', header: t('sales.item.vat_rate'), role: 'hidden', kind: 'number', render: (x) => vat.label(x.vat_rate) },
+    { key: 'name', header: t('stock.item.name'), role: 'title', sortable: true, render: (x) => x.name },
+    { key: 'code', header: t('stock.item.code'), role: 'meta', kind: 'code', sortable: true, render: (x) => x.code },
+    { key: 'unit', header: t('stock.item.unit'), role: 'hidden', kind: 'code', render: (x) => x.unit },
+    { key: 'price', header: t('stock.item.price'), role: 'meta', kind: 'number', render: (x) => formatNumber(x.price) },
+    { key: 'tracking', header: t('stock.item.tracking'), role: 'meta', render: (x) => t(`stock.item.tracking_${x.tracking}`) },
+    { key: 'vat_rate', header: t('stock.item.vat_rate'), role: 'hidden', kind: 'number', render: (x) => vat.label(x.vat_rate) },
     {
       key: 'active',
-      header: t('sales.item.status'),
+      header: t('stock.item.status'),
       role: 'status',
       kind: 'status',
-      render: (x) => <StatusBadge tone={x.active ? 'success' : 'neutral'}>{t(x.active ? 'sales.item.in_use' : 'sales.item.retired')}</StatusBadge>,
+      render: (x) => <StatusBadge tone={x.active ? 'success' : 'neutral'}>{t(x.active ? 'stock.item.in_use' : 'stock.item.retired')}</StatusBadge>,
     },
   ]
-  const view = useListView('sales.items', columns)
+  const view = useListView('stock.items', columns)
   return (
     <ListPage
-      title={t('sales.items.title')}
-      description={t('sales.items.description')}
+      title={t('stock.items.title')}
+      description={t('stock.items.description')}
       action={
         writable && (
           <Button leftSection={<IconPlus {...icon.button} />} onClick={() => setEditing('new')}>
-            {t('sales.items.create')}
+            {t('stock.items.create')}
           </Button>
         )
       }
       onClearFilters={filterBar.active ? filterBar.clear : undefined}
       filters={
         <>
-          <SearchInput label={t('sales.items.search')} placeholder={t('sales.items.search_hint')} value={q} onSearch={(v) => set({ filters: { q: v } })} />
+          <SearchInput label={t('stock.items.search')} placeholder={t('stock.items.search_hint')} value={q} onSearch={(v) => set({ filters: { q: v } })} />
           <FilterChip
-            label={t('sales.item.status')}
+            label={t('stock.item.status')}
             icon={IconCircleDot}
             data={[
-              { value: 'true', label: t('sales.item.in_use') },
-              { value: 'false', label: t('sales.item.retired') },
+              { value: 'true', label: t('stock.item.in_use') },
+              { value: 'false', label: t('stock.item.retired') },
             ]}
             {...filterBar.bind('active')}
           />
@@ -126,7 +126,7 @@ export function ItemsPage() {
       list={{
         query: list,
         table: {
-          label: t('sales.items.title'),
+          label: t('stock.items.title'),
           columns: view.columns,
           onResize: view.onResize,
           rowKey: (x) => x.id,
@@ -137,17 +137,17 @@ export function ItemsPage() {
             ? (x) => (
                 <>
                   <MenuAction icon={IconPencil} onClick={() => setEditing(x)}>
-                    {t('sales.items.edit')}
+                    {t('stock.items.edit')}
                   </MenuAction>
                   <MenuAction icon={x.active ? IconArchive : IconArchiveOff} onClick={() => toggle.mutate({ item: x })}>
-                    {t(x.active ? 'sales.items.retire' : 'sales.items.reactivate')}
+                    {t(x.active ? 'stock.items.retire' : 'stock.items.reactivate')}
                   </MenuAction>
                 </>
               )
             : undefined,
         },
-        empty: { title: t('sales.items.empty'), description: t('sales.items.empty_description') },
-        noResults: t('sales.common.no_results'),
+        empty: { title: t('stock.items.empty'), description: t('stock.items.empty_description') },
+        noResults: t('stock.common.no_results'),
         paging: { page: params.page, pageSize: params.pageSize, onPage: (page) => set({ page }), onPageSize: (pageSize) => set({ pageSize }) },
       }}
     >
@@ -185,28 +185,28 @@ function ItemModal({ item, onClose }: { item: Item | null; onClose: () => void }
     if (item) await unwrap(api.PUT('/items/{id}', { params: { path: { id: item.id } }, body }))
     else await unwrap(api.POST('/items', { body: { ...body, code: v.code.trim() } }))
     // The pickers too: an item's name and price fill new lines.
-    await qc.invalidateQueries({ queryKey: salesKeys.items.all() })
-    notifySuccess(t('sales.items.saved'))
+    await qc.invalidateQueries({ queryKey: stockKeys.items.all() })
+    notifySuccess(t('stock.items.saved'))
     onClose()
   }
   return (
-    <FormModal open title={t(item ? 'sales.items.edit' : 'sales.items.create')} onOpenChange={onClose}>
+    <FormModal open title={t(item ? 'stock.items.edit' : 'stock.items.create')} onOpenChange={onClose}>
       <Form form={form} onSubmit={save} errorFields={{ item_code_taken: 'code', item_tracking_locked: 'tracking', item_negative_not_quantity: 'allow_negative' }}>
-        <CodeField name="code" label={t('sales.item.code')} existing={!!item} />
-        <TextField name="name" label={t('sales.item.name')} required maxLength={300} />
-        <TextField name="unit" label={t('sales.item.unit')} description={t('sales.item.unit_hint')} required maxLength={30} />
-        <MoneyField name="price" label={t('sales.item.price')} description={t('sales.item.price_hint')} required />
-        <SelectField name="vat_rate" label={t('sales.item.vat_rate')} required data={vat.options} />
+        <CodeField name="code" label={t('stock.item.code')} existing={!!item} />
+        <TextField name="name" label={t('stock.item.name')} required maxLength={300} />
+        <TextField name="unit" label={t('stock.item.unit')} description={t('stock.item.unit_hint')} required maxLength={30} />
+        <MoneyField name="price" label={t('stock.item.price')} description={t('stock.item.price_hint')} required />
+        <SelectField name="vat_rate" label={t('stock.item.vat_rate')} required data={vat.options} />
         <SelectField
           name="tracking"
-          label={t('sales.item.tracking')}
-          description={t('sales.item.tracking_hint')}
+          label={t('stock.item.tracking')}
+          description={t('stock.item.tracking_hint')}
           required
-          data={trackings.map((x) => ({ value: x, label: t(`sales.item.tracking_${x}`) }))}
+          data={trackings.map((x) => ({ value: x, label: t(`stock.item.tracking_${x}`) }))}
         />
-        {tracking === 'quantity' && <CheckboxField name="allow_negative" label={t('sales.item.allow_negative')} description={t('sales.item.allow_negative_hint')} />}
-        <CheckboxField name="active" label={t('sales.item.active')} description={t('sales.item.active_hint')} />
-        <FormActions submitLabel={t('sales.common.save')} onCancel={onClose} cancelLabel={t('sales.common.cancel')} />
+        {tracking === 'quantity' && <CheckboxField name="allow_negative" label={t('stock.item.allow_negative')} description={t('stock.item.allow_negative_hint')} />}
+        <CheckboxField name="active" label={t('stock.item.active')} description={t('stock.item.active_hint')} />
+        <FormActions submitLabel={t('stock.common.save')} onCancel={onClose} cancelLabel={t('stock.common.cancel')} />
       </Form>
     </FormModal>
   )

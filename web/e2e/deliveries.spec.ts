@@ -69,7 +69,7 @@ test.beforeAll(async ({ baseURL }) => {
 
 test('opening stock in a new lot, delivered from the order, leaves the rest on hand and the order delivered', async ({ browser }) => {
   // Opening stock: ten bags in a new lot, by an adjustment.
-  const page = await as(browser, login, '/sales/stock/adjustments')
+  const page = await as(browser, login, '/stock/adjustments')
   await page.getByRole('link', { name: 'Lập phiếu điều chỉnh' }).click()
   await page.getByRole('textbox', { name: 'Ngày điều chỉnh' }).fill(typed(iso))
   await page.getByRole('combobox', { name: 'Kho', exact: true }).click()
@@ -86,7 +86,7 @@ test('opening stock in a new lot, delivered from the order, leaves the rest on h
   await status(page, 'Đã ghi sổ')
 
   const onHand = async (quantity: string) => {
-    await page.goto(`/sales/stock/on-hand?q=${code}`)
+    await page.goto(`/stock/on-hand?q=${code}`)
     const row = page.getByRole('table', { name: 'Tồn kho' }).getByRole('row').filter({ hasText: lot })
     await expect(row.getByRole('cell', { name: quantity, exact: true })).toBeVisible()
   }

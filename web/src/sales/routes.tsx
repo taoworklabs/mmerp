@@ -2,8 +2,6 @@ import { Navigate, Route, Routes } from 'react-router'
 import { useCan } from '@/shared/auth/me'
 import { ApprovalRules } from '@/shared/document'
 import { ForbiddenPage, NotFoundPage } from '@/shared/ui/states'
-import { AdjustmentPage } from './pages/AdjustmentPage'
-import { AdjustmentsPage } from './pages/AdjustmentsPage'
 import { CustomerPage } from './pages/CustomerPage'
 import { CustomersPage } from './pages/CustomersPage'
 import { DocPage } from './pages/DocPage'
@@ -12,27 +10,20 @@ import { DeliveriesPage } from './pages/DeliveriesPage'
 import { DeliveryPage } from './pages/DeliveryPage'
 import { InvoicePage } from './pages/InvoicePage'
 import { InvoicesPage } from './pages/InvoicesPage'
-import { ItemsPage } from './pages/ItemsPage'
-import { NewAdjustmentPage } from './pages/NewAdjustmentPage'
 import { NewCustomerPage } from './pages/NewCustomerPage'
 import { NewDeliveryPage } from './pages/NewDeliveryPage'
 import { NewInvoicePage } from './pages/NewInvoicePage'
 import { NewReceiptPage } from './pages/NewReceiptPage'
 import { NewDocPage } from './pages/NewDocPage'
-import { OnHandPage } from './pages/OnHandPage'
 import { PartnerPage } from './pages/PartnerPage'
 import { ReceiptPage } from './pages/ReceiptPage'
 import { ReceiptsPage } from './pages/ReceiptsPage'
-import { StockCardPage } from './pages/StockCardPage'
-import { WarehousesPage } from './pages/WarehousesPage'
 
 export default function SalesRoutes() {
   const canCustomers = useCan('sales.customer.view')
   const canQuotes = useCan('sales.quote.view')
   const canOrders = useCan('sales.order.view')
-  const canItems = useCan('item.view')
   const canPartners = useCan('partner.view')
-  const canStock = useCan('stock.view')
   const canRules = useCan(['sales.approval.manage', 'core.approval.manage'])
   return (
     <Routes>
@@ -60,14 +51,6 @@ export default function SalesRoutes() {
       {/* Without create (or create_receipt on the invoice) the new page itself answers forbidden. */}
       <Route path="receipts/new" element={canOrders ? <NewReceiptPage /> : <ForbiddenPage />} />
       <Route path="receipts/:id" element={canOrders ? <ReceiptPage /> : <ForbiddenPage />} />
-      <Route path="items" element={canItems ? <ItemsPage /> : <ForbiddenPage />} />
-      <Route path="stock/on-hand" element={canStock ? <OnHandPage /> : <ForbiddenPage />} />
-      <Route path="stock/card" element={canStock ? <StockCardPage /> : <ForbiddenPage />} />
-      <Route path="stock/adjustments" element={canStock ? <AdjustmentsPage /> : <ForbiddenPage />} />
-      {/* Without create in the type's actions the new page itself answers forbidden. */}
-      <Route path="stock/adjustments/new" element={canStock ? <NewAdjustmentPage /> : <ForbiddenPage />} />
-      <Route path="stock/adjustments/:id" element={canStock ? <AdjustmentPage /> : <ForbiddenPage />} />
-      <Route path="stock/warehouses" element={canStock ? <WarehousesPage /> : <ForbiddenPage />} />
       <Route path="approval-rules/*" element={canRules ? <ApprovalRules product="sales" basePath="/sales/approval-rules" /> : <ForbiddenPage />} />
       <Route path="*" element={<NotFoundPage />} />
     </Routes>

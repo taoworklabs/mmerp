@@ -27,7 +27,7 @@ async function open(page: Page, url: string) {
 }
 
 test('undo restores a retired item', async ({ page }) => {
-  await open(page, '/sales/items')
+  await open(page, '/stock/items')
   const row = page.getByRole('row', { name: new RegExp(`Bút toast ${run}`) })
   await expect(row.getByText('Đang bán', { exact: true })).toBeVisible()
   await row.getByRole('button', { name: 'Thao tác khác' }).click()

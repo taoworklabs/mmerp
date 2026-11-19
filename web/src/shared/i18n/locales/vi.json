@@ -918,5 +918,7 @@
   "shared.devui.day_mode": "Chế độ xem",
   "shared.devui.day_prev": "Trước",
   "shared.devui.day_next": "Sau",
-  "shared.devui.day_grid": "Lịch ngày"
+  "shared.devui.day_grid": "Lịch ngày",
+  "shared.error.stock_transfer_same_warehouse": "Kho xuất và kho nhập phải khác nhau.",
+  "shared.error.stock_count_duplicate": "Dòng {{line_no}}: mặt hàng, lô hoặc số serial này đã có ở dòng khác."
 }

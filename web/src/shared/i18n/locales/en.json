@@ -918,5 +918,7 @@
   "shared.devui.day_mode": "View",
   "shared.devui.day_prev": "Previous",
   "shared.devui.day_next": "Next",
-  "shared.devui.day_grid": "Day calendar"
+  "shared.devui.day_grid": "Day calendar",
+  "shared.error.stock_transfer_same_warehouse": "The source and destination warehouses must differ.",
+  "shared.error.stock_count_duplicate": "Line {{line_no}}: this item, lot or serial is already on another line."
 }

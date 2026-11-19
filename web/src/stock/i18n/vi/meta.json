@@ -1,0 +1,14 @@
+{
+  "stock.nav.group": "Kho",
+  "stock.nav.group_config": "Cấu hình",
+  "stock.nav.warehouses": "Kho",
+  "stock.nav.on_hand": "Tồn kho",
+  "stock.nav.stock_card": "Thẻ kho",
+  "stock.nav.adjustments": "Phiếu điều chỉnh kho",
+  "stock.nav.items": "Hàng hóa, dịch vụ",
+  "stock.preview.warehouse": "Kho",
+  "stock.preview.reason": "Lý do",
+  "stock.preview.date": "Ngày",
+  "stock.preview.lines": "Số dòng hàng",
+  "stock.adjustment.name": "Phiếu điều chỉnh kho"
+}

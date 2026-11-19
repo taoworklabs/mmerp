@@ -2,16 +2,15 @@ import { IconAdjustmentsHorizontal, IconListDetails } from '@tabler/icons-react'
 import { useState } from 'react'
 import { useForm, type Path } from 'react-hook-form'
 import { useTranslation } from 'react-i18next'
-import { api, ApiError, unwrap, type Adjustment, type AdjustmentLine } from '@/shared/api/core'
-import type { LineItem } from '@/shared/api/sales'
+import { api, ApiError, unwrap, type Adjustment, type AdjustmentLine, type StockItem } from '@/shared/api/core'
 import { useDocumentMutation } from '@/shared/document'
 import { errorText, formatDate, formatDecimal } from '@/shared/i18n'
 import { DateField, DecimalField, Form, FormActions, FormRow, FormSection, LinesTable, SelectField, TextField, type ErrorFields, type LineColumn } from '@/shared/ui/form'
 import { adjustmentDocType } from '../keys'
 import { useWarehouseOptions } from '../hooks/useStock'
-import { ItemField } from './pickers'
+import { StockItemField } from './pickers'
 
-type Tracking = LineItem['tracking']
+type Tracking = StockItem['tracking']
 
 type LineValues = {
   item_id: string | null
@@ -60,8 +59,6 @@ const incoming = (quantity: string) => !quantity.trim().startsWith('-')
 // checked before sending: a lot item needs a lot, a serial item a serial and one unit in or out.
 export function adjustmentLineErrors(line: Pick<LineValues, 'lot_code' | 'serial' | 'quantity'>, tracking: Tracking): string[] {
   switch (tracking) {
-    case 'none':
-      return ['stock_untracked']
     case 'lot':
       return line.lot_code.trim() ? [] : ['stock_lot_required']
     case 'serial':
@@ -143,13 +140,13 @@ export function AdjustmentForm({ doc, onCreated }: Props) {
   const lineColumns: LineColumn<Line>[] = [
     {
       key: 'item',
-      header: t('sales.line.item_col'),
+      header: t('stock.line.item_col'),
       required: true,
       value: (l) => `${l.item_code} · ${l.item_name}`,
       cell: (i, bare, line) => (
-        <ItemField
+        <StockItemField
           name={`lines.${i}.item_id`}
-          label={t('sales.line.item', { n: i + 1 })}
+          label={t('stock.line.item', { n: i + 1 })}
           bare={bare}
           current={
             doc?.lines[i] && String(doc.lines[i].item_id) === line.item_id ? { id: doc.lines[i].item_id, code: doc.lines[i].item_code, name: doc.lines[i].item_name } : undefined
@@ -165,71 +162,71 @@ export function AdjustmentForm({ doc, onCreated }: Props) {
     },
     {
       key: 'lot',
-      header: t('sales.on_hand.lot'),
+      header: t('stock.on_hand.lot'),
       width: 128,
       value: (l) => l.lot?.code ?? '',
       cell: (i, bare) =>
-        lines[i]?.tracking === 'lot' && <TextField name={`lines.${i}.lot_code`} label={t('sales.adjustment.line.lot', { n: i + 1 })} bare={bare} required maxLength={100} />,
+        lines[i]?.tracking === 'lot' && <TextField name={`lines.${i}.lot_code`} label={t('stock.adjustment.line.lot', { n: i + 1 })} bare={bare} required maxLength={100} />,
     },
     {
       key: 'expiry',
-      header: t('sales.on_hand.expiry'),
+      header: t('stock.on_hand.expiry'),
       width: 144,
       value: (l) => (l.lot?.expiry ? formatDate(l.lot.expiry) : ''),
       cell: (i, bare) =>
         lines[i]?.tracking === 'lot' &&
-        incoming(lines[i].quantity) && <DateField name={`lines.${i}.expiry`} label={t('sales.adjustment.line.expiry', { n: i + 1 })} bare={bare} clearable />,
+        incoming(lines[i].quantity) && <DateField name={`lines.${i}.expiry`} label={t('stock.adjustment.line.expiry', { n: i + 1 })} bare={bare} clearable />,
     },
     {
       key: 'serial',
-      header: t('sales.on_hand.serial'),
+      header: t('stock.on_hand.serial'),
       width: 144,
       value: (l) => l.serial ?? '',
       cell: (i, bare) =>
-        lines[i]?.tracking === 'serial' && <TextField name={`lines.${i}.serial`} label={t('sales.adjustment.line.serial', { n: i + 1 })} bare={bare} required maxLength={100} />,
+        lines[i]?.tracking === 'serial' && <TextField name={`lines.${i}.serial`} label={t('stock.adjustment.line.serial', { n: i + 1 })} bare={bare} required maxLength={100} />,
     },
     {
       key: 'quantity',
-      header: t('sales.line.quantity_col'),
+      header: t('stock.line.quantity_col'),
       numeric: true,
       required: true,
       width: 112,
       value: (l) => `${formatDecimal(l.quantity, 3)} ${l.unit}`,
-      cell: (i, bare) => <DecimalField name={`lines.${i}.quantity`} label={t('sales.line.quantity', { n: i + 1 })} bare={bare} required scale={3} allowNegative />,
+      cell: (i, bare) => <DecimalField name={`lines.${i}.quantity`} label={t('stock.line.quantity', { n: i + 1 })} bare={bare} required scale={3} allowNegative />,
     },
   ]
 
   return (
     <Form form={form} onSubmit={save} errorFields={errorFields}>
-      <FormSection title={t('sales.adjustment.section.general')} description={t('sales.adjustment.section.general_hint')} icon={IconAdjustmentsHorizontal}>
-        <DateField name="date" label={t('sales.adjustment.date')} required readOnly={ro} />
-        <SelectField name="warehouse_id" label={t('sales.adjustment.warehouse')} required readOnly={ro} data={warehouses} />
-        <TextField name="reason" label={t('sales.adjustment.reason')} required maxLength={500} wide readOnly={ro} />
+      <FormSection title={t('stock.adjustment.section.general')} description={t('stock.adjustment.section.general_hint')} icon={IconAdjustmentsHorizontal}>
+        <DateField name="date" label={t('stock.adjustment.date')} required readOnly={ro} />
+        <SelectField name="warehouse_id" label={t('stock.adjustment.warehouse')} required readOnly={ro} data={warehouses} />
+        <TextField name="reason" label={t('stock.adjustment.reason')} required maxLength={500} wide readOnly={ro} />
       </FormSection>
       <FormSection
-        title={t('sales.doc.section.lines')}
-        description={t(ro ? 'sales.adjustment.section.lines_hint_ro' : 'sales.adjustment.section.lines_hint')}
+        title={t('stock.doc.section.lines')}
+        description={t(ro ? 'stock.adjustment.section.lines_hint_ro' : 'stock.adjustment.section.lines_hint')}
         icon={IconListDetails}
         wide
       >
         <FormRow>
           {ro && doc ? (
-            <LinesTable readOnly label={t('sales.doc.section.lines')} columns={lineColumns} lines={doc.lines} lineLabel={(n) => t('sales.line.title', { n })} />
+            <LinesTable readOnly label={t('stock.doc.section.lines')} columns={lineColumns} lines={doc.lines} lineLabel={(n) => t('stock.line.title', { n })} />
           ) : (
             <LinesTable
               name="lines"
-              label={t('sales.doc.section.lines')}
+              label={t('stock.doc.section.lines')}
               columns={lineColumns}
               newLine={() => ({ ...emptyLine })}
-              addLabel={t('sales.line.add')}
-              lineLabel={(n) => t('sales.line.title', { n })}
-              removeLabel={(n) => t('sales.line.remove', { n })}
+              addLabel={t('stock.line.add')}
+              lineLabel={(n) => t('stock.line.title', { n })}
+              removeLabel={(n) => t('stock.line.remove', { n })}
               minLines={1}
             />
           )}
         </FormRow>
       </FormSection>
-      {!ro && <FormActions submitLabel={t(doc ? 'sales.common.save' : 'sales.common.create_draft')} cancelTo={doc ? undefined : '/sales/stock/adjustments'} />}
+      {!ro && <FormActions submitLabel={t(doc ? 'stock.common.save' : 'stock.common.create_draft')} cancelTo={doc ? undefined : '/stock/adjustments'} />}
       {mutation.dialog}
     </Form>
   )

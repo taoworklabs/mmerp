@@ -249,7 +249,7 @@ function Shell({ areas }: { areas: AreaManifest[] }) {
           <ErrorState message={error} />
         </Box>
       )}
-      {area && !onOwn && area.product !== 'core' && !me.products.includes(area.product) && (
+      {area && !onOwn && area.product !== 'core' && !area.shared && !me.products.includes(area.product) && (
         <Box className={cx(classes.banner, classes.bannerFramed)}>
           <ReadOnlyBanner />
         </Box>

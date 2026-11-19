@@ -8,9 +8,6 @@ describe('adjustmentLineErrors', () => {
     expect(adjustmentLineErrors(line, 'quantity')).toEqual([])
     expect(adjustmentLineErrors({ ...line, quantity: '-2.5' }, 'quantity')).toEqual([])
   })
-  it('refuses an item not tracked in stock', () => {
-    expect(adjustmentLineErrors(line, 'none')).toEqual(['stock_untracked'])
-  })
   it('needs a lot for a lot item, coming in or going out', () => {
     expect(adjustmentLineErrors(line, 'lot')).toEqual(['stock_lot_required'])
     expect(adjustmentLineErrors({ ...line, quantity: '-3' }, 'lot')).toEqual(['stock_lot_required'])

@@ -1,0 +1,14 @@
+{
+  "stock.nav.group": "Stock",
+  "stock.nav.group_config": "Configuration",
+  "stock.nav.warehouses": "Warehouses",
+  "stock.nav.on_hand": "On hand",
+  "stock.nav.stock_card": "Stock card",
+  "stock.nav.adjustments": "Stock adjustments",
+  "stock.nav.items": "Goods and services",
+  "stock.preview.warehouse": "Warehouse",
+  "stock.preview.reason": "Reason",
+  "stock.preview.date": "Date",
+  "stock.preview.lines": "Lines",
+  "stock.adjustment.name": "Stock adjustment"
+}
