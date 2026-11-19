@@ -178,7 +178,7 @@ func (q *Queries) InsertStocktakeLines(ctx context.Context, arg InsertStocktakeL
 }
 
 const onHandLines = `-- name: OnHandLines :many
-SELECT b.item_id, l.code AS lot_code, l.expiry AS lot_expiry, s.code AS serial_code, greatest(b.quantity, 0)::text AS quantity
+SELECT b.item_id, i.code AS item_code, i.name AS item_name, i.unit, l.code AS lot_code, l.expiry AS lot_expiry, s.code AS serial_code, greatest(b.quantity, 0)::text AS quantity
 FROM stock.balances b
 JOIN item.items i ON i.id = b.item_id
 LEFT JOIN stock.lots l ON l.id = b.lot_id
@@ -195,6 +195,9 @@ type OnHandLinesParams struct {
 
 type OnHandLinesRow struct {
 	ItemID     int64
+	ItemCode   string
+	ItemName   string
+	Unit       string
 	LotCode    pgtype.Text
 	LotExpiry  pgtype.Date
 	SerialCode pgtype.Text
@@ -213,6 +216,9 @@ func (q *Queries) OnHandLines(ctx context.Context, arg OnHandLinesParams) ([]OnH
 		var i OnHandLinesRow
 		if err := rows.Scan(
 			&i.ItemID,
+			&i.ItemCode,
+			&i.ItemName,
+			&i.Unit,
 			&i.LotCode,
 			&i.LotExpiry,
 			&i.SerialCode,

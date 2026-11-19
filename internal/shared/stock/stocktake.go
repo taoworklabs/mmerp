@@ -248,7 +248,7 @@ func (s *Service) stocktakeTransition(ctx context.Context, d record.Doc, _ recor
 // OnHandLines lists a warehouse's non-zero balances, optionally of one item, as stocktake lines
 // counting what is on hand, to anyone who may view stock somewhere.
 func (s *Service) OnHandLines(ctx context.Context, warehouse, itemID int64) (OnHandLines, error) {
-	out := OnHandLines{Items: []StocktakeLine{}}
+	out := OnHandLines{Items: []OnHandLine{}}
 	if err := s.requireView(ctx); err != nil {
 		return out, err
 	}
@@ -261,7 +261,7 @@ func (s *Service) OnHandLines(ctx context.Context, warehouse, itemID int64) (OnH
 		if r.LotCode.Valid {
 			l.Lot = &LotRef{Code: r.LotCode.String, Expiry: platform.DatePtr(r.LotExpiry)}
 		}
-		out.Items = append(out.Items, l)
+		out.Items = append(out.Items, OnHandLine{StocktakeLine: l, ItemCode: r.ItemCode, ItemName: r.ItemName, Unit: r.Unit})
 	}
 	return out, nil
 }

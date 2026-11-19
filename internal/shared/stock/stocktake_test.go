@@ -181,13 +181,13 @@ func TestOnHandLines(t *testing.T) {
 	if len(l.Items) != 2 {
 		t.Fatalf("lines %+v", l.Items)
 	}
-	var lotLine stock.StocktakeLine
+	var lotLine stock.OnHandLine
 	for _, x := range l.Items {
 		if x.ItemID == lt {
 			lotLine = x
 		}
 	}
-	if lotLine.Lot == nil || lotLine.Lot.Code != "L1" || lotLine.Counted != "2.5" {
+	if lotLine.Lot == nil || lotLine.Lot.Code != "L1" || lotLine.Counted != "2.5" || lotLine.ItemCode == "" || lotLine.Unit != "cái" {
 		t.Fatalf("lot line %+v", lotLine)
 	}
 	if one, err := s.stock.OnHandLines(viewer, s.wh, lt); err != nil || len(one.Items) != 1 {

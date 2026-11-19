@@ -80,9 +80,17 @@ type StocktakeList struct {
 	Total int64               `json:"total"`
 }
 
-// OnHandLines are a warehouse's balances as stocktake lines counting what is on hand.
+// OnHandLine is a balance as a stocktake line counting what is on hand.
+type OnHandLine struct {
+	StocktakeLine
+	ItemCode string `json:"item_code"`
+	ItemName string `json:"item_name"`
+	Unit     string `json:"unit"`
+}
+
+// OnHandLines are a warehouse's balances as stocktake lines.
 type OnHandLines struct {
-	Items []StocktakeLine `json:"items" nullable:"false"`
+	Items []OnHandLine `json:"items" nullable:"false"`
 }
 
 type OnHandLinesFilter struct {

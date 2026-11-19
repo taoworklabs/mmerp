@@ -42,3 +42,17 @@ export function useTransfer(id: number) {
     queryFn: () => unwrap(api.GET('/stock/transfers/{id}', { params: { path: { id } } })),
   })
 }
+
+export function useStocktakeActions() {
+  return useQuery({
+    queryKey: stockKeys.stocktakes.actions(),
+    queryFn: async () => (await unwrap(api.GET('/stock/stocktakes/actions'))).allowed_actions,
+  })
+}
+
+export function useStocktake(id: number) {
+  return useQuery({
+    queryKey: stockKeys.stocktakes.detail(id),
+    queryFn: () => unwrap(api.GET('/stock/stocktakes/{id}', { params: { path: { id } } })),
+  })
+}

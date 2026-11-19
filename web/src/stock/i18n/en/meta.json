@@ -14,5 +14,7 @@
   "stock.nav.transfers": "Transfers",
   "stock.transfer.name": "Stock transfer",
   "stock.preview.from_warehouse": "From warehouse",
-  "stock.preview.to_warehouse": "To warehouse"
+  "stock.preview.to_warehouse": "To warehouse",
+  "stock.nav.stocktakes": "Stocktakes",
+  "stock.stocktake.name": "Stocktake"
 }

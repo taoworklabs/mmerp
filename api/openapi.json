@@ -7575,6 +7575,47 @@
         ],
         "type": "object"
       },
+      "OnHandLine": {
+        "additionalProperties": false,
+        "properties": {
+          "counted": {
+            "description": "0 or more, up to 3 decimals; a serial counts 0 or 1",
+            "pattern": "^[0-9]{1,12}(\\.[0-9]{1,3})?$",
+            "type": "string"
+          },
+          "item_code": {
+            "type": "string"
+          },
+          "item_id": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "item_name": {
+            "type": "string"
+          },
+          "lot": {
+            "$ref": "#/components/schemas/LotRef",
+            "description": "Lot-tracked items: a lot found on the shelf is created at posting"
+          },
+          "serial": {
+            "description": "Serial-tracked items",
+            "maxLength": 100,
+            "minLength": 1,
+            "type": "string"
+          },
+          "unit": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "item_code",
+          "item_name",
+          "unit",
+          "item_id",
+          "counted"
+        ],
+        "type": "object"
+      },
       "OnHandLines": {
         "additionalProperties": false,
         "properties": {
@@ -7589,7 +7630,7 @@
           },
           "items": {
             "items": {
-              "$ref": "#/components/schemas/StocktakeLine"
+              "$ref": "#/components/schemas/OnHandLine"
             },
             "type": "array"
           }

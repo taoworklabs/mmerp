@@ -52,7 +52,7 @@ JOIN stock.warehouses w ON w.id = s.warehouse_id;
 
 -- name: OnHandLines :many
 -- Non-zero balances of a warehouse, optionally of one item, as stocktake lines counting what is on hand.
-SELECT b.item_id, l.code AS lot_code, l.expiry AS lot_expiry, s.code AS serial_code, greatest(b.quantity, 0)::text AS quantity
+SELECT b.item_id, i.code AS item_code, i.name AS item_name, i.unit, l.code AS lot_code, l.expiry AS lot_expiry, s.code AS serial_code, greatest(b.quantity, 0)::text AS quantity
 FROM stock.balances b
 JOIN item.items i ON i.id = b.item_id
 LEFT JOIN stock.lots l ON l.id = b.lot_id

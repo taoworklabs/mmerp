@@ -5,9 +5,12 @@ import { AdjustmentPage } from './pages/AdjustmentPage'
 import { AdjustmentsPage } from './pages/AdjustmentsPage'
 import { ItemsPage } from './pages/ItemsPage'
 import { NewAdjustmentPage } from './pages/NewAdjustmentPage'
+import { NewStocktakePage } from './pages/NewStocktakePage'
 import { NewTransferPage } from './pages/NewTransferPage'
 import { OnHandPage } from './pages/OnHandPage'
 import { StockCardPage } from './pages/StockCardPage'
+import { StocktakePage } from './pages/StocktakePage'
+import { StocktakesPage } from './pages/StocktakesPage'
 import { TransferPage } from './pages/TransferPage'
 import { TransfersPage } from './pages/TransfersPage'
 import { WarehousesPage } from './pages/WarehousesPage'
@@ -28,6 +31,9 @@ export default function StockRoutes() {
       <Route path="transfers" element={canStock ? <TransfersPage /> : <ForbiddenPage />} />
       <Route path="transfers/new" element={canStock ? <NewTransferPage /> : <ForbiddenPage />} />
       <Route path="transfers/:id" element={canStock ? <TransferPage /> : <ForbiddenPage />} />
+      <Route path="stocktakes" element={canStock ? <StocktakesPage /> : <ForbiddenPage />} />
+      <Route path="stocktakes/new" element={canStock ? <NewStocktakePage /> : <ForbiddenPage />} />
+      <Route path="stocktakes/:id" element={canStock ? <StocktakePage /> : <ForbiddenPage />} />
       <Route path="warehouses" element={canStock ? <WarehousesPage /> : <ForbiddenPage />} />
       <Route path="*" element={<NotFoundPage />} />
     </Routes>

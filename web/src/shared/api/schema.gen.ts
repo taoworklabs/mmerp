@@ -5392,6 +5392,19 @@ export interface components {
             /** @description e.g. hrm.leave_request; null for a job */
             record_type: string | null;
         };
+        OnHandLine: {
+            /** @description 0 or more, up to 3 decimals; a serial counts 0 or 1 */
+            counted: string;
+            item_code: string;
+            /** Format: int64 */
+            item_id: number;
+            item_name: string;
+            /** @description Lot-tracked items: a lot found on the shelf is created at posting */
+            lot?: components["schemas"]["LotRef"];
+            /** @description Serial-tracked items */
+            serial?: string;
+            unit: string;
+        };
         OnHandLines: {
             /**
              * Format: uri
@@ -5399,7 +5412,7 @@ export interface components {
              * @example /api/schemas/OnHandLines.json
              */
             readonly $schema?: string;
-            items: components["schemas"]["StocktakeLine"][];
+            items: components["schemas"]["OnHandLine"][];
         };
         OnHandList: {
             /**
