@@ -152,6 +152,8 @@ test('a repriced supplier invoice books goods, expense and input VAT against the
 
   const dup = await created(bill('0000123', [line(1, '1', 50_000, '8')]))
   expect(await code(move(staff, 'purchase.invoice', '/api/purchase/invoices', dup, 'posted'))).toBe('purchase_invoice_duplicate')
+  // The refused draft still holds its carton; deleting it frees the quantity.
+  await ok(staff.delete(`/api/documents/purchase.invoice/${dup}?version=${await version(staff, `/api/purchase/invoices/${dup}`)}`))
   const rest = await created(bill('0000124', [line(1, '6', 50_000, '8')]))
   await ok(move(staff, 'purchase.invoice', '/api/purchase/invoices', rest, 'posted'))
   const r = (await (await staff.get(`/api/purchase/invoices/${rest}`)).json()) as { number: string; totals: { total: number } }

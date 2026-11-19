@@ -13,6 +13,12 @@ test.beforeAll(async ({ baseURL }) => {
   const a = await created(api.post('/api/org-units', { data: { parent_id: company, kind: 'department', name: `Phòng A PD ${run}` } }))
   for (let i = 0; i < 3; i++) await created(api.post('/api/hrm/employees', { data: employee(`PDA${run}-${i}`, a) }))
   timesheet = await created(api.post('/api/hrm/timesheets', { data: { org_unit_id: a, month: '2026-09' } }))
+  // A disabled product shows its read-only banner only once it has data.
+  await created(
+    api.post('/api/purchase/suppliers', {
+      data: { partner: { name: `NCC PD ${run}`, tax_code: null, address: null, phone: null, email: null, contact_name: null }, payment_terms: null, org_unit_id: a, active: true },
+    }),
+  )
 })
 
 test('with HRM disabled, its data stays readable behind a read-only banner', async ({ browser, page: withHrm }) => {
