@@ -5,7 +5,7 @@ import { allocationsFor, withOwnAllocations } from './receiptAllocations'
 const open = (id: number, remaining: number): Allocation => ({
   invoice_id: id,
   amount: remaining,
-  invoice_number: `HD-${id}`,
+  invoice_number: `HB-${id}`,
   invoice_date: '2026-03-12',
   invoice_total: 10_000,
   remaining,

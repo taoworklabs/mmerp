@@ -188,7 +188,9 @@ func TestDeclarationsAreCheckedAtRegistration(t *testing.T) {
 		"unknown permission":  {Code: "test.b", Kind: record.Document, NumberPrefix: "B", Perms: record.Perms{View: "test.nope"}, OnDelete: noRows},
 		"document, no delete": {Code: "test.e", Kind: record.Document, NumberPrefix: "E", Perms: record.Perms{View: "test.view"}},
 		"catalog, no locate":  {Code: "test.c", Kind: record.Catalog, Perms: record.Perms{View: "test.view"}},
-		"catalog with number": {Code: "test.d", Kind: record.Catalog, NumberPrefix: "D", Perms: record.Perms{View: "test.view"}, Locate: func(context.Context, int64) (int64, error) { return 0, nil }},
+		// test.decl numbers its documents D-…: two types sharing a prefix print the same numbers.
+		"shared number prefix": {Code: "test.f", Kind: record.Document, NumberPrefix: "D", Perms: record.Perms{View: "test.view"}, OnDelete: noRows},
+		"catalog with number":  {Code: "test.d", Kind: record.Catalog, NumberPrefix: "D", Perms: record.Perms{View: "test.view"}, Locate: func(context.Context, int64) (int64, error) { return 0, nil }},
 	} {
 		typ.Product = "test"
 		func() {
