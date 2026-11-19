@@ -2620,6 +2620,55 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/stock/transfers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["list-stock-transfers"];
+        put?: never;
+        /** @description Sending the same request_id again returns the document created the first time. */
+        post: operations["create-stock-transfer"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/stock/transfers/actions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["get-stock-transfer-actions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/stock/transfers/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["get-stock-transfer"];
+        put: operations["update-stock-transfer"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/stock/warehouses": {
         parameters: {
             query?: never;
@@ -5186,6 +5235,27 @@ export interface components {
              */
             request_id?: string;
         };
+        NewTransfer: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example /api/schemas/NewTransfer.json
+             */
+            readonly $schema?: string;
+            /** Format: date */
+            date: string;
+            /** Format: int64 */
+            from_warehouse_id: number;
+            lines: components["schemas"]["TransferLine"][];
+            note: string;
+            /**
+             * Format: uuid
+             * @description Generated once per form: sending it again returns the first document
+             */
+            request_id: string;
+            /** Format: int64 */
+            to_warehouse_id: number;
+        };
         NewWarehouse: {
             /**
              * Format: uri
@@ -7312,6 +7382,106 @@ export interface components {
             total: number;
             /** Format: int64 */
             vat_total: number;
+        };
+        Transfer: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example /api/schemas/Transfer.json
+             */
+            readonly $schema?: string;
+            allowed_actions: string[];
+            /** Format: date */
+            date: string;
+            from_warehouse_code: string;
+            /** Format: int64 */
+            from_warehouse_id: number;
+            from_warehouse_name: string;
+            /** Format: int64 */
+            id: number;
+            /** Format: int64 */
+            legal_entity_id: number;
+            lines: components["schemas"]["TransferLineOut"][];
+            note: string;
+            number: string;
+            /** @enum {string} */
+            status: "draft" | "pending_approval" | "posted" | "cancelled";
+            to_warehouse_code: string;
+            /** Format: int64 */
+            to_warehouse_id: number;
+            to_warehouse_name: string;
+            /** Format: int32 */
+            version: number;
+        };
+        TransferLine: {
+            /** Format: int64 */
+            item_id: number;
+            /** @description Lot code, for lot-tracked items */
+            lot?: string;
+            /** @description Above 0, up to 3 decimals */
+            quantity: string;
+            /** @description Serial-tracked items */
+            serial?: string;
+        };
+        TransferLineOut: {
+            item_code: string;
+            /** Format: int64 */
+            item_id: number;
+            item_name: string;
+            /** @description Lot code, for lot-tracked items */
+            lot?: string;
+            /** @description Above 0, up to 3 decimals */
+            quantity: string;
+            /** @description Serial-tracked items */
+            serial?: string;
+            unit: string;
+        };
+        TransferList: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example /api/schemas/TransferList.json
+             */
+            readonly $schema?: string;
+            items: components["schemas"]["TransferListItem"][];
+            /** Format: int64 */
+            total: number;
+        };
+        TransferListItem: {
+            /** Format: date */
+            date: string;
+            from_warehouse_code: string;
+            /** Format: int64 */
+            from_warehouse_id: number;
+            from_warehouse_name: string;
+            /** Format: int64 */
+            id: number;
+            note: string;
+            number: string;
+            /** @enum {string} */
+            status: "draft" | "pending_approval" | "posted" | "cancelled";
+            to_warehouse_code: string;
+            /** Format: int64 */
+            to_warehouse_id: number;
+            to_warehouse_name: string;
+        };
+        TransferUpdate: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example /api/schemas/TransferUpdate.json
+             */
+            readonly $schema?: string;
+            /** Format: date */
+            date: string;
+            /** Format: int64 */
+            from_warehouse_id: number;
+            lines: components["schemas"]["TransferLine"][];
+            note: string;
+            /** Format: int64 */
+            to_warehouse_id: number;
+            /** Format: int32 */
+            version: number;
         };
         TransitionInputBody: {
             /**
@@ -14819,6 +14989,170 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["OnHandList"];
                 };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "list-stock-transfers": {
+        parameters: {
+            query?: {
+                /** @description Number or note */
+                q?: string;
+                status?: "draft" | "pending_approval" | "posted" | "cancelled";
+                /** @description Source or destination */
+                warehouse_id?: number;
+                sort?: "date" | "-date" | "number" | "-number";
+                page?: number;
+                page_size?: 20 | 50 | 100;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TransferList"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "create-stock-transfer": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NewTransfer"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CreatedOutputBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "get-stock-transfer-actions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdjustmentActions"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "get-stock-transfer": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Transfer"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "update-stock-transfer": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TransferUpdate"];
+            };
+        };
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Error */
             default: {
