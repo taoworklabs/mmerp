@@ -25,3 +25,10 @@ LEFT JOIN stock.lots l ON l.id = m.lot_id
 LEFT JOIN stock.serials s ON s.id = m.serial_id
 WHERE m.warehouse_id = @warehouse_id AND m.item_id = @item_id AND m.date BETWEEN @from_date::date AND @to_date::date
 ORDER BY m.date, m.id;
+
+-- name: StockItems :many
+-- Active items with stock matching q in code or name, for stock document lines.
+SELECT id, code, name, unit, tracking FROM item.items
+WHERE active AND tracking <> 'none' AND (@q::text = '' OR code ILIKE '%' || @q || '%' OR name ILIKE '%' || @q || '%')
+ORDER BY code, id
+LIMIT 50;
