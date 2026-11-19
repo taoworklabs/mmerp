@@ -94,7 +94,7 @@ func readStocktake(ctx context.Context, id int64) (Stocktake, error) {
 	return out, nil
 }
 
-// plainPtr is a numeric read as '' when null, as the API writes it.
+// plainPtr is a numeric read as ” when null, as the API writes it.
 func plainPtr(v string) *string {
 	if v == "" {
 		return nil
