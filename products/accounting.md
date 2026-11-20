@@ -18,7 +18,7 @@ A minimal general ledger, generic first: the parts that are the same in every co
 | Business lines from supplier invoices and payments (M18, [ADR-0090](../docs/adr/0090-purchasing-product.md)) | |
 | Circular 133 and 99 templates, insurance per fund, closing entries, B01 and B02 (M21, [ADR-0120](../docs/adr/0120-vietnamese-accounting-layer.md)) | |
 
-The Vietnamese layer is mostly data (charts, default rules, report forms), but it also needs HRM to split its insurance business line kinds per fund: HRM folds BHXH, BHYT, BHTN and the union fee into `employer_insurance_expense` and `insurance_payable`, while Circular 133/200 books them to 3382, 3383, 3384 and 3386 separately, which needs new posting kinds in HRM (a code change). Splitting them is cheapest before any tenant has a ledger.
+Chart templates for Circular 133 and Circular 99 carry the chart, the default rules, the closing accounts and the statement forms; they are applied once to a tenant without accounts ([ADR-0120](../docs/adr/0120-vietnamese-accounting-layer.md)).
 
 ## Module
 

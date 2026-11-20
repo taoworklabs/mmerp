@@ -325,12 +325,14 @@ Only payrolls produce business lines, on moving to `posted`:
 | `salary_expense` (salary and allowance expense) | — | The employee's department |
 | `employer_insurance_expense` (employer's share of insurance) | — | Department |
 | `salary_payable` (payable to employees, after deductions) | — (aggregated) | Department |
-| `insurance_payable` (insurance payable, both shares) | — | Legal entity |
+| `social_insurance_payable`, `health_insurance_payable`, `unemployment_insurance_payable` (owed per fund, both shares) | — | Legal entity |
+| `union_fee_payable` (union fee, employer's share) | — | Legal entity |
 | `pit_payable` (PIT withheld) | — | Legal entity |
 
 - Every line is aggregated by department or legal entity. Business lines and the ledger are not encrypted ([ADR-0003](../docs/adr/0003-business-lines-are-data.md)), so they must not carry per-person amounts.
 - Payables detailed per employee live in `hrm.payroll_lines` (encrypted), and are reconciled when salaries are paid.
 - A department with only one person still lets that person's salary be inferred from the ledger. Accepted, because viewing the ledger is already an accountant's permission.
+- Payrolls posted before the split per fund ([ADR-0120](../docs/adr/0120-vietnamese-accounting-layer.md)) carry one `insurance_payable` line instead of the four.
 - Mapping these line types to accounts is the job of `accounting`.
 
 ## Reports

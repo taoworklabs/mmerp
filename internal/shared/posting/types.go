@@ -22,8 +22,14 @@ const (
 	SalaryExpense            Kind = "salary_expense"
 	EmployerInsuranceExpense Kind = "employer_insurance_expense"
 	SalaryPayable            Kind = "salary_payable"
-	InsurancePayable         Kind = "insurance_payable"
 	PitPayable               Kind = "pit_payable"
+	// Owed to each fund, employee and employer shares together.
+	SocialInsurancePayable       Kind = "social_insurance_payable"
+	HealthInsurancePayable       Kind = "health_insurance_payable"
+	UnemploymentInsurancePayable Kind = "unemployment_insurance_payable"
+	UnionFeePayable              Kind = "union_fee_payable"
+	// InsurancePayable is every fund in one line: payrolls posted before the split.
+	InsurancePayable Kind = "insurance_payable"
 )
 
 // Line is one posting line: a signed amount in the minor unit, by org unit, never per person.
@@ -41,7 +47,8 @@ type KindDecl struct {
 	ByPartner bool
 }
 
-var kinds = []KindDecl{{Kind: SalaryExpense}, {Kind: EmployerInsuranceExpense}, {Kind: SalaryPayable}, {Kind: InsurancePayable}, {Kind: PitPayable}}
+var kinds = []KindDecl{{Kind: SalaryExpense}, {Kind: EmployerInsuranceExpense}, {Kind: SalaryPayable}, {Kind: InsurancePayable}, {Kind: PitPayable},
+	{Kind: SocialInsurancePayable}, {Kind: HealthInsurancePayable}, {Kind: UnemploymentInsurancePayable}, {Kind: UnionFeePayable}}
 
 // Kinds lists the declared kinds, in declaration order.
 func Kinds() []KindDecl {

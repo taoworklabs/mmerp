@@ -229,7 +229,8 @@ func TestPayrollReachesLedger(t *testing.T) {
 		accounts[code] = f.id(f.admin, "/api/accounting/accounts", fmt.Sprintf(`{"code":%q,"name":"Tài khoản %s","type":%q,"parent_id":null,"active":true}`, code, code, typ))
 	}
 	for kind, rule := range map[string][2]string{"salary_expense": {"642", "debit"}, "employer_insurance_expense": {"642", "debit"},
-		"salary_payable": {"334", "credit"}, "insurance_payable": {"338", "credit"}, "pit_payable": {"3335", "credit"}} {
+		"salary_payable": {"334", "credit"}, "social_insurance_payable": {"338", "credit"},
+		"health_insurance_payable": {"338", "credit"}, "unemployment_insurance_payable": {"338", "credit"}, "union_fee_payable": {"338", "credit"}, "pit_payable": {"3335", "credit"}} {
 		f.ok(f.admin, "PUT", "/api/accounting/rules/"+kind, fmt.Sprintf(`{"account_id":%d,"side":%q}`, accounts[rule[0]], rule[1]), 204)
 	}
 	f.ok(f.admin, "PUT", fmt.Sprintf("/api/accounting/starts/%d", f.legalEntity()), `{"start_date":"2026-01-01"}`, 204)

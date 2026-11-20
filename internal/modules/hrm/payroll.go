@@ -348,7 +348,7 @@ func postingLines(le int64, parent map[int64]int64, lines []PayrollLine) []posti
 		}
 		return g
 	}
-	var insurance, tax int64
+	var social, health, unemployment, union, tax int64
 	for _, l := range lines {
 		g := get(l.OrgUnitID)
 		if l.Gross != 0 || l.Net != 0 || l.employerInsurance() != 0 {
@@ -357,7 +357,10 @@ func postingLines(le int64, parent map[int64]int64, lines []PayrollLine) []posti
 		g.sums[posting.SalaryExpense] += l.Gross
 		g.sums[posting.EmployerInsuranceExpense] += l.employerInsurance()
 		g.sums[posting.SalaryPayable] += l.Net
-		insurance += l.employeeInsurance() + l.employerInsurance()
+		social += l.SocialInsurance + l.EmployerSocial
+		health += l.HealthInsurance + l.EmployerHealth
+		unemployment += l.UnemploymentIns + l.EmployerUnemploy
+		union += l.EmployerUnion
 		tax += l.IncomeTax
 	}
 	depth := func(unit int64) int {
@@ -421,7 +424,9 @@ func postingLines(le int64, parent map[int64]int64, lines []PayrollLine) []posti
 			}
 		}
 	}
-	for _, l := range []posting.Line{{Kind: posting.InsurancePayable, OrgUnitID: le, Amount: insurance}, {Kind: posting.PitPayable, OrgUnitID: le, Amount: tax}} {
+	for _, l := range []posting.Line{{Kind: posting.SocialInsurancePayable, OrgUnitID: le, Amount: social},
+		{Kind: posting.HealthInsurancePayable, OrgUnitID: le, Amount: health}, {Kind: posting.UnemploymentInsurancePayable, OrgUnitID: le, Amount: unemployment},
+		{Kind: posting.UnionFeePayable, OrgUnitID: le, Amount: union}, {Kind: posting.PitPayable, OrgUnitID: le, Amount: tax}} {
 		if l.Amount != 0 {
 			out = append(out, l)
 		}
