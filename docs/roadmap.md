@@ -27,8 +27,8 @@ A milestone only passes when what it adds keeps the contract intact from table t
 ```
 M11 Attachments and discussion ─► M12 Notifications ─► M13 PDF printing ─► M14 Sales   (all done)
    ─► HRM review ─► Core work after M14   (done) ─► M15 Accounting   (done)
-   ─► M16 Partner subledger ─► M17 Sales to cash ─► M18 Purchasing ─► M19 Stock ─► M20 Stock valuation   (done)
-   ─► M21 Vietnamese accounting
+   ─► M16 Partner subledger ─► M17 Sales to cash ─► M18 Purchasing ─► M19 Stock ─► M20 Stock valuation
+   ─► M21 Vietnamese accounting   (done)
    ┄► M10 On-premise operations ┄► [Gate: production readiness]   (on hold)
 ```
 
@@ -212,6 +212,8 @@ Vertical slices, each from migration to screen:
 
 ## M21. Vietnamese accounting
 
+**Done** (2026-11-20): [ADR-0120](./adr/0120-vietnamese-accounting-layer.md).
+
 **Goal:** a tenant keeps books under Circular 133 or Circular 99 without building a chart by hand: a template applies the chart, the rules, the closing accounts and the statement forms; the payroll writes what it owes per insurance fund; closing entries move the period's result to 911 and 421; the balance sheet (B01) and income statement (B02) come from the ledger ([ADR-0120](./adr/0120-vietnamese-accounting-layer.md)). VAT declarations and CIT stay out.
 
 **Exit criteria** (with `make seed` data and `PRODUCTS=hrm,sales,purchase,accounting`):
@@ -245,7 +247,7 @@ Core and frontend foundations built once Sales opened:
 - [ADR-0038](./adr/0038-data-engine-over-sqlc.md): Data engine over sqlc: dynamic parts compiled from code-declared fragments, no ORM
 - [ADR-0039](./adr/0039-shared-master-data.md): Shared master data: partners, items and tax in `shared/`, with their own namespace
 
-**Next:** M21 Vietnamese accounting. M10 and the production-readiness gate stay on hold.
+**Next:** not chosen yet; the next milestone needs an ADR first. M10 and the production-readiness gate stay on hold.
 
 ## M10. On-premise operations
 
