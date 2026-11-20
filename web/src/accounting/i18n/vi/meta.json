@@ -41,5 +41,20 @@
   "accounting.error.entry_partner_mismatch": "Bút toán ghi đối tác không đúng với cách theo dõi của tài khoản.",
   "accounting.error.journal_line_partner_required": "Dòng {{line_no}}: tài khoản theo dõi theo đối tác, chọn đối tác.",
   "accounting.error.journal_line_partner_not_allowed": "Dòng {{line_no}}: tài khoản không theo dõi theo đối tác, bỏ đối tác.",
-  "accounting.error.account_not_tracked": "Tài khoản không theo dõi theo đối tác. Chọn tài khoản theo dõi theo đối tác."
+  "accounting.error.account_not_tracked": "Tài khoản không theo dõi theo đối tác. Chọn tài khoản theo dõi theo đối tác.",
+  "accounting.nav.closings": "Kết chuyển",
+  "accounting.nav.group_statements": "Báo cáo tài chính",
+  "accounting.nav.balance_sheet": "Báo cáo tình hình tài chính",
+  "accounting.nav.income_statement": "Báo cáo kết quả kinh doanh",
+  "accounting.nav.closing_accounts": "Tài khoản kết chuyển",
+  "accounting.nav.statement_forms": "Mẫu báo cáo tài chính",
+  "accounting.closing.name": "Kết chuyển",
+  "accounting.error.closing_accounts_unset": "Chưa chọn tài khoản kết chuyển. Chọn tài khoản xác định kết quả và lợi nhuận chưa phân phối trong Cấu hình.",
+  "accounting.error.closing_nothing_to_close": "Không còn số dư doanh thu, chi phí nào để kết chuyển đến ngày này.",
+  "accounting.error.closing_too_large": "Bút toán kết chuyển có quá nhiều dòng. Kết chuyển theo kỳ ngắn hơn.",
+  "accounting.error.statement_formula_invalid": "Dòng {{code}}: công thức sai ở ký tự thứ {{position}}.",
+  "accounting.error.statement_formula_cycle": "Dòng {{code}}: công thức tham chiếu vòng lại chính nó.",
+  "accounting.error.statement_row_unknown": "Dòng {{code}}: công thức dùng mã số không có trong mẫu.",
+  "accounting.error.statement_row_duplicate": "Mã số {{code}} đã có trong mẫu.",
+  "accounting.error.chart_not_empty": "Hệ thống tài khoản đã có tài khoản nên không áp dụng mẫu được."
 }

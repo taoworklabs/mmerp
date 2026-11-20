@@ -64,3 +64,18 @@ export function useReportParams() {
   }
   return { p, put, entities }
 }
+
+// useClosingActions: what the user may do before picking a closing entry (create).
+export function useClosingActions() {
+  return useQuery({
+    queryKey: accountingKeys.closings.actions(),
+    queryFn: async () => (await unwrap(api.GET('/accounting/closings/actions'))).allowed_actions,
+  })
+}
+
+export function useClosing(id: number) {
+  return useQuery({
+    queryKey: accountingKeys.closings.detail(id),
+    queryFn: () => unwrap(api.GET('/accounting/closings/{id}', { params: { path: { id } } })),
+  })
+}

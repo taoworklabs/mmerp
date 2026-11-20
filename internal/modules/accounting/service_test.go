@@ -10,7 +10,7 @@ import (
 
 func TestAccountingRoles(t *testing.T) {
 	core := coretest.New(t, "accounting")
-	accounting.NewService(accounting.Deps{IAM: core.IAM, Audit: core.Audit, Record: core.Record})
+	accounting.NewService(accounting.Deps{IAM: core.IAM, Audit: core.Audit, Record: core.Record, DataIO: core.DataIO})
 	id, err := core.IAM.CreateUser(core.Admin, "acc", "Acc", "long enough")
 	if err != nil {
 		t.Fatal(err)

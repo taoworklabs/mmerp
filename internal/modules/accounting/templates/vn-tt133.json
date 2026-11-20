@@ -1,0 +1,1185 @@
+{
+ "code": "vn-tt133",
+ "name": {
+  "vi": "Thông tư 133/2016/TT-BTC (doanh nghiệp nhỏ và vừa)",
+  "en": "Circular 133/2016 (small and medium enterprises)"
+ },
+ "accounts": [
+  {
+   "code": "111",
+   "name": "Tiền mặt",
+   "type": "asset"
+  },
+  {
+   "code": "1111",
+   "name": "Tiền Việt Nam",
+   "type": "asset",
+   "parent": "111"
+  },
+  {
+   "code": "1112",
+   "name": "Ngoại tệ",
+   "type": "asset",
+   "parent": "111"
+  },
+  {
+   "code": "112",
+   "name": "Tiền gửi Ngân hàng",
+   "type": "asset"
+  },
+  {
+   "code": "1121",
+   "name": "Tiền Việt Nam",
+   "type": "asset",
+   "parent": "112"
+  },
+  {
+   "code": "1122",
+   "name": "Ngoại tệ",
+   "type": "asset",
+   "parent": "112"
+  },
+  {
+   "code": "121",
+   "name": "Chứng khoán kinh doanh",
+   "type": "asset"
+  },
+  {
+   "code": "128",
+   "name": "Đầu tư nắm giữ đến ngày đáo hạn",
+   "type": "asset"
+  },
+  {
+   "code": "1281",
+   "name": "Tiền gửi có kỳ hạn",
+   "type": "asset",
+   "parent": "128"
+  },
+  {
+   "code": "1288",
+   "name": "Các khoản đầu tư khác nắm giữ đến ngày đáo hạn",
+   "type": "asset",
+   "parent": "128"
+  },
+  {
+   "code": "131",
+   "name": "Phải thu của khách hàng",
+   "type": "asset",
+   "by_partner": true
+  },
+  {
+   "code": "133",
+   "name": "Thuế GTGT được khấu trừ",
+   "type": "asset"
+  },
+  {
+   "code": "1331",
+   "name": "Thuế GTGT được khấu trừ của hàng hóa, dịch vụ",
+   "type": "asset",
+   "parent": "133"
+  },
+  {
+   "code": "1332",
+   "name": "Thuế GTGT được khấu trừ của TSCĐ",
+   "type": "asset",
+   "parent": "133"
+  },
+  {
+   "code": "136",
+   "name": "Phải thu nội bộ",
+   "type": "asset"
+  },
+  {
+   "code": "1361",
+   "name": "Vốn kinh doanh ở đơn vị trực thuộc",
+   "type": "asset",
+   "parent": "136"
+  },
+  {
+   "code": "1368",
+   "name": "Phải thu nội bộ khác",
+   "type": "asset",
+   "parent": "136"
+  },
+  {
+   "code": "138",
+   "name": "Phải thu khác",
+   "type": "asset"
+  },
+  {
+   "code": "1381",
+   "name": "Tài sản thiếu chờ xử lý",
+   "type": "asset",
+   "parent": "138"
+  },
+  {
+   "code": "1386",
+   "name": "Cầm cố, thế chấp, ký quỹ, ký cược",
+   "type": "asset",
+   "parent": "138"
+  },
+  {
+   "code": "1388",
+   "name": "Phải thu khác",
+   "type": "asset",
+   "parent": "138"
+  },
+  {
+   "code": "141",
+   "name": "Tạm ứng",
+   "type": "asset"
+  },
+  {
+   "code": "151",
+   "name": "Hàng mua đang đi đường",
+   "type": "asset"
+  },
+  {
+   "code": "152",
+   "name": "Nguyên liệu, vật liệu",
+   "type": "asset"
+  },
+  {
+   "code": "153",
+   "name": "Công cụ, dụng cụ",
+   "type": "asset"
+  },
+  {
+   "code": "154",
+   "name": "Chi phí sản xuất, kinh doanh dở dang",
+   "type": "asset"
+  },
+  {
+   "code": "155",
+   "name": "Thành phẩm",
+   "type": "asset"
+  },
+  {
+   "code": "156",
+   "name": "Hàng hóa",
+   "type": "asset"
+  },
+  {
+   "code": "157",
+   "name": "Hàng gửi đi bán",
+   "type": "asset"
+  },
+  {
+   "code": "211",
+   "name": "Tài sản cố định",
+   "type": "asset"
+  },
+  {
+   "code": "2111",
+   "name": "TSCĐ hữu hình",
+   "type": "asset",
+   "parent": "211"
+  },
+  {
+   "code": "2112",
+   "name": "TSCĐ thuê tài chính",
+   "type": "asset",
+   "parent": "211"
+  },
+  {
+   "code": "2113",
+   "name": "TSCĐ vô hình",
+   "type": "asset",
+   "parent": "211"
+  },
+  {
+   "code": "214",
+   "name": "Hao mòn tài sản cố định",
+   "type": "asset"
+  },
+  {
+   "code": "2141",
+   "name": "Hao mòn TSCĐ hữu hình",
+   "type": "asset",
+   "parent": "214"
+  },
+  {
+   "code": "2142",
+   "name": "Hao mòn TSCĐ thuê tài chính",
+   "type": "asset",
+   "parent": "214"
+  },
+  {
+   "code": "2143",
+   "name": "Hao mòn TSCĐ vô hình",
+   "type": "asset",
+   "parent": "214"
+  },
+  {
+   "code": "2147",
+   "name": "Hao mòn bất động sản đầu tư",
+   "type": "asset",
+   "parent": "214"
+  },
+  {
+   "code": "217",
+   "name": "Bất động sản đầu tư",
+   "type": "asset"
+  },
+  {
+   "code": "228",
+   "name": "Đầu tư góp vốn vào đơn vị khác",
+   "type": "asset"
+  },
+  {
+   "code": "2281",
+   "name": "Đầu tư vào công ty liên doanh, liên kết",
+   "type": "asset",
+   "parent": "228"
+  },
+  {
+   "code": "2288",
+   "name": "Đầu tư khác",
+   "type": "asset",
+   "parent": "228"
+  },
+  {
+   "code": "229",
+   "name": "Dự phòng tổn thất tài sản",
+   "type": "asset"
+  },
+  {
+   "code": "2291",
+   "name": "Dự phòng giảm giá chứng khoán kinh doanh",
+   "type": "asset",
+   "parent": "229"
+  },
+  {
+   "code": "2292",
+   "name": "Dự phòng tổn thất đầu tư vào đơn vị khác",
+   "type": "asset",
+   "parent": "229"
+  },
+  {
+   "code": "2293",
+   "name": "Dự phòng phải thu khó đòi",
+   "type": "asset",
+   "parent": "229"
+  },
+  {
+   "code": "2294",
+   "name": "Dự phòng giảm giá hàng tồn kho",
+   "type": "asset",
+   "parent": "229"
+  },
+  {
+   "code": "241",
+   "name": "Xây dựng cơ bản dở dang",
+   "type": "asset"
+  },
+  {
+   "code": "2411",
+   "name": "Mua sắm TSCĐ",
+   "type": "asset",
+   "parent": "241"
+  },
+  {
+   "code": "2412",
+   "name": "Xây dựng cơ bản",
+   "type": "asset",
+   "parent": "241"
+  },
+  {
+   "code": "2413",
+   "name": "Sửa chữa lớn TSCĐ",
+   "type": "asset",
+   "parent": "241"
+  },
+  {
+   "code": "242",
+   "name": "Chi phí trả trước",
+   "type": "asset"
+  },
+  {
+   "code": "331",
+   "name": "Phải trả cho người bán",
+   "type": "liability",
+   "by_partner": true
+  },
+  {
+   "code": "333",
+   "name": "Thuế và các khoản phải nộp Nhà nước",
+   "type": "liability"
+  },
+  {
+   "code": "3331",
+   "name": "Thuế giá trị gia tăng phải nộp",
+   "type": "liability",
+   "parent": "333"
+  },
+  {
+   "code": "33311",
+   "name": "Thuế GTGT đầu ra",
+   "type": "liability",
+   "parent": "3331"
+  },
+  {
+   "code": "33312",
+   "name": "Thuế GTGT hàng nhập khẩu",
+   "type": "liability",
+   "parent": "3331"
+  },
+  {
+   "code": "3332",
+   "name": "Thuế tiêu thụ đặc biệt",
+   "type": "liability",
+   "parent": "333"
+  },
+  {
+   "code": "3333",
+   "name": "Thuế xuất, nhập khẩu",
+   "type": "liability",
+   "parent": "333"
+  },
+  {
+   "code": "3334",
+   "name": "Thuế thu nhập doanh nghiệp",
+   "type": "liability",
+   "parent": "333"
+  },
+  {
+   "code": "3335",
+   "name": "Thuế thu nhập cá nhân",
+   "type": "liability",
+   "parent": "333"
+  },
+  {
+   "code": "3336",
+   "name": "Thuế tài nguyên",
+   "type": "liability",
+   "parent": "333"
+  },
+  {
+   "code": "3337",
+   "name": "Thuế nhà đất, tiền thuê đất",
+   "type": "liability",
+   "parent": "333"
+  },
+  {
+   "code": "3338",
+   "name": "Thuế bảo vệ môi trường và các loại thuế khác",
+   "type": "liability",
+   "parent": "333"
+  },
+  {
+   "code": "33381",
+   "name": "Thuế bảo vệ môi trường",
+   "type": "liability",
+   "parent": "3338"
+  },
+  {
+   "code": "33382",
+   "name": "Các loại thuế khác",
+   "type": "liability",
+   "parent": "3338"
+  },
+  {
+   "code": "3339",
+   "name": "Phí, lệ phí và các khoản phải nộp khác",
+   "type": "liability",
+   "parent": "333"
+  },
+  {
+   "code": "334",
+   "name": "Phải trả người lao động",
+   "type": "liability"
+  },
+  {
+   "code": "335",
+   "name": "Chi phí phải trả",
+   "type": "liability"
+  },
+  {
+   "code": "336",
+   "name": "Phải trả nội bộ",
+   "type": "liability"
+  },
+  {
+   "code": "3361",
+   "name": "Phải trả nội bộ về vốn kinh doanh",
+   "type": "liability",
+   "parent": "336"
+  },
+  {
+   "code": "3368",
+   "name": "Phải trả nội bộ khác",
+   "type": "liability",
+   "parent": "336"
+  },
+  {
+   "code": "338",
+   "name": "Phải trả, phải nộp khác",
+   "type": "liability"
+  },
+  {
+   "code": "3381",
+   "name": "Tài sản thừa chờ giải quyết",
+   "type": "liability",
+   "parent": "338"
+  },
+  {
+   "code": "3382",
+   "name": "Kinh phí công đoàn",
+   "type": "liability",
+   "parent": "338"
+  },
+  {
+   "code": "3383",
+   "name": "Bảo hiểm xã hội",
+   "type": "liability",
+   "parent": "338"
+  },
+  {
+   "code": "3384",
+   "name": "Bảo hiểm y tế",
+   "type": "liability",
+   "parent": "338"
+  },
+  {
+   "code": "3385",
+   "name": "Bảo hiểm thất nghiệp",
+   "type": "liability",
+   "parent": "338"
+  },
+  {
+   "code": "3386",
+   "name": "Nhận ký quỹ, ký cược",
+   "type": "liability",
+   "parent": "338"
+  },
+  {
+   "code": "3387",
+   "name": "Doanh thu chưa thực hiện",
+   "type": "liability",
+   "parent": "338"
+  },
+  {
+   "code": "3388",
+   "name": "Phải trả, phải nộp khác",
+   "type": "liability",
+   "parent": "338"
+  },
+  {
+   "code": "341",
+   "name": "Vay và nợ thuê tài chính",
+   "type": "liability"
+  },
+  {
+   "code": "3411",
+   "name": "Các khoản đi vay",
+   "type": "liability",
+   "parent": "341"
+  },
+  {
+   "code": "3412",
+   "name": "Nợ thuê tài chính",
+   "type": "liability",
+   "parent": "341"
+  },
+  {
+   "code": "352",
+   "name": "Dự phòng phải trả",
+   "type": "liability"
+  },
+  {
+   "code": "3521",
+   "name": "Dự phòng bảo hành sản phẩm hàng hóa",
+   "type": "liability",
+   "parent": "352"
+  },
+  {
+   "code": "3522",
+   "name": "Dự phòng bảo hành công trình xây dựng",
+   "type": "liability",
+   "parent": "352"
+  },
+  {
+   "code": "3524",
+   "name": "Dự phòng phải trả khác",
+   "type": "liability",
+   "parent": "352"
+  },
+  {
+   "code": "353",
+   "name": "Quỹ khen thưởng phúc lợi",
+   "type": "liability"
+  },
+  {
+   "code": "3531",
+   "name": "Quỹ khen thưởng",
+   "type": "liability",
+   "parent": "353"
+  },
+  {
+   "code": "3532",
+   "name": "Quỹ phúc lợi",
+   "type": "liability",
+   "parent": "353"
+  },
+  {
+   "code": "3533",
+   "name": "Quỹ phúc lợi đã hình thành TSCĐ",
+   "type": "liability",
+   "parent": "353"
+  },
+  {
+   "code": "3534",
+   "name": "Quỹ thưởng ban quản lý điều hành công ty",
+   "type": "liability",
+   "parent": "353"
+  },
+  {
+   "code": "356",
+   "name": "Quỹ phát triển khoa học và công nghệ",
+   "type": "liability"
+  },
+  {
+   "code": "3561",
+   "name": "Quỹ phát triển khoa học và công nghệ",
+   "type": "liability",
+   "parent": "356"
+  },
+  {
+   "code": "3562",
+   "name": "Quỹ phát triển khoa học và công nghệ đã hình thành TSCĐ",
+   "type": "liability",
+   "parent": "356"
+  },
+  {
+   "code": "411",
+   "name": "Vốn đầu tư của chủ sở hữu",
+   "type": "equity"
+  },
+  {
+   "code": "4111",
+   "name": "Vốn góp của chủ sở hữu",
+   "type": "equity",
+   "parent": "411"
+  },
+  {
+   "code": "4112",
+   "name": "Thặng dư vốn cổ phần",
+   "type": "equity",
+   "parent": "411"
+  },
+  {
+   "code": "4118",
+   "name": "Vốn khác",
+   "type": "equity",
+   "parent": "411"
+  },
+  {
+   "code": "413",
+   "name": "Chênh lệch tỷ giá hối đoái",
+   "type": "equity"
+  },
+  {
+   "code": "418",
+   "name": "Các quỹ thuộc vốn chủ sở hữu",
+   "type": "equity"
+  },
+  {
+   "code": "419",
+   "name": "Cổ phiếu quỹ",
+   "type": "equity"
+  },
+  {
+   "code": "421",
+   "name": "Lợi nhuận sau thuế chưa phân phối",
+   "type": "equity"
+  },
+  {
+   "code": "4211",
+   "name": "Lợi nhuận sau thuế chưa phân phối năm trước",
+   "type": "equity",
+   "parent": "421"
+  },
+  {
+   "code": "4212",
+   "name": "Lợi nhuận sau thuế chưa phân phối năm nay",
+   "type": "equity",
+   "parent": "421"
+  },
+  {
+   "code": "511",
+   "name": "Doanh thu bán hàng và cung cấp dịch vụ",
+   "type": "revenue"
+  },
+  {
+   "code": "5111",
+   "name": "Doanh thu bán hàng hóa",
+   "type": "revenue",
+   "parent": "511"
+  },
+  {
+   "code": "5112",
+   "name": "Doanh thu bán thành phẩm",
+   "type": "revenue",
+   "parent": "511"
+  },
+  {
+   "code": "5113",
+   "name": "Doanh thu cung cấp dịch vụ",
+   "type": "revenue",
+   "parent": "511"
+  },
+  {
+   "code": "5118",
+   "name": "Doanh thu khác",
+   "type": "revenue",
+   "parent": "511"
+  },
+  {
+   "code": "515",
+   "name": "Doanh thu hoạt động tài chính",
+   "type": "revenue"
+  },
+  {
+   "code": "611",
+   "name": "Mua hàng",
+   "type": "expense"
+  },
+  {
+   "code": "631",
+   "name": "Giá thành sản xuất",
+   "type": "expense"
+  },
+  {
+   "code": "632",
+   "name": "Giá vốn hàng bán",
+   "type": "expense"
+  },
+  {
+   "code": "635",
+   "name": "Chi phí tài chính",
+   "type": "expense"
+  },
+  {
+   "code": "642",
+   "name": "Chi phí quản lý kinh doanh",
+   "type": "expense"
+  },
+  {
+   "code": "6421",
+   "name": "Chi phí bán hàng",
+   "type": "expense",
+   "parent": "642"
+  },
+  {
+   "code": "6422",
+   "name": "Chi phí quản lý doanh nghiệp",
+   "type": "expense",
+   "parent": "642"
+  },
+  {
+   "code": "711",
+   "name": "Thu nhập khác",
+   "type": "revenue"
+  },
+  {
+   "code": "811",
+   "name": "Chi phí khác",
+   "type": "expense"
+  },
+  {
+   "code": "821",
+   "name": "Chi phí thuế thu nhập doanh nghiệp",
+   "type": "expense"
+  },
+  {
+   "code": "911",
+   "name": "Xác định kết quả kinh doanh",
+   "type": "equity"
+  }
+ ],
+ "rules": [
+  {
+   "kind": "salary_expense",
+   "account": "6422",
+   "side": "debit"
+  },
+  {
+   "kind": "employer_insurance_expense",
+   "account": "6422",
+   "side": "debit"
+  },
+  {
+   "kind": "salary_payable",
+   "account": "334",
+   "side": "credit"
+  },
+  {
+   "kind": "insurance_payable",
+   "account": "3383",
+   "side": "credit"
+  },
+  {
+   "kind": "social_insurance_payable",
+   "account": "3383",
+   "side": "credit"
+  },
+  {
+   "kind": "health_insurance_payable",
+   "account": "3384",
+   "side": "credit"
+  },
+  {
+   "kind": "unemployment_insurance_payable",
+   "account": "3385",
+   "side": "credit"
+  },
+  {
+   "kind": "union_fee_payable",
+   "account": "3382",
+   "side": "credit"
+  },
+  {
+   "kind": "pit_payable",
+   "account": "3335",
+   "side": "credit"
+  },
+  {
+   "kind": "sales_receivable",
+   "account": "131",
+   "side": "debit"
+  },
+  {
+   "kind": "sales_revenue",
+   "account": "5111",
+   "side": "credit"
+  },
+  {
+   "kind": "sales_output_vat",
+   "account": "33311",
+   "side": "credit"
+  },
+  {
+   "kind": "sales_cash_receipt",
+   "account": "1111",
+   "side": "debit"
+  },
+  {
+   "kind": "sales_bank_receipt",
+   "account": "1121",
+   "side": "debit"
+  },
+  {
+   "kind": "sales_cost_of_goods_sold",
+   "account": "632",
+   "side": "debit"
+  },
+  {
+   "kind": "purchase_goods",
+   "account": "156",
+   "side": "debit"
+  },
+  {
+   "kind": "purchase_expense",
+   "account": "6422",
+   "side": "debit"
+  },
+  {
+   "kind": "purchase_input_vat",
+   "account": "1331",
+   "side": "debit"
+  },
+  {
+   "kind": "purchase_payable",
+   "account": "331",
+   "side": "credit"
+  },
+  {
+   "kind": "purchase_cash_payment",
+   "account": "1111",
+   "side": "credit"
+  },
+  {
+   "kind": "purchase_bank_payment",
+   "account": "1121",
+   "side": "credit"
+  },
+  {
+   "kind": "purchase_received_not_invoiced",
+   "account": "3388",
+   "side": "credit"
+  },
+  {
+   "kind": "purchase_price_difference",
+   "account": "632",
+   "side": "debit"
+  },
+  {
+   "kind": "stock_inventory",
+   "account": "156",
+   "side": "debit"
+  },
+  {
+   "kind": "stock_adjustment_gain",
+   "account": "711",
+   "side": "credit"
+  },
+  {
+   "kind": "stock_adjustment_loss",
+   "account": "811",
+   "side": "debit"
+  },
+  {
+   "kind": "stocktake_surplus",
+   "account": "3381",
+   "side": "credit"
+  },
+  {
+   "kind": "stocktake_shortage",
+   "account": "1381",
+   "side": "debit"
+  }
+ ],
+ "closing": {
+  "result": "911",
+  "retained": "4212"
+ },
+ "forms": {
+  "balance_sheet": [
+   {
+    "code": "110",
+    "label": "I. Tiền và các khoản tương đương tiền",
+    "formula": "DB(111, 112)",
+    "bold": true
+   },
+   {
+    "code": "120",
+    "label": "II. Đầu tư tài chính",
+    "formula": "R(121, 122, 123, 124)",
+    "bold": true
+   },
+   {
+    "code": "121",
+    "label": "1. Chứng khoán kinh doanh",
+    "formula": "DB(121)"
+   },
+   {
+    "code": "122",
+    "label": "2. Đầu tư nắm giữ đến ngày đáo hạn",
+    "formula": "DB(1281, 1288)"
+   },
+   {
+    "code": "123",
+    "label": "3. Đầu tư góp vốn vào đơn vị khác",
+    "formula": "DB(228)"
+   },
+   {
+    "code": "124",
+    "label": "4. Dự phòng tổn thất đầu tư tài chính (*)",
+    "formula": "-CB(2291, 2292)"
+   },
+   {
+    "code": "130",
+    "label": "III. Các khoản phải thu",
+    "formula": "R(131, 132, 133, 134, 135, 136)",
+    "bold": true
+   },
+   {
+    "code": "131",
+    "label": "1. Phải thu của khách hàng",
+    "formula": "DB(131)"
+   },
+   {
+    "code": "132",
+    "label": "2. Trả trước cho người bán",
+    "formula": "DB(331)"
+   },
+   {
+    "code": "133",
+    "label": "3. Vốn kinh doanh ở đơn vị trực thuộc",
+    "formula": "DB(1361)"
+   },
+   {
+    "code": "134",
+    "label": "4. Phải thu khác",
+    "formula": "DB(1368, 1386, 1388, 334, 338, 141)"
+   },
+   {
+    "code": "135",
+    "label": "5. Tài sản thiếu chờ xử lý",
+    "formula": "DB(1381)"
+   },
+   {
+    "code": "136",
+    "label": "6. Dự phòng phải thu khó đòi (*)",
+    "formula": "-CB(2293)"
+   },
+   {
+    "code": "140",
+    "label": "IV. Hàng tồn kho",
+    "formula": "R(141, 142)",
+    "bold": true
+   },
+   {
+    "code": "141",
+    "label": "1. Hàng tồn kho",
+    "formula": "DB(151, 152, 153, 154, 155, 156, 157)"
+   },
+   {
+    "code": "142",
+    "label": "2. Dự phòng giảm giá hàng tồn kho (*)",
+    "formula": "-CB(2294)"
+   },
+   {
+    "code": "150",
+    "label": "V. Tài sản cố định",
+    "formula": "R(151, 152)",
+    "bold": true
+   },
+   {
+    "code": "151",
+    "label": "- Nguyên giá",
+    "formula": "DB(211)"
+   },
+   {
+    "code": "152",
+    "label": "- Giá trị hao mòn lũy kế (*)",
+    "formula": "-CB(2141, 2142, 2143)"
+   },
+   {
+    "code": "160",
+    "label": "VI. Bất động sản đầu tư",
+    "formula": "R(161, 162)",
+    "bold": true
+   },
+   {
+    "code": "161",
+    "label": "- Nguyên giá",
+    "formula": "DB(217)"
+   },
+   {
+    "code": "162",
+    "label": "- Giá trị hao mòn lũy kế (*)",
+    "formula": "-CB(2147)"
+   },
+   {
+    "code": "170",
+    "label": "VII. XDCB dở dang",
+    "formula": "DB(241)",
+    "bold": true
+   },
+   {
+    "code": "180",
+    "label": "VIII. Tài sản khác",
+    "formula": "R(181, 182)",
+    "bold": true
+   },
+   {
+    "code": "181",
+    "label": "1. Thuế GTGT được khấu trừ",
+    "formula": "DB(133)"
+   },
+   {
+    "code": "182",
+    "label": "2. Tài sản khác",
+    "formula": "DB(242, 333)"
+   },
+   {
+    "code": "200",
+    "label": "TỔNG CỘNG TÀI SẢN (200=110+120+130+140+150+160+170+180)",
+    "formula": "R(110, 120, 130, 140, 150, 160, 170, 180)",
+    "bold": true
+   },
+   {
+    "code": "300",
+    "label": "I. Nợ phải trả",
+    "formula": "R(311, 312, 313, 314, 315, 316, 317, 318, 319, 320)",
+    "bold": true
+   },
+   {
+    "code": "311",
+    "label": "1. Phải trả người bán",
+    "formula": "CB(331)"
+   },
+   {
+    "code": "312",
+    "label": "2. Người mua trả tiền trước",
+    "formula": "CB(131)"
+   },
+   {
+    "code": "313",
+    "label": "3. Thuế và các khoản phải nộp Nhà nước",
+    "formula": "CB(333)"
+   },
+   {
+    "code": "314",
+    "label": "4. Phải trả người lao động",
+    "formula": "CB(334)"
+   },
+   {
+    "code": "315",
+    "label": "5. Phải trả khác",
+    "formula": "CB(335, 3368, 338, 1388)"
+   },
+   {
+    "code": "316",
+    "label": "6. Vay và nợ thuê tài chính",
+    "formula": "CB(341)"
+   },
+   {
+    "code": "317",
+    "label": "7. Phải trả nội bộ về vốn kinh doanh",
+    "formula": "CB(3361)"
+   },
+   {
+    "code": "318",
+    "label": "8. Dự phòng phải trả",
+    "formula": "CB(352)"
+   },
+   {
+    "code": "319",
+    "label": "9. Quỹ khen thưởng, phúc lợi",
+    "formula": "CB(353)"
+   },
+   {
+    "code": "320",
+    "label": "10. Quỹ phát triển khoa học và công nghệ",
+    "formula": "CB(356)"
+   },
+   {
+    "code": "400",
+    "label": "II. Vốn chủ sở hữu",
+    "formula": "R(411, 412, 413, 414, 415, 416, 417)",
+    "bold": true
+   },
+   {
+    "code": "411",
+    "label": "1. Vốn góp của chủ sở hữu",
+    "formula": "CB(4111)"
+   },
+   {
+    "code": "412",
+    "label": "2. Thặng dư vốn cổ phần",
+    "formula": "-B(4112)"
+   },
+   {
+    "code": "413",
+    "label": "3. Vốn khác của chủ sở hữu",
+    "formula": "CB(4118)"
+   },
+   {
+    "code": "414",
+    "label": "4. Cổ phiếu quỹ (*)",
+    "formula": "-DB(419)"
+   },
+   {
+    "code": "415",
+    "label": "5. Chênh lệch tỷ giá hối đoái",
+    "formula": ""
+   },
+   {
+    "code": "416",
+    "label": "6. Các quỹ thuộc vốn chủ sở hữu",
+    "formula": "CB(418)"
+   },
+   {
+    "code": "417",
+    "label": "7. Lợi nhuận sau thuế chưa phân phối",
+    "formula": "-B(421)"
+   },
+   {
+    "code": "500",
+    "label": "TỔNG CỘNG NGUỒN VỐN (500=300+400)",
+    "formula": "R(300, 400)",
+    "bold": true
+   }
+  ],
+  "income_statement": [
+   {
+    "code": "01",
+    "label": "1. Doanh thu bán hàng và cung cấp dịch vụ",
+    "formula": "CT(511)"
+   },
+   {
+    "code": "02",
+    "label": "2. Các khoản giảm trừ doanh thu",
+    "formula": "DT(511)"
+   },
+   {
+    "code": "10",
+    "label": "3. Doanh thu thuần về bán hàng và cung cấp dịch vụ (10 = 01 - 02)",
+    "formula": "R(01) - R(02)",
+    "bold": true
+   },
+   {
+    "code": "11",
+    "label": "4. Giá vốn hàng bán",
+    "formula": "CK(632) - DK(632)"
+   },
+   {
+    "code": "20",
+    "label": "5. Lợi nhuận gộp về bán hàng và cung cấp dịch vụ (20 = 10 - 11)",
+    "formula": "R(10) - R(11)",
+    "bold": true
+   },
+   {
+    "code": "21",
+    "label": "6. Doanh thu hoạt động tài chính",
+    "formula": "DK(515) - CK(515)"
+   },
+   {
+    "code": "22",
+    "label": "7. Chi phí tài chính",
+    "formula": "CK(635) - DK(635)"
+   },
+   {
+    "code": "23",
+    "label": "- Trong đó: Chi phí lãi vay",
+    "formula": ""
+   },
+   {
+    "code": "24",
+    "label": "8. Chi phí quản lý kinh doanh",
+    "formula": "CK(642) - DK(642)"
+   },
+   {
+    "code": "30",
+    "label": "9. Lợi nhuận thuần từ hoạt động kinh doanh (30 = 20 + 21 - 22 - 24)",
+    "formula": "R(20) + R(21) - R(22) - R(24)",
+    "bold": true
+   },
+   {
+    "code": "31",
+    "label": "10. Thu nhập khác",
+    "formula": "DK(711) - CK(711)"
+   },
+   {
+    "code": "32",
+    "label": "11. Chi phí khác",
+    "formula": "CK(811) - DK(811)"
+   },
+   {
+    "code": "40",
+    "label": "12. Lợi nhuận khác (40 = 31 - 32)",
+    "formula": "R(31) - R(32)",
+    "bold": true
+   },
+   {
+    "code": "50",
+    "label": "13. Tổng lợi nhuận kế toán trước thuế (50 = 30 + 40)",
+    "formula": "R(30) + R(40)",
+    "bold": true
+   },
+   {
+    "code": "51",
+    "label": "14. Chi phí thuế TNDN",
+    "formula": "CK(821) - DK(821)"
+   },
+   {
+    "code": "60",
+    "label": "15. Lợi nhuận sau thuế thu nhập doanh nghiệp (60 = 50 - 51)",
+    "formula": "R(50) - R(51)",
+    "bold": true
+   }
+  ]
+ }
+}

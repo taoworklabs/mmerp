@@ -7,6 +7,13 @@ type Rule struct {
 	Side      *string `json:"side" nullable:"true" enum:"debit,credit"`
 	// ByPartner: the kind's lines name a partner, so it maps only to an account tracked by partner.
 	ByPartner bool `json:"by_partner"`
+	// Suggested: for a kind without a rule, what the applied chart template maps it to.
+	Suggested *RuleSuggestion `json:"suggested,omitempty"`
+}
+
+type RuleSuggestion struct {
+	AccountID int64  `json:"account_id"`
+	Side      string `json:"side" enum:"debit,credit"`
 }
 
 type RuleList struct {

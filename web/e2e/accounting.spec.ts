@@ -110,12 +110,15 @@ test('a payroll posted before its rules exist waits for mapping, then reaches th
   await expect.poll(async () => (await pending())?.reason, { timeout: 60_000 }).toBe('unmapped')
   expect((await ledger('642')).lines).toHaveLength(0)
 
-  // The accountant sets the five rules, then posts what is pending from the screen.
+  // The accountant sets the payroll rules, then posts what is pending from the screen.
   for (const [kind, code, side] of [
     ['salary_expense', '642', 'debit'],
     ['employer_insurance_expense', '642', 'debit'],
     ['salary_payable', '334', 'credit'],
-    ['insurance_payable', '338', 'credit'],
+    ['social_insurance_payable', '338', 'credit'],
+    ['health_insurance_payable', '338', 'credit'],
+    ['unemployment_insurance_payable', '338', 'credit'],
+    ['union_fee_payable', '338', 'credit'],
     ['pit_payable', '3335', 'credit'],
   ] as const) {
     await ok(api.put(`/api/accounting/rules/${kind}`, { data: { account_id: acct[code], side } }))

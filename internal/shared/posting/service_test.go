@@ -85,7 +85,8 @@ func TestMain(m *testing.M) {
 
 func TestKindsListsEveryKind(t *testing.T) {
 	want := []posting.KindDecl{{Kind: posting.SalaryExpense}, {Kind: posting.EmployerInsuranceExpense}, {Kind: posting.SalaryPayable},
-		{Kind: posting.InsurancePayable}, {Kind: posting.PitPayable}, {Kind: testReceivable, ByPartner: true}}
+		{Kind: posting.InsurancePayable}, {Kind: posting.PitPayable}, {Kind: posting.SocialInsurancePayable}, {Kind: posting.HealthInsurancePayable},
+		{Kind: posting.UnemploymentInsurancePayable}, {Kind: posting.UnionFeePayable}, {Kind: testReceivable, ByPartner: true}}
 	if got := posting.Kinds(); !slices.Equal(got, want) {
 		t.Fatalf("got %v", got)
 	}

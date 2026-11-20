@@ -206,7 +206,11 @@ func TestPayrollLifecycle(t *testing.T) {
 	p = f.payrollDoc(first)
 	// Fewer than 3 people in department A: the pay rolls up to the legal entity.
 	want := []line{{"salary_expense", f.c, p.Totals[0].Gross}, {"employer_insurance_expense", f.c, 22_000_000 * 235 / 1000},
-		{"salary_payable", f.c, p.Totals[0].Net}, {"insurance_payable", f.c, 22_000_000 * 340 / 1000}, {"pit_payable", f.c, p.Totals[0].IncomeTax}}
+		{"salary_payable", f.c, p.Totals[0].Net},
+		// Owed per fund, employee and employer shares together: 8 + 17.5 %, 1.5 + 3 %, 1 + 1 %, 2 %.
+		{"social_insurance_payable", f.c, 22_000_000 * 255 / 1000}, {"health_insurance_payable", f.c, 22_000_000 * 45 / 1000},
+		{"unemployment_insurance_payable", f.c, 22_000_000 * 20 / 1000}, {"union_fee_payable", f.c, 22_000_000 * 20 / 1000},
+		{"pit_payable", f.c, p.Totals[0].IncomeTax}}
 	if !slices.Equal(lines, want) {
 		t.Fatalf("posting lines %+v, want %+v", lines, want)
 	}
@@ -226,7 +230,7 @@ func TestPayrollLifecycle(t *testing.T) {
 	f.check(errOf(f.rec.Transition(f.pay, payrollRef(first), f.payrollDoc(first).Version, record.Cancelled)))
 	var voided int
 	f.check(f.system.QueryRow(f.admin, `SELECT count(*) FROM posting.lines WHERE doc_id = $1 AND voided_at IS NOT NULL`, first).Scan(&voided))
-	if voided != 5 || f.heldBy(first) != 0 {
+	if voided != len(want) || f.heldBy(first) != 0 {
 		t.Fatalf("voided %d, held %d", voided, f.heldBy(first))
 	}
 	f.check(f.send(second))

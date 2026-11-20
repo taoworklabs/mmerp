@@ -36,6 +36,70 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/accounting/closing-accounts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["get-closing-accounts"];
+        put: operations["set-closing-accounts"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/accounting/closings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["list-closings"];
+        put?: never;
+        post: operations["create-closing"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/accounting/closings/actions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["get-closing-actions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/accounting/closings/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["get-closing"];
+        put: operations["update-closing"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/accounting/journal-entries": {
         parameters: {
             query?: never;
@@ -239,6 +303,86 @@ export interface paths {
         get?: never;
         put: operations["set-accounting-start"];
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/accounting/statement-forms/{form}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["get-statement-form"];
+        put: operations["save-statement-form"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/accounting/statements/balance-sheet": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["get-balance-sheet"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/accounting/statements/income-statement": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["get-income-statement"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/accounting/templates": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["list-chart-templates"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/accounting/templates/{code}/apply": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["apply-chart-template"];
         delete?: never;
         options?: never;
         head?: never;
@@ -3242,6 +3386,123 @@ export interface components {
             current: string;
             next: string;
         };
+        Closing: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example /api/schemas/Closing.json
+             */
+            readonly $schema?: string;
+            allowed_actions: string[];
+            /** Format: date */
+            date: string;
+            description: string;
+            /** Format: int64 */
+            id: number;
+            /** Format: int64 */
+            legal_entity_id: number;
+            lines: components["schemas"]["ClosingLine"][];
+            number: string;
+            /** @enum {string} */
+            status: "draft" | "pending_approval" | "posted" | "cancelled";
+            /** Format: int32 */
+            version: number;
+        };
+        ClosingAccounts: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example /api/schemas/ClosingAccounts.json
+             */
+            readonly $schema?: string;
+            /** Format: int64 */
+            result_account_id: number;
+            /** Format: int64 */
+            retained_account_id: number;
+        };
+        ClosingAccountsOut: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example /api/schemas/ClosingAccountsOut.json
+             */
+            readonly $schema?: string;
+            /** Format: int64 */
+            result_account_id: number;
+            result_code: string;
+            result_name: string;
+            /** Format: int64 */
+            retained_account_id: number;
+            retained_code: string;
+            retained_name: string;
+        };
+        ClosingActions: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example /api/schemas/ClosingActions.json
+             */
+            readonly $schema?: string;
+            allowed_actions: string[];
+        };
+        ClosingLine: {
+            account_code: string;
+            /** Format: int64 */
+            account_id: number;
+            account_name: string;
+            /**
+             * Format: int64
+             * @description Minor unit
+             */
+            credit: number;
+            /**
+             * Format: int64
+             * @description Minor unit
+             */
+            debit: number;
+            /** Format: int64 */
+            org_unit_id: number | null;
+            /** Format: int64 */
+            partner_id: number | null;
+        };
+        ClosingList: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example /api/schemas/ClosingList.json
+             */
+            readonly $schema?: string;
+            items: components["schemas"]["ClosingListItem"][];
+            /** Format: int64 */
+            total: number;
+        };
+        ClosingListItem: {
+            /** Format: date */
+            date: string;
+            description: string;
+            /** Format: int64 */
+            id: number;
+            /** Format: int64 */
+            legal_entity_id: number;
+            number: string;
+            /** @enum {string} */
+            status: "draft" | "pending_approval" | "posted" | "cancelled";
+        };
+        ClosingUpdate: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example /api/schemas/ClosingUpdate.json
+             */
+            readonly $schema?: string;
+            /** Format: date */
+            date: string;
+            description: string;
+            /** Format: int64 */
+            legal_entity_id: number;
+            /** Format: int32 */
+            version: number;
+        };
         CodeSeries: {
             allowed_actions: string[];
             /** @description Translated as <code>.code_series */
@@ -4967,6 +5228,24 @@ export interface components {
             request_id: string;
             /** Format: int64 */
             warehouse_id: number;
+        };
+        NewClosing: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example /api/schemas/NewClosing.json
+             */
+            readonly $schema?: string;
+            /** Format: date */
+            date: string;
+            description: string;
+            /** Format: int64 */
+            legal_entity_id: number;
+            /**
+             * Format: uuid
+             * @description Generated once per form: sending it again returns the first document
+             */
+            request_id: string;
         };
         NewContract: {
             /**
@@ -7053,6 +7332,7 @@ export interface components {
             kind: string;
             /** @enum {string|null} */
             side: "debit" | "credit" | null;
+            suggested?: components["schemas"]["RuleSuggestion"];
         };
         RuleFields: {
             /**
@@ -7090,6 +7370,12 @@ export interface components {
              */
             readonly $schema?: string;
             items: components["schemas"]["Rule"][];
+        };
+        RuleSuggestion: {
+            /** Format: int64 */
+            account_id: number;
+            /** @enum {string} */
+            side: "debit" | "credit";
         };
         SavePITAuthorisationsInputBody: {
             /**
@@ -7209,6 +7495,49 @@ export interface components {
              */
             readonly $schema?: string;
             items: components["schemas"]["Start"][];
+        };
+        Statement: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example /api/schemas/Statement.json
+             */
+            readonly $schema?: string;
+            lines: components["schemas"]["StatementLine"][];
+            not_closed: boolean;
+        };
+        StatementForm: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example /api/schemas/StatementForm.json
+             */
+            readonly $schema?: string;
+            rows: components["schemas"]["StatementRow"][];
+        };
+        StatementLine: {
+            bold: boolean;
+            /** @description The row's code on the official form (mã số) */
+            code: string;
+            /**
+             * Format: int64
+             * @description Minor unit
+             */
+            current: number;
+            formula: string;
+            label: string;
+            /**
+             * Format: int64
+             * @description Comparative column, minor unit
+             */
+            previous: number;
+        };
+        StatementRow: {
+            bold: boolean;
+            /** @description The row's code on the official form (mã số) */
+            code: string;
+            formula: string;
+            label: string;
         };
         StepDef: {
             /**
@@ -7397,6 +7726,21 @@ export interface components {
             version: number;
             /** Format: int64 */
             warehouse_id: number;
+        };
+        TemplateInfo: {
+            code: string;
+            name: {
+                [key: string]: string;
+            };
+        };
+        TemplatesOutputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example /api/schemas/TemplatesOutputBody.json
+             */
+            readonly $schema?: string;
+            items: components["schemas"]["TemplateInfo"][];
         };
         Termination: {
             /**
@@ -8031,6 +8375,231 @@ export interface operations {
             };
         };
     };
+    "get-closing-accounts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ClosingAccountsOut"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "set-closing-accounts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ClosingAccounts"];
+            };
+        };
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "list-closings": {
+        parameters: {
+            query?: {
+                /** @description Number or description */
+                q?: string;
+                status?: "draft" | "pending_approval" | "posted" | "cancelled";
+                legal_entity_id?: number;
+                from?: string;
+                to?: string;
+                sort?: "date" | "-date" | "number" | "-number";
+                page?: number;
+                page_size?: 20 | 50 | 100;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ClosingList"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "create-closing": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NewClosing"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CreatedOutputBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "get-closing-actions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ClosingActions"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "get-closing": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Closing"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "update-closing": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ClosingUpdate"];
+            };
+        };
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
     "list-journal-entries": {
         parameters: {
             query?: {
@@ -8531,6 +9100,193 @@ export interface operations {
                 "application/json": components["schemas"]["StartInputBody"];
             };
         };
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "get-statement-form": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                form: "balance_sheet" | "income_statement";
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StatementForm"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "save-statement-form": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                form: "balance_sheet" | "income_statement";
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StatementForm"];
+            };
+        };
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "get-balance-sheet": {
+        parameters: {
+            query: {
+                legal_entity_id: number;
+                date: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Statement"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "get-income-statement": {
+        parameters: {
+            query: {
+                legal_entity_id: number;
+                from: string;
+                to: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Statement"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "list-chart-templates": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TemplatesOutputBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "apply-chart-template": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                code: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
         responses: {
             /** @description No Content */
             204: {

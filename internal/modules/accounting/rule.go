@@ -2,6 +2,9 @@ package accounting
 
 import (
 	"context"
+	"errors"
+
+	"github.com/jackc/pgx/v5"
 
 	"github.com/taoworklabs/mmerp/internal/modules/accounting/internal/store"
 	"github.com/taoworklabs/mmerp/internal/platform"
@@ -41,7 +44,42 @@ func (s *Service) Rules(ctx context.Context) ([]Rule, error) {
 			out = append(out, x)
 		}
 	}
-	return out, nil
+	return out, suggestRules(ctx, out)
+}
+
+// suggestRules fills the applied template's account and side into rules without one, where
+// the template's account still exists and matches the kind's partner flag.
+func suggestRules(ctx context.Context, rules []Rule) error {
+	code, err := store.GetChartTemplate.Run(ctx)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return nil
+	}
+	if err != nil {
+		return err
+	}
+	t, _ := templateOf(code)
+	byKind := map[string]int{}
+	var codes []string
+	for i, r := range t.Rules {
+		byKind[r.Kind] = i
+		codes = append(codes, r.Account)
+	}
+	accounts, err := store.AccountIDsByCode.Run(ctx, codes)
+	if err != nil {
+		return err
+	}
+	for i, r := range rules {
+		j, ok := byKind[r.Kind]
+		if r.AccountID != nil || !ok {
+			continue
+		}
+		for _, a := range accounts {
+			if a.Code == t.Rules[j].Account && a.ByPartner == r.ByPartner {
+				rules[i].Suggested = &RuleSuggestion{AccountID: a.ID, Side: t.Rules[j].Side}
+			}
+		}
+	}
+	return nil
 }
 
 func (s *Service) SaveRule(ctx context.Context, kind string, accountID int64, side string) error {

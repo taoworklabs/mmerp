@@ -15,6 +15,7 @@ import { ContentSkeleton, EmptyState, ErrorState } from '@/shared/ui/states'
 import { StatusBadge } from '@/shared/ui/StatusBadge'
 import { icon } from '@/shared/ui/theme'
 import { TreeList, type TreeNode } from '@/shared/ui/TreeList'
+import { ApplyTemplateModal } from '../components/ApplyTemplateModal'
 import { accountOptions, useAccounts } from '../hooks/useAccounting'
 import { hasLinesBelow, parentCandidates } from '../tree'
 import { accountingKeys } from '../keys'
@@ -44,6 +45,7 @@ export function AccountsPage() {
   const accounts = useAccounts()
   const [editing, setEditing] = useState<Account | 'new' | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [applying, setApplying] = useState(false)
 
   // Retiring is reversible and touches no document, so it applies at once and offers Undo.
   async function toggle(a: Account, undo = false) {
@@ -65,7 +67,14 @@ export function AccountsPage() {
   function body() {
     if (accounts.isPending) return <ContentSkeleton />
     if (accounts.isError) return <ErrorState message={errorText(t, accounts.error)} onRetry={() => void accounts.refetch()} />
-    if (accounts.data.length === 0) return <EmptyState title={t('accounting.accounts.empty')} description={t('accounting.accounts.empty_description')} />
+    if (accounts.data.length === 0)
+      return (
+        <EmptyState
+          title={t('accounting.accounts.empty')}
+          description={t('accounting.accounts.empty_description')}
+          action={writable && <Button onClick={() => setApplying(true)}>{t('accounting.template.title')}</Button>}
+        />
+      )
     return (
       <TreeList
         label={t('accounting.accounts.title')}
@@ -116,6 +125,7 @@ export function AccountsPage() {
     >
       {error && <ErrorState message={error} />}
       {body()}
+      {applying && <ApplyTemplateModal onClose={() => setApplying(false)} />}
       {editing && <AccountModal account={editing === 'new' ? null : editing} accounts={accounts.data ?? []} onClose={() => setEditing(null)} />}
     </ListPage>
   )

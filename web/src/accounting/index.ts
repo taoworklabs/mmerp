@@ -1,6 +1,22 @@
-import { IconBook, IconBook2, IconCalculator, IconCalendarEvent, IconClockHour4, IconGitBranch, IconListNumbers, IconRoute, IconScale, IconUsers } from '@tabler/icons-react'
+import {
+  IconArrowsShuffle,
+  IconBook,
+  IconBook2,
+  IconCalculator,
+  IconCalendarEvent,
+  IconChartBar,
+  IconClockHour4,
+  IconFileSpreadsheet,
+  IconGitBranch,
+  IconListNumbers,
+  IconReportMoney,
+  IconRoute,
+  IconScale,
+  IconTransfer,
+  IconUsers,
+} from '@tabler/icons-react'
 import type { AreaManifest } from '@/shared/area'
-import { accountingKeys, journalEntryDocType } from './keys'
+import { accountingKeys, closingDocType, journalEntryDocType } from './keys'
 
 export const accounting: AreaManifest = {
   product: 'accounting',
@@ -9,13 +25,18 @@ export const accounting: AreaManifest = {
   routes: () => import('./routes'),
   nav: [
     { label: 'accounting.nav.journal_entries', path: 'journal-entries', icon: IconBook, permission: 'accounting.view' },
+    { label: 'accounting.nav.closings', path: 'closings', icon: IconTransfer, permission: 'accounting.view' },
     { label: 'accounting.nav.ledger', path: 'ledger', icon: IconBook2, permission: 'accounting.view' },
     { label: 'accounting.nav.trial_balance', path: 'trial-balance', icon: IconScale, permission: 'accounting.view' },
     { label: 'accounting.nav.partner_balances', path: 'partner-balances', icon: IconUsers, permission: 'accounting.view' },
     { label: 'accounting.nav.pending', path: 'pending', icon: IconClockHour4, permission: 'accounting.view' },
+    { label: 'accounting.nav.balance_sheet', path: 'balance-sheet', icon: IconReportMoney, permission: 'accounting.view', group: 'accounting.nav.group_statements' },
+    { label: 'accounting.nav.income_statement', path: 'income-statement', icon: IconChartBar, permission: 'accounting.view', group: 'accounting.nav.group_statements' },
     { label: 'accounting.nav.accounts', path: 'accounts', icon: IconListNumbers, permission: 'accounting.manage', group: 'accounting.nav.group_config' },
     { label: 'accounting.nav.rules', path: 'rules', icon: IconRoute, permission: 'accounting.manage', group: 'accounting.nav.group_config' },
     { label: 'accounting.nav.starts', path: 'starts', icon: IconCalendarEvent, permission: 'accounting.manage', group: 'accounting.nav.group_config' },
+    { label: 'accounting.nav.closing_accounts', path: 'closing-accounts', icon: IconArrowsShuffle, permission: 'accounting.manage', group: 'accounting.nav.group_config' },
+    { label: 'accounting.nav.statement_forms', path: 'statement-forms', icon: IconFileSpreadsheet, permission: 'accounting.manage', group: 'accounting.nav.group_config' },
     {
       label: 'accounting.nav.approval_rules',
       path: 'approval-rules',
@@ -35,6 +56,11 @@ export const accounting: AreaManifest = {
       path: (id) => `journal-entries/${id}`,
       preview: () => import('./components/JournalEntryPreview'),
       // Posting or cancelling an entry moves the ledger, the trial balance and what is pending.
+      invalidate: () => [accountingKeys.books()],
+    },
+    [closingDocType]: {
+      path: (id) => `closings/${id}`,
+      preview: () => import('./components/ClosingPreview'),
       invalidate: () => [accountingKeys.books()],
     },
   },
