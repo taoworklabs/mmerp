@@ -29,6 +29,9 @@ func (s *Service) registerClosing() {
 
 // ClosingAccounts returns where closings post; not found until they are set.
 func (s *Service) ClosingAccounts(ctx context.Context) (ClosingAccountsOut, error) {
+	if err := s.requireView(ctx); err != nil {
+		return ClosingAccountsOut{}, err
+	}
 	r, err := store.GetClosingAccounts.Run(ctx)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return ClosingAccountsOut{}, platform.ErrNotFound

@@ -144,6 +144,14 @@ func TestClosingRefusals(t *testing.T) {
 	if err := l.postClosing(early); !isCode(err, "accounting_not_started") {
 		t.Fatalf("before the start date: %v", err)
 	}
+	// Reading them needs the view permission somewhere.
+	outsider, err := l.core.IAM.CreateUser(l.core.Admin, "outsider", "Outsider", "long enough")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := l.s.ClosingAccounts(platform.WithActor(l.core.Ctx, outsider)); !isCode(err, "forbidden") {
+		t.Fatalf("outsider reads closing accounts: %v", err)
+	}
 	// Closing accounts must be postable.
 	parent := mustCreate(t, l.s, l.core.Admin, acct("42", "equity", nil))
 	mustCreate(t, l.s, l.core.Admin, acct("421", "equity", &parent))
