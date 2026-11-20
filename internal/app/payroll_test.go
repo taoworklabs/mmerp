@@ -133,7 +133,8 @@ func TestPayrollSampleFlow(t *testing.T) {
 	if err := f.system.QueryRow(t.Context(), `SELECT count(*) FROM river_job WHERE kind NOT IN ('dataio.import', 'dataio.export', 'dataio.cleanup', 'attachment.cleanup', 'approval.overdue', 'hrm.leave_accrual', 'hrm.payroll_compute')`).Scan(&others); err != nil {
 		t.Fatal(err)
 	}
-	if lines != 5 || others != 0 {
+	// Expense, employer insurance and net pay; then four funds and the PIT.
+	if lines != 8 || others != 0 {
 		t.Fatalf("%d posting lines, %d other jobs", lines, others)
 	}
 	// 11': another March overtime cannot be approved into the closed period; it stays pending.
