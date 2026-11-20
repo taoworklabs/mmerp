@@ -207,7 +207,7 @@ Decision: [ADR-0003](./adr/0003-business-lines-are-data.md). Accounting is an **
 - **Business lines contain no sensitive data tied to an individual.** `posting.lines` and the general ledger are not encrypted, and accounting reads them with SQL. The module must aggregate such lines, for example salaries payable aggregated by department. Per-person detail stays in the owning module's tables, encrypted.
 - Business lines are written even when the tenant has no accounting. `record` knows nothing about posting.
 - `posting` exposes the hook `posting.Hooks{OnChanged func(ctx, ref) error}`, which runs in the transaction that wrote or voided the lines; a `nil` hook is a no-op. `accounting` (in `modules/`, only running when the accounting product is enabled) implements the hook by enqueueing a `(doc_type, doc_id)` job in the same transaction. The hook is always wired and does nothing while the accounting product is disabled.
-- **Account mapping** (from line kind to account and side) is done by `accounting` using configurable rules. The generic core ships no defaults; defaults following Circular 200 (TT200) and Circular 133 (TT133) belong to a later localisation pack ([ADR-0050](./adr/0050-accounting-product-and-general-ledger.md)).
+- **Account mapping** (from line kind to account and side) is done by `accounting` using configurable rules. The generic core ships no defaults; defaults following Circular 133 and Circular 99 come from chart templates applied once to a tenant ([ADR-0120](./adr/0120-vietnamese-accounting-layer.md)).
 
 ### Posting jobs: reconcile, do not replay
 

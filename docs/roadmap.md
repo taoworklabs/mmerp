@@ -28,6 +28,7 @@ A milestone only passes when what it adds keeps the contract intact from table t
 M11 Attachments and discussion ─► M12 Notifications ─► M13 PDF printing ─► M14 Sales   (all done)
    ─► HRM review ─► Core work after M14   (done) ─► M15 Accounting   (done)
    ─► M16 Partner subledger ─► M17 Sales to cash ─► M18 Purchasing ─► M19 Stock ─► M20 Stock valuation   (done)
+   ─► M21 Vietnamese accounting
    ┄► M10 On-premise operations ┄► [Gate: production readiness]   (on hold)
 ```
 
@@ -209,6 +210,19 @@ Vertical slices, each from migration to screen:
 5. Cancelling any of these reverses the value it posted; the average returns to what it was.
 6. A delivery of an item allowing negative stock and never received posts at value zero; the next receipt absorbs it. `recordtest` passes for every type touched.
 
+## M21. Vietnamese accounting
+
+**Goal:** a tenant keeps books under Circular 133 or Circular 99 without building a chart by hand: a template applies the chart, the rules, the closing accounts and the statement forms; the payroll writes what it owes per insurance fund; closing entries move the period's result to 911 and 421; the balance sheet (B01) and income statement (B02) come from the ledger ([ADR-0120](./adr/0120-vietnamese-accounting-layer.md)). VAT declarations and CIT stay out.
+
+**Exit criteria** (with `make seed` data and `PRODUCTS=hrm,sales,purchase,accounting`):
+
+1. On a tenant without accounts, applying the Circular 133 template gives its chart, a rule for every declared kind and the closing accounts; applying it again, or with any account present, is refused. The same holds for Circular 99 on another tenant.
+2. A payroll posts its insurance to one account per fund (3382, 3383, 3384, 3385 under Circular 133); payrolls posted before keep `insurance_payable`.
+3. A closing entry at month end leaves every revenue and expense account at zero and 911 at zero, and moves the result to 4212; a document backdated into the month and a second closing move only the remainder; cancelling a closing reverses it. `recordtest` passes for `accounting.closing`.
+4. B01 at month end balances (total assets equal total sources) and its 421 equals the trial balance; a customer with an advance shows under liabilities, not as a negative receivable.
+5. B02 for the month matches a worked example per template, checked by hand; before the closing it says the period is not closed.
+6. Both statements export to Excel. The seed applies the Circular 133 template instead of its hand-built chart.
+
 ## HRM review
 
 After M14, HRM went through a business review ([docs/hrm-review-plan.md](./hrm-review-plan.md), rounds [one](./hrm-review-round1.md) and [two](./hrm-review-round2.md)). The decisions are settled and built:
@@ -231,7 +245,7 @@ Core and frontend foundations built once Sales opened:
 - [ADR-0038](./adr/0038-data-engine-over-sqlc.md): Data engine over sqlc: dynamic parts compiled from code-declared fragments, no ORM
 - [ADR-0039](./adr/0039-shared-master-data.md): Shared master data: partners, items and tax in `shared/`, with their own namespace
 
-**Next:** not chosen yet; the next milestone needs an ADR first. M10 and the production-readiness gate stay on hold.
+**Next:** M21 Vietnamese accounting. M10 and the production-readiness gate stay on hold.
 
 ## M10. On-premise operations
 
@@ -288,7 +302,7 @@ Not numbered; the checks before real data goes in. Real data enters the system o
 | --- | --- |
 | Custom fields | When a tenant needs something specific |
 | Pay periods other than the calendar month, time clocks, salary payment through banks, electronic social insurance (BHXH điện tử) | Per [products/hrm.md](../products/hrm.md#scope) |
-| Accounting: the Vietnamese layer (Circular 133/200 charts and rules, Ministry of Finance reports, VAT and CIT), financial statements, receivables and payables per party, multiple currencies | When the generic ledger (M15) is in use and a tenant needs them ([products/accounting.md](../products/accounting.md#scope)) |
+| Accounting: VAT declarations, CIT, HTKK export, due dates and aging, multiple currencies | When the generic ledger (M15) is in use and a tenant needs them ([products/accounting.md](../products/accounting.md#scope)) |
 | Sales: CRM pipeline, stock, delivery, payment, invoices and e-invoices, foreign currencies, price lists | Per [products/sales.md](../products/sales.md#scope) |
 | Cloud model B | When operating cloud model A becomes overloaded ([tenancy.md](./tenancy.md#cloud-path-from-a-to-b)) |
 | Product switcher in the header | When moving between HRM and Sales through the home page proves slow |
