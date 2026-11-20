@@ -357,6 +357,38 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/accounting/templates": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["list-chart-templates"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/accounting/templates/{code}/apply": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["apply-chart-template"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/accounting/trial-balance": {
         parameters: {
             query?: never;
@@ -7300,6 +7332,7 @@ export interface components {
             kind: string;
             /** @enum {string|null} */
             side: "debit" | "credit" | null;
+            suggested?: components["schemas"]["RuleSuggestion"];
         };
         RuleFields: {
             /**
@@ -7337,6 +7370,12 @@ export interface components {
              */
             readonly $schema?: string;
             items: components["schemas"]["Rule"][];
+        };
+        RuleSuggestion: {
+            /** Format: int64 */
+            account_id: number;
+            /** @enum {string} */
+            side: "debit" | "credit";
         };
         SavePITAuthorisationsInputBody: {
             /**
@@ -7687,6 +7726,21 @@ export interface components {
             version: number;
             /** Format: int64 */
             warehouse_id: number;
+        };
+        TemplateInfo: {
+            code: string;
+            name: {
+                [key: string]: string;
+            };
+        };
+        TemplatesOutputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example /api/schemas/TemplatesOutputBody.json
+             */
+            readonly $schema?: string;
+            items: components["schemas"]["TemplateInfo"][];
         };
         Termination: {
             /**
@@ -9182,6 +9236,64 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["Statement"];
                 };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "list-chart-templates": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TemplatesOutputBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "apply-chart-template": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                code: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Error */
             default: {

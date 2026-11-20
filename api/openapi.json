@@ -12934,6 +12934,9 @@
               "string",
               "null"
             ]
+          },
+          "suggested": {
+            "$ref": "#/components/schemas/RuleSuggestion"
           }
         },
         "required": [
@@ -13038,6 +13041,27 @@
         },
         "required": [
           "items"
+        ],
+        "type": "object"
+      },
+      "RuleSuggestion": {
+        "additionalProperties": false,
+        "properties": {
+          "account_id": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "side": {
+            "enum": [
+              "debit",
+              "credit"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "account_id",
+          "side"
         ],
         "type": "object"
       },
@@ -14118,6 +14142,49 @@
           "warehouse_id",
           "note",
           "lines"
+        ],
+        "type": "object"
+      },
+      "TemplateInfo": {
+        "additionalProperties": false,
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "name": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": "object"
+          }
+        },
+        "required": [
+          "code",
+          "name"
+        ],
+        "type": "object"
+      },
+      "TemplatesOutputBody": {
+        "additionalProperties": false,
+        "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "/api/schemas/TemplatesOutputBody.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/TemplateInfo"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "items"
         ],
         "type": "object"
       },
@@ -17144,6 +17211,71 @@
               }
             },
             "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "tags": [
+          "accounting",
+          "accounting"
+        ]
+      }
+    },
+    "/accounting/templates": {
+      "get": {
+        "operationId": "list-chart-templates",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TemplatesOutputBody"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "tags": [
+          "accounting",
+          "accounting"
+        ]
+      }
+    },
+    "/accounting/templates/{code}/apply": {
+      "post": {
+        "operationId": "apply-chart-template",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "code",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
           },
           "default": {
             "content": {
