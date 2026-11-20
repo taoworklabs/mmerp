@@ -282,6 +282,37 @@ func (q *Queries) InsertOrderLines(ctx context.Context, arg InsertOrderLinesPara
 	return err
 }
 
+const orderLineNets = `-- name: OrderLineNets :many
+SELECT position, quantity::text AS quantity, (amount - discount)::bigint AS net FROM purchase.order_lines WHERE order_id = $1
+`
+
+type OrderLineNetsRow struct {
+	Position int32
+	Quantity string
+	Net      int64
+}
+
+// What each line costs net of its discount, for valuing goods at the order price.
+func (q *Queries) OrderLineNets(ctx context.Context, orderID int64) ([]OrderLineNetsRow, error) {
+	rows, err := q.db.Query(ctx, orderLineNets, orderID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []OrderLineNetsRow
+	for rows.Next() {
+		var i OrderLineNetsRow
+		if err := rows.Scan(&i.Position, &i.Quantity, &i.Net); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const orderListBase = `-- name: OrderListBase :many
 SELECT o.id, d.number, d.status, d.date, d.org_unit_id, o.supplier_id, o.supplier_code, o.supplier_name,
        o.total, u.name AS org_unit_name,

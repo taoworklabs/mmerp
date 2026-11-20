@@ -47,9 +47,10 @@ func newFixture(t *testing.T) *fixture {
 	core := coretest.New(t, "purchase")
 	ctx, admin, ids, rec, num := core.Ctx, core.Admin, core.IAM, core.Record, core.Numbering
 	partners := partner.NewService(partner.Deps{IAM: ids, Record: rec, Audit: core.Audit, Numbering: num})
-	stk := stock.NewService(stock.Deps{IAM: ids, Audit: core.Audit, Numbering: num, Record: rec, Printing: core.Printing})
+	pst := posting.NewService(posting.Hooks{})
+	stk := stock.NewService(stock.Deps{IAM: ids, Audit: core.Audit, Numbering: num, Record: rec, Printing: core.Printing, Posting: pst})
 	s := purchase.NewService(purchase.Deps{IAM: ids, Record: rec, Audit: core.Audit, Setting: core.Setting, Printing: core.Printing,
-		Numbering: num, Partner: partners, Stock: stk, Posting: posting.NewService(posting.Hooks{})})
+		Numbering: num, Partner: partners, Stock: stk, Posting: pst})
 	f := &fixture{t: t, core: core, ctx: ctx, admin: admin, rec: rec, appr: core.Approval, purchase: s, partners: partners, stock: stk}
 	f.c = must(t)(ids.CreateOrgUnit(admin, iam.OrgUnitInput{Kind: "company", Name: "C"}))
 	f.a = must(t)(ids.CreateOrgUnit(admin, iam.OrgUnitInput{ParentID: &f.c, Kind: "department", Name: "A"}))

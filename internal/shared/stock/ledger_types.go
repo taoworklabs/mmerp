@@ -30,7 +30,10 @@ var (
 	ErrCountDuplicate = &platform.Error{Status: http.StatusUnprocessableEntity, Code: "stock_count_duplicate"}
 )
 
-// Move is one document line's effect on stock: positive in, negative out.
+// Move is one document line's effect on stock: positive in, negative out. Value is the
+// incoming value when the caller knows it; nil values the move at average. A value-only move
+// (no warehouse, lot, serial or quantity) changes only the value, and only while the legal
+// entity has the item on hand.
 type Move struct {
 	LineNo      int
 	WarehouseID int64
@@ -38,6 +41,7 @@ type Move struct {
 	Lot         *LotRef
 	Serial      *string
 	Quantity    decimal.Decimal
+	Value       *int64
 }
 
 // Count is what a stocktake found for one key of one warehouse; Quantity ≥ 0.
@@ -49,10 +53,11 @@ type Count struct {
 	Quantity decimal.Decimal
 }
 
-// CountResult is a count's on hand when it posted.
+// CountResult is a count's on hand when it posted and the value of its difference.
 type CountResult struct {
 	LineNo int
 	Book   decimal.Decimal
+	Value  int64
 }
 
 // LotRef names a lot by code; a move creates it when missing, with Expiry (YYYY-MM-DD).

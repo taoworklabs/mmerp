@@ -99,7 +99,7 @@ func Modules() []platform.Module {
 	pst := posting.NewService(posting.Hooks{OnChanged: acc.PostingChanged})
 	h := hrm.NewService(hrm.Deps{IAM: ids, Record: rec, Audit: audit.NewService(), Setting: set, DataIO: dio, Printing: prn, Posting: pst, Numbering: num})
 	itm := item.NewService(item.Deps{IAM: ids, Audit: audit.NewService(), Numbering: num})
-	stk := stock.NewService(stock.Deps{IAM: ids, Audit: audit.NewService(), Numbering: num, Record: rec, Printing: prn})
+	stk := stock.NewService(stock.Deps{IAM: ids, Audit: audit.NewService(), Numbering: num, Record: rec, Printing: prn, Posting: pst})
 	ids.SetLegalEntityCreated(func(ctx context.Context, le int64) error { _, err := stk.DefaultWarehouse(ctx, le); return err })
 	prt := partner.NewService(partner.Deps{IAM: ids, Record: rec, Audit: audit.NewService(), Numbering: num})
 	sal := sales.NewService(sales.Deps{IAM: ids, Record: rec, Audit: audit.NewService(), Setting: set, Printing: prn, Numbering: num, Partner: prt, Stock: stk, Posting: pst})

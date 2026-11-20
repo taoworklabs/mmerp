@@ -253,12 +253,17 @@ func (s *Service) stocktakeTransition(ctx context.Context, d record.Doc, _ recor
 			return err
 		}
 		p := store.SetStocktakeResultsParams{StocktakeID: d.ID}
-		for _, r := range res {
+		vals := make([]int64, len(res))
+		for i, r := range res {
 			p.LineNos, p.Books = append(p.LineNos, int32(r.LineNo)), append(p.Books, r.Book.String())
+			vals[i] = r.Value
 		}
-		return store.SetStocktakeResults.Run(ctx, p)
+		if err := store.SetStocktakeResults.Run(ctx, p); err != nil {
+			return err
+		}
+		return s.postDifferences(ctx, d, vals, KindStocktakeSurplus, KindStocktakeShortage)
 	case record.Cancelled:
-		return s.Void(ctx, d.Ref)
+		return s.voidPosted(ctx, d.Ref)
 	}
 	return nil
 }

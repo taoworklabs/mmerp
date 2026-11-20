@@ -6,7 +6,7 @@ import { Link, useSearchParams } from 'react-router'
 import { api, ApiError, unwrap, type StockCardRow } from '@/shared/api/core'
 import { useRecordLinks } from '@/shared/area'
 import { useMe } from '@/shared/auth/me'
-import { errorText, formatDate, formatDecimal, today as todayIn } from '@/shared/i18n'
+import { errorText, formatDate, formatDecimal, formatNumber, today as todayIn } from '@/shared/i18n'
 import { type Column } from '@/shared/ui/DataTable'
 import { DateFilter, FilterChip, RemoteFilter } from '@/shared/ui/form'
 import { ListPage } from '@/shared/ui/page'
@@ -18,7 +18,7 @@ import { docTypeLabelKey, monthToDate } from '../stock'
 // The opening balance heads the moves; the closing one is the table's footer.
 type Row = StockCardRow & { key: string; edge?: 'opening' | 'closing' }
 
-const edgeRow = (edge: 'opening' | 'closing', date: string, balance: string): Row => ({ key: edge, edge, date, balance, doc_type: '', doc_id: 0, number: '', quantity: '' })
+const edgeRow = (edge: 'opening' | 'closing', date: string, balance: string): Row => ({ key: edge, edge, date, balance, doc_type: '', doc_id: 0, number: '', quantity: '', value: 0 })
 
 // StockCardPage: the moves of one item in one warehouse over a period, with the running balance.
 export function StockCardPage() {
@@ -94,6 +94,7 @@ export function StockCardPage() {
     { key: 'lot', header: t('stock.stock_card.lot'), role: 'meta', kind: 'code', render: (r) => r.lot_code ?? '' },
     { key: 'serial', header: t('stock.stock_card.serial'), role: 'meta', kind: 'code', render: (r) => r.serial_code ?? '' },
     { key: 'quantity', header: t('stock.stock_card.quantity'), role: 'meta', kind: 'number', render: (r) => formatDecimal(r.quantity, 3) },
+    { key: 'value', header: t('stock.stock_card.value'), role: 'meta', kind: 'number', render: (r) => (r.edge ? '' : formatNumber(r.value)) },
     { key: 'balance', header: t('stock.stock_card.balance'), role: 'meta', kind: 'number', strong: true, render: (r) => formatDecimal(r.balance, 3) },
   ]
   const rows = card.data && [edgeRow('opening', p.from, card.data.opening), ...card.data.rows.map((r, i) => ({ ...r, key: String(i) }))]

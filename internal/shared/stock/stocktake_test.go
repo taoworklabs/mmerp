@@ -227,3 +227,26 @@ func TestOnHandLinesTruncated(t *testing.T) {
 		t.Fatalf("large warehouse %d %v %v", len(l.Items), l.Truncated, err)
 	}
 }
+
+func TestStocktakePostsValues(t *testing.T) {
+	s := newStocked(t)
+	s.postAdjustment(t, stock.AdjustmentLine{ItemID: s.in, Quantity: "10", UnitCost: new(int64(100))})
+	id, err := s.stock.CreateStocktake(s.admin, stock.NewStocktake{StocktakeFields: stock.StocktakeFields{Date: "2026-11-03", WarehouseID: s.wh,
+		Lines: []stock.StocktakeLine{{ItemID: s.in, Counted: "7"}}}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := s.postStocktake(t, id); err != nil {
+		t.Fatal(err)
+	}
+	ref := record.Ref{Type: "stock.stocktake", ID: id}
+	if got := s.lines(t, ref); len(got) != 2 || got["stock_inventory"] != -300 || got["stocktake_shortage"] != 300 {
+		t.Fatalf("lines %v", got)
+	}
+	if err := s.transition(t, ref.Type, id, record.Cancelled); err != nil {
+		t.Fatal(err)
+	}
+	if got := s.lines(t, ref); len(got) != 0 {
+		t.Fatalf("cancelled %v", got)
+	}
+}

@@ -43,6 +43,7 @@ func NewService(d Deps) *Service {
 		"admin":  {PermView, PermManage},
 	}, "admin")
 	d.Numbering.RegisterSeries(warehouseSeries, "", "KHO")
+	declareKinds()
 	s := &Service{d: d}
 	s.registerAdjustment()
 	s.registerTransfer()

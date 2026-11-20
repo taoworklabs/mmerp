@@ -254,7 +254,8 @@ func (s *Service) transferTransition(ctx context.Context, d record.Doc, _ record
 				Move{LineNo: i + 1, WarehouseID: t.FromWarehouseID, ItemID: l.ItemID, Lot: lot, Serial: l.Serial, Quantity: q.Neg()},
 				Move{LineNo: i + 1, WarehouseID: t.ToWarehouseID, ItemID: l.ItemID, Lot: lot, Serial: l.Serial, Quantity: q})
 		}
-		return s.Record(ctx, d.Ref, moves)
+		_, err = s.Record(ctx, d.Ref, moves)
+		return err
 	case record.Cancelled:
 		return s.Void(ctx, d.Ref)
 	}

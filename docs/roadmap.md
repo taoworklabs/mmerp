@@ -196,7 +196,16 @@ Vertical slices, each from migration to screen:
 
 ## M20. Stock valuation
 
-**Not started.** Costing method (moving average or FIFO), cost on stock moves, cost of goods sold on deliveries, and whether goods reach 156 at the goods receipt with a "received, not invoiced" clearing account ([ADR-0090](./adr/0090-purchasing-product.md#consequences)). Needs an ADR first.
+**Goal:** every stock move carries a value at moving average per legal entity and item, and the documents moving goods book it: goods reach 156 at the goods receipt through "received, not invoiced", deliveries book cost of goods sold, adjustments and stocktakes their differences ([ADR-0110](./adr/0110-moving-average-stock-valuation.md), [design](./superpowers/specs/2026-11-19-stock-valuation-design.md)).
+
+**Exit criteria** (with `make seed` data and `PRODUCTS=hrm,sales,purchase,accounting`):
+
+1. Opening stock entered by adjustment with unit costs; the stock card shows the values.
+2. Two goods receipts of one item at different order prices give the weighted average; a delivery then books cost of goods sold at it, and the delivery emptying the stock leaves value zero.
+3. A goods receipt books 156 against received-not-invoiced; the supplier invoice clears it; a price difference goes to stock when on hand and to the price difference kind when not.
+4. Stocktake differences and adjustments book their kinds; transfers book nothing.
+5. Cancelling any of these reverses the value it posted; the average returns to what it was.
+6. A delivery of an item allowing negative stock and never received posts at value zero; the next receipt absorbs it. `recordtest` passes for every type touched.
 
 ## HRM review
 

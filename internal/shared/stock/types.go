@@ -101,6 +101,7 @@ type StockCardRow struct {
 	LotCode    *string `json:"lot_code,omitempty"`
 	SerialCode *string `json:"serial_code,omitempty"`
 	Quantity   string  `json:"quantity" doc:"Decimal, signed"`
+	Value      int64   `json:"value" doc:"Minor unit, signed like the quantity"`
 	Balance    string  `json:"balance" doc:"Decimal"`
 }
 

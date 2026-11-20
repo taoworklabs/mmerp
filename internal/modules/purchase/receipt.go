@@ -13,6 +13,7 @@ import (
 	"github.com/taoworklabs/mmerp/internal/core/record"
 	"github.com/taoworklabs/mmerp/internal/modules/purchase/internal/store"
 	"github.com/taoworklabs/mmerp/internal/platform"
+	"github.com/taoworklabs/mmerp/internal/shared/posting"
 	"github.com/taoworklabs/mmerp/internal/shared/stock"
 )
 
@@ -28,8 +29,9 @@ func (s *Service) registerGoodsReceipt() {
 	})
 }
 
-// receiptTransition brings the goods in on posting, after checking the lines against the order
-// again, and takes them out on cancelling; the ledger refuses when they were already issued.
+// receiptTransition brings the goods in at the order price on posting, after checking the lines
+// against the order again, booking them as received not invoiced; cancelling takes them out, and
+// the ledger refuses when they were already issued.
 func (s *Service) receiptTransition(ctx context.Context, d record.Doc, _ record.Status) error {
 	switch d.Status {
 	case record.Posted:
@@ -49,19 +51,58 @@ func (s *Service) receiptTransition(ctx context.Context, d record.Doc, _ record.
 		if err != nil {
 			return err
 		}
+		prices, err := loadOrderPrices(ctx, h.OrderID)
+		if err != nil {
+			return err
+		}
 		moves := make([]stock.Move, len(lines))
+		var total int64
 		for i, l := range lines {
 			q, err := decimal.NewFromString(l.Quantity)
 			if err != nil {
 				return err
 			}
-			moves[i] = stock.Move{LineNo: i + 1, WarehouseID: h.WarehouseID, ItemID: l.ItemID, Lot: l.Lot, Serial: l.Serial, Quantity: q}
+			v := prices.value(l.OrderPosition, q)
+			total += v
+			moves[i] = stock.Move{LineNo: i + 1, WarehouseID: h.WarehouseID, ItemID: l.ItemID, Lot: l.Lot, Serial: l.Serial, Quantity: q, Value: &v}
 		}
-		return s.d.Stock.Record(ctx, d.Ref, moves)
+		if _, err := s.d.Stock.Record(ctx, d.Ref, moves); err != nil {
+			return err
+		}
+		return s.d.Posting.Record(ctx, d.Ref, nonZero([]posting.Line{
+			{Kind: stock.KindInventory, OrgUnitID: d.OrgUnitID, Amount: total},
+			{Kind: KindReceivedNotInvoiced, OrgUnitID: d.OrgUnitID, Amount: total},
+		}))
 	case record.Cancelled:
-		return s.d.Stock.Void(ctx, d.Ref)
+		if err := s.d.Stock.Void(ctx, d.Ref); err != nil {
+			return err
+		}
+		return s.d.Posting.Void(ctx, d.Ref)
 	}
 	return nil
+}
+
+// orderPrices are an order's lines by position: quantity and net amount.
+type orderPrices map[int]store.OrderLineNetsRow
+
+func loadOrderPrices(ctx context.Context, orderID int64) (orderPrices, error) {
+	rows, err := store.OrderLineNets.Run(ctx, orderID)
+	p := orderPrices{}
+	for _, r := range rows {
+		p[int(r.Position)] = r
+	}
+	return p, err
+}
+
+// value is q of an order line at its net order price; receipts and invoices value alike, so
+// the invoice clears what the receipt booked.
+func (p orderPrices) value(pos int, q decimal.Decimal) int64 {
+	l := p[pos]
+	ordered, err := decimal.NewFromString(l.Quantity)
+	if err != nil || ordered.IsZero() {
+		return 0 // the column is a positive numeric
+	}
+	return platform.Round(decimal.NewFromInt(l.Net).Mul(q).Div(ordered))
 }
 
 func receiptLineInput(r store.GetGoodsReceiptLinesRow) ReceiptLineInput {

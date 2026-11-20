@@ -91,12 +91,13 @@ func (s *Service) StockCard(ctx context.Context, warehouse, item int64, from, to
 			}
 			readable[ref] = ok
 		}
-		docID, number := r.DocID, r.Number
+		// The value comes from the document's prices, so it is hidden with the document.
+		docID, number, value := r.DocID, r.Number, r.Value
 		if !ok {
-			docID, number = 0, ""
+			docID, number, value = 0, "", 0
 		}
 		out.Rows = append(out.Rows, StockCardRow{Date: *platform.DatePtr(r.Date), DocType: r.DocType, DocID: docID, Number: number,
-			LotCode: platform.TextPtr(r.LotCode), SerialCode: platform.TextPtr(r.SerialCode), Quantity: r.Quantity, Balance: bal.StringFixed(3)})
+			LotCode: platform.TextPtr(r.LotCode), SerialCode: platform.TextPtr(r.SerialCode), Quantity: r.Quantity, Value: value, Balance: bal.StringFixed(3)})
 	}
 	out.Closing = bal.StringFixed(3)
 	return out, nil

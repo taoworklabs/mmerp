@@ -11,7 +11,8 @@ SELECT EXISTS (
 
 -- name: OpenMoves :many
 -- Original moves of a document with no reversal yet.
-SELECT m.id, m.line_no, m.warehouse_id, m.item_id, coalesce(m.lot_id, 0)::bigint AS lot_id, coalesce(m.serial_id, 0)::bigint AS serial_id, m.quantity::text AS quantity
+SELECT m.id, m.line_no, coalesce(m.warehouse_id, 0)::bigint AS warehouse_id, m.item_id, coalesce(m.lot_id, 0)::bigint AS lot_id, coalesce(m.serial_id, 0)::bigint AS serial_id,
+       m.quantity::text AS quantity, m.value
 FROM stock.moves m
 WHERE m.doc_type = $1 AND m.doc_id = $2 AND m.reverses IS NULL
   AND NOT EXISTS (SELECT 1 FROM stock.moves r WHERE r.reverses = m.id)
@@ -66,10 +67,29 @@ RETURNING b.warehouse_id, b.item_id, coalesce(b.lot_id, 0)::bigint AS lot_id, co
 SELECT serial_id::bigint FROM stock.balances WHERE serial_id = ANY(@ids::bigint[]) GROUP BY serial_id HAVING sum(quantity) > 1;
 
 -- name: InsertMoves :exec
-INSERT INTO stock.moves (doc_type, doc_id, line_no, warehouse_id, item_id, lot_id, serial_id, quantity, date, reverses)
-SELECT @doc_type::text, @doc_id::bigint, k.n, k.w, k.i, nullif(k.l, 0), nullif(k.s, 0), k.q::numeric, @date::date, nullif(k.r, 0)
+-- A value-only move travels with warehouse 0.
+INSERT INTO stock.moves (doc_type, doc_id, line_no, warehouse_id, item_id, lot_id, serial_id, quantity, value, date, reverses)
+SELECT @doc_type::text, @doc_id::bigint, k.n, nullif(k.w, 0), k.i, nullif(k.l, 0), nullif(k.s, 0), k.q::numeric, k.v, @date::date, nullif(k.r, 0)
 FROM (SELECT unnest(@line_nos::int[]) AS n, unnest(@warehouse_ids::bigint[]) AS w, unnest(@item_ids::bigint[]) AS i,
-             unnest(@lot_ids::bigint[]) AS l, unnest(@serial_ids::bigint[]) AS s, unnest(@quantities::text[]) AS q, unnest(@reverses_ids::bigint[]) AS r) AS k;
+             unnest(@lot_ids::bigint[]) AS l, unnest(@serial_ids::bigint[]) AS s, unnest(@quantities::text[]) AS q,
+             unnest(@values::bigint[]) AS v, unnest(@reverses_ids::bigint[]) AS r) AS k;
+
+-- name: InsertCosts :exec
+INSERT INTO stock.costs (legal_entity_id, item_id, quantity, value)
+SELECT @legal_entity_id::bigint, unnest(@item_ids::bigint[]), 0, 0
+ON CONFLICT DO NOTHING;
+
+-- name: LockCosts :many
+-- After the balances, by item, so documents valuing the same items queue.
+SELECT item_id, quantity::text AS quantity, value, coalesce(unit_cost::text, '')::text AS unit_cost
+FROM stock.costs WHERE legal_entity_id = @legal_entity_id AND item_id = ANY(@item_ids::bigint[])
+ORDER BY item_id FOR UPDATE;
+
+-- name: UpdateCosts :exec
+-- An empty unit cost keeps the one stored.
+UPDATE stock.costs c SET quantity = k.q::numeric, value = k.v, unit_cost = coalesce(nullif(k.u, '')::numeric, c.unit_cost)
+FROM (SELECT unnest(@item_ids::bigint[]) AS i, unnest(@quantities::text[]) AS q, unnest(@values::bigint[]) AS v, unnest(@unit_costs::text[]) AS u) AS k
+WHERE c.legal_entity_id = @legal_entity_id AND c.item_id = k.i;
 
 -- name: LotsOnHand :many
 -- First expiring first; undated lots last, then oldest received.

@@ -3,8 +3,8 @@ import { created, signedInApi } from './api'
 import { admin as root } from './helpers'
 
 // Accounting on top of the Demo demo company (demo.seed.ts, sales.seed.ts and purchase.seed.ts run
-// first): a small chart of accounts with 131 and 331 tracked by partner, the payroll, sales and
-// purchasing mapping rules, a start date
+// first): a small chart of accounts with 131 and 331 tracked by partner, the payroll, sales,
+// purchasing and stock value mapping rules, a start date
 // per company, an opening-balance entry with two customers and a supplier, then "post pending"
 // so the seeded payrolls reach the ledger. Skipped once accounts exist.
 
@@ -21,6 +21,8 @@ const chart: [string, string, Type, string?, boolean?][] = [
   ['131', 'Phải thu của khách hàng', 'asset', undefined, true],
   ['133', 'Thuế GTGT được khấu trừ', 'asset'],
   ['1331', 'Thuế GTGT được khấu trừ của hàng hóa, dịch vụ', 'asset', '133'],
+  ['138', 'Phải thu khác', 'asset'],
+  ['1381', 'Tài sản thiếu chờ xử lý', 'asset', '138'],
   ['156', 'Hàng hóa', 'asset'],
   ['333', 'Thuế và các khoản phải nộp Nhà nước', 'liability'],
   ['3331', 'Thuế giá trị gia tăng phải nộp', 'liability', '333'],
@@ -28,9 +30,15 @@ const chart: [string, string, Type, string?, boolean?][] = [
   ['334', 'Phải trả người lao động', 'liability'],
   ['331', 'Phải trả cho người bán', 'liability', undefined, true],
   ['338', 'Phải trả, phải nộp khác', 'liability'],
+  // Top level: 338 takes the insurance payable, so it can take no child.
+  ['3381', 'Tài sản thừa chờ giải quyết', 'liability'],
+  ['3388', 'Phải trả, phải nộp khác', 'liability'],
   ['411', 'Vốn đầu tư của chủ sở hữu', 'equity'],
   ['511', 'Doanh thu bán hàng và cung cấp dịch vụ', 'revenue'],
+  ['632', 'Giá vốn hàng bán', 'expense'],
   ['642', 'Chi phí quản lý doanh nghiệp', 'expense'],
+  ['711', 'Thu nhập khác', 'revenue'],
+  ['811', 'Chi phí khác', 'expense'],
 ]
 // [kind, account code, side]
 const rules: [string, string, 'debit' | 'credit'][] = [
@@ -50,6 +58,14 @@ const rules: [string, string, 'debit' | 'credit'][] = [
   ['purchase_payable', '331', 'credit'],
   ['purchase_cash_payment', '111', 'credit'],
   ['purchase_bank_payment', '112', 'credit'],
+  ['purchase_received_not_invoiced', '3388', 'credit'],
+  ['purchase_price_difference', '632', 'debit'],
+  ['sales_cost_of_goods_sold', '632', 'debit'],
+  ['stock_inventory', '156', 'debit'],
+  ['stock_adjustment_gain', '711', 'credit'],
+  ['stock_adjustment_loss', '811', 'debit'],
+  ['stocktake_surplus', '3381', 'credit'],
+  ['stocktake_shortage', '1381', 'debit'],
 ]
 
 test('seed Accounting on the Demo demo company', async ({ baseURL }) => {

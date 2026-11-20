@@ -36,7 +36,7 @@ func newStocked(t *testing.T) *stocked {
 // fields bring 5 of in and take 1 of out.
 func (s *stocked) fields(date string) stock.AdjustmentFields {
 	return stock.AdjustmentFields{Date: date, WarehouseID: s.wh, Reason: "Kiểm kê",
-		Lines: []stock.AdjustmentLine{{ItemID: s.in, Quantity: "5"}, {ItemID: s.out, Quantity: "-1"}}}
+		Lines: []stock.AdjustmentLine{{ItemID: s.in, Quantity: "5", UnitCost: new(int64(100))}, {ItemID: s.out, Quantity: "-1"}}}
 }
 
 func TestAdjustmentRecordContract(t *testing.T) {
@@ -91,7 +91,7 @@ func TestAdjustmentCreatesLotsInline(t *testing.T) {
 	lt := s.item(t, item.TrackLot, false)
 	exp := "2027-01-31"
 	id, err := s.stock.CreateAdjustment(s.admin, stock.NewAdjustment{AdjustmentFields: stock.AdjustmentFields{Date: "2026-11-02", WarehouseID: s.wh, Reason: "Nhập tồn đầu",
-		Lines: []stock.AdjustmentLine{{ItemID: lt, Lot: lot("L9", &exp), Quantity: "12.5"}}}})
+		Lines: []stock.AdjustmentLine{{ItemID: lt, Lot: lot("L9", &exp), Quantity: "12.5", UnitCost: new(int64(100))}}}})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -153,6 +153,83 @@ func TestAdjustmentQuantityChecked(t *testing.T) {
 	f.Lines[1].Quantity = "0"
 	_, err := s.stock.CreateAdjustment(s.admin, stock.NewAdjustment{AdjustmentFields: f})
 	if e := wantCode(t, err, stock.ErrQuantityInvalid); e.Params["line_no"] != 2 {
+		t.Fatalf("params %+v", e.Params)
+	}
+}
+
+// lines reads a document's live business lines as kind=amount, sorted by kind.
+func (l *ledger) lines(t *testing.T, r record.Ref) map[string]int64 {
+	t.Helper()
+	rows, err := l.core.Pool.Query(l.core.Ctx, `SELECT kind, amount FROM posting.lines WHERE doc_type = $1 AND doc_id = $2 AND voided_at IS NULL`, r.Type, r.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer rows.Close()
+	out := map[string]int64{}
+	for rows.Next() {
+		var k string
+		var a int64
+		if err := rows.Scan(&k, &a); err != nil {
+			t.Fatal(err)
+		}
+		out[k] += a
+	}
+	return out
+}
+
+func (s *stocked) postAdjustment(t *testing.T, lines ...stock.AdjustmentLine) record.Ref {
+	t.Helper()
+	id, err := s.stock.CreateAdjustment(s.admin, stock.NewAdjustment{AdjustmentFields: stock.AdjustmentFields{Date: "2026-11-02", WarehouseID: s.wh, Reason: "R", Lines: lines}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := s.transition(t, adjustmentType, id, record.Posted); err != nil {
+		t.Fatal(err)
+	}
+	return record.Ref{Type: adjustmentType, ID: id}
+}
+
+func TestAdjustmentValuesAndPosts(t *testing.T) {
+	s := newStocked(t)
+	in := s.postAdjustment(t, stock.AdjustmentLine{ItemID: s.in, Quantity: "10", UnitCost: new(int64(150))})
+	if got := s.lines(t, in); len(got) != 2 || got["stock_inventory"] != 1500 || got["stock_adjustment_gain"] != 1500 {
+		t.Fatalf("increase %v", got)
+	}
+	out := s.postAdjustment(t, stock.AdjustmentLine{ItemID: s.in, Quantity: "-4"})
+	if got := s.lines(t, out); len(got) != 2 || got["stock_inventory"] != -600 || got["stock_adjustment_loss"] != 600 {
+		t.Fatalf("decrease %v", got)
+	}
+	if err := s.transition(t, adjustmentType, out.ID, record.Cancelled); err != nil {
+		t.Fatal(err)
+	}
+	if got := s.lines(t, out); len(got) != 0 {
+		t.Fatalf("cancelled %v", got)
+	}
+	wantCost(t, s.ledger, s.in, "10.000", 1500)
+}
+
+func TestAdjustmentUnitCostChecked(t *testing.T) {
+	s := newStocked(t)
+	f := s.fields("2026-11-02")
+	f.Lines[0].UnitCost = nil
+	_, err := s.stock.CreateAdjustment(s.admin, stock.NewAdjustment{AdjustmentFields: f})
+	if e := wantCode(t, err, stock.ErrUnitCostRequired); e.Params["line_no"] != 1 {
+		t.Fatalf("params %+v", e.Params)
+	}
+	f = s.fields("2026-11-02")
+	f.Lines[1].UnitCost = new(int64(5))
+	_, err = s.stock.CreateAdjustment(s.admin, stock.NewAdjustment{AdjustmentFields: f})
+	if e := wantCode(t, err, stock.ErrUnitCostNotAllowed); e.Params["line_no"] != 2 {
+		t.Fatalf("params %+v", e.Params)
+	}
+}
+
+func TestAdjustmentValueBounded(t *testing.T) {
+	s := newStocked(t)
+	f := s.fields("2026-11-02")
+	f.Lines[0].Quantity, f.Lines[0].UnitCost = "100000", new(int64(10_000_000_000))
+	_, err := s.stock.CreateAdjustment(s.admin, stock.NewAdjustment{AdjustmentFields: f})
+	if e := wantCode(t, err, stock.ErrValueTooLarge); e.Params["line_no"] != 1 {
 		t.Fatalf("params %+v", e.Params)
 	}
 }

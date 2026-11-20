@@ -3056,6 +3056,11 @@ export interface components {
             quantity: string;
             /** @description Serial-tracked items */
             serial?: string;
+            /**
+             * Format: int64
+             * @description Minor unit; required on increase lines, absent on decreases (valued at average)
+             */
+            unit_cost?: number;
         };
         AdjustmentLineOut: {
             item_code: string;
@@ -3069,6 +3074,11 @@ export interface components {
             /** @description Serial-tracked items */
             serial?: string;
             unit: string;
+            /**
+             * Format: int64
+             * @description Minor unit; required on increase lines, absent on decreases (valued at average)
+             */
+            unit_cost?: number;
         };
         AdjustmentList: {
             /**
@@ -7271,6 +7281,11 @@ export interface components {
             /** @description Decimal, signed */
             quantity: string;
             serial_code?: string;
+            /**
+             * Format: int64
+             * @description Minor unit, signed like the quantity
+             */
+            value: number;
         };
         StockItem: {
             code: string;

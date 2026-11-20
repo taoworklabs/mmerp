@@ -36,6 +36,7 @@ var InsertOrderLines = data.ExecArg("purchase.InsertOrderLines", newQ, (*Queries
 var GetOrderLines = data.ManyArg("purchase.GetOrderLines", newQ, (*Queries).GetOrderLines)
 var OrderListBase = data.NewBase("purchase.OrderListBase", orderListBase, []string{"id", "number", "status", "date", "org_unit_id", "supplier_id", "supplier_code", "supplier_name", "total", "org_unit_name", "receipt_state", "invoice_state", "payment_state", "paid"}, (*Queries).OrderListBase)
 var CopySupplier = data.OneArg("purchase.CopySupplier", newQ, (*Queries).CopySupplier)
+var OrderLineNets = data.ManyArg("purchase.OrderLineNets", newQ, (*Queries).OrderLineNets)
 var InsertPayment = data.ExecArg("purchase.InsertPayment", newQ, (*Queries).InsertPayment)
 var UpdatePayment = data.ExecArg("purchase.UpdatePayment", newQ, (*Queries).UpdatePayment)
 var DeletePayment = data.ExecArg("purchase.DeletePayment", newQ, (*Queries).DeletePayment)

@@ -45,8 +45,9 @@ func adjustmentLayout1(p *printing.Page, raw json.RawMessage) error {
 	p.LegalEntity(t("company"), t("name"), d.Company)
 	p.Field(t("warehouse"), d.WarehouseCode+" · "+d.WarehouseName)
 	p.Field(t("reason"), d.Reason)
-	cols := []printing.Column{{Title: t("item_code"), Share: 0.14}, {Title: t("item_name"), Share: 0.32}, {Title: t("unit"), Share: 0.1},
-		{Title: t("lot"), Share: 0.14}, {Title: t("expiry"), Share: 0.12}, {Title: t("serial"), Share: 0.08}, {Title: t("quantity"), Share: 0.1, Right: true}}
+	cols := []printing.Column{{Title: t("item_code"), Share: 0.12}, {Title: t("item_name"), Share: 0.26}, {Title: t("unit"), Share: 0.08},
+		{Title: t("lot"), Share: 0.12}, {Title: t("expiry"), Share: 0.1}, {Title: t("serial"), Share: 0.08}, {Title: t("quantity"), Share: 0.1, Right: true},
+		{Title: t("unit_cost"), Share: 0.14, Right: true}}
 	rows := make([][]string, len(d.Lines))
 	for i, l := range d.Lines {
 		var lot, expiry, serial string
@@ -59,7 +60,11 @@ func adjustmentLayout1(p *printing.Page, raw json.RawMessage) error {
 		if l.Serial != nil {
 			serial = *l.Serial
 		}
-		rows[i] = []string{l.ItemCode, l.ItemName, l.Unit, lot, expiry, serial, p.Decimal(l.Quantity)}
+		var cost string
+		if l.UnitCost != nil {
+			cost = p.Money(*l.UnitCost)
+		}
+		rows[i] = []string{l.ItemCode, l.ItemName, l.Unit, lot, expiry, serial, p.Decimal(l.Quantity), cost}
 	}
 	p.Heading(t("lines"))
 	p.Table(cols, rows, false)

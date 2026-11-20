@@ -4,8 +4,8 @@ import { useForm, type Path } from 'react-hook-form'
 import { useTranslation } from 'react-i18next'
 import { api, ApiError, unwrap, type Adjustment, type AdjustmentLine, type StockItem } from '@/shared/api/core'
 import { useDocumentMutation } from '@/shared/document'
-import { errorText, formatDate, formatDecimal } from '@/shared/i18n'
-import { DateField, DecimalField, Form, FormActions, FormRow, FormSection, LinesTable, SelectField, TextField, type ErrorFields, type LineColumn } from '@/shared/ui/form'
+import { errorText, formatDate, formatDecimal, formatNumber } from '@/shared/i18n'
+import { DateField, DecimalField, Form, FormActions, FormRow, FormSection, LinesTable, MoneyField, SelectField, TextField, type ErrorFields, type LineColumn } from '@/shared/ui/form'
 import { adjustmentDocType } from '../keys'
 import { useWarehouseOptions } from '../hooks/useStock'
 import { StockItemField } from './pickers'
@@ -20,6 +20,7 @@ type LineValues = {
   expiry: string | null
   serial: string
   quantity: string
+  unit_cost: number | null
 }
 
 type Values = {
@@ -29,7 +30,7 @@ type Values = {
   lines: LineValues[]
 }
 
-const emptyLine: LineValues = { item_id: null, tracking: null, lot_code: '', expiry: null, serial: '', quantity: '' }
+const emptyLine: LineValues = { item_id: null, tracking: null, lot_code: '', expiry: null, serial: '', quantity: '', unit_cost: null }
 
 // A saved line does not carry its item's tracking; its lot or serial tells it.
 const trackingOf = (l: AdjustmentLine): Tracking => (l.lot ? 'lot' : l.serial ? 'serial' : 'quantity')
@@ -47,6 +48,7 @@ function defaults(doc?: Adjustment): Values {
           expiry: l.lot?.expiry ?? null,
           serial: l.serial ?? '',
           quantity: l.quantity,
+          unit_cost: l.unit_cost ?? null,
         }))
       : [{ ...emptyLine }],
   }
@@ -79,6 +81,9 @@ const errorFields: ErrorFields<Values> = {
   stock_lot_required: 'lines.*.lot_code',
   stock_lot_expiry_mismatch: 'lines.*.expiry',
   stock_serial_required: 'lines.*.serial',
+  stock_unit_cost_required: 'lines.*.unit_cost',
+  stock_unit_cost_not_allowed: 'lines.*.unit_cost',
+  stock_value_too_large: 'lines.*.unit_cost',
 }
 
 type Line = Adjustment['lines'][number]
@@ -125,6 +130,8 @@ export function AdjustmentForm({ doc, onCreated }: Props) {
           quantity: l.quantity,
           lot: l.tracking === 'lot' ? { code: l.lot_code.trim(), expiry: (incoming(l.quantity) && l.expiry) || undefined } : undefined,
           serial: l.tracking === 'serial' ? l.serial.trim() : undefined,
+          // Goods taken out are valued at average.
+          unit_cost: incoming(l.quantity) ? (l.unit_cost ?? undefined) : undefined,
         }),
       ),
     }
@@ -193,6 +200,15 @@ export function AdjustmentForm({ doc, onCreated }: Props) {
       width: 112,
       value: (l) => `${formatDecimal(l.quantity, 3)} ${l.unit}`,
       cell: (i, bare) => <DecimalField name={`lines.${i}.quantity`} label={t('stock.line.quantity', { n: i + 1 })} bare={bare} required scale={3} allowNegative />,
+    },
+    {
+      key: 'unit_cost',
+      header: t('stock.adjustment.line.unit_cost_col'),
+      numeric: true,
+      width: 128,
+      value: (l) => (l.unit_cost == null ? '' : formatNumber(l.unit_cost)),
+      cell: (i, bare) =>
+        incoming(lines[i]?.quantity ?? '') && <MoneyField name={`lines.${i}.unit_cost`} label={t('stock.adjustment.line.unit_cost', { n: i + 1 })} bare={bare} required />,
     },
   ]
 

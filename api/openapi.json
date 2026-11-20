@@ -376,6 +376,13 @@
             "maxLength": 100,
             "minLength": 1,
             "type": "string"
+          },
+          "unit_cost": {
+            "description": "Minor unit; required on increase lines, absent on decreases (valued at average)",
+            "format": "int64",
+            "maximum": 1000000000000000,
+            "minimum": 0,
+            "type": "integer"
           }
         },
         "required": [
@@ -414,6 +421,13 @@
           },
           "unit": {
             "type": "string"
+          },
+          "unit_cost": {
+            "description": "Minor unit; required on increase lines, absent on decreases (valued at average)",
+            "format": "int64",
+            "maximum": 1000000000000000,
+            "minimum": 0,
+            "type": "integer"
           }
         },
         "required": [
@@ -13260,6 +13274,11 @@
           },
           "serial_code": {
             "type": "string"
+          },
+          "value": {
+            "description": "Minor unit, signed like the quantity",
+            "format": "int64",
+            "type": "integer"
           }
         },
         "required": [
@@ -13268,6 +13287,7 @@
           "doc_id",
           "number",
           "quantity",
+          "value",
           "balance"
         ],
         "type": "object"

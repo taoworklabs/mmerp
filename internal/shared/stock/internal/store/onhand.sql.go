@@ -73,12 +73,12 @@ func (q *Queries) OnHandListBase(ctx context.Context) ([]OnHandListBaseRow, erro
 
 const stockCardMoves = `-- name: StockCardMoves :many
 SELECT m.id, m.date, m.doc_type, m.doc_id, coalesce(d.number, '') AS number, l.code AS lot_code, s.code AS serial_code,
-       m.quantity::text AS quantity
+       m.quantity::text AS quantity, m.value
 FROM stock.moves m
 LEFT JOIN record.documents d ON d.id = m.doc_id AND d.doc_type = m.doc_type
 LEFT JOIN stock.lots l ON l.id = m.lot_id
 LEFT JOIN stock.serials s ON s.id = m.serial_id
-WHERE m.warehouse_id = $1 AND m.item_id = $2 AND m.date BETWEEN $3::date AND $4::date
+WHERE m.warehouse_id = $1::bigint AND m.item_id = $2 AND m.date BETWEEN $3::date AND $4::date
 ORDER BY m.date, m.id
 `
 
@@ -98,6 +98,7 @@ type StockCardMovesRow struct {
 	LotCode    pgtype.Text
 	SerialCode pgtype.Text
 	Quantity   string
+	Value      int64
 }
 
 func (q *Queries) StockCardMoves(ctx context.Context, arg StockCardMovesParams) ([]StockCardMovesRow, error) {
@@ -123,6 +124,7 @@ func (q *Queries) StockCardMoves(ctx context.Context, arg StockCardMovesParams) 
 			&i.LotCode,
 			&i.SerialCode,
 			&i.Quantity,
+			&i.Value,
 		); err != nil {
 			return nil, err
 		}
@@ -137,7 +139,7 @@ func (q *Queries) StockCardMoves(ctx context.Context, arg StockCardMovesParams) 
 const stockCardOpening = `-- name: StockCardOpening :one
 SELECT coalesce(sum(quantity), 0)::text AS quantity
 FROM stock.moves
-WHERE warehouse_id = $1 AND item_id = $2 AND date < $3::date
+WHERE warehouse_id = $1::bigint AND item_id = $2 AND date < $3::date
 `
 
 type StockCardOpeningParams struct {

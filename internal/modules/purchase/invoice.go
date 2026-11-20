@@ -14,6 +14,7 @@ import (
 	"github.com/taoworklabs/mmerp/internal/modules/purchase/internal/store"
 	"github.com/taoworklabs/mmerp/internal/platform"
 	"github.com/taoworklabs/mmerp/internal/shared/posting"
+	"github.com/taoworklabs/mmerp/internal/shared/stock"
 )
 
 const invoiceType = "purchase.invoice"
@@ -63,8 +64,9 @@ func (s *Service) checkSupplierRef(ctx context.Context, id int64, h store.GetInv
 }
 
 // invoiceTransition checks the lines against the order and the supplier reference again and
-// writes the business lines on posting; cancelling is refused while a payment settles the
-// invoice, then voids them.
+// writes the business lines on posting: stock lines clear received not invoiced at the order
+// price, and their difference from it goes to the goods while on hand, else to price
+// difference. Cancelling is refused while a payment settles the invoice, then reverses both.
 func (s *Service) invoiceTransition(ctx context.Context, d record.Doc, _ record.Status) error {
 	switch d.Status {
 	case record.Posted:
@@ -87,23 +89,50 @@ func (s *Service) invoiceTransition(ctx context.Context, d record.Doc, _ record.
 		if err := s.checkSupplierRef(ctx, d.ID, h); err != nil {
 			return err
 		}
+		prices, err := loadOrderPrices(ctx, h.OrderID)
+		if err != nil {
+			return err
+		}
 		// The amounts are those saved, which the approver saw.
-		var goods, expense int64
-		for _, l := range saved {
-			if l.Stocked {
-				goods += l.Amount - l.Discount
-			} else {
+		var cleared, diff, expense int64
+		var moves []stock.Move
+		for i, l := range saved {
+			if !l.Stocked {
 				expense += l.Amount - l.Discount
+				continue
+			}
+			q, err := decimal.NewFromString(l.Quantity)
+			if err != nil {
+				return err
+			}
+			o := prices.value(int(l.OrderPosition), q)
+			cleared += o
+			if dv := l.Amount - l.Discount - o; dv != 0 {
+				diff += dv
+				moves = append(moves, stock.Move{LineNo: i + 1, ItemID: l.ItemID, Value: &dv})
 			}
 		}
+		vals, err := s.d.Stock.Record(ctx, d.Ref, moves)
+		if err != nil {
+			return err
+		}
+		var applied int64
+		for _, v := range vals {
+			applied += v
+		}
 		return s.d.Posting.Record(ctx, d.Ref, nonZero([]posting.Line{
-			{Kind: KindGoods, OrgUnitID: d.OrgUnitID, Amount: goods},
+			{Kind: KindReceivedNotInvoiced, OrgUnitID: d.OrgUnitID, Amount: -cleared},
+			{Kind: stock.KindInventory, OrgUnitID: d.OrgUnitID, Amount: applied},
+			{Kind: KindPriceDifference, OrgUnitID: d.OrgUnitID, Amount: diff - applied},
 			{Kind: KindExpense, OrgUnitID: d.OrgUnitID, Amount: expense},
 			{Kind: KindInputVAT, OrgUnitID: d.OrgUnitID, Amount: h.VatTotal},
 			{Kind: KindPayable, OrgUnitID: d.OrgUnitID, PartnerID: &h.PartnerID, Amount: h.Total},
 		}))
 	case record.Cancelled:
 		if err := refuseIfLive(ctx, d.ID, store.LivePaymentOfInvoice.Run, ErrInvoiceHasPayment); err != nil {
+			return err
+		}
+		if err := s.d.Stock.Void(ctx, d.Ref); err != nil {
 			return err
 		}
 		return s.d.Posting.Void(ctx, d.Ref)

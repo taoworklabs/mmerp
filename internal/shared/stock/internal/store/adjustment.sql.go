@@ -147,7 +147,7 @@ func (q *Queries) GetAdjustment(ctx context.Context, id int64) (GetAdjustmentRow
 }
 
 const getAdjustmentLines = `-- name: GetAdjustmentLines :many
-SELECT l.line_no, l.item_id, i.code AS item_code, i.name AS item_name, i.unit, l.lot_code, l.lot_expiry, l.serial_code, l.quantity::text AS quantity
+SELECT l.line_no, l.item_id, i.code AS item_code, i.name AS item_name, i.unit, l.lot_code, l.lot_expiry, l.serial_code, l.quantity::text AS quantity, l.unit_cost
 FROM stock.adjustment_lines l JOIN item.items i ON i.id = l.item_id
 WHERE l.adjustment_id = $1 ORDER BY l.line_no
 `
@@ -162,6 +162,7 @@ type GetAdjustmentLinesRow struct {
 	LotExpiry  pgtype.Date
 	SerialCode pgtype.Text
 	Quantity   string
+	UnitCost   pgtype.Int8
 }
 
 func (q *Queries) GetAdjustmentLines(ctx context.Context, adjustmentID int64) ([]GetAdjustmentLinesRow, error) {
@@ -183,6 +184,7 @@ func (q *Queries) GetAdjustmentLines(ctx context.Context, adjustmentID int64) ([
 			&i.LotExpiry,
 			&i.SerialCode,
 			&i.Quantity,
+			&i.UnitCost,
 		); err != nil {
 			return nil, err
 		}
@@ -210,10 +212,11 @@ func (q *Queries) InsertAdjustment(ctx context.Context, arg InsertAdjustmentPara
 }
 
 const insertAdjustmentLines = `-- name: InsertAdjustmentLines :exec
-INSERT INTO stock.adjustment_lines (adjustment_id, line_no, item_id, lot_code, lot_expiry, serial_code, quantity)
-SELECT $1::bigint, k.n, k.i, nullif(k.l, ''), nullif(k.e, '')::date, nullif(k.s, ''), k.q::numeric
+INSERT INTO stock.adjustment_lines (adjustment_id, line_no, item_id, lot_code, lot_expiry, serial_code, quantity, unit_cost)
+SELECT $1::bigint, k.n, k.i, nullif(k.l, ''), nullif(k.e, '')::date, nullif(k.s, ''), k.q::numeric, nullif(k.c, -1)
 FROM (SELECT unnest($2::int[]) AS n, unnest($3::bigint[]) AS i, unnest($4::text[]) AS l,
-             unnest($5::text[]) AS e, unnest($6::text[]) AS s, unnest($7::text[]) AS q) AS k
+             unnest($5::text[]) AS e, unnest($6::text[]) AS s, unnest($7::text[]) AS q,
+             unnest($8::bigint[]) AS c) AS k
 `
 
 type InsertAdjustmentLinesParams struct {
@@ -224,9 +227,10 @@ type InsertAdjustmentLinesParams struct {
 	LotExpiries  []string
 	Serials      []string
 	Quantities   []string
+	UnitCosts    []int64
 }
 
-// No lot, expiry or serial travels as ”.
+// No lot, expiry or serial travels as ”, no unit cost as -1.
 func (q *Queries) InsertAdjustmentLines(ctx context.Context, arg InsertAdjustmentLinesParams) error {
 	_, err := q.db.Exec(ctx, insertAdjustmentLines,
 		arg.AdjustmentID,
@@ -236,6 +240,7 @@ func (q *Queries) InsertAdjustmentLines(ctx context.Context, arg InsertAdjustmen
 		arg.LotExpiries,
 		arg.Serials,
 		arg.Quantities,
+		arg.UnitCosts,
 	)
 	return err
 }

@@ -80,6 +80,7 @@ test('opening stock in a new lot, delivered from the order, leaves the rest on h
   await page.getByRole('textbox', { name: 'Lô hàng (1)' }).fill(lot)
   await page.getByRole('textbox', { name: 'Hạn sử dụng (1)' }).fill(`31/12/${new Date().getFullYear() + 1}`)
   await page.getByRole('textbox', { name: 'Số lượng (1)' }).fill('10')
+  await page.getByRole('textbox', { name: 'Đơn giá (1)' }).fill('150000')
   await page.getByRole('button', { name: 'Tạo bản nháp' }).click()
   await expect(page.getByRole('heading', { name: /^DC-\d{4}-/ })).toBeVisible()
   await page.getByRole('button', { name: 'Gửi duyệt' }).click()

@@ -14,6 +14,7 @@ import (
 	"github.com/taoworklabs/mmerp/internal/core/record"
 	"github.com/taoworklabs/mmerp/internal/modules/sales/internal/store"
 	"github.com/taoworklabs/mmerp/internal/platform"
+	"github.com/taoworklabs/mmerp/internal/shared/posting"
 	"github.com/taoworklabs/mmerp/internal/shared/stock"
 )
 
@@ -30,7 +31,7 @@ func (s *Service) registerDelivery() {
 }
 
 // deliveryTransition takes the goods out of stock on posting, after checking the lines
-// against the order again, and puts them back on cancelling.
+// against the order again, and books their cost; cancelling puts them back.
 func (s *Service) deliveryTransition(ctx context.Context, d record.Doc, _ record.Status) error {
 	switch d.Status {
 	case record.Posted:
@@ -62,9 +63,23 @@ func (s *Service) deliveryTransition(ctx context.Context, d record.Doc, _ record
 				moves[i].Lot = &stock.LotRef{Code: *l.LotCode}
 			}
 		}
-		return s.d.Stock.Record(ctx, d.Ref, moves)
+		vals, err := s.d.Stock.Record(ctx, d.Ref, moves)
+		if err != nil {
+			return err
+		}
+		var out int64
+		for _, v := range vals {
+			out -= v
+		}
+		return s.d.Posting.Record(ctx, d.Ref, nonZero([]posting.Line{
+			{Kind: stock.KindInventory, OrgUnitID: d.OrgUnitID, Amount: -out},
+			{Kind: KindCostOfGoodsSold, OrgUnitID: d.OrgUnitID, Amount: out},
+		}))
 	case record.Cancelled:
-		return s.d.Stock.Void(ctx, d.Ref)
+		if err := s.d.Stock.Void(ctx, d.Ref); err != nil {
+			return err
+		}
+		return s.d.Posting.Void(ctx, d.Ref)
 	}
 	return nil
 }

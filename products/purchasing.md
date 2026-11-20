@@ -53,7 +53,10 @@ A supplier invoice must state the supplier's invoice symbol, number and date bef
 
 | Kind | Partner | Written by | Amount | Sample rule |
 | --- | --- | --- | --- | --- |
-| `purchase_goods` | no | invoice | net of lines whose item has stock | 156, debit |
+| `stock_inventory` | no | goods receipt; invoice | receipt: value at the order price; invoice: price difference applied to goods on hand ([ADR-0110](../docs/adr/0110-moving-average-stock-valuation.md)) | 156, debit |
+| `purchase_received_not_invoiced` | no | goods receipt; invoice | receipt +value at the order price; invoice −order price of its stock lines | 3388, credit |
+| `purchase_price_difference` | no | invoice | stock lines' difference from the order price when the goods are no longer on hand | 632, debit |
+| `purchase_goods` | no | invoices posted before ADR-0110 | net of lines whose item has stock | 156, debit |
 | `purchase_expense` | no | invoice | net of other lines | 642, debit |
 | `purchase_input_vat` | no | invoice, when VAT > 0 | VAT | 1331, debit |
 | `purchase_payable` | yes | invoice; payment | invoice +total; payment −amount | 331, credit |

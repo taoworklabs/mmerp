@@ -5,7 +5,7 @@ import { as } from './helpers'
 // One run, in order: a company of its own with purchasing teams A and B, a lot item, a serial item
 // and a service, a partner that is a Sales customer and becomes a supplier of team A, and an order
 // of 10 cartons at 50 000 đ (8 %), 2 purifiers at 3 000 000 đ (10 %) and one transport at
-// 500 000 đ (10 %). Root plays the accountant: the chart, the six purchasing rules and the start
+// 500 000 đ (10 %). Root plays the accountant: the chart, the purchasing and stock value rules and the start
 // date. The file sets mapping rules for the whole tenant, so it runs alone.
 const run = runId()
 const login = { a: `pur_a_${run}`, b: `pur_b_${run}` }
@@ -68,6 +68,9 @@ test.beforeAll(async ({ baseURL }) => {
     ['1331', 'Thuế GTGT được khấu trừ của hàng hóa, dịch vụ', 'asset', '133'],
     ['156', 'Hàng hóa', 'asset'],
     ['331', 'Phải trả cho người bán', 'liability', undefined, true],
+    // Top level: 338 takes payroll entries in other files, so it can take no child.
+    ['3388', 'Phải trả, phải nộp khác', 'liability'],
+    ['632', 'Giá vốn hàng bán', 'expense'],
     ['642', 'Chi phí quản lý doanh nghiệp', 'expense'],
   ]
   for (const [code, name, type, parent, byPartner] of chart) {
@@ -82,6 +85,9 @@ test.beforeAll(async ({ baseURL }) => {
     ['purchase_payable', '331', 'credit'],
     ['purchase_cash_payment', '111', 'credit'],
     ['purchase_bank_payment', '112', 'credit'],
+    ['purchase_received_not_invoiced', '3388', 'credit'],
+    ['purchase_price_difference', '632', 'debit'],
+    ['stock_inventory', '156', 'debit'],
   ] as const) {
     await ok(api.put(`/api/accounting/rules/${kind}`, { data: { account_id: acct[account], side } }))
   }
@@ -146,7 +152,9 @@ test('a repriced supplier invoice books goods, expense and input VAT against the
 
   // The ledger gets it once the accounting job has run.
   await expect.poll(() => net('331', v.number), { timeout: 30_000 }).toBe(-7_374_640)
-  expect(await net('156', v.number)).toBe(6_208_000)
+  // Goods received: the order price clears received-not-invoiced, the 2 000 a carton on hand goes to stock.
+  expect(await net('3388', v.number)).toBe(6_200_000)
+  expect(await net('156', v.number)).toBe(8_000)
   expect(await net('642', v.number)).toBe(500_000)
   expect(await net('1331', v.number)).toBe(666_640)
 
