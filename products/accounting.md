@@ -29,6 +29,7 @@ A single module `internal/modules/accounting`, schema `accounting`, product `acc
 | Type code | Kind | `posted` means | Date for period lock | Approval fields |
 | --- | --- | --- | --- | --- |
 | `accounting.journal_entry` | document `PK` (vi: "Phiếu kế toán") | Entry written to the ledger | Entry date | `amount` (the total) |
+| `accounting.closing` | document `KC` (vi: "Kết chuyển") | Revenue and expense balances moved to the result account, the result to retained earnings | Closing date | none |
 
 Automatic entries and reversals are ledger rows, not documents: they have no number of their own and show the source document's number.
 
@@ -40,6 +41,9 @@ Automatic entries and reversals are ledger rows, not documents: they have no num
 - **Start date.** Per legal entity; no date means accounting is not in use there. It can be set or changed only while the legal entity has no ledger entry. A start date on or before the legal entity's lock date is refused (`start_date_in_locked_period`) while a document with business lines is dated between it and the lock date, since those documents would become pending inside the locked period; tenants enabling accounting on locked history set it after the lock date and enter opening balances as a manual journal entry. Documents dated before it never reach the ledger.
 - **Period lock.** Locking is refused while the period holds pending, awaiting-mapping or unbalanced documents dated on or after the start date. The only way a document's first posting or a reversal lands in a locked period is a period locked while accounting was off.
 - **Manual entry.** Date, legal entity, description, at least two lines (postable active account, one positive debit or credit, optional org unit and description). Posting needs debits equal to credits.
+- **Chart template.** Circular 133 or Circular 99, applied once while the tenant has no account (`chart_not_empty`): accounts, a rule for every declared kind, the closing accounts and the statement forms. A kind left without a rule is offered the template's account on the rules screen.
+- **Closing entry.** Date, legal entity, description; posting computes, at the date, every revenue and expense balance left per account, org unit and partner, moves it to the result account and moves each org unit's result to retained earnings. Refused without closing accounts (`closing_accounts_unset`) or with nothing to close (`closing_nothing_to_close`); a draft previews its lines.
+- **Statements.** The balance sheet at a date (against the end of the previous year) and the income statement over a range (against the same range a year earlier), computed from the statement forms; `not_closed` while a revenue or expense account still has a balance at the end date. Both export to Excel.
 
 ## Permissions
 
@@ -57,7 +61,7 @@ No personal or sensitive data. Business lines already aggregate per-person amoun
 
 ## Frontend
 
-Area `web/src/accounting`, menu: general ledger, trial balance, partner balances, journal entries, awaiting posting; configuration: chart of accounts, mapping rules, approval rules. Screens: chart (tree), mapping rules (one row per known kind), awaiting posting (reason, link to the source document, "post pending"), journal entries (manual form; automatic entries viewable only), general ledger (opening balance, lines, running balance, closing balance; a parent shows its children), trial balance (opening, debit, credit, closing, parents rolled up, equal totals), partner balances (per partner and tracked account, totals equal to the trial balance; a partner opens their partner ledger), partner ledger (one partner's lines with running balance). Accounts tracked by partner take a partner on every journal line; the manual entry form asks for it on those lines only.
+Area `web/src/accounting`, menu: journal entries, closing entries, general ledger, trial balance, partner balances, awaiting posting; financial statements: balance sheet, income statement; configuration: chart of accounts (with "apply a chart template" while empty), mapping rules, start dates, closing accounts, statement forms, approval rules. Screens: chart (tree), mapping rules (one row per known kind), awaiting posting (reason, link to the source document, "post pending"), journal entries (manual form; automatic entries viewable only), general ledger (opening balance, lines, running balance, closing balance; a parent shows its children), trial balance (opening, debit, credit, closing, parents rolled up, equal totals), partner balances (per partner and tracked account, totals equal to the trial balance; a partner opens their partner ledger), partner ledger (one partner's lines with running balance). Accounts tracked by partner take a partner on every journal line; the manual entry form asks for it on those lines only.
 
 ## Proving flow
 

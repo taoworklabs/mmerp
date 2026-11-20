@@ -53,8 +53,8 @@ The ledger ships no chart, no rules and no statements, so a tenant builds 60 to 
   - `DK(…)`, `CK(…)`: debit, credit turnover over the range, closing entries only;
   - `R(…)`: sum of other rows of the same form (no cycles, checked on save).
 - B01: at a date, with the same figures at the end of the previous year as the comparative column. B02: over a range, with the same range a year earlier. Per legal entity, `accounting.view` scoped to legal entity. Inputs read with fixed sqlc queries (balances per account and partner at a date, turnovers per account split by closing or not); formulas are evaluated in Go.
-- `not_closed: true` when a revenue or expense account has a non-zero balance at the end date. B01 also returns `assets` and `sources` totals by the rows the form marks (`270`, `440` under Circular 99; the equivalents under 133), so the screen can flag an imbalance.
-- Export: `dataio` exports `accounting.report.balance_sheet` and `accounting.report.income_statement` (xlsx, header with the legal entity's name, tax code and address, as HRM reports).
+- `not_closed: true` when a revenue or expense account has a non-zero balance at the end date. Totals are rows of the form like any other; the worked-example tests check that they balance.
+- Export: `dataio` exports `accounting.report.balance_sheet` and `accounting.report.income_statement` (xlsx: label, code, current, comparative).
 
 ### Frontend (`web/src/accounting`)
 
