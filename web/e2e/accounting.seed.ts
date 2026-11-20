@@ -3,73 +3,14 @@ import { created, signedInApi } from './api'
 import { admin as root } from './helpers'
 
 // Accounting on top of the Demo demo company (demo.seed.ts, sales.seed.ts and purchase.seed.ts run
-// first): a small chart of accounts with 131 and 331 tracked by partner, the payroll, sales,
-// purchasing and stock value mapping rules, a start date
-// per company, an opening-balance entry with two customers and a supplier, then "post pending"
-// so the seeded payrolls reach the ledger. Skipped once accounts exist.
+// first): the Circular 133 chart template (chart, mapping rules, closing accounts, statement forms),
+// a start date per company, an opening-balance entry with two customers and a supplier, then "post
+// pending" so the seeded payrolls and documents reach the ledger. Skipped once accounts exist.
 
 async function ok(res: Promise<APIResponse>, what: string) {
   const r = await res
   expect(r.ok(), `${what}: ${r.status()} ${await r.text()}`).toBe(true)
 }
-
-type Type = 'asset' | 'liability' | 'equity' | 'revenue' | 'expense'
-// [code, name, type, parent code, tracked by partner]
-const chart: [string, string, Type, string?, boolean?][] = [
-  ['111', 'Tiền mặt', 'asset'],
-  ['112', 'Tiền gửi ngân hàng', 'asset'],
-  ['131', 'Phải thu của khách hàng', 'asset', undefined, true],
-  ['133', 'Thuế GTGT được khấu trừ', 'asset'],
-  ['1331', 'Thuế GTGT được khấu trừ của hàng hóa, dịch vụ', 'asset', '133'],
-  ['138', 'Phải thu khác', 'asset'],
-  ['1381', 'Tài sản thiếu chờ xử lý', 'asset', '138'],
-  ['156', 'Hàng hóa', 'asset'],
-  ['333', 'Thuế và các khoản phải nộp Nhà nước', 'liability'],
-  ['3331', 'Thuế giá trị gia tăng phải nộp', 'liability', '333'],
-  ['3335', 'Thuế thu nhập cá nhân', 'liability', '333'],
-  ['334', 'Phải trả người lao động', 'liability'],
-  ['331', 'Phải trả cho người bán', 'liability', undefined, true],
-  ['338', 'Phải trả, phải nộp khác', 'liability'],
-  // Top level: 338 takes the insurance payable, so it can take no child.
-  ['3381', 'Tài sản thừa chờ giải quyết', 'liability'],
-  ['3388', 'Phải trả, phải nộp khác', 'liability'],
-  ['411', 'Vốn đầu tư của chủ sở hữu', 'equity'],
-  ['511', 'Doanh thu bán hàng và cung cấp dịch vụ', 'revenue'],
-  ['632', 'Giá vốn hàng bán', 'expense'],
-  ['642', 'Chi phí quản lý doanh nghiệp', 'expense'],
-  ['711', 'Thu nhập khác', 'revenue'],
-  ['811', 'Chi phí khác', 'expense'],
-]
-// [kind, account code, side]
-const rules: [string, string, 'debit' | 'credit'][] = [
-  ['salary_expense', '642', 'debit'],
-  ['employer_insurance_expense', '642', 'debit'],
-  ['salary_payable', '334', 'credit'],
-  ['social_insurance_payable', '338', 'credit'],
-  ['health_insurance_payable', '338', 'credit'],
-  ['unemployment_insurance_payable', '338', 'credit'],
-  ['union_fee_payable', '338', 'credit'],
-  ['pit_payable', '3335', 'credit'],
-  ['sales_receivable', '131', 'debit'],
-  ['sales_revenue', '511', 'credit'],
-  ['sales_output_vat', '3331', 'credit'],
-  ['sales_cash_receipt', '111', 'debit'],
-  ['sales_bank_receipt', '112', 'debit'],
-  ['purchase_goods', '156', 'debit'],
-  ['purchase_expense', '642', 'debit'],
-  ['purchase_input_vat', '1331', 'debit'],
-  ['purchase_payable', '331', 'credit'],
-  ['purchase_cash_payment', '111', 'credit'],
-  ['purchase_bank_payment', '112', 'credit'],
-  ['purchase_received_not_invoiced', '3388', 'credit'],
-  ['purchase_price_difference', '632', 'debit'],
-  ['sales_cost_of_goods_sold', '632', 'debit'],
-  ['stock_inventory', '156', 'debit'],
-  ['stock_adjustment_gain', '711', 'credit'],
-  ['stock_adjustment_loss', '811', 'debit'],
-  ['stocktake_surplus', '3381', 'credit'],
-  ['stocktake_shortage', '1381', 'debit'],
-]
 
 test('seed Accounting on the Demo demo company', async ({ baseURL }) => {
   test.setTimeout(120_000)
@@ -83,13 +24,8 @@ test('seed Accounting on the Demo demo company', async ({ baseURL }) => {
   const role = await api.post(`/api/users/${me}/roles`, { data: { product: 'accounting', role: 'admin', org_unit_id: null } })
   expect([201, 409], await role.text()).toContain(role.status())
 
-  const id: Record<string, number> = {}
-  for (const [code, name, type, parent, byPartner] of chart) {
-    id[code] = await created(api.post('/api/accounting/accounts', { data: { code, name, type, parent_id: parent ? id[parent] : null, active: true, by_partner: !!byPartner } }))
-  }
-  for (const [kind, code, side] of rules) {
-    await ok(api.put(`/api/accounting/rules/${kind}`, { data: { account_id: id[code], side } }), `rule ${kind}`)
-  }
+  await ok(api.post('/api/accounting/templates/vn-tt133/apply'), 'apply the Circular 133 template')
+  const id = Object.fromEntries((await list<{ id: number; code: string }>('/api/accounting/accounts')).map((a) => [a.code, a.id]))
 
   const units = (await (await api.get('/api/org-units')).json()) as { id: number; name: string; kind: string }[]
   const companies = units.filter((u) => u.kind === 'company')
@@ -112,11 +48,11 @@ test('seed Accounting on the Demo demo company', async ({ baseURL }) => {
         legal_entity_id: demo,
         description: 'Số dư đầu kỳ',
         lines: [
-          { account_id: id['112'], debit: 500_000_000, credit: 0 },
+          { account_id: id['1121'], debit: 500_000_000, credit: 0 },
           { account_id: id['131'], partner_id: first.id, debit: 80_000_000, credit: 0 },
           { account_id: id['131'], partner_id: second.id, debit: 45_000_000, credit: 0 },
           { account_id: id['331'], partner_id: supplier, debit: 0, credit: 60_000_000 },
-          { account_id: id['411'], debit: 0, credit: 565_000_000 },
+          { account_id: id['4111'], debit: 0, credit: 565_000_000 },
         ],
       },
     }),
