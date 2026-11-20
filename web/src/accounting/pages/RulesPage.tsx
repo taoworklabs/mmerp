@@ -44,7 +44,7 @@ export function RulesPage() {
       header: t('accounting.rule.account'),
       role: 'meta',
       render: (r) => {
-        const a = accountOf(r.account_id)
+        const a = accountOf(r.account_id ?? r.suggested?.account_id)
         return a ? accountLabel(a) : ''
       },
     },
@@ -57,6 +57,8 @@ export function RulesPage() {
       render: (r) =>
         r.account_id ? (
           <StatusBadge tone="success">{t('accounting.rule.set')}</StatusBadge>
+        ) : r.suggested ? (
+          <StatusBadge tone="info">{t('accounting.rule.suggested')}</StatusBadge>
         ) : (
           <StatusBadge tone="neutral">{t('accounting.rule.unset')}</StatusBadge>
         ),
@@ -83,7 +85,7 @@ export function RulesPage() {
         <RuleModal
           rule={editing}
           // A retired or parent account is no longer offered, but the saved one still shows.
-          options={accountOptions(accounts.data, (a) => (a.active && a.postable && !!a.by_partner === editing.by_partner) || a.id === editing.account_id)}
+          options={accountOptions(accounts.data, (a) => (a.active && a.postable && !!a.by_partner === editing.by_partner) || a.id === (editing.account_id ?? editing.suggested?.account_id))}
           onClose={() => setEditing(null)}
         />
       )}
@@ -96,7 +98,9 @@ type Values = { account_id: string | null; side: string | null }
 function RuleModal({ rule, options, onClose }: { rule: Rule; options: { value: string; label: string }[]; onClose: () => void }) {
   const { t } = useTranslation()
   const qc = useQueryClient()
-  const form = useForm<Values>({ mode: 'onBlur', defaultValues: { account_id: rule.account_id ? String(rule.account_id) : null, side: rule.side ?? null } })
+  // A kind without a rule starts from what the applied chart template suggests.
+  const account = rule.account_id ?? rule.suggested?.account_id
+  const form = useForm<Values>({ mode: 'onBlur', defaultValues: { account_id: account ? String(account) : null, side: rule.side ?? rule.suggested?.side ?? null } })
   async function save(v: Values) {
     await unwrap(
       api.PUT('/accounting/rules/{kind}', { params: { path: { kind: rule.kind } }, body: { account_id: Number(v.account_id), side: v.side as 'debit' | 'credit' } }),

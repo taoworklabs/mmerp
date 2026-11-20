@@ -41,5 +41,20 @@
   "accounting.error.entry_partner_mismatch": "The entry's partners do not match how its accounts are tracked.",
   "accounting.error.journal_line_partner_required": "Line {{line_no}}: the account is tracked by partner. Choose a partner.",
   "accounting.error.journal_line_partner_not_allowed": "Line {{line_no}}: the account is not tracked by partner. Remove the partner.",
-  "accounting.error.account_not_tracked": "The account is not tracked by partner. Choose one that is."
+  "accounting.error.account_not_tracked": "The account is not tracked by partner. Choose one that is.",
+  "accounting.nav.closings": "Closing entries",
+  "accounting.nav.group_statements": "Financial statements",
+  "accounting.nav.balance_sheet": "Balance sheet",
+  "accounting.nav.income_statement": "Income statement",
+  "accounting.nav.closing_accounts": "Closing accounts",
+  "accounting.nav.statement_forms": "Statement forms",
+  "accounting.closing.name": "Closing entry",
+  "accounting.error.closing_accounts_unset": "The closing accounts are not set. Choose the result and retained earnings accounts under Configuration.",
+  "accounting.error.closing_nothing_to_close": "No revenue or expense balance is left to close at this date.",
+  "accounting.error.closing_too_large": "The closing entry has too many lines. Close a shorter period.",
+  "accounting.error.statement_formula_invalid": "Row {{code}}: the formula is wrong at character {{position}}.",
+  "accounting.error.statement_formula_cycle": "Row {{code}}: the formula refers back to itself.",
+  "accounting.error.statement_row_unknown": "Row {{code}}: the formula uses a code the form does not have.",
+  "accounting.error.statement_row_duplicate": "Code {{code}} is already in the form.",
+  "accounting.error.chart_not_empty": "The chart already has accounts, so a template cannot be applied."
 }
