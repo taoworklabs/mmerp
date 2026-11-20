@@ -27,7 +27,7 @@ A milestone only passes when what it adds keeps the contract intact from table t
 ```
 M11 Attachments and discussion ─► M12 Notifications ─► M13 PDF printing ─► M14 Sales   (all done)
    ─► HRM review ─► Core work after M14   (done) ─► M15 Accounting   (done)
-   ─► M16 Partner subledger ─► M17 Sales to cash ─► M18 Purchasing ─► M19 Stock   (done) ─► M20 Stock valuation
+   ─► M16 Partner subledger ─► M17 Sales to cash ─► M18 Purchasing ─► M19 Stock ─► M20 Stock valuation   (done)
    ┄► M10 On-premise operations ┄► [Gate: production readiness]   (on hold)
 ```
 
@@ -196,6 +196,8 @@ Vertical slices, each from migration to screen:
 
 ## M20. Stock valuation
 
+**Done** (2026-11-20): [ADR-0110](./adr/0110-moving-average-stock-valuation.md).
+
 **Goal:** every stock move carries a value at moving average per legal entity and item, and the documents moving goods book it: goods reach 156 at the goods receipt through "received, not invoiced", deliveries book cost of goods sold, adjustments and stocktakes their differences ([ADR-0110](./adr/0110-moving-average-stock-valuation.md), [design](./superpowers/specs/2026-11-19-stock-valuation-design.md)).
 
 **Exit criteria** (with `make seed` data and `PRODUCTS=hrm,sales,purchase,accounting`):
@@ -229,7 +231,7 @@ Core and frontend foundations built once Sales opened:
 - [ADR-0038](./adr/0038-data-engine-over-sqlc.md): Data engine over sqlc: dynamic parts compiled from code-declared fragments, no ORM
 - [ADR-0039](./adr/0039-shared-master-data.md): Shared master data: partners, items and tax in `shared/`, with their own namespace
 
-**Next:** M20 Stock valuation. M10 and the production-readiness gate stay on hold.
+**Next:** not chosen yet; the next milestone needs an ADR first. M10 and the production-readiness gate stay on hold.
 
 ## M10. On-premise operations
 
