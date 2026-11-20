@@ -13422,6 +13422,133 @@
         ],
         "type": "object"
       },
+      "Statement": {
+        "additionalProperties": false,
+        "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "/api/schemas/Statement.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
+          "lines": {
+            "items": {
+              "$ref": "#/components/schemas/StatementLine"
+            },
+            "type": "array"
+          },
+          "not_closed": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "lines",
+          "not_closed"
+        ],
+        "type": "object"
+      },
+      "StatementForm": {
+        "additionalProperties": false,
+        "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "/api/schemas/StatementForm.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
+          "rows": {
+            "items": {
+              "$ref": "#/components/schemas/StatementRow"
+            },
+            "maxItems": 200,
+            "type": "array"
+          }
+        },
+        "required": [
+          "rows"
+        ],
+        "type": "object"
+      },
+      "StatementLine": {
+        "additionalProperties": false,
+        "properties": {
+          "bold": {
+            "type": "boolean"
+          },
+          "code": {
+            "description": "The row's code on the official form (mã số)",
+            "maxLength": 10,
+            "minLength": 1,
+            "pattern": "^[0-9A-Za-z.]+$",
+            "type": "string"
+          },
+          "current": {
+            "description": "Minor unit",
+            "format": "int64",
+            "type": "integer"
+          },
+          "formula": {
+            "maxLength": 1000,
+            "type": "string"
+          },
+          "label": {
+            "maxLength": 300,
+            "minLength": 1,
+            "type": "string"
+          },
+          "previous": {
+            "description": "Comparative column, minor unit",
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "current",
+          "previous",
+          "code",
+          "label",
+          "formula",
+          "bold"
+        ],
+        "type": "object"
+      },
+      "StatementRow": {
+        "additionalProperties": false,
+        "properties": {
+          "bold": {
+            "type": "boolean"
+          },
+          "code": {
+            "description": "The row's code on the official form (mã số)",
+            "maxLength": 10,
+            "minLength": 1,
+            "pattern": "^[0-9A-Za-z.]+$",
+            "type": "string"
+          },
+          "formula": {
+            "maxLength": 1000,
+            "type": "string"
+          },
+          "label": {
+            "maxLength": 300,
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "code",
+          "label",
+          "formula",
+          "bold"
+        ],
+        "type": "object"
+      },
       "StepDef": {
         "additionalProperties": false,
         "properties": {
@@ -16810,6 +16937,213 @@
         "responses": {
           "204": {
             "description": "No Content"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "tags": [
+          "accounting",
+          "accounting"
+        ]
+      }
+    },
+    "/accounting/statement-forms/{form}": {
+      "get": {
+        "operationId": "get-statement-form",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "form",
+            "required": true,
+            "schema": {
+              "enum": [
+                "balance_sheet",
+                "income_statement"
+              ],
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StatementForm"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "tags": [
+          "accounting",
+          "accounting"
+        ]
+      },
+      "put": {
+        "operationId": "save-statement-form",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "form",
+            "required": true,
+            "schema": {
+              "enum": [
+                "balance_sheet",
+                "income_statement"
+              ],
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StatementForm"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "tags": [
+          "accounting",
+          "accounting"
+        ]
+      }
+    },
+    "/accounting/statements/balance-sheet": {
+      "get": {
+        "operationId": "get-balance-sheet",
+        "parameters": [
+          {
+            "explode": false,
+            "in": "query",
+            "name": "legal_entity_id",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          },
+          {
+            "explode": false,
+            "in": "query",
+            "name": "date",
+            "required": true,
+            "schema": {
+              "format": "date",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Statement"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "tags": [
+          "accounting",
+          "accounting"
+        ]
+      }
+    },
+    "/accounting/statements/income-statement": {
+      "get": {
+        "operationId": "get-income-statement",
+        "parameters": [
+          {
+            "explode": false,
+            "in": "query",
+            "name": "legal_entity_id",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          },
+          {
+            "explode": false,
+            "in": "query",
+            "name": "from",
+            "required": true,
+            "schema": {
+              "format": "date",
+              "type": "string"
+            }
+          },
+          {
+            "explode": false,
+            "in": "query",
+            "name": "to",
+            "required": true,
+            "schema": {
+              "format": "date",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Statement"
+                }
+              }
+            },
+            "description": "OK"
           },
           "default": {
             "content": {

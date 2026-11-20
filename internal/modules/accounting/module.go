@@ -17,6 +17,7 @@ func Module(s *Service) platform.Module {
 			registerPendingHandlers(api, s)
 			registerJournalHandlers(api, s)
 			registerClosingHandlers(api, s)
+			registerStatementHandlers(api, s)
 			registerReportHandlers(api, s)
 			registerPartnerHandlers(api, s)
 		},

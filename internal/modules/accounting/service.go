@@ -22,6 +22,7 @@ func NewService(d Deps) *Service {
 	s := &Service{d: d}
 	s.registerJournalEntry()
 	s.registerClosing()
+	s.registerStatementExports()
 	return s
 }
 

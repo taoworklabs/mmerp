@@ -90,3 +90,42 @@ ORDER BY e.date, e.id, l.line_no;
 
 -- name: PartnerExists :one
 SELECT EXISTS (SELECT 1 FROM partner.partners WHERE id = $1);
+
+-- name: StatementRows :many
+SELECT code, label, formula, bold FROM accounting.statement_rows WHERE form = $1 ORDER BY line_no;
+
+-- name: DeleteStatementRows :exec
+DELETE FROM accounting.statement_rows WHERE form = $1;
+
+-- name: InsertStatementRows :exec
+INSERT INTO accounting.statement_rows (form, line_no, code, label, formula, bold)
+SELECT @form::text, generate_series(1, cardinality(@codes::text[])), unnest(@codes::text[]), unnest(@labels::text[]),
+       unnest(@formulas::text[]), unnest(@bolds::boolean[]);
+
+-- name: StatementBalances :many
+-- Balances at a date of a legal entity's postable accounts, per partner on tracked accounts.
+SELECT a.code, COALESCE(l.partner_id, 0)::bigint AS partner_id, sum(l.debit - l.credit)::bigint AS amount
+FROM accounting.entries e
+JOIN accounting.entry_lines l ON l.entry_id = e.id
+JOIN accounting.accounts a ON a.id = l.account_id
+WHERE e.legal_entity_id = $1 AND e.date <= $2
+GROUP BY a.code, l.partner_id
+HAVING sum(l.debit - l.credit) <> 0;
+
+-- name: StatementTurnovers :many
+-- Turnovers over a range of a legal entity's postable accounts, closing entries apart.
+SELECT a.code, (e.doc_type = 'accounting.closing') AS closing, sum(l.debit)::bigint AS debit, sum(l.credit)::bigint AS credit
+FROM accounting.entries e
+JOIN accounting.entry_lines l ON l.entry_id = e.id
+JOIN accounting.accounts a ON a.id = l.account_id
+WHERE e.legal_entity_id = $1 AND e.date BETWEEN @from_date AND @to_date
+GROUP BY a.code, closing;
+
+-- name: ProfitAndLossOpen :one
+-- Whether a revenue or expense account of a legal entity still has a balance at a date.
+SELECT EXISTS (
+  SELECT 1 FROM accounting.entries e
+  JOIN accounting.entry_lines l ON l.entry_id = e.id
+  JOIN accounting.accounts a ON a.id = l.account_id
+  WHERE e.legal_entity_id = $1 AND e.date <= $2 AND a.type IN ('revenue', 'expense')
+  GROUP BY l.account_id HAVING sum(l.debit - l.credit) <> 0);

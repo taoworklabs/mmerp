@@ -13,7 +13,7 @@ import (
 func newAccounting(t *testing.T) (*coretest.Core, *accounting.Service) {
 	t.Helper()
 	core := coretest.New(t, "accounting")
-	return core, accounting.NewService(accounting.Deps{IAM: core.IAM, Audit: core.Audit, Record: core.Record})
+	return core, accounting.NewService(accounting.Deps{IAM: core.IAM, Audit: core.Audit, Record: core.Record, DataIO: core.DataIO})
 }
 
 func acct(code, typ string, parent *int64) accounting.AccountFields {

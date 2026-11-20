@@ -11,6 +11,40 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const deleteStatementRows = `-- name: DeleteStatementRows :exec
+DELETE FROM accounting.statement_rows WHERE form = $1
+`
+
+func (q *Queries) DeleteStatementRows(ctx context.Context, form string) error {
+	_, err := q.db.Exec(ctx, deleteStatementRows, form)
+	return err
+}
+
+const insertStatementRows = `-- name: InsertStatementRows :exec
+INSERT INTO accounting.statement_rows (form, line_no, code, label, formula, bold)
+SELECT $1::text, generate_series(1, cardinality($2::text[])), unnest($2::text[]), unnest($3::text[]),
+       unnest($4::text[]), unnest($5::boolean[])
+`
+
+type InsertStatementRowsParams struct {
+	Form     string
+	Codes    []string
+	Labels   []string
+	Formulas []string
+	Bolds    []bool
+}
+
+func (q *Queries) InsertStatementRows(ctx context.Context, arg InsertStatementRowsParams) error {
+	_, err := q.db.Exec(ctx, insertStatementRows,
+		arg.Form,
+		arg.Codes,
+		arg.Labels,
+		arg.Formulas,
+		arg.Bolds,
+	)
+	return err
+}
+
 const ledgerAccountExists = `-- name: LedgerAccountExists :one
 SELECT EXISTS (SELECT 1 FROM accounting.accounts WHERE id = $1)
 `
@@ -312,6 +346,154 @@ func (q *Queries) PartnerLedgerOpening(ctx context.Context, arg PartnerLedgerOpe
 	var opening int64
 	err := row.Scan(&opening)
 	return opening, err
+}
+
+const profitAndLossOpen = `-- name: ProfitAndLossOpen :one
+SELECT EXISTS (
+  SELECT 1 FROM accounting.entries e
+  JOIN accounting.entry_lines l ON l.entry_id = e.id
+  JOIN accounting.accounts a ON a.id = l.account_id
+  WHERE e.legal_entity_id = $1 AND e.date <= $2 AND a.type IN ('revenue', 'expense')
+  GROUP BY l.account_id HAVING sum(l.debit - l.credit) <> 0)
+`
+
+type ProfitAndLossOpenParams struct {
+	LegalEntityID int64
+	Date          pgtype.Date
+}
+
+// Whether a revenue or expense account of a legal entity still has a balance at a date.
+func (q *Queries) ProfitAndLossOpen(ctx context.Context, arg ProfitAndLossOpenParams) (bool, error) {
+	row := q.db.QueryRow(ctx, profitAndLossOpen, arg.LegalEntityID, arg.Date)
+	var exists bool
+	err := row.Scan(&exists)
+	return exists, err
+}
+
+const statementBalances = `-- name: StatementBalances :many
+SELECT a.code, COALESCE(l.partner_id, 0)::bigint AS partner_id, sum(l.debit - l.credit)::bigint AS amount
+FROM accounting.entries e
+JOIN accounting.entry_lines l ON l.entry_id = e.id
+JOIN accounting.accounts a ON a.id = l.account_id
+WHERE e.legal_entity_id = $1 AND e.date <= $2
+GROUP BY a.code, l.partner_id
+HAVING sum(l.debit - l.credit) <> 0
+`
+
+type StatementBalancesParams struct {
+	LegalEntityID int64
+	Date          pgtype.Date
+}
+
+type StatementBalancesRow struct {
+	Code      string
+	PartnerID int64
+	Amount    int64
+}
+
+// Balances at a date of a legal entity's postable accounts, per partner on tracked accounts.
+func (q *Queries) StatementBalances(ctx context.Context, arg StatementBalancesParams) ([]StatementBalancesRow, error) {
+	rows, err := q.db.Query(ctx, statementBalances, arg.LegalEntityID, arg.Date)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []StatementBalancesRow
+	for rows.Next() {
+		var i StatementBalancesRow
+		if err := rows.Scan(&i.Code, &i.PartnerID, &i.Amount); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const statementRows = `-- name: StatementRows :many
+SELECT code, label, formula, bold FROM accounting.statement_rows WHERE form = $1 ORDER BY line_no
+`
+
+type StatementRowsRow struct {
+	Code    string
+	Label   string
+	Formula string
+	Bold    bool
+}
+
+func (q *Queries) StatementRows(ctx context.Context, form string) ([]StatementRowsRow, error) {
+	rows, err := q.db.Query(ctx, statementRows, form)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []StatementRowsRow
+	for rows.Next() {
+		var i StatementRowsRow
+		if err := rows.Scan(
+			&i.Code,
+			&i.Label,
+			&i.Formula,
+			&i.Bold,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const statementTurnovers = `-- name: StatementTurnovers :many
+SELECT a.code, (e.doc_type = 'accounting.closing') AS closing, sum(l.debit)::bigint AS debit, sum(l.credit)::bigint AS credit
+FROM accounting.entries e
+JOIN accounting.entry_lines l ON l.entry_id = e.id
+JOIN accounting.accounts a ON a.id = l.account_id
+WHERE e.legal_entity_id = $1 AND e.date BETWEEN $2 AND $3
+GROUP BY a.code, closing
+`
+
+type StatementTurnoversParams struct {
+	LegalEntityID int64
+	FromDate      pgtype.Date
+	ToDate        pgtype.Date
+}
+
+type StatementTurnoversRow struct {
+	Code    string
+	Closing bool
+	Debit   int64
+	Credit  int64
+}
+
+// Turnovers over a range of a legal entity's postable accounts, closing entries apart.
+func (q *Queries) StatementTurnovers(ctx context.Context, arg StatementTurnoversParams) ([]StatementTurnoversRow, error) {
+	rows, err := q.db.Query(ctx, statementTurnovers, arg.LegalEntityID, arg.FromDate, arg.ToDate)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []StatementTurnoversRow
+	for rows.Next() {
+		var i StatementTurnoversRow
+		if err := rows.Scan(
+			&i.Code,
+			&i.Closing,
+			&i.Debit,
+			&i.Credit,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const trialBalanceRows = `-- name: TrialBalanceRows :many

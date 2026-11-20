@@ -309,6 +309,54 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/accounting/statement-forms/{form}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["get-statement-form"];
+        put: operations["save-statement-form"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/accounting/statements/balance-sheet": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["get-balance-sheet"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/accounting/statements/income-statement": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["get-income-statement"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/accounting/trial-balance": {
         parameters: {
             query?: never;
@@ -7409,6 +7457,49 @@ export interface components {
             readonly $schema?: string;
             items: components["schemas"]["Start"][];
         };
+        Statement: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example /api/schemas/Statement.json
+             */
+            readonly $schema?: string;
+            lines: components["schemas"]["StatementLine"][];
+            not_closed: boolean;
+        };
+        StatementForm: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example /api/schemas/StatementForm.json
+             */
+            readonly $schema?: string;
+            rows: components["schemas"]["StatementRow"][];
+        };
+        StatementLine: {
+            bold: boolean;
+            /** @description The row's code on the official form (mã số) */
+            code: string;
+            /**
+             * Format: int64
+             * @description Minor unit
+             */
+            current: number;
+            formula: string;
+            label: string;
+            /**
+             * Format: int64
+             * @description Comparative column, minor unit
+             */
+            previous: number;
+        };
+        StatementRow: {
+            bold: boolean;
+            /** @description The row's code on the official form (mã số) */
+            code: string;
+            formula: string;
+            label: string;
+        };
         StepDef: {
             /**
              * Format: int32
@@ -8962,6 +9053,135 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "get-statement-form": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                form: "balance_sheet" | "income_statement";
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StatementForm"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "save-statement-form": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                form: "balance_sheet" | "income_statement";
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StatementForm"];
+            };
+        };
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "get-balance-sheet": {
+        parameters: {
+            query: {
+                legal_entity_id: number;
+                date: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Statement"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "get-income-statement": {
+        parameters: {
+            query: {
+                legal_entity_id: number;
+                from: string;
+                to: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Statement"];
+                };
             };
             /** @description Error */
             default: {
